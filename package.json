@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p  5053",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 5053",
     "lint": "next lint",
     "setup": "node -r dotenv/config node_modules/.bin/tsx scripts/setup.ts dotenv_config_path=.env.local",
     "admin:list": "node -r dotenv/config node_modules/.bin/tsx scripts/manage-admin.ts list dotenv_config_path=.env.local",
