@@ -238,8 +238,8 @@ export async function listAppointments(
     .populate('patientId', 'firstName lastName patientId phone')
     .populate('doctorId', 'firstName lastName')
     .sort({ appointmentDate: 1, startTime: 1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
+    .skip(((page || 1) - 1) * (limit || 10))
+    .limit(limit || 10)
     .lean();
 
   // Audit list access
@@ -253,7 +253,7 @@ export async function listAppointments(
     { count: appointments.length, filters: query }
   );
 
-  return createPaginationResult(appointments, total, page, limit);
+  return createPaginationResult(appointments as unknown as IAppointment[], total, page || 1, limit || 10);
 }
 
 /**
@@ -400,8 +400,8 @@ export async function changeAppointmentStatus(
             .select('queueNumber')
             .lean();
           
-          const queueNumber = latest && latest.queueNumber
-            ? `Q-${(parseInt(latest.queueNumber.match(/Q-(\d+)/)?.[1] || '0', 10) + 1).toString().padStart(4, '0')}`
+          const queueNumber = latest && (latest as any).queueNumber
+            ? `Q-${(parseInt((latest as any).queueNumber.match(/Q-(\d+)/)?.[1] || '0', 10) + 1).toString().padStart(4, '0')}`
             : 'Q-0001';
 
           // Calculate position
@@ -466,7 +466,8 @@ export async function changeAppointmentStatus(
       userId,
       tenantId,
       AuditAction.UPDATE,
-      { before, after: updated.toObject(), statusChange: input.status }
+      { before, after: updated.toObject() },
+      { statusChange: input.status }
     );
   }
 

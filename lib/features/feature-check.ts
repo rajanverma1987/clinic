@@ -19,7 +19,7 @@ export async function getTenantSubscriptionWithPlan(tenantId: string) {
     .sort({ createdAt: -1 })
     .lean();
 
-  if (!subscription || subscription.status !== SubscriptionStatus.ACTIVE) {
+  if (!subscription || (subscription as any).status !== SubscriptionStatus.ACTIVE) {
     return null;
   }
 
@@ -32,11 +32,11 @@ export async function getTenantSubscriptionWithPlan(tenantId: string) {
 export async function getTenantFeatures(tenantId: string): Promise<string[]> {
   const subscription = await getTenantSubscriptionWithPlan(tenantId);
   
-  if (!subscription || !subscription.planId) {
+  if (!subscription || !(subscription as any).planId) {
     return [];
   }
 
-  const plan = subscription.planId as any;
+  const plan = (subscription as any).planId;
   return plan.features || [];
 }
 
@@ -87,7 +87,7 @@ export async function hasAllFeatureAccess(
 export async function getTenantLimits(tenantId: string) {
   const subscription = await getTenantSubscriptionWithPlan(tenantId);
   
-  if (!subscription || !subscription.planId) {
+  if (!subscription || !(subscription as any).planId) {
     return {
       maxUsers: null,
       maxPatients: null,
@@ -95,7 +95,7 @@ export async function getTenantLimits(tenantId: string) {
     };
   }
 
-  const plan = subscription.planId as any;
+  const plan = (subscription as any).planId;
   return {
     maxUsers: plan.maxUsers || null,
     maxPatients: plan.maxPatients || null,

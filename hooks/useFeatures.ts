@@ -31,7 +31,7 @@ export function useFeatures() {
 
   const fetchFeatures = async () => {
     try {
-      const response = await apiClient.get<{ data: TenantFeatures }>('/subscriptions/features');
+      const response = await apiClient.get<TenantFeatures>('/features');
       if (response.success && response.data) {
         setFeatures(response.data.features || []);
         setLimits(response.data.limits || {});

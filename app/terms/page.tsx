@@ -40,8 +40,8 @@ export default function TermsPage() {
                 1. Agreement to Terms
               </h2>
               <p className="text-gray-700 mb-4">
-                By accessing or using ClinicHub ("Service"), you agree to be
-                bound by these Terms of Service ("Terms"). If you disagree with
+                By accessing or using ClinicHub (&quot;Service&quot;), you agree to be
+                bound by these Terms of Service (&quot;Terms&quot;). If you disagree with
                 any part of these terms, you may not access the Service.
               </p>
               <p className="text-gray-700">
@@ -274,7 +274,7 @@ export default function TermsPage() {
                 You agree to indemnify, defend, and hold harmless ClinicHub and
                 its officers, directors, employees, and agents from and against
                 any claims, liabilities, damages, losses, and expenses,
-                including reasonable attorneys' fees, arising out of or in any
+                including reasonable attorneys&apos; fees, arising out of or in any
                 way connected with your use of the Service, violation of these
                 Terms, or violation of any applicable laws or regulations.
               </p>
@@ -340,7 +340,7 @@ export default function TermsPage() {
               <p className="text-gray-700">
                 We reserve the right to modify these Terms at any time. We will
                 notify you of material changes by posting the updated Terms on
-                this page and updating the "Last updated" date. Your continued
+                this page and updating the &quot;Last updated&quot; date. Your continued
                 use of the Service after such changes constitutes acceptance of
                 the modified Terms.
               </p>

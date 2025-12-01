@@ -36,7 +36,12 @@ async function generateTransactionNumber(tenantId: string): Promise<string> {
     return 'STX-0001';
   }
 
-  const match = lastTransaction.transactionNumber.match(/(\d+)$/);
+  const transactionNumber = (lastTransaction as any).transactionNumber;
+  if (!transactionNumber) {
+    return 'STX-0001';
+  }
+
+  const match = transactionNumber.match(/(\d+)$/);
   if (match) {
     const nextNum = parseInt(match[1], 10) + 1;
     return `STX-${nextNum.toString().padStart(4, '0')}`;
@@ -218,8 +223,8 @@ export async function listInventoryItems(
   const items = await InventoryItem.find(filter)
     .populate('primarySupplierId', 'name')
     .sort({ name: 1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
+    .skip(((page || 1) - 1) * (limit || 10))
+    .limit(limit || 10)
     .lean();
 
   // Audit list access
@@ -233,7 +238,7 @@ export async function listInventoryItems(
     { count: items.length, filters: query }
   );
 
-  return createPaginationResult(items, total, page, limit);
+  return createPaginationResult(items as unknown as IInventoryItem[], total, page || 1, limit || 10);
 }
 
 /**
@@ -256,7 +261,7 @@ export async function getLowStockItems(
     .sort({ availableQuantity: 1 })
     .lean();
 
-  return items as IInventoryItem[];
+  return items as unknown as IInventoryItem[];
 }
 
 /**
@@ -280,11 +285,11 @@ export async function getExpiredItems(
 
   for (const item of items) {
     const expired = item.batches.filter(
-      (batch) => new Date(batch.expiryDate) < new Date()
+      (batch: Batch) => new Date(batch.expiryDate) < new Date()
     );
     
     for (const batch of expired) {
-      expiredBatches.push({ item: item as IInventoryItem, batch });
+      expiredBatches.push({ item: item as unknown as IInventoryItem, batch: batch as Batch });
     }
   }
 
@@ -413,7 +418,7 @@ export async function listSuppliers(
     .sort({ name: 1 })
     .lean();
 
-  return suppliers as ISupplier[];
+  return suppliers as unknown as ISupplier[];
 }
 
 /**

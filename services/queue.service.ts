@@ -33,12 +33,13 @@ async function generateQueueNumber(tenantId: string): Promise<string> {
     .select('queueNumber')
     .lean();
 
-  if (!latest || !latest.queueNumber) {
+  if (!latest || !(latest as any).queueNumber) {
     return 'Q-0001';
   }
 
   // Extract number from queue number (e.g., Q-0001 -> 1)
-  const match = latest.queueNumber.match(/Q-(\d+)/);
+  const queueNumber = (latest as any).queueNumber;
+  const match = queueNumber.match(/Q-(\d+)/);
   if (!match) {
     return 'Q-0001';
   }
@@ -261,7 +262,7 @@ export async function getQueueEntryById(
     await AuditLogger.auditRead('queue', queueEntryId, userId, tenantId);
   }
 
-  return queueEntry as IQueue | null;
+  return queueEntry as unknown as IQueue | null;
 }
 
 /**
@@ -334,8 +335,8 @@ export async function listQueueEntries(
     .populate('doctorId', 'firstName lastName')
     .populate('appointmentId', 'appointmentDate startTime')
     .sort(sortOptions)
-    .skip((page - 1) * limit)
-    .limit(limit)
+    .skip(((page || 1) - 1) * (limit || 10))
+    .limit(limit || 10)
     .lean();
 
   // Audit list access
@@ -349,7 +350,7 @@ export async function listQueueEntries(
     { count: queueEntries.length, filters: query }
   );
 
-  return createPaginationResult(queueEntries, total, page, limit);
+  return createPaginationResult(queueEntries as unknown as IQueue[], total, page || 1, limit || 10);
 }
 
 /**
@@ -376,7 +377,7 @@ export async function getDoctorQueue(
 
   await AuditLogger.auditRead('queue', `doctor-${doctorId}`, userId, tenantId);
 
-  return queueEntries as IQueue[];
+  return queueEntries as unknown as IQueue[];
 }
 
 /**
@@ -544,7 +545,8 @@ export async function changeQueueStatus(
       userId,
       tenantId,
       AuditAction.UPDATE,
-      { before, after: updated.toObject(), statusChange: input.status }
+      { before, after: updated.toObject() },
+      { statusChange: input.status }
     );
   }
 

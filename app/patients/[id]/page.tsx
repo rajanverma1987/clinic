@@ -78,7 +78,7 @@ export default function PatientDetailPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await apiClient.get<{ data: Patient }>(`/patients/${params.id}`);
+      const response = await apiClient.get<Patient>(`/patients/${params.id}`);
       if (response.success && response.data) {
         setPatient(response.data);
         setFormData(response.data);

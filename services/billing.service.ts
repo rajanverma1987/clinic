@@ -37,7 +37,12 @@ async function generateInvoiceNumber(tenantId: string): Promise<string> {
     return 'INV-0001';
   }
 
-  const match = lastInvoice.invoiceNumber.match(/(\d+)$/);
+  const invoiceNumber = (lastInvoice as any).invoiceNumber;
+  if (!invoiceNumber) {
+    return 'INV-0001';
+  }
+
+  const match = invoiceNumber.match(/(\d+)$/);
   if (match) {
     const nextNum = parseInt(match[1], 10) + 1;
     return `INV-${nextNum.toString().padStart(4, '0')}`;
@@ -63,7 +68,12 @@ async function generatePaymentNumber(tenantId: string): Promise<string> {
     return 'PAY-0001';
   }
 
-  const match = lastPayment.paymentNumber.match(/(\d+)$/);
+  const paymentNumber = (lastPayment as any).paymentNumber;
+  if (!paymentNumber) {
+    return 'PAY-0001';
+  }
+
+  const match = paymentNumber.match(/(\d+)$/);
   if (match) {
     const nextNum = parseInt(match[1], 10) + 1;
     return `PAY-${nextNum.toString().padStart(4, '0')}`;
@@ -206,7 +216,7 @@ export async function createInvoice(
     discountAmount: item.discountAmount
       ? parseAmount(item.discountAmount, tenant.settings.currency)
       : undefined,
-  }));
+  })) as InvoiceItem[];
 
   // Calculate totals
   const totals = await calculateInvoiceTotals(
@@ -351,8 +361,8 @@ export async function listInvoices(
   const invoices = await Invoice.find(filter)
     .populate('patientId', 'firstName lastName patientId')
     .sort({ invoiceDate: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
+    .skip(((page || 1) - 1) * (limit || 10))
+    .limit(limit || 10)
     .lean();
 
   // Audit list access
@@ -366,7 +376,7 @@ export async function listInvoices(
     { count: invoices.length, filters: query }
   );
 
-  return createPaginationResult(invoices, total, page, limit);
+  return createPaginationResult(invoices as unknown as IInvoice[], total, page || 1, limit || 10);
 }
 
 /**
@@ -410,7 +420,7 @@ export async function updateInvoice(
       discountAmount: item.discountAmount
         ? parseAmount(item.discountAmount, existing.currency)
         : undefined,
-    }));
+    })) as InvoiceItem[];
 
     const totals = await calculateInvoiceTotals(
       items,
@@ -586,11 +596,11 @@ export async function listPayments(
     .populate('patientId', 'firstName lastName patientId')
     .populate('createdBy', 'firstName lastName')
     .sort({ paymentDate: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
+    .skip(((page || 1) - 1) * (limit || 10))
+    .limit(limit || 10)
     .lean();
 
-  return createPaginationResult(payments, total, page, limit);
+  return createPaginationResult(payments as unknown as IPayment[], total, page || 1, limit || 10);
 }
 
 /**

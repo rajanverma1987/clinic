@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PrescriptionStatus, DrugForm } from '@/models/Prescription';
+import { PrescriptionStatus } from '@/models/Prescription';
 
 /**
  * Validation schemas for Prescription module

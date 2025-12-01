@@ -59,7 +59,6 @@ export class AuditLogger {
       tenantId,
       changes,
       metadata,
-      timestamp: new Date(),
     };
 
     // In production, use:

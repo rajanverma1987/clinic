@@ -77,9 +77,10 @@ export default function AdminClientsPage() {
 
   const fetchPlans = async () => {
     try {
-      const response = await apiClient.get<{ data: SubscriptionPlan[] }>('/admin/subscription-plans');
+      const response = await apiClient.get<SubscriptionPlan[]>('/admin/subscription-plans');
       if (response.success && response.data) {
-        setPlans(response.data);
+        const plansData = Array.isArray(response.data) ? response.data : [];
+        setPlans(plansData);
       }
     } catch (error) {
       console.error('Failed to fetch plans:', error);
@@ -88,9 +89,10 @@ export default function AdminClientsPage() {
 
   const fetchClients = async () => {
     try {
-      const response = await apiClient.get<{ data: Client[] }>('/admin/clients');
+      const response = await apiClient.get<Client[]>('/admin/clients');
       if (response.success && response.data) {
-        setClients(response.data);
+        const clientsData = Array.isArray(response.data) ? response.data : [];
+        setClients(clientsData);
       }
     } catch (error) {
       console.error('Failed to fetch clients:', error);
@@ -289,14 +291,15 @@ export default function AdminClientsPage() {
                   value={selectedPlanId}
                   onChange={(e) => setSelectedPlanId(e.target.value)}
                   required
-                >
-                  <option value="">-- Select Plan --</option>
-                  {plans.map((plan) => (
-                    <option key={plan._id} value={plan._id}>
-                      {plan.name} - {formatCurrency(plan.price)}/{plan.billingCycle === 'MONTHLY' ? 'month' : 'year'}
-                    </option>
-                  ))}
-                </Select>
+                  placeholder="-- Select Plan --"
+                  options={[
+                    { value: '', label: '-- Select Plan --' },
+                    ...plans.map((plan) => ({
+                      value: plan._id,
+                      label: `${plan.name} - ${formatCurrency(plan.price)}/${plan.billingCycle === 'MONTHLY' ? 'month' : 'year'}`,
+                    })),
+                  ]}
+                />
               </div>
 
               <div className="flex gap-4">

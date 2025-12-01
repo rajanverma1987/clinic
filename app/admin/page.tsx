@@ -35,14 +35,14 @@ export default function AdminDashboardPage() {
   const fetchStats = async () => {
     try {
       // Fetch clients
-      const clientsResponse = await apiClient.get<{ data: any[] }>('/admin/clients');
+      const clientsResponse = await apiClient.get<any[]>('/admin/clients');
       
       // Fetch subscriptions
-      const subscriptionsResponse = await apiClient.get<{ data: any[] }>('/subscriptions');
+      const subscriptionsResponse = await apiClient.get<any[]>('/subscriptions');
       
       if (clientsResponse.success && subscriptionsResponse.success) {
-        const clients = clientsResponse.data || [];
-        const subscriptions = subscriptionsResponse.data || [];
+        const clients = Array.isArray(clientsResponse.data) ? clientsResponse.data : [];
+        const subscriptions = Array.isArray(subscriptionsResponse.data) ? subscriptionsResponse.data : [];
         
         const activeClients = clients.filter((c: any) => c.isActive).length;
         const activeSubscriptions = subscriptions.filter(

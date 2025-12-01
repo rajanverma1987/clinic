@@ -55,14 +55,14 @@ export default function PaymentHistoryPage() {
     try {
       setLoading(true);
       // Get subscription
-      const subResponse = await apiClient.get<{ data: Subscription }>('/subscriptions');
-      if (subResponse.success && subResponse.data) {
-        setSubscription(subResponse.data);
-        // Get payments for this subscription
-        if (subResponse.data._id) {
-          const paymentsResponse = await apiClient.get<{ data: SubscriptionPayment[] }>(
-            `/subscriptions/${subResponse.data._id}?type=payments`
-          );
+          const subResponse = await apiClient.get<Subscription>('/subscriptions');
+          if (subResponse.success && subResponse.data) {
+            setSubscription(subResponse.data);
+            // Get payments for this subscription
+            if (subResponse.data._id) {
+              const paymentsResponse = await apiClient.get<SubscriptionPayment[]>(
+                `/subscriptions/${subResponse.data._id}?type=payments`
+              );
           if (paymentsResponse.success && paymentsResponse.data) {
             setPayments(paymentsResponse.data);
           }
@@ -92,20 +92,20 @@ export default function PaymentHistoryPage() {
     });
   };
 
-  const getStatusVariant = (status: string): 'success' | 'warning' | 'error' | 'info' => {
-    switch (status.toUpperCase()) {
-      case 'COMPLETED':
-      case 'PAID':
-        return 'success';
-      case 'PENDING':
-        return 'warning';
-      case 'FAILED':
-      case 'CANCELLED':
-        return 'error';
-      default:
-        return 'info';
-    }
-  };
+      const getStatusVariant = (status: string): 'success' | 'warning' | 'danger' | 'default' => {
+        switch (status.toUpperCase()) {
+          case 'COMPLETED':
+          case 'PAID':
+            return 'success';
+          case 'PENDING':
+            return 'warning';
+          case 'FAILED':
+          case 'CANCELLED':
+            return 'danger';
+          default:
+            return 'default';
+        }
+      };
 
   const columns = [
     {

@@ -37,9 +37,9 @@ export default function PrescriptionsPage() {
   const fetchPrescriptions = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get<{ data: Prescription[] }>('/prescriptions');
+      const response = await apiClient.get<Prescription[]>('/prescriptions');
       if (response.success && response.data) {
-        setPrescriptions(response.data.data || []);
+        setPrescriptions(Array.isArray(response.data) ? response.data : []);
       }
     } catch (error) {
       console.error('Failed to fetch prescriptions:', error);

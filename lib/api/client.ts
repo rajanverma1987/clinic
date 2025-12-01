@@ -27,9 +27,9 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const token = this.getToken();
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> || {}),
     };
 
     if (token) {
@@ -39,7 +39,7 @@ class ApiClient {
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
-        headers,
+        headers: headers as HeadersInit,
       });
 
       const data = await response.json();

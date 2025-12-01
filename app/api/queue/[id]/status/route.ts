@@ -11,10 +11,10 @@ import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/ap
 async function putHandler(
   req: AuthenticatedRequest,
   user: any,
-  { params }: { params: Promise<{ id: string }> }
+  params: { id: string }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const body = await req.json();
 
     const validationResult = changeQueueStatusSchema.safeParse(body);
@@ -65,6 +65,6 @@ export async function PUT(
   const authenticatedReq = req as AuthenticatedRequest;
   authenticatedReq.user = authResult.user;
 
-  return putHandler(authenticatedReq, authResult.user, { params });
+  return putHandler(authenticatedReq, authResult.user, params);
 }
 

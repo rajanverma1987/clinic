@@ -103,7 +103,7 @@ export default function PatientsPage() {
 
       const response = await apiClient.get<PaginationResult>(`/patients?${params}`);
       if (response.success && response.data) {
-        setPatients(response.data.data || []);
+        setPatients(Array.isArray(response.data) ? response.data : []);
         setTotalPages(response.data.totalPages || 1);
       }
     } catch (error) {

@@ -38,7 +38,7 @@ export default function PricingPage() {
 
   const fetchPlans = async () => {
     try {
-      const response = await apiClient.get<{ data: SubscriptionPlan[] }>('/subscription-plans');
+      const response = await apiClient.get<SubscriptionPlan[]>('/subscription-plans');
       if (response.success && response.data) {
         setPlans(response.data);
       }
@@ -64,7 +64,7 @@ export default function PricingPage() {
 
     // User is logged in, create subscription
     try {
-      const response = await apiClient.post('/subscriptions', {
+      const response = await apiClient.post<{ approvalUrl?: string }>('/subscriptions', {
         planId,
         customerEmail: user.email,
         customerName: `${user.firstName} ${user.lastName}`,

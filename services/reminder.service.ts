@@ -62,8 +62,8 @@ export async function findAppointmentsNeedingReminders(): Promise<ReminderJob[]>
 
     if (patient && doctor && tenant) {
       reminderJobs.push({
-        appointmentId: appointment._id.toString(),
-        patientId: patient._id.toString(),
+        appointmentId: (appointment as any)._id.toString(),
+        patientId: (patient as any)._id.toString(),
         patientName: `${patient.firstName} ${patient.lastName}`,
         patientPhone: patient.phone,
         patientEmail: patient.email,

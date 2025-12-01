@@ -8,7 +8,7 @@ import Invoice, { InvoiceStatus } from '@/models/Invoice';
 import Payment, { PaymentStatus } from '@/models/Payment';
 import Patient, { Gender } from '@/models/Patient';
 import Appointment, { AppointmentStatus, AppointmentType } from '@/models/Appointment';
-import InventoryItem, { InventoryItemType } from '@/models/InventoryItem';
+import InventoryItem, { InventoryItemType, Batch } from '@/models/InventoryItem';
 import StockTransaction from '@/models/StockTransaction';
 import { withTenant } from '@/lib/db/tenant-helper';
 import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger';
@@ -405,10 +405,10 @@ export async function getInventoryReport(
   if (input.includeExpired) {
     const now = new Date();
     items.forEach((item) => {
-      item.batches?.forEach((batch) => {
+      item.batches?.forEach((batch: Batch) => {
         if (new Date(batch.expiryDate) < now && batch.quantity > 0) {
           expiredItems.push({
-            itemId: item._id,
+            itemId: (item as any)._id,
             itemName: item.name,
             batchNumber: batch.batchNumber,
             expiryDate: batch.expiryDate,
@@ -457,7 +457,7 @@ export async function getInventoryReport(
 
     // Predict reorder needs
     items.forEach((item) => {
-      const itemId = item._id.toString();
+      const itemId = (item as any)._id.toString();
       const avgConsumption = consumptionByItem[itemId] || 0;
       const daysInPeriod = dateFilter
         ? (new Date(dateFilter.$lte).getTime() - new Date(dateFilter.$gte).getTime()) /
@@ -472,7 +472,7 @@ export async function getInventoryReport(
 
       if (daysUntilReorder > 0 && daysUntilReorder <= 30) {
         predictions.push({
-          itemId: item._id,
+          itemId: (item as any)._id,
           itemName: item.name,
           currentStock: item.totalQuantity,
           reorderPoint: item.reorderPoint,
@@ -496,7 +496,7 @@ export async function getInventoryReport(
       types: typeBreakdown,
     },
     lowStockItems: input.includeLowStock ? lowStockItems.map((item) => ({
-      id: item._id,
+      id: (item as any)._id,
       name: item.name,
       currentStock: item.totalQuantity,
       threshold: item.lowStockThreshold,

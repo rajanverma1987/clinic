@@ -71,7 +71,7 @@ export default function AppointmentsPage() {
 
       const response = await apiClient.get<PaginationResult>(`/appointments?${params}`);
       if (response.success && response.data) {
-        setAppointments(response.data.data || []);
+        setAppointments(Array.isArray(response.data) ? response.data : []);
         setTotalPages(response.data.totalPages || 1);
       }
     } catch (error) {

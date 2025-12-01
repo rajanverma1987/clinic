@@ -65,9 +65,9 @@ export default function NewInvoicePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const patientsResponse = await apiClient.get<{ data: Patient[] }>('/patients?limit=100');
+      const patientsResponse = await apiClient.get<Patient[]>('/patients?limit=100');
       if (patientsResponse.success && patientsResponse.data) {
-        setPatients(patientsResponse.data.data || []);
+        setPatients(Array.isArray(patientsResponse.data) ? patientsResponse.data : []);
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);

@@ -39,9 +39,9 @@ export default function InvoicesPage() {
   const fetchInvoices = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get<{ data: Invoice[] }>('/invoices');
+      const response = await apiClient.get<Invoice[]>('/invoices');
       if (response.success && response.data) {
-        setInvoices(response.data.data || []);
+        setInvoices(Array.isArray(response.data) ? response.data : []);
       }
     } catch (error) {
       console.error('Failed to fetch invoices:', error);

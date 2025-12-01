@@ -14,10 +14,10 @@ import {
 async function activateHandler(
   req: AuthenticatedRequest,
   user: any,
-  { params }: { params: Promise<{ id: string }> }
+  params: { id: string }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     
     const subscription = await activateSubscription(id, user.tenantId);
     return NextResponse.json(successResponse(subscription));
@@ -36,10 +36,10 @@ async function activateHandler(
 async function cancelHandler(
   req: AuthenticatedRequest,
   user: any,
-  { params }: { params: Promise<{ id: string }> }
+  params: { id: string }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const body = await req.json();
     
     const subscription = await cancelSubscription(
@@ -63,10 +63,10 @@ async function cancelHandler(
 async function getPaymentsHandler(
   req: AuthenticatedRequest,
   user: any,
-  { params }: { params: Promise<{ id: string }> }
+  params: { id: string }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     
     const payments = await getSubscriptionPayments(id, user.tenantId);
     return NextResponse.json(successResponse(payments));
@@ -93,9 +93,9 @@ export async function POST(
   const action = searchParams.get('action');
 
   if (action === 'activate') {
-    return activateHandler(authenticatedReq, authResult.user, { params });
+    return activateHandler(authenticatedReq, authResult.user, params);
   } else if (action === 'cancel') {
-    return cancelHandler(authenticatedReq, authResult.user, { params });
+    return cancelHandler(authenticatedReq, authResult.user, params);
   }
 
   return NextResponse.json(
@@ -119,7 +119,7 @@ export async function GET(
   const type = searchParams.get('type');
 
   if (type === 'payments') {
-    return getPaymentsHandler(authenticatedReq, authResult.user, { params });
+    return getPaymentsHandler(authenticatedReq, authResult.user, params);
   }
 
   return NextResponse.json(

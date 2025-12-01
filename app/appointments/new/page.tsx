@@ -58,9 +58,9 @@ export default function NewAppointmentPage() {
     setLoading(true);
     try {
       // Fetch patients
-      const patientsResponse = await apiClient.get<{ data: Patient[] }>('/patients?limit=100');
+      const patientsResponse = await apiClient.get<Patient[]>('/patients?limit=100');
       if (patientsResponse.success && patientsResponse.data) {
-        setPatients(patientsResponse.data.data || []);
+        setPatients(Array.isArray(patientsResponse.data) ? patientsResponse.data : []);
       }
 
       // Fetch doctors (users with doctor role)

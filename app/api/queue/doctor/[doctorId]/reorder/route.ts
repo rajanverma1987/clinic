@@ -11,10 +11,10 @@ import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/ap
 async function postHandler(
   req: AuthenticatedRequest,
   user: any,
-  { params }: { params: Promise<{ doctorId: string }> }
+  params: { doctorId: string }
 ) {
   try {
-    const { doctorId } = await params;
+    const { doctorId } = params;
     const body = await req.json();
 
     const validationResult = reorderQueueSchema.safeParse(body);
@@ -58,6 +58,6 @@ export async function POST(
   const authenticatedReq = req as AuthenticatedRequest;
   authenticatedReq.user = authResult.user;
 
-  return postHandler(authenticatedReq, authResult.user, { params });
+  return postHandler(authenticatedReq, authResult.user, params);
 }
 

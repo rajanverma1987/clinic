@@ -40,7 +40,7 @@ export default function PrivacyPage() {
                 1. Introduction
               </h2>
               <p className="text-gray-700 mb-4">
-                Welcome to ClinicHub ("we," "our," or "us"). We are committed to
+                Welcome to ClinicHub (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We are committed to
                 protecting your privacy and ensuring the security of your
                 personal information and Protected Health Information (PHI). This
                 Privacy Policy explains how we collect, use, disclose, and
@@ -275,7 +275,7 @@ export default function PrivacyPage() {
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                10. Children's Privacy
+                10. Children&apos;s Privacy
               </h2>
               <p className="text-gray-700">
                 Our services are not intended for individuals under the age of
@@ -292,7 +292,7 @@ export default function PrivacyPage() {
               <p className="text-gray-700">
                 We may update this Privacy Policy from time to time. We will
                 notify you of any material changes by posting the new policy on
-                this page and updating the "Last updated" date. For significant
+                this page and updating the &quot;Last updated&quot; date. For significant
                 changes, we may also notify you via email or through our platform.
               </p>
             </section>

@@ -55,7 +55,7 @@ export default function InventoryItemDetailPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await apiClient.get<{ data: InventoryItem }>(`/inventory/items/${params.id}`);
+      const response = await apiClient.get<InventoryItem>(`/inventory/items/${params.id}`);
       if (response.success && response.data) {
         setItem(response.data);
         setFormData(response.data);

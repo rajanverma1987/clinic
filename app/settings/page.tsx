@@ -38,6 +38,14 @@ interface TenantSettings {
       autoCallNext?: boolean;
       maxQueueLength?: number;
     };
+    clinicHours?: Array<{
+      day: string;
+      isOpen: boolean;
+      timeSlots: Array<{
+        startTime: string;
+        endTime: string;
+      }>;
+    }>;
   };
   isActive: boolean;
 }
@@ -170,7 +178,7 @@ export default function SettingsPage() {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get<{ data: TenantSettings }>('/settings');
+      const response = await apiClient.get<TenantSettings>('/settings');
       if (response.success && response.data) {
         const data = response.data;
         console.log('Fetched settings data:', JSON.stringify(data, null, 2));
@@ -261,9 +269,9 @@ export default function SettingsPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await apiClient.get<{ data: User[] }>('/users');
+      const response = await apiClient.get<User[]>('/users');
       if (response.success && response.data) {
-        setUsers(response.data.data || []);
+        setUsers(Array.isArray(response.data) ? response.data : []);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -685,7 +693,7 @@ export default function SettingsPage() {
           {!isClinicAdmin ? (
             <Card>
               <div className="text-center py-8">
-                <p className="text-gray-500">You don't have permission to access this section.</p>
+                <p className="text-gray-500">You don&apos;t have permission to access this section.</p>
                 <p className="text-sm text-gray-400 mt-2">Only clinic administrators can manage clinic information.</p>
               </div>
             </Card>
@@ -799,7 +807,7 @@ export default function SettingsPage() {
           {!isClinicAdmin ? (
             <Card>
               <div className="text-center py-8">
-                <p className="text-gray-500">You don't have permission to access this section.</p>
+                <p className="text-gray-500">You don&apos;t have permission to access this section.</p>
                 <p className="text-sm text-gray-400 mt-2">Only clinic administrators can manage compliance settings.</p>
               </div>
             </Card>
@@ -882,7 +890,7 @@ export default function SettingsPage() {
           {!isClinicAdmin ? (
             <Card>
               <div className="text-center py-8">
-                <p className="text-gray-500">You don't have permission to access this section.</p>
+                <p className="text-gray-500">You don&apos;t have permission to access this section.</p>
                 <p className="text-sm text-gray-400 mt-2">Only clinic administrators can manage doctors and staff.</p>
               </div>
             </Card>

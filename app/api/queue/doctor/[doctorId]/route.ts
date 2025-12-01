@@ -10,10 +10,10 @@ import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/ap
 async function getHandler(
   req: AuthenticatedRequest,
   user: any,
-  { params }: { params: Promise<{ doctorId: string }> }
+  params: { doctorId: string }
 ) {
   try {
-    const { doctorId } = await params;
+    const { doctorId } = params;
     const { searchParams } = new URL(req.url);
     const stats = searchParams.get('stats') === 'true';
 
@@ -49,6 +49,6 @@ export async function GET(
   const authenticatedReq = req as AuthenticatedRequest;
   authenticatedReq.user = authResult.user;
 
-  return getHandler(authenticatedReq, authResult.user, { params });
+  return getHandler(authenticatedReq, authResult.user, params);
 }
 

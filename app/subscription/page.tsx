@@ -45,7 +45,7 @@ export default function SubscriptionPage() {
 
   const fetchSubscription = async () => {
     try {
-      const response = await apiClient.get<{ data: Subscription }>('/subscriptions');
+      const response = await apiClient.get<Subscription>('/subscriptions');
       if (response.success && response.data) {
         setSubscription(response.data);
       }
@@ -131,7 +131,7 @@ export default function SubscriptionPage() {
 
         <Card>
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">You don't have an active subscription</p>
+            <p className="text-gray-600 mb-4">You don&apos;t have an active subscription</p>
             <Button onClick={() => router.push('/pricing')}>
               View Plans
             </Button>

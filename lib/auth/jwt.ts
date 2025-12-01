@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
+import type { SignOptions } from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'change-me-in-production';
+const JWT_SECRET: string = process.env.JWT_SECRET || 'change-me-in-production';
+const JWT_REFRESH_SECRET: string = process.env.JWT_REFRESH_SECRET || 'change-me-in-production';
 // Default to 2 hours for access token (configurable via JWT_EXPIRES_IN env var)
 // Format: '2h', '30m', '1d', etc.
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
@@ -18,8 +19,8 @@ export interface JWTPayload {
  * Generate access token
  */
 export function generateAccessToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
+  return jwt.sign(payload as object, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN as any,
   });
 }
 
@@ -27,8 +28,8 @@ export function generateAccessToken(payload: JWTPayload): string {
  * Generate refresh token
  */
 export function generateRefreshToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, {
-    expiresIn: JWT_REFRESH_EXPIRES_IN,
+  return jwt.sign(payload as object, JWT_REFRESH_SECRET, {
+    expiresIn: JWT_REFRESH_EXPIRES_IN as any,
   });
 }
 

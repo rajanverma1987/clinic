@@ -29,12 +29,12 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const response = await apiClient.post('/auth/forgot-password', { email });
+      const response = await apiClient.post<{ message?: string; secretCode?: string }>('/auth/forgot-password', { email });
       if (response.success) {
-        setSuccess(response.data?.message || t('auth.passwordResetCodeSent'));
+        setSuccess((response.data as any)?.message || t('auth.passwordResetCodeSent'));
         // In development, show the code if returned
-        if (response.data?.secretCode) {
-          setSuccess(`Code sent! Your secret code is: ${response.data.secretCode} (development only)`);
+        if ((response.data as any)?.secretCode) {
+          setSuccess(`Code sent! Your secret code is: ${(response.data as any).secretCode} (development only)`);
         }
         setStep('verify');
       } else {

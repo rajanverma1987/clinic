@@ -36,7 +36,12 @@ async function generatePrescriptionNumber(tenantId: string): Promise<string> {
     return 'RX-0001';
   }
 
-  const match = lastPrescription.prescriptionNumber.match(/(\d+)$/);
+  const prescriptionNumber = (lastPrescription as any).prescriptionNumber;
+  if (!prescriptionNumber) {
+    return 'RX-0001';
+  }
+
+  const match = prescriptionNumber.match(/(\d+)$/);
   if (match) {
     const nextNum = parseInt(match[1], 10) + 1;
     return `RX-${nextNum.toString().padStart(4, '0')}`;
@@ -233,8 +238,8 @@ export async function listPrescriptions(
     .populate('patientId', 'firstName lastName patientId')
     .populate('doctorId', 'firstName lastName')
     .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
+    .skip(((page || 1) - 1) * (limit || 10))
+    .limit(limit || 10)
     .lean();
 
   // Audit list access
@@ -248,7 +253,7 @@ export async function listPrescriptions(
     { count: prescriptions.length, filters: query }
   );
 
-  return createPaginationResult(prescriptions, total, page, limit);
+  return createPaginationResult(prescriptions as unknown as IPrescription[], total, page || 1, limit || 10);
 }
 
 /**
@@ -399,7 +404,8 @@ export async function dispensePrescription(
     userId,
     tenantId,
     AuditAction.UPDATE,
-    { before, after: prescription.toObject(), action: 'dispensed' }
+    { before, after: prescription.toObject() },
+    { action: 'dispensed' }
   );
 
   return prescription;

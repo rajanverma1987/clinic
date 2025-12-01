@@ -33,13 +33,13 @@ export async function getTenantSubscriptionWithPlan(tenantId: string): Promise<{
     .sort({ createdAt: -1 })
     .lean();
 
-  if (!subscription || !subscription.planId) {
+  if (!subscription || !(subscription as any).planId) {
     return null;
   }
 
   return {
     subscription,
-    plan: subscription.planId,
+    plan: (subscription as any).planId,
   };
 }
 

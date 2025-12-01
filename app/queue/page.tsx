@@ -41,7 +41,7 @@ export default function QueuePage() {
       fetchQueue();
       // Set up polling for real-time updates
       const cleanup = setupSSE();
-      return cleanup;
+      return cleanup || undefined;
     }
   }, [authLoading, user, selectedDoctor]);
 
@@ -55,9 +55,9 @@ export default function QueuePage() {
         params.append('doctorId', selectedDoctor);
       }
 
-      const response = await apiClient.get<{ data: QueueEntry[] }>(`/queue?${params}`);
+      const response = await apiClient.get<QueueEntry[]>(`/queue?${params}`);
       if (response.success && response.data) {
-        setQueueEntries(response.data.data || []);
+        setQueueEntries(Array.isArray(response.data) ? response.data : []);
       }
     } catch (error) {
       console.error('Failed to fetch queue:', error);

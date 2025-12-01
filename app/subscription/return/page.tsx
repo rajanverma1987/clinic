@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
@@ -8,7 +8,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
-export default function SubscriptionReturnPage() {
+function SubscriptionReturnContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -32,7 +32,7 @@ export default function SubscriptionReturnPage() {
 
     // Activate subscription
     activateSubscription(subscriptionId);
-  }, [user]);
+  }, [user, router, searchParams]);
 
   const activateSubscription = async (subscriptionId: string) => {
     try {
@@ -57,65 +57,82 @@ export default function SubscriptionReturnPage() {
   };
 
   return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Card className="max-w-md w-full text-center">
+        {status === 'loading' && (
+          <div className="py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Activating your subscription...</p>
+          </div>
+        )}
+
+        {status === 'success' && (
+          <div className="py-12">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Success!</h2>
+            <p className="text-gray-600 mb-6">{message}</p>
+            <p className="text-sm text-gray-500">Redirecting to your subscription page...</p>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <div className="py-12">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
+            <p className="text-gray-600 mb-6">{message}</p>
+            <Button onClick={() => router.push('/subscription')}>
+              Go to Subscription
+            </Button>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+export default function SubscriptionReturnPage() {
+  return (
     <Layout>
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="max-w-md w-full text-center">
-          {status === 'loading' && (
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="max-w-md w-full text-center">
             <div className="py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Activating your subscription...</p>
+              <p className="text-gray-600">Loading...</p>
             </div>
-          )}
-
-          {status === 'success' && (
-            <div className="py-12">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Success!</h2>
-              <p className="text-gray-600 mb-6">{message}</p>
-              <p className="text-sm text-gray-500">Redirecting to your subscription page...</p>
-            </div>
-          )}
-
-          {status === 'error' && (
-            <div className="py-12">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-8 h-8 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
-              <p className="text-gray-600 mb-6">{message}</p>
-              <Button onClick={() => router.push('/subscription')}>
-                Go to Subscription
-              </Button>
-            </div>
-          )}
-        </Card>
-      </div>
+          </Card>
+        </div>
+      }>
+        <SubscriptionReturnContent />
+      </Suspense>
     </Layout>
   );
 }

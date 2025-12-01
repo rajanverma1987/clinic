@@ -50,7 +50,7 @@ export function formatValidationErrors(zodErrors: any[]): string {
     // Format field name to be more readable (e.g., "firstName" -> "First Name")
     const readableFieldName = fieldName
       .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (str) => str.toUpperCase())
+      .replace(/^./, (str: string) => str.toUpperCase())
       .trim();
 
     // Get specific error message
@@ -130,7 +130,7 @@ export function handleMongoError(error: any): ApiResponse {
       const fieldError = error.errors[field];
       const fieldName = field
         .replace(/([A-Z])/g, ' $1')
-        .replace(/^./, (str) => str.toUpperCase())
+        .replace(/^./, (str: string) => str.toUpperCase())
         .trim();
       
       if (fieldError.kind === 'required') {
@@ -155,7 +155,7 @@ export function handleMongoError(error: any): ApiResponse {
 
   if (error.name === 'CastError') {
     const fieldName = error.path 
-      ? error.path.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()).trim()
+      ? error.path.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()).trim()
       : 'Field';
     return errorResponse(`${fieldName} has an invalid format`, 'INVALID_FORMAT');
   }
@@ -165,7 +165,7 @@ export function handleMongoError(error: any): ApiResponse {
     const field = Object.keys(error.keyPattern)[0];
     const fieldName = field
       .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (str) => str.toUpperCase())
+      .replace(/^./, (str: string) => str.toUpperCase())
       .trim();
     return errorResponse(
       `${fieldName} already exists. Please use a different value.`,

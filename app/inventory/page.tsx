@@ -44,9 +44,9 @@ export default function InventoryPage() {
         // Filter will be handled on backend, but we can add a note here
       }
 
-      const response = await apiClient.get<{ data: InventoryItem[] }>(`/inventory/items?${params}`);
+      const response = await apiClient.get<InventoryItem[]>(`/inventory/items?${params}`);
       if (response.success && response.data) {
-        let filteredItems = response.data.data || [];
+        let filteredItems = Array.isArray(response.data) ? response.data : [];
         if (showLowStock) {
           filteredItems = filteredItems.filter(
             (item) => item.totalQuantity <= item.lowStockThreshold

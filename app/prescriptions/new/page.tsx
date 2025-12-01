@@ -79,15 +79,15 @@ export default function NewPrescriptionPage() {
     setLoading(true);
     try {
       // Fetch patients
-      const patientsResponse = await apiClient.get<{ data: Patient[] }>('/patients?limit=100');
+      const patientsResponse = await apiClient.get<Patient[]>('/patients?limit=100');
       if (patientsResponse.success && patientsResponse.data) {
-        setPatients(patientsResponse.data.data || []);
+        setPatients(Array.isArray(patientsResponse.data) ? patientsResponse.data : []);
       }
 
       // Fetch drugs from inventory
-      const drugsResponse = await apiClient.get<{ data: Drug[] }>('/inventory/items?type=medication&limit=100');
+      const drugsResponse = await apiClient.get<Drug[]>('/inventory/items?type=medication&limit=100');
       if (drugsResponse.success && drugsResponse.data) {
-        setDrugs(drugsResponse.data.data || []);
+        setDrugs(Array.isArray(drugsResponse.data) ? drugsResponse.data : []);
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);

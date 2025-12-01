@@ -15,10 +15,10 @@ import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/ap
 async function getHandler(
   req: AuthenticatedRequest,
   user: any,
-  { params }: { params: Promise<{ id: string }> }
+  params: { id: string }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const queueEntry = await getQueueEntryById(id, user.tenantId, user.userId);
 
     if (!queueEntry) {
@@ -48,10 +48,10 @@ async function getHandler(
 async function putHandler(
   req: AuthenticatedRequest,
   user: any,
-  { params }: { params: Promise<{ id: string }> }
+  params: { id: string }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const body = await req.json();
 
     const validationResult = updateQueueEntrySchema.safeParse(body);
@@ -98,10 +98,10 @@ async function putHandler(
 async function deleteHandler(
   req: AuthenticatedRequest,
   user: any,
-  { params }: { params: Promise<{ id: string }> }
+  params: { id: string }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const deleted = await removeQueueEntry(id, user.tenantId, user.userId);
 
     if (!deleted) {
@@ -137,7 +137,7 @@ export async function GET(
   const authenticatedReq = req as AuthenticatedRequest;
   authenticatedReq.user = authResult.user;
 
-  return getHandler(authenticatedReq, authResult.user, { params });
+  return getHandler(authenticatedReq, authResult.user, params);
 }
 
 export async function PUT(
@@ -151,7 +151,7 @@ export async function PUT(
   const authenticatedReq = req as AuthenticatedRequest;
   authenticatedReq.user = authResult.user;
 
-  return putHandler(authenticatedReq, authResult.user, { params });
+  return putHandler(authenticatedReq, authResult.user, params);
 }
 
 export async function DELETE(
@@ -165,6 +165,6 @@ export async function DELETE(
   const authenticatedReq = req as AuthenticatedRequest;
   authenticatedReq.user = authResult.user;
 
-  return deleteHandler(authenticatedReq, authResult.user, { params });
+  return deleteHandler(authenticatedReq, authResult.user, params);
 }
 

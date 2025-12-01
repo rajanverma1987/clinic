@@ -123,7 +123,7 @@ export async function listSubscriptionPlans(
     query.isHidden = { $ne: true };
   }
 
-  return await SubscriptionPlan.find(query).sort({ price: 1 }).lean();
+  return await SubscriptionPlan.find(query).sort({ price: 1 }).lean() as unknown as ISubscriptionPlan[];
 }
 
 /**
@@ -131,7 +131,7 @@ export async function listSubscriptionPlans(
  */
 export async function getSubscriptionPlanById(planId: string): Promise<ISubscriptionPlan | null> {
   await connectDB();
-  return await SubscriptionPlan.findById(planId).lean();
+  return await SubscriptionPlan.findById(planId).lean() as unknown as ISubscriptionPlan | null;
 }
 
 /**
@@ -225,7 +225,7 @@ export async function getTenantSubscription(tenantId: string): Promise<ISubscrip
   return await Subscription.findOne({ tenantId })
     .populate('planId')
     .sort({ createdAt: -1 })
-    .lean();
+    .lean() as unknown as ISubscription | null;
 }
 
 /**
@@ -307,7 +307,7 @@ export async function listSubscriptions(): Promise<ISubscription[]> {
     .populate('tenantId', 'name slug')
     .populate('planId', 'name price billingCycle')
     .sort({ createdAt: -1 })
-    .lean();
+    .lean() as unknown as ISubscription[];
 }
 
 /**
@@ -382,7 +382,7 @@ export async function getSubscriptionPayments(
     tenantId,
   })
     .sort({ createdAt: -1 })
-    .lean();
+    .lean() as unknown as ISubscriptionPayment[];
 }
 
 /**

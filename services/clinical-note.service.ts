@@ -206,8 +206,8 @@ export async function listClinicalNotes(
     .populate('patientId', 'firstName lastName patientId')
     .populate('doctorId', 'firstName lastName')
     .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
+    .skip(((page || 1) - 1) * (limit || 10))
+    .limit(limit || 10)
     .lean();
 
   // Audit list access
@@ -221,7 +221,7 @@ export async function listClinicalNotes(
     { count: notes.length, filters: query }
   );
 
-  return createPaginationResult(notes, total, page, limit);
+  return createPaginationResult(notes as unknown as IClinicalNote[], total, page || 1, limit || 10);
 }
 
 /**
@@ -288,7 +288,8 @@ export async function updateClinicalNote(
     userId,
     tenantId,
     AuditAction.UPDATE,
-    { before, after: newNote.toObject(), previousVersionId: existing._id.toString() }
+    { before, after: newNote.toObject() },
+    { previousVersionId: existing._id.toString() }
   );
 
   return newNote;

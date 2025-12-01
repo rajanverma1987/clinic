@@ -43,13 +43,11 @@ export function FeatureProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const response = await apiClient.get<{
-        data: {
-          features: string[];
-          limits: {
-            maxUsers?: number;
-            maxPatients?: number;
-            maxStorageGB?: number;
-          };
+        features: string[];
+        limits: {
+          maxUsers?: number;
+          maxPatients?: number;
+          maxStorageGB?: number;
         };
       }>('/features');
 

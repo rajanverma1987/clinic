@@ -29,7 +29,12 @@ async function generatePatientId(tenantId: string): Promise<string> {
   }
 
   // Extract number from patientId (e.g., PAT-0001 -> 1)
-  const match = lastPatient.patientId.match(/(\d+)$/);
+  const patientId = (lastPatient as any).patientId;
+  if (!patientId) {
+    return 'PAT-0001';
+  }
+
+  const match = patientId.match(/(\d+)$/);
   if (match) {
     const nextNum = parseInt(match[1], 10) + 1;
     return `PAT-${nextNum.toString().padStart(4, '0')}`;
@@ -166,8 +171,8 @@ export async function listPatients(
   // Get paginated results
   const patients = await Patient.find(filter)
     .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
+    .skip(((page || 1) - 1) * (limit || 10))
+    .limit(limit || 10)
     .lean();
 
   // Audit list access
@@ -181,7 +186,7 @@ export async function listPatients(
     { count: patients.length, filters: query }
   );
 
-  return createPaginationResult(patients, total, page, limit);
+  return createPaginationResult(patients as unknown as IPatient[], total, page || 1, limit || 10);
 }
 
 /**

@@ -95,7 +95,7 @@ export default function AdminSubscriptionsPage() {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get<{ data: SubscriptionPlan[] }>('/admin/subscription-plans');
+      const response = await apiClient.get<SubscriptionPlan[]>('/admin/subscription-plans');
       if (response.success) {
         // Ensure response.data is an array
         const plansData = Array.isArray(response.data) ? response.data : [];

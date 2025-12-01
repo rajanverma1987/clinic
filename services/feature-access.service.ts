@@ -40,11 +40,11 @@ export async function getTenantFeatures(tenantId: string): Promise<string[]> {
     .lean();
 
   // If no subscription or subscription is not active, return empty array
-  if (!subscription || subscription.status !== SubscriptionStatus.ACTIVE) {
+  if (!subscription || (subscription as any).status !== SubscriptionStatus.ACTIVE) {
     return [];
   }
 
-  const plan = subscription.planId as any;
+  const plan = (subscription as any).planId;
   return plan?.features || [];
 }
 
@@ -96,11 +96,11 @@ export async function getTenantLimits(tenantId: string): Promise<{
     .sort({ createdAt: -1 })
     .lean();
 
-  if (!subscription || subscription.status !== SubscriptionStatus.ACTIVE) {
+  if (!subscription || (subscription as any).status !== SubscriptionStatus.ACTIVE) {
     return {};
   }
 
-  const plan = subscription.planId as any;
+  const plan = (subscription as any).planId;
   return {
     maxUsers: plan?.maxUsers,
     maxPatients: plan?.maxPatients,
