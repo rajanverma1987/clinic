@@ -82,6 +82,31 @@ export function Sidebar() {
     </svg>
   );
 
+  const IconAPI = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+    </svg>
+  );
+
+  const IconLocation = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+
+  const IconBranding = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+    </svg>
+  );
+
+  const IconTelemedicine = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+    </svg>
+  );
+
   const IconLogout = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -128,6 +153,11 @@ export function Sidebar() {
     { href: '/invoices', labelKey: 'invoices.title', icon: IconInvoices, requiredFeature: 'Invoice & Billing' },
     { href: '/inventory', labelKey: 'inventory.title', icon: IconInventory, requiredFeature: 'Inventory Management' },
     { href: '/reports', labelKey: 'reports.title', icon: IconReports, requiredFeature: 'Reports & Analytics' },
+    { href: '/telemedicine', label: 'Telemedicine', icon: IconTelemedicine, requiredFeature: 'Telemedicine' },
+    { href: '/settings/locations', label: 'Locations', icon: IconLocation, requiredFeature: 'Multi-Location Support' },
+    { href: '/api-docs', label: 'API Docs', icon: IconAPI, requiredFeature: 'API Access' },
+    { href: '/settings/branding', label: 'Branding', icon: IconBranding, requiredFeature: 'Custom Branding' },
+    { href: '/settings/white-label', label: 'White Label', icon: IconBranding, requiredFeature: 'White Label Solution' },
     { href: '/settings', labelKey: 'settings.title', icon: IconSettings, requiredFeature: null }, // Settings always available
   ];
 
@@ -236,7 +266,7 @@ export function Sidebar() {
               onClick={handleLinkClick}
               prefetch={false}
               className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-3'} py-2 rounded-lg transition-colors text-sm ${
-                pathname === '/admin' || pathname?.startsWith('/admin/')
+                pathname === '/admin'
                   ? 'bg-purple-600 text-white'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'
               }`}
@@ -283,8 +313,9 @@ export function Sidebar() {
         ) : (
           /* Regular menu items for non-admin users */
           <>
-            {menuItems.map((item) => {
+            {menuItems.map((item: any) => {
               const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+              const displayLabel = item.labelKey ? t(item.labelKey) : item.label;
               return (
                 <Link
                   key={item.href}
@@ -296,12 +327,12 @@ export function Sidebar() {
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                   }`}
-                  title={isCollapsed ? t(item.labelKey) : ''}
+                  title={isCollapsed ? displayLabel : ''}
                 >
                   <span className={`${isCollapsed ? '' : 'mr-2'}`}>
                     {item.icon && <item.icon />}
                   </span>
-                  <span className={isCollapsed ? 'hidden' : ''}>{t(item.labelKey)}</span>
+                  <span className={isCollapsed ? 'hidden' : ''}>{displayLabel}</span>
                 </Link>
               );
             })}

@@ -13,6 +13,7 @@ import { Table } from '@/components/ui/Table';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
 
 interface Patient {
   _id: string;
@@ -53,10 +54,14 @@ export default function PatientsPage() {
     dateOfBirth: '',
     gender: 'male',
   });
+  const [countryCode, setCountryCode] = useState('+1');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
+      // Fetch settings to get default country code
+      fetchSettings();
+      
       // Initial load - use normal loading
       if (!searchTerm && currentPage === 1) {
         fetchPatients(false);
@@ -85,6 +90,24 @@ export default function PatientsPage() {
       return () => document.removeEventListener('keydown', handleEscape);
     }
   }, [showModal]);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await apiClient.get<{
+        region: string;
+        settings: { locale: string };
+      }>('/settings');
+      
+      if (response.success && response.data) {
+        // Set default country code based on region
+        const defaultCode = getCountryCodeFromRegion(response.data.region);
+        setCountryCode(defaultCode);
+      }
+    } catch (error) {
+      console.error('Failed to fetch settings:', error);
+      // Keep default +1 if fetch fails
+    }
+  };
 
   const fetchPatients = async (isSearch = false) => {
     if (isSearch) {
@@ -128,7 +151,12 @@ export default function PatientsPage() {
     setSubmitting(true);
 
     try {
-      const response = await apiClient.post('/patients', formData);
+      // Combine country code with phone number
+      const fullPhone = formData.phone ? `${countryCode}${formData.phone}` : '';
+      const response = await apiClient.post('/patients', {
+        ...formData,
+        phone: fullPhone,
+      });
       if (response.success) {
         setShowModal(false);
         setFormData({
@@ -139,6 +167,7 @@ export default function PatientsPage() {
           dateOfBirth: '',
           gender: 'male',
         });
+        setCountryCode('+1'); // Reset country code
         fetchPatients();
       }
     } catch (error) {
@@ -264,6 +293,8 @@ export default function PatientsPage() {
                 label={t('patients.phone')}
                 value={formData.phone}
                 onChange={(value) => setFormData({ ...formData, phone: value })}
+                countryCode={countryCode}
+                onCountryCodeChange={setCountryCode}
                 required
               />
 

@@ -5,7 +5,12 @@ import {
   createAppointment,
   listAppointments,
 } from '@/services/appointment.service';
+import { createTelemedicineSession } from '@/services/telemedicine.service';
+import { sendVideoConsultationEmail } from '@/lib/email/email-service';
 import { successResponse, errorResponse, handleMongoError, validationErrorResponse } from '@/lib/utils/api-response';
+import { SessionType } from '@/models/TelemedicineSession';
+import Patient from '@/models/Patient';
+import User from '@/models/User';
 
 /**
  * GET /api/appointments
@@ -87,6 +92,57 @@ async function postHandler(req: AuthenticatedRequest, user: any) {
 
     const appointment = await createAppointment(validationResult.data, user.tenantId, user.userId);
 
+    // If telemedicine appointment, create session and send email
+    let telemedicineSession = null;
+    if (body.isTelemedicine) {
+      try {
+        // Create telemedicine session
+        telemedicineSession = await createTelemedicineSession(
+          user.tenantId,
+          user.userId,
+          {
+            patientId: appointment.patientId.toString(),
+            doctorId: appointment.doctorId.toString(),
+            sessionType: SessionType.VIDEO,
+            scheduledStartTime: appointment.startTime,
+            scheduledEndTime: appointment.endTime,
+            appointmentId: appointment._id.toString(),
+            chatEnabled: true,
+            recordingConsent: body.telemedicineConsent || false,
+          }
+        );
+
+        // Update appointment with telemedicine session ID
+        appointment.telemedicineSessionId = telemedicineSession._id as any;
+        await appointment.save();
+
+        // Get patient and doctor details for email
+        const patient = await Patient.findById(appointment.patientId);
+        const doctor = await User.findById(appointment.doctorId);
+
+        if (patient && doctor && body.patientEmail) {
+          const patientName = `${patient.firstName} ${patient.lastName}`;
+          const doctorName = `${doctor.firstName} ${doctor.lastName}`;
+          const sessionLink = `${process.env.NEXT_PUBLIC_APP_URL}/telemedicine/${telemedicineSession._id}`;
+
+          // Send email notification
+          await sendVideoConsultationEmail(
+            body.patientEmail,
+            patientName,
+            doctorName,
+            sessionLink,
+            appointment.startTime,
+            telemedicineSession.sessionId
+          );
+
+          console.log(`📧 Video consultation email sent to: ${body.patientEmail}`);
+        }
+      } catch (emailError) {
+        console.error('Failed to create session or send email:', emailError);
+        // Don't fail appointment creation if email fails
+      }
+    }
+
     return NextResponse.json(
       successResponse({
         id: appointment._id.toString(),
@@ -98,6 +154,8 @@ async function postHandler(req: AuthenticatedRequest, user: any) {
         duration: appointment.duration,
         type: appointment.type,
         status: appointment.status,
+        isTelemedicine: appointment.isTelemedicine,
+        telemedicineSessionId: telemedicineSession?._id?.toString(),
         createdAt: appointment.createdAt,
       }),
       { status: 201 }

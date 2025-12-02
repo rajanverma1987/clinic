@@ -1,13 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/marketing/Header';
 import { Footer } from '@/components/marketing/Footer';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Home() {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const router = useRouter();
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -728,20 +732,33 @@ export default function Home() {
               practice efficiently and securely.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register">
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-                  Start Free Trial
-                </Button>
-              </Link>
-              <Link href="/support/contact">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto bg-white/10 border-white text-white hover:bg-white/20"
+              {user ? (
+                <Button 
+                  variant="secondary" 
+                  size="lg" 
+                  className="w-full sm:w-auto"
+                  onClick={() => router.push('/dashboard')}
                 >
-                  Contact Sales
+                  Go to Dashboard
                 </Button>
-              </Link>
+              ) : (
+                <>
+                  <Link href="/register">
+                    <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                      Start Free Trial
+                    </Button>
+                  </Link>
+                  <Link href="/support/contact">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full sm:w-auto bg-white/10 border-white text-white hover:bg-white/20"
+                    >
+                      Contact Sales
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </section>

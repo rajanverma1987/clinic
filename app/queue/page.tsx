@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
@@ -9,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Table } from '@/components/ui/Table';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { Tag } from '@/components/ui/Tag';
 
 interface QueueEntry {
   _id: string;
@@ -22,6 +24,11 @@ interface QueueEntry {
     firstName: string;
     lastName: string;
   };
+  appointmentId?: {
+    _id: string;
+    isTelemedicine: boolean;
+    telemedicineSessionId?: string;
+  };
   position: number;
   priority: string;
   status: string;
@@ -30,6 +37,7 @@ interface QueueEntry {
 }
 
 export default function QueuePage() {
+  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
@@ -109,6 +117,10 @@ export default function QueuePage() {
     return `${hours}h ${mins}m`;
   };
 
+  const handleStartVideo = (sessionId: string) => {
+    router.push(`/telemedicine/${sessionId}`);
+  };
+
   const columns = [
     { header: t('queue.queueNumber'), accessor: 'queueNumber' as keyof QueueEntry },
     { header: t('queue.position'), accessor: 'position' as keyof QueueEntry },
@@ -121,6 +133,28 @@ export default function QueuePage() {
       header: t('appointments.doctor'),
       accessor: (row: QueueEntry) =>
         `${row.doctorId?.firstName || ''} ${row.doctorId?.lastName || ''}`,
+    },
+    {
+      header: 'Type',
+      accessor: (row: QueueEntry) => (
+        <div className="flex items-center gap-2">
+          {row.appointmentId?.isTelemedicine ? (
+            <Tag variant="default" className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Video
+            </Tag>
+          ) : (
+            <Tag variant="success" className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              In-Person
+            </Tag>
+          )}
+        </div>
+      ),
     },
     {
       header: t('queue.priority'),
@@ -146,15 +180,31 @@ export default function QueuePage() {
       header: t('common.actions'),
       accessor: (row: QueueEntry) => (
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleStatusChange(row._id, 'called');
-            }}
-          >
-            {t('queue.callNext')}
-          </Button>
+          {row.appointmentId?.isTelemedicine && row.appointmentId?.telemedicineSessionId ? (
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStartVideo(row.appointmentId.telemedicineSessionId!);
+              }}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Start Video
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStatusChange(row._id, 'called');
+              }}
+            >
+              {t('queue.callNext')}
+            </Button>
+          )}
           <Button
             size="sm"
             variant="secondary"

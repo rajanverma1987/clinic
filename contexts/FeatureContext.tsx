@@ -4,6 +4,13 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { useAuth } from './AuthContext';
 import { apiClient } from '@/lib/api/client';
 
+interface SubscriptionInfo {
+  status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'SUSPENDED' | 'PENDING' | null;
+  currentPeriodEnd?: string;
+  trialDaysRemaining?: number;
+  paypalApprovalUrl?: string;
+}
+
 interface FeatureContextType {
   features: string[];
   limits: {
@@ -11,6 +18,7 @@ interface FeatureContextType {
     maxPatients?: number;
     maxStorageGB?: number;
   };
+  subscription: SubscriptionInfo | null;
   loading: boolean;
   hasFeature: (featureName: string) => boolean;
   hasAnyFeature: (featureNames: string[]) => boolean;
@@ -29,6 +37,7 @@ export function FeatureProvider({ children }: { children: ReactNode }) {
     maxPatients?: number;
     maxStorageGB?: number;
   }>({});
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchFeatures = async () => {
@@ -36,6 +45,7 @@ export function FeatureProvider({ children }: { children: ReactNode }) {
       // Super admin has all features
       setFeatures(['*']);
       setLimits({});
+      setSubscription(null);
       setLoading(false);
       return;
     }
@@ -49,16 +59,19 @@ export function FeatureProvider({ children }: { children: ReactNode }) {
           maxPatients?: number;
           maxStorageGB?: number;
         };
+        subscription?: SubscriptionInfo | null;
       }>('/features');
 
       if (response.success && response.data) {
         setFeatures(response.data.features || []);
         setLimits(response.data.limits || {});
+        setSubscription(response.data.subscription || null);
       }
     } catch (error) {
       console.error('Failed to fetch features:', error);
       setFeatures([]);
       setLimits({});
+      setSubscription(null);
     } finally {
       setLoading(false);
     }
@@ -70,6 +83,7 @@ export function FeatureProvider({ children }: { children: ReactNode }) {
     } else if (!authLoading && !user) {
       setFeatures([]);
       setLimits({});
+      setSubscription(null);
       setLoading(false);
     }
   }, [authLoading, user]);
@@ -123,6 +137,7 @@ export function FeatureProvider({ children }: { children: ReactNode }) {
       value={{
         features,
         limits,
+        subscription,
         loading,
         hasFeature,
         hasAnyFeature,

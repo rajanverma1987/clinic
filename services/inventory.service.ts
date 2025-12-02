@@ -83,7 +83,7 @@ async function updateItemStock(
  * Create a new inventory item
  */
 export async function createInventoryItem(
-  input: CreateInventoryItemInput,
+  input: CreateInventoryItemInput & { currentStock?: number; batchNumber?: string; expiryDate?: string; supplier?: string },
   tenantId: string,
   userId: string
 ): Promise<IInventoryItem> {
@@ -114,18 +114,53 @@ export async function createInventoryItem(
       
       totalQuantity += batch.quantity;
     }
+  } else if (input.currentStock !== undefined && input.currentStock > 0) {
+    // If currentStock is provided without batches, create a default batch
+    const defaultBatchNumber = input.batchNumber || `BATCH-${Date.now()}`;
+    const defaultExpiryDate = input.expiryDate 
+      ? new Date(input.expiryDate)
+      : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
+
+    batches.push({
+      batchNumber: defaultBatchNumber,
+      expiryDate: defaultExpiryDate,
+      quantity: input.currentStock,
+      purchasePrice: input.costPrice
+        ? parseAmount(input.costPrice, input.currency || 'USD')
+        : undefined,
+      purchaseDate: new Date(),
+      // Don't set supplierId if supplier is just a string name
+      // supplierId expects ObjectId, not string
+      supplierId: undefined,
+    });
+    
+    totalQuantity = input.currentStock;
   }
 
   // Create inventory item
   const item = await InventoryItem.create({
     tenantId,
-    ...input,
+    name: input.name,
+    code: input.code,
+    type: input.type,
+    description: input.description,
+    drugId: input.drugId as any,
+    genericName: input.genericName,
+    brandName: input.brandName,
+    form: input.form,
+    strength: input.strength,
+    unit: input.unit,
     totalQuantity,
     availableQuantity: totalQuantity,
     reservedQuantity: 0,
     costPrice: input.costPrice ? parseAmount(input.costPrice, input.currency || 'USD') : undefined,
     sellingPrice: input.sellingPrice ? parseAmount(input.sellingPrice, input.currency || 'USD') : undefined,
     currency: input.currency || 'USD',
+    lowStockThreshold: input.lowStockThreshold,
+    reorderPoint: input.reorderPoint,
+    reorderQuantity: input.reorderQuantity,
+    primarySupplierId: input.primarySupplierId as any,
+    location: input.location,
     batches,
   });
 

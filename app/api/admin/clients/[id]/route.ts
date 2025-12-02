@@ -23,11 +23,36 @@ async function putHandler(req: AuthenticatedRequest, user: any, tenantId: string
 
     // Update subscription if planId provided
     if (body.planId) {
-      const subscription = await updateTenantSubscription(tenantId, body.planId);
+      // Get tenant details for PayPal subscription
+      const tenant = await Tenant.findById(tenantId);
+      if (!tenant) {
+        return NextResponse.json(
+          errorResponse('Tenant not found', 'NOT_FOUND'),
+          { status: 404 }
+        );
+      }
+
+      // Get tenant's admin user email for PayPal
+      const User = (await import('@/models/User')).default;
+      const adminUser = await User.findOne({ tenantId, role: 'clinic_admin' });
+      const customerEmail = adminUser?.email || body.customerEmail;
+      const customerName = tenant.name;
+
+      const result = await updateTenantSubscription(
+        tenantId, 
+        body.planId,
+        customerEmail,
+        customerName
+      );
+      
       return NextResponse.json(
         successResponse({
-          message: 'Subscription updated successfully',
-          subscription,
+          message: result.requiresPayment 
+            ? 'Subscription created. Payment required - send approval URL to client.' 
+            : 'Subscription updated successfully',
+          subscription: result.subscription,
+          approvalUrl: result.approvalUrl,
+          requiresPayment: result.requiresPayment,
         })
       );
     }

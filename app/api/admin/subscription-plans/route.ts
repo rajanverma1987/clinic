@@ -56,6 +56,7 @@ async function postHandler(req: AuthenticatedRequest, user: any) {
       price: body.price, // Expected in cents
       currency: body.currency || 'USD',
       billingCycle: body.billingCycle,
+      paypalPlanId: body.paypalPlanId, // Use provided PayPal Plan ID if available
       features: body.features || [],
       maxUsers: body.maxUsers,
       maxPatients: body.maxPatients,

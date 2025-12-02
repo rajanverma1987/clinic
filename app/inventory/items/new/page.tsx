@@ -27,6 +27,7 @@ export default function NewInventoryItemPage() {
     description: '',
     costPrice: '',
     sellingPrice: '',
+    currentStock: '',
     lowStockThreshold: '',
     expiryDate: '',
     batchNumber: '',
@@ -47,6 +48,7 @@ export default function NewInventoryItemPage() {
         description: formData.description || undefined,
         costPrice: formData.costPrice ? Math.round(parseFloat(formData.costPrice) * 100) : undefined,
         sellingPrice: formData.sellingPrice ? Math.round(parseFloat(formData.sellingPrice) * 100) : undefined,
+        currentStock: formData.currentStock ? parseInt(formData.currentStock) : 0,
         lowStockThreshold: formData.lowStockThreshold ? parseInt(formData.lowStockThreshold) : 0,
         expiryDate: formData.expiryDate || undefined,
         batchNumber: formData.batchNumber || undefined,
@@ -140,24 +142,39 @@ export default function NewInventoryItemPage() {
 
             <div>
               <Input
-                label={t('inventory.price')}
+                label="Purchase Cost"
                 type="number"
                 step="0.01"
                 value={formData.costPrice}
                 onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
                 placeholder="0.00"
               />
+              <p className="text-sm text-gray-500 mt-1">Cost price per unit (what you pay)</p>
             </div>
 
             <div>
               <Input
-                label={t('inventory.price')}
+                label="Selling Price *"
                 type="number"
                 step="0.01"
                 value={formData.sellingPrice}
                 onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value })}
                 placeholder="0.00"
+                required
               />
+              <p className="text-sm text-gray-500 mt-1">Selling price per unit (what customers pay)</p>
+            </div>
+
+            <div>
+              <Input
+                label={t('inventory.currentStock') + ' *'}
+                type="number"
+                value={formData.currentStock}
+                onChange={(e) => setFormData({ ...formData, currentStock: e.target.value })}
+                required
+                placeholder="0"
+              />
+              <p className="text-sm text-gray-500 mt-1">Initial stock quantity</p>
             </div>
 
             <div>

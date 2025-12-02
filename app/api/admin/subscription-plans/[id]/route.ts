@@ -55,6 +55,7 @@ async function putHandler(req: AuthenticatedRequest, user: any, planId: string) 
       price: body.price, // Expected in cents
       currency: body.currency,
       billingCycle: body.billingCycle,
+      paypalPlanId: body.paypalPlanId, // Allow updating PayPal Plan ID
       features: body.features || [],
       maxUsers: body.maxUsers,
       maxPatients: body.maxPatients,

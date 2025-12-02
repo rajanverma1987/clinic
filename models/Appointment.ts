@@ -33,6 +33,11 @@ export interface IAppointment extends Document {
   type: AppointmentType;
   status: AppointmentStatus;
   
+  // Telemedicine
+  isTelemedicine: boolean; // Video consultation vs in-person
+  telemedicineSessionId?: mongoose.Types.ObjectId; // Link to telemedicine session
+  telemedicineConsent: boolean; // Patient consent for video recording
+  
   // Reason and Notes
   reason?: string; // Encrypted if contains PHI
   notes?: string; // General notes
@@ -112,6 +117,21 @@ const AppointmentSchema = new Schema<IAppointment>(
       required: true,
       default: AppointmentStatus.SCHEDULED,
       index: true,
+    },
+    
+    // Telemedicine
+    isTelemedicine: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    telemedicineSessionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'TelemedicineSession',
+    },
+    telemedicineConsent: {
+      type: Boolean,
+      default: false,
     },
     
     // Reason and Notes

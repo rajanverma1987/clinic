@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/components/marketing/Header';
 import { Footer } from '@/components/marketing/Footer';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { SubscriptionCard } from '@/components/ui/SubscriptionCard';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -142,123 +142,21 @@ export default function PricingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {filteredPlans.map((plan) => (
-              <Card
+              <SubscriptionCard
                 key={plan._id}
-                className={`relative ${plan.isPopular ? 'ring-2 ring-blue-500 scale-105' : ''}`}
-              >
-                {plan.isPopular && (
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
-
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  {plan.description && (
-                    <p className="text-gray-600 mb-6">{plan.description}</p>
-                  )}
-
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold text-gray-900">
-                      {formatPrice(plan.price, plan.currency)}
-                    </span>
-                    <span className="text-gray-600 ml-2">
-                      /{plan.billingCycle === 'MONTHLY' ? 'month' : 'year'}
-                    </span>
-                  </div>
-
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <svg
-                          className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                    {plan.maxUsers && (
-                      <li className="flex items-start">
-                        <svg
-                          className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        <span className="text-gray-700">
-                          Up to {plan.maxUsers} users
-                        </span>
-                      </li>
-                    )}
-                    {plan.maxPatients && (
-                      <li className="flex items-start">
-                        <svg
-                          className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        <span className="text-gray-700">
-                          Up to {plan.maxPatients.toLocaleString()} patients
-                        </span>
-                      </li>
-                    )}
-                    {plan.maxStorageGB && (
-                      <li className="flex items-start">
-                        <svg
-                          className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        <span className="text-gray-700">
-                          {plan.maxStorageGB}GB storage
-                        </span>
-                      </li>
-                    )}
-                  </ul>
-
-                  <Button
-                    variant={plan.isPopular ? 'primary' : 'outline'}
-                    className="w-full"
-                    onClick={() => handleSelectPlan(plan._id)}
-                  >
-                    {user ? 'Subscribe Now' : 'Get Started'}
-                  </Button>
-                </div>
-              </Card>
+                name={plan.name}
+                description={plan.description}
+                price={plan.price}
+                currency={plan.currency}
+                billingCycle={plan.billingCycle as 'MONTHLY' | 'YEARLY'}
+                features={plan.features}
+                maxUsers={plan.maxUsers}
+                maxPatients={plan.maxPatients}
+                maxStorageGB={plan.maxStorageGB}
+                isPopular={plan.isPopular}
+                onSelect={() => handleSelectPlan(plan._id)}
+                ctaText={user ? 'Subscribe Now' : 'Get Started'}
+              />
             ))}
           </div>
 

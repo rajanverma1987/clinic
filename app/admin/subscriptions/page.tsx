@@ -65,6 +65,7 @@ export default function AdminSubscriptionsPage() {
     price: '',
     currency: 'USD',
     billingCycle: 'MONTHLY' as 'MONTHLY' | 'YEARLY',
+    paypalPlanId: '',
     features: [] as string[],
     maxUsers: '',
     maxPatients: '',
@@ -73,6 +74,7 @@ export default function AdminSubscriptionsPage() {
     isHidden: false,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [creatingPayPalPlan, setCreatingPayPalPlan] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -113,7 +115,7 @@ export default function AdminSubscriptionsPage() {
     }
   };
 
-  const handleEdit = async (plan: SubscriptionPlan) => {
+  const handleEdit = async (plan: SubscriptionPlan & { paypalPlanId?: string }) => {
     setEditingPlanId(plan._id);
     setFormData({
       name: plan.name,
@@ -121,6 +123,7 @@ export default function AdminSubscriptionsPage() {
       price: (plan.price / 100).toFixed(2), // Convert from cents to dollars
       currency: plan.currency,
       billingCycle: plan.billingCycle,
+      paypalPlanId: plan.paypalPlanId || '',
       features: plan.features || [],
       maxUsers: plan.maxUsers?.toString() || '',
       maxPatients: plan.maxPatients?.toString() || '',
@@ -129,6 +132,42 @@ export default function AdminSubscriptionsPage() {
       isHidden: plan.isHidden || false,
     });
     setShowForm(true);
+  };
+
+  const handleCreatePayPalPlan = async () => {
+    // Validate required fields
+    if (!formData.name || !formData.price) {
+      alert('Please enter Plan Name and Price first');
+      return;
+    }
+
+    const price = parseFloat(formData.price);
+    if (price <= 0) {
+      alert('Price must be greater than 0 to create PayPal plan');
+      return;
+    }
+
+    setCreatingPayPalPlan(true);
+    try {
+      const response = await apiClient.post('/admin/subscription-plans/create-paypal-plan', {
+        name: formData.name,
+        description: formData.description || `${formData.name} subscription plan`,
+        price: price, // In dollars
+        currency: formData.currency,
+        billingCycle: formData.billingCycle,
+      });
+
+      if (response.success && response.data) {
+        const paypalPlanId = (response.data as any).paypalPlanId;
+        setFormData({ ...formData, paypalPlanId });
+        alert(`PayPal plan created successfully!\nPlan ID: ${paypalPlanId}`);
+      }
+    } catch (error: any) {
+      console.error('Failed to create PayPal plan:', error);
+      alert(error.message || 'Failed to create PayPal plan. Check PayPal credentials.');
+    } finally {
+      setCreatingPayPalPlan(false);
+    }
   };
 
   const handleCancel = () => {
@@ -140,6 +179,7 @@ export default function AdminSubscriptionsPage() {
       price: '',
       currency: 'USD',
       billingCycle: 'MONTHLY',
+      paypalPlanId: '',
       features: [],
       maxUsers: '',
       maxPatients: '',
@@ -160,6 +200,7 @@ export default function AdminSubscriptionsPage() {
         price: Math.round(parseFloat(formData.price) * 100), // Convert to cents
         currency: formData.currency,
         billingCycle: formData.billingCycle,
+        paypalPlanId: formData.paypalPlanId || undefined,
         features: formData.features || [],
         maxUsers: formData.maxUsers ? parseInt(formData.maxUsers) : undefined,
         maxPatients: formData.maxPatients ? parseInt(formData.maxPatients) : undefined,
@@ -202,6 +243,9 @@ export default function AdminSubscriptionsPage() {
       accessor: (row: SubscriptionPlan) => (
         <div>
           <div className="font-medium">{row.name}</div>
+          <div className="text-xs text-gray-500 font-mono mt-1">
+            ID: {row._id}
+          </div>
           <div className="flex gap-2 mt-1">
             {row.isPopular && (
               <Tag variant="success" size="sm">
@@ -256,6 +300,17 @@ export default function AdminSubscriptionsPage() {
             onClick={() => handleEdit(row)}
           >
             Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(row._id);
+              alert('Plan ID copied to clipboard!');
+            }}
+            title="Copy Plan ID for manual assignment"
+          >
+            Copy ID
           </Button>
         </div>
       ),
@@ -372,7 +427,42 @@ export default function AdminSubscriptionsPage() {
                 ]}
                 required
               />
+            </div>
 
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                PayPal Plan ID (optional - for payment integration)
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  value={formData.paypalPlanId}
+                  onChange={(e) => setFormData({ ...formData, paypalPlanId: e.target.value })}
+                  placeholder="e.g., P-7L918936KP7498103NEXRFNY"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCreatePayPalPlan}
+                  disabled={!formData.name || !formData.price || parseFloat(formData.price) <= 0 || creatingPayPalPlan}
+                  isLoading={creatingPayPalPlan}
+                  title="Create PayPal billing plan automatically"
+                >
+                  Create PayPal Plan
+                </Button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                {formData.paypalPlanId ? (
+                  <span className="text-green-600 font-medium">✓ PayPal integration configured</span>
+                ) : (
+                  <span>
+                    Leave empty for free plans. For paid plans, click "Create PayPal Plan" button or enter manually.
+                  </span>
+                )}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
                 label="Max Users (optional)"
                 type="number"

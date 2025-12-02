@@ -5,6 +5,7 @@ import {
   activateSubscription,
   cancelSubscription,
   getSubscriptionPayments,
+  updateTenantSubscription,
 } from '@/services/subscription.service';
 
 /**
@@ -96,6 +97,59 @@ export async function POST(
     return activateHandler(authenticatedReq, authResult.user, params);
   } else if (action === 'cancel') {
     return cancelHandler(authenticatedReq, authResult.user, params);
+  }
+
+  return NextResponse.json(
+    errorResponse('Invalid action', 'INVALID_ACTION'),
+    { status: 400 }
+  );
+}
+
+/**
+ * PUT /api/subscriptions/:id?action=upgrade
+ * Upgrade/change subscription plan
+ */
+async function upgradeHandler(
+  req: AuthenticatedRequest,
+  user: any,
+  params: { id: string }
+) {
+  try {
+    const body = await req.json();
+    
+    if (!body.planId) {
+      return NextResponse.json(
+        errorResponse('Plan ID is required', 'VALIDATION_ERROR'),
+        { status: 400 }
+      );
+    }
+    
+    const subscription = await updateTenantSubscription(user.tenantId, body.planId);
+    return NextResponse.json(successResponse(subscription));
+  } catch (error: any) {
+    return NextResponse.json(
+      errorResponse(error.message || 'Failed to upgrade subscription', 'UPGRADE_ERROR'),
+      { status: 400 }
+    );
+  }
+}
+
+export async function PUT(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
+  if ('error' in authResult) return authResult.error;
+
+  const params = await context.params;
+  const authenticatedReq = req as AuthenticatedRequest;
+  authenticatedReq.user = authResult.user;
+
+  const { searchParams } = new URL(req.url);
+  const action = searchParams.get('action');
+
+  if (action === 'upgrade') {
+    return upgradeHandler(authenticatedReq, authResult.user, params);
   }
 
   return NextResponse.json(

@@ -26,6 +26,7 @@ export async function createSubscriptionPlan(
     price: number;
     currency: string;
     billingCycle: PlanBillingCycle;
+    paypalPlanId?: string; // Allow manual PayPal Plan ID
     features: string[];
     maxUsers?: number;
     maxPatients?: number;
@@ -36,19 +37,26 @@ export async function createSubscriptionPlan(
 ): Promise<ISubscriptionPlan> {
   await connectDB();
 
-  // Create PayPal plan
-  let paypalPlanId: string | undefined;
-  try {
-    paypalPlanId = await createPayPalPlan(
-      input.name,
-      input.description || '',
-      input.price / 100, // Convert from cents to dollars
-      input.currency,
-      input.billingCycle
-    );
-  } catch (error) {
-    console.error('Failed to create PayPal plan:', error);
-    // Continue without PayPal plan ID for now
+  // Only create PayPal plan if not provided and plan is paid
+  let paypalPlanId: string | undefined = input.paypalPlanId;
+  
+  if (!paypalPlanId && input.price > 0) {
+    // No PayPal Plan ID provided and it's a paid plan - try to create one
+    try {
+      paypalPlanId = await createPayPalPlan(
+        input.name,
+        input.description || '',
+        input.price / 100, // Convert from cents to dollars
+        input.currency,
+        input.billingCycle
+      );
+      console.log(`✅ Auto-created PayPal plan: ${paypalPlanId}`);
+    } catch (error) {
+      console.error('Failed to create PayPal plan:', error);
+      // Continue without PayPal plan ID - admin can add it later
+    }
+  } else if (paypalPlanId) {
+    console.log(`✅ Using provided PayPal plan ID: ${paypalPlanId}`);
   }
 
   const plan = await SubscriptionPlan.create({
@@ -72,6 +80,7 @@ export async function updateSubscriptionPlan(
     price?: number;
     currency?: string;
     billingCycle?: PlanBillingCycle;
+    paypalPlanId?: string; // Allow updating PayPal Plan ID
     features?: string[];
     maxUsers?: number;
     maxPatients?: number;
@@ -94,6 +103,7 @@ export async function updateSubscriptionPlan(
   if (input.price !== undefined) plan.price = input.price;
   if (input.currency !== undefined) plan.currency = input.currency;
   if (input.billingCycle !== undefined) plan.billingCycle = input.billingCycle;
+  if (input.paypalPlanId !== undefined) plan.paypalPlanId = input.paypalPlanId; // Update PayPal Plan ID
   if (input.features !== undefined) plan.features = input.features;
   if (input.maxUsers !== undefined) plan.maxUsers = input.maxUsers;
   if (input.maxPatients !== undefined) plan.maxPatients = input.maxPatients;
@@ -162,8 +172,36 @@ export async function createSubscription(
     status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PENDING] },
   });
 
-  if (existingSubscription) {
-    throw new Error('Tenant already has an active subscription');
+  // If upgrading to a paid plan from any existing subscription, cancel the old one first
+  if (existingSubscription && plan.price > 0) {
+    console.log(`Cancelling existing subscription ${existingSubscription._id} before creating new paid subscription`);
+    
+    // Cancel the old subscription immediately (not at period end)
+    existingSubscription.status = SubscriptionStatus.CANCELLED;
+    existingSubscription.cancelledAt = new Date();
+    existingSubscription.cancelAtPeriodEnd = false;
+    await existingSubscription.save();
+
+    // If old subscription had PayPal subscription, cancel it
+    if (existingSubscription.paypalSubscriptionId) {
+      try {
+        await cancelPayPalSubscription(existingSubscription.paypalSubscriptionId, 'Upgrading to new plan');
+      } catch (error) {
+        console.error('Failed to cancel PayPal subscription:', error);
+        // Continue anyway - we'll create the new subscription
+      }
+    }
+  } else if (existingSubscription && plan.price === 0) {
+    // If trying to create a free subscription while having an active one, throw error
+    throw new Error('Tenant already has an active subscription. Use update endpoint instead.');
+  }
+
+  // SECURITY: Paid plans MUST have PayPal integration
+  if (plan.price > 0 && !plan.paypalPlanId) {
+    throw new Error(
+      'This plan requires payment but PayPal integration is not configured. ' +
+      'Please contact support or choose a free plan.'
+    );
   }
 
   // Calculate period dates
@@ -171,7 +209,10 @@ export async function createSubscription(
   const periodStart = now;
   let periodEnd = new Date(now);
   
-  if (plan.billingCycle === PlanBillingCycle.MONTHLY) {
+  // Free Trial gets 15 days, others follow billing cycle
+  if (plan.name === 'Free Trial') {
+    periodEnd.setDate(periodEnd.getDate() + 15);
+  } else if (plan.billingCycle === PlanBillingCycle.MONTHLY) {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
   } else {
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
@@ -208,6 +249,7 @@ export async function createSubscription(
     planId,
     status: plan.paypalPlanId ? SubscriptionStatus.PENDING : SubscriptionStatus.ACTIVE,
     paypalSubscriptionId,
+    paypalApprovalUrl: approvalUrl, // Store approval URL for later use
     currentPeriodStart: periodStart,
     currentPeriodEnd: periodEnd,
     cancelAtPeriodEnd: false,
@@ -387,12 +429,15 @@ export async function getSubscriptionPayments(
 
 /**
  * Update tenant subscription (Admin only)
- * Creates a new subscription if one doesn't exist, or updates the existing one
+ * Creates PayPal subscription for paid plans and returns approval URL for client to pay
+ * Free plans are activated immediately without payment
  */
 export async function updateTenantSubscription(
   tenantId: string,
-  newPlanId: string
-): Promise<ISubscription> {
+  newPlanId: string,
+  customerEmail?: string,
+  customerName?: string
+): Promise<{ subscription: ISubscription; approvalUrl?: string; requiresPayment: boolean }> {
   await connectDB();
 
   // Get new plan
@@ -406,15 +451,37 @@ export async function updateTenantSubscription(
     throw new Error('Subscription plan is not active');
   }
 
+  // Get tenant for customer details
+  const tenant = await Tenant.findById(tenantId);
+  if (!tenant) {
+    throw new Error('Tenant not found');
+  }
+
   // Get existing subscription
   const existingSubscription = await Subscription.findOne({ tenantId })
     .sort({ createdAt: -1 });
+
+  // Cancel existing subscription if switching plans
+  if (existingSubscription) {
+    existingSubscription.status = SubscriptionStatus.CANCELLED;
+    existingSubscription.cancelledAt = new Date();
+    await existingSubscription.save();
+
+    // Cancel PayPal subscription if exists
+    if (existingSubscription.paypalSubscriptionId) {
+      try {
+        await cancelPayPalSubscription(existingSubscription.paypalSubscriptionId, 'Admin changed subscription plan');
+      } catch (error) {
+        console.error('Failed to cancel PayPal subscription:', error);
+      }
+    }
+  }
 
   // Calculate period dates based on new plan
   const periodStart = new Date();
   const periodEnd = new Date(periodStart);
   
-  // Free Trial plan gets 15 days, others follow billing cycle
+  // Free Trial gets 15 days, others follow billing cycle
   if (newPlan.name === 'Free Trial') {
     periodEnd.setDate(periodEnd.getDate() + 15); // 15 days for free trial
   } else if (newPlan.billingCycle === PlanBillingCycle.MONTHLY) {
@@ -423,36 +490,60 @@ export async function updateTenantSubscription(
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   }
 
-  // If no existing subscription, create a new one
-  if (!existingSubscription) {
-    const newSubscription = await Subscription.create({
-      tenantId,
-      planId: newPlanId,
-      status: SubscriptionStatus.ACTIVE,
-      currentPeriodStart: periodStart,
-      currentPeriodEnd: periodEnd,
-      cancelAtPeriodEnd: false,
-      nextBillingDate: periodEnd,
-    });
+  // For PAID plans: Create PayPal subscription
+  let paypalSubscriptionId: string | undefined;
+  let approvalUrl: string | undefined;
+  const isPaidPlan = newPlan.price > 0;
 
-    return newSubscription;
+  if (isPaidPlan) {
+    // SECURITY: Paid plans MUST have PayPal integration
+    if (!newPlan.paypalPlanId) {
+      throw new Error(
+        'This plan requires payment but PayPal integration is not configured. ' +
+        'Please run: npm run setup:paypal-plans to configure PayPal billing plans.'
+      );
+    }
+
+    try {
+      const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5053'}/subscription/return`;
+      const cancelUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5053'}/subscription/cancel`;
+      
+      const paypalResult = await createPayPalSubscription(
+        newPlan.paypalPlanId,
+        returnUrl,
+        cancelUrl,
+        customerEmail || tenant.name, // Use tenant name if no email
+        customerName || tenant.name
+      );
+
+      paypalSubscriptionId = paypalResult.subscriptionId;
+      approvalUrl = paypalResult.approvalUrl;
+
+      console.log(`✅ Created PayPal subscription for ${tenant.name}: ${paypalSubscriptionId}`);
+      console.log(`📧 Payment URL: ${approvalUrl}`);
+    } catch (error: any) {
+      console.error('Failed to create PayPal subscription:', error);
+      throw new Error(`Failed to create PayPal subscription: ${error.message}`);
+    }
   }
 
-  // Update existing subscription
-  existingSubscription.planId = newPlanId as any;
-  existingSubscription.status = SubscriptionStatus.ACTIVE;
-  existingSubscription.currentPeriodStart = periodStart;
-  existingSubscription.currentPeriodEnd = periodEnd;
-  existingSubscription.nextBillingDate = periodEnd;
-  existingSubscription.cancelAtPeriodEnd = false;
+  // Create new subscription
+  const newSubscription = await Subscription.create({
+    tenantId,
+    planId: newPlanId,
+    status: isPaidPlan ? SubscriptionStatus.PENDING : SubscriptionStatus.ACTIVE, // PENDING until client pays
+    paypalSubscriptionId,
+    paypalApprovalUrl: approvalUrl, // Store approval URL so user can pay later
+    currentPeriodStart: periodStart,
+    currentPeriodEnd: periodEnd,
+    cancelAtPeriodEnd: false,
+    nextBillingDate: periodEnd,
+  });
 
-  // Clear cancellation date if it was set
-  if (existingSubscription.cancelledAt) {
-    existingSubscription.cancelledAt = undefined;
-  }
-
-  await existingSubscription.save();
-
-  return existingSubscription;
+  return {
+    subscription: newSubscription,
+    approvalUrl, // Send this URL to client so they can pay
+    requiresPayment: isPaidPlan,
+  };
 }
 

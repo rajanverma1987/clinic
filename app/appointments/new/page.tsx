@@ -44,6 +44,9 @@ export default function NewAppointmentPage() {
     startTime: '',
     duration: '30',
     type: 'consultation',
+    isTelemedicine: false,
+    telemedicineConsent: false,
+    patientEmail: '',
     reason: '',
     notes: '',
   });
@@ -94,6 +97,20 @@ export default function NewAppointmentPage() {
       const durationMinutes = parseInt(formData.duration);
       const endDateTime = new Date(startDateTime.getTime() + durationMinutes * 60000);
 
+      // Validate telemedicine requirements
+      if (formData.isTelemedicine) {
+        if (!formData.telemedicineConsent) {
+          setError('Please confirm patient consent for video consultation');
+          setSubmitting(false);
+          return;
+        }
+        if (!formData.patientEmail) {
+          setError('Patient email is required for video consultations');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const appointmentData = {
         patientId: formData.patientId,
         doctorId: formData.doctorId,
@@ -102,6 +119,9 @@ export default function NewAppointmentPage() {
         endTime: endDateTime.toISOString(),
         duration: durationMinutes,
         type: formData.type,
+        isTelemedicine: formData.isTelemedicine,
+        telemedicineConsent: formData.telemedicineConsent,
+        patientEmail: formData.patientEmail || undefined,
         reason: formData.reason || undefined,
         notes: formData.notes || undefined,
       };
@@ -241,6 +261,119 @@ export default function NewAppointmentPage() {
               ]}
             />
           </div>
+
+          {/* Consultation Type - Video or In-Person */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Consultation Method *
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, isTelemedicine: false, telemedicineConsent: false })}
+                className={`p-4 border-2 rounded-lg transition-all ${
+                  !formData.isTelemedicine
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                    !formData.isTelemedicine ? 'bg-blue-600' : 'bg-gray-200'
+                  }`}>
+                    <svg className={`w-6 h-6 ${!formData.isTelemedicine ? 'text-white' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-gray-900">In-Person Visit</div>
+                    <div className="text-sm text-gray-600">Patient visits clinic</div>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, isTelemedicine: true })}
+                className={`p-4 border-2 rounded-lg transition-all ${
+                  formData.isTelemedicine
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                    formData.isTelemedicine ? 'bg-blue-600' : 'bg-gray-200'
+                  }`}>
+                    <svg className={`w-6 h-6 ${formData.isTelemedicine ? 'text-white' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-gray-900">Video Consultation</div>
+                    <div className="text-sm text-gray-600">Remote via video call</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Telemedicine Email & Consent - HIPAA/GDPR Compliance */}
+          {formData.isTelemedicine && (
+            <div className="md:col-span-2 space-y-4">
+              {/* Email Address for Video Link */}
+              <div>
+                <Input
+                  label="Patient Email Address *"
+                  type="email"
+                  value={formData.patientEmail}
+                  onChange={(e) => setFormData({ ...formData, patientEmail: e.target.value })}
+                  required
+                  placeholder="patient@example.com"
+                />
+                <p className="text-sm text-gray-600 mt-1">
+                  📧 An email with the secure video consultation link will be sent to this address
+                </p>
+              </div>
+
+              {/* Compliance Notice */}
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                      Video Consultation - Privacy & Compliance
+                    </h4>
+                    <ul className="text-sm text-blue-800 space-y-1 mb-3">
+                      <li>• Video calls are encrypted end-to-end</li>
+                      <li>• Sessions are HIPAA and GDPR compliant</li>
+                      <li>• Data is stored securely on our servers</li>
+                      <li>• Patient consent is required and recorded</li>
+                      <li>• All sessions are logged for compliance</li>
+                      <li>• Automated email will be sent with session details</li>
+                    </ul>
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.telemedicineConsent}
+                        onChange={(e) => setFormData({ ...formData, telemedicineConsent: e.target.checked })}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        required={formData.isTelemedicine}
+                      />
+                      <span className="ml-2 text-sm font-medium text-blue-900">
+                        Patient consents to video consultation and understands their rights under HIPAA/GDPR *
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">

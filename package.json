@@ -12,7 +12,8 @@
     "admin:create": "node -r dotenv/config node_modules/.bin/tsx scripts/manage-admin.ts create dotenv_config_path=.env.local",
     "admin:reset": "node -r dotenv/config node_modules/.bin/tsx scripts/manage-admin.ts reset dotenv_config_path=.env.local",
     "admin:quick": "node -r dotenv/config node_modules/.bin/tsx scripts/create-default-admin.ts dotenv_config_path=.env.local",
-    "seed:plans": "node -r dotenv/config node_modules/.bin/tsx scripts/seed-subscription-plans.ts dotenv_config_path=.env.local"
+    "seed:plans": "node -r dotenv/config node_modules/.bin/tsx scripts/seed-subscription-plans.ts dotenv_config_path=.env.local",
+    "setup:paypal-plans": "node -r dotenv/config node_modules/.bin/tsx scripts/setup-paypal-plans.ts dotenv_config_path=.env.local"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

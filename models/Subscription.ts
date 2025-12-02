@@ -13,6 +13,7 @@ export interface ISubscription extends Document {
   planId: Schema.Types.ObjectId;
   status: SubscriptionStatus;
   paypalSubscriptionId?: string; // PayPal subscription ID
+  paypalApprovalUrl?: string; // PayPal approval URL for pending payments
   currentPeriodStart: Date;
   currentPeriodEnd: Date;
   cancelAtPeriodEnd: boolean;
@@ -46,6 +47,10 @@ const SubscriptionSchema = new Schema<ISubscription>(
       type: String,
       trim: true,
       index: true,
+    },
+    paypalApprovalUrl: {
+      type: String,
+      trim: true,
     },
     currentPeriodStart: {
       type: Date,

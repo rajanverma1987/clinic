@@ -115,3 +115,4 @@ final rule
   description: "always compile and fix the error, after fixing, kill the npm run dev process and restart it"
   validatoins Error : in Resoonse always return what is the actual error and what is the expected error and what is the solution to fix the error.
   keep in mind the multi language support when adding new element on the FE.
+  create any .MD file in CursorMD folder to document the project.

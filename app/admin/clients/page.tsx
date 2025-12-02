@@ -50,6 +50,8 @@ export default function AdminClientsPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string>('');
+  const [showPaymentUrlModal, setShowPaymentUrlModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -119,16 +121,29 @@ export default function AdminClientsPage() {
 
     setUpdatingClientId(currentClient._id);
     try {
-      const response = await apiClient.put(`/admin/clients/${currentClient._id}`, {
+      const response = await apiClient.put<{
+        message: string;
+        subscription: any;
+        approvalUrl?: string;
+        requiresPayment?: boolean;
+      }>(`/admin/clients/${currentClient._id}`, {
         planId: selectedPlanId,
       });
 
-      if (response.success) {
+      if (response.success && response.data) {
         setShowUpdateModal(false);
+        
+        // If plan requires payment, show PayPal approval URL
+        if (response.data.requiresPayment && response.data.approvalUrl) {
+          setPaymentUrl(response.data.approvalUrl);
+          setShowPaymentUrlModal(true);
+        } else {
+          alert('Subscription updated successfully');
+        }
+        
         setCurrentClient(null);
         setSelectedPlanId('');
         fetchClients();
-        alert('Subscription updated successfully');
       }
     } catch (error: any) {
       console.error('Failed to update subscription:', error);
@@ -181,7 +196,7 @@ export default function AdminClientsPage() {
     {
       header: 'Subscription',
       accessor: (row: Client) => {
-        if (!row.subscription) {
+        if (!row.subscription || !row.subscription.planId) {
           return <Tag variant="default">No Subscription</Tag>;
         }
         return (
@@ -320,6 +335,81 @@ export default function AdminClientsPage() {
                   disabled={updatingClientId === currentClient._id}
                 >
                   Cancel
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Payment URL Modal - Shows PayPal approval link for client */}
+      {showPaymentUrlModal && paymentUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="max-w-2xl w-full mx-4">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4 text-green-600">
+                ✅ Subscription Created - Payment Required
+              </h2>
+              
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                <p className="text-sm text-blue-800 mb-2">
+                  <strong>PayPal subscription created successfully!</strong>
+                </p>
+                <p className="text-sm text-blue-700">
+                  The client needs to complete payment to activate their subscription. 
+                  Send them the payment link below.
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Link (Send to Client):
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={paymentUrl}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(paymentUrl);
+                      alert('Payment link copied to clipboard!');
+                    }}
+                  >
+                    Copy Link
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>⚠️ Important:</strong> The subscription status is PENDING until the client completes payment.
+                  Features will be disabled until payment is received.
+                </p>
+              </div>
+
+              <div className="flex gap-4">
+                <Button
+                  onClick={() => {
+                    window.open(paymentUrl, '_blank');
+                  }}
+                  className="flex-1"
+                >
+                  Open Payment Link
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowPaymentUrlModal(false);
+                    setPaymentUrl('');
+                  }}
+                  className="flex-1"
+                >
+                  Close
                 </Button>
               </div>
             </div>

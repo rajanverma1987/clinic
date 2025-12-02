@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useI18n } from '@/contexts/I18nContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Header() {
   const router = useRouter();
   const { t } = useI18n();
+  const { user } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
@@ -64,22 +66,42 @@ export function Header() {
 
           <div className="flex items-center space-x-4">
             <LanguageSwitcher />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push('/login')}
-              className="whitespace-nowrap"
-            >
-              {t('auth.login')}
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => router.push('/register')}
-              className="whitespace-nowrap"
-            >
-              {t('navigation.getStarted')}
-            </Button>
+            {user ? (
+              // Logged in user - show dashboard button
+              <>
+                <span className="text-sm text-gray-700 hidden sm:inline">
+                  {user.firstName} {user.lastName}
+                </span>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => router.push('/dashboard')}
+                  className="whitespace-nowrap"
+                >
+                  Go to Dashboard
+                </Button>
+              </>
+            ) : (
+              // Not logged in - show sign in and get started
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/login')}
+                  className="whitespace-nowrap"
+                >
+                  {t('auth.login')}
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => router.push('/register')}
+                  className="whitespace-nowrap"
+                >
+                  {t('navigation.getStarted')}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
