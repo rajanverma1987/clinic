@@ -9,6 +9,8 @@ import Tenant from '@/models/Tenant';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, JWTPayload } from '@/lib/auth/jwt';
 import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger';
 import { RegisterInput, LoginInput } from '@/lib/validations/auth';
+import SubscriptionPlan, { PlanStatus } from '@/models/SubscriptionPlan';
+import Subscription, { SubscriptionStatus } from '@/models/Subscription';
 
 export interface AuthResponse {
   user: {
@@ -60,6 +62,39 @@ export async function registerUser(input: RegisterInput): Promise<AuthResponse> 
       },
     });
     tenantId = tenant._id;
+
+    // Auto-assign Free Trial subscription to new clinic
+    try {
+      const freeTrialPlan = await SubscriptionPlan.findOne({ 
+        name: 'Free Trial',
+        status: PlanStatus.ACTIVE 
+      });
+
+      if (freeTrialPlan) {
+        // Calculate 15-day trial period
+        const periodStart = new Date();
+        const periodEnd = new Date(periodStart);
+        periodEnd.setDate(periodEnd.getDate() + 15); // 15 days from now
+
+        // Create subscription
+        await Subscription.create({
+          tenantId: tenant._id,
+          planId: freeTrialPlan._id,
+          status: SubscriptionStatus.ACTIVE,
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+          nextBillingDate: periodEnd,
+        });
+
+        console.log(`✅ Auto-assigned Free Trial subscription to tenant: ${tenant.name} (expires: ${periodEnd.toISOString()})`);
+      } else {
+        console.warn('⚠️  Free Trial plan not found. User registered without subscription.');
+      }
+    } catch (subscriptionError) {
+      // Log error but don't fail registration
+      console.error('Failed to create free trial subscription:', subscriptionError);
+    }
   } else if (tenantId) {
     // Validate tenant exists if provided
     const tenant = await Tenant.findById(tenantId);

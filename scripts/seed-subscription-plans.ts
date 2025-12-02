@@ -35,6 +35,39 @@ const AVAILABLE_FEATURES = {
 
 const PLANS = [
   {
+    name: 'Free Trial',
+    description: '15-day free trial with full access to all features',
+    price: 0, // FREE
+    currency: 'USD',
+    billingCycle: PlanBillingCycle.MONTHLY,
+    features: [
+      AVAILABLE_FEATURES.patients,
+      AVAILABLE_FEATURES.appointments,
+      AVAILABLE_FEATURES.queue,
+      AVAILABLE_FEATURES.prescriptions,
+      AVAILABLE_FEATURES.invoices,
+      AVAILABLE_FEATURES.inventory,
+      AVAILABLE_FEATURES.reports,
+      AVAILABLE_FEATURES.reminders,
+      AVAILABLE_FEATURES.multiLocation,
+      AVAILABLE_FEATURES.telemedicine,
+      AVAILABLE_FEATURES.api,
+      AVAILABLE_FEATURES.customBranding,
+      AVAILABLE_FEATURES.prioritySupport,
+      AVAILABLE_FEATURES.advancedReports,
+      AVAILABLE_FEATURES.dataExport,
+      AVAILABLE_FEATURES.auditLogs,
+      AVAILABLE_FEATURES.compliance,
+      AVAILABLE_FEATURES.whiteLabel,
+      AVAILABLE_FEATURES.dedicatedSupport,
+    ],
+    maxUsers: 100,
+    maxPatients: 50000,
+    maxStorageGB: 500,
+    isPopular: false,
+    isHidden: true, // Hidden from pricing page as it's for new signups only
+  },
+  {
     name: 'Basic',
     description: 'Perfect for small clinics getting started',
     price: 49.99, // in dollars
@@ -153,9 +186,10 @@ async function seedPlans() {
 
     console.log('🎉 Subscription plans seeded successfully!\n');
     console.log('📋 Summary:');
-    console.log(`   - Basic: $${PLANS[0].price}/month`);
-    console.log(`   - Professional: $${PLANS[1].price}/month (Popular)`);
-    console.log(`   - Enterprise: $${PLANS[2].price}/month\n`);
+    console.log(`   - Free Trial: $${PLANS[0].price} (15-day trial, auto-assigned to new signups)`);
+    console.log(`   - Basic: $${PLANS[1].price}/month`);
+    console.log(`   - Professional: $${PLANS[2].price}/month (Popular)`);
+    console.log(`   - Enterprise: $${PLANS[3].price}/month\n`);
 
     process.exit(0);
   } catch (error: any) {

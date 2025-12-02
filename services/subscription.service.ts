@@ -387,6 +387,7 @@ export async function getSubscriptionPayments(
 
 /**
  * Update tenant subscription (Admin only)
+ * Creates a new subscription if one doesn't exist, or updates the existing one
  */
 export async function updateTenantSubscription(
   tenantId: string,
@@ -400,29 +401,55 @@ export async function updateTenantSubscription(
     throw new Error('Subscription plan not found');
   }
 
+  // Check if plan is active
+  if (newPlan.status !== PlanStatus.ACTIVE) {
+    throw new Error('Subscription plan is not active');
+  }
+
   // Get existing subscription
   const existingSubscription = await Subscription.findOne({ tenantId })
     .sort({ createdAt: -1 });
 
-  if (!existingSubscription) {
-    throw new Error('No existing subscription found for this tenant');
-  }
-
-  // Update subscription plan
-  existingSubscription.planId = newPlanId as any;
-
-  // Recalculate period dates based on new plan
+  // Calculate period dates based on new plan
   const periodStart = new Date();
   const periodEnd = new Date(periodStart);
-  if (newPlan.billingCycle === PlanBillingCycle.MONTHLY) {
+  
+  // Free Trial plan gets 15 days, others follow billing cycle
+  if (newPlan.name === 'Free Trial') {
+    periodEnd.setDate(periodEnd.getDate() + 15); // 15 days for free trial
+  } else if (newPlan.billingCycle === PlanBillingCycle.MONTHLY) {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
   } else {
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   }
 
+  // If no existing subscription, create a new one
+  if (!existingSubscription) {
+    const newSubscription = await Subscription.create({
+      tenantId,
+      planId: newPlanId,
+      status: SubscriptionStatus.ACTIVE,
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
+      cancelAtPeriodEnd: false,
+      nextBillingDate: periodEnd,
+    });
+
+    return newSubscription;
+  }
+
+  // Update existing subscription
+  existingSubscription.planId = newPlanId as any;
+  existingSubscription.status = SubscriptionStatus.ACTIVE;
   existingSubscription.currentPeriodStart = periodStart;
   existingSubscription.currentPeriodEnd = periodEnd;
   existingSubscription.nextBillingDate = periodEnd;
+  existingSubscription.cancelAtPeriodEnd = false;
+
+  // Clear cancellation date if it was set
+  if (existingSubscription.cancelledAt) {
+    existingSubscription.cancelledAt = undefined;
+  }
 
   await existingSubscription.save();
 
