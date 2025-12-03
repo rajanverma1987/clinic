@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useFeatures } from '@/hooks/useFeatures';
 import { apiClient } from '@/lib/api/client';
+import { showSuccess, showError, showWarning } from '@/lib/utils/toast';
 import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
+import { PatientSelector } from '@/components/ui/PatientSelector';
 
 interface Patient {
   _id: string;
@@ -19,24 +22,33 @@ interface Patient {
   firstName: string;
   lastName: string;
   phone: string;
+  email?: string;
+  dateOfBirth?: string;
 }
 
 interface User {
-  _id: string;
+  id: string; // API returns 'id' not '_id'
+  email: string;
   firstName: string;
   lastName: string;
   role: string;
+  isActive: boolean;
 }
 
 export default function NewAppointmentPage() {
   const router = useRouter();
   const { user: currentUser, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const { hasFeature } = useFeatures();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [showAddPatient, setShowAddPatient] = useState(false);
+  
+  // Check if telemedicine is available in subscription
+  const hasTelemedicine = hasFeature('Telemedicine');
   const [formData, setFormData] = useState({
     patientId: '',
     doctorId: '',
@@ -60,24 +72,50 @@ export default function NewAppointmentPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch patients
-      const patientsResponse = await apiClient.get<Patient[]>('/patients?limit=100');
+      // Fetch patients with pagination
+      const patientsResponse = await apiClient.get<{
+        data: Patient[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>('/patients?limit=1000'); // Get more patients for appointment booking
+      
       if (patientsResponse.success && patientsResponse.data) {
-        setPatients(Array.isArray(patientsResponse.data) ? patientsResponse.data : []);
+        // Handle pagination structure - data is inside response.data.data
+        const patientsList = patientsResponse.data.data || [];
+        setPatients(Array.isArray(patientsList) ? patientsList : []);
       }
 
-      // Fetch doctors (users with doctor role)
-      // Note: For now, we'll use the current user if they're a doctor
-      // TODO: Create a /api/users endpoint to fetch all doctors
-      if (currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') {
-        setDoctors([{
-          _id: currentUser.userId,
-          firstName: currentUser.firstName,
-          lastName: currentUser.lastName,
-          role: currentUser.role,
-        }]);
-        // Pre-select current user as doctor
-        setFormData(prev => ({ ...prev, doctorId: currentUser.userId }));
+      // Fetch all doctors and clinic admins (anyone who can conduct appointments)
+      const doctorsResponse = await apiClient.get<{
+        data: User[];
+      }>('/users'); // Fetch all users, we'll filter on frontend
+      
+      if (doctorsResponse.success && doctorsResponse.data) {
+        const allUsers = doctorsResponse.data.data || [];
+        
+        console.log('Fetched users:', allUsers); // Debug log
+        
+        // Filter to only show active doctors and clinic admins
+        const doctorsList = allUsers.filter(
+          (u: User) =>
+            (u.role === 'doctor' || u.role === 'clinic_admin') && u.isActive
+        );
+        
+        console.log('Filtered doctors:', doctorsList); // Debug log
+        
+        setDoctors(doctorsList);
+        
+        // Pre-select current user as doctor if they're in the list
+        if (currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') {
+          const currentDoctor = doctorsList.find((d: User) => 
+            d.id === currentUser.userId || (d as any)._id === currentUser.userId
+          );
+          if (currentDoctor) {
+            setFormData(prev => ({ ...prev, doctorId: currentDoctor.id }));
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -92,6 +130,31 @@ export default function NewAppointmentPage() {
     setSubmitting(true);
 
     try {
+      // Validate required fields
+      if (!formData.patientId) {
+        showError('Please select a patient');
+        setSubmitting(false);
+        return;
+      }
+
+      if (!formData.doctorId) {
+        showError('Please select a doctor');
+        setSubmitting(false);
+        return;
+      }
+
+      if (!formData.appointmentDate) {
+        showError('Please select an appointment date');
+        setSubmitting(false);
+        return;
+      }
+
+      if (!formData.startTime) {
+        showError('Please select a start time');
+        setSubmitting(false);
+        return;
+      }
+
       // Calculate end time from start time and duration
       const startDateTime = new Date(`${formData.appointmentDate}T${formData.startTime}`);
       const durationMinutes = parseInt(formData.duration);
@@ -100,12 +163,12 @@ export default function NewAppointmentPage() {
       // Validate telemedicine requirements
       if (formData.isTelemedicine) {
         if (!formData.telemedicineConsent) {
-          setError('Please confirm patient consent for video consultation');
+          showWarning('Please confirm patient consent for video consultation');
           setSubmitting(false);
           return;
         }
         if (!formData.patientEmail) {
-          setError('Patient email is required for video consultations');
+          showWarning('Patient email is required for video consultations');
           setSubmitting(false);
           return;
         }
@@ -128,12 +191,49 @@ export default function NewAppointmentPage() {
 
       const response = await apiClient.post('/appointments', appointmentData);
       if (response.success) {
-        router.push('/appointments');
+        showSuccess(
+          formData.isTelemedicine 
+            ? 'Video consultation scheduled! Email sent to patient.' 
+            : 'Appointment scheduled successfully!'
+        );
+        setTimeout(() => {
+          router.push('/appointments');
+        }, 1500);
       } else {
-        setError(response.error?.message || t('common.error'));
+        // User-friendly error messages
+        const errorMsg = response.error?.message || 'Failed to create appointment';
+        
+        // Replace technical errors with user-friendly messages
+        if (errorMsg.includes('Cast to ObjectId failed') || errorMsg.includes('ObjectId')) {
+          showError('Invalid selection. Please refresh the page and try again.');
+        } else if (errorMsg.includes('validation') || errorMsg.includes('required')) {
+          showError('Please fill in all required fields correctly');
+        } else if (errorMsg.includes('duplicate') || errorMsg.includes('exists')) {
+          showError('An appointment already exists for this time slot');
+        } else {
+          showError(errorMsg);
+        }
       }
     } catch (error: any) {
-      setError(error.message || 'Failed to create appointment');
+      console.error('Appointment creation error:', error);
+      
+      // User-friendly error messages for exceptions
+      let errorMsg = 'Failed to create appointment. Please try again.';
+      
+      if (error.message) {
+        if (error.message.includes('Cast to ObjectId') || error.message.includes('ObjectId')) {
+          errorMsg = 'Invalid selection. Please refresh the page and try again.';
+        } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+          errorMsg = 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('timeout')) {
+          errorMsg = 'Request timeout. Please try again.';
+        } else if (!error.message.includes('MongoDB') && !error.message.includes('Schema')) {
+          // Only show non-technical errors
+          errorMsg = error.message;
+        }
+      }
+      
+      showError(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -164,27 +264,18 @@ export default function NewAppointmentPage() {
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Select
-              label={t('appointments.patient')}
-              value={formData.patientId}
-              onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-              required
-              placeholder={`${t('common.select')} ${t('appointments.patient').toLowerCase()}`}
-              options={[
-                { value: '', label: `${t('common.select')} ${t('appointments.patient').toLowerCase()}`, disabled: true },
-                ...patients.map((patient) => ({
-                  value: patient._id,
-                  label: `${patient.patientId} - ${patient.firstName} ${patient.lastName} (${patient.phone})`,
-                })),
-              ]}
-            />
+            <div className="md:col-span-2">
+              <PatientSelector
+                patients={patients}
+                selectedPatientId={formData.patientId}
+                onSelect={(patientId) => setFormData({ ...formData, patientId })}
+                onAddNew={() => router.push('/patients')}
+                label={t('appointments.patient')}
+                required
+                placeholder="Search by name, ID, or phone number..."
+              />
+            </div>
 
             <div>
               <Select
@@ -196,14 +287,14 @@ export default function NewAppointmentPage() {
                 options={[
                   { value: '', label: `${t('common.select')} ${t('appointments.doctor').toLowerCase()}`, disabled: true },
                   ...doctors.map((doctor) => ({
-                    value: doctor._id,
+                    value: doctor.id, // Use 'id' field from API
                     label: `Dr. ${doctor.firstName} ${doctor.lastName}`,
                   })),
                 ]}
               />
               {doctors.length === 0 && (
                 <p className="text-sm text-gray-500 mt-1">
-                  No doctors available.
+                  No doctors available. Add doctors in Settings → Doctors & Staff.
                 </p>
               )}
             </div>
@@ -267,55 +358,108 @@ export default function NewAppointmentPage() {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Consultation Method *
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, isTelemedicine: false, telemedicineConsent: false })}
-                className={`p-4 border-2 rounded-lg transition-all ${
-                  !formData.isTelemedicine
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    !formData.isTelemedicine ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}>
-                    <svg className={`w-6 h-6 ${!formData.isTelemedicine ? 'text-white' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-gray-900">In-Person Visit</div>
-                    <div className="text-sm text-gray-600">Patient visits clinic</div>
+            
+            {/* If Telemedicine not available, show only In-Person (disabled) */}
+            {!hasTelemedicine ? (
+              <div>
+                <div className="p-4 border-2 border-blue-500 bg-blue-50 rounded-lg opacity-75 cursor-not-allowed">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-blue-600">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="font-semibold text-gray-900">In-Person Visit</div>
+                      <div className="text-sm text-gray-600">Patient visits clinic</div>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full">
+                      ✓ Selected
+                    </div>
                   </div>
                 </div>
-              </button>
+                
+                {/* Upgrade Notice */}
+                <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">
+                        Video Consultations Not Available
+                      </h4>
+                      <p className="text-sm text-gray-700 mb-3">
+                        Upgrade your subscription to enable secure video consultations with patients remotely.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => router.push('/subscription')}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                        </svg>
+                        Upgrade Plan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Show both options if Telemedicine is available */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, isTelemedicine: false, telemedicineConsent: false })}
+                  className={`p-4 border-2 rounded-lg transition-all ${
+                    !formData.isTelemedicine
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      !formData.isTelemedicine ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}>
+                      <svg className={`w-6 h-6 ${!formData.isTelemedicine ? 'text-white' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">In-Person Visit</div>
+                      <div className="text-sm text-gray-600">Patient visits clinic</div>
+                    </div>
+                  </div>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, isTelemedicine: true })}
-                className={`p-4 border-2 rounded-lg transition-all ${
-                  formData.isTelemedicine
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    formData.isTelemedicine ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}>
-                    <svg className={`w-6 h-6 ${formData.isTelemedicine ? 'text-white' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, isTelemedicine: true })}
+                  className={`p-4 border-2 rounded-lg transition-all ${
+                    formData.isTelemedicine
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      formData.isTelemedicine ? 'bg-blue-600' : 'bg-gray-200'
+                    }`}>
+                      <svg className={`w-6 h-6 ${formData.isTelemedicine ? 'text-white' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">Video Consultation</div>
+                      <div className="text-sm text-gray-600">Remote via video call</div>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-gray-900">Video Consultation</div>
-                    <div className="text-sm text-gray-600">Remote via video call</div>
-                  </div>
-                </div>
-              </button>
-            </div>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Telemedicine Email & Consent - HIPAA/GDPR Compliance */}

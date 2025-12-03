@@ -11,4 +11,5 @@ export { PhoneInput } from './PhoneInput';
 export { DatePicker } from './DatePicker';
 export { Textarea } from './Textarea';
 export { Select } from './Select';
+export { PatientSelector } from './PatientSelector';
 

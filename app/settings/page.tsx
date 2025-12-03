@@ -269,9 +269,11 @@ export default function SettingsPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await apiClient.get<User[]>('/users');
+      const response = await apiClient.get<{ data: User[] }>('/users');
       if (response.success && response.data) {
-        setUsers(Array.isArray(response.data) ? response.data : []);
+        // Handle wrapped response structure - data is inside response.data.data
+        const usersList = response.data.data || [];
+        setUsers(Array.isArray(usersList) ? usersList : []);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);

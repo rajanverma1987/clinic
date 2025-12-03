@@ -8,7 +8,7 @@ import { AppointmentStatus, AppointmentType } from '@/models/Appointment';
 export const createAppointmentSchema = z.object({
   patientId: z.string().min(1, 'Patient ID is required'),
   doctorId: z.string().min(1, 'Doctor ID is required'),
-  appointmentDate: z.string().datetime().or(z.date()),
+  appointmentDate: z.string().min(1, 'Appointment date is required').or(z.date()), // Accept date string (YYYY-MM-DD) or datetime
   startTime: z.string().datetime().or(z.date()),
   endTime: z.string().datetime().or(z.date()).optional(),
   duration: z.number().int().min(5).max(480).optional(), // 5 minutes to 8 hours
@@ -16,6 +16,9 @@ export const createAppointmentSchema = z.object({
   reason: z.string().optional(),
   notes: z.string().optional(),
   reminderScheduledAt: z.string().datetime().or(z.date()).optional(),
+  isTelemedicine: z.boolean().optional(),
+  telemedicineConsent: z.boolean().optional(),
+  patientEmail: z.string().email().optional(),
 });
 
 export const updateAppointmentSchema = createAppointmentSchema.partial().extend({

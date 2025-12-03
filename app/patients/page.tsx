@@ -125,8 +125,16 @@ export default function PatientsPage() {
       }
 
       const response = await apiClient.get<PaginationResult>(`/patients?${params}`);
+      
+      console.log('Patients API Response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response data.data:', response.data?.data);
+      
       if (response.success && response.data) {
-        setPatients(Array.isArray(response.data) ? response.data : []);
+        // Handle pagination structure - data is inside response.data.data
+        const patientsList = response.data.data || [];
+        console.log('Patients list:', patientsList);
+        setPatients(Array.isArray(patientsList) ? patientsList : []);
         setTotalPages(response.data.totalPages || 1);
       }
     } catch (error) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -36,10 +36,21 @@ interface Appointment {
 
 interface PaginationResult {
   data: Appointment[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+interface TenantSettings {
+  settings: {
+    locale: string;
+    timezone: string;
+  };
 }
 
 export default function AppointmentsPage() {
@@ -48,9 +59,113 @@ export default function AppointmentsPage() {
   const { t } = useI18n();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+  const [dateFilter, setDateFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [todayCount, setTodayCount] = useState(0);
+  const [tomorrowCount, setTomorrowCount] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [settings, setSettings] = useState<TenantSettings | null>(null);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await apiClient.get<TenantSettings>('/settings');
+        if (response.success && response.data) {
+          setSettings(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch settings:', error);
+      }
+    };
+    if (!authLoading && user) {
+      fetchSettings();
+    }
+  }, [authLoading, user]);
+
+  const formatDateDisplay = useCallback(
+    (date: Date, options?: Intl.DateTimeFormatOptions) => {
+      try {
+        return new Intl.DateTimeFormat(settings?.settings.locale || 'en-US', {
+          timeZone: settings?.settings.timezone || 'UTC',
+          ...options,
+        }).format(date);
+      } catch (error) {
+        console.error('Failed to format date:', error);
+        return date.toLocaleDateString();
+      }
+    },
+    [settings?.settings.locale, settings?.settings.timezone]
+  );
+
+  const formatDateForApi = useCallback((date: Date) => {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: settings?.settings.timezone || 'UTC',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(date);
+    } catch {
+      return date.toISOString().split('T')[0];
+    }
+  }, [settings?.settings.timezone]);
+
+  const fetchStats = useCallback(async () => {
+    if (!settings) return; // Wait for settings to load
+    
+    setStatsLoading(true);
+    try {
+      const timezone = settings.settings.timezone || 'UTC';
+      const now = new Date();
+      
+      // Format today's date in clinic timezone as YYYY-MM-DD
+      // Use Intl.DateTimeFormat to ensure correct timezone handling
+      const todayStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(now);
+      
+      // Get tomorrow by adding 1 day
+      const tomorrowDate = new Date(now);
+      tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+      const tomorrowStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(tomorrowDate);
+
+      console.log('Fetching stats:', { todayStr, tomorrowStr, timezone, now: now.toISOString() });
+
+      // Fetch counts using the appointments API with date filter
+      const [todayResponse, tomorrowResponse] = await Promise.all([
+        apiClient.get<PaginationResult>(`/appointments?page=1&limit=1&date=${todayStr}`),
+        apiClient.get<PaginationResult>(`/appointments?page=1&limit=1&date=${tomorrowStr}`),
+      ]);
+
+      const todayTotal = todayResponse.success && todayResponse.data?.pagination ? (todayResponse.data.pagination.total || 0) : 0;
+      const tomorrowTotal = tomorrowResponse.success && tomorrowResponse.data?.pagination ? (tomorrowResponse.data.pagination.total || 0) : 0;
+
+      console.log('Stats results:', { 
+        todayTotal, 
+        tomorrowTotal,
+        todayStr,
+        tomorrowStr,
+        todayResponseData: todayResponse.data,
+        tomorrowResponseData: tomorrowResponse.data,
+      });
+
+      setTodayCount(todayTotal);
+      setTomorrowCount(tomorrowTotal);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [settings]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -62,19 +177,28 @@ export default function AppointmentsPage() {
     }
   }, [authLoading, user, router, currentPage, dateFilter]);
 
+  // Fetch stats separately when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      fetchStats();
+    }
+  }, [settings, fetchStats]);
+
   const fetchAppointments = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
-        date: dateFilter,
+        ...(dateFilter ? { date: dateFilter } : {}),
       });
 
       const response = await apiClient.get<PaginationResult>(`/appointments?${params}`);
       if (response.success && response.data) {
-        setAppointments(Array.isArray(response.data) ? response.data : []);
-        setTotalPages(response.data.totalPages || 1);
+        // Handle pagination structure - data is inside response.data.data
+        const appointmentsList = response.data.data || [];
+        setAppointments(Array.isArray(appointmentsList) ? appointmentsList : []);
+        setTotalPages(response.data.pagination?.totalPages || 1);
       }
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
@@ -262,17 +386,66 @@ export default function AppointmentsPage() {
         <Button onClick={() => router.push('/appointments/new')}>+ {t('appointments.bookAppointment')}</Button>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card className="bg-blue-50 border border-blue-100">
+          <p className="text-sm font-medium text-blue-600 mb-2">Today's Appointments</p>
+          <div className="flex items-baseline gap-3">
+            <p className="text-4xl font-bold text-blue-900">
+              {statsLoading ? '—' : todayCount}
+            </p>
+            <span className="text-sm text-blue-700">
+              {formatDateDisplay(new Date(), { year: 'numeric', month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+          <p className="text-xs text-blue-600 mt-3">
+            Includes all appointments scheduled for today
+          </p>
+        </Card>
+
+        <Card className="bg-emerald-50 border border-emerald-100">
+          <p className="text-sm font-medium text-emerald-600 mb-2">Tomorrow's Appointments</p>
+          <div className="flex items-baseline gap-3">
+            <p className="text-4xl font-bold text-emerald-900">
+              {statsLoading ? '—' : tomorrowCount}
+            </p>
+            <span className="text-sm text-emerald-700">
+              {formatDateDisplay(
+                new Date(new Date().setDate(new Date().getDate() + 1)),
+                { year: 'numeric', month: 'short', day: 'numeric' }
+              )}
+            </span>
+          </div>
+          <p className="text-xs text-emerald-600 mt-3">
+            Scheduled visits and video consultations for tomorrow
+          </p>
+        </Card>
+      </div>
+
       <Card className="mb-6">
-        <div className="flex gap-4 items-end">
-          <DatePicker
-            label={t('appointments.selectDate')}
-            value={dateFilter}
-            onChange={(e) => {
-              setDateFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full md:w-auto"
-          />
+        <div className="flex gap-4 items-end flex-wrap">
+          <div className="flex items-center gap-3">
+            <DatePicker
+              label={t('appointments.selectDate')}
+              value={dateFilter || ''}
+              onChange={(e) => {
+                setDateFilter(e.target.value || null);
+                setCurrentPage(1);
+              }}
+              className="w-full md:w-auto"
+            />
+            {dateFilter && (
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  setDateFilter(null);
+                  setCurrentPage(1);
+                }}
+              >
+                {t('common.clear')}
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
 

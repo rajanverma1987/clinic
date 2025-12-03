@@ -63,9 +63,13 @@ export default function QueuePage() {
         params.append('doctorId', selectedDoctor);
       }
 
-      const response = await apiClient.get<QueueEntry[]>(`/queue?${params}`);
+      const response = await apiClient.get<QueueEntry[] | { data: QueueEntry[] }>(`/queue?${params}`);
       if (response.success && response.data) {
-        setQueueEntries(Array.isArray(response.data) ? response.data : []);
+        // Handle both array and pagination structure
+        const queueList = Array.isArray(response.data) 
+          ? response.data 
+          : (response.data as any).data || [];
+        setQueueEntries(Array.isArray(queueList) ? queueList : []);
       }
     } catch (error) {
       console.error('Failed to fetch queue:', error);
