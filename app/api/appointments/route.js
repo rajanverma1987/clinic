@@ -1,0 +1,180 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/middleware/auth';
+import { createAppointmentSchema, appointmentQuerySchema } from '@/lib/validations/appointment';
+import {
+  createAppointment,
+  listAppointments,
+} from '@/services/appointment.service';
+import { createTelemedicineSession } from '@/services/telemedicine.service';
+import { sendVideoConsultationEmail } from '@/lib/email/email-service';
+import { successResponse, errorResponse, handleMongoError, validationErrorResponse } from '@/lib/utils/api-response';
+import { SessionType } from '@/models/TelemedicineSession';
+import Patient from '@/models/Patient';
+import User from '@/models/User';
+
+/**
+ * GET /api/appointments
+ * List appointments with pagination and filters
+ */
+async function getHandler(req, user) {
+  // Check if Appointment Scheduling feature is available (skip for super_admin)
+  if (user.role !== 'super_admin') {
+    const { requireFeature } = await import('@/middleware/feature-check');
+    const featureCheck = await requireFeature(req, user, 'Appointment Scheduling');
+    if (!featureCheck.allowed) {
+      return featureCheck.error;
+    }
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+
+    const queryParams = {
+      page: searchParams.get('page') || undefined,
+      limit: searchParams.get('limit') || undefined,
+      patientId: searchParams.get('patientId') || undefined,
+      doctorId: searchParams.get('doctorId') || undefined,
+      status: searchParams.get('status') || undefined,
+      type: searchParams.get('type') || undefined,
+      startDate: searchParams.get('startDate') || undefined,
+      endDate: searchParams.get('endDate') || undefined,
+      date: searchParams.get('date') || undefined,
+      isActive: searchParams.get('isActive') || undefined,
+    };
+
+    const validationResult = appointmentQuerySchema.safeParse(queryParams);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        validationErrorResponse(validationResult.error.errors),
+        { status: 400 }
+      );
+    }
+
+    const result = await listAppointments(validationResult.data, user.tenantId, user.userId);
+
+    return NextResponse.json(successResponse(result));
+  } catch (error) {
+    if (error.name === 'MongoError' || error.name === 'ValidationError') {
+      return NextResponse.json(handleMongoError(error), { status: 400 });
+    }
+
+    return NextResponse.json(
+      errorResponse('Failed to fetch appointments', 'INTERNAL_ERROR'),
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/appointments
+ * Create a new appointment
+ */
+async function postHandler(req, user) {
+  // Check if Appointment Scheduling feature is available (skip for super_admin)
+  if (user.role !== 'super_admin') {
+    const { requireFeature } = await import('@/middleware/feature-check');
+    const featureCheck = await requireFeature(req, user, 'Appointment Scheduling');
+    if (!featureCheck.allowed) {
+      return featureCheck.error;
+    }
+  }
+
+  try {
+    const body = await req.json();
+
+    const validationResult = createAppointmentSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        validationErrorResponse(validationResult.error.errors),
+        { status: 400 }
+      );
+    }
+
+    const appointment = await createAppointment(validationResult.data, user.tenantId, user.userId);
+
+    // If telemedicine appointment, create session and send email
+    let telemedicineSession = null;
+    if (body.isTelemedicine) {
+      try {
+        // Create telemedicine session
+        telemedicineSession = await createTelemedicineSession(
+          user.tenantId,
+          user.userId,
+          {
+            patientId: appointment.patientId.toString(),
+            doctorId: appointment.doctorId.toString(),
+            sessionType: SessionType.VIDEO,
+            scheduledStartTime: appointment.startTime,
+            scheduledEndTime: appointment.endTime,
+            appointmentId: appointment._id.toString(),
+            chatEnabled: true,
+            recordingConsent: body.telemedicineConsent || false,
+          }
+        );
+
+        // Update appointment with telemedicine session ID
+        appointment.telemedicineSessionId = telemedicineSession._id;
+        await appointment.save();
+
+        // Get patient and doctor details for email
+        const patient = await Patient.findById(appointment.patientId);
+        const doctor = await User.findById(appointment.doctorId);
+
+        if (patient && doctor && body.patientEmail) {
+          const patientName = `${patient.firstName} ${patient.lastName}`;
+          const doctorName = `${doctor.firstName} ${doctor.lastName}`;
+          const sessionLink = `${process.env.NEXT_PUBLIC_APP_URL}/telemedicine/${telemedicineSession._id}`;
+
+          // Send email notification
+          await sendVideoConsultationEmail(
+            body.patientEmail,
+            patientName,
+            doctorName,
+            sessionLink,
+            appointment.startTime,
+            telemedicineSession.sessionId
+          );
+
+          console.log(`📧 Video consultation email sent to: ${body.patientEmail}`);
+        }
+      } catch (emailError) {
+        console.error('Failed to create session or send email:', emailError);
+        // Don't fail appointment creation if email fails
+      }
+    }
+
+    return NextResponse.json(
+      successResponse({
+        id: appointment._id.toString(),
+        patientId: appointment.patientId.toString(),
+        doctorId: appointment.doctorId.toString(),
+        appointmentDate: appointment.appointmentDate,
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+        duration: appointment.duration,
+        type: appointment.type,
+        status: appointment.status,
+        isTelemedicine: appointment.isTelemedicine,
+        telemedicineSessionId: telemedicineSession?._id?.toString(),
+        createdAt: appointment.createdAt,
+      }),
+      { status: 201 }
+    );
+  } catch (error) {
+    if (error.name === 'MongoError' || error.name === 'ValidationError') {
+      return NextResponse.json(handleMongoError(error), { status: 400 });
+    }
+
+    return NextResponse.json(
+      errorResponse(
+        (error instanceof Error ? error.message : String(error)) || 'Failed to create appointment',
+        'CREATE_ERROR'
+      ),
+      { status: 400 }
+    );
+  }
+}
+
+export const GET = withAuth(getHandler);
+export const POST = withAuth(postHandler);
+

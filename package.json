@@ -7,14 +7,14 @@
     "build": "next build",
     "start": "next start -p 5053",
     "lint": "next lint",
-    "setup": "node -r dotenv/config node_modules/.bin/tsx scripts/setup.ts dotenv_config_path=.env.local",
-    "admin:list": "node -r dotenv/config node_modules/.bin/tsx scripts/manage-admin.ts list dotenv_config_path=.env.local",
-    "admin:create": "node -r dotenv/config node_modules/.bin/tsx scripts/manage-admin.ts create dotenv_config_path=.env.local",
-    "admin:reset": "node -r dotenv/config node_modules/.bin/tsx scripts/manage-admin.ts reset dotenv_config_path=.env.local",
-    "admin:quick": "node -r dotenv/config node_modules/.bin/tsx scripts/create-default-admin.ts dotenv_config_path=.env.local",
-    "seed:plans": "node -r dotenv/config node_modules/.bin/tsx scripts/seed-subscription-plans.ts dotenv_config_path=.env.local",
-    "seed:patients": "node -r dotenv/config node_modules/.bin/tsx scripts/seed-patients.ts dotenv_config_path=.env.local",
-    "setup:paypal-plans": "node -r dotenv/config node_modules/.bin/tsx scripts/setup-paypal-plans.ts dotenv_config_path=.env.local"
+    "setup": "node -r dotenv/config scripts/setup.js dotenv_config_path=.env.local",
+    "admin:list": "node -r dotenv/config scripts/manage-admin.js list dotenv_config_path=.env.local",
+    "admin:create": "node -r dotenv/config scripts/manage-admin.js create dotenv_config_path=.env.local",
+    "admin:reset": "node -r dotenv/config scripts/manage-admin.js reset dotenv_config_path=.env.local",
+    "admin:quick": "node -r dotenv/config scripts/create-default-admin.js dotenv_config_path=.env.local",
+    "seed:plans": "node -r dotenv/config scripts/seed-subscription-plans.js dotenv_config_path=.env.local",
+    "seed:patients": "node -r dotenv/config scripts/seed-patients.js dotenv_config_path=.env.local",
+    "setup:paypal-plans": "node -r dotenv/config scripts/setup-paypal-plans.js dotenv_config_path=.env.local"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -29,17 +29,10 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.5",
-    "@types/node": "^20.14.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "postcss": "^8.4.0",
-    "tailwindcss": "^3.4.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.4.0"
+    "tailwindcss": "^3.4.0"
   }
 }

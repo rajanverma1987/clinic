@@ -1,0 +1,68 @@
+/* Print styles for prescription form */
+@media print {
+  /* Hide everything except prescription content */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-content,
+  .print-content * {
+    visibility: visible;
+  }
+
+  .print-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Hide navigation, buttons, sidebar */
+  .no-print,
+  nav,
+  header,
+  button,
+  .sidebar,
+  .layout-sidebar {
+    display: none !important;
+  }
+
+  /* Prescription print layout */
+  .prescription-print {
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 0.5in;
+    background: white;
+  }
+
+  .prescription-print h1 {
+    font-size: 24pt;
+    margin-bottom: 12pt;
+  }
+
+  .prescription-print h2 {
+    font-size: 12pt;
+    margin-top: 12pt;
+    margin-bottom: 6pt;
+  }
+
+  .prescription-print table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12pt 0;
+  }
+
+  .prescription-print th,
+  .prescription-print td {
+    border: 1px solid #000;
+    padding: 6pt;
+    text-align: left;
+    font-size: 10pt;
+  }
+
+  .prescription-print th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+  }
+}
+

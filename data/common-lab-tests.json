@@ -1,0 +1,23 @@
+[
+  {"code": "CBC", "name": "Complete Blood Count", "category": "Hematology"},
+  {"code": "LIPID", "name": "Lipid Profile", "category": "Cardiology"},
+  {"code": "LFT", "name": "Liver Function Test", "category": "Hepatology"},
+  {"code": "RFT", "name": "Renal Function Test", "category": "Nephrology"},
+  {"code": "TSH", "name": "Thyroid Stimulating Hormone", "category": "Endocrinology"},
+  {"code": "HBA1C", "name": "Hemoglobin A1C", "category": "Diabetes"},
+  {"code": "URINE", "name": "Urine Analysis", "category": "General"},
+  {"code": "XRAY", "name": "X-Ray", "category": "Radiology"},
+  {"code": "CT", "name": "CT Scan", "category": "Radiology"},
+  {"code": "MRI", "name": "MRI Scan", "category": "Radiology"},
+  {"code": "ECG", "name": "Electrocardiogram", "category": "Cardiology"},
+  {"code": "ECHO", "name": "Echocardiogram", "category": "Cardiology"},
+  {"code": "ULTRASOUND", "name": "Ultrasound", "category": "Radiology"},
+  {"code": "MAMMO", "name": "Mammogram", "category": "Radiology"},
+  {"code": "PAP", "name": "Pap Smear", "category": "Gynecology"},
+  {"code": "PSA", "name": "Prostate Specific Antigen", "category": "Urology"},
+  {"code": "VITD", "name": "Vitamin D", "category": "General"},
+  {"code": "B12", "name": "Vitamin B12", "category": "General"},
+  {"code": "FOLATE", "name": "Folate", "category": "General"},
+  {"code": "CULTURE", "name": "Culture & Sensitivity", "category": "Microbiology"}
+]
+

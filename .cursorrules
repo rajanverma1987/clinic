@@ -2,6 +2,7 @@ version: 1
 
 rules:
 
+
   - id: architecture
     description: "Base architecture rules."
     patterns:
@@ -116,3 +117,5 @@ final rule
   validatoins Error : in Resoonse always return what is the actual error and what is the expected error and what is the solution to fix the error.
   keep in mind the multi language support when adding new element on the FE.
   create any .MD file in CursorMD folder to document the project.
+
+  No Typescript code should be written, only JavaScript.
