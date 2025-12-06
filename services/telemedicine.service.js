@@ -72,14 +72,18 @@ export async function createTelemedicineSession(tenantId, userId, data) {
 
 /**
  * Get session by ID
+ * @param {string} sessionId - Session ID
+ * @param {string} tenantId - Optional tenant ID (for authenticated access)
  */
-export async function getSessionById(sessionId, tenantId) {
+export async function getSessionById(sessionId, tenantId = null) {
   await connectDB();
 
-  return await TelemedicineSession.findOne(
-    withTenant(tenantId, { _id: sessionId })
-  )
-    .populate('patientId', 'firstName lastName patientId')
+  const query = tenantId 
+    ? withTenant(tenantId, { _id: sessionId })
+    : { _id: sessionId };
+
+  return await TelemedicineSession.findOne(query)
+    .populate('patientId', 'firstName lastName patientId email')
     .populate('doctorId', 'firstName lastName')
     .lean();
 }

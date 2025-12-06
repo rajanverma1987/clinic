@@ -13,7 +13,8 @@ import { Modal } from '@/components/ui/Modal';
 export default function VideoConsultationRoom() {
   const router = useRouter();
   const params = useParams();
-  const { user } = useAuth();
+  const authContext = useAuth();
+  const user = authContext?.user || null; // Allow null user for patients
   const sessionId = params.id;
 
   const [isConnected, setIsConnected] = useState(false);
@@ -51,29 +52,57 @@ export default function VideoConsultationRoom() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Load session data on mount
+  // Load session data on mount (use public endpoint if not authenticated)
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const sessionResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
+        // Try public endpoint first (works for both authenticated and unauthenticated users)
+        const sessionResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}/public`, undefined, true);
         if (sessionResponse.success && sessionResponse.data) {
           setSessionData(sessionResponse.data);
+        } else {
+          // Fallback to authenticated endpoint if user is logged in
+          if (user) {
+            const authResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
+            if (authResponse.success && authResponse.data) {
+              setSessionData(authResponse.data);
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to load session:', error);
+        // If public endpoint fails and user is not authenticated, try public again
+        if (!user) {
+          try {
+            const publicResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}/public`, undefined, true);
+            if (publicResponse.success && publicResponse.data) {
+              setSessionData(publicResponse.data);
+            }
+          } catch (publicError) {
+            console.error('Failed to load session from public endpoint:', publicError);
+          }
+        }
       }
     };
     if (sessionId) {
       loadSession();
     }
-  }, [sessionId]);
+  }, [sessionId, user]);
 
   const handleConnect = async () => {
     try {
       // Use cached session data or fetch if not available
       let session = sessionData;
       if (!session) {
-        const sessionResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
+        // Try public endpoint first
+        let sessionResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}/public`, undefined, true);
+        if (!sessionResponse.success || !sessionResponse.data) {
+          // Fallback to authenticated endpoint if user is logged in
+          if (user) {
+            sessionResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
+          }
+        }
+        
         if (!sessionResponse.success || !sessionResponse.data) {
           alert('Failed to load session details');
           return;
@@ -86,15 +115,19 @@ export default function VideoConsultationRoom() {
       const patientId = session.patientId?._id || session.patientId;
       
       // Determine remote user ID (if doctor, remote is patient and vice versa)
-      const isDoctor = user?.userId === doctorId;
+      // If user is not logged in, assume they are the patient
+      const isDoctor = user ? (user.userId === doctorId) : false;
       const remote = isDoctor ? patientId : doctorId;
       setRemoteUserId(remote);
+
+      // Generate a temporary user ID for patients if not logged in
+      const currentUserId = user?.userId || `patient-${patientId}`;
 
       // Initialize WebRTC call
       const callManager = new VideoCallManager(
         {
           sessionId,
-          userId: user?.userId || '',
+          userId: currentUserId,
           remoteUserId: remote,
           isInitiator: isDoctor, // Doctor initiates the call
         },
@@ -102,6 +135,7 @@ export default function VideoConsultationRoom() {
           onLocalStream: (stream) => {
             if (videoRef.current) {
               videoRef.current.srcObject = stream;
+              localStreamRef.current = stream; // Store for screen share
             }
           },
           onRemoteStream: (stream) => {
@@ -110,12 +144,18 @@ export default function VideoConsultationRoom() {
             }
           },
           onConnectionChange: (state) => {
+            console.log('WebRTC connection state changed:', state);
             setConnectionStatus(state);
-            console.log('WebRTC connection state:', state);
+            // Update connection status immediately
+            if (state === 'connected') {
+              setIsConnected(true);
+            } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+              setIsConnected(false);
+            }
           },
           onError: (error) => {
             console.error('WebRTC error:', error);
-            alert(error.message);
+            alert(error.message || 'Failed to establish connection. Please try again.');
           },
         }
       );
@@ -123,11 +163,21 @@ export default function VideoConsultationRoom() {
       callManagerRef.current = callManager;
       await callManager.startCall();
       setIsConnected(true);
+      setConnectionStatus('connecting'); // Set initial state
 
-      // Mark session as started
-      await apiClient.put(`/telemedicine/sessions/${sessionId}?action=start`, {});
+      // Mark session as started (only if user is authenticated)
+      if (user) {
+        try {
+          await apiClient.put(`/telemedicine/sessions/${sessionId}?action=start`, {});
+        } catch (error) {
+          console.warn('Failed to mark session as started:', error);
+          // Continue even if this fails
+        }
+      }
     } catch (error) {
       console.error('Failed to start call:', error);
+      setConnectionStatus('failed');
+      setIsConnected(false);
       alert('Failed to start video call. Please check camera/microphone permissions.');
     }
   };
@@ -155,9 +205,15 @@ export default function VideoConsultationRoom() {
   const handleSendMessage = () => {
     if (!chatMessage.trim()) return;
 
+    const senderName = user 
+      ? `${user.firstName} ${user.lastName}`
+      : sessionData?.patientId?.firstName 
+        ? `${sessionData.patientId.firstName} ${sessionData.patientId.lastName || ''}`
+        : 'Patient';
+
     const newMessage = {
       id: Date.now().toString(),
-      senderName: `${user?.firstName} ${user?.lastName}`,
+      senderName,
       message: chatMessage,
       timestamp: new Date(),
       isMe: true,
@@ -297,7 +353,7 @@ export default function VideoConsultationRoom() {
             <span className="text-sm text-gray-400">Duration: </span>
             <span className="font-mono">{formatDuration(sessionDuration)}</span>
           </div>
-          {sessionData && (
+          {sessionData && user && (
             <Button
               variant="outline"
               size="sm"
@@ -508,12 +564,14 @@ export default function VideoConsultationRoom() {
       </div>
 
       {/* Connection Status Banner */}
-      {isConnected && connectionStatus !== 'connected' && (
+      {isConnected && connectionStatus && connectionStatus !== 'connected' && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10">
           <Card className="px-6 py-3">
             <p className="text-sm text-gray-700">
               <strong>Connection Status:</strong> {connectionStatus}
               {connectionStatus === 'connecting' && ' - Establishing connection...'}
+              {connectionStatus === 'disconnected' && ' - Attempting to reconnect...'}
+              {connectionStatus === 'failed' && ' - Connection failed. Please try again.'}
             </p>
           </Card>
         </div>
