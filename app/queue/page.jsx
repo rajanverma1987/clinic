@@ -158,8 +158,8 @@ export default function QueuePage() {
       }
       
       if (sessionId) {
-        // Open in new tab
-        window.open(`/telemedicine/${sessionId}`, '_blank');
+        // Open in new tab with doctor role
+        window.open(`/telemedicine/${sessionId}?role=doctor`, '_blank');
       } else {
         showError('Unable to start video session');
       }

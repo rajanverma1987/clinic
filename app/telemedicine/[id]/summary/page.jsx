@@ -178,13 +178,27 @@ export default function SessionSummaryPage() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              onClick={() => router.push(`/prescriptions/new?patientId=${session.patientId}`)}
+              onClick={() => {
+                const patientId = session.patientId?._id || session.patientId;
+                if (patientId) {
+                  router.push(`/prescriptions/new?patientId=${patientId}`);
+                } else {
+                  router.push('/prescriptions/new');
+                }
+              }}
             >
               Create Prescription
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push(`/appointments/new?patientId=${session.patientId}`)}
+              onClick={() => {
+                const patientId = session.patientId?._id || session.patientId;
+                if (patientId) {
+                  router.push(`/appointments/new?patientId=${patientId}`);
+                } else {
+                  router.push('/appointments/new');
+                }
+              }}
             >
               Schedule Follow-up
             </Button>

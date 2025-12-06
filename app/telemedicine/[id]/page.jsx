@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useState, useRef, Suspense } from 'react';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -10,21 +10,22 @@ import { VideoCallManager } from '@/lib/webrtc/video-call';
 import { apiClient } from '@/lib/api/client';
 import { Modal } from '@/components/ui/Modal';
 
-export default function VideoConsultationRoom() {
+function VideoConsultationRoomContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const authContext = useAuth();
   const user = authContext?.user || null; // Allow null user for patients
   const sessionId = params.id;
+  
+  // Check if this is a patient link (from query parameter)
+  const isPatientLink = searchParams.get('role') === 'patient' || !user;
 
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [chatMessage, setChatMessage] = useState('');
-  const [chatMessages, setChatMessages] = useState([]);
   const [sessionDuration, setSessionDuration] = useState(0);
-  const [showChat, setShowChat] = useState(true);
 
   const videoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -36,15 +37,80 @@ export default function VideoConsultationRoom() {
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [sessionData, setSessionData] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [permissionsRequested, setPermissionsRequested] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState(null);
 
+  // Session timer - only start when connected
   useEffect(() => {
-    // Session timer
+    if (!isConnected) {
+      setSessionDuration(0);
+      return;
+    }
+
     const timer = setInterval(() => {
       setSessionDuration(prev => prev + 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [isConnected]);
+
+  // Request camera and microphone permissions on page load (desktop only)
+  // On mobile, permissions must be requested on user interaction (button click)
+  useEffect(() => {
+    const requestPermissions = async () => {
+      // Only request once
+      if (permissionsRequested) return;
+      
+      // Check if we're on a patient link or if user is not authenticated
+      const isPatient = isPatientLink || !user;
+      
+      // Only request on desktop - mobile requires user interaction
+      const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        // Skip auto-request on mobile - will request on button click
+        return;
+      }
+      
+      // Request permissions for patients on desktop
+      if (isPatient) {
+        try {
+          // Check if getUserMedia is available
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.warn('getUserMedia is not supported in this browser');
+            setPermissionsRequested(true);
+            return;
+          }
+
+          console.log('Requesting camera and microphone permissions for patient (desktop)...');
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+            },
+          });
+          // Stop the stream immediately - we just wanted permission
+          stream.getTracks().forEach(track => track.stop());
+          console.log('Permissions granted');
+          setPermissionsRequested(true);
+        } catch (error) {
+          console.warn('Permission request failed or denied:', error);
+          setPermissionsRequested(true); // Mark as requested even if denied
+        }
+      }
+    };
+
+    // Request permissions after a short delay to ensure page is loaded (desktop only)
+    const timeoutId = setTimeout(() => {
+      requestPermissions();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [isPatientLink, user, permissionsRequested]);
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -90,8 +156,124 @@ export default function VideoConsultationRoom() {
   }, [sessionId, user]);
 
   const handleConnect = async () => {
+    console.log('=== handleConnect called ===');
+    setIsConnecting(true);
+    setConnectionError(null);
+    
     try {
+      // Check and request permissions (required for mobile browsers)
+      // We'll do a quick permission check first, then let startCall handle the actual stream
+      const isMobile = typeof window !== 'undefined' && 
+                       typeof navigator !== 'undefined' && 
+                       navigator.userAgent && 
+                       /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      // Check if we can query permissions (not all browsers support this)
+      let hasPermissions = false;
+      if (typeof navigator !== 'undefined' && navigator.permissions && navigator.permissions.query) {
+        try {
+          const cameraPermission = await navigator.permissions.query({ name: 'camera' });
+          const microphonePermission = await navigator.permissions.query({ name: 'microphone' });
+          hasPermissions = cameraPermission?.state === 'granted' && microphonePermission?.state === 'granted';
+          console.log('[Step 1] Permission check:', {
+            camera: cameraPermission?.state,
+            microphone: microphonePermission?.state,
+            hasPermissions
+          });
+        } catch (e) {
+          console.log('[Step 1] Permission query not supported, will request directly:', e);
+        }
+      }
+      
+      // On mobile, we need user interaction to request permissions
+      // So we do a quick test request here, but don't keep the stream
+      if (isMobile && !hasPermissions) {
+        try {
+          console.log('[Step 1] Requesting camera and microphone permissions (mobile)...');
+          
+          // Check if getUserMedia is available (with fallback)
+          let getUserMedia = null;
+          if (typeof navigator !== 'undefined') {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+              getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+            } else if (navigator.getUserMedia) {
+              getUserMedia = (constraints) => new Promise((resolve, reject) => {
+                navigator.getUserMedia(constraints, resolve, reject);
+              });
+            } else if (navigator.webkitGetUserMedia) {
+              getUserMedia = (constraints) => new Promise((resolve, reject) => {
+                navigator.webkitGetUserMedia(constraints, resolve, reject);
+              });
+            } else if (navigator.mozGetUserMedia) {
+              getUserMedia = (constraints) => new Promise((resolve, reject) => {
+                navigator.mozGetUserMedia(constraints, resolve, reject);
+              });
+            }
+          }
+          
+          if (!getUserMedia) {
+            throw new Error('getUserMedia is not supported in this browser');
+          }
+          
+          const stream = await getUserMedia({
+            video: {
+              facingMode: 'user', // Prefer front-facing camera on mobile
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+            },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+            },
+          });
+          
+          if (!stream) {
+            throw new Error('Failed to get media stream: stream is null');
+          }
+          
+          // Stop the stream immediately - we'll get it again in startCall with proper settings
+          const tracks = stream.getTracks();
+          if (tracks && tracks.length > 0) {
+            tracks.forEach(track => {
+              if (track && track.stop) {
+                track.stop();
+              }
+            });
+          }
+          console.log('[Step 1] Permissions granted on mobile');
+        } catch (error) {
+          console.error('[Step 1] Permission request failed:', error, {
+            name: error.name,
+            message: error.message,
+            constraint: error.constraint
+          });
+          
+          // Only stop and show error for actual permission errors
+          // Other errors (like device busy, constraints) will be handled in startCall
+          if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            setIsConnecting(false);
+            const errorMessage = 'Please allow camera and microphone access in your browser settings and try again.';
+            setConnectionError(errorMessage);
+            alert(errorMessage);
+            return;
+          } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+            setIsConnecting(false);
+            const errorMessage = 'No camera or microphone found. Please connect a device and try again.';
+            setConnectionError(errorMessage);
+            alert(errorMessage);
+            return;
+          } else {
+            // For other errors (NotReadableError, OverconstrainedError, etc.), 
+            // log but continue - startCall will handle them with simpler constraints
+            console.warn('[Step 1] Non-critical error, continuing to startCall:', error.name, error.message);
+          }
+        }
+      } else if (isMobile && hasPermissions) {
+        console.log('[Step 1] Permissions already granted, skipping permission request');
+      }
+
       // Use cached session data or fetch if not available
+      console.log('[Step 2] Loading session data...');
       let session = sessionData;
       if (!session) {
         // Try public endpoint first
@@ -104,24 +286,68 @@ export default function VideoConsultationRoom() {
         }
         
         if (!sessionResponse.success || !sessionResponse.data) {
+          console.error('[Step 2] Failed to load session:', sessionResponse);
+          setIsConnecting(false);
+          setConnectionError('Failed to load session details');
           alert('Failed to load session details');
           return;
         }
         session = sessionResponse.data;
         setSessionData(session);
+        console.log('[Step 2] Session loaded:', session);
+      } else {
+        console.log('[Step 2] Using cached session data');
       }
 
+      console.log('[Step 3] Setting up connection parameters...');
       const doctorId = session.doctorId?._id || session.doctorId;
       const patientId = session.patientId?._id || session.patientId;
       
+      if (!doctorId || !patientId) {
+        console.error('[Step 3] Missing doctorId or patientId:', { doctorId, patientId });
+        setIsConnecting(false);
+        setConnectionError('Invalid session: missing doctor or patient information');
+        alert('Invalid session: missing doctor or patient information');
+        return;
+      }
+      
       // Determine remote user ID (if doctor, remote is patient and vice versa)
       // If user is not logged in, assume they are the patient
-      const isDoctor = user ? (user.userId === doctorId) : false;
-      const remote = isDoctor ? patientId : doctorId;
+      const doctorIdStr = String(doctorId).trim();
+      const patientIdStr = String(patientId).trim();
+      const userUserIdStr = user ? String(user.userId).trim() : null;
+      
+      const isDoctor = user ? (userUserIdStr === doctorIdStr) : false;
+      
+      // Generate a consistent user ID for signaling
+      // IMPORTANT: For WebRTC signaling, we use a consistent format:
+      // - Doctor uses their actual userId
+      // - Patient ALWAYS uses `patient-{patientId}` format (even if logged in)
+      // This ensures the doctor can always send to the correct userId
+      const currentUserId = isDoctor ? userUserIdStr : `patient-${patientIdStr}`;
+      
+      // For remote user ID:
+      // - Doctor sends to patient's signaling userId: `patient-{patientId}`
+      // - Patient sends to doctor's userId: `{doctorId}`
+      const remote = isDoctor 
+        ? `patient-${patientIdStr}` // Doctor always sends to patient-{patientId} format
+        : doctorIdStr; // Patient sends to doctor's userId
+      
       setRemoteUserId(remote);
-
-      // Generate a temporary user ID for patients if not logged in
-      const currentUserId = user?.userId || `patient-${patientId}`;
+      
+      console.log('[Step 3] Connection setup:', {
+        isDoctor,
+        currentUserId,
+        remoteUserId: remote,
+        doctorId: doctorIdStr,
+        patientId: patientIdStr,
+        userUserId: userUserIdStr,
+        userRole: user?.role,
+        sessionDoctorId: session.doctorId,
+        sessionPatientId: session.patientId,
+        comparison: user ? `${userUserIdStr} === ${doctorIdStr} = ${userUserIdStr === doctorIdStr}` : 'no user',
+        note: isDoctor ? `Doctor sending to patient userId: ${remote}` : `Patient sending to doctor userId: ${remote}`,
+      });
 
       // Initialize WebRTC call
       const callManager = new VideoCallManager(
@@ -144,86 +370,124 @@ export default function VideoConsultationRoom() {
             }
           },
           onConnectionChange: (state) => {
-            console.log('WebRTC connection state changed:', state);
+            console.log('[Callback] WebRTC connection state changed:', state);
             setConnectionStatus(state);
             // Update connection status immediately
-            if (state === 'connected') {
+            if (state === 'connected' || state === 'completed') {
               setIsConnected(true);
+              setIsConnecting(false);
+              setConnectionStatus('connected');
+              setConnectionError(null);
+              // Timer will start automatically via useEffect when isConnected becomes true
             } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
               setIsConnected(false);
+              setIsConnecting(false);
+              if (state === 'failed') {
+                setConnectionError('Connection failed. Please try again.');
+              }
+            } else if (state === 'connecting' || state === 'checking') {
+              // Keep showing connecting state
+              setConnectionStatus('connecting');
             }
           },
           onError: (error) => {
-            console.error('WebRTC error:', error);
+            console.error('[Callback] WebRTC error:', error);
+            setIsConnecting(false);
+            setConnectionError(error.message || 'Failed to establish connection. Please try again.');
             alert(error.message || 'Failed to establish connection. Please try again.');
           },
         }
       );
 
       callManagerRef.current = callManager;
-      await callManager.startCall();
-      setIsConnected(true);
       setConnectionStatus('connecting'); // Set initial state
+      
+      console.log('[Step 5] Starting video call...');
+      try {
+        await callManager.startCall();
+        console.log('[Step 5] Call manager started successfully');
+      } catch (error) {
+        console.error('[Step 5] Failed to start call manager:', error);
+        setConnectionStatus('failed');
+        setIsConnected(false);
+        setIsConnecting(false);
+        setConnectionError(error.message || 'Failed to start video call');
+        alert(`Failed to start video call: ${error.message || 'Please check your camera and microphone permissions and try again.'}`);
+        return;
+      }
+      
+      // Don't set isConnected to true here - wait for actual connection
+      // Timer will start automatically when isConnected becomes true
 
       // Mark session as started (only if user is authenticated)
+      console.log('[Step 6] Marking session as started...');
       if (user) {
         try {
           await apiClient.put(`/telemedicine/sessions/${sessionId}?action=start`, {});
+          console.log('[Step 6] Session marked as started');
         } catch (error) {
-          console.warn('Failed to mark session as started:', error);
+          console.warn('[Step 6] Failed to mark session as started:', error);
           // Continue even if this fails
         }
       }
+      
+      console.log('[Complete] Video call initialization complete');
     } catch (error) {
-      console.error('Failed to start call:', error);
+      console.error('[Error] Failed to start call:', error);
       setConnectionStatus('failed');
       setIsConnected(false);
-      alert('Failed to start video call. Please check camera/microphone permissions.');
+      setIsConnecting(false);
+      setConnectionError(error.message || 'Failed to start video call');
+      alert(`Failed to start video call: ${error.message || 'Please check camera/microphone permissions.'}`);
     }
   };
 
   const toggleMute = () => {
+    const newMutedState = !isMuted;
+    
+    // Try using call manager first
+    if (callManagerRef.current) {
+      try {
+        callManagerRef.current.toggleMute(newMutedState);
+      } catch (error) {
+        console.warn('Failed to toggle mute via call manager:', error);
+      }
+    }
+    
+    // Always update tracks directly as fallback
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject;
       stream.getAudioTracks().forEach(track => {
-        track.enabled = isMuted;
+        track.enabled = !newMutedState; // Disable if muted, enable if unmuted
       });
-      setIsMuted(!isMuted);
     }
+    
+    setIsMuted(newMutedState);
   };
 
   const toggleVideo = () => {
+    const newVideoOffState = !isVideoOff;
+    
+    // Try using call manager first
+    if (callManagerRef.current) {
+      try {
+        callManagerRef.current.toggleVideo(!newVideoOffState); // Pass enabled state (opposite of isVideoOff)
+      } catch (error) {
+        console.warn('Failed to toggle video via call manager:', error);
+      }
+    }
+    
+    // Always update tracks directly as fallback
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject;
       stream.getVideoTracks().forEach(track => {
-        track.enabled = isVideoOff;
+        track.enabled = !newVideoOffState; // Disable if video off, enable if video on
       });
-      setIsVideoOff(!isVideoOff);
     }
+    
+    setIsVideoOff(newVideoOffState);
   };
 
-  const handleSendMessage = () => {
-    if (!chatMessage.trim()) return;
-
-    const senderName = user 
-      ? `${user.firstName} ${user.lastName}`
-      : sessionData?.patientId?.firstName 
-        ? `${sessionData.patientId.firstName} ${sessionData.patientId.lastName || ''}`
-        : 'Patient';
-
-    const newMessage = {
-      id: Date.now().toString(),
-      senderName,
-      message: chatMessage,
-      timestamp: new Date(),
-      isMe: true,
-    };
-
-    setChatMessages([...chatMessages, newMessage]);
-    setChatMessage('');
-
-    // TODO: Send message via WebSocket/API
-  };
 
   const handleScreenShare = async () => {
     if (!callManagerRef.current || !isConnected) return;
@@ -290,19 +554,32 @@ export default function VideoConsultationRoom() {
     }
 
     if (window.confirm('Are you sure you want to end this consultation?')) {
-      router.push(`/telemedicine/${sessionId}/summary`);
+      // If user is authenticated (doctor), go to summary page
+      // If user is not authenticated (patient), just close the window/tab
+      if (user) {
+        router.push(`/telemedicine/${sessionId}/summary`);
+      } else {
+        // For patients, just close or go back
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.close();
+        }
+      }
     }
   };
 
   const handleShareLink = async () => {
-    const videoLink = `${window.location.origin}/telemedicine/${sessionId}`;
+    // Generate separate links for doctor and patient
+    const doctorLink = `${window.location.origin}/telemedicine/${sessionId}?role=doctor`;
+    const patientLink = `${window.location.origin}/telemedicine/${sessionId}?role=patient`;
     
     try {
-      // Try to copy to clipboard
-      await navigator.clipboard.writeText(videoLink);
-      alert('Video link copied to clipboard!');
+      // Copy patient link to clipboard (this is what should be shared)
+      await navigator.clipboard.writeText(patientLink);
+      alert('Patient video link copied to clipboard!');
     } catch (error) {
-      // Fallback: show modal with link
+      // Fallback: show modal with both links
       setShowShareModal(true);
     }
   };
@@ -314,14 +591,15 @@ export default function VideoConsultationRoom() {
     }
 
     try {
+      const patientLink = `${window.location.origin}/telemedicine/${sessionId}?role=patient`;
       const response = await apiClient.post('/telemedicine/sessions/send-link', {
         sessionId,
         patientEmail: sessionData.patientId.email,
-        videoLink: `${window.location.origin}/telemedicine/${sessionId}`,
-      });
+        videoLink: patientLink,
+      }, {}, true);
 
       if (response.success) {
-        alert('Video link sent to patient via email!');
+        alert('Patient video link sent via email!');
         setShowShareModal(false);
       } else {
         alert(response.error?.message || 'Failed to send email');
@@ -335,46 +613,36 @@ export default function VideoConsultationRoom() {
   return (
     <div className="h-screen bg-gray-900 flex flex-col">
       {/* Header */}
-      <div className="bg-gray-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="bg-gray-800 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+        <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
           </div>
-          <div>
-            <h2 className="text-white font-semibold">Telemedicine Consultation</h2>
-            <p className="text-gray-400 text-sm">Session: {sessionId}</p>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-white font-semibold text-sm sm:text-base truncate">Telemedicine Consultation</h2>
+            <p className="text-gray-400 text-xs sm:text-sm truncate">Session: {sessionId}</p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className="text-white">
-            <span className="text-sm text-gray-400">Duration: </span>
+        <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+          <div className="text-white text-xs sm:text-sm">
+            <span className="text-gray-400 hidden sm:inline">Duration: </span>
             <span className="font-mono">{formatDuration(sessionDuration)}</span>
           </div>
           {sessionData && user && (
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={handleShareLink}
-              className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
               title="Share video link with patient"
             >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
-              Share Link
-            </Button>
+              <span className="text-sm sm:text-base font-medium">Share</span>
+            </button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowChat(!showChat)}
-            className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
-          >
-            {showChat ? 'Hide' : 'Show'} Chat
-          </Button>
         </div>
       </div>
 
@@ -383,17 +651,33 @@ export default function VideoConsultationRoom() {
         {/* Video Area */}
         <div className="flex-1 relative bg-black flex items-center justify-center">
           {!isConnected ? (
-            <div className="text-center">
-              <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center px-4">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <svg className="w-8 h-8 sm:w-12 sm:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-white text-xl font-semibold mb-2">Ready to Join</h3>
-              <p className="text-gray-400 mb-6">Click the button below to start the video consultation</p>
-              <Button onClick={handleConnect} size="lg">
-                Join Video Call
+              <h3 className="text-white text-lg sm:text-xl font-semibold mb-2">Ready to Join</h3>
+              <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6 px-2">
+                {isPatientLink 
+                  ? 'Camera and microphone permissions have been requested. Click below to start the video consultation.'
+                  : 'Click the button below to start the video consultation'}
+              </p>
+              <Button 
+                onClick={handleConnect} 
+                size="lg" 
+                className="text-sm sm:text-base px-6 sm:px-8"
+                disabled={isConnecting}
+                isLoading={isConnecting}
+              >
+                {isConnecting ? 'Connecting...' : 'Join Video Call'}
               </Button>
+              {connectionError && (
+                <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                  <p className="font-semibold">Connection Error:</p>
+                  <p>{connectionError}</p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="w-full h-full relative">
@@ -406,7 +690,7 @@ export default function VideoConsultationRoom() {
               />
 
               {/* Local Video (Picture in Picture) */}
-              <div className="absolute bottom-4 right-4 w-64 h-48 bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+              <div className="absolute bottom-16 sm:bottom-4 right-2 sm:right-4 w-32 h-24 sm:w-64 sm:h-48 bg-gray-800 rounded-lg overflow-hidden shadow-lg">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -414,24 +698,24 @@ export default function VideoConsultationRoom() {
                   muted
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute bottom-2 right-2">
-                  <span className="bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                <div className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2">
+                  <span className="bg-black bg-opacity-70 text-white text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[10px] sm:text-xs">
                     You
                   </span>
                 </div>
               </div>
 
               {/* Controls Overlay */}
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-                <div className="bg-gray-800 bg-opacity-90 rounded-full px-6 py-3 flex items-center space-x-4 shadow-lg">
+              <div className="absolute bottom-2 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-10">
+                <div className="bg-gray-800 bg-opacity-90 rounded-full px-2 py-2 sm:px-6 sm:py-3 flex items-center space-x-2 sm:space-x-4 shadow-lg">
                   <button
                     onClick={toggleMute}
-                    className={`p-3 rounded-full transition-colors ${
+                    className={`p-2 sm:p-3 rounded-full transition-colors ${
                       isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'
                     }`}
                     title={isMuted ? 'Unmute' : 'Mute'}
                   >
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {isMuted ? (
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clipRule="evenodd" />
                       ) : (
@@ -442,12 +726,12 @@ export default function VideoConsultationRoom() {
 
                   <button
                     onClick={toggleVideo}
-                    className={`p-3 rounded-full transition-colors ${
+                    className={`p-2 sm:p-3 rounded-full transition-colors ${
                       isVideoOff ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'
                     }`}
                     title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
                   >
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {isVideoOff ? (
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       ) : (
@@ -458,21 +742,21 @@ export default function VideoConsultationRoom() {
 
                   <button
                     onClick={handleEndCall}
-                    className="p-3 px-6 rounded-full bg-red-600 hover:bg-red-700 transition-colors"
+                    className="p-2 sm:p-3 px-4 sm:px-6 rounded-full bg-red-600 hover:bg-red-700 transition-colors"
                     title="End call"
                   >
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />
                     </svg>
                   </button>
 
                   <button
                     onClick={handleScreenShare}
-                    className="p-3 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors"
+                    className="p-2 sm:p-3 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors hidden sm:block"
                     title="Share screen"
                     disabled={!isConnected}
                   >
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </button>
@@ -482,92 +766,13 @@ export default function VideoConsultationRoom() {
           )}
         </div>
 
-        {/* Chat Sidebar */}
-        {showChat && (
-          <div className="w-96 bg-white flex flex-col border-l border-gray-200">
-            {/* Chat Header */}
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900">Chat</h3>
-              <p className="text-sm text-gray-600">Secure messaging</p>
-            </div>
-
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {chatMessages.length === 0 ? (
-                <div className="text-center text-gray-500 text-sm mt-8">
-                  <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <p>No messages yet</p>
-                  <p className="text-xs mt-1">Start the conversation</p>
-                </div>
-              ) : (
-                chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-xs px-4 py-2 rounded-lg ${
-                        msg.isMe
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <p className="text-xs font-semibold mb-1">{msg.senderName}</p>
-                      <p className="text-sm">{msg.message}</p>
-                      <p className="text-xs mt-1 opacity-75">
-                        {new Date(msg.timestamp).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Chat Input */}
-            <div className="p-4 border-t border-gray-200">
-              <div className="flex gap-2">
-                <Input
-                  value={chatMessage}
-                  onChange={(e) => setChatMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder="Type a message..."
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!chatMessage.trim()}
-                  size="sm"
-                >
-                  Send
-                </Button>
-              </div>
-
-              {/* File Upload */}
-              <div className="mt-2">
-                <label className="cursor-pointer text-sm text-blue-600 hover:text-blue-700 flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
-                  Attach File
-                  <input type="file" className="hidden" />
-                </label>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Connection Status Banner */}
       {isConnected && connectionStatus && connectionStatus !== 'connected' && (
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10">
-          <Card className="px-6 py-3">
-            <p className="text-sm text-gray-700">
+        <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2 z-10 max-w-[90%] sm:max-w-none">
+          <Card className="px-3 py-2 sm:px-6 sm:py-3">
+            <p className="text-xs sm:text-sm text-gray-700">
               <strong>Connection Status:</strong> {connectionStatus}
               {connectionStatus === 'connecting' && ' - Establishing connection...'}
               {connectionStatus === 'disconnected' && ' - Attempting to reconnect...'}
@@ -586,20 +791,46 @@ export default function VideoConsultationRoom() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Video Consultation Link
+              Patient Link (Share this with patient)
             </label>
             <div className="flex gap-2">
               <Input
-                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/telemedicine/${sessionId}`}
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/telemedicine/${sessionId}?role=patient`}
                 readOnly
                 className="flex-1"
               />
               <Button
                 onClick={async () => {
-                  const link = `${window.location.origin}/telemedicine/${sessionId}`;
+                  const link = `${window.location.origin}/telemedicine/${sessionId}?role=patient`;
                   try {
                     await navigator.clipboard.writeText(link);
-                    alert('Link copied to clipboard!');
+                    alert('Patient link copied to clipboard!');
+                  } catch (error) {
+                    alert('Failed to copy link');
+                  }
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Doctor Link (Your link)
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/telemedicine/${sessionId}?role=doctor`}
+                readOnly
+                className="flex-1"
+              />
+              <Button
+                onClick={async () => {
+                  const link = `${window.location.origin}/telemedicine/${sessionId}?role=doctor`;
+                  try {
+                    await navigator.clipboard.writeText(link);
+                    alert('Doctor link copied to clipboard!');
                   } catch (error) {
                     alert('Failed to copy link');
                   }
@@ -613,24 +844,61 @@ export default function VideoConsultationRoom() {
           {sessionData?.patientId?.email && (
             <div>
               <Button
-                onClick={handleSendEmail}
+                onClick={async () => {
+                  const patientLink = `${window.location.origin}/telemedicine/${sessionId}?role=patient`;
+                  if (!sessionData?.patientId?.email) {
+                    alert('Patient email not available');
+                    return;
+                  }
+
+                  try {
+                    const response = await apiClient.post('/telemedicine/sessions/send-link', {
+                      sessionId,
+                      patientEmail: sessionData.patientId.email,
+                      videoLink: patientLink,
+                    }, {}, true);
+
+                    if (response.success) {
+                      alert('Patient video link sent via email!');
+                      setShowShareModal(false);
+                    } else {
+                      alert(response.error?.message || 'Failed to send email');
+                    }
+                  } catch (error) {
+                    console.error('Failed to send email:', error);
+                    alert('Failed to send email. Please try copying the link manually.');
+                  }
+                }}
                 className="w-full"
                 variant="primary"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                Send Link via Email to {sessionData.patientId.email}
+                Send Patient Link via Email to {sessionData.patientId.email}
               </Button>
             </div>
           )}
           
           <p className="text-sm text-gray-600">
-            Share this link with the patient so they can join the video consultation.
+            Share the <strong>Patient Link</strong> with the patient so they can join the video consultation.
+            The <strong>Doctor Link</strong> is for your use.
           </p>
         </div>
       </Modal>
     </div>
+  );
+}
+
+export default function VideoConsultationRoom() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    }>
+      <VideoConsultationRoomContent />
+    </Suspense>
   );
 }
 
