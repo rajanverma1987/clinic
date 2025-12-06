@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -16,7 +16,7 @@ import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionI
 import { PrescriptionFormPrintPreview } from '@/components/prescriptions/PrescriptionFormPrintPreview';
 import { SimpleTextEditor } from '@/components/ui/SimpleTextEditor';
 
-export default function NewPrescriptionPage() {
+function NewPrescriptionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user: currentUser, loading: authLoading } = useAuth();
@@ -67,7 +67,7 @@ export default function NewPrescriptionPage() {
     clinicalNoteId: '',
     diagnosis: '',
     additionalInstructions: '',
-    validUntil: '',
+    validUntil: '', // Will be auto-calculated from prescription date + validity days
     refillsAllowed: 0,
   });
   const [showPrintPreview, setShowPrintPreview] = useState(false);
@@ -142,11 +142,26 @@ export default function NewPrescriptionPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch clinic settings for print
+      // Fetch clinic settings for print and prescription validity
       try {
         const settingsResponse = await apiClient.get('/settings');
         if (settingsResponse.success && settingsResponse.data) {
           setClinicSettings(settingsResponse.data);
+          
+          // Auto-calculate validUntil date based on prescription validity days
+          const validityDays = settingsResponse.data.settings?.prescriptionValidityDays || 30;
+          const today = new Date();
+          const validUntilDate = new Date(today);
+          validUntilDate.setDate(validUntilDate.getDate() + validityDays);
+          
+          // Format as YYYY-MM-DD for date input
+          const validUntilStr = validUntilDate.toISOString().split('T')[0];
+          
+          // Only set if validUntil is not already set (don't override user input)
+          setFormData(prev => ({
+            ...prev,
+            validUntil: prev.validUntil || validUntilStr
+          }));
         }
       } catch (err) {
         console.error('Failed to fetch clinic settings:', err);
@@ -520,16 +535,16 @@ export default function NewPrescriptionPage() {
         {/* Left column: Main form */}
         <div className="lg:col-span-2">
       <Card>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="patientId" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="patientId" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('appointments.patient')} *
               </label>
               <select
@@ -560,7 +575,7 @@ export default function NewPrescriptionPage() {
             </div>
 
             <div>
-              <label htmlFor="validUntil" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="validUntil" className="block text-sm font-medium text-gray-700 mb-1">
                 Valid Until *
               </label>
               <Input
@@ -573,7 +588,7 @@ export default function NewPrescriptionPage() {
             </div>
 
             <div>
-              <label htmlFor="diagnosis" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="diagnosis" className="block text-sm font-medium text-gray-700 mb-1">
                 Diagnosis
               </label>
               <Input
@@ -585,7 +600,7 @@ export default function NewPrescriptionPage() {
             </div>
 
             <div>
-              <label htmlFor="refillsAllowed" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="refillsAllowed" className="block text-sm font-medium text-gray-700 mb-1">
                 Refills Allowed
               </label>
               <Input
@@ -599,7 +614,7 @@ export default function NewPrescriptionPage() {
           </div>
 
           <div>
-            <label htmlFor="additionalInstructions" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="additionalInstructions" className="block text-sm font-medium text-gray-700 mb-1">
               Additional Instructions
             </label>
             <SimpleTextEditor
@@ -610,7 +625,7 @@ export default function NewPrescriptionPage() {
             />
           </div>
 
-          <div className="border-t pt-6">
+          <div className="border-t pt-4">
             <PrescriptionItemsTable
               items={items}
               drugs={drugs}
@@ -622,7 +637,7 @@ export default function NewPrescriptionPage() {
             />
           </div>
 
-          <div className="flex justify-end gap-4 pt-6 border-t">
+          <div className="flex justify-end gap-4 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => router.back()}>
               Cancel
             </Button>
@@ -658,5 +673,19 @@ export default function NewPrescriptionPage() {
       />
     </Layout>
     </>
+  );
+}
+
+export default function NewPrescriptionPage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </Layout>
+    }>
+      <NewPrescriptionPageContent />
+    </Suspense>
   );
 }

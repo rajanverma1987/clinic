@@ -23,6 +23,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'lg' }) {
     lg: 'max-w-4xl',
     xl: 'max-w-6xl',
     full: 'max-w-full',
+    print: 'max-w-[794px]', // A4 width at 96 DPI (~210mm)
   };
 
   return (

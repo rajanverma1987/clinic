@@ -31,7 +31,7 @@ export function Table({
             {columns.map((column, index) => (
               <th
                 key={index}
-                className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                className={`px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                   column.className || ''
                 }`}
               >
@@ -50,7 +50,7 @@ export function Table({
               {columns.map((column, colIndex) => (
                 <td
                   key={colIndex}
-                  className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
+                  className={`px-4 py-2 whitespace-nowrap text-sm text-gray-900 ${
                     column.className || ''
                   }`}
                 >
@@ -64,4 +64,6 @@ export function Table({
     </div>
   );
 }
+
+export default Table;
 

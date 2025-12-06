@@ -119,3 +119,5 @@ final rule
   create any .MD file in CursorMD folder to document the project.
 
   No Typescript code should be written, only JavaScript.
+  dont compile the code unless i ask you to compile it.
+  dont build the code unless i ask you to build it.

@@ -29,7 +29,7 @@ export default function Home() {
                 <svg className="w-4 h-4 animate-pulse-slow" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>HIPAA & GDPR Compliant</span>
+                <span>{t('homepage.hipaaGdprCompliant')}</span>
               </div>
               
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 animate-fade-in">
@@ -65,19 +65,19 @@ export default function Home() {
                   <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  No credit card required
+                  {t('homepage.noCreditCardRequired')}
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
                   <svg className="w-5 h-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                   </svg>
-                  14-day free trial
+                  {t('homepage.freeTrial')}
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
                   <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
-                  Cancel anytime
+                  {t('homepage.cancelAnytime')}
                 </div>
               </div>
             </div>
@@ -165,12 +165,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Clinical Notes
+                  {t('homepage.clinicalNotes')}
                 </h3>
                 <p className="text-gray-600">
-                  SOAP notes with versioning, templates, and encrypted storage.
-                  Track vital signs, diagnoses with ICD-10/SNOMED CT codes, and
-                  maintain complete audit trails.
+                  {t('homepage.clinicalNotesDesc')}
                 </p>
               </div>
 
@@ -192,12 +190,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
-                  Prescriptions
+                  {t('homepage.prescriptions')}
                 </h3>
                 <p className="text-gray-600">
-                  Region-specific prescription management with drug database,
-                  refill tracking, and dispensing workflow. Support for
-                  e-signatures and regional compliance.
+                  {t('homepage.prescriptionsDesc')}
                 </p>
               </div>
 
@@ -219,12 +215,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-yellow-600 transition-colors">
-                  Billing & Invoicing
+                  {t('homepage.billingInvoicing')}
                 </h3>
                 <p className="text-gray-600">
-                  Comprehensive billing with region-specific tax calculations,
-                  multi-currency support, payment tracking, and insurance
-                  coverage management.
+                  {t('homepage.billingInvoicingDesc')}
                 </p>
               </div>
 
@@ -246,12 +240,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                  Inventory Management
+                  {t('homepage.inventoryManagement')}
                 </h3>
                 <p className="text-gray-600">
-                  Track medicines and supplies with batch/expiry management,
-                  low-stock alerts, supplier management, and automated
-                  transaction tracking.
+                  {t('homepage.inventoryManagementDesc')}
                 </p>
               </div>
 
@@ -273,12 +265,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-teal-600 transition-colors">
-                  Queue Management
+                  {t('homepage.queueManagement')}
                 </h3>
                 <p className="text-gray-600">
-                  Real-time queue tracking with walk-in support, priority management,
-                  wait time estimation, and seamless check-in/check-out workflows
-                  for efficient patient flow.
+                  {t('homepage.queueManagementDesc')}
                 </p>
               </div>
 
@@ -300,12 +290,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">
-                  Reports & Analytics
+                  {t('homepage.reportsAnalytics')}
                 </h3>
                 <p className="text-gray-600">
-                  Comprehensive reporting with financial summaries, patient statistics,
-                  appointment analytics, inventory reports, and customizable exports
-                  for data-driven decision making.
+                  {t('homepage.reportsAnalyticsDesc')}
                 </p>
               </div>
 
@@ -327,12 +315,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-cyan-600 transition-colors">
-                  Automated Reminders
+                  {t('homepage.automatedReminders')}
                 </h3>
                 <p className="text-gray-600">
-                  Multi-channel appointment reminders via SMS, email, and WhatsApp.
-                  Customizable templates, scheduling flexibility, and delivery tracking
-                  to reduce no-shows and improve patient engagement.
+                  {t('homepage.automatedRemindersDesc')}
                 </p>
               </div>
 
@@ -354,12 +340,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-pink-600 transition-colors">
-                  Multi-Language Support
+                  {t('homepage.multiLanguageSupport')}
                 </h3>
                 <p className="text-gray-600">
-                  Global-ready platform with i18n support for multiple languages,
-                  region-specific templates for prescriptions and invoices, and
-                  localized date/time and currency formats.
+                  {t('homepage.multiLanguageSupportDesc')}
                 </p>
               </div>
 
@@ -381,12 +365,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-emerald-600 transition-colors">
-                  Mobile-Ready Platform
+                  {t('homepage.mobileReadyPlatform')}
                 </h3>
                 <p className="text-gray-600">
-                  Fully responsive design optimized for tablets and smartphones.
-                  API-first architecture ready for native mobile apps, enabling
-                  healthcare providers to manage their clinic on-the-go.
+                  {t('homepage.mobileReadyPlatformDesc')}
                 </p>
               </div>
 
@@ -408,12 +390,10 @@ export default function Home() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-violet-600 transition-colors">
-                  Multi-Location Support
+                  {t('homepage.multiLocationSupport')}
                 </h3>
                 <p className="text-gray-600">
-                  Manage multiple clinic locations from a single dashboard with
-                  centralized patient records, unified reporting, and location-specific
-                  settings for seamless multi-site operations.
+                  {t('homepage.multiLocationSupportDesc')}
                 </p>
               </div>
             </div>
@@ -449,9 +429,9 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">HIPAA Compliant</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('homepage.hipaaCompliant')}</h3>
                 <p className="text-sm text-gray-600">
-                  Full compliance with HIPAA regulations
+                  {t('homepage.hipaaCompliantDesc')}
                 </p>
               </div>
 
@@ -471,9 +451,9 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">GDPR Ready</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('homepage.gdprReady')}</h3>
                 <p className="text-sm text-gray-600">
-                  Meets GDPR requirements for data protection
+                  {t('homepage.gdprReadyDesc')}
                 </p>
               </div>
 
@@ -493,9 +473,9 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Encrypted Storage</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('homepage.encryptedStorage')}</h3>
                 <p className="text-sm text-gray-600">
-                  AES-256-GCM encryption for PHI fields
+                  {t('homepage.encryptedStorageDesc')}
                 </p>
               </div>
 
@@ -515,9 +495,9 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Audit Logs</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('homepage.auditLogs')}</h3>
                 <p className="text-sm text-gray-600">
-                  Complete audit trail for all operations
+                  {t('homepage.auditLogsDesc')}
                 </p>
               </div>
             </div>
@@ -552,9 +532,7 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="text-gray-700 mb-6 italic">
-                  &ldquo;ClinicHub has transformed how we manage our practice. The patient
-                  management system is intuitive, and the automated reminders have
-                  reduced our no-show rate by 40%. Highly recommend!&rdquo;
+                  &ldquo;{t('homepage.testimonial1')}&rdquo;
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold mr-4">
@@ -582,9 +560,7 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="text-gray-700 mb-6 italic">
-                  &ldquo;The billing and invoicing features are fantastic. Region-specific
-                  tax calculations and multi-currency support make it perfect for our
-                  international clinic. Compliance features give us peace of mind.&rdquo;
+                  &ldquo;{t('homepage.testimonial2')}&rdquo;
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-semibold mr-4">
@@ -612,9 +588,7 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="text-gray-700 mb-6 italic">
-                  &ldquo;Queue management has been a game-changer for our busy clinic. The
-                  real-time tracking and wait time estimates help us provide better
-                  patient experiences. Setup was quick and the support team is excellent.&rdquo;
+                  &ldquo;{t('homepage.testimonial3')}&rdquo;
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold mr-4">
@@ -642,9 +616,7 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="text-gray-700 mb-6 italic">
-                  &ldquo;As someone managing multiple clinic locations, the multi-location
-                  support is exactly what we needed. Centralized patient records and
-                  unified reporting save us hours every week. Worth every penny!&rdquo;
+                  &ldquo;{t('homepage.testimonial4')}&rdquo;
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white font-semibold mr-4">
@@ -672,9 +644,7 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="text-gray-700 mb-6 italic">
-                  &ldquo;The clinical notes feature with SOAP templates has streamlined our
-                  documentation process significantly. The encryption and audit logs
-                  ensure we meet all compliance requirements. Highly secure and efficient!&rdquo;
+                  &ldquo;{t('homepage.testimonial5')}&rdquo;
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center text-white font-semibold mr-4">
@@ -702,10 +672,7 @@ export default function Home() {
                   ))}
                 </div>
                 <p className="text-gray-700 mb-6 italic">
-                  &ldquo;Inventory management has revolutionized how we track medicines and
-                  supplies. Low-stock alerts prevent shortages, and batch tracking
-                  ensures we maintain quality standards. The mobile-friendly interface
-                  is a huge plus!&rdquo;
+                  &ldquo;{t('homepage.testimonial6')}&rdquo;
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold mr-4">
@@ -725,11 +692,10 @@ export default function Home() {
         <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 to-blue-800">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl font-bold text-white mb-4">
-              Ready to Transform Your Clinic Management?
+              {t('homepage.ctaTitle')}
             </h2>
             <p className="text-xl text-blue-100 mb-8">
-              Join healthcare professionals who trust ClinicHub to manage their
-              practice efficiently and securely.
+              {t('homepage.ctaDescription')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {user ? (
@@ -739,13 +705,13 @@ export default function Home() {
                   className="w-full sm:w-auto"
                   onClick={() => router.push('/dashboard')}
                 >
-                  Go to Dashboard
+                  {t('homepage.goToDashboard')}
                 </Button>
               ) : (
                 <>
                   <Link href="/register">
                     <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-                      Start Free Trial
+                      {t('homepage.startFreeTrial')}
                     </Button>
                   </Link>
                   <Link href="/support/contact">

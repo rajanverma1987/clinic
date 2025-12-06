@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Table } from '@/components/ui/Table';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Tag } from '@/components/ui/Tag';
+import { showError } from '@/lib/utils/toast';
 
 export default function QueuePage() {
   const router = useRouter();
@@ -129,8 +130,43 @@ export default function QueuePage() {
     return `${hours}h ${mins}m`;
   };
 
-  const handleStartVideo = (sessionId) => {
-    router.push(`/telemedicine/${sessionId}`);
+  const handleStartVideo = async (appointment) => {
+    try {
+      let sessionId = appointment.telemedicineSessionId;
+      
+      // If no session exists, create one
+      if (!sessionId && appointment._id) {
+        const response = await apiClient.post('/telemedicine/sessions', {
+          appointmentId: appointment._id,
+          patientId: appointment.patientId?._id || appointment.patientId,
+          doctorId: appointment.doctorId?._id || appointment.doctorId,
+          scheduledStartTime: appointment.startTime || new Date(),
+          scheduledEndTime: appointment.endTime || new Date(),
+          sessionType: 'video',
+        });
+        
+        if (response.success && response.data) {
+          sessionId = response.data._id;
+          // Update the appointment with the session ID
+          await apiClient.put(`/appointments/${appointment._id}`, {
+            telemedicineSessionId: sessionId,
+          });
+        } else {
+          showError(response.error?.message || 'Failed to create video session');
+          return;
+        }
+      }
+      
+      if (sessionId) {
+        // Open in new tab
+        window.open(`/telemedicine/${sessionId}`, '_blank');
+      } else {
+        showError('Unable to start video session');
+      }
+    } catch (error) {
+      console.error('Failed to start video:', error);
+      showError(error.message || 'Failed to start video session');
+    }
   };
 
   const columns = [
@@ -196,28 +232,43 @@ export default function QueuePage() {
             <span className="text-sm font-medium text-gray-500">Completed</span>
           ) : row.status === 'in_progress' ? (
             <>
-              {row.appointmentId?.isTelemedicine && row.appointmentId?.telemedicineSessionId && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (row.appointmentId?.telemedicineSessionId) {
-                      handleStartVideo(row.appointmentId.telemedicineSessionId);
-                    }
-                  }}
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  Video
-                </Button>
+              {row.appointmentId?.isTelemedicine && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await handleStartVideo(row.appointmentId);
+                    }}
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Start Video
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      // Navigate to prescription page with patient pre-filled
+                      const patientId = row.patientId?._id || row.patientId;
+                      if (patientId) {
+                        router.push(`/prescriptions/new?patientId=${patientId}`);
+                      } else {
+                        router.push('/prescriptions/new');
+                      }
+                    }}
+                  >
+                    {t('appointments.startAppointment')}
+                  </Button>
+                </>
               )}
               <Button
                 size="sm"
-                variant="outline"
-                className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+                variant="primary"
+                className="!bg-green-600 hover:!bg-green-700 text-white border-green-600"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (confirm('Complete this appointment and remove from queue?')) {
@@ -228,25 +279,42 @@ export default function QueuePage() {
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                Complete
+                {t('queue.markComplete') || 'Mark Complete'}
               </Button>
             </>
-          ) : row.appointmentId?.isTelemedicine && row.appointmentId?.telemedicineSessionId ? (
-            <Button
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (row.appointmentId?.telemedicineSessionId) {
-                  handleStartVideo(row.appointmentId.telemedicineSessionId);
-                }
-              }}
-            >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              Start Video
-            </Button>
+          ) : row.appointmentId?.isTelemedicine ? (
+            <>
+              <Button
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await handleStartVideo(row.appointmentId);
+                }}
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Start Video
+              </Button>
+              <Button
+                size="sm"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  // Update queue status to in_progress
+                  await handleStatusChange(row._id, 'in_progress');
+                  // Navigate to prescription page with patient pre-filled
+                  const patientId = row.patientId?._id || row.patientId;
+                  if (patientId) {
+                    router.push(`/prescriptions/new?patientId=${patientId}`);
+                  } else {
+                    router.push('/prescriptions/new');
+                  }
+                }}
+              >
+                {t('appointments.startAppointment')}
+              </Button>
+            </>
           ) : (
             <Button
               size="sm"

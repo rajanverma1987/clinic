@@ -14,7 +14,7 @@ export function Input({ label, error, helperText, className = '', disabled, ...p
   return (
     <div className="w-full">
       {label && (
-        <label className={`block text-sm font-medium mb-1 ${
+        <label className={`block text-sm font-medium mb-0.5 ${
           disabled ? 'text-gray-500' : 'text-gray-700'
         }`}>{label}</label>
       )}
@@ -23,9 +23,11 @@ export function Input({ label, error, helperText, className = '', disabled, ...p
         disabled={disabled}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
+      {error && <p className="mt-0.5 text-sm text-red-600">{error}</p>}
+      {helperText && !error && <p className="mt-0.5 text-sm text-gray-500">{helperText}</p>}
     </div>
   );
 }
+
+export default Input;
 

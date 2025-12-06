@@ -102,7 +102,7 @@ export default function LoginPage() {
                 />
               </svg>
             </div>
-            <span className="text-2xl font-bold">ClinicHub</span>
+            <span className="text-2xl font-bold">Doctor's Clinic</span>
           </Link>
 
           <div className="space-y-6 animate-fade-in">
@@ -179,7 +179,7 @@ export default function LoginPage() {
                   />
                 </svg>
               </div>
-              <span className="text-xl font-bold text-gray-900">ClinicHub</span>
+              <span className="text-xl font-bold text-gray-900">Doctor's Clinic</span>
             </Link>
           </div>
 

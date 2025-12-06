@@ -1,6 +1,10 @@
+'use client';
+
 import Link from 'next/link';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function Footer() {
+  const { t } = useI18n();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -24,11 +28,10 @@ export function Footer() {
                   />
                 </svg>
               </div>
-              <span className="text-xl font-bold text-white">ClinicHub</span>
+              <span className="text-xl font-bold text-white">Doctor's Clinic</span>
             </div>
             <p className="text-gray-400 mb-4 max-w-md">
-              Global-ready clinic management system with HIPAA/GDPR compliance.
-              Streamline your practice with our comprehensive healthcare management platform.
+              {t('footer.description')}
             </p>
             <div className="flex space-x-4">
               <a
@@ -66,14 +69,14 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">Product</h3>
+            <h3 className="text-white font-semibold mb-4">{t('footer.product')}</h3>
             <ul className="space-y-2">
               <li>
                 <Link
                   href="/#features"
                   className="hover:text-white transition-colors"
                 >
-                  Features
+                  {t('footer.features')}
                 </Link>
               </li>
               <li>
@@ -81,7 +84,7 @@ export function Footer() {
                   href="/register"
                   className="hover:text-white transition-colors"
                 >
-                  Get Started
+                  {t('footer.getStarted')}
                 </Link>
               </li>
               <li>
@@ -89,21 +92,21 @@ export function Footer() {
                   href="/support"
                   className="hover:text-white transition-colors"
                 >
-                  Support
+                  {t('footer.support')}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">Legal</h3>
+            <h3 className="text-white font-semibold mb-4">{t('footer.legal')}</h3>
             <ul className="space-y-2">
               <li>
                 <Link
                   href="/privacy"
                   className="hover:text-white transition-colors"
                 >
-                  Privacy Policy
+                  {t('footer.privacyPolicy')}
                 </Link>
               </li>
               <li>
@@ -111,7 +114,7 @@ export function Footer() {
                   href="/terms"
                   className="hover:text-white transition-colors"
                 >
-                  Terms of Service
+                  {t('footer.termsOfService')}
                 </Link>
               </li>
               <li>
@@ -119,7 +122,7 @@ export function Footer() {
                   href="/support/contact"
                   className="hover:text-white transition-colors"
                 >
-                  Contact Us
+                  {t('footer.contactUs')}
                 </Link>
               </li>
             </ul>
@@ -127,7 +130,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-          <p>&copy; {currentYear} ClinicHub. All rights reserved.</p>
+          <p>&copy; {currentYear} {t('common.appName')}. {t('footer.allRightsReserved')}.</p>
         </div>
       </div>
     </footer>

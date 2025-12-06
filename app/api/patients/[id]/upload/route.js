@@ -136,7 +136,7 @@ async function deleteHandler(
     // Get attachmentId from query parameter
     const { searchParams } = new URL(req.url);
     const attachmentId = searchParams.get('attachmentId');
-    
+
     if (!attachmentId) {
       return NextResponse.json(
         errorResponse('Attachment ID is required', 'VALIDATION_ERROR'),
@@ -180,11 +180,11 @@ export async function POST(
 ) {
   const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
   if ('error' in authResult) return authResult.error;
-  
+
   const params = await context.params;
   const authenticatedReq = req;
   authenticatedReq.user = authResult.user;
-  
+
   return postHandler(authenticatedReq, authResult.user, { params });
 }
 
@@ -194,11 +194,11 @@ export async function DELETE(
 ) {
   const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
   if ('error' in authResult) return authResult.error;
-  
+
   const params = await context.params;
   const authenticatedReq = req;
   authenticatedReq.user = authResult.user;
-  
+
   return deleteHandler(authenticatedReq, authResult.user, { params });
 }
 

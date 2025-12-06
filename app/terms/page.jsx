@@ -3,8 +3,8 @@ import { Footer } from '@/components/marketing/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Terms of Service | ClinicHub',
-  description: 'Terms of Service for ClinicHub - Clinic Management System',
+  title: 'Terms of Service | Doctor\'s Clinic',
+  description: 'Terms of Service for Doctor\'s Clinic - Clinic Management System',
 };
 
 export default function TermsPage() {
@@ -39,7 +39,7 @@ export default function TermsPage() {
                 1. Agreement to Terms
               </h2>
               <p className="text-gray-700 mb-4">
-                By accessing or using ClinicHub (&quot;Service&quot;), you agree to be
+                By accessing or using Doctor's Clinic (&quot;Service&quot;), you agree to be
                 bound by these Terms of Service (&quot;Terms&quot;). If you disagree with
                 any part of these terms, you may not access the Service.
               </p>
@@ -55,7 +55,7 @@ export default function TermsPage() {
                 2. Description of Service
               </h2>
               <p className="text-gray-700 mb-4">
-                ClinicHub is a cloud-based clinic management system that provides:
+                Doctor's Clinic is a cloud-based clinic management system that provides:
               </p>
               <ul className="list-disc pl-6 text-gray-700 mb-4 space-y-2">
                 <li>Patient management and medical records</li>
@@ -127,7 +127,7 @@ export default function TermsPage() {
                 5.1 HIPAA Compliance
               </h3>
               <p className="text-gray-700 mb-4">
-                As a healthcare provider using ClinicHub, you are responsible for:
+                As a healthcare provider using Doctor's Clinic, you are responsible for:
               </p>
               <ul className="list-disc pl-6 text-gray-700 mb-4 space-y-2">
                 <li>Complying with all applicable HIPAA regulations</li>
@@ -154,7 +154,7 @@ export default function TermsPage() {
               </h2>
               <p className="text-gray-700 mb-4">
                 The Service and its original content, features, and functionality
-                are owned by ClinicHub and are protected by international
+                are owned by Doctor's Clinic and are protected by international
                 copyright, trademark, patent, trade secret, and other intellectual
                 property laws.
               </p>
@@ -270,7 +270,7 @@ export default function TermsPage() {
                 11. Indemnification
               </h2>
               <p className="text-gray-700">
-                You agree to indemnify, defend, and hold harmless ClinicHub and
+                You agree to indemnify, defend, and hold harmless Doctor's Clinic and
                 its officers, directors, employees, and agents from and against
                 any claims, liabilities, damages, losses, and expenses,
                 including reasonable attorneys&apos; fees, arising out of or in any

@@ -29,12 +29,16 @@ async function getHandler(
 
     return NextResponse.json(successResponse(invoice));
   } catch (error) {
+    console.error('Error in GET /api/invoices/[id]:', error);
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
       return NextResponse.json(handleMongoError(error), { status: 400 });
     }
 
     return NextResponse.json(
-      errorResponse('Failed to fetch invoice', 'INTERNAL_ERROR'),
+      errorResponse(
+        error instanceof Error ? error.message : 'Failed to fetch invoice',
+        'INTERNAL_ERROR'
+      ),
       { status: 500 }
     );
   }

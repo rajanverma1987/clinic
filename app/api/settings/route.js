@@ -74,6 +74,9 @@ async function putHandler(req, user) {
       if (body.settings.dataRetentionYears !== undefined) {
         tenant.settings.dataRetentionYears = body.settings.dataRetentionYears;
       }
+      if (body.settings.prescriptionValidityDays !== undefined) {
+        tenant.settings.prescriptionValidityDays = body.settings.prescriptionValidityDays;
+      }
       
       // Update nested objects only if they are provided (not undefined or null)
       if (body.settings.taxRules !== undefined && body.settings.taxRules !== null) {

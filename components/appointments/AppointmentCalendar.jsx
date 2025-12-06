@@ -19,7 +19,8 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
   // Default working hours (9 AM to 5 PM)
   const defaultStartHour = 9;
   const defaultEndHour = 17;
-  const slotDuration = 30; // minutes
+  // Get slot duration from Queue Settings (Average Consultation Time), default to 30 minutes
+  const slotDuration = settings?.queueSettings?.averageConsultationTime || 30; // minutes
 
   const formatDateForApi = useCallback((date) => {
     try {
@@ -108,10 +109,15 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
         `/appointments?doctorId=${selectedDoctorId}&startDate=${startDate}&endDate=${endDate}`
       );
 
-      if (response.success && response.data?.data) {
+      if (response.success && response.data) {
+        // Handle both array and paginated response formats
+        const appointmentsData = Array.isArray(response.data) 
+          ? response.data 
+          : (response.data?.data || []);
         // Filter appointments to only include active statuses
-        const activeStatuses = ['scheduled', 'confirmed', 'arrived', 'in_progress'];
-        const allAppointments = response.data.data.filter(apt => 
+        // Include 'in_queue' for video consultations that go directly to queue
+        const activeStatuses = ['scheduled', 'confirmed', 'arrived', 'in_progress', 'in_queue'];
+        const allAppointments = appointmentsData.filter(apt => 
           activeStatuses.includes(apt.status)
         );
         
@@ -124,23 +130,9 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
           // Also check if startTime falls on the selected date
           const aptStartDate = new Date(apt.startTime);
           const aptStartDateKey = formatDateForApi(aptStartDate);
-          
           return aptDateKey === dateKey || aptStartDateKey === dateKey;
         });
-        
-        console.log('Calendar Debug:', {
-          selectedDate: dateKey,
-          allAppointments: allAppointments.length,
-          filteredAppointments: appointments.length,
-          appointments: appointments.map(apt => ({
-            id: apt._id,
-            date: formatDateForApi(new Date(apt.appointmentDate || apt.startTime)),
-            startTime: apt.startTime,
-            endTime: apt.endTime,
-            status: apt.status
-          }))
-        });
-        
+                
         // Generate slots for the selected date
         const slots = generateTimeSlots(currentDate);
         
@@ -150,68 +142,99 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
           slot.booked = false;
         });
 
-        // Mark slots as unavailable if they conflict with appointments
+        // Match doctor's appointments date/time with calendar date/timeslot
+        // Mark slot as booked if any appointment date/time matches
         appointments.forEach((apt) => {
           const aptStart = new Date(apt.startTime);
           const aptEnd = new Date(apt.endTime);
 
-          console.log('Processing appointment:', {
-            id: apt._id,
-            startTime: apt.startTime,
-            endTime: apt.endTime,
-            startDate: aptStart.toISOString(),
-            endDate: aptEnd.toISOString()
-          });
+          // Get appointment date string (YYYY-MM-DD format) for comparison
+          const aptDateStr = formatDateForApi(aptStart);
+          const selectedDateStr = formatDateForApi(currentDate);
 
-          // Normalize appointment times to local timezone (get local hours/minutes)
-          const aptStartHours = aptStart.getHours();
-          const aptStartMinutes = aptStart.getMinutes();
-          const aptEndHours = aptEnd.getHours();
-          const aptEndMinutes = aptEnd.getMinutes();
+          // Check if appointment is on the selected date
+          if (aptDateStr !== selectedDateStr) {
+            return; // Skip appointments not on this date
+          }
+
+          // Get appointment time in minutes from midnight (using clinic timezone)
+          // Convert UTC times to clinic timezone for accurate comparison
+          const clinicTimezone = settings?.timezone || 'UTC';
           
-          const aptStartTime = aptStartHours * 60 + aptStartMinutes;
-          const aptEndTime = aptEndHours * 60 + aptEndMinutes;
+          // Get hours/minutes in clinic timezone
+          const aptStartInClinicTz = new Date(aptStart.toLocaleString('en-US', { timeZone: clinicTimezone }));
+          const aptEndInClinicTz = new Date(aptEnd.toLocaleString('en-US', { timeZone: clinicTimezone }));
+          
+          // Use the original date but extract time in clinic timezone
+          const aptStartHours = parseInt(new Intl.DateTimeFormat('en-US', {
+            timeZone: clinicTimezone,
+            hour: 'numeric',
+            hour12: false
+          }).format(aptStart));
+          const aptStartMinutes = parseInt(new Intl.DateTimeFormat('en-US', {
+            timeZone: clinicTimezone,
+            minute: 'numeric'
+          }).format(aptStart));
+          const aptEndHours = parseInt(new Intl.DateTimeFormat('en-US', {
+            timeZone: clinicTimezone,
+            hour: 'numeric',
+            hour12: false
+          }).format(aptEnd));
+          const aptEndMinutes = parseInt(new Intl.DateTimeFormat('en-US', {
+            timeZone: clinicTimezone,
+            minute: 'numeric'
+          }).format(aptEnd));
+          
+          const aptStartTimeMinutes = aptStartHours * 60 + aptStartMinutes;
+          const aptEndTimeMinutes = aptEndHours * 60 + aptEndMinutes;
 
-          console.log('Appointment time in minutes:', {
-            start: `${aptStartHours}:${aptStartMinutes.toString().padStart(2, '0')}`,
-            end: `${aptEndHours}:${aptEndMinutes.toString().padStart(2, '0')}`,
-            startMinutes: aptStartTime,
-            endMinutes: aptEndTime
-          });
-
+          // Check each slot against this appointment
           slots.forEach((slot, slotIdx) => {
-            const slotStart = new Date(slot.start);
-            const slotEnd = new Date(slot.end);
+            // Get slot time in minutes from midnight (using clinic timezone)
+            const clinicTimezone = settings?.timezone || 'UTC';
             
-            // Get slot times in minutes from midnight (local time)
-            const slotStartHours = slotStart.getHours();
-            const slotStartMinutes = slotStart.getMinutes();
-            const slotEndHours = slotEnd.getHours();
-            const slotEndMinutes = slotEnd.getMinutes();
+            // Extract hours/minutes from slot in clinic timezone
+            const slotStartHours = parseInt(new Intl.DateTimeFormat('en-US', {
+              timeZone: clinicTimezone,
+              hour: 'numeric',
+              hour12: false
+            }).format(slot.start));
+            const slotStartMinutes = parseInt(new Intl.DateTimeFormat('en-US', {
+              timeZone: clinicTimezone,
+              minute: 'numeric'
+            }).format(slot.start));
+            const slotEndHours = parseInt(new Intl.DateTimeFormat('en-US', {
+              timeZone: clinicTimezone,
+              hour: 'numeric',
+              hour12: false
+            }).format(slot.end));
+            const slotEndMinutes = parseInt(new Intl.DateTimeFormat('en-US', {
+              timeZone: clinicTimezone,
+              minute: 'numeric'
+            }).format(slot.end));
             
-            const slotStartTime = slotStartHours * 60 + slotStartMinutes;
-            const slotEndTime = slotEndHours * 60 + slotEndMinutes;
+            const slotStartTimeMinutes = slotStartHours * 60 + slotStartMinutes;
+            const slotEndTimeMinutes = slotEndHours * 60 + slotEndMinutes;
             
-            // Check if slot overlaps with appointment
-            // Two time ranges overlap if: start1 < end2 AND start2 < end1
-            const overlaps = slotStartTime < aptEndTime && aptStartTime < slotEndTime;
+            // Simple overlap check: two time ranges overlap if:
+            // slotStart < aptEnd AND aptStart < slotEnd
+            // This covers all cases: partial overlap, complete containment, exact match
+            const slotOverlaps = slotStartTimeMinutes < aptEndTimeMinutes && aptStartTimeMinutes < slotEndTimeMinutes;
             
-            if (overlaps) {
+            if (slotOverlaps) {
               slot.available = false;
               slot.booked = true;
-              console.log('✓ Slot marked as booked:', {
-                slotIndex: slotIdx,
-                slotTime: `${slotStartHours}:${slotStartMinutes.toString().padStart(2, '0')} - ${slotEndHours}:${slotEndMinutes.toString().padStart(2, '0')}`,
-                aptTime: `${aptStartHours}:${aptStartMinutes.toString().padStart(2, '0')} - ${aptEndHours}:${aptEndMinutes.toString().padStart(2, '0')}`,
-                slotStartTime,
-                slotEndTime,
-                aptStartTime,
-                aptEndTime,
-                overlaps
-              });
             }
           });
         });
+
+        // Get current date/time for past slot detection
+        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDay = new Date(currentDate);
+        selectedDay.setHours(0, 0, 0, 0);
+        const isToday = selectedDay.getTime() === today.getTime();
 
         // Format slots with date and time info - preserve booked status
         const formattedSlots = slots.map((slot) => {
@@ -219,6 +242,22 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
           const slotMinute = slot.start.getMinutes();
           const slotDate = new Date(currentDate);
           slotDate.setHours(slotHour, slotMinute, 0, 0);
+          
+          // Check if this slot is in the past (only if selected date is today)
+          let isPastSlot = false;
+          if (isToday) {
+            // Create a date object for this slot's start time in the clinic timezone
+            const slotDateTime = new Date(slotDate);
+            // Compare with current time
+            isPastSlot = slotDateTime < now;
+          } else if (selectedDay < today) {
+            // If the entire day is in the past, all slots are past
+            isPastSlot = true;
+          }
+          
+          // Explicitly preserve booked and available status from the slot object
+          const isBooked = slot.booked === true;
+          const isAvailable = slot.available === true && !isBooked && !isPastSlot;
           
           return {
             ...slot, // This includes available and booked properties
@@ -229,33 +268,53 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
             hour: slotHour,
             minute: slotMinute,
             // Explicitly preserve booked and available status
-            available: slot.available !== false, // Default to true if not explicitly false
-            booked: slot.booked === true, // Explicitly check for true
+            available: isAvailable,
+            booked: isBooked,
+            isPast: isPastSlot,
           };
         });
         
-        console.log('Formatted slots summary:', {
-          total: formattedSlots.length,
-          booked: formattedSlots.filter(s => s.booked).length,
-          available: formattedSlots.filter(s => s.available && !s.booked).length,
-          bookedSlots: formattedSlots.filter(s => s.booked).map(s => `${s.hour}:${s.minute.toString().padStart(2, '0')}`)
-        });
 
         setAvailableSlots(formattedSlots);
       } else {
         // Still generate slots even if no appointments
         const slots = generateTimeSlots(currentDate);
+        
+        // Get current date/time for past slot detection
+        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDay = new Date(currentDate);
+        selectedDay.setHours(0, 0, 0, 0);
+        const isToday = selectedDay.getTime() === today.getTime();
+        
         const formattedSlots = slots.map((slot) => {
           const slotHour = slot.start.getHours();
           const slotMinute = slot.start.getMinutes();
+          const slotDate = new Date(currentDate);
+          slotDate.setHours(slotHour, slotMinute, 0, 0);
+          
+          // Check if this slot is in the past (only if selected date is today)
+          let isPastSlot = false;
+          if (isToday) {
+            // Create a date object for this slot's start time
+            const slotDateTime = new Date(slotDate);
+            // Compare with current time
+            isPastSlot = slotDateTime < now;
+          } else if (selectedDay < today) {
+            // If the entire day is in the past, all slots are past
+            isPastSlot = true;
+          }
+          
           return {
             ...slot,
             date: new Date(currentDate),
             dateKey: formatDateForApi(currentDate),
             hour: slotHour,
             minute: slotMinute,
-            available: true,
+            available: !isPastSlot,
             booked: false,
+            isPast: isPastSlot,
           };
         });
         setAvailableSlots(formattedSlots);
@@ -264,17 +323,42 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
       console.error('Failed to fetch availability:', error);
       // Generate empty slots on error
       const slots = generateTimeSlots(currentDate);
+      
+      // Get current date/time for past slot detection
+      const now = new Date();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDay = new Date(currentDate);
+      selectedDay.setHours(0, 0, 0, 0);
+      const isToday = selectedDay.getTime() === today.getTime();
+      
       const formattedSlots = slots.map((slot) => {
         const slotHour = slot.start.getHours();
         const slotMinute = slot.start.getMinutes();
+        const slotDate = new Date(currentDate);
+        slotDate.setHours(slotHour, slotMinute, 0, 0);
+        
+        // Check if this slot is in the past (only if selected date is today)
+        let isPastSlot = false;
+        if (isToday) {
+          // Create a date object for this slot's start time
+          const slotDateTime = new Date(slotDate);
+          // Compare with current time
+          isPastSlot = slotDateTime < now;
+        } else if (selectedDay < today) {
+          // If the entire day is in the past, all slots are past
+          isPastSlot = true;
+        }
+        
         return {
           ...slot,
           date: new Date(currentDate),
           dateKey: formatDateForApi(currentDate),
           hour: slotHour,
           minute: slotMinute,
-          available: true,
+          available: !isPastSlot,
           booked: false,
+          isPast: isPastSlot,
         };
       });
       setAvailableSlots(formattedSlots);
@@ -288,7 +372,7 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
   }, [fetchAvailability]);
 
   const handleSlotClick = (slot) => {
-    if (slot.available && !slot.booked) {
+    if (slot.available && !slot.booked && !slot.isPast) {
       setSelectedSlot(slot);
       if (onSlotSelect) {
         onSlotSelect({
@@ -398,8 +482,10 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
                   const slotMinute = slot.minute;
                   const timeStr = `${slotHour.toString().padStart(2, '0')}:${slotMinute.toString().padStart(2, '0')}`;
                   
-                  const isBooked = slot?.booked || false;
-                  const isAvailable = slot ? (slot.available && !isBooked && !isPast) : false;
+                  // Explicitly check booked status and past slot status
+                  const isBooked = slot?.booked === true;
+                  const isPastSlot = slot?.isPast === true;
+                  const isAvailable = slot ? (slot.available && !isBooked && !isPastSlot) : false;
                   const isSelected =
                     selectedSlot &&
                     selectedSlot.dateKey === slot.dateKey &&
@@ -407,19 +493,21 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
                     selectedSlot.minute === slotMinute;
 
                   // Determine slot state and color class
+                  // Priority: selected > booked > past > available > unavailable
                   let slotClass = '';
                   let slotTitle = '';
                   let slotIcon = '○';
                   
-                  if (isSelected) {
+                  if (isSelected && !isBooked && !isPastSlot) {
                     slotClass = 'bg-blue-600 text-white border-blue-600 cursor-pointer';
                     slotTitle = `${timeStr} - ${t('appointments.available') || 'Available'} (${t('appointments.selected') || 'Selected'})`;
                     slotIcon = '✓';
                   } else if (isBooked) {
-                    slotClass = 'bg-red-100 text-red-700 border-red-300 cursor-not-allowed';
+                    // Booked slots should always be red and disabled
+                    slotClass = 'bg-red-100 text-red-700 border-red-300 cursor-not-allowed opacity-75';
                     slotTitle = `${timeStr} - ${t('appointments.booked') || 'Booked'}`;
                     slotIcon = '●';
-                  } else if (isPast) {
+                  } else if (isPastSlot) {
                     slotClass = 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed';
                     slotTitle = `${timeStr} - ${t('appointments.past') || 'Past'}`;
                     slotIcon = '—';
@@ -437,7 +525,7 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
                     <button
                       key={idx}
                       onClick={() => handleSlotClick(slot)}
-                      disabled={!isAvailable}
+                      disabled={isBooked || !isAvailable || isPastSlot}
                       className={`py-2 px-3 text-xs rounded border transition-colors font-medium ${slotClass}`}
                       title={slotTitle}
                     >

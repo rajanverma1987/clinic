@@ -3,8 +3,8 @@ import { Footer } from '@/components/marketing/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Support & FAQ | ClinicHub',
-  description: 'Get help and find answers to frequently asked questions about ClinicHub',
+  title: 'Support & FAQ | Doctor\'s Clinic',
+  description: 'Get help and find answers to frequently asked questions about Doctor\'s Clinic',
 };
 
 export default function SupportPage() {
@@ -22,7 +22,7 @@ export default function SupportPage() {
         },
         {
           q: 'Is there a mobile app?',
-          a: 'Currently, ClinicHub is accessible through web browsers on desktop and mobile devices. We are working on native mobile apps for iOS and Android, which will be available in the future.',
+          a: 'Currently, Doctor\'s Clinic is accessible through web browsers on desktop and mobile devices. We are working on native mobile apps for iOS and Android, which will be available in the future.',
         },
       ],
     },
@@ -55,8 +55,8 @@ export default function SupportPage() {
       category: 'Security & Compliance',
       questions: [
         {
-          q: 'Is ClinicHub HIPAA compliant?',
-          a: 'Yes, ClinicHub is designed to be HIPAA compliant. We implement encryption for PHI, maintain audit logs, use role-based access control, and execute Business Associate Agreements with healthcare providers.',
+          q: 'Is Doctor\'s Clinic HIPAA compliant?',
+          a: 'Yes, Doctor\'s Clinic is designed to be HIPAA compliant. We implement encryption for PHI, maintain audit logs, use role-based access control, and execute Business Associate Agreements with healthcare providers.',
         },
         {
           q: 'How is patient data encrypted?',
@@ -98,11 +98,11 @@ export default function SupportPage() {
       questions: [
         {
           q: 'What browsers are supported?',
-          a: 'ClinicHub works best on modern browsers including Chrome, Firefox, Safari, and Edge. We recommend using the latest version of your preferred browser for optimal performance.',
+          a: 'Doctor\'s Clinic works best on modern browsers including Chrome, Firefox, Safari, and Edge. We recommend using the latest version of your preferred browser for optimal performance.',
         },
         {
           q: 'Do I need to install any software?',
-          a: 'No installation is required! ClinicHub is a cloud-based platform accessible through your web browser. Just sign up and start using it immediately.',
+          a: 'No installation is required! Doctor\'s Clinic is a cloud-based platform accessible through your web browser. Just sign up and start using it immediately.',
         },
         {
           q: 'How do I report a bug or issue?',
@@ -110,7 +110,7 @@ export default function SupportPage() {
         },
         {
           q: 'Is there an API available?',
-          a: 'Yes, ClinicHub is built API-first to support future integrations and mobile apps. API documentation is available for enterprise customers. Contact us for API access.',
+          a: 'Yes, Doctor\'s Clinic is built API-first to support future integrations and mobile apps. API documentation is available for enterprise customers. Contact us for API access.',
         },
       ],
     },
@@ -254,7 +254,7 @@ export default function SupportPage() {
               Still Need Help?
             </h2>
             <p className="text-blue-100 mb-6">
-              Our support team is here to help you get the most out of ClinicHub
+              Our support team is here to help you get the most out of Doctor\'s Clinic
             </p>
             <Link href="/support/contact">
               <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">

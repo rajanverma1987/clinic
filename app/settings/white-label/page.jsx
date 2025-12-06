@@ -13,7 +13,7 @@ export default function WhiteLabelPage() {
   const [formData, setFormData] = useState({
     companyName: '',
     customDomain: '',
-    removeClinicHubBranding: false,
+    removeDoctorsClinicBranding: false,
     customEmailDomain: '',
     customLoginPage: false,
     customTermsUrl: '',
@@ -78,21 +78,21 @@ export default function WhiteLabelPage() {
 
         {/* Branding Removal */}
         <Card>
-          <h2 className="text-xl font-semibold mb-6">ClinicHub Branding</h2>
+          <h2 className="text-xl font-semibold mb-6">Doctor's Clinic Branding</h2>
           
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <h3 className="font-medium text-gray-900">Remove ClinicHub Branding</h3>
+                <h3 className="font-medium text-gray-900">Remove Doctor's Clinic Branding</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Hide all ClinicHub logos, names, and references from the application
+                  Hide all Doctor's Clinic logos, names, and references from the application
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={formData.removeClinicHubBranding}
-                  onChange={(e) => setFormData({ ...formData, removeClinicHubBranding: e.target.checked })}
+                  checked={formData.removeDoctorsClinicBranding}
+                  onChange={(e) => setFormData({ ...formData, removeDoctorsClinicBranding: e.target.checked })}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>

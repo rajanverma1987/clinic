@@ -252,7 +252,7 @@ export async function getQueueEntryById(queueEntryId, tenantId, userId) {
   )
     .populate('patientId', 'firstName lastName patientId phone')
     .populate('doctorId', 'firstName lastName email')
-    .populate('appointmentId', 'appointmentDate startTime type')
+    .populate('appointmentId', 'appointmentDate startTime type isTelemedicine telemedicineSessionId endTime patientId doctorId')
     .populate('calledBy', 'firstName lastName')
     .lean();
 
@@ -330,7 +330,7 @@ export async function listQueueEntries(query, tenantId, userId) {
   const queueEntries = await Queue.find(filter)
     .populate('patientId', 'firstName lastName patientId phone')
     .populate('doctorId', 'firstName lastName')
-    .populate('appointmentId', 'appointmentDate startTime')
+    .populate('appointmentId', 'appointmentDate startTime endTime isTelemedicine telemedicineSessionId patientId doctorId')
     .sort(sortOptions)
     .skip(((page || 1) - 1) * (limit || 10))
     .limit(limit || 10)
@@ -364,7 +364,7 @@ export async function getDoctorQueue(doctorId, tenantId, userId) {
     })
   )
     .populate('patientId', 'firstName lastName patientId phone')
-    .populate('appointmentId', 'appointmentDate startTime')
+    .populate('appointmentId', 'appointmentDate startTime endTime isTelemedicine telemedicineSessionId patientId doctorId')
     .sort({ priority: -1, position: 1, joinedAt: 1 })
     .lean();
 

@@ -305,7 +305,7 @@ export default function SubscriptionPage() {
             <p className="text-gray-600 mt-2">
               {subscription 
                 ? 'Select a different plan to upgrade or downgrade your subscription' 
-                : 'Select a plan to get started with ClinicHub'}
+                : 'Select a plan to get started with Doctor\'s Clinic'}
             </p>
           </div>
 

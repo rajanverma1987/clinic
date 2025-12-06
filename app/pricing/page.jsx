@@ -78,7 +78,7 @@ export default function PricingPage() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-gray-500">Loading pricing plans...</div>
+          <div className="text-gray-500">{t('pricing.loadingPricingPlans')}</div>
         </main>
         <Footer />
       </div>
@@ -92,10 +92,10 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Simple, Transparent Pricing
+              {t('pricing.title')}
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Choose the perfect plan for your clinic
+              {t('pricing.description')}
             </p>
 
             {/* Billing Cycle Toggle */}
@@ -108,7 +108,7 @@ export default function PricingPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Monthly
+                {t('pricing.monthly')}
               </button>
               <button
                 onClick={() => setBillingCycle('YEARLY')}
@@ -118,9 +118,9 @@ export default function PricingPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Yearly
+                {t('pricing.yearly')}
                 <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                  Save 20%
+                  {t('pricing.save20')}
                 </span>
               </button>
             </div>
@@ -141,14 +141,14 @@ export default function PricingPage() {
                 maxStorageGB={plan.maxStorageGB}
                 isPopular={plan.isPopular}
                 onSelect={() => handleSelectPlan(plan._id)}
-                ctaText={user ? 'Subscribe Now' : 'Get Started'}
+                ctaText={user ? t('pricing.subscribeNow') : t('pricing.getStarted')}
               />
             ))}
           </div>
 
           {filteredPlans.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-600">No plans available for {billingCycle.toLowerCase()} billing.</p>
+              <p className="text-gray-600">{t('pricing.noPlansAvailable', { billingCycle: billingCycle.toLowerCase() })}</p>
             </div>
           )}
         </div>

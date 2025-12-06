@@ -91,6 +91,56 @@ export default function EditPrescriptionPage() {
     }
   }, [authLoading, currentUser, prescriptionId]);
 
+  // Sync items after drugs are loaded to ensure drugId matches
+  // This ensures that when drugs load, any items with drugId are properly matched
+  useEffect(() => {
+    if (drugs.length > 0 && items.length > 0) {
+      // Check if any item has a drugId that needs to be synced
+      setItems(prevItems => {
+        let hasChanges = false;
+        const updatedItems = prevItems.map(item => {
+          if (item.itemType === 'drug' && item.drugId) {
+            const drugIdStr = String(item.drugId).trim();
+            // Try to find the drug in the list by matching _id
+            const drug = drugs.find(d => {
+              const drugId = String(d._id).trim();
+              return drugId === drugIdStr;
+            });
+            
+            if (drug) {
+              // Ensure drugId is exactly matching the drug's _id (as string)
+              const correctDrugId = String(drug._id).trim();
+              if (item.drugId !== correctDrugId) {
+                console.log('Syncing drugId:', {
+                  old: item.drugId,
+                  new: correctDrugId,
+                  drugName: drug.name,
+                });
+                hasChanges = true;
+                return {
+                  ...item,
+                  drugId: correctDrugId,
+                  drugName: drug.name || item.drugName,
+                  form: drug.form || item.form,
+                  strength: drug.strength || item.strength,
+                };
+              }
+            } else {
+              console.warn('Drug not found in list:', {
+                drugId: drugIdStr,
+                availableIds: drugs.slice(0, 5).map(d => String(d._id)),
+              });
+            }
+          }
+          return item;
+        });
+        
+        // Only update if there were actual changes to prevent infinite loops
+        return hasChanges ? updatedItems : prevItems;
+      });
+    }
+  }, [drugs]); // Only re-run when drugs change
+
   const fetchPrescription = async () => {
     try {
       const response = await apiClient.get(`/prescriptions/${prescriptionId}`);
@@ -112,18 +162,25 @@ export default function EditPrescriptionPage() {
 
         // Populate items
         if (prescription.items && Array.isArray(prescription.items)) {
-          setItems(prescription.items.map(item => {
+          const mappedItems = prescription.items.map(item => {
             // Extract drugId and ensure it's a string
             let drugIdValue = '';
             if (item.drugId) {
               if (typeof item.drugId === 'object' && item.drugId._id) {
                 drugIdValue = String(item.drugId._id);
               } else if (typeof item.drugId === 'string') {
-                drugIdValue = item.drugId;
+                drugIdValue = item.drugId.trim(); // Remove any whitespace
               } else {
                 drugIdValue = String(item.drugId);
               }
             }
+            
+            console.log('Prescription item drugId:', {
+              original: item.drugId,
+              normalized: drugIdValue,
+              type: typeof item.drugId,
+              isObject: typeof item.drugId === 'object',
+            });
             
             return {
               itemType: item.itemType || 'drug',
@@ -151,7 +208,10 @@ export default function EditPrescriptionPage() {
               itemName: item.itemName || '',
               itemDescription: item.itemDescription || '',
             };
-          }));
+          });
+          
+          console.log('Mapped prescription items:', mappedItems);
+          setItems(mappedItems);
         } else {
           // Default item if none exist
           setItems([{
@@ -210,7 +270,7 @@ export default function EditPrescriptionPage() {
           drugsList = drugsResponse.data.data
             .filter((item) => item.type === 'medicine')
             .map((item) => ({
-              _id: String(item._id), // Ensure _id is always a string
+              _id: String(item._id).trim(), // Ensure _id is always a string and trimmed
               name: item.name || item.brandName || 'Unknown',
               genericName: item.genericName,
               form: item.form || '',
@@ -220,7 +280,7 @@ export default function EditPrescriptionPage() {
           drugsList = drugsResponse.data
             .filter((item) => item.type === 'medicine')
             .map((item) => ({
-              _id: String(item._id), // Ensure _id is always a string
+              _id: String(item._id).trim(), // Ensure _id is always a string and trimmed
               name: item.name || item.brandName || 'Unknown',
               genericName: item.genericName,
               form: item.form || '',
@@ -228,6 +288,8 @@ export default function EditPrescriptionPage() {
             }));
         }
         
+        console.log('Fetched drugs list:', drugsList.length, 'drugs');
+        console.log('Sample drug IDs:', drugsList.slice(0, 3).map(d => ({ id: d._id, name: d.name })));
         setDrugs(drugsList);
       }
     } catch (error) {

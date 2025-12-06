@@ -16,7 +16,10 @@ const UserSchema = new Schema(
     tenantId: {
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
-      required: true,
+      required: function() {
+        // tenantId is not required for super_admin users
+        return this.role !== UserRole.SUPER_ADMIN;
+      },
       index: true,
     },
     email: {
@@ -59,8 +62,10 @@ const UserSchema = new Schema(
   }
 );
 
-// Compound index for tenant + email uniqueness
-UserSchema.index({ tenantId: 1, email: 1 }, { unique: true });
+// Compound index for tenant + email uniqueness (sparse index to allow null tenantId for super_admin)
+UserSchema.index({ tenantId: 1, email: 1 }, { unique: true, sparse: true });
+// Unique index for super_admin users (email only, no tenantId)
+UserSchema.index({ email: 1 }, { unique: true, partialFilterExpression: { role: UserRole.SUPER_ADMIN } });
 
 // Index for role-based queries
 UserSchema.index({ tenantId: 1, role: 1 });

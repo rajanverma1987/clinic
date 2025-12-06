@@ -3,8 +3,8 @@ import { Footer } from '@/components/marketing/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Privacy Policy | ClinicHub',
-  description: 'Privacy Policy for ClinicHub - Clinic Management System',
+  title: 'Privacy Policy | Doctor\'s Clinic',
+  description: 'Privacy Policy for Doctor\'s Clinic - Clinic Management System',
 };
 
 export default function PrivacyPage() {
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
                 1. Introduction
               </h2>
               <p className="text-gray-700 mb-4">
-                Welcome to ClinicHub (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We are committed to
+                Welcome to Doctor's Clinic (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We are committed to
                 protecting your privacy and ensuring the security of your
                 personal information and Protected Health Information (PHI). This
                 Privacy Policy explains how we collect, use, disclose, and
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
                 system.
               </p>
               <p className="text-gray-700">
-                By using ClinicHub, you agree to the collection and use of
+                By using Doctor's Clinic, you agree to the collection and use of
                 information in accordance with this policy. We comply with
                 applicable data protection laws, including HIPAA (Health Insurance
                 Portability and Accountability Act) in the United States and GDPR

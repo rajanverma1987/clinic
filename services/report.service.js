@@ -493,13 +493,17 @@ export async function getDashboardStats(tenantId, userId) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(today);
+  endOfToday.setHours(23, 59, 59, 999);
   const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const thisYear = new Date(today.getFullYear(), 0, 1);
 
-  // Today's appointments
+  // Today's appointments (exclude "arrived" status - they should only appear in queue)
+  // Match the appointments page logic: filter by date and exclude "arrived" status
   const todayAppointments = await Appointment.countDocuments(
     withTenant(tenantId, {
-      appointmentDate: { $gte: today },
+      appointmentDate: { $gte: today, $lte: endOfToday },
+      status: { $ne: AppointmentStatus.ARRIVED },
       deletedAt: null,
     })
   );

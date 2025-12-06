@@ -102,6 +102,11 @@ export async function createAppointment(input, tenantId, userId) {
     reminderScheduledAt = new Date(startTime.getTime() - 24 * 60 * 60 * 1000);
   }
 
+  // For video consultations, set status to IN_QUEUE so they go directly to queue
+  const initialStatus = input.isTelemedicine 
+    ? AppointmentStatus.IN_QUEUE 
+    : AppointmentStatus.SCHEDULED;
+
   // Create appointment
   const appointment = await Appointment.create({
     tenantId,
@@ -112,7 +117,7 @@ export async function createAppointment(input, tenantId, userId) {
     endTime,
     duration,
     type: input.type || 'consultation',
-    status: AppointmentStatus.SCHEDULED,
+    status: initialStatus,
     reason: input.reason,
     notes: input.notes,
     reminderScheduledAt,
@@ -120,6 +125,33 @@ export async function createAppointment(input, tenantId, userId) {
     isTelemedicine: input.isTelemedicine || false,
     telemedicineConsent: input.telemedicineConsent || false,
   });
+
+  // For video consultations, automatically create queue entry
+  if (input.isTelemedicine) {
+    try {
+      const { createQueueEntry } = await import('@/services/queue.service.js');
+      await createQueueEntry(
+        {
+          type: QueueType.APPOINTMENT,
+          appointmentId: appointment._id.toString(),
+          patientId: appointment.patientId.toString(),
+          doctorId: appointment.doctorId.toString(),
+          priority: QueuePriority.NORMAL,
+        },
+        tenantId,
+        userId
+      );
+      console.log(`✅ Queue entry created for video consultation appointment ${appointment._id}`);
+    } catch (queueError) {
+      // Log error but don't fail appointment creation
+      console.error('Failed to create queue entry for video consultation:', queueError);
+      // If it's a duplicate error, that's okay - queue entry already exists
+      if (!queueError.message?.includes('duplicate') && !queueError.message?.includes('E11000')) {
+        // For non-duplicate errors, we might want to handle differently
+        // But for now, we'll continue with appointment creation
+      }
+    }
+  }
 
   // Audit log
   await AuditLogger.auditWrite(
@@ -192,23 +224,61 @@ export async function listAppointments(query, tenantId, userId) {
     filter.isActive = query.isActive;
   }
 
-  // Date filters
+  // Date filters - check both appointmentDate and startTime to catch all appointments
   if (query.date) {
     const date = new Date(query.date);
     const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+    startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-    filter.appointmentDate = { $gte: startOfDay, $lte: endOfDay };
+    endOfDay.setUTCHours(23, 59, 59, 999);
+    // Filter by both appointmentDate and startTime to catch all appointments on that date
+    filter.$or = [
+      { appointmentDate: { $gte: startOfDay, $lte: endOfDay } },
+      { startTime: { $gte: startOfDay, $lte: endOfDay } }
+    ];
+    console.log('Date filter (single date):', {
+      date: query.date,
+      startOfDay: startOfDay.toISOString(),
+      endOfDay: endOfDay.toISOString(),
+      filter: filter.$or
+    });
   } else if (query.startDate || query.endDate) {
-    filter.appointmentDate = {};
-    if (query.startDate) {
-      filter.appointmentDate.$gte = new Date(query.startDate);
+    // When filtering by date range, check both appointmentDate and startTime
+    const startDate = query.startDate ? new Date(query.startDate) : null;
+    const endDate = query.endDate ? new Date(query.endDate) : null;
+    
+    console.log('Date filter (range):', {
+      startDate: query.startDate,
+      endDate: query.endDate,
+      startDateParsed: startDate?.toISOString(),
+      endDateParsed: endDate?.toISOString()
+    });
+    
+    const orConditions = [];
+    
+    // Build conditions for appointmentDate
+    const appointmentDateCondition = {};
+    if (startDate) appointmentDateCondition.$gte = startDate;
+    if (endDate) appointmentDateCondition.$lte = endDate;
+    if (Object.keys(appointmentDateCondition).length > 0) {
+      orConditions.push({ appointmentDate: appointmentDateCondition });
     }
-    if (query.endDate) {
-      filter.appointmentDate.$lte = new Date(query.endDate);
+    
+    // Build conditions for startTime
+    const startTimeCondition = {};
+    if (startDate) startTimeCondition.$gte = startDate;
+    if (endDate) startTimeCondition.$lte = endDate;
+    if (Object.keys(startTimeCondition).length > 0) {
+      orConditions.push({ startTime: startTimeCondition });
+    }
+    
+    if (orConditions.length > 0) {
+      filter.$or = orConditions;
+      console.log('Date filter $or conditions:', JSON.stringify(orConditions, null, 2));
     }
   }
+  
+  console.log('Final filter for appointments:', JSON.stringify(filter, null, 2));
 
   // Get total count
   const total = await Appointment.countDocuments(filter);

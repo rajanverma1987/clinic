@@ -31,6 +31,7 @@ export default function SettingsPage() {
     currency: 'USD',
     locale: 'en-US',
     timezone: 'America/New_York',
+    prescriptionValidityDays: 30,
   });
 
   const [complianceForm, setComplianceForm] = useState({
@@ -125,6 +126,7 @@ export default function SettingsPage() {
           currency: data.settings.currency,
           locale: data.settings.locale,
           timezone: data.settings.timezone,
+          prescriptionValidityDays: data.settings.prescriptionValidityDays || 30,
         });
         setComplianceForm({
           hipaa: data.settings.complianceSettings?.hipaa || false,
@@ -228,6 +230,7 @@ export default function SettingsPage() {
           currency: clinicForm.currency,
           locale: clinicForm.locale,
           timezone: clinicForm.timezone,
+          prescriptionValidityDays: clinicForm.prescriptionValidityDays,
         },
       });
       if (response.success) {
@@ -725,6 +728,22 @@ export default function SettingsPage() {
                   <option value="Asia/Kolkata">India</option>
                   <option value="Australia/Sydney">Sydney</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('settings.prescriptionValidityDays') || 'Prescription Validity Days'} *
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={clinicForm.prescriptionValidityDays}
+                  onChange={(e) => setClinicForm({ ...clinicForm, prescriptionValidityDays: parseInt(e.target.value) || 30 })}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Number of days a prescription remains valid from the date it's issued
+                </p>
               </div>
             </div>
 

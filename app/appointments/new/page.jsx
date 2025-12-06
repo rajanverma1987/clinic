@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { PatientSelector } from '@/components/ui/PatientSelector';
 
-export default function NewAppointmentPage() {
+function NewAppointmentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user: currentUser, loading: authLoading } = useAuth();
@@ -85,10 +85,27 @@ export default function NewAppointmentPage() {
       // Verify patient exists in the list before setting
       const patientExists = patients.some(p => p._id === patientIdFromUrl);
       if (patientExists) {
-        setFormData(prev => ({ ...prev, patientId: patientIdFromUrl }));
+        const patient = patients.find(p => p._id === patientIdFromUrl);
+        setFormData(prev => ({ 
+          ...prev, 
+          patientId: patientIdFromUrl,
+          // Auto-populate email if Video Consultation is selected
+          patientEmail: formData.isTelemedicine && patient?.email ? patient.email : prev.patientEmail
+        }));
       }
     }
   }, [patientIdFromUrl, patients]);
+
+  // Auto-populate patient email when patient is selected and Video Consultation is enabled
+  useEffect(() => {
+    if (formData.patientId && formData.isTelemedicine && patients.length > 0) {
+      const selectedPatient = patients.find(p => p._id === formData.patientId || p.id === formData.patientId);
+      if (selectedPatient?.email) {
+        // Always update email from patient collection when Video Consultation is enabled
+        setFormData(prev => ({ ...prev, patientEmail: selectedPatient.email }));
+      }
+    }
+  }, [formData.patientId, formData.isTelemedicine, patients]);
 
   // Update doctorId when URL parameter changes or when doctors are loaded
   useEffect(() => {
@@ -319,7 +336,18 @@ export default function NewAppointmentPage() {
               <PatientSelector
                 patients={patients}
                 selectedPatientId={formData.patientId}
-                onSelect={(patientId) => setFormData({ ...formData, patientId })}
+                onSelect={(patientId) => {
+                  // Find the selected patient to get their email
+                  const selectedPatient = patients.find(p => p._id === patientId || p.id === patientId);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    patientId,
+                    // Auto-populate email if Video Consultation is enabled
+                    patientEmail: formData.isTelemedicine && selectedPatient?.email 
+                      ? selectedPatient.email 
+                      : prev.patientEmail
+                  }));
+                }}
                 onAddNew={() => router.push('/patients')}
                 label={t('appointments.patient')}
                 required
@@ -487,7 +515,18 @@ export default function NewAppointmentPage() {
 
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, isTelemedicine: true })}
+                  onClick={() => {
+                    // When Video Consultation is selected, auto-populate email from patient
+                    const selectedPatient = patients.find(p => 
+                      p._id === formData.patientId || p.id === formData.patientId
+                    );
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      isTelemedicine: true,
+                      // Auto-populate email from patient collection
+                      patientEmail: selectedPatient?.email || prev.patientEmail
+                    }));
+                  }}
                   className={`p-4 border-2 rounded-lg transition-all ${
                     formData.isTelemedicine
                       ? 'border-blue-500 bg-blue-50'
@@ -607,6 +646,20 @@ export default function NewAppointmentPage() {
         </form>
       </Card>
     </Layout>
+  );
+}
+
+export default function NewAppointmentPage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </Layout>
+    }>
+      <NewAppointmentPageContent />
+    </Suspense>
   );
 }
 

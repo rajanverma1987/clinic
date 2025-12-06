@@ -56,7 +56,7 @@ export async function createPayPalPlan(
       'Prefer': 'return=representation',
     },
     body: JSON.stringify({
-      name: 'ClinicHub Subscription',
+      name: 'Doctor\'s Clinic Subscription',
       description: 'Clinic management software subscription',
       type: 'SERVICE',
       category: 'SOFTWARE',
@@ -144,7 +144,7 @@ export async function createPayPalSubscription(
   const subscription = {
     plan_id: planId,
     application_context: {
-      brand_name: 'ClinicHub',
+      brand_name: 'Doctor\'s Clinic',
       locale: 'en-US',
       shipping_preference: 'NO_SHIPPING',
       user_action: 'SUBSCRIBE_NOW',

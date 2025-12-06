@@ -13,12 +13,15 @@ import { Select } from '@/components/ui/Select';
 import { Tag } from '@/components/ui/Tag';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Textarea } from '@/components/ui/Textarea';
+import { useSettings } from '@/hooks/useSettings';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 
 export default function InventoryItemDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const { currency, locale } = useSettings();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -107,10 +110,7 @@ export default function InventoryItemDetailPage() {
 
   const formatCurrency = (amount) => {
     if (!amount) return 'N/A';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount / 100);
+    return formatCurrencyUtil(amount, currency, locale);
   };
 
   const getStockStatus = () => {

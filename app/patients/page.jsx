@@ -278,9 +278,9 @@ export default function PatientsPage() {
           }}
         >
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-2xl font-bold mb-4">{t('patients.addNewPatient')}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <h2 className="text-2xl font-bold mb-3">{t('patients.addNewPatient')}</h2>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 <Input
                   label={t('auth.firstName')}
                   value={formData.firstName}

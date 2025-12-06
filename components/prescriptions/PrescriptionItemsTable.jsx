@@ -106,10 +106,10 @@ export function PrescriptionItemsTable({
                 <td className="px-3 py-2 text-sm">
                   {item.itemType === 'drug' && (
                     <select
-                      value={item.drugId ? String(item.drugId) : ''}
+                      value={item.drugId ? String(item.drugId).trim() : ''}
                       onChange={(e) => {
-                        const selectedValue = e.target.value;
-                        const drug = drugs.find(d => String(d._id) === String(selectedValue));
+                        const selectedValue = String(e.target.value).trim();
+                        const drug = drugs.find(d => String(d._id).trim() === selectedValue);
                         
                         // Use onUpdateItem to update all fields at once if available
                         if (onUpdateItem) {

@@ -1,0 +1,12 @@
+this is the patient flow -
+Add Patient
+Select Patient for Appointment
+Receptionist "Mark Arrived"
+Patient Get removed from Appoinments list" 
+get added to queue list"
+on queue page - doctor "Start Appoinment"
+doctor create prescription - Que get cleared when prescription is created.
+as soon as prescription is created - Patient appears in for invoicing, 
+when selecting Patient in Create Invoice dropdown, make sure it only list the latest prescription items to invoice.
+Invoice created and Marked as paids end the process.
+

@@ -35,6 +35,10 @@ const TenantSchema = new Schema(
         required: true,
         default: 'UTC',
       },
+      prescriptionValidityDays: {
+        type: Number,
+        default: 30, // days
+      },
       taxRules: {
         country: String,
         taxType: {

@@ -7,10 +7,13 @@ import { apiClient } from '@/lib/api/client';
 import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { useSettings } from '@/hooks/useSettings';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { currency, locale } = useSettings();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,10 +68,7 @@ export default function AdminDashboardPage() {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount / 100);
+    return formatCurrencyUtil(amount, currency, locale);
   };
 
   if (authLoading || loading) {
@@ -162,7 +162,7 @@ export default function AdminDashboardPage() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats ? formatCurrency(stats.totalRevenue) : '$0.00'}
+                  {stats ? formatCurrency(stats.totalRevenue) : formatCurrencyUtil(0, currency, locale)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">

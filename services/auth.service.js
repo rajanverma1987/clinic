@@ -155,14 +155,32 @@ export async function registerUser(input) {
 export async function loginUser(input) {
   await connectDB();
 
-  // Find user by email
-  const user = await User.findOne({
+  console.log('Login attempt for email:', input.email.toLowerCase());
+  console.log('TenantId provided:', input.tenantId);
+
+  // Find user by email first (without tenantId filter)
+  // This allows us to find super_admin users regardless of tenantId
+  let user = await User.findOne({
     email: input.email.toLowerCase(),
-    ...(input.tenantId && { tenantId: input.tenantId }),
-  }).select('+password'); // Include password field
+  }).select('+password');
+
+  console.log('User found:', user ? {
+    email: user.email,
+    role: user.role,
+    tenantId: user.tenantId,
+    isActive: user.isActive
+  } : 'Not found');
 
   if (!user) {
     throw new Error('Invalid email or password');
+  }
+
+  // For non-super_admin users, validate tenantId matches if provided
+  if (user.role !== UserRole.SUPER_ADMIN && input.tenantId) {
+    if (user.tenantId?.toString() !== input.tenantId.toString()) {
+      console.log('TenantId mismatch for non-super_admin user');
+      throw new Error('Invalid email or password');
+    }
   }
 
   // Check if user is active
@@ -176,8 +194,8 @@ export async function loginUser(input) {
     throw new Error('Invalid email or password');
   }
 
-  // Validate tenant is active
-  if (user.tenantId) {
+  // Validate tenant is active (skip for super_admin)
+  if (user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
     const tenant = await Tenant.findById(user.tenantId);
     if (!tenant || !tenant.isActive) {
       throw new Error('Tenant is not active');

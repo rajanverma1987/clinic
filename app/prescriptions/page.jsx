@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Table } from '@/components/ui/Table';
 import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
+import { showSuccess, showError } from '@/lib/utils/toast';
 
 export default function PrescriptionsPage() {
   const router = useRouter();
@@ -75,6 +76,26 @@ export default function PrescriptionsPage() {
     setPrintPrescriptionId(null);
   };
 
+  const handleActivate = async (prescriptionId) => {
+    if (!confirm('Are you sure you want to activate this prescription?')) {
+      return;
+    }
+    
+    try {
+      const response = await apiClient.post(`/prescriptions/${prescriptionId}/activate`);
+      if (response.success) {
+        showSuccess(t('prescriptions.activated') || 'Prescription activated successfully');
+        // Refresh the prescriptions list
+        fetchPrescriptions();
+      } else {
+        showError(response.error?.message || 'Failed to activate prescription');
+      }
+    } catch (error) {
+      console.error('Failed to activate prescription:', error);
+      showError(error.message || 'Failed to activate prescription');
+    }
+  };
+
   const columns = [
     { header: t('prescriptions.title') + ' #', accessor: 'prescriptionNumber' },
     {
@@ -110,6 +131,18 @@ export default function PrescriptionsPage() {
       header: 'Actions',
       accessor: (row) => (
         <div className="flex gap-2">
+          {row.status === 'draft' && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleActivate(row._id);
+              }}
+            >
+              {t('prescriptions.activate') || 'Activate'}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

@@ -31,6 +31,8 @@ export default function AppointmentsPage() {
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showCalendar, setShowCalendar] = useState(true);
+  const [doctorIdInitialized, setDoctorIdInitialized] = useState(false);
+  const [loadingAppointmentId, setLoadingAppointmentId] = useState(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -106,12 +108,15 @@ export default function AppointmentsPage() {
     fetchDoctors();
   }, [authLoading, user]);
 
-  // Set selected doctor to current user if doctor role
+  // Set selected doctor to current user by default (for all roles) - only on initial load
   useEffect(() => {
-    if (user && user.role === 'doctor' && user.userId) {
+    if (user && user.userId && !doctorIdInitialized) {
+      // Set logged-in user as default selected doctor on initial load
+      // This applies to all roles: doctor, clinic_admin, super_admin, receptionist
       setSelectedDoctorId(user.userId);
+      setDoctorIdInitialized(true);
     }
-  }, [user]);
+  }, [user, doctorIdInitialized]);
 
   const formatDateDisplay = useCallback(
     (date, options) => {
@@ -171,13 +176,18 @@ export default function AppointmentsPage() {
       console.log('Fetching stats:', { todayStr, tomorrowStr, timezone, now: now.toISOString() });
 
       // Fetch counts using the appointments API with date filter
+      // Exclude video consultations from stats (they go to queue)
       const [todayResponse, tomorrowResponse] = await Promise.all([
-        apiClient.get(`/appointments?page=1&limit=1&date=${todayStr}`),
-        apiClient.get(`/appointments?page=1&limit=1&date=${tomorrowStr}`),
+        apiClient.get(`/appointments?page=1&limit=1000&date=${todayStr}`),
+        apiClient.get(`/appointments?page=1&limit=1000&date=${tomorrowStr}`),
       ]);
 
-      const todayTotal = todayResponse.success && todayResponse.data?.pagination ? (todayResponse.data.pagination.total || 0) : 0;
-      const tomorrowTotal = tomorrowResponse.success && tomorrowResponse.data?.pagination ? (tomorrowResponse.data.pagination.total || 0) : 0;
+      // Filter out video consultations from counts
+      const todayList = todayResponse.success && todayResponse.data?.data ? todayResponse.data.data : [];
+      const tomorrowList = tomorrowResponse.success && tomorrowResponse.data?.data ? tomorrowResponse.data.data : [];
+      
+      const todayTotal = todayList.filter(apt => !apt.isTelemedicine && apt.status !== 'arrived').length;
+      const tomorrowTotal = tomorrowList.filter(apt => !apt.isTelemedicine && apt.status !== 'arrived').length;
 
       console.log('Stats results:', { 
         todayTotal, 
@@ -234,9 +244,11 @@ export default function AppointmentsPage() {
       if (response.success && response.data) {
         // Handle pagination structure - data is inside response.data.data
         const appointmentsList = response.data.data || [];
-        // Filter out appointments with "arrived" status - they should only appear in queue
+        // Filter out:
+        // 1. Video consultations (isTelemedicine: true) - they go directly to queue
+        // 2. Appointments with "arrived" status - they should only appear in queue
         const filteredAppointments = appointmentsList.filter(
-          (apt) => apt.status !== 'arrived'
+          (apt) => !apt.isTelemedicine && apt.status !== 'arrived'
         );
         setAppointments(Array.isArray(filteredAppointments) ? filteredAppointments : []);
         setTotalPages(response.data.pagination?.totalPages || 1);
@@ -249,6 +261,9 @@ export default function AppointmentsPage() {
   };
 
   const handleStatusChange = async (appointmentId, newStatus, patientName) => {
+    // Set loading state for this specific appointment
+    setLoadingAppointmentId(appointmentId);
+    
     try {
       const response = await apiClient.put(`/appointments/${appointmentId}/status`, {
         status: newStatus,
@@ -264,27 +279,32 @@ export default function AppointmentsPage() {
           setTimeout(() => {
             fetchAppointments();
             fetchStats();
+            setLoadingAppointmentId(null);
           }, 500);
         } else if (newStatus === 'in_progress') {
           showSuccess(
             `Appointment started for ${patientName || 'patient'}`
           );
           fetchAppointments();
+          setLoadingAppointmentId(null);
         } else if (newStatus === 'completed') {
           showSuccess(
             `Appointment completed for ${patientName || 'patient'}`
           );
           fetchAppointments();
           fetchStats();
+          setLoadingAppointmentId(null);
         } else if (newStatus === 'cancelled') {
           showSuccess(
             `Appointment cancelled for ${patientName || 'patient'}`
           );
           fetchAppointments();
           fetchStats();
+          setLoadingAppointmentId(null);
         } else {
           showSuccess('Appointment status updated successfully');
           fetchAppointments();
+          setLoadingAppointmentId(null);
         }
       } else {
         // Handle error from API response
@@ -297,9 +317,11 @@ export default function AppointmentsPage() {
           setTimeout(() => {
             fetchAppointments();
             fetchStats();
+            setLoadingAppointmentId(null);
           }, 500);
         } else {
           showError(errorMessage);
+          setLoadingAppointmentId(null);
         }
       }
     } catch (error) {
@@ -314,9 +336,11 @@ export default function AppointmentsPage() {
         setTimeout(() => {
           fetchAppointments();
           fetchStats();
+          setLoadingAppointmentId(null);
         }, 500);
       } else {
         showError(errorMessage);
+        setLoadingAppointmentId(null);
       }
     }
   };
@@ -402,6 +426,7 @@ export default function AppointmentsPage() {
                 <Button
                   size="sm"
                   variant="secondary"
+                  isLoading={loadingAppointmentId === row._id}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStatusChange(row._id, 'arrived', patientName);

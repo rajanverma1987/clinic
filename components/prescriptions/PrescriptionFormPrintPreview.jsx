@@ -191,7 +191,7 @@ export function PrescriptionFormPrintPreview({
       isOpen={isOpen}
       onClose={onClose}
       title="Print Preview"
-      size="xl"
+      size="print"
     >
       <div className="space-y-4">
         {loading && (

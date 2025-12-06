@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
@@ -12,8 +12,10 @@ import { Input } from '@/components/ui/Input';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 
-export default function NewInvoicePage() {
+export default function EditInvoicePage() {
   const router = useRouter();
+  const params = useParams();
+  const invoiceId = params?.id;
   const { user: currentUser, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { currency, locale } = useSettings();
@@ -21,16 +23,7 @@ export default function NewInvoicePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [items, setItems] = useState([
-    {
-      type: 'consultation',
-      description: '',
-      quantity: 1,
-      unitPrice: 0,
-      discount: 0,
-      taxRate: 0,
-    },
-  ]);
+  const [items, setItems] = useState([]);
   const [formData, setFormData] = useState({
     patientId: '',
     appointmentId: '',
@@ -38,39 +31,21 @@ export default function NewInvoicePage() {
     discountValue: 0,
     discountReason: '',
     dueDate: '',
-    invoiceDate: new Date().toISOString().split('T')[0], // Default to today
+    invoiceDate: new Date().toISOString().split('T')[0],
     notes: '',
   });
 
   useEffect(() => {
-    if (!authLoading && currentUser) {
+    if (!authLoading && currentUser && invoiceId) {
       fetchData();
+      fetchInvoice();
     }
-  }, [authLoading, currentUser]);
-
-  // Auto-populate invoice items when patient is selected
-  useEffect(() => {
-    if (formData.patientId) {
-      autoPopulateInvoiceItems(formData.patientId);
-    } else {
-      // Reset to default empty item when no patient selected
-      setItems([{
-        type: 'consultation',
-        description: '',
-        quantity: 1,
-        unitPrice: 0,
-        discount: 0,
-        taxRate: 0,
-      }]);
-      setFormData(prev => ({ ...prev, appointmentId: '' }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.patientId]);
+  }, [authLoading, currentUser, invoiceId]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch all patients - invoices can be for consultations, prescriptions, labs, etc.
+      // Fetch all patients
       const allPatientsResponse = await apiClient.get('/patients?limit=1000');
       let allPatients = [];
       
@@ -88,126 +63,53 @@ export default function NewInvoicePage() {
     }
   };
 
-  // Auto-populate invoice items based on patient's appointments, prescriptions, and lab orders
-  const autoPopulateInvoiceItems = async (patientId) => {
+  const fetchInvoice = async () => {
     try {
-      const invoiceItems = [];
-
-      // Fetch completed/in_progress appointments for consultation fees (in parallel)
-      const [appointmentsResponse, prescriptionsResponse] = await Promise.all([
-        apiClient.get(`/appointments?patientId=${patientId}&limit=100`),
-        apiClient.get(`/prescriptions?patientId=${patientId}&limit=100`),
-      ]);
-      
-      // Process appointments - get most recent completed/in_progress appointment
-      if (appointmentsResponse.success && appointmentsResponse.data) {
-        const appointmentsData = Array.isArray(appointmentsResponse.data)
-          ? appointmentsResponse.data
-          : appointmentsResponse.data.data || [];
-
-        // Filter for completed/in_progress appointments and get the most recent one
-        const recentAppointment = appointmentsData
-          .filter((apt) => apt.status === 'completed' || apt.status === 'in_progress')
-          .sort((a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime())[0];
-
-        if (recentAppointment) {
-          // Default consultation fee - $100 in-person, $150 telemedicine (can be configured in settings)
-          const defaultConsultationFee = recentAppointment.isTelemedicine ? 150 : 100;
-          
-          invoiceItems.push({
-            type: 'consultation',
-            description: `${recentAppointment.isTelemedicine ? 'Video' : 'In-Person'} Consultation - ${new Date(recentAppointment.appointmentDate).toLocaleDateString()}`,
-            quantity: 1,
-            unitPrice: defaultConsultationFee,
-            discount: 0,
-            taxRate: 0,
-            appointmentId: recentAppointment._id,
-          });
-
-          // Set appointment ID in form data
-          setFormData(prev => ({ ...prev, appointmentId: recentAppointment._id }));
+      const response = await apiClient.get(`/invoices/${invoiceId}`);
+      if (response.success && response.data) {
+        const invoice = response.data;
+        
+        // Check if invoice is draft
+        if (invoice.status !== 'draft') {
+          setError('Only draft invoices can be edited');
+          return;
         }
-      }
 
-      // Process prescriptions - get only the LATEST active/dispensed prescription
-      if (prescriptionsResponse.success && prescriptionsResponse.data) {
-        const prescriptionsData = Array.isArray(prescriptionsResponse.data)
-          ? prescriptionsResponse.data
-          : prescriptionsResponse.data.data || [];
-
-        // Filter for active/dispensed prescriptions and get the most recent one
-        const activePrescriptions = prescriptionsData.filter(
-          (pres) => pres.status === 'active' || pres.status === 'dispensed'
-        );
-
-        // Sort by creation date (most recent first) and get only the latest prescription
-        const latestPrescription = activePrescriptions
-          .sort((a, b) => new Date(b.createdAt || b._id.getTimestamp()).getTime() - new Date(a.createdAt || a._id.getTimestamp()).getTime())[0];
-
-        // Process only the latest prescription
-        if (latestPrescription) {
-          if (latestPrescription.items && Array.isArray(latestPrescription.items)) {
-            for (const item of latestPrescription.items) {
-              if (item.drugId) {
-                try {
-                  // Fetch inventory item to get price
-                  const inventoryResponse = await apiClient.get(`/inventory/items/${item.drugId}`);
-                  
-                  if (inventoryResponse.success && inventoryResponse.data) {
-                    const inventoryItem = Array.isArray(inventoryResponse.data)
-                      ? inventoryResponse.data[0]
-                      : inventoryResponse.data.data || inventoryResponse.data;
-                    
-                    const sellingPrice = inventoryItem?.sellingPrice 
-                      ? inventoryItem.sellingPrice / 100 // Convert from minor units (cents) to dollars
-                      : 0;
-
-                    if (sellingPrice > 0) {
-                      invoiceItems.push({
-                        type: 'medication',
-                        description: `${item.drugName || inventoryItem?.name || 'Medicine'}${item.strength ? ` (${item.strength})` : ''} - Qty: ${item.quantity || 1} ${item.unit || 'units'}`,
-                        quantity: item.quantity || 1,
-                        unitPrice: sellingPrice,
-                        discount: 0,
-                        taxRate: 0,
-                        prescriptionId: latestPrescription._id,
-                      });
-                    }
-                  }
-                } catch (err) {
-                  console.warn(`Failed to fetch inventory item ${item.drugId}:`, err);
-                  // Continue with other items
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // If no items found, show a default consultation item that user can edit
-      if (invoiceItems.length === 0) {
-        invoiceItems.push({
-          type: 'consultation',
-          description: 'Consultation',
-          quantity: 1,
-          unitPrice: 100, // Default consultation fee
-          discount: 0,
-          taxRate: 0,
+        // Populate form data
+        setFormData({
+          patientId: invoice.patientId?._id || invoice.patientId || '',
+          appointmentId: invoice.appointmentId?._id || invoice.appointmentId || '',
+          discountType: invoice.discountType || 'percentage',
+          discountValue: invoice.discountValue ? invoice.discountValue / 100 : 0, // Convert from cents to dollars
+          discountReason: invoice.discountReason || '',
+          dueDate: invoice.dueDate 
+            ? new Date(invoice.dueDate).toISOString().split('T')[0]
+            : '',
+          invoiceDate: invoice.invoiceDate 
+            ? new Date(invoice.invoiceDate).toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0],
+          notes: invoice.notes || '',
         });
-      }
 
-      setItems(invoiceItems);
+        // Populate items - convert amounts from cents to dollars
+        if (invoice.items && Array.isArray(invoice.items)) {
+          setItems(invoice.items.map(item => ({
+            type: item.type || 'consultation',
+            description: item.description || '',
+            quantity: item.quantity || 1,
+            unitPrice: item.unitPrice ? item.unitPrice / 100 : 0, // Convert from cents to dollars
+            discount: item.discount || 0,
+            taxRate: item.taxRate || 0,
+            appointmentId: item.appointmentId?._id || item.appointmentId || undefined,
+            prescriptionId: item.prescriptionId?._id || item.prescriptionId || undefined,
+          })));
+        }
+      } else {
+        setError('Invoice not found');
+      }
     } catch (error) {
-      console.error('Failed to auto-populate invoice items:', error);
-      // On error, show default consultation item
-      setItems([{
-        type: 'consultation',
-        description: 'Consultation',
-        quantity: 1,
-        unitPrice: 100,
-        discount: 0,
-        taxRate: 0,
-      }]);
+      console.error('Failed to fetch invoice:', error);
+      setError('Failed to load invoice');
     }
   };
 
@@ -294,11 +196,8 @@ export default function NewInvoicePage() {
     try {
       // Prepare items for submission
       // Note: Send amounts in dollars - the service will convert to cents using parseAmount
-      // The service will calculate total and totalWithTax, but we need to send them for validation
-      // So we calculate them here in dollars, then service will recalculate in cents
       const itemsWithTotals = items.map(item => {
         const itemCalc = calculateItemTotal(item);
-        // Ensure taxAmount is 0 (not undefined) when tax is 0
         const taxAmount = itemCalc.taxAmount || 0;
         const discountAmount = itemCalc.discountAmount || 0;
         
@@ -306,14 +205,13 @@ export default function NewInvoicePage() {
           type: item.type,
           description: item.description,
           quantity: item.quantity,
-          unitPrice: item.unitPrice, // Send in dollars - service will convert to cents via parseAmount
+          unitPrice: item.unitPrice, // Send in dollars - service will convert to cents
           discount: item.discount || undefined,
-          discountAmount: discountAmount / 100, // Convert from cents to dollars for service
-          taxRate: item.taxRate || 0, // Default to 0 if not set
-          taxAmount: taxAmount / 100, // Convert from cents to dollars for service
-          // Send totals in dollars - service will recalculate in cents
-          total: itemCalc.afterDiscount / 100, // Total after discount, before tax (in dollars)
-          totalWithTax: itemCalc.total / 100, // Total including tax (in dollars)
+          discountAmount: discountAmount / 100, // Convert from cents to dollars
+          taxRate: item.taxRate || 0,
+          taxAmount: taxAmount / 100, // Convert from cents to dollars
+          total: itemCalc.afterDiscount / 100, // Convert from cents to dollars
+          totalWithTax: itemCalc.total / 100, // Convert from cents to dollars
           appointmentId: item.appointmentId || undefined,
           prescriptionId: item.prescriptionId || undefined,
         };
@@ -331,15 +229,15 @@ export default function NewInvoicePage() {
         notes: formData.notes || undefined,
       };
 
-      const response = await apiClient.post('/invoices', invoiceData);
+      const response = await apiClient.put(`/invoices/${invoiceId}`, invoiceData);
       if (response.success) {
         router.push('/invoices');
       } else {
-        setError(response.error?.message || 'Failed to create invoice');
+        setError(response.error?.message || 'Failed to update invoice');
       }
     } catch (error) {
-      console.error('Failed to create invoice:', error);
-      setError(error.message || 'Failed to create invoice');
+      console.error('Failed to update invoice:', error);
+      setError(error.message || 'Failed to update invoice');
     } finally {
       setSubmitting(false);
     }
@@ -363,21 +261,21 @@ export default function NewInvoicePage() {
         <Button variant="outline" onClick={() => router.back()} className="mb-4">
           ← {t('common.back')}
         </Button>
-        <h1 className="text-3xl font-bold text-gray-900">{t('invoices.createInvoice')}</h1>
-        <p className="text-gray-600 mt-2">{t('invoices.invoiceList')}</p>
+        <h1 className="text-3xl font-bold text-gray-900">Edit Invoice</h1>
+        <p className="text-gray-600 mt-2">Update invoice details</p>
       </div>
 
       <Card>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="patientId" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="patientId" className="block text-sm font-medium text-gray-700 mb-2">
                 Patient *
               </label>
               <select
@@ -403,7 +301,7 @@ export default function NewInvoicePage() {
             </div>
 
             <div>
-              <label htmlFor="invoiceDate" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="invoiceDate" className="block text-sm font-medium text-gray-700 mb-2">
                 Invoice Date *
               </label>
               <Input
@@ -416,7 +314,7 @@ export default function NewInvoicePage() {
             </div>
 
             <div>
-              <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2">
                 Due Date
               </label>
               <Input
@@ -428,8 +326,8 @@ export default function NewInvoicePage() {
             </div>
           </div>
 
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-3">
+          <div className="border-t pt-6">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">Invoice Items</h2>
               <Button type="button" variant="secondary" onClick={addItem}>
                 + Add Item
@@ -440,22 +338,22 @@ export default function NewInvoicePage() {
               <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Discount (%)</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tax Rate (%)</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Discount (%)</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax Rate (%)</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {items.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 text-sm text-gray-900">{index + 1}</td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-3 text-sm text-gray-900">{index + 1}</td>
+                      <td className="px-4 py-3 text-sm">
                         <select
                           required
                           value={item.type}
@@ -469,7 +367,7 @@ export default function NewInvoicePage() {
                           <option value="other">Other</option>
                         </select>
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-3 text-sm">
                         <Input
                           required
                           value={item.description}
@@ -478,7 +376,7 @@ export default function NewInvoicePage() {
                           className="text-xs w-full"
                         />
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-3 text-sm">
                         <Input
                           type="number"
                           min="1"
@@ -488,7 +386,7 @@ export default function NewInvoicePage() {
                           className="text-xs w-20"
                         />
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-3 text-sm">
                         <Input
                           type="number"
                           min="0"
@@ -499,7 +397,7 @@ export default function NewInvoicePage() {
                           className="text-xs w-24"
                         />
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-3 text-sm">
                         <Input
                           type="number"
                           min="0"
@@ -509,7 +407,7 @@ export default function NewInvoicePage() {
                           className="text-xs w-20"
                         />
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-3 text-sm">
                         <Input
                           type="number"
                           min="0"
@@ -519,10 +417,10 @@ export default function NewInvoicePage() {
                           className="text-xs w-20"
                         />
                       </td>
-                      <td className="px-4 py-2 text-sm font-medium text-gray-900">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
                         {formatCurrencyUtil(calculateItemTotal(item).total, currency, locale)}
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-3 text-sm">
                         {items.length > 1 && (
                           <Button
                             type="button"
@@ -625,7 +523,7 @@ export default function NewInvoicePage() {
               Cancel
             </Button>
             <Button type="submit" isLoading={submitting}>
-              Create Invoice
+              Update Invoice
             </Button>
           </div>
         </form>

@@ -1,5 +1,8 @@
+'use client';
+
 import React from 'react';
 import { Button } from './Button.jsx';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function SubscriptionCard({
   name,
@@ -18,6 +21,8 @@ export function SubscriptionCard({
   ctaDisabled = false,
   className = '',
 }) {
+  const { t } = useI18n();
+  
   const formatPrice = (amount, curr) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -27,7 +32,7 @@ export function SubscriptionCard({
     }).format(amount / 100);
   };
 
-  const billingPeriod = billingCycle === 'MONTHLY' ? 'month' : 'year';
+  const billingPeriod = billingCycle === 'MONTHLY' ? t('pricing.perMonth') : t('pricing.perYear');
   const isPaid = price > 0;
 
   return (
@@ -44,7 +49,7 @@ export function SubscriptionCard({
       {isPopular && (
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
           <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-1.5 rounded-full text-sm font-semibold shadow-md">
-            ⭐ Most Popular
+            {t('pricing.mostPopular')}
           </div>
         </div>
       )}
@@ -53,7 +58,7 @@ export function SubscriptionCard({
       {isCurrent && (
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
           <div className="bg-gradient-to-r from-green-600 to-green-500 text-white px-6 py-1.5 rounded-full text-sm font-semibold shadow-md">
-            ✓ Current Plan
+            {t('pricing.currentPlan')}
           </div>
         </div>
       )}
@@ -71,7 +76,7 @@ export function SubscriptionCard({
         <div className="mb-8">
           {price === 0 ? (
             <div className="flex items-baseline">
-              <span className="text-5xl font-bold text-gray-900">Free</span>
+              <span className="text-5xl font-bold text-gray-900">{t('pricing.free')}</span>
             </div>
           ) : (
             <div className="flex items-baseline">
@@ -85,7 +90,7 @@ export function SubscriptionCard({
           )}
           {billingCycle === 'YEARLY' && isPaid && (
             <p className="text-sm text-green-600 font-medium mt-2">
-              💰 Save 20% with annual billing
+              {t('pricing.save20Annual')}
             </p>
           )}
         </div>
@@ -123,7 +128,7 @@ export function SubscriptionCard({
                   </svg>
                 </div>
                 <span className="text-gray-700 text-sm leading-relaxed">
-                  <strong className="font-semibold">{maxUsers}</strong> team members
+                  <strong className="font-semibold">{maxUsers}</strong> {t('pricing.teamMembers')}
                 </span>
               </li>
             )}
@@ -136,7 +141,7 @@ export function SubscriptionCard({
                   </svg>
                 </div>
                 <span className="text-gray-700 text-sm leading-relaxed">
-                  Up to <strong className="font-semibold">{maxPatients.toLocaleString()}</strong> patients
+                  {t('pricing.upToPatients')} <strong className="font-semibold">{maxPatients.toLocaleString()}</strong> {t('pricing.patients')}
                 </span>
               </li>
             )}
@@ -149,7 +154,7 @@ export function SubscriptionCard({
                   </svg>
                 </div>
                 <span className="text-gray-700 text-sm leading-relaxed">
-                  <strong className="font-semibold">{maxStorageGB}GB</strong> storage
+                  <strong className="font-semibold">{maxStorageGB}GB</strong> {t('pricing.storage')}
                 </span>
               </li>
             )}

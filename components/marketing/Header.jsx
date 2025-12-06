@@ -48,7 +48,7 @@ export function Header() {
               href="/pricing"
               className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
             >
-              Pricing
+              {t('navigation.pricing')}
             </Link>
             <Link
               href="/support"
@@ -78,7 +78,7 @@ export function Header() {
                   onClick={() => router.push('/dashboard')}
                   className="whitespace-nowrap"
                 >
-                  Go to Dashboard
+                  {t('navigation.goToDashboard')}
                 </Button>
               </>
             ) : (

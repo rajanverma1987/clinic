@@ -7,11 +7,14 @@ import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/ui/Card';
+import { useSettings } from '@/hooks/useSettings';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const { t } = useI18n();
+  const { currency, locale } = useSettings();
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -90,11 +93,7 @@ export default function DashboardPage() {
   }
 
   const formatCurrency = (amount) => {
-    // Amount is in minor units (cents/paisa), convert to major units
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD', // TODO: Get from tenant settings
-    }).format(amount / 100);
+    return formatCurrencyUtil(amount, currency, locale);
   };
 
   return (

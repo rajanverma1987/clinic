@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { VideoCallManager } from '@/lib/webrtc/video-call';
 import { apiClient } from '@/lib/api/client';
+import { Modal } from '@/components/ui/Modal';
 
 export default function VideoConsultationRoom() {
   const router = useRouter();
@@ -32,6 +33,8 @@ export default function VideoConsultationRoom() {
   
   const [remoteUserId, setRemoteUserId] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [sessionData, setSessionData] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     // Session timer
@@ -48,18 +51,39 @@ export default function VideoConsultationRoom() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Load session data on mount
+  useEffect(() => {
+    const loadSession = async () => {
+      try {
+        const sessionResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
+        if (sessionResponse.success && sessionResponse.data) {
+          setSessionData(sessionResponse.data);
+        }
+      } catch (error) {
+        console.error('Failed to load session:', error);
+      }
+    };
+    if (sessionId) {
+      loadSession();
+    }
+  }, [sessionId]);
+
   const handleConnect = async () => {
     try {
-      // Fetch session to get doctor/patient IDs
-      const sessionResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
-      if (!sessionResponse.success || !sessionResponse.data) {
-        alert('Failed to load session details');
-        return;
+      // Use cached session data or fetch if not available
+      let session = sessionData;
+      if (!session) {
+        const sessionResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
+        if (!sessionResponse.success || !sessionResponse.data) {
+          alert('Failed to load session details');
+          return;
+        }
+        session = sessionResponse.data;
+        setSessionData(session);
       }
 
-      const sessionData = sessionResponse.data;
-      const doctorId = sessionData.doctorId?._id || sessionData.doctorId;
-      const patientId = sessionData.patientId?._id || sessionData.patientId;
+      const doctorId = session.doctorId?._id || session.doctorId;
+      const patientId = session.patientId?._id || session.patientId;
       
       // Determine remote user ID (if doctor, remote is patient and vice versa)
       const isDoctor = user?.userId === doctorId;
@@ -214,6 +238,44 @@ export default function VideoConsultationRoom() {
     }
   };
 
+  const handleShareLink = async () => {
+    const videoLink = `${window.location.origin}/telemedicine/${sessionId}`;
+    
+    try {
+      // Try to copy to clipboard
+      await navigator.clipboard.writeText(videoLink);
+      alert('Video link copied to clipboard!');
+    } catch (error) {
+      // Fallback: show modal with link
+      setShowShareModal(true);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!sessionData?.patientId?.email) {
+      alert('Patient email not available');
+      return;
+    }
+
+    try {
+      const response = await apiClient.post('/telemedicine/sessions/send-link', {
+        sessionId,
+        patientEmail: sessionData.patientId.email,
+        videoLink: `${window.location.origin}/telemedicine/${sessionId}`,
+      });
+
+      if (response.success) {
+        alert('Video link sent to patient via email!');
+        setShowShareModal(false);
+      } else {
+        alert(response.error?.message || 'Failed to send email');
+      }
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      alert('Failed to send email. Please try copying the link manually.');
+    }
+  };
+
   return (
     <div className="h-screen bg-gray-900 flex flex-col">
       {/* Header */}
@@ -235,6 +297,20 @@ export default function VideoConsultationRoom() {
             <span className="text-sm text-gray-400">Duration: </span>
             <span className="font-mono">{formatDuration(sessionDuration)}</span>
           </div>
+          {sessionData && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShareLink}
+              className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+              title="Share video link with patient"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              Share Link
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -442,6 +518,60 @@ export default function VideoConsultationRoom() {
           </Card>
         </div>
       )}
+
+      {/* Share Link Modal */}
+      <Modal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        title="Share Video Link"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Video Consultation Link
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/telemedicine/${sessionId}`}
+                readOnly
+                className="flex-1"
+              />
+              <Button
+                onClick={async () => {
+                  const link = `${window.location.origin}/telemedicine/${sessionId}`;
+                  try {
+                    await navigator.clipboard.writeText(link);
+                    alert('Link copied to clipboard!');
+                  } catch (error) {
+                    alert('Failed to copy link');
+                  }
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+          </div>
+          
+          {sessionData?.patientId?.email && (
+            <div>
+              <Button
+                onClick={handleSendEmail}
+                className="w-full"
+                variant="primary"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Send Link via Email to {sessionData.patientId.email}
+              </Button>
+            </div>
+          )}
+          
+          <p className="text-sm text-gray-600">
+            Share this link with the patient so they can join the video consultation.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }
