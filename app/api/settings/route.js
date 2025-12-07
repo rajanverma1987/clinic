@@ -95,6 +95,19 @@ async function putHandler(req, user) {
         tenant.settings.clinicHours = body.settings.clinicHours;
         tenant.markModified('settings.clinicHours');
       }
+      if (body.settings.smtp !== undefined && body.settings.smtp !== null) {
+        // Merge SMTP settings, only update password if provided
+        const existingSmtp = tenant.settings.smtp || {};
+        const newSmtp = { ...existingSmtp, ...body.settings.smtp };
+        
+        // If password is not provided in the update, keep the existing one
+        if (!body.settings.smtp.password || body.settings.smtp.password === '') {
+          delete newSmtp.password;
+        }
+        
+        tenant.settings.smtp = newSmtp;
+        tenant.markModified('settings.smtp');
+      }
     }
     if (body.isActive !== undefined) tenant.isActive = body.isActive;
 

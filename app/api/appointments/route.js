@@ -132,7 +132,8 @@ async function postHandler(req, user) {
             doctorName,
             sessionLink,
             appointment.startTime,
-            telemedicineSession.sessionId
+            telemedicineSession.sessionId,
+            user.tenantId
           );
 
           console.log(`📧 Video consultation email sent to: ${body.patientEmail}`);
@@ -140,6 +141,35 @@ async function postHandler(req, user) {
       } catch (emailError) {
         console.error('Failed to create session or send email:', emailError);
         // Don't fail appointment creation if email fails
+      }
+    } else {
+      // Send appointment confirmation email for regular appointments
+      try {
+        const { sendAppointmentConfirmationEmail } = await import('@/lib/email/email-service.js');
+        const patient = await Patient.findById(appointment.patientId);
+        
+        if (patient?.email) {
+          const doctor = await User.findById(appointment.doctorId);
+          if (doctor) {
+            const patientName = `${patient.firstName} ${patient.lastName}`;
+            const doctorName = `${doctor.firstName} ${doctor.lastName}`;
+            
+            await sendAppointmentConfirmationEmail(
+              patient.email,
+              patientName,
+              doctorName,
+              appointment.appointmentDate,
+              appointment.startTime,
+              appointment.type || 'consultation',
+              user.tenantId
+            );
+            
+            console.log(`📧 Appointment confirmation email sent to: ${patient.email}`);
+          }
+        }
+      } catch (emailError) {
+        // Don't fail appointment creation if email fails
+        console.error('Failed to send appointment confirmation email:', emailError);
       }
     }
 

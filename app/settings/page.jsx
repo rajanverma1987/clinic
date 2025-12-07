@@ -57,6 +57,18 @@ export default function SettingsPage() {
     rate: 0,
   });
 
+  const [smtpForm, setSmtpForm] = useState({
+    enabled: false,
+    host: '',
+    port: 587,
+    secure: false,
+    user: '',
+    password: '',
+    fromEmail: '',
+    fromName: '',
+    rejectUnauthorized: true,
+  });
+
   const [clinicHours, setClinicHours] = useState([
     { day: 'Monday', isOpen: true, timeSlots: [{ startTime: '09:00', endTime: '17:00' }] },
     { day: 'Tuesday', isOpen: true, timeSlots: [{ startTime: '09:00', endTime: '17:00' }] },
@@ -321,6 +333,38 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveSmtp = async () => {
+    setSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      // Only send password if it was changed (not empty)
+      const smtpData = { ...smtpForm };
+      if (!smtpData.password) {
+        // Remove password from update if not provided
+        delete smtpData.password;
+      }
+      
+      const response = await apiClient.put('/settings', {
+        settings: {
+          smtp: smtpData,
+        },
+      });
+      if (response.success) {
+        setSuccess('SMTP settings saved successfully');
+        // Clear password field after save
+        setSmtpForm({ ...smtpForm, password: '' });
+        fetchSettings();
+      } else {
+        setError(response.error?.message || 'Failed to save settings');
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveHours = async () => {
     setSaving(true);
     setError('');
@@ -506,6 +550,12 @@ export default function SettingsPage() {
     </svg>
   );
 
+  const EmailIcon = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  );
+
   // Define all tabs
   const allTabs = [
     { id: 'profile', label: t('settings.profile'), icon: <ProfileIcon />, adminOnly: false },
@@ -515,6 +565,7 @@ export default function SettingsPage() {
     { id: 'hours', label: t('settings.clinicHours'), icon: <HoursIcon />, adminOnly: false },
     { id: 'queue', label: t('settings.queueSettings'), icon: <QueueIcon />, adminOnly: false },
     { id: 'tax', label: t('settings.taxSettings'), icon: <TaxIcon />, adminOnly: false },
+    { id: 'smtp', label: t('settings.emailSettings') || 'Email Settings', icon: <EmailIcon />, adminOnly: true },
   ];
 
   // Filter tabs based on user role
@@ -1214,6 +1265,163 @@ export default function SettingsPage() {
 
             <div className="flex justify-end">
               <Button onClick={handleSaveTax} isLoading={saving}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* SMTP/Email Settings */}
+      {activeTab === 'smtp' && (
+        <Card>
+          <h2 className="text-xl font-semibold mb-6">Email (SMTP) Configuration</h2>
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Configure clinic-specific SMTP settings here. If not configured, the system will use Platform email settings. 
+                
+              </p>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={smtpForm.enabled}
+                onChange={(e) => setSmtpForm({ ...smtpForm, enabled: e.target.checked })}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label className="ml-2 text-sm font-medium text-gray-700">
+                Enable Clinic-Specific SMTP Settings
+              </label>
+            </div>
+
+            {smtpForm.enabled && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SMTP Host *
+                    </label>
+                    <Input
+                      value={smtpForm.host}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, host: e.target.value })}
+                      placeholder="e.g., smtp.gmail.com"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">SMTP server hostname</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SMTP Port *
+                    </label>
+                    <Input
+                      type="number"
+                      value={smtpForm.port}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, port: parseInt(e.target.value) || 587 })}
+                      placeholder="587"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Usually 587 (TLS) or 465 (SSL)</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={smtpForm.secure}
+                    onChange={(e) => setSmtpForm({ ...smtpForm, secure: e.target.checked })}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label className="ml-2 text-sm font-medium text-gray-700">
+                    Use SSL/TLS (usually for port 465)
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SMTP Username *
+                    </label>
+                    <Input
+                      value={smtpForm.user}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, user: e.target.value })}
+                      placeholder="your-email@gmail.com"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      SMTP Password {smtpForm.password ? '(change)' : '(leave blank to keep existing)'}
+                    </label>
+                    <Input
+                      type="password"
+                      value={smtpForm.password}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, password: e.target.value })}
+                      placeholder="Enter new password or leave blank"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">For Gmail, use App Password</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      From Email Address *
+                    </label>
+                    <Input
+                      type="email"
+                      value={smtpForm.fromEmail}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })}
+                      placeholder="noreply@yourclinic.com"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Sender email address</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      From Name
+                    </label>
+                    <Input
+                      value={smtpForm.fromName}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, fromName: e.target.value })}
+                      placeholder="Your Clinic Name"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Display name for sender</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={smtpForm.rejectUnauthorized}
+                    onChange={(e) => setSmtpForm({ ...smtpForm, rejectUnauthorized: e.target.checked })}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label className="ml-2 text-sm font-medium text-gray-700">
+                    Reject Unauthorized SSL Certificates (recommended: enabled)
+                  </label>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Common SMTP Providers:</strong>
+                  </p>
+                  <ul className="text-xs text-yellow-700 mt-2 list-disc list-inside space-y-1">
+                    <li><strong>Gmail:</strong> smtp.gmail.com, Port 587, Use App Password</li>
+                    <li><strong>Outlook:</strong> smtp.office365.com, Port 587</li>
+                    <li><strong>SendGrid:</strong> smtp.sendgrid.net, Port 587, Username: apikey</li>
+                    <li><strong>AWS SES:</strong> email-smtp.region.amazonaws.com, Port 587</li>
+                  </ul>
+                </div>
+              </>
+            )}
+
+            <div className="flex justify-end">
+              <Button onClick={handleSaveSmtp} isLoading={saving} disabled={smtpForm.enabled && (!smtpForm.host || !smtpForm.user || !smtpForm.fromEmail)}>
                 Save Changes
               </Button>
             </div>

@@ -390,6 +390,7 @@
     "complianceSettings": "Compliance Settings",
     "queueSettings": "Queue Settings",
     "taxSettings": "Tax Settings",
+    "emailSettings": "Email Settings",
     "clinicHours": "Clinic Hours",
     "day": "Day",
     "isOpen": "Is Open",
@@ -478,11 +479,30 @@
   },
   "navigation": {
     "features": "Features",
+    "blog": "Blog",
     "support": "Support",
     "contact": "Contact",
     "getStarted": "Get Started",
     "pricing": "Pricing",
     "goToDashboard": "Go to Dashboard"
+  },
+  "blog": {
+    "title": "Blog & Resources",
+    "subtitle": "Learn about clinic management, best practices, and how Doctor's Clinic can transform your practice",
+    "readMore": "Read more",
+    "backToBlog": "Back to Blog",
+    "relatedArticles": "Related Articles",
+    "published": "Published",
+    "updated": "Updated",
+    "tags": "Tags",
+    "readTime": "min read",
+    "categories": {
+      "overview": "Overview",
+      "features": "Features",
+      "operations": "Operations",
+      "security": "Security",
+      "telemedicine": "Telemedicine"
+    }
   },
   "subscription": {
     "title": "Subscription",

@@ -45,6 +45,12 @@ export function Header() {
               {t('navigation.features')}
             </Link>
             <Link
+              href="/blog"
+              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+            >
+              {t('navigation.blog') || 'Blog'}
+            </Link>
+            <Link
               href="/pricing"
               className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
             >

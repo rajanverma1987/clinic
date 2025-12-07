@@ -84,31 +84,63 @@ export async function markReminderSent(appointmentId, tenantId) {
 }
 
 /**
- * Send reminder (placeholder - integrate with SMS/Email/WhatsApp service)
- * This should be implemented based on tenant's notification preferences
+ * Send reminder via email
+ * This sends email reminders based on tenant's notification preferences
  */
 export async function sendReminder(job) {
   try {
-    // TODO: Integrate with notification service
-    // - Check tenant settings for preferred channel (SMS/Email/WhatsApp)
-    // - Format message (no PHI in notifications per compliance rules)
-    // - Send via appropriate gateway
-    // - Log delivery attempt
+    // Check if patient has email
+    if (!job.patientEmail) {
+      console.warn(`[REMINDER] No email for patient ${job.patientName}, skipping email reminder`);
+      // Still mark as sent to avoid retrying
+      await markReminderSent(job.appointmentId, job.tenantId);
+      return true;
+    }
 
-    // For now, just log
-    console.log('[REMINDER]', {
-      appointmentId: job.appointmentId,
-      patientName: job.patientName,
-      appointmentTime: job.startTime,
-      tenant: job.tenantName,
-    });
+    // Import email service
+    const { sendAppointmentReminderEmail } = await import('@/lib/email/email-service.js');
+    
+    // Determine appointment type (default to 'consultation')
+    const appointment = await Appointment.findById(job.appointmentId).lean();
+    const appointmentType = appointment?.type || 'consultation';
 
-    // Mark as sent
+    // Send email reminder
+    const emailSent = await sendAppointmentReminderEmail(
+      job.patientEmail,
+      job.patientName,
+      job.doctorName,
+      job.appointmentDate,
+      job.startTime,
+      appointmentType,
+      job.tenantId
+    );
+
+    if (emailSent) {
+      console.log('[REMINDER] ✅ Email reminder sent:', {
+        appointmentId: job.appointmentId,
+        patientName: job.patientName,
+        appointmentTime: job.startTime,
+        tenant: job.tenantName,
+      });
+    } else {
+      console.error('[REMINDER] ❌ Failed to send email reminder:', {
+        appointmentId: job.appointmentId,
+        patientEmail: job.patientEmail,
+      });
+    }
+
+    // Mark as sent (even if email failed, to avoid infinite retries)
     await markReminderSent(job.appointmentId, job.tenantId);
 
-    return true;
+    return emailSent;
   } catch (error) {
     console.error('[REMINDER ERROR]', error);
+    // Mark as sent to avoid infinite retries
+    try {
+      await markReminderSent(job.appointmentId, job.tenantId);
+    } catch (markError) {
+      console.error('[REMINDER] Failed to mark reminder as sent:', markError);
+    }
     return false;
   }
 }

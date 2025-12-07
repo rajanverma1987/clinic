@@ -93,6 +93,29 @@ const TenantSchema = new Schema(
           ],
         },
       ],
+      smtp: {
+        enabled: {
+          type: Boolean,
+          default: false,
+        },
+        host: String,
+        port: {
+          type: Number,
+          default: 587,
+        },
+        secure: {
+          type: Boolean,
+          default: false,
+        },
+        user: String,
+        password: String,
+        fromEmail: String,
+        fromName: String,
+        rejectUnauthorized: {
+          type: Boolean,
+          default: true,
+        },
+      },
     },
     isActive: {
       type: Boolean,

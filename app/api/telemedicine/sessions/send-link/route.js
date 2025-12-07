@@ -83,13 +83,13 @@ Best regards,
 Doctor's Clinic Team
     `;
 
-    // Send email to patient
+    // Send email to patient (pass user's tenantId if available)
     await sendEmail({
       to: patientEmail,
       subject,
       html,
       text,
-    });
+    }, user?.tenantId || null);
 
     return NextResponse.json(successResponse({ message: 'Email sent successfully' }));
   } catch (error) {

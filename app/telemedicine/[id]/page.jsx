@@ -359,9 +359,22 @@ function VideoConsultationRoomContent() {
         },
         {
           onLocalStream: (stream) => {
+            console.log('[Telemedicine] 📹 onLocalStream callback called:', {
+              hasStream: !!stream,
+              tracks: stream?.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })),
+              hasVideoRef: !!videoRef.current
+            });
             if (videoRef.current) {
               videoRef.current.srcObject = stream;
               localStreamRef.current = stream; // Store for screen share
+              console.log('[Telemedicine] ✅ Local stream set to video element');
+              
+              // Ensure video plays
+              videoRef.current.play().catch(err => {
+                console.error('[Telemedicine] ❌ Failed to play local video:', err);
+              });
+            } else {
+              console.warn('[Telemedicine] ⚠️ videoRef.current is null, cannot set local stream');
             }
           },
           onRemoteStream: (stream) => {
@@ -406,6 +419,22 @@ function VideoConsultationRoomContent() {
       try {
         await callManager.startCall();
         console.log('[Step 5] Call manager started successfully');
+        
+        // Ensure local stream is displayed if it wasn't set via callback
+        // This is a fallback in case the callback didn't fire or videoRef wasn't ready
+        setTimeout(() => {
+          if (callManagerRef.current?.peerConnection?.localStream) {
+            const stream = callManagerRef.current.peerConnection.localStream;
+            if (videoRef.current && !videoRef.current.srcObject) {
+              console.log('[Step 5] Fallback: Setting local stream to video element');
+              videoRef.current.srcObject = stream;
+              localStreamRef.current = stream;
+              videoRef.current.play().catch(err => {
+                console.error('[Step 5] Failed to play local video in fallback:', err);
+              });
+            }
+          }
+        }, 500);
       } catch (error) {
         console.error('[Step 5] Failed to start call manager:', error);
         setConnectionStatus('failed');
@@ -687,6 +716,17 @@ function VideoConsultationRoomContent() {
                 autoPlay
                 playsInline
                 className="w-full h-full object-cover"
+                onLoadedMetadata={() => {
+                  console.log('[Telemedicine] ✅ Remote video metadata loaded');
+                  if (remoteVideoRef.current) {
+                    remoteVideoRef.current.play().catch(err => {
+                      console.error('[Telemedicine] ❌ Failed to play remote video after metadata:', err);
+                    });
+                  }
+                }}
+                onError={(e) => {
+                  console.error('[Telemedicine] ❌ Remote video error:', e);
+                }}
               />
 
               {/* Local Video (Picture in Picture) */}
@@ -697,6 +737,17 @@ function VideoConsultationRoomContent() {
                   playsInline
                   muted
                   className="w-full h-full object-cover"
+                  onLoadedMetadata={() => {
+                    console.log('[Telemedicine] ✅ Local video metadata loaded');
+                    if (videoRef.current) {
+                      videoRef.current.play().catch(err => {
+                        console.error('[Telemedicine] ❌ Failed to play local video after metadata:', err);
+                      });
+                    }
+                  }}
+                  onError={(e) => {
+                    console.error('[Telemedicine] ❌ Local video error:', e);
+                  }}
                 />
                 <div className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2">
                   <span className="bg-black bg-opacity-70 text-white text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[10px] sm:text-xs">

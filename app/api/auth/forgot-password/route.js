@@ -67,18 +67,26 @@ export async function POST(req) {
       used: false,
     });
 
-    // TODO: Send email with secret code
-    // In production, use an email service like SendGrid, AWS SES, etc.
-    // For now, we'll log it (remove in production!)
-    console.log(`Password reset code for ${email}: ${secretCode}`);
-    
+    // Send email with secret code
+    const { sendPasswordResetEmail } = await import('@/lib/email/email-service.js');
+    const emailSent = await sendPasswordResetEmail(
+      email.toLowerCase(),
+      secretCode,
+      user.tenantId
+    );
+
+    if (!emailSent) {
+      console.error(`Failed to send password reset email to ${email}`);
+      // Still return success to prevent email enumeration
+    }
+
     // In development, you might want to return the code for testing
     // Remove this in production!
     if (process.env.NODE_ENV === 'development') {
       return NextResponse.json(
         successResponse({
           message: 'Password reset code sent to your email.',
-          // Only include in development
+          // Only include in development for testing
           secretCode: process.env.NODE_ENV === 'development' ? secretCode : undefined,
         })
       );
