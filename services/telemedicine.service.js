@@ -1,10 +1,12 @@
 /**
  * Telemedicine Service
- * Handles video consultations, chat, and session management
+ * Handles video consultations, and session management
  */
 
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession, { SessionStatus } from '@/models/TelemedicineSession.js';
+import Patient from '@/models/Patient.js';
+import User from '@/models/User.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 
@@ -78,7 +80,7 @@ export async function createTelemedicineSession(tenantId, userId, data) {
 export async function getSessionById(sessionId, tenantId = null) {
   await connectDB();
 
-  const query = tenantId 
+  const query = tenantId
     ? withTenant(tenantId, { _id: sessionId })
     : { _id: sessionId };
 
@@ -158,7 +160,7 @@ export async function endSession(sessionId, tenantId, userId, data) {
 
   session.status = SessionStatus.COMPLETED;
   session.actualEndTime = new Date();
-  
+
   if (session.actualStartTime) {
     const duration = Math.round(
       (session.actualEndTime.getTime() - session.actualStartTime.getTime()) / 1000 / 60

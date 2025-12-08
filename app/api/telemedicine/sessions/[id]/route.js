@@ -6,6 +6,9 @@ import {
   startSession,
   endSession,
 } from '@/services/telemedicine.service';
+import connectDB from '@/lib/db/connection.js';
+import TelemedicineSession from '@/models/TelemedicineSession.js';
+import { withTenant } from '@/lib/db/tenant-helper.js';
 
 /**
  * GET /api/telemedicine/sessions/:id
@@ -62,6 +65,24 @@ async function putHandler(
         );
       }
       return NextResponse.json(successResponse(session));
+    }
+
+    // Update session with any additional fields
+    if (body && Object.keys(body).length > 0) {
+      await connectDB();
+      const session = await TelemedicineSession.findOne(
+        withTenant(user.tenantId, { _id: params.id })
+      );
+      if (!session) {
+        return NextResponse.json(
+          errorResponse('Session not found', 'NOT_FOUND'),
+          { status: 404 }
+        );
+      }
+      // Update session fields
+      Object.assign(session, body);
+      await session.save();
+      return NextResponse.json(successResponse(session.toObject()));
     }
 
     if (action === 'end') {
