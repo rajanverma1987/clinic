@@ -209,7 +209,8 @@ function VideoConsultationRoomContent() {
       }
 
       // Determine user IDs
-      // If user is authenticated, use their userId, otherwise generate a unique ID
+      // CRITICAL: Both users must use the SAME userId format for signaling to work
+      // If user is authenticated, use their userId, otherwise use session-based ID
       let currentUserId;
       if (user) {
         // Try multiple possible user ID fields
@@ -229,28 +230,43 @@ function VideoConsultationRoomContent() {
               ? session.doctorId._id?.toString() || `doctor-${sessionId}`
               : session.doctorId.toString();
           } else {
-            // Fallback: generate unique ID
-            currentUserId = `user-${sessionId}-${Date.now()}`;
+            // Fallback: use session-based ID (consistent format)
+            currentUserId = `user-${sessionId}`;
           }
         }
       } else {
         // No user object - this is a patient (anonymous)
-        currentUserId = `patient-${sessionId}-${Date.now()}`;
+        // Use consistent format: patient-{sessionId} (NO timestamp to ensure matching)
+        // If session has patientId, use it; otherwise use fallback
+        currentUserId = session.patientId?._id || session.patientId || `patient-${sessionId}`;
+        if (currentUserId) {
+          currentUserId = currentUserId.toString();
+        } else {
+          currentUserId = `patient-${sessionId}`;
+        }
       }
       
       // Ensure currentUserId is never undefined
       if (!currentUserId) {
-        currentUserId = `user-${sessionId}-${Date.now()}`;
+        currentUserId = user ? `doctor-${sessionId}` : `patient-${sessionId}`;
       }
       
-      let remoteUserId = user 
-        ? (session.patientId?._id || session.patientId || `patient-${sessionId}`)
-        : (session.doctorId?._id || session.doctorId || `doctor-${sessionId}`);
+      // Determine remoteUserId - must match the other peer's currentUserId
+      let remoteUserId;
+      if (user) {
+        // Doctor is connected - remote is patient
+        remoteUserId = session.patientId?._id || session.patientId || `patient-${sessionId}`;
+      } else {
+        // Patient is connected - remote is doctor
+        remoteUserId = session.doctorId?._id || session.doctorId || `doctor-${sessionId}`;
+      }
       
-      // Ensure remoteUserId is never undefined
+      // Ensure remoteUserId is never undefined and convert to string
       if (!remoteUserId) {
         remoteUserId = user ? `patient-${sessionId}` : `doctor-${sessionId}`;
         console.warn('[VideoCall] remoteUserId was undefined, using fallback:', remoteUserId);
+      } else {
+        remoteUserId = remoteUserId.toString();
       }
       
       // Determine if current user is initiator (doctor starts the call)

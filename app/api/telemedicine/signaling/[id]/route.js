@@ -100,11 +100,14 @@ export async function POST(
 
     sessionStore.get(to).push(signalData);
 
-    // HIPAA: No PHI in logs, only session metadata
+    // Debug: Log all users in session after adding signal
+    const allUserIds = Array.from(sessionStore.keys());
     console.log(`[Signaling API] POST ${sessionId}: Signal from ${from} to ${to}`, {
       signalType: signal.type || 'unknown',
       signalId,
-      totalSignalsForRecipient: sessionStore.get(to).length
+      totalSignalsForRecipient: sessionStore.get(to).length,
+      allUsersInSession: allUserIds,
+      recipientHasQueue: sessionStore.has(to)
     });
 
     return NextResponse.json(successResponse({
@@ -160,6 +163,26 @@ export async function GET(
     // Get signals for this user
     const sessionStore = signalingStore.get(sessionId);
     const userSignals = sessionStore?.get(userId) || [];
+
+    // Debug: Log all users in this session for troubleshooting
+    if (sessionStore) {
+      const allUserIds = Array.from(sessionStore.keys());
+      console.log(`[Signaling API] GET ${sessionId} - All users in session:`, allUserIds);
+      console.log(`[Signaling API] GET ${sessionId} - Requesting userId:`, userId);
+      console.log(`[Signaling API] GET ${sessionId} - Signals for this user:`, userSignals.length);
+
+      // Log signals for all users (for debugging)
+      for (const [uid, signals] of sessionStore.entries()) {
+        if (signals.length > 0) {
+          console.log(`[Signaling API] User ${uid} has ${signals.length} signal(s):`, signals.map(s => ({
+            id: s.id,
+            from: s.from,
+            to: s.to,
+            type: s.signal?.type || 'unknown'
+          })));
+        }
+      }
+    }
 
     console.log(`[Signaling API] GET ${sessionId} for userId ${userId}:`, {
       totalSignals: userSignals.length,
