@@ -243,10 +243,12 @@ function VideoConsultationRoomContent() {
           }
         },
         onConnectionChange: (state) => {
+          console.log('[VideoCall] Connection state changed:', state);
           if (state.status === 'connected') {
             setIsConnected(true);
             setIsConnecting(false);
             isConnectedRef.current = true;
+            setConnectionError(null);
           } else if (state.status === 'disconnected' || state.status === 'ended') {
             setIsConnected(false);
             setIsConnecting(false);
@@ -254,6 +256,9 @@ function VideoConsultationRoomContent() {
           } else if (state.status === 'error') {
             setIsConnecting(false);
             setConnectionError(state.error?.message || 'Connection error occurred');
+          } else if (state.status === 'connecting') {
+            // Keep connecting state
+            setIsConnecting(true);
           }
         },
         onError: (error) => {
@@ -525,10 +530,17 @@ function VideoConsultationRoomContent() {
 
               {/* Connecting Indicator */}
               {isConnecting && !isConnected && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <div className="text-center">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                  <div className="text-center bg-gray-900/90 rounded-lg p-6 max-w-md mx-4">
                     <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-white text-lg">Connecting...</p>
+                    <p className="text-white text-lg font-semibold mb-2">Connecting...</p>
+                    <p className="text-gray-400 text-sm">Establishing peer-to-peer connection</p>
+                    <p className="text-gray-500 text-xs mt-2">This may take a few seconds</p>
+                    {connectionError && (
+                      <div className="mt-4 p-3 bg-red-900/50 border border-red-700 rounded text-red-200 text-xs">
+                        {connectionError}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

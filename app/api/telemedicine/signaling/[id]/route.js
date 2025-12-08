@@ -101,7 +101,11 @@ export async function POST(
     sessionStore.get(to).push(signalData);
 
     // HIPAA: No PHI in logs, only session metadata
-    console.log(`[Signaling] Session ${sessionId}: Signal from ${from} to ${to}`);
+    console.log(`[Signaling API] POST ${sessionId}: Signal from ${from} to ${to}`, {
+      signalType: signal.type || 'unknown',
+      signalId,
+      totalSignalsForRecipient: sessionStore.get(to).length
+    });
 
     return NextResponse.json(successResponse({
       id: signalId,
@@ -157,6 +161,12 @@ export async function GET(
     const sessionStore = signalingStore.get(sessionId);
     const userSignals = sessionStore?.get(userId) || [];
 
+    console.log(`[Signaling API] GET ${sessionId} for userId ${userId}:`, {
+      totalSignals: userSignals.length,
+      lastSignalId,
+      allSignalIds: userSignals.map(s => s.id)
+    });
+
     // Filter signals after lastSignalId
     let signals = userSignals;
     if (lastSignalId) {
@@ -165,6 +175,8 @@ export async function GET(
         signals = userSignals.slice(lastIndex + 1);
       }
     }
+
+    console.log(`[Signaling API] Returning ${signals.length} new signals for userId ${userId}`);
 
     // Clear processed signals (keep only last 10 for debugging)
     if (sessionStore && sessionStore.has(userId)) {
