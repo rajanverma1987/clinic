@@ -98,7 +98,7 @@ listening-ip=0.0.0.0
 # External IP (REPLACE WITH YOUR VPS PUBLIC IP)
 external-ip=YOUR_VPS_PUBLIC_IP
 
-# Domain/realm
+# Domain/realmuse
 realm=yourdomain.com
 server-name=yourdomain.com
 
@@ -133,7 +133,7 @@ max-port=65535
 
 # ===========================================
 # Logging
-# ===========================================
+# ===========================================verb
 
 # Log file location
 log-file=/var/log/turn.log
