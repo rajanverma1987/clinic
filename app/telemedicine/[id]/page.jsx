@@ -209,20 +209,82 @@ function VideoConsultationRoomContent() {
       }
 
       // Determine user IDs
-      const currentUserId = user ? user.userId : `patient-${sessionId}`;
-      const remoteUserId = user 
+      // If user is authenticated, use their userId, otherwise generate a unique ID
+      let currentUserId;
+      if (user) {
+        // Try multiple possible user ID fields
+        currentUserId = user.userId || user._id || user.id;
+        if (currentUserId) {
+          currentUserId = currentUserId.toString();
+        } else {
+          // User object exists but no ID field found - use session-based ID
+          // Check if this is a doctor (initiator) or patient
+          const isDoctor = session.doctorId && (
+            (typeof session.doctorId === 'object' && session.doctorId._id) ||
+            (typeof session.doctorId === 'string' && session.doctorId)
+          );
+          if (isDoctor) {
+            // Use doctor ID from session
+            currentUserId = typeof session.doctorId === 'object' 
+              ? session.doctorId._id?.toString() || `doctor-${sessionId}`
+              : session.doctorId.toString();
+          } else {
+            // Fallback: generate unique ID
+            currentUserId = `user-${sessionId}-${Date.now()}`;
+          }
+        }
+      } else {
+        // No user object - this is a patient (anonymous)
+        currentUserId = `patient-${sessionId}-${Date.now()}`;
+      }
+      
+      // Ensure currentUserId is never undefined
+      if (!currentUserId) {
+        currentUserId = `user-${sessionId}-${Date.now()}`;
+      }
+      
+      let remoteUserId = user 
         ? (session.patientId?._id || session.patientId || `patient-${sessionId}`)
         : (session.doctorId?._id || session.doctorId || `doctor-${sessionId}`);
       
+      // Ensure remoteUserId is never undefined
+      if (!remoteUserId) {
+        remoteUserId = user ? `patient-${sessionId}` : `doctor-${sessionId}`;
+        console.warn('[VideoCall] remoteUserId was undefined, using fallback:', remoteUserId);
+      }
+      
       // Determine if current user is initiator (doctor starts the call)
+      // If user exists, they're likely the doctor (initiator)
       const isInitiator = !!user;
 
       console.log('[VideoCall] User info:', {
         currentUserId,
         remoteUserId,
         isInitiator,
-        sessionId
+        sessionId,
+        hasUser: !!user,
+        userKeys: user ? Object.keys(user) : [],
+        userValues: user ? {
+          userId: user.userId,
+          _id: user._id,
+          id: user.id
+        } : null
       });
+      
+      // Validate user IDs before proceeding
+      if (!currentUserId || currentUserId === 'undefined') {
+        console.error('[VideoCall] ❌ currentUserId is invalid:', currentUserId);
+        setIsConnecting(false);
+        setConnectionError('Failed to identify user. Please refresh the page and try again.');
+        return;
+      }
+      
+      if (!remoteUserId || remoteUserId === 'undefined') {
+        console.error('[VideoCall] ❌ remoteUserId is invalid:', remoteUserId);
+        setIsConnecting(false);
+        setConnectionError('Failed to identify remote user. Please refresh the page and try again.');
+        return;
+      }
 
       // Create video call manager
       console.log('[VideoCall] Creating VideoCallManager...');
