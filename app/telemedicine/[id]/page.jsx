@@ -378,8 +378,37 @@ function VideoConsultationRoomContent() {
             }
           },
           onRemoteStream: (stream) => {
-            if (remoteVideoRef.current) {
+            console.log('[Telemedicine] 📹 onRemoteStream callback called:', {
+              hasStream: !!stream,
+              tracks: stream?.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })),
+              hasRemoteVideoRef: !!remoteVideoRef.current
+            });
+            if (remoteVideoRef.current && stream) {
               remoteVideoRef.current.srcObject = stream;
+              console.log('[Telemedicine] ✅ Remote stream set to video element');
+              
+              // Ensure video plays and audio is enabled
+              remoteVideoRef.current.play().catch(err => {
+                console.error('[Telemedicine] ❌ Failed to play remote video:', err);
+              });
+              
+              // Ensure audio tracks are enabled
+              stream.getAudioTracks().forEach(track => {
+                if (track && track.readyState === 'live') {
+                  track.enabled = true;
+                  console.log('[Telemedicine] ✅ Remote audio track enabled:', track.id);
+                }
+              });
+              
+              // Ensure video tracks are enabled
+              stream.getVideoTracks().forEach(track => {
+                if (track && track.readyState === 'live') {
+                  track.enabled = true;
+                  console.log('[Telemedicine] ✅ Remote video track enabled:', track.id);
+                }
+              });
+            } else {
+              console.warn('[Telemedicine] ⚠️ remoteVideoRef.current is null or stream is null, cannot set remote stream');
             }
           },
           onConnectionChange: (state) => {
@@ -715,12 +744,23 @@ function VideoConsultationRoomContent() {
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
+                muted={false}
                 className="w-full h-full object-cover"
                 onLoadedMetadata={() => {
                   console.log('[Telemedicine] ✅ Remote video metadata loaded');
                   if (remoteVideoRef.current) {
+                    // Ensure audio is not muted
+                    remoteVideoRef.current.muted = false;
                     remoteVideoRef.current.play().catch(err => {
                       console.error('[Telemedicine] ❌ Failed to play remote video after metadata:', err);
+                    });
+                  }
+                }}
+                onCanPlay={() => {
+                  console.log('[Telemedicine] ✅ Remote video can play');
+                  if (remoteVideoRef.current) {
+                    remoteVideoRef.current.play().catch(err => {
+                      console.error('[Telemedicine] ❌ Failed to play remote video on canPlay:', err);
                     });
                   }
                 }}
