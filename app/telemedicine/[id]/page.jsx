@@ -279,13 +279,8 @@ function VideoConsultationRoomContent() {
       // Determine if current user is initiator (doctor starts the call)
       // Doctor is always the initiator, patient is always the receiver
       // Check session data to determine role, not just user object (auth might fail)
+      // Note: sessionDoctorId, sessionPatientId, sessionDoctorIdStr, sessionPatientIdStr are already declared above
       let isInitiator = false;
-      
-      // Get session IDs for comparison
-      const sessionDoctorId = session.doctorId?._id || session.doctorId;
-      const sessionPatientId = session.patientId?._id || session.patientId;
-      const sessionDoctorIdStr = sessionDoctorId ? sessionDoctorId.toString() : null;
-      const sessionPatientIdStr = sessionPatientId ? sessionPatientId.toString() : null;
       
       // Determine initiator by comparing currentUserId with session IDs
       if (sessionDoctorIdStr && currentUserId === sessionDoctorIdStr) {
@@ -299,7 +294,7 @@ function VideoConsultationRoomContent() {
       } else if (user) {
         // Authenticated user but IDs don't match - assume doctor (authenticated users are usually doctors)
         isInitiator = true;
-        console.log('[VideoCall] ⚠️ User is authenticated but IDs don't match session - assuming DOCTOR (initiator)');
+        console.log('[VideoCall] ⚠️ User is authenticated but IDs don\'t match session - assuming DOCTOR (initiator)');
       } else {
         // Not authenticated and IDs don't match - assume patient (anonymous users are usually patients)
         isInitiator = false;
