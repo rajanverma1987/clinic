@@ -210,46 +210,53 @@ function VideoConsultationRoomContent() {
 
       // Determine user IDs
       // CRITICAL: Both users must use the SAME userId format for signaling to work
-      // If user is authenticated, use their userId, otherwise use session-based ID
+      // Get session IDs first to determine role
+      const sessionDoctorId = session.doctorId?._id || session.doctorId;
+      const sessionPatientId = session.patientId?._id || session.patientId;
+      const sessionDoctorIdStr = sessionDoctorId ? sessionDoctorId.toString() : null;
+      const sessionPatientIdStr = sessionPatientId ? sessionPatientId.toString() : null;
+      
       let currentUserId;
       if (user) {
         // Try multiple possible user ID fields
         currentUserId = user.userId || user._id || user.id;
         if (currentUserId) {
           currentUserId = currentUserId.toString();
-        } else {
-          // User object exists but no ID field found - use session-based ID
-          // Check if this is a doctor (initiator) or patient
-          const isDoctor = session.doctorId && (
-            (typeof session.doctorId === 'object' && session.doctorId._id) ||
-            (typeof session.doctorId === 'string' && session.doctorId)
-          );
-          if (isDoctor) {
-            // Use doctor ID from session
-            currentUserId = typeof session.doctorId === 'object' 
-              ? session.doctorId._id?.toString() || `doctor-${sessionId}`
-              : session.doctorId.toString();
-          } else {
-            // Fallback: use session-based ID (consistent format)
-            currentUserId = `user-${sessionId}`;
+          
+          // Verify this ID matches either doctor or patient in session
+          if (currentUserId !== sessionDoctorIdStr && currentUserId !== sessionPatientIdStr) {
+            console.warn('[VideoCall] User ID does not match session doctorId or patientId. Using session doctorId as fallback.');
+            // If authenticated user, assume they're the doctor
+            currentUserId = sessionDoctorIdStr || `doctor-${sessionId}`;
           }
+        } else {
+          // User object exists but no ID field found - use doctor ID from session (authenticated users are usually doctors)
+          currentUserId = sessionDoctorIdStr || `doctor-${sessionId}`;
         }
       } else {
-        // No user object - this is a patient (anonymous)
-        // Use consistent format: patient-{sessionId} (NO timestamp to ensure matching)
-        // If session has patientId, use it; otherwise use fallback
-        currentUserId = session.patientId?._id || session.patientId || `patient-${sessionId}`;
-        if (currentUserId) {
-          currentUserId = currentUserId.toString();
-        } else {
-          currentUserId = `patient-${sessionId}`;
-        }
+        // No user object - determine if this is doctor or patient by checking URL or session
+        // For now, we'll determine based on which ID is being accessed
+        // If the page is accessed by doctor (authenticated route), they should have user object
+        // If no user object, assume patient (public route)
+        currentUserId = sessionPatientIdStr || `patient-${sessionId}`;
+        console.log('[VideoCall] No user object - assuming PATIENT, using patientId from session');
       }
       
       // Ensure currentUserId is never undefined
       if (!currentUserId) {
+        // Last resort fallback
         currentUserId = user ? `doctor-${sessionId}` : `patient-${sessionId}`;
+        console.warn('[VideoCall] currentUserId was undefined, using fallback:', currentUserId);
       }
+      
+      console.log('[VideoCall] User ID determination:', {
+        hasUser: !!user,
+        currentUserId,
+        sessionDoctorId: sessionDoctorIdStr,
+        sessionPatientId: sessionPatientIdStr,
+        matchesDoctor: currentUserId === sessionDoctorIdStr,
+        matchesPatient: currentUserId === sessionPatientIdStr
+      });
       
       // Determine remoteUserId - must match the other peer's currentUserId
       let remoteUserId;
@@ -270,8 +277,39 @@ function VideoConsultationRoomContent() {
       }
       
       // Determine if current user is initiator (doctor starts the call)
-      // If user exists, they're likely the doctor (initiator)
-      const isInitiator = !!user;
+      // Doctor is always the initiator, patient is always the receiver
+      // Check session data to determine role, not just user object (auth might fail)
+      let isInitiator = false;
+      
+      // Get session IDs for comparison
+      const sessionDoctorId = session.doctorId?._id || session.doctorId;
+      const sessionPatientId = session.patientId?._id || session.patientId;
+      const sessionDoctorIdStr = sessionDoctorId ? sessionDoctorId.toString() : null;
+      const sessionPatientIdStr = sessionPatientId ? sessionPatientId.toString() : null;
+      
+      // Determine initiator by comparing currentUserId with session IDs
+      if (sessionDoctorIdStr && currentUserId === sessionDoctorIdStr) {
+        // Current user matches doctor ID from session
+        isInitiator = true;
+        console.log('[VideoCall] ✅ User is DOCTOR (initiator) - matched session.doctorId');
+      } else if (sessionPatientIdStr && currentUserId === sessionPatientIdStr) {
+        // Current user matches patient ID from session
+        isInitiator = false;
+        console.log('[VideoCall] ✅ User is PATIENT (receiver) - matched session.patientId');
+      } else if (user) {
+        // Authenticated user but IDs don't match - assume doctor (authenticated users are usually doctors)
+        isInitiator = true;
+        console.log('[VideoCall] ⚠️ User is authenticated but IDs don't match session - assuming DOCTOR (initiator)');
+      } else {
+        // Not authenticated and IDs don't match - assume patient (anonymous users are usually patients)
+        isInitiator = false;
+        console.warn('[VideoCall] ⚠️ Could not determine role from session data - defaulting to PATIENT (receiver)');
+        console.warn('[VideoCall] Session IDs:', {
+          doctorId: sessionDoctorIdStr,
+          patientId: sessionPatientIdStr,
+          currentUserId: currentUserId
+        });
+      }
 
       console.log('[VideoCall] User info:', {
         currentUserId,
