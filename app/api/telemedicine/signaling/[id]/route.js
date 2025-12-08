@@ -102,12 +102,19 @@ export async function POST(
 
     // Debug: Log all users in session after adding signal
     const allUserIds = Array.from(sessionStore.keys());
+    const recipientQueue = sessionStore.get(to) || [];
     console.log(`[Signaling API] POST ${sessionId}: Signal from ${from} to ${to}`, {
       signalType: signal.type || 'unknown',
       signalId,
-      totalSignalsForRecipient: sessionStore.get(to).length,
+      totalSignalsForRecipient: recipientQueue.length,
       allUsersInSession: allUserIds,
-      recipientHasQueue: sessionStore.has(to)
+      recipientHasQueue: sessionStore.has(to),
+      recipientQueueSize: recipientQueue.length,
+      latestSignalInQueue: recipientQueue.length > 0 ? {
+        id: recipientQueue[recipientQueue.length - 1].id,
+        type: recipientQueue[recipientQueue.length - 1].signal?.type || 'unknown',
+        from: recipientQueue[recipientQueue.length - 1].from
+      } : null
     });
 
     return NextResponse.json(successResponse({
@@ -171,17 +178,31 @@ export async function GET(
       console.log(`[Signaling API] GET ${sessionId} - Requesting userId:`, userId);
       console.log(`[Signaling API] GET ${sessionId} - Signals for this user:`, userSignals.length);
 
+      // Check if requesting user exists in session
+      if (!sessionStore.has(userId)) {
+        console.warn(`[Signaling API] ⚠️ User ${userId} not found in session store. Available users:`, allUserIds);
+      }
+
       // Log signals for all users (for debugging)
+      let totalSignalsInSession = 0;
       for (const [uid, signals] of sessionStore.entries()) {
+        totalSignalsInSession += signals.length;
         if (signals.length > 0) {
           console.log(`[Signaling API] User ${uid} has ${signals.length} signal(s):`, signals.map(s => ({
             id: s.id,
             from: s.from,
             to: s.to,
-            type: s.signal?.type || 'unknown'
+            type: s.signal?.type || 'unknown',
+            timestamp: new Date(s.timestamp).toISOString()
           })));
         }
       }
+
+      if (totalSignalsInSession === 0) {
+        console.warn(`[Signaling API] ⚠️ No signals in session ${sessionId} for any user. Doctor may not have connected yet.`);
+      }
+    } else {
+      console.warn(`[Signaling API] ⚠️ Session store not found for ${sessionId}. This is normal if no signals have been sent yet.`);
     }
 
     console.log(`[Signaling API] GET ${sessionId} for userId ${userId}:`, {
