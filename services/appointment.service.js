@@ -164,7 +164,20 @@ export async function createAppointment(input, tenantId, userId) {
 
         // Send email to patient with video link
         if (patient.email) {
-          const videoLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/telemedicine/${session.sessionId}`;
+          // Get base URL without any path (remove /dashboard or other paths)
+          let baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+          // Remove any path after the domain (e.g., /dashboard)
+          try {
+            const url = new URL(baseUrl);
+            baseUrl = `${url.protocol}//${url.host}`;
+          } catch (e) {
+            // If URL parsing fails, try to extract just the origin
+            const match = baseUrl.match(/^(https?:\/\/[^\/]+)/);
+            if (match) {
+              baseUrl = match[1];
+            }
+          }
+          const videoLink = `${baseUrl}/telemedicine/${session.sessionId}`;
           const appointmentDate = new Date(appointment.startTime).toLocaleDateString('en-US', {
             weekday: 'long',
             year: 'numeric',

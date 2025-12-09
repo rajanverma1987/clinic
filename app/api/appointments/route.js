@@ -123,7 +123,20 @@ async function postHandler(req, user) {
         if (patient && doctor && body.patientEmail) {
           const patientName = `${patient.firstName} ${patient.lastName}`;
           const doctorName = `${doctor.firstName} ${doctor.lastName}`;
-          const sessionLink = `${process.env.NEXT_PUBLIC_APP_URL}/telemedicine/${telemedicineSession._id}`;
+          // Get base URL without any path (remove /dashboard or other paths)
+          let baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+          // Remove any path after the domain (e.g., /dashboard)
+          try {
+            const url = new URL(baseUrl);
+            baseUrl = `${url.protocol}//${url.host}`;
+          } catch (e) {
+            // If URL parsing fails, try to extract just the origin
+            const match = baseUrl.match(/^(https?:\/\/[^\/]+)/);
+            if (match) {
+              baseUrl = match[1];
+            }
+          }
+          const sessionLink = `${baseUrl}/telemedicine/${telemedicineSession._id}`;
 
           // Send email notification
           await sendVideoConsultationEmail(
@@ -147,13 +160,13 @@ async function postHandler(req, user) {
       try {
         const { sendAppointmentConfirmationEmail } = await import('@/lib/email/email-service.js');
         const patient = await Patient.findById(appointment.patientId);
-        
+
         if (patient?.email) {
           const doctor = await User.findById(appointment.doctorId);
           if (doctor) {
             const patientName = `${patient.firstName} ${patient.lastName}`;
             const doctorName = `${doctor.firstName} ${doctor.lastName}`;
-            
+
             await sendAppointmentConfirmationEmail(
               patient.email,
               patientName,
@@ -163,7 +176,7 @@ async function postHandler(req, user) {
               appointment.type || 'consultation',
               user.tenantId
             );
-            
+
             console.log(`📧 Appointment confirmation email sent to: ${patient.email}`);
           }
         }
