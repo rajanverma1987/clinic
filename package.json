@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "git": "git add . && git commit -m 'update' && git push",
-    "dev": "next dev -p  5053",
+    "dev": "node server.js",
+    "dev:next": "next dev -p 5053",
     "build": "next build",
-    "start": "next start -p 5053",
+    "start": "NODE_ENV=production node server.js",
+    "start:next": "next start -p 5053",
     "lint": "next lint",
     "setup": "node -r dotenv/config scripts/setup.js dotenv_config_path=.env.local",
     "admin:list": "node -r dotenv/config scripts/manage-admin.js list dotenv_config_path=.env.local",
@@ -29,6 +31,8 @@
     "react-dom": "^18.3.0",
     "redis": "^4.6.0",
     "simple-peer": "^9.11.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "zod": "^3.23.0"
   },
   "devDependencies": {

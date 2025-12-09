@@ -14,6 +14,7 @@ import { FileTransfer } from '@/components/telemedicine/FileTransfer';
 import { AuditLogger } from '@/lib/audit/audit-logger';
 import { deriveSharedKey, encryptMessage, decryptMessage, encryptFile, decryptFile } from '@/lib/encryption/e2ee';
 import { getUserFriendlyMessage, getConnectionQualityLabel, getConnectionStatusMessage } from '@/lib/utils/user-messages';
+import { io } from 'socket.io-client';
 
 function VideoConsultationRoomContent() {
   const router = useRouter();
@@ -52,6 +53,7 @@ function VideoConsultationRoomContent() {
   const [remoteUserConnected, setRemoteUserConnected] = useState(false); // Track if remote user is connected
   const [connectionQuality, setConnectionQuality] = useState('UNKNOWN'); // Connection quality indicator
   const [reconnectAttempts, setReconnectAttempts] = useState(0); // Track reconnection attempts
+  const socketRef = useRef(null); // Socket.IO connection
   
   const videoContainerRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -265,107 +267,114 @@ function VideoConsultationRoomContent() {
     }
   }, [encryptionKey]); // Only run when encryption key changes
 
-  // Poll for new chat messages when connected (with improved synchronization)
+  // Socket.IO for real-time chat
   useEffect(() => {
-    if (!sessionId) return; // Poll even when not connected to catch messages
+    if (!sessionId) return;
 
-    let chatPollInterval = null;
-    let lastPollTime = Date.now();
+    // Initialize Socket.IO connection
+    // Use window.location.origin for same-origin connection
+    const socketUrl = typeof window !== 'undefined' 
+      ? (process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin)
+      : 'http://localhost:5053';
+    console.log('[Chat] Connecting to Socket.IO server:', socketUrl);
+    
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      autoConnect: true
+    });
 
-    const pollChatMessages = async () => {
-      try {
-        const response = await apiClient.get(
-          `/telemedicine/sessions/${sessionId}/chat`,
-          undefined,
-          true
+    socketRef.current = socket;
+
+    // Connection events
+    socket.on('connect', () => {
+      console.log('[Chat] ✅ Socket.IO connected:', socket.id);
+      
+      // Join session room
+      socket.emit('join-session', sessionId);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('[Chat] ❌ Socket.IO disconnected');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('[Chat] Socket.IO connection error:', error);
+      // Fallback to polling if Socket.IO fails
+    });
+
+    // Receive chat messages via Socket.IO
+    socket.on('chat-message', async (data) => {
+      console.log('[Chat] 📨 Received message via Socket.IO:', data);
+      
+      // Check if message is from current user (avoid duplicates)
+      const currentUserId = user?.userId || user?._id;
+      if (data.senderId === currentUserId) {
+        // This is our own message, might already be in state
+        return;
+      }
+
+      // Decrypt message if encrypted
+      let decryptedMessage = data.message;
+      if (data.encrypted && encryptionKey) {
+        try {
+          decryptedMessage = await decryptMessage(data.message, encryptionKey);
+        } catch (error) {
+          console.error('[E2EE] Failed to decrypt Socket.IO message:', error);
+          decryptedMessage = '[Unable to read this message]';
+        }
+      }
+
+      // Add to chat messages
+      setChatMessages(prev => {
+        // Check for duplicates
+        const msgId = `${data.timestamp || Date.now()}-${data.senderId || 'unknown'}-${decryptedMessage.substring(0, 20)}`;
+        const existingIds = new Set(
+          prev.map(m => {
+            const mTime = m.timestamp ? new Date(m.timestamp).getTime() : 0;
+            const mMsg = m.message || '';
+            return `${mTime}-${m.senderId || 'unknown'}-${mMsg.substring(0, 20)}`;
+          })
         );
 
-        if (response.success && response.data && response.data.messages) {
-          const allMessages = response.data.messages || [];
-          
-          // Filter messages that are new (after last poll time or not in current state)
-          setChatMessages(prev => {
-            // Create a set of existing message IDs for quick lookup
-            const existingIds = new Set(
-              prev.map(m => {
-                const timestamp = m.timestamp ? new Date(m.timestamp).getTime() : 0;
-                return `${timestamp}-${m.senderId || 'unknown'}-${m.message?.substring(0, 20) || ''}`;
-              })
-            );
-
-            // Find new messages
-            const newMessages = allMessages.filter(msg => {
-              const timestamp = msg.timestamp ? new Date(msg.timestamp).getTime() : 0;
-              const msgId = `${timestamp}-${msg.senderId || 'unknown'}-${msg.message?.substring(0, 20) || ''}`;
-              return !existingIds.has(msgId);
-            });
-
-            if (newMessages.length > 0) {
-              console.log(`[Chat] Received ${newMessages.length} new message(s)`);
-              
-              // Decrypt new messages if encryption key is available (async processing)
-              if (encryptionKey) {
-                Promise.all(
-                  newMessages.map(async (msg) => {
-                    if (msg.encrypted && msg.message && typeof msg.message === 'string') {
-                      try {
-                        const decrypted = await decryptMessage(msg.message, encryptionKey);
-                        return { ...msg, message: decrypted, decrypted: true };
-                      } catch (error) {
-                        console.error('[E2EE] Failed to decrypt message:', error);
-                        return { ...msg, message: '[Unable to read this message]', decrypted: false };
-                      }
-                    }
-                    return msg;
-                  })
-                ).then(processedMessages => {
-                  // Update messages after decryption
-                  setChatMessages(prevMsgs => {
-                    const merged = [...prevMsgs, ...processedMessages];
-                    return merged.sort((a, b) => {
-                      const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-                      const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-                      return timeA - timeB;
-                    });
-                  });
-                });
-                
-                // Return previous messages for now, will be updated after decryption
-                return prev;
-              } else {
-                // No encryption, add messages directly
-                const merged = [...prev, ...newMessages];
-                return merged.sort((a, b) => {
-                  const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-                  const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-                  return timeA - timeB;
-                });
-              }
-            }
-
-            return prev; // No new messages
-          });
-
-          lastPollTime = Date.now();
+        if (existingIds.has(msgId)) {
+          return prev; // Already have this message
         }
-      } catch (error) {
-        console.error('[Chat] Failed to poll chat messages:', error);
-        // Don't stop polling on error - retry next interval
-      }
-    };
 
-    // Poll every 1.5 seconds for faster message delivery
-    chatPollInterval = setInterval(pollChatMessages, 1500);
-    
-    // Poll immediately on mount
-    pollChatMessages();
+        return [...prev, {
+          senderId: data.senderId,
+          senderName: data.senderName || 'Unknown',
+          message: decryptedMessage,
+          timestamp: data.timestamp || new Date(),
+          encrypted: data.encrypted || false
+        }].sort((a, b) => {
+          const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return timeA - timeB;
+        });
+      });
+    });
 
+    // User joined/left events
+    socket.on('user-joined', (data) => {
+      console.log('[Chat] User joined session:', data);
+    });
+
+    socket.on('user-left', (data) => {
+      console.log('[Chat] User left session:', data);
+    });
+
+    // Cleanup on unmount
     return () => {
-      if (chatPollInterval) {
-        clearInterval(chatPollInterval);
+      if (socket) {
+        socket.emit('leave-session', sessionId);
+        socket.disconnect();
+        socketRef.current = null;
       }
     };
-  }, [sessionId, encryptionKey]); // Poll regardless of connection status
+  }, [sessionId, encryptionKey, user]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -727,23 +736,49 @@ function VideoConsultationRoomContent() {
             setRemoteUserConnected(true);
             setWaitingForRemoteUser(false);
           } else if (state.status === 'disconnected' || state.status === 'ended') {
-            setIsConnected(false);
-            setIsConnecting(false);
-            isConnectedRef.current = false;
-            setRemoteUserConnected(false);
-            // Convert technical reason to user-friendly message
-            if (state.status === 'disconnected' && state.reason && !state.reason.includes('ended')) {
-              const friendlyMsg = getUserFriendlyMessage(state.reason);
-              setConnectionError(friendlyMsg);
-            } else if (state.status === 'disconnected') {
-              setConnectionError('The other person has left the call');
+            // If call was previously connected, show waiting message instead of error
+            if (isConnectedRef.current && state.status === 'disconnected' && !state.reason?.includes('ended')) {
+              // User disconnected but may reconnect - show waiting message
+              setIsConnected(true); // Keep connected state
+              setIsConnecting(false);
+              setRemoteUserConnected(false);
+              setWaitingForRemoteUser(true);
+              setConnectionError(null); // Clear error, show waiting message
+            } else if (state.status === 'ended') {
+              // Call was ended by user
+              setIsConnected(false);
+              setIsConnecting(false);
+              isConnectedRef.current = false;
+              setRemoteUserConnected(false);
+              setConnectionError(null);
+            } else {
+              // Initial disconnect or other case
+              setIsConnected(false);
+              setIsConnecting(false);
+              isConnectedRef.current = false;
+              setRemoteUserConnected(false);
+              if (state.status === 'disconnected' && state.reason && !state.reason.includes('ended')) {
+                const friendlyMsg = getUserFriendlyMessage(state.reason);
+                setConnectionError(friendlyMsg);
+              }
             }
           } else if (state.status === 'error' || state.status === 'failed') {
-            setIsConnecting(false);
-            const technicalMsg = state.error?.message || state.reason || 'Connection error occurred';
-            const friendlyMsg = getUserFriendlyMessage(technicalMsg);
-            setConnectionError(friendlyMsg);
-            // Don't set isConnected to false immediately - let reconnection try
+            // Only show error if we weren't previously connected (initial connection failure)
+            // If we were connected, treat as disconnect and wait for rejoin
+            if (isConnectedRef.current) {
+              // Was connected, now error - treat as disconnect and wait
+              setIsConnected(true);
+              setIsConnecting(false);
+              setRemoteUserConnected(false);
+              setWaitingForRemoteUser(true);
+              setConnectionError(null);
+            } else {
+              // Initial connection error
+              setIsConnecting(false);
+              const technicalMsg = state.error?.message || state.reason || 'Connection error occurred';
+              const friendlyMsg = getUserFriendlyMessage(technicalMsg);
+              setConnectionError(friendlyMsg);
+            }
           } else if (state.status === 'connecting') {
             // Keep connecting state
             setIsConnecting(true);
@@ -1108,7 +1143,21 @@ function VideoConsultationRoomContent() {
         });
       });
       
-      // Send encrypted message to backend
+      // Send message via Socket.IO (real-time) and also save to backend
+      if (socketRef.current && socketRef.current.connected) {
+        // Send via Socket.IO for real-time delivery
+        socketRef.current.emit('chat-message', {
+          sessionId,
+          message: chatMessage.message, // Encrypted message
+          senderId: chatMessage.senderId,
+          senderName: chatMessage.senderName,
+          timestamp: chatMessage.timestamp,
+          encrypted: chatMessage.encrypted
+        });
+        console.log('[Chat] ✅ Message sent via Socket.IO');
+      }
+
+      // Also save to backend for persistence
       try {
         await apiClient.post(
           `/telemedicine/sessions/${sessionId}/chat`,
@@ -1122,8 +1171,10 @@ function VideoConsultationRoomContent() {
           {},
           true
         );
+        console.log('[Chat] ✅ Message saved to backend');
       } catch (error) {
-        console.error('Failed to send message to backend:', error);
+        console.error('[Chat] Failed to save message to backend:', error);
+        // Don't fail if backend save fails - Socket.IO already delivered it
       }
       
       // Audit log
@@ -1470,6 +1521,7 @@ function VideoConsultationRoomContent() {
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
+                muted={false}
                 className={`w-full h-full ${isScreenSharing ? 'object-contain' : 'object-cover'}`}
                 style={{ 
                   maxHeight: '100vh',
@@ -1477,6 +1529,12 @@ function VideoConsultationRoomContent() {
                 }}
                 // Removed mirror effect - remote video should show normally
                 // Use object-contain for screen share to fit entire screen without cropping
+                onLoadedMetadata={(e) => {
+                  // Ensure video plays at full quality
+                  if (e.target) {
+                    e.target.play().catch(err => console.warn('Video autoplay prevented:', err));
+                  }
+                }}
               />
               
               {/* Local Video (Self) - Picture in Picture */}
@@ -1626,18 +1684,28 @@ function VideoConsultationRoomContent() {
               )}
 
               {/* Waiting for Remote User Message */}
-              {isConnected && !remoteUserConnected && (
+              {(isConnected && !remoteUserConnected) || waitingForRemoteUser ? (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
                   <div className="text-center bg-gray-900/90 rounded-lg p-6 max-w-md mx-4">
                     <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-white text-lg font-semibold mb-2">Waiting for {userRole === 'doctor' ? 'patient' : 'doctor'} to join...</p>
-                    <p className="text-gray-400 text-sm">You're connected. Waiting for the other participant to join the call.</p>
+                    <p className="text-white text-lg font-semibold mb-2">
+                      {waitingForRemoteUser 
+                        ? `Waiting for ${userRole === 'doctor' ? 'patient' : 'doctor'} to rejoin...`
+                        : `Waiting for ${userRole === 'doctor' ? 'patient' : 'doctor'} to join...`
+                      }
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      {waitingForRemoteUser
+                        ? 'The other person disconnected. Waiting for them to reconnect...'
+                        : 'You\'re connected. Waiting for the other participant to join the call.'
+                      }
+                    </p>
                     {reconnectAttempts > 0 && (
                       <p className="text-yellow-400 text-xs mt-2">Reconnecting... (try {reconnectAttempts} of 10)</p>
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Connection Quality Warning */}
               {isConnected && connectionQuality === 'POOR' && (
