@@ -47,10 +47,10 @@ app.prepare().then(() => {
         socket.emit('error', { message: 'Session ID is required' });
         return;
       }
-      
+
       socket.join(`session:${sessionId}`);
       console.log(`[Socket.IO] Client ${socket.id} joined session: ${sessionId}`);
-      
+
       // Notify others in the session
       socket.to(`session:${sessionId}`).emit('user-joined', {
         socketId: socket.id,
@@ -63,7 +63,7 @@ app.prepare().then(() => {
       if (sessionId) {
         socket.leave(`session:${sessionId}`);
         console.log(`[Socket.IO] Client ${socket.id} left session: ${sessionId}`);
-        
+
         // Notify others in the session
         socket.to(`session:${sessionId}`).emit('user-left', {
           socketId: socket.id,
@@ -75,7 +75,7 @@ app.prepare().then(() => {
     // Handle chat message
     socket.on('chat-message', async (data) => {
       const { sessionId, message, senderId, senderName, timestamp, encrypted } = data;
-      
+
       if (!sessionId || !message) {
         socket.emit('error', { message: 'Session ID and message are required' });
         return;
