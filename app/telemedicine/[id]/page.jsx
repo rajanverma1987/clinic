@@ -49,6 +49,8 @@ function VideoConsultationRoomContent() {
   const [encryptionKey, setEncryptionKey] = useState(null); // E2EE key for chat and files
   const [waitingForRemoteUser, setWaitingForRemoteUser] = useState(false); // Show "Waiting for user A" message
   const [remoteUserConnected, setRemoteUserConnected] = useState(false); // Track if remote user is connected
+  const [connectionQuality, setConnectionQuality] = useState('UNKNOWN'); // Connection quality indicator
+  const [reconnectAttempts, setReconnectAttempts] = useState(0); // Track reconnection attempts
   
   const videoContainerRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -262,14 +264,15 @@ function VideoConsultationRoomContent() {
     }
   }, [encryptionKey]); // Only run when encryption key changes
 
-  // Poll for new chat messages when connected
+  // Poll for new chat messages when connected (with improved synchronization)
   useEffect(() => {
     if (!isConnected || !sessionId) return;
 
     let chatPollInterval = null;
-    let lastMessageTimestamp = chatMessages.length > 0 
-      ? new Date(chatMessages[chatMessages.length - 1].timestamp).getTime()
-      : 0;
+    const messageIds = new Set(chatMessages.map(m => {
+      // Create unique ID from timestamp and senderId
+      return `${m.timestamp?.toString() || Date.now()}-${m.senderId || 'unknown'}`;
+    }));
 
     const pollChatMessages = async () => {
       try {
@@ -280,12 +283,15 @@ function VideoConsultationRoomContent() {
         );
 
         if (response.success && response.data && response.data.messages) {
+          // Filter out messages we already have
           const newMessages = response.data.messages.filter(msg => {
-            const msgTime = new Date(msg.timestamp).getTime();
-            return msgTime > lastMessageTimestamp;
+            const msgId = `${msg.timestamp?.toString() || Date.now()}-${msg.senderId || 'unknown'}`;
+            return !messageIds.has(msgId);
           });
 
           if (newMessages.length > 0) {
+            console.log(`[Chat] Received ${newMessages.length} new message(s)`);
+            
             // Decrypt new messages if encryption key is available
             let processedMessages = newMessages;
             if (encryptionKey) {
@@ -305,37 +311,42 @@ function VideoConsultationRoomContent() {
               );
             }
 
-            setChatMessages(prev => {
-              // Avoid duplicates
-              const existingIds = new Set(prev.map(m => m.timestamp?.toString() + m.senderId));
-              const uniqueNew = processedMessages.filter(m => 
-                !existingIds.has(m.timestamp?.toString() + m.senderId)
-              );
-              return [...prev, ...uniqueNew];
+            // Add to message IDs set
+            processedMessages.forEach(msg => {
+              const msgId = `${msg.timestamp?.toString() || Date.now()}-${msg.senderId || 'unknown'}`;
+              messageIds.add(msgId);
             });
 
-            // Update last message timestamp
-            if (processedMessages.length > 0) {
-              lastMessageTimestamp = new Date(
-                processedMessages[processedMessages.length - 1].timestamp
-              ).getTime();
-            }
+            // Update chat messages
+            setChatMessages(prev => {
+              // Merge and sort by timestamp
+              const allMessages = [...prev, ...processedMessages];
+              return allMessages.sort((a, b) => {
+                const timeA = new Date(a.timestamp || 0).getTime();
+                const timeB = new Date(b.timestamp || 0).getTime();
+                return timeA - timeB;
+              });
+            });
           }
         }
       } catch (error) {
-        console.error('Failed to poll chat messages:', error);
+        console.error('[Chat] Failed to poll chat messages:', error);
+        // Don't stop polling on error - retry next interval
       }
     };
 
     // Poll every 2 seconds for new messages
     chatPollInterval = setInterval(pollChatMessages, 2000);
+    
+    // Poll immediately on mount
+    pollChatMessages();
 
     return () => {
       if (chatPollInterval) {
         clearInterval(chatPollInterval);
       }
     };
-  }, [isConnected, sessionId, encryptionKey, chatMessages.length]);
+  }, [isConnected, sessionId, encryptionKey]); // Removed chatMessages.length from deps to avoid infinite loop
 
   // Cleanup on unmount
   useEffect(() => {
@@ -680,6 +691,14 @@ function VideoConsultationRoomContent() {
         },
         onConnectionChange: (state) => {
           console.log('[VideoCall] Connection state changed:', state);
+          
+          // Handle reconnection attempts
+          if (state.isReconnecting) {
+            setConnectionError(`Reconnecting... (Attempt ${state.reconnectAttempts})`);
+            setIsConnecting(true);
+            return;
+          }
+
           if (state.status === 'connected') {
             setIsConnected(true);
             setIsConnecting(false);
@@ -692,9 +711,15 @@ function VideoConsultationRoomContent() {
             setIsConnecting(false);
             isConnectedRef.current = false;
             setRemoteUserConnected(false);
-          } else if (state.status === 'error') {
+            // Don't show error if it's a normal disconnect
+            if (state.status === 'disconnected' && state.reason && !state.reason.includes('ended')) {
+              setConnectionError(state.reason || 'Connection lost. Reconnecting...');
+            }
+          } else if (state.status === 'error' || state.status === 'failed') {
             setIsConnecting(false);
-            setConnectionError(state.error?.message || 'Connection error occurred');
+            const errorMsg = state.error?.message || state.reason || 'Connection error occurred';
+            setConnectionError(errorMsg);
+            // Don't set isConnected to false immediately - let reconnection try
           } else if (state.status === 'connecting') {
             // Keep connecting state
             setIsConnecting(true);
@@ -718,6 +743,35 @@ function VideoConsultationRoomContent() {
       console.log('[VideoCall] Starting call...');
       await callManager.startCall();
       console.log('[VideoCall] Call started successfully');
+
+      // Monitor connection quality and status
+      const qualityInterval = setInterval(() => {
+        if (callManagerRef.current) {
+          try {
+            const status = callManagerRef.current.getConnectionStatus();
+            if (status) {
+              setConnectionQuality(status.quality || 'UNKNOWN');
+              setReconnectAttempts(status.reconnectAttempts || 0);
+              
+              // Update remote user connection status
+              if (status.connectionState === 'connected' && status.iceConnectionState === 'connected') {
+                setRemoteUserConnected(true);
+                setWaitingForRemoteUser(false);
+              } else if (status.connectionState === 'disconnected' || status.iceConnectionState === 'disconnected') {
+                setRemoteUserConnected(false);
+                if (isConnectedRef.current) {
+                  setWaitingForRemoteUser(true);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('[VideoCall] Error getting connection status:', error);
+          }
+        }
+      }, 2000);
+
+      // Store interval for cleanup
+      window.qualityInterval = qualityInterval;
 
       // Audit log: User joined call
       if (user) {
@@ -800,10 +854,15 @@ function VideoConsultationRoomContent() {
         callManagerRef.current = null;
       }
 
-      // Cleanup watermark interval
+      // Cleanup intervals
       if (window.screenShareWatermarkInterval) {
         clearInterval(window.screenShareWatermarkInterval);
         window.screenShareWatermarkInterval = null;
+      }
+
+      if (window.qualityInterval) {
+        clearInterval(window.qualityInterval);
+        window.qualityInterval = null;
       }
 
       // Remove watermark overlay
@@ -816,6 +875,8 @@ function VideoConsultationRoomContent() {
       setIsConnecting(false);
       setSessionDuration(0);
       setIsScreenSharing(false);
+      setConnectionQuality('UNKNOWN');
+      setReconnectAttempts(0);
 
       // Mark session as ended (only if user is authenticated)
       if (user) {
@@ -984,10 +1045,27 @@ function VideoConsultationRoomContent() {
       };
       
       // Add to local state (decrypted for display)
-      setChatMessages(prev => [...prev, {
-        ...chatMessage,
-        message: message // Store decrypted version for display
-      }]);
+      // Use functional update to avoid race conditions
+      setChatMessages(prev => {
+        // Check for duplicates
+        const msgId = `${chatMessage.timestamp?.toString() || Date.now()}-${chatMessage.senderId || 'unknown'}`;
+        const existingIds = new Set(prev.map(m => 
+          `${m.timestamp?.toString() || Date.now()}-${m.senderId || 'unknown'}`
+        ));
+        
+        if (existingIds.has(msgId)) {
+          return prev; // Already have this message
+        }
+        
+        return [...prev, {
+          ...chatMessage,
+          message: message // Store decrypted version for display
+        }].sort((a, b) => {
+          const timeA = new Date(a.timestamp || 0).getTime();
+          const timeB = new Date(b.timestamp || 0).getTime();
+          return timeA - timeB;
+        });
+      });
       
       // Send encrypted message to backend
       try {
@@ -1297,10 +1375,28 @@ function VideoConsultationRoomContent() {
 
         <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
           {isConnected && (
-            <div className="text-white text-xs sm:text-sm">
-              <span className="text-gray-400 hidden sm:inline">Duration: </span>
-              <span className="font-mono">{formatDuration(sessionDuration)}</span>
-            </div>
+            <>
+              <div className="text-white text-xs sm:text-sm">
+                <span className="text-gray-400 hidden sm:inline">Duration: </span>
+                <span className="font-mono">{formatDuration(sessionDuration)}</span>
+              </div>
+              {/* Connection Quality Indicator */}
+              {connectionQuality !== 'UNKNOWN' && (
+                <div className="flex items-center space-x-1">
+                  <div className={`w-2 h-2 rounded-full ${
+                    connectionQuality === 'EXCELLENT' ? 'bg-green-500' :
+                    connectionQuality === 'GOOD' ? 'bg-blue-500' :
+                    connectionQuality === 'FAIR' ? 'bg-yellow-500' :
+                    'bg-red-500'
+                  }`} title={`Connection: ${connectionQuality}`}></div>
+                  {reconnectAttempts > 0 && (
+                    <span className="text-yellow-400 text-xs" title={`Reconnecting (${reconnectAttempts} attempts)`}>
+                      🔄
+                    </span>
+                  )}
+                </div>
+              )}
+            </>
           )}
           {sessionData && user && userRole === 'doctor' && (
             <button
@@ -1490,7 +1586,20 @@ function VideoConsultationRoomContent() {
                     <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                     <p className="text-white text-lg font-semibold mb-2">Waiting for {userRole === 'doctor' ? 'patient' : 'doctor'} to join...</p>
                     <p className="text-gray-400 text-sm">You're connected. Waiting for the other participant to join the call.</p>
+                    {reconnectAttempts > 0 && (
+                      <p className="text-yellow-400 text-xs mt-2">Reconnecting... (Attempt {reconnectAttempts})</p>
+                    )}
                   </div>
+                </div>
+              )}
+
+              {/* Connection Quality Warning */}
+              {isConnected && connectionQuality === 'POOR' && (
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-900/90 border border-yellow-700 rounded-lg px-4 py-2 z-30">
+                  <p className="text-yellow-200 text-sm flex items-center space-x-2">
+                    <span>⚠️</span>
+                    <span>Poor connection quality. Check your internet connection.</span>
+                  </p>
                 </div>
               )}
 
