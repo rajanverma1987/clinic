@@ -8,6 +8,10 @@ import { Input } from '@/components/ui/Input';
 import { apiClient } from '@/lib/api/client';
 import { Modal } from '@/components/ui/Modal';
 import { VideoCallManager } from '@/lib/webrtc/video-call-manager';
+import { WaitingRoom } from '@/components/telemedicine/WaitingRoom';
+import { ChatPanel } from '@/components/telemedicine/ChatPanel';
+import { FileTransfer } from '@/components/telemedicine/FileTransfer';
+import { AuditLogger } from '@/lib/audit/audit-logger';
 
 function VideoConsultationRoomContent() {
   const router = useRouter();
@@ -28,12 +32,26 @@ function VideoConsultationRoomContent() {
   const [connectionError, setConnectionError] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [showFileTransfer, setShowFileTransfer] = useState(false);
+  const [sharedFiles, setSharedFiles] = useState([]);
+  const [waitingRoomParticipants, setWaitingRoomParticipants] = useState([]);
+  const [isInWaitingRoom, setIsInWaitingRoom] = useState(false);
+  const [recordingConsent, setRecordingConsent] = useState(false);
+  const [showRecordingConsent, setShowRecordingConsent] = useState(false);
+  const [userRole, setUserRole] = useState(null); // 'doctor', 'patient', 'admin'
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const [hasMicrophonePermission, setHasMicrophonePermission] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   
   const videoContainerRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const callManagerRef = useRef(null);
   const isConnectedRef = useRef(false);
+  const canvasRef = useRef(null); // For watermarking
 
   // Session timer
   useEffect(() => {
@@ -49,17 +67,66 @@ function VideoConsultationRoomContent() {
     return () => clearInterval(timer);
   }, [isConnected]);
 
-  // Load session data
+  // Load session data and check expiry
   useEffect(() => {
     const loadSession = async () => {
       try {
         const sessionResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}/public`, undefined, true);
         if (sessionResponse.success && sessionResponse.data) {
-          setSessionData(sessionResponse.data);
+          const session = sessionResponse.data;
+          setSessionData(session);
+          
+          // Check if session is expired
+          if (session.expiresAt) {
+            const expiresAt = new Date(session.expiresAt);
+            const now = new Date();
+            if (now > expiresAt) {
+              setSessionExpired(true);
+              setConnectionError('This session link has expired. Please request a new link.');
+              return;
+            }
+          }
+
+          // Check if one-time link was already used
+          if (session.oneTimeToken && session.linkUsed && !user) {
+            setSessionExpired(true);
+            setConnectionError('This session link has already been used. Please request a new link.');
+            return;
+          }
+
+          // Load shared files
+          if (session.sharedFiles) {
+            setSharedFiles(session.sharedFiles);
+          }
+
+          // Load waiting room participants
+          if (session.participants) {
+            setWaitingRoomParticipants(session.participants);
+          }
         } else if (user) {
           const authResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
           if (authResponse.success && authResponse.data) {
-            setSessionData(authResponse.data);
+            const session = authResponse.data;
+            setSessionData(session);
+            
+            // Check expiry for authenticated users too
+            if (session.expiresAt) {
+              const expiresAt = new Date(session.expiresAt);
+              const now = new Date();
+              if (now > expiresAt) {
+                setSessionExpired(true);
+                setConnectionError('This session has expired.');
+                return;
+              }
+            }
+
+            if (session.sharedFiles) {
+              setSharedFiles(session.sharedFiles);
+            }
+
+            if (session.participants) {
+              setWaitingRoomParticipants(session.participants);
+            }
           }
         }
       } catch (error) {
@@ -69,7 +136,42 @@ function VideoConsultationRoomContent() {
     if (sessionId) {
       loadSession();
     }
-  }, [sessionId, user]);
+
+    // Poll for waiting room updates (if patient)
+    let waitingRoomInterval = null;
+    if (isInWaitingRoom && !isConnected) {
+      waitingRoomInterval = setInterval(async () => {
+        try {
+          const response = await apiClient.get(`/telemedicine/sessions/${sessionId}/waiting-room`, undefined, true);
+          if (response.success && response.data) {
+            const currentUserId = user?.userId || user?._id;
+            const participant = response.data.participants?.find(p => 
+              p.userId?.toString() === currentUserId?.toString()
+            );
+            
+            if (participant && participant.status === 'admitted') {
+              setIsInWaitingRoom(false);
+              // Auto-connect when admitted
+              if (!isConnecting && !isConnected) {
+                handleConnect();
+              }
+            } else if (participant && participant.status === 'rejected') {
+              setIsInWaitingRoom(false);
+              setConnectionError('You have been rejected from the waiting room.');
+            }
+          }
+        } catch (error) {
+          console.error('Failed to check waiting room status:', error);
+        }
+      }, 2000); // Poll every 2 seconds
+    }
+
+    return () => {
+      if (waitingRoomInterval) {
+        clearInterval(waitingRoomInterval);
+      }
+    };
+  }, [sessionId, user, isInWaitingRoom, isConnected, isConnecting]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -105,6 +207,13 @@ function VideoConsultationRoomContent() {
 
   const handleConnect = async () => {
     console.log('[VideoCall] Starting connection...');
+    
+    // Check if session is expired
+    if (sessionExpired) {
+      setConnectionError('This session has expired. Please request a new link.');
+      return;
+    }
+
     setIsConnecting(true);
     setConnectionError(null);
     isConnectedRef.current = false;
@@ -177,8 +286,24 @@ function VideoConsultationRoomContent() {
             microphone: microphonePermission.state
           });
 
-          if (cameraPermission.state === 'denied' || microphonePermission.state === 'denied') {
-            throw new Error('Camera and microphone permissions are currently denied. Please enable them in your browser settings:\n\n1. Click the lock/camera icon in your browser\'s address bar\n2. Set Camera and Microphone to "Allow"\n3. Refresh this page and try again');
+          // Block joining if permissions are denied
+          if (cameraPermission.state === 'denied') {
+            setHasCameraPermission(false);
+            throw new Error('Camera permission is denied. Please enable camera access in your browser settings to join the call.');
+          } else if (cameraPermission.state === 'granted') {
+            setHasCameraPermission(true);
+          }
+
+          if (microphonePermission.state === 'denied') {
+            setHasMicrophonePermission(false);
+            throw new Error('Microphone permission is denied. Please enable microphone access in your browser settings to join the call.');
+          } else if (microphonePermission.state === 'granted') {
+            setHasMicrophonePermission(true);
+          }
+
+          // Block if both permissions are denied
+          if (cameraPermission.state === 'denied' && microphonePermission.state === 'denied') {
+            throw new Error('Camera and microphone permissions are denied. Please enable both in your browser settings:\n\n1. Click the lock/camera icon in your browser\'s address bar\n2. Set Camera and Microphone to "Allow"\n3. Refresh this page and try again');
           }
         } catch (permError) {
           // Permission API might not be fully supported or query failed, continue anyway
@@ -283,27 +408,52 @@ function VideoConsultationRoomContent() {
       let isInitiator = false;
       
       // Determine initiator by comparing currentUserId with session IDs
+      let detectedRole = 'patient'; // Default to patient
+      
       if (sessionDoctorIdStr && currentUserId === sessionDoctorIdStr) {
         // Current user matches doctor ID from session
         isInitiator = true;
+        detectedRole = 'doctor';
         console.log('[VideoCall] ✅ User is DOCTOR (initiator) - matched session.doctorId');
       } else if (sessionPatientIdStr && currentUserId === sessionPatientIdStr) {
         // Current user matches patient ID from session
         isInitiator = false;
+        detectedRole = 'patient';
         console.log('[VideoCall] ✅ User is PATIENT (receiver) - matched session.patientId');
       } else if (user) {
         // Authenticated user but IDs don't match - assume doctor (authenticated users are usually doctors)
         isInitiator = true;
+        detectedRole = 'doctor';
         console.log('[VideoCall] ⚠️ User is authenticated but IDs don\'t match session - assuming DOCTOR (initiator)');
       } else {
         // Not authenticated and IDs don't match - assume patient (anonymous users are usually patients)
         isInitiator = false;
+        detectedRole = 'patient';
         console.warn('[VideoCall] ⚠️ Could not determine role from session data - defaulting to PATIENT (receiver)');
         console.warn('[VideoCall] Session IDs:', {
           doctorId: sessionDoctorIdStr,
           patientId: sessionPatientIdStr,
           currentUserId: currentUserId
         });
+      }
+
+      // Set user role for UI components
+      setUserRole(detectedRole);
+
+      // If patient, check if they need to wait in waiting room
+      if (detectedRole === 'patient' && session.waitingRoomEnabled) {
+        setIsInWaitingRoom(true);
+        
+        // Add participant to waiting room via API
+        try {
+          await apiClient.post(`/telemedicine/sessions/${sessionId}/waiting-room`, {
+            userId: currentUserId,
+            name: user?.firstName || 'Patient',
+            role: 'patient'
+          }, {}, true);
+        } catch (error) {
+          console.warn('Failed to add to waiting room:', error);
+        }
       }
 
       console.log('[VideoCall] User info:', {
@@ -387,6 +537,23 @@ function VideoConsultationRoomContent() {
       await callManager.startCall();
       console.log('[VideoCall] Call started successfully');
 
+      // Audit log: User joined call
+      if (user) {
+        try {
+          await AuditLogger.auditWrite(
+            'telemedicine_session',
+            sessionId,
+            user.userId || user._id,
+            user.tenantId,
+            'ACCESS',
+            { action: 'join_call', role: detectedRole },
+            { timestamp: new Date().toISOString() }
+          );
+        } catch (error) {
+          console.warn('Failed to log audit:', error);
+        }
+      }
+
       // Mark session as started (only if user is authenticated)
       if (user) {
         try {
@@ -395,6 +562,11 @@ function VideoConsultationRoomContent() {
         } catch (error) {
           console.warn('[VideoCall] Failed to mark session as started:', error);
         }
+      }
+
+      // Show recording consent modal if not already consented
+      if (!recordingConsent && session?.recordingEnabled) {
+        setShowRecordingConsent(true);
       }
     } catch (error) {
       console.error('[VideoCall] Failed to start call:', error);
@@ -423,15 +595,45 @@ function VideoConsultationRoomContent() {
 
   const handleEndCall = async () => {
     if (window.confirm('Are you sure you want to end this consultation?')) {
+      // Audit log: User left call
+      if (user) {
+        try {
+          await AuditLogger.auditWrite(
+            'telemedicine_session',
+            sessionId,
+            user.userId || user._id,
+            user.tenantId,
+            'ACCESS',
+            { action: 'leave_call', duration: sessionDuration },
+            { timestamp: new Date().toISOString() }
+          );
+        } catch (error) {
+          console.warn('Failed to log audit:', error);
+        }
+      }
+
       // End the call
       if (callManagerRef.current) {
         await callManagerRef.current.endCall();
         callManagerRef.current = null;
       }
 
+      // Cleanup watermark interval
+      if (window.screenShareWatermarkInterval) {
+        clearInterval(window.screenShareWatermarkInterval);
+        window.screenShareWatermarkInterval = null;
+      }
+
+      // Remove watermark overlay
+      const watermark = document.querySelector('.screen-share-watermark');
+      if (watermark) {
+        watermark.remove();
+      }
+
       setIsConnected(false);
       setIsConnecting(false);
       setSessionDuration(0);
+      setIsScreenSharing(false);
 
       // Mark session as ended (only if user is authenticated)
       if (user) {
@@ -456,6 +658,19 @@ function VideoConsultationRoomContent() {
       const newMutedState = !isMuted;
       callManagerRef.current.toggleMute(newMutedState);
       setIsMuted(newMutedState);
+      
+      // Audit log
+      if (user) {
+        AuditLogger.auditWrite(
+          'telemedicine_session',
+          sessionId,
+          user.userId || user._id,
+          user.tenantId,
+          'UPDATE',
+          { muted: newMutedState },
+          { action: 'toggle_mute' }
+        ).catch(console.error);
+      }
     }
   };
 
@@ -464,7 +679,304 @@ function VideoConsultationRoomContent() {
       const newVideoState = !isVideoEnabled;
       callManagerRef.current.toggleVideo(newVideoState);
       setIsVideoEnabled(newVideoState);
+      
+      // Audit log
+      if (user) {
+        AuditLogger.auditWrite(
+          'telemedicine_session',
+          sessionId,
+          user.userId || user._id,
+          user.tenantId,
+          'UPDATE',
+          { videoEnabled: newVideoState },
+          { action: 'toggle_video' }
+        ).catch(console.error);
+      }
     }
+  };
+
+  const handleScreenShare = async () => {
+    if (!callManagerRef.current) return;
+    
+    try {
+      if (isScreenSharing) {
+        await callManagerRef.current.stopScreenShare();
+        setIsScreenSharing(false);
+        
+        // Audit log
+        if (user) {
+          AuditLogger.auditWrite(
+            'telemedicine_session',
+            sessionId,
+            user.userId || user._id,
+            user.tenantId,
+            'UPDATE',
+            { screenShare: false },
+            { action: 'stop_screen_share' }
+          ).catch(console.error);
+        }
+      } else {
+        const stream = await callManagerRef.current.startScreenShare();
+        setIsScreenSharing(true);
+        
+        // Apply watermark overlay to screen share video element
+        if (remoteVideoRef.current && stream) {
+          // Create canvas overlay for watermark
+          const video = remoteVideoRef.current;
+          const container = video.parentElement;
+          
+          // Remove existing watermark if any
+          const existingWatermark = container.querySelector('.screen-share-watermark');
+          if (existingWatermark) {
+            existingWatermark.remove();
+          }
+          
+          // Create watermark overlay
+          const watermark = document.createElement('div');
+          watermark.className = 'screen-share-watermark absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1 rounded text-xs font-mono z-10';
+          watermark.textContent = `${user?.userId || user?._id || 'User'} | ${new Date().toLocaleString()}`;
+          container.appendChild(watermark);
+          
+          // Update watermark timestamp every second
+          const watermarkInterval = setInterval(() => {
+            if (watermark && isScreenSharing) {
+              watermark.textContent = `${user?.userId || user?._id || 'User'} | ${new Date().toLocaleString()}`;
+            } else {
+              clearInterval(watermarkInterval);
+            }
+          }, 1000);
+          
+          // Store interval for cleanup
+          if (!window.screenShareWatermarkInterval) {
+            window.screenShareWatermarkInterval = watermarkInterval;
+          }
+        }
+        
+        // Audit log
+        if (user) {
+          AuditLogger.auditWrite(
+            'telemedicine_session',
+            sessionId,
+            user.userId || user._id,
+            user.tenantId,
+            'UPDATE',
+            { screenShare: true },
+            { action: 'start_screen_share' }
+          ).catch(console.error);
+        }
+      }
+    } catch (error) {
+      console.error('Screen share error:', error);
+      alert(error.message || 'Failed to share screen');
+    }
+  };
+
+  const handleSendChatMessage = async (message) => {
+    if (!message.trim()) return;
+    
+    const chatMessage = {
+      senderId: user?.userId || user?._id || 'anonymous',
+      senderName: user?.firstName || 'User',
+      message: message,
+      timestamp: new Date(),
+      isEncrypted: true
+    };
+    
+    setChatMessages(prev => [...prev, chatMessage]);
+    
+    // TODO: Send to API/WebSocket for encryption and delivery
+    // For now, just add to local state
+    
+    // Audit log
+    if (user) {
+      AuditLogger.auditWrite(
+        'telemedicine_session',
+        sessionId,
+        user.userId || user._id,
+        user.tenantId,
+        'CREATE',
+        { messageSent: true },
+        { action: 'send_chat_message' }
+      ).catch(console.error);
+    }
+  };
+
+  const handleAdmitParticipant = async (participantId) => {
+    try {
+      const response = await apiClient.post(
+        `/telemedicine/sessions/${sessionId}/admit`,
+        { participantId },
+        {},
+        true
+      );
+
+      if (response.success) {
+        setWaitingRoomParticipants(prev => 
+          prev.map(p => 
+            p.userId === participantId ? { ...p, status: 'admitted' } : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Failed to admit participant:', error);
+    }
+    
+    // Audit log
+    if (user) {
+      AuditLogger.auditWrite(
+        'telemedicine_session',
+        sessionId,
+        user.userId || user._id,
+        user.tenantId,
+        'UPDATE',
+        { participantAdmitted: participantId },
+        { action: 'admit_participant' }
+      ).catch(console.error);
+    }
+  };
+
+  const handleRejectParticipant = async (participantId) => {
+    try {
+      const response = await apiClient.post(
+        `/telemedicine/sessions/${sessionId}/reject`,
+        { participantId },
+        {},
+        true
+      );
+
+      if (response.success) {
+        setWaitingRoomParticipants(prev => prev.filter(p => p.userId !== participantId));
+      }
+    } catch (error) {
+      console.error('Failed to reject participant:', error);
+    }
+    
+    // Audit log
+    if (user) {
+      AuditLogger.auditWrite(
+        'telemedicine_session',
+        sessionId,
+        user.userId || user._id,
+        user.tenantId,
+        'UPDATE',
+        { participantRejected: participantId },
+        { action: 'reject_participant' }
+      ).catch(console.error);
+    }
+  };
+
+  const handleRecordingConsent = async (consented) => {
+    setRecordingConsent(consented);
+    setShowRecordingConsent(false);
+    
+    // Save consent to session
+    try {
+      await apiClient.put(`/telemedicine/sessions/${sessionId}`, {
+        recordingConsent: consented
+      });
+    } catch (error) {
+      console.error('Failed to save recording consent:', error);
+    }
+    
+    // Audit log
+    if (user) {
+      AuditLogger.auditWrite(
+        'telemedicine_session',
+        sessionId,
+        user.userId || user._id,
+        user.tenantId,
+        'UPDATE',
+        { recordingConsent: consented },
+        { action: 'recording_consent' }
+      ).catch(console.error);
+    }
+  };
+
+  const handleFileUpload = async (fileData) => {
+    try {
+      // Upload encrypted file
+      const response = await apiClient.post(
+        `/telemedicine/sessions/${sessionId}/files`,
+        fileData,
+        {},
+        true
+      );
+
+      if (response.success) {
+        setSharedFiles(prev => [...prev, response.data]);
+        
+        // Audit log
+        if (user) {
+          AuditLogger.auditWrite(
+            'telemedicine_session',
+            sessionId,
+            user.userId || user._id,
+            user.tenantId,
+            'CREATE',
+            { fileName: fileData.fileName, fileSize: fileData.fileSize },
+            { action: 'upload_file' }
+          ).catch(console.error);
+        }
+      }
+    } catch (error) {
+      console.error('File upload error:', error);
+      throw error;
+    }
+  };
+
+  const handleFileDownload = async (file) => {
+    try {
+      // Download encrypted file
+      const response = await apiClient.get(
+        `/telemedicine/sessions/${sessionId}/files/${file._id || file.id}`,
+        undefined,
+        true
+      );
+
+      if (response.success) {
+        // Decrypt file data
+        // TODO: Implement decryption using Web Crypto API
+        const decryptedData = await decryptFile(response.data.encryptedData);
+        
+        // Create download link
+        const blob = new Blob([decryptedData], { type: file.fileType });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        // Audit log
+        if (user) {
+          AuditLogger.auditWrite(
+            'telemedicine_session',
+            sessionId,
+            user.userId || user._id,
+            user.tenantId,
+            'ACCESS',
+            { fileName: file.fileName },
+            { action: 'download_file' }
+          ).catch(console.error);
+        }
+      }
+    } catch (error) {
+      console.error('File download error:', error);
+      throw error;
+    }
+  };
+
+  const decryptFile = async (encryptedData) => {
+    // TODO: Implement AES-256 decryption using Web Crypto API
+    // For now, decode base64
+    const binaryString = atob(encryptedData);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
   };
 
   const handleShareLink = async () => {
@@ -626,6 +1138,57 @@ function VideoConsultationRoomContent() {
                     )}
                   </button>
 
+                  {/* Screen Share Button */}
+                  <button
+                    onClick={handleScreenShare}
+                    className={`p-3 rounded-full transition-colors ${
+                      isScreenSharing 
+                        ? 'bg-blue-600 hover:bg-blue-700' 
+                        : 'bg-gray-700 hover:bg-gray-600'
+                    }`}
+                    title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
+                  >
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+
+                  {/* Chat Toggle Button */}
+                  <button
+                    onClick={() => {
+                      setShowChat(!showChat);
+                      if (!showChat) setShowFileTransfer(false); // Close file transfer if opening chat
+                    }}
+                    className={`p-3 rounded-full transition-colors ${
+                      showChat 
+                        ? 'bg-blue-600 hover:bg-blue-700' 
+                        : 'bg-gray-700 hover:bg-gray-600'
+                    }`}
+                    title={showChat ? 'Close chat' : 'Open chat'}
+                  >
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </button>
+
+                  {/* File Transfer Toggle Button */}
+                  <button
+                    onClick={() => {
+                      setShowFileTransfer(!showFileTransfer);
+                      if (!showFileTransfer) setShowChat(false); // Close chat if opening file transfer
+                    }}
+                    className={`p-3 rounded-full transition-colors ${
+                      showFileTransfer 
+                        ? 'bg-blue-600 hover:bg-blue-700' 
+                        : 'bg-gray-700 hover:bg-gray-600'
+                    }`}
+                    title={showFileTransfer ? 'Close files' : 'Open files'}
+                  >
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </button>
+
                   {/* End Call Button */}
                   <button
                     onClick={handleEndCall}
@@ -655,6 +1218,66 @@ function VideoConsultationRoomContent() {
                   </div>
                 </div>
               )}
+
+              {/* Waiting Room Overlay */}
+              {userRole === 'doctor' && (
+                <WaitingRoom
+                  participants={waitingRoomParticipants}
+                  onAdmit={handleAdmitParticipant}
+                  onReject={handleRejectParticipant}
+                  isHost={userRole === 'doctor'}
+                  currentUserId={user?.userId || user?._id}
+                />
+              )}
+
+              {/* Chat Panel */}
+              <ChatPanel
+                messages={chatMessages}
+                onSendMessage={handleSendChatMessage}
+                currentUserId={user?.userId || user?._id}
+                isOpen={showChat}
+                onClose={() => setShowChat(false)}
+              />
+
+              {/* File Transfer Panel */}
+              <FileTransfer
+                files={sharedFiles}
+                onUpload={handleFileUpload}
+                onDownload={handleFileDownload}
+                currentUserId={user?.userId || user?._id}
+                isOpen={showFileTransfer}
+                onClose={() => setShowFileTransfer(false)}
+              />
+
+              {/* Recording Consent Modal */}
+              {showRecordingConsent && (
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                  <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
+                    <h3 className="text-white text-xl font-semibold mb-4">Recording Consent</h3>
+                    <p className="text-gray-300 mb-4">
+                      This session may be recorded for medical records and quality assurance purposes.
+                      By continuing, you consent to the recording of this consultation.
+                    </p>
+                    <div className="flex space-x-3">
+                      <Button
+                        onClick={() => handleRecordingConsent(true)}
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                      >
+                        I Consent
+                      </Button>
+                      <Button
+                        onClick={() => handleRecordingConsent(false)}
+                        className="flex-1 bg-red-600 hover:bg-red-700"
+                      >
+                        Decline
+                      </Button>
+                    </div>
+                    <p className="text-gray-500 text-xs mt-4">
+                      Note: Recording will be disabled if you decline consent.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             /* Pre-connection UI - Shown when not connecting and not connected */
@@ -674,10 +1297,16 @@ function VideoConsultationRoomContent() {
                 onClick={handleConnect} 
                 size="lg" 
                 className="text-sm sm:text-base px-6 sm:px-8"
-                disabled={isConnecting}
+                disabled={isConnecting || sessionExpired || !hasCameraPermission || !hasMicrophonePermission}
                 isLoading={isConnecting}
               >
-                {isConnecting ? 'Requesting Permissions...' : 'Join Video Call'}
+                {sessionExpired 
+                  ? 'Session Expired' 
+                  : isConnecting 
+                    ? 'Requesting Permissions...' 
+                    : !hasCameraPermission || !hasMicrophonePermission
+                      ? 'Permissions Required'
+                      : 'Join Video Call'}
               </Button>
               {(() => {
                 const mediaSupport = checkMediaSupport();
@@ -707,6 +1336,36 @@ function VideoConsultationRoomContent() {
                   <p>{typeof connectionError === 'string' ? connectionError : JSON.stringify(connectionError)}</p>
                 </div>
               )}
+
+              {/* Permission Status Indicator */}
+              {!hasCameraPermission || !hasMicrophonePermission ? (
+                <div className="mt-4 p-4 bg-yellow-900/50 border border-yellow-700 rounded-lg text-sm max-w-md mx-auto">
+                  <p className="font-semibold text-yellow-300 mb-2">⚠️ Permissions Required</p>
+                  <ul className="text-yellow-200 space-y-1 text-xs">
+                    {!hasCameraPermission && <li>❌ Camera permission denied</li>}
+                    {!hasMicrophonePermission && <li>❌ Microphone permission denied</li>}
+                  </ul>
+                  <p className="text-yellow-300 text-xs mt-2">
+                    Please enable camera and microphone permissions to join the call.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* Waiting Room UI for Patients */}
+          {isInWaitingRoom && !isConnected && (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full mx-4 border border-gray-700 text-center">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <h3 className="text-white text-xl font-semibold mb-2">Waiting Room</h3>
+                <p className="text-gray-400 mb-4">
+                  You are in the waiting room. The doctor will admit you to the consultation shortly.
+                </p>
+                <p className="text-gray-500 text-sm">
+                  Please wait...
+                </p>
+              </div>
             </div>
           )}
         </div>

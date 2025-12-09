@@ -86,6 +86,48 @@ const TelemedicineSessionSchema = new Schema(
       type: Boolean,
       default: false,
     },
+
+    // One-time link and expiry
+    oneTimeToken: {
+      type: String,
+      index: true,
+    },
+    expiresAt: {
+      type: Date,
+      index: true,
+    },
+    linkUsed: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Waiting room
+    waitingRoomEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    participants: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        name: String,
+        role: {
+          type: String,
+          enum: ['doctor', 'patient', 'admin'],
+        },
+        status: {
+          type: String,
+          enum: ['waiting', 'admitted', 'rejected'],
+          default: 'waiting',
+        },
+        joinedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     
     chatEnabled: {
       type: Boolean,
