@@ -12,6 +12,7 @@ import { WaitingRoom } from '@/components/telemedicine/WaitingRoom';
 import { ChatPanel } from '@/components/telemedicine/ChatPanel';
 import { FileTransfer } from '@/components/telemedicine/FileTransfer';
 import { AuditLogger } from '@/lib/audit/audit-logger';
+import { deriveSharedKey, encryptMessage, decryptMessage, encryptFile, decryptFile } from '@/lib/encryption/e2ee';
 
 function VideoConsultationRoomContent() {
   const router = useRouter();
@@ -45,6 +46,7 @@ function VideoConsultationRoomContent() {
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [hasMicrophonePermission, setHasMicrophonePermission] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [encryptionKey, setEncryptionKey] = useState(null); // E2EE key for chat and files
   
   const videoContainerRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -103,6 +105,11 @@ function VideoConsultationRoomContent() {
           if (session.participants) {
             setWaitingRoomParticipants(session.participants);
           }
+
+          // Load chat messages (will be decrypted when encryption key is available)
+          if (session.chatMessages && session.chatMessages.length > 0) {
+            setChatMessages(session.chatMessages);
+          }
         } else if (user) {
           const authResponse = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
           if (authResponse.success && authResponse.data) {
@@ -126,6 +133,10 @@ function VideoConsultationRoomContent() {
 
             if (session.participants) {
               setWaitingRoomParticipants(session.participants);
+            }
+
+            if (session.chatMessages && session.chatMessages.length > 0) {
+              setChatMessages(session.chatMessages);
             }
           }
         }
@@ -172,6 +183,34 @@ function VideoConsultationRoomContent() {
       }
     };
   }, [sessionId, user, isInWaitingRoom, isConnected, isConnecting]);
+
+  // Decrypt chat messages when encryption key becomes available
+  useEffect(() => {
+    if (encryptionKey && chatMessages.length > 0) {
+      const decryptMessages = async () => {
+        const decryptedMessages = await Promise.all(
+          chatMessages.map(async (msg) => {
+            if (msg.encrypted && msg.message && typeof msg.message === 'string' && !msg.decrypted) {
+              try {
+                const decrypted = await decryptMessage(msg.message, encryptionKey);
+                return { ...msg, message: decrypted, decrypted: true };
+              } catch (error) {
+                console.error('[E2EE] Failed to decrypt message:', error);
+                return { ...msg, message: '[Encrypted - Decryption failed]', decrypted: false };
+              }
+            }
+            return msg; // Already decrypted or not encrypted
+          })
+        );
+        // Only update if we actually decrypted something
+        const hasEncrypted = decryptedMessages.some(msg => msg.encrypted && !msg.decrypted);
+        if (!hasEncrypted) {
+          setChatMessages(decryptedMessages);
+        }
+      };
+      decryptMessages();
+    }
+  }, [encryptionKey]); // Only run when encryption key changes
 
   // Cleanup on unmount
   useEffect(() => {
@@ -399,6 +438,18 @@ function VideoConsultationRoomContent() {
         console.warn('[VideoCall] remoteUserId was undefined, using fallback:', remoteUserId);
       } else {
         remoteUserId = remoteUserId.toString();
+      }
+
+      // Derive E2EE encryption key for chat and files
+      if (currentUserId && remoteUserId && sessionId) {
+        try {
+          const key = await deriveSharedKey(sessionId, currentUserId, remoteUserId);
+          setEncryptionKey(key);
+          console.log('[E2EE] ✅ Encryption key derived successfully for session:', sessionId);
+        } catch (error) {
+          console.error('[E2EE] ❌ Failed to derive encryption key:', error);
+          // Continue without encryption (graceful degradation)
+        }
       }
       
       // Determine if current user is initiator (doctor starts the call)
@@ -774,30 +825,71 @@ function VideoConsultationRoomContent() {
   const handleSendChatMessage = async (message) => {
     if (!message.trim()) return;
     
-    const chatMessage = {
-      senderId: user?.userId || user?._id || 'anonymous',
-      senderName: user?.firstName || 'User',
-      message: message,
-      timestamp: new Date(),
-      isEncrypted: true
-    };
-    
-    setChatMessages(prev => [...prev, chatMessage]);
-    
-    // TODO: Send to API/WebSocket for encryption and delivery
-    // For now, just add to local state
-    
-    // Audit log
-    if (user) {
-      AuditLogger.auditWrite(
-        'telemedicine_session',
-        sessionId,
-        user.userId || user._id,
-        user.tenantId,
-        'CREATE',
-        { messageSent: true },
-        { action: 'send_chat_message' }
-      ).catch(console.error);
+    try {
+      let encryptedMessage = message;
+      let encryptionError = null;
+
+      // Encrypt message if encryption key is available
+      if (encryptionKey) {
+        try {
+          encryptedMessage = await encryptMessage(message, encryptionKey);
+          console.log('[E2EE] ✅ Message encrypted successfully');
+        } catch (error) {
+          console.error('[E2EE] ❌ Failed to encrypt message:', error);
+          encryptionError = error;
+          // Continue with plain text if encryption fails (graceful degradation)
+        }
+      } else {
+        console.warn('[E2EE] ⚠️ No encryption key available, sending plain text');
+      }
+
+      const chatMessage = {
+        senderId: user?.userId || user?._id || 'anonymous',
+        senderName: user?.firstName || 'User',
+        message: encryptionKey && !encryptionError ? encryptedMessage : message, // Send encrypted if available
+        encrypted: !!encryptionKey && !encryptionError,
+        timestamp: new Date(),
+        isEncrypted: !!encryptionKey && !encryptionError
+      };
+      
+      // Add to local state (decrypted for display)
+      setChatMessages(prev => [...prev, {
+        ...chatMessage,
+        message: message // Store decrypted version for display
+      }]);
+      
+      // Send encrypted message to backend
+      try {
+        await apiClient.post(
+          `/telemedicine/sessions/${sessionId}/chat`,
+          {
+            encryptedMessage: chatMessage.message,
+            senderId: chatMessage.senderId,
+            senderName: chatMessage.senderName,
+            timestamp: chatMessage.timestamp,
+            encrypted: chatMessage.encrypted
+          },
+          {},
+          true
+        );
+      } catch (error) {
+        console.error('Failed to send message to backend:', error);
+      }
+      
+      // Audit log
+      if (user) {
+        AuditLogger.auditWrite(
+          'telemedicine_session',
+          sessionId,
+          user.userId || user._id,
+          user.tenantId,
+          'CREATE',
+          { messageSent: true, encrypted: chatMessage.encrypted },
+          { action: 'send_chat_message' }
+        ).catch(console.error);
+      }
+    } catch (error) {
+      console.error('Error sending chat message:', error);
     }
   };
 
@@ -894,10 +986,38 @@ function VideoConsultationRoomContent() {
 
   const handleFileUpload = async (fileData) => {
     try {
+      let encryptedFileData = fileData.encryptedData;
+      let iv = null;
+
+      // Encrypt file if encryption key is available
+      if (encryptionKey && fileData.fileData) {
+        try {
+          // fileData.fileData should be ArrayBuffer from FileReader
+          const encrypted = await encryptFile(fileData.fileData, encryptionKey);
+          encryptedFileData = encrypted.encrypted;
+          iv = encrypted.iv;
+          console.log('[E2EE] ✅ File encrypted successfully');
+        } catch (error) {
+          console.error('[E2EE] ❌ Failed to encrypt file:', error);
+          throw new Error('Failed to encrypt file');
+        }
+      } else if (!encryptionKey) {
+        console.warn('[E2EE] ⚠️ No encryption key available, file will be stored unencrypted');
+      }
+
       // Upload encrypted file
       const response = await apiClient.post(
         `/telemedicine/sessions/${sessionId}/files`,
-        fileData,
+        {
+          fileName: fileData.fileName,
+          fileType: fileData.fileType,
+          fileSize: fileData.fileSize,
+          encryptedData: encryptedFileData,
+          iv: iv, // Include IV for decryption
+          encrypted: !!encryptionKey,
+          uploadedBy: fileData.uploadedBy,
+          uploadedAt: fileData.uploadedAt
+        },
         {},
         true
       );
@@ -913,7 +1033,7 @@ function VideoConsultationRoomContent() {
             user.userId || user._id,
             user.tenantId,
             'CREATE',
-            { fileName: fileData.fileName, fileSize: fileData.fileSize },
+            { fileName: fileData.fileName, fileSize: fileData.fileSize, encrypted: !!encryptionKey },
             { action: 'upload_file' }
           ).catch(console.error);
         }
@@ -934,12 +1054,35 @@ function VideoConsultationRoomContent() {
       );
 
       if (response.success) {
-        // Decrypt file data
-        // TODO: Implement decryption using Web Crypto API
-        const decryptedData = await decryptFile(response.data.encryptedData);
+        let decryptedData;
+
+        // Decrypt file if it's encrypted
+        if (file.encrypted && encryptionKey && response.data.encryptedData && response.data.iv) {
+          try {
+            decryptedData = await decryptFile(
+              response.data.encryptedData,
+              response.data.iv,
+              encryptionKey
+            );
+            console.log('[E2EE] ✅ File decrypted successfully');
+          } catch (error) {
+            console.error('[E2EE] ❌ Failed to decrypt file:', error);
+            throw new Error('Failed to decrypt file');
+          }
+        } else if (file.encrypted && !encryptionKey) {
+          throw new Error('File is encrypted but no decryption key available');
+        } else {
+          // File is not encrypted, use as-is
+          const binaryString = atob(response.data.encryptedData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          decryptedData = bytes.buffer;
+        }
         
         // Create download link
-        const blob = new Blob([decryptedData], { type: file.fileType });
+        const blob = new Blob([decryptedData], { type: file.fileType || 'application/octet-stream' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -957,7 +1100,7 @@ function VideoConsultationRoomContent() {
             user.userId || user._id,
             user.tenantId,
             'ACCESS',
-            { fileName: file.fileName },
+            { fileName: file.fileName, encrypted: file.encrypted },
             { action: 'download_file' }
           ).catch(console.error);
         }
@@ -966,17 +1109,6 @@ function VideoConsultationRoomContent() {
       console.error('File download error:', error);
       throw error;
     }
-  };
-
-  const decryptFile = async (encryptedData) => {
-    // TODO: Implement AES-256 decryption using Web Crypto API
-    // For now, decode base64
-    const binaryString = atob(encryptedData);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
   };
 
   const handleShareLink = async () => {

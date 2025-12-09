@@ -40,7 +40,7 @@ export async function GET(
     }
 
     // Find file in sharedFiles array
-    const file = session.sharedFiles?.find(f => 
+    const file = session.sharedFiles?.find(f =>
       f._id?.toString() === fileId || f.fileName === fileId
     );
 
@@ -59,7 +59,9 @@ export async function GET(
       fileName: file.fileName,
       fileType: file.fileType,
       fileSize: file.fileSize,
-      encryptedData: file.fileUrl, // Return encrypted data for client-side decryption
+      encryptedData: file.encryptedData || file.fileUrl, // Return encrypted data for client-side decryption
+      iv: file.iv || null, // IV for decryption
+      encrypted: file.encrypted || false, // Flag indicating if file is encrypted
       uploadedAt: file.uploadedAt
     }));
   } catch (error) {

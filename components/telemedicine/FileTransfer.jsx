@@ -45,18 +45,14 @@ export function FileTransfer({
       };
 
       reader.onload = async (e) => {
-        const fileData = e.target.result;
+        const fileData = e.target.result; // ArrayBuffer
         
-        // Encrypt file data (AES-256)
-        // TODO: Implement actual encryption using Web Crypto API
-        const encryptedData = await encryptFile(fileData);
-        
-        // Upload encrypted file
+        // Upload file (encryption happens in parent component with encryption key)
         await onUpload({
           fileName: file.name,
           fileType: file.type,
           fileSize: file.size,
-          encryptedData: encryptedData,
+          fileData: fileData, // Pass ArrayBuffer for encryption
           uploadedBy: currentUserId,
           uploadedAt: new Date().toISOString()
         });
@@ -77,14 +73,6 @@ export function FileTransfer({
     }
   };
 
-  const encryptFile = async (fileData) => {
-    // TODO: Implement AES-256 encryption using Web Crypto API
-    // For now, return base64 encoded data
-    // In production, use: crypto.subtle.encrypt()
-    const uint8Array = new Uint8Array(fileData);
-    const base64 = btoa(String.fromCharCode(...uint8Array));
-    return base64;
-  };
 
   const handleDownload = async (file) => {
     try {

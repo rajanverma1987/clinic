@@ -22,41 +22,41 @@ const TelemedicineSessionSchema = new Schema(
       required: true,
       index: true,
     },
-    
+
     sessionId: {
       type: String,
       required: true,
       unique: true,
       index: true,
     },
-    
+
     appointmentId: {
       type: Schema.Types.ObjectId,
       ref: 'Appointment',
       index: true,
     },
-    
+
     patientId: {
       type: Schema.Types.ObjectId,
       ref: 'Patient',
       required: true,
       index: true,
     },
-    
+
     doctorId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
       index: true,
     },
-    
+
     sessionType: {
       type: String,
       enum: Object.values(SessionType),
       default: SessionType.VIDEO,
       required: true,
     },
-    
+
     status: {
       type: String,
       enum: Object.values(SessionStatus),
@@ -64,24 +64,24 @@ const TelemedicineSessionSchema = new Schema(
       required: true,
       index: true,
     },
-    
+
     scheduledStartTime: {
       type: Date,
       required: true,
     },
-    
+
     scheduledEndTime: {
       type: Date,
       required: true,
     },
-    
+
     actualStartTime: Date,
     actualEndTime: Date,
     duration: Number,
-    
+
     roomId: String,
     recordingUrl: String,
-    
+
     recordingConsent: {
       type: Boolean,
       default: false,
@@ -128,12 +128,12 @@ const TelemedicineSessionSchema = new Schema(
         },
       },
     ],
-    
+
     chatEnabled: {
       type: Boolean,
       default: true,
     },
-    
+
     chatMessages: [
       {
         senderId: {
@@ -153,7 +153,7 @@ const TelemedicineSessionSchema = new Schema(
         },
       },
     ],
-    
+
     sharedFiles: [
       {
         fileName: String,
@@ -168,22 +168,22 @@ const TelemedicineSessionSchema = new Schema(
         },
       },
     ],
-    
+
     notes: String,
     diagnosis: String,
-    
+
     prescriptionIds: [
       {
         type: Schema.Types.ObjectId,
         ref: 'Prescription',
       },
     ],
-    
+
     connectionQuality: {
       type: String,
       enum: ['EXCELLENT', 'GOOD', 'FAIR', 'POOR'],
     },
-    
+
     technicalIssues: String,
     cancellationReason: String,
   },

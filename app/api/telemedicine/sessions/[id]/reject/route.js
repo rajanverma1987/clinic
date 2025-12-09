@@ -50,11 +50,11 @@ export async function POST(
 
     // Update participant status to rejected
     await TelemedicineSession.updateOne(
-      { 
+      {
         sessionId,
         'participants.userId': participantId
       },
-      { 
+      {
         $set: { 'participants.$.status': 'rejected' }
       }
     );

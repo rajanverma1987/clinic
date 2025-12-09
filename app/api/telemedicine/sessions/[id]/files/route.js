@@ -30,7 +30,7 @@ export async function POST(
       );
     }
 
-    const { fileName, fileType, fileSize, encryptedData, uploadedBy, uploadedAt } = body;
+    const { fileName, fileType, fileSize, encryptedData, iv, encrypted, uploadedBy, uploadedAt } = body;
 
     if (!fileName || !encryptedData) {
       return NextResponse.json(
@@ -58,12 +58,15 @@ export async function POST(
       );
     }
 
-    // Add file to session
+    // Add encrypted file to session
+    // IMPORTANT: Store encrypted file as-is, never decrypt on server
     const fileData = {
       fileName,
       fileType: fileType || 'application/octet-stream',
       fileSize,
-      fileUrl: encryptedData, // Store encrypted data (in production, store in S3)
+      encryptedData: encryptedData, // Encrypted file data
+      iv: iv || null, // IV for decryption (if encrypted)
+      encrypted: encrypted || false, // Flag indicating if file is encrypted
       uploadedBy,
       uploadedAt: uploadedAt || new Date()
     };
