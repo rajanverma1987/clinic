@@ -69,6 +69,54 @@ function VideoConsultationRoomContent() {
     return () => clearInterval(timer);
   }, [isConnected]);
 
+  // Request media permissions explicitly on page load
+  useEffect(() => {
+    const requestMediaPermissions = async () => {
+      if (typeof window === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        return;
+      }
+
+      try {
+        // Request camera and microphone permissions explicitly
+        console.log('[VideoCall] Requesting media permissions on page load...');
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+
+        // Permissions granted
+        setHasCameraPermission(true);
+        setHasMicrophonePermission(true);
+        console.log('[VideoCall] ✅ Media permissions granted');
+
+        // Stop the stream immediately (we just needed to trigger the permission prompt)
+        stream.getTracks().forEach(track => track.stop());
+      } catch (error) {
+        console.error('[VideoCall] Media permission request failed:', error);
+        
+        // Check which permission was denied
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          // User denied permissions
+          setHasCameraPermission(false);
+          setHasMicrophonePermission(false);
+          setConnectionError('Camera and microphone permissions are required. Please allow access and refresh the page.');
+        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+          // No devices found
+          setConnectionError('No camera or microphone found. Please connect a device and refresh the page.');
+        } else {
+          // Other error
+          console.warn('[VideoCall] Permission request error (will retry on connect):', error);
+          // Don't set error state here, let it be requested again on connect
+        }
+      }
+    };
+
+    // Only request if we're in a secure context and have the API
+    if (window.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      requestMediaPermissions();
+    }
+  }, []); // Run once on mount
+
   // Load session data and check expiry
   useEffect(() => {
     const loadSession = async () => {
@@ -312,7 +360,8 @@ function VideoConsultationRoomContent() {
         throw new Error(errorMsg);
       }
 
-      // Check current permission status (if API available)
+      // Check current permission status (if API available) - this is a secondary check
+      // Primary permission request happens on page load
       if (navigator.permissions && navigator.permissions.query) {
         try {
           const [cameraPermission, microphonePermission] = await Promise.all([
@@ -325,17 +374,15 @@ function VideoConsultationRoomContent() {
             microphone: microphonePermission.state
           });
 
-          // Block joining if permissions are denied
+          // Update permission state based on query results
           if (cameraPermission.state === 'denied') {
             setHasCameraPermission(false);
-            throw new Error('Camera permission is denied. Please enable camera access in your browser settings to join the call.');
           } else if (cameraPermission.state === 'granted') {
             setHasCameraPermission(true);
           }
 
           if (microphonePermission.state === 'denied') {
             setHasMicrophonePermission(false);
-            throw new Error('Microphone permission is denied. Please enable microphone access in your browser settings to join the call.');
           } else if (microphonePermission.state === 'granted') {
             setHasMicrophonePermission(true);
           }
