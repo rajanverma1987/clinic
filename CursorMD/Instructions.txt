@@ -1,20 +1,12 @@
-it worked perfectly when i run it on prod with https. here is what more i want to add in telemedecin video call page. 
+This is the flow of telemedicine video call.
 
-You are building a production-grade telemedicine video call screen. Implement the following security and compliance features strictly:
+1. When video call appointment is booked. patient should get an email with video link and timing detail.
+2. when either of patient or doctor opens that link. after clicking "Join Video call". if A havent joined yet. User B should get message that "Waiting for user a to join the call". 
+3. Once User A join the call. Both should connect and start their call.
 
-1. End-to-end encryption using WebRTC Insertable Streams wherever supported.
-2. Enforce authenticated access only using JWT or secure session tokens.
-3. Generate one-time meeting links with automatic expiry.
-4. Implement a waiting room where only the host can admit participants.
-5. Apply role-based access control with roles: doctor, patient, admin.
-6. Block joining the call unless camera and microphone permissions are granted.
-7. Add screen-sharing controls with dynamic watermarking (user ID + timestamp).
-8. Enable encrypted real-time chat and encrypted file transfer inside the call.
-9. Disable recording by default and require explicit consent from all participants.
-10. Maintain audit logs for join, leave, screen share, mute, recording, and file actions.
-11. Apply API rate limiting and bot protection on all call-related endpoints.
-12. Enforce IP throttling and session limits on the TURN server.
-13. Rotate JWT secrets, TURN credentials, and encryption keys automatically.
-14. Ensure HIPAA and GDPR compliant data handling, storage, access logs, and consent flow.
-15. Improve the UI of the screen.
-All implementations must be secure, scalable, and production-ready for real telemedicine usage.
+Bugs and Improvements
+1. Chat didnt work. User A and User B didnt receive each other's messages.
+2. Screen is showing as mirron screen to other user
+3. Make the screen responsive to fit everything on mobile screen without scrolling.
+4. For Doctors. when call is join, Share button hides.
+

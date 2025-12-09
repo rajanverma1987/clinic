@@ -47,6 +47,8 @@ function VideoConsultationRoomContent() {
   const [hasMicrophonePermission, setHasMicrophonePermission] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [encryptionKey, setEncryptionKey] = useState(null); // E2EE key for chat and files
+  const [waitingForRemoteUser, setWaitingForRemoteUser] = useState(false); // Show "Waiting for user A" message
+  const [remoteUserConnected, setRemoteUserConnected] = useState(false); // Track if remote user is connected
   
   const videoContainerRef = useRef(null);
   const localVideoRef = useRef(null);
@@ -259,6 +261,81 @@ function VideoConsultationRoomContent() {
       decryptMessages();
     }
   }, [encryptionKey]); // Only run when encryption key changes
+
+  // Poll for new chat messages when connected
+  useEffect(() => {
+    if (!isConnected || !sessionId) return;
+
+    let chatPollInterval = null;
+    let lastMessageTimestamp = chatMessages.length > 0 
+      ? new Date(chatMessages[chatMessages.length - 1].timestamp).getTime()
+      : 0;
+
+    const pollChatMessages = async () => {
+      try {
+        const response = await apiClient.get(
+          `/telemedicine/sessions/${sessionId}/chat`,
+          undefined,
+          true
+        );
+
+        if (response.success && response.data && response.data.messages) {
+          const newMessages = response.data.messages.filter(msg => {
+            const msgTime = new Date(msg.timestamp).getTime();
+            return msgTime > lastMessageTimestamp;
+          });
+
+          if (newMessages.length > 0) {
+            // Decrypt new messages if encryption key is available
+            let processedMessages = newMessages;
+            if (encryptionKey) {
+              processedMessages = await Promise.all(
+                newMessages.map(async (msg) => {
+                  if (msg.encrypted && msg.message && typeof msg.message === 'string') {
+                    try {
+                      const decrypted = await decryptMessage(msg.message, encryptionKey);
+                      return { ...msg, message: decrypted, decrypted: true };
+                    } catch (error) {
+                      console.error('[E2EE] Failed to decrypt message:', error);
+                      return { ...msg, message: '[Encrypted - Decryption failed]', decrypted: false };
+                    }
+                  }
+                  return msg;
+                })
+              );
+            }
+
+            setChatMessages(prev => {
+              // Avoid duplicates
+              const existingIds = new Set(prev.map(m => m.timestamp?.toString() + m.senderId));
+              const uniqueNew = processedMessages.filter(m => 
+                !existingIds.has(m.timestamp?.toString() + m.senderId)
+              );
+              return [...prev, ...uniqueNew];
+            });
+
+            // Update last message timestamp
+            if (processedMessages.length > 0) {
+              lastMessageTimestamp = new Date(
+                processedMessages[processedMessages.length - 1].timestamp
+              ).getTime();
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to poll chat messages:', error);
+      }
+    };
+
+    // Poll every 2 seconds for new messages
+    chatPollInterval = setInterval(pollChatMessages, 2000);
+
+    return () => {
+      if (chatPollInterval) {
+        clearInterval(chatPollInterval);
+      }
+    };
+  }, [isConnected, sessionId, encryptionKey, chatMessages.length]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -608,16 +685,23 @@ function VideoConsultationRoomContent() {
             setIsConnecting(false);
             isConnectedRef.current = true;
             setConnectionError(null);
+            setRemoteUserConnected(true);
+            setWaitingForRemoteUser(false);
           } else if (state.status === 'disconnected' || state.status === 'ended') {
             setIsConnected(false);
             setIsConnecting(false);
             isConnectedRef.current = false;
+            setRemoteUserConnected(false);
           } else if (state.status === 'error') {
             setIsConnecting(false);
             setConnectionError(state.error?.message || 'Connection error occurred');
           } else if (state.status === 'connecting') {
             // Keep connecting state
             setIsConnecting(true);
+            // If we're connected locally but remote isn't, show waiting message
+            if (isConnectedRef.current && !remoteUserConnected) {
+              setWaitingForRemoteUser(true);
+            }
           }
         },
         onError: (error) => {
@@ -1218,7 +1302,7 @@ function VideoConsultationRoomContent() {
               <span className="font-mono">{formatDuration(sessionDuration)}</span>
             </div>
           )}
-          {sessionData && user && !isConnected && (
+          {sessionData && user && userRole === 'doctor' && (
             <button
               onClick={handleShareLink}
               className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
@@ -1227,21 +1311,21 @@ function VideoConsultationRoomContent() {
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
-              <span className="text-sm sm:text-base font-medium">Share</span>
+              <span className="text-sm sm:text-base font-medium hidden sm:inline">Share</span>
             </button>
           )}
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Video Area */}
-        <div className="flex-1 relative bg-black flex items-center justify-center">
+        <div className="flex-1 relative bg-black flex items-center justify-center min-h-0">
           {/* Video Container - WebRTC Video Streams */}
           {isConnecting || isConnected ? (
             <div 
               ref={videoContainerRef}
-              className="w-full h-full relative"
+              className="w-full h-full relative overflow-hidden"
             >
               {/* Remote Video (Patient/Doctor) - Full Screen */}
               <video
@@ -1249,18 +1333,19 @@ function VideoConsultationRoomContent() {
                 autoPlay
                 playsInline
                 className="w-full h-full object-cover"
-                style={{ transform: 'scaleX(-1)' }} // Mirror effect
+                style={{ maxHeight: '100vh' }}
+                // Removed mirror effect - remote video should show normally
               />
               
               {/* Local Video (Self) - Picture in Picture */}
-              <div className="absolute bottom-4 right-4 w-48 h-36 sm:w-64 sm:h-48 bg-gray-900 rounded-lg overflow-hidden shadow-2xl border-2 border-blue-500">
+              <div className="absolute bottom-16 sm:bottom-20 right-2 sm:right-4 w-28 h-20 sm:w-48 sm:h-36 md:w-64 md:h-48 bg-gray-900 rounded-lg overflow-hidden shadow-2xl border-2 border-blue-500 z-10">
                 <video
                   ref={localVideoRef}
                   autoPlay
                   playsInline
                   muted
                   className="w-full h-full object-cover"
-                  style={{ transform: 'scaleX(-1)' }} // Mirror effect
+                  style={{ transform: 'scaleX(-1)' }} // Mirror effect for self-view only
                 />
                 {!isVideoEnabled && (
                   <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
@@ -1273,11 +1358,11 @@ function VideoConsultationRoomContent() {
 
               {/* Call Controls - Overlay */}
               {isConnected && (
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-3 sm:gap-4 bg-gray-900/80 backdrop-blur-sm px-4 py-3 rounded-full">
+                <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 sm:gap-3 md:gap-4 bg-gray-900/80 backdrop-blur-sm px-2 sm:px-4 py-2 sm:py-3 rounded-full flex-wrap justify-center max-w-[95vw]">
                   {/* Mute/Unmute Button */}
                   <button
                     onClick={handleToggleMute}
-                    className={`p-3 rounded-full transition-colors ${
+                    className={`p-2 sm:p-3 rounded-full transition-colors ${
                       isMuted 
                         ? 'bg-red-600 hover:bg-red-700' 
                         : 'bg-gray-700 hover:bg-gray-600'
@@ -1285,7 +1370,7 @@ function VideoConsultationRoomContent() {
                     title={isMuted ? 'Unmute' : 'Mute'}
                   >
                     {isMuted ? (
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                       </svg>
@@ -1299,7 +1384,7 @@ function VideoConsultationRoomContent() {
                   {/* Video On/Off Button */}
                   <button
                     onClick={handleToggleVideo}
-                    className={`p-3 rounded-full transition-colors ${
+                    className={`p-2 sm:p-3 rounded-full transition-colors ${
                       isVideoEnabled 
                         ? 'bg-gray-700 hover:bg-gray-600' 
                         : 'bg-red-600 hover:bg-red-700'
@@ -1307,7 +1392,7 @@ function VideoConsultationRoomContent() {
                     title={isVideoEnabled ? 'Turn off video' : 'Turn on video'}
                   >
                     {isVideoEnabled ? (
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                     ) : (
@@ -1320,14 +1405,14 @@ function VideoConsultationRoomContent() {
                   {/* Screen Share Button */}
                   <button
                     onClick={handleScreenShare}
-                    className={`p-3 rounded-full transition-colors ${
+                    className={`p-2 sm:p-3 rounded-full transition-colors ${
                       isScreenSharing 
                         ? 'bg-blue-600 hover:bg-blue-700' 
                         : 'bg-gray-700 hover:bg-gray-600'
                     }`}
                     title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
                   >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </button>
@@ -1338,14 +1423,14 @@ function VideoConsultationRoomContent() {
                       setShowChat(!showChat);
                       if (!showChat) setShowFileTransfer(false); // Close file transfer if opening chat
                     }}
-                    className={`p-3 rounded-full transition-colors ${
+                    className={`p-2 sm:p-3 rounded-full transition-colors ${
                       showChat 
                         ? 'bg-blue-600 hover:bg-blue-700' 
                         : 'bg-gray-700 hover:bg-gray-600'
                     }`}
                     title={showChat ? 'Close chat' : 'Open chat'}
                   >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                   </button>
@@ -1356,14 +1441,14 @@ function VideoConsultationRoomContent() {
                       setShowFileTransfer(!showFileTransfer);
                       if (!showFileTransfer) setShowChat(false); // Close chat if opening file transfer
                     }}
-                    className={`p-3 rounded-full transition-colors ${
+                    className={`p-2 sm:p-3 rounded-full transition-colors ${
                       showFileTransfer 
                         ? 'bg-blue-600 hover:bg-blue-700' 
                         : 'bg-gray-700 hover:bg-gray-600'
                     }`}
                     title={showFileTransfer ? 'Close files' : 'Open files'}
                   >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </button>
@@ -1371,10 +1456,10 @@ function VideoConsultationRoomContent() {
                   {/* End Call Button */}
                   <button
                     onClick={handleEndCall}
-                    className="p-3 rounded-full bg-red-600 hover:bg-red-700 transition-colors"
+                    className="p-2 sm:p-3 rounded-full bg-red-600 hover:bg-red-700 transition-colors"
                     title="End call"
                   >
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M16 16l2 2m0 0l2 2m-2-2l-2 2m2-2l-2-2M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
                     </svg>
                   </button>
@@ -1394,6 +1479,17 @@ function VideoConsultationRoomContent() {
                         {connectionError}
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Waiting for Remote User Message */}
+              {isConnected && !remoteUserConnected && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                  <div className="text-center bg-gray-900/90 rounded-lg p-6 max-w-md mx-4">
+                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-white text-lg font-semibold mb-2">Waiting for {userRole === 'doctor' ? 'patient' : 'doctor'} to join...</p>
+                    <p className="text-gray-400 text-sm">You're connected. Waiting for the other participant to join the call.</p>
                   </div>
                 </div>
               )}

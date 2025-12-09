@@ -74,7 +74,7 @@ export async function createAppointment(input, tenantId, userId) {
   const appointmentDate = input.appointmentDate instanceof Date
     ? input.appointmentDate
     : new Date(input.appointmentDate);
-  
+
   const startTime = input.startTime instanceof Date
     ? input.startTime
     : new Date(input.startTime);
@@ -103,8 +103,8 @@ export async function createAppointment(input, tenantId, userId) {
   }
 
   // For video consultations, set status to IN_QUEUE so they go directly to queue
-  const initialStatus = input.isTelemedicine 
-    ? AppointmentStatus.IN_QUEUE 
+  const initialStatus = input.isTelemedicine
+    ? AppointmentStatus.IN_QUEUE
     : AppointmentStatus.SCHEDULED;
 
   // Create appointment
@@ -142,6 +142,87 @@ export async function createAppointment(input, tenantId, userId) {
         userId
       );
       console.log(`✅ Queue entry created for video consultation appointment ${appointment._id}`);
+
+      // Create telemedicine session and send email to patient
+      try {
+        const { createTelemedicineSession } = await import('@/services/telemedicine.service.js');
+        const { sendEmail } = await import('@/lib/email/email-service.js');
+
+        // Create telemedicine session
+        const session = await createTelemedicineSession(
+          tenantId,
+          userId,
+          {
+            appointmentId: appointment._id.toString(),
+            patientId: appointment.patientId.toString(),
+            doctorId: appointment.doctorId.toString(),
+            scheduledStartTime: appointment.startTime,
+            scheduledEndTime: appointment.endTime,
+            sessionType: 'video_consultation',
+          }
+        );
+
+        // Send email to patient with video link
+        if (patient.email) {
+          const videoLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/telemedicine/${session.sessionId}`;
+          const appointmentDate = new Date(appointment.startTime).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          const appointmentTime = new Date(appointment.startTime).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          await sendEmail({
+            to: patient.email,
+            subject: `Video Consultation Appointment - ${appointmentDate} at ${appointmentTime}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">Video Consultation Appointment</h2>
+                <p>Dear ${patient.firstName || 'Patient'},</p>
+                <p>Your video consultation appointment has been scheduled:</p>
+                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <p><strong>Date:</strong> ${appointmentDate}</p>
+                  <p><strong>Time:</strong> ${appointmentTime}</p>
+                  <p><strong>Duration:</strong> ${appointment.duration || 30} minutes</p>
+                </div>
+                <p>To join your video consultation, please click the link below:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${videoLink}" 
+                     style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                    Join Video Call
+                  </a>
+                </div>
+                <p style="color: #6b7280; font-size: 14px;">
+                  Or copy and paste this link into your browser:<br>
+                  <a href="${videoLink}" style="color: #2563eb;">${videoLink}</a>
+                </p>
+                <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                  <strong>Important:</strong> Please ensure you have a stable internet connection and allow camera/microphone access when prompted.
+                </p>
+              </div>
+            `,
+            text: `
+              Video Consultation Appointment
+              
+              Date: ${appointmentDate}
+              Time: ${appointmentTime}
+              Duration: ${appointment.duration || 30} minutes
+              
+              Join your video consultation: ${videoLink}
+              
+              Please ensure you have a stable internet connection and allow camera/microphone access when prompted.
+            `
+          });
+          console.log(`✅ Email sent to patient ${patient.email} with video link`);
+        }
+      } catch (telemedicineError) {
+        // Log error but don't fail appointment creation
+        console.error('Failed to create telemedicine session or send email:', telemedicineError);
+      }
     } catch (queueError) {
       // Log error but don't fail appointment creation
       console.error('Failed to create queue entry for video consultation:', queueError);
@@ -246,16 +327,16 @@ export async function listAppointments(query, tenantId, userId) {
     // When filtering by date range, check both appointmentDate and startTime
     const startDate = query.startDate ? new Date(query.startDate) : null;
     const endDate = query.endDate ? new Date(query.endDate) : null;
-    
+
     console.log('Date filter (range):', {
       startDate: query.startDate,
       endDate: query.endDate,
       startDateParsed: startDate?.toISOString(),
       endDateParsed: endDate?.toISOString()
     });
-    
+
     const orConditions = [];
-    
+
     // Build conditions for appointmentDate
     const appointmentDateCondition = {};
     if (startDate) appointmentDateCondition.$gte = startDate;
@@ -263,7 +344,7 @@ export async function listAppointments(query, tenantId, userId) {
     if (Object.keys(appointmentDateCondition).length > 0) {
       orConditions.push({ appointmentDate: appointmentDateCondition });
     }
-    
+
     // Build conditions for startTime
     const startTimeCondition = {};
     if (startDate) startTimeCondition.$gte = startDate;
@@ -271,13 +352,13 @@ export async function listAppointments(query, tenantId, userId) {
     if (Object.keys(startTimeCondition).length > 0) {
       orConditions.push({ startTime: startTimeCondition });
     }
-    
+
     if (orConditions.length > 0) {
       filter.$or = orConditions;
       console.log('Date filter $or conditions:', JSON.stringify(orConditions, null, 2));
     }
   }
-  
+
   console.log('Final filter for appointments:', JSON.stringify(filter, null, 2));
 
   // Get total count
@@ -420,11 +501,11 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
   switch (input.status) {
     case AppointmentStatus.ARRIVED:
       updateData.arrivedAt = now;
-      
+
       // Automatically create queue entry when patient arrives
       try {
         console.log(`[Queue Creation] Starting queue creation for appointment ${appointmentId}, tenantId: ${tenantId}`);
-        
+
         // Check if queue entry already exists
         const existingQueueEntry = await Queue.findOne(
           withTenant(tenantId, {
@@ -447,10 +528,10 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
           }
         } else {
           console.log(`[Queue Creation] No existing queue entry found, creating new one...`);
-          
+
           // Use the proper queue service function to handle queue number generation safely
           const { createQueueEntry } = await import('@/services/queue.service.js');
-          
+
           try {
             await createQueueEntry(
               {
@@ -466,21 +547,21 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
             console.log(`✅ Queue entry created successfully for appointment ${appointmentId}`);
           } catch (queueError) {
             if (
-              queueError.message?.includes('duplicate') || 
+              queueError.message?.includes('duplicate') ||
               queueError.message?.includes('E11000') ||
               queueError.message?.includes('already in queue')
             ) {
               console.log(`⚠️ Queue creation conflict detected, checking if queue entry exists...`);
-              
+
               await new Promise(resolve => setTimeout(resolve, 200));
-              
+
               const checkAgain = await Queue.findOne(
                 withTenant(tenantId, {
                   appointmentId: appointmentId,
                   deletedAt: null,
                 })
               );
-              
+
               if (checkAgain) {
                 console.log(`✅ Queue entry exists for appointment ${appointmentId}: ${checkAgain.queueNumber}`);
               } else {
@@ -500,14 +581,14 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
           stack: error.stack,
           name: error.name,
         });
-        
+
         const finalCheck = await Queue.findOne(
           withTenant(tenantId, {
             appointmentId: appointmentId,
             deletedAt: null,
           })
         );
-        
+
         if (finalCheck) {
           console.log(`✅ Queue entry exists despite error: ${finalCheck.queueNumber}`);
         } else {
@@ -532,7 +613,7 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
             .sort({ createdAt: -1 })
             .select('queueNumber')
             .lean();
-          
+
           const queueNumber = latest && latest.queueNumber
             ? `Q-${(parseInt(latest.queueNumber.match(/Q-(\d+)/)?.[1] || '0', 10) + 1).toString().padStart(4, '0')}`
             : 'Q-0001';
