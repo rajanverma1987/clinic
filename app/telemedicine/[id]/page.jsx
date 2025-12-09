@@ -267,13 +267,10 @@ function VideoConsultationRoomContent() {
 
   // Poll for new chat messages when connected (with improved synchronization)
   useEffect(() => {
-    if (!isConnected || !sessionId) return;
+    if (!sessionId) return; // Poll even when not connected to catch messages
 
     let chatPollInterval = null;
-    const messageIds = new Set(chatMessages.map(m => {
-      // Create unique ID from timestamp and senderId
-      return `${m.timestamp?.toString() || Date.now()}-${m.senderId || 'unknown'}`;
-    }));
+    let lastPollTime = Date.now();
 
     const pollChatMessages = async () => {
       try {
@@ -284,51 +281,72 @@ function VideoConsultationRoomContent() {
         );
 
         if (response.success && response.data && response.data.messages) {
-          // Filter out messages we already have
-          const newMessages = response.data.messages.filter(msg => {
-            const msgId = `${msg.timestamp?.toString() || Date.now()}-${msg.senderId || 'unknown'}`;
-            return !messageIds.has(msgId);
-          });
+          const allMessages = response.data.messages || [];
+          
+          // Filter messages that are new (after last poll time or not in current state)
+          setChatMessages(prev => {
+            // Create a set of existing message IDs for quick lookup
+            const existingIds = new Set(
+              prev.map(m => {
+                const timestamp = m.timestamp ? new Date(m.timestamp).getTime() : 0;
+                return `${timestamp}-${m.senderId || 'unknown'}-${m.message?.substring(0, 20) || ''}`;
+              })
+            );
 
-          if (newMessages.length > 0) {
-            console.log(`[Chat] Received ${newMessages.length} new message(s)`);
-            
-            // Decrypt new messages if encryption key is available
-            let processedMessages = newMessages;
-            if (encryptionKey) {
-              processedMessages = await Promise.all(
-                newMessages.map(async (msg) => {
-                  if (msg.encrypted && msg.message && typeof msg.message === 'string') {
-                    try {
-                      const decrypted = await decryptMessage(msg.message, encryptionKey);
-                      return { ...msg, message: decrypted, decrypted: true };
-                    } catch (error) {
-                      console.error('[E2EE] Failed to decrypt message:', error);
-                      return { ...msg, message: '[Encrypted - Decryption failed]', decrypted: false };
+            // Find new messages
+            const newMessages = allMessages.filter(msg => {
+              const timestamp = msg.timestamp ? new Date(msg.timestamp).getTime() : 0;
+              const msgId = `${timestamp}-${msg.senderId || 'unknown'}-${msg.message?.substring(0, 20) || ''}`;
+              return !existingIds.has(msgId);
+            });
+
+            if (newMessages.length > 0) {
+              console.log(`[Chat] Received ${newMessages.length} new message(s)`);
+              
+              // Decrypt new messages if encryption key is available (async processing)
+              if (encryptionKey) {
+                Promise.all(
+                  newMessages.map(async (msg) => {
+                    if (msg.encrypted && msg.message && typeof msg.message === 'string') {
+                      try {
+                        const decrypted = await decryptMessage(msg.message, encryptionKey);
+                        return { ...msg, message: decrypted, decrypted: true };
+                      } catch (error) {
+                        console.error('[E2EE] Failed to decrypt message:', error);
+                        return { ...msg, message: '[Unable to read this message]', decrypted: false };
+                      }
                     }
-                  }
-                  return msg;
-                })
-              );
+                    return msg;
+                  })
+                ).then(processedMessages => {
+                  // Update messages after decryption
+                  setChatMessages(prevMsgs => {
+                    const merged = [...prevMsgs, ...processedMessages];
+                    return merged.sort((a, b) => {
+                      const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                      const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                      return timeA - timeB;
+                    });
+                  });
+                });
+                
+                // Return previous messages for now, will be updated after decryption
+                return prev;
+              } else {
+                // No encryption, add messages directly
+                const merged = [...prev, ...newMessages];
+                return merged.sort((a, b) => {
+                  const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                  const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                  return timeA - timeB;
+                });
+              }
             }
 
-            // Add to message IDs set
-            processedMessages.forEach(msg => {
-              const msgId = `${msg.timestamp?.toString() || Date.now()}-${msg.senderId || 'unknown'}`;
-              messageIds.add(msgId);
-            });
+            return prev; // No new messages
+          });
 
-            // Update chat messages
-            setChatMessages(prev => {
-              // Merge and sort by timestamp
-              const allMessages = [...prev, ...processedMessages];
-              return allMessages.sort((a, b) => {
-                const timeA = new Date(a.timestamp || 0).getTime();
-                const timeB = new Date(b.timestamp || 0).getTime();
-                return timeA - timeB;
-              });
-            });
-          }
+          lastPollTime = Date.now();
         }
       } catch (error) {
         console.error('[Chat] Failed to poll chat messages:', error);
@@ -336,8 +354,8 @@ function VideoConsultationRoomContent() {
       }
     };
 
-    // Poll every 2 seconds for new messages
-    chatPollInterval = setInterval(pollChatMessages, 2000);
+    // Poll every 1.5 seconds for faster message delivery
+    chatPollInterval = setInterval(pollChatMessages, 1500);
     
     // Poll immediately on mount
     pollChatMessages();
@@ -347,7 +365,7 @@ function VideoConsultationRoomContent() {
         clearInterval(chatPollInterval);
       }
     };
-  }, [isConnected, sessionId, encryptionKey]); // Removed chatMessages.length from deps to avoid infinite loop
+  }, [sessionId, encryptionKey]); // Poll regardless of connection status
 
   // Cleanup on unmount
   useEffect(() => {
@@ -954,6 +972,13 @@ function VideoConsultationRoomContent() {
         await callManagerRef.current.stopScreenShare();
         setIsScreenSharing(false);
         
+        // Restore video element to object-cover for regular video
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.classList.remove('object-contain');
+          remoteVideoRef.current.classList.add('object-cover');
+          remoteVideoRef.current.style.backgroundColor = 'transparent';
+        }
+        
         // Audit log
         if (user) {
           AuditLogger.auditWrite(
@@ -969,6 +994,13 @@ function VideoConsultationRoomContent() {
       } else {
         const stream = await callManagerRef.current.startScreenShare();
         setIsScreenSharing(true);
+        
+        // Force video element to use object-contain for screen share
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.classList.remove('object-cover');
+          remoteVideoRef.current.classList.add('object-contain');
+          remoteVideoRef.current.style.backgroundColor = '#000';
+        }
         
         // Apply watermark overlay to screen share video element
         if (remoteVideoRef.current && stream) {
@@ -1438,9 +1470,13 @@ function VideoConsultationRoomContent() {
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
-                className="w-full h-full object-cover"
-                style={{ maxHeight: '100vh' }}
+                className={`w-full h-full ${isScreenSharing ? 'object-contain' : 'object-cover'}`}
+                style={{ 
+                  maxHeight: '100vh',
+                  backgroundColor: isScreenSharing ? '#000' : 'transparent'
+                }}
                 // Removed mirror effect - remote video should show normally
+                // Use object-contain for screen share to fit entire screen without cropping
               />
               
               {/* Local Video (Self) - Picture in Picture */}
