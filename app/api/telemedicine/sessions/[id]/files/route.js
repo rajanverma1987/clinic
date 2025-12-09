@@ -20,7 +20,7 @@ export async function POST(
 ) {
   try {
     const params = await context.params;
-    const sessionId = params.id;
+    const sessionId = params?.id;
     const body = await req.json();
 
     if (!sessionId) {
@@ -115,24 +115,30 @@ export async function GET(
 ) {
   try {
     const params = await context.params;
-    const sessionId = params.id;
+    const sessionId = params?.id;
 
     if (!sessionId) {
+      console.error('[Files API] Missing sessionId in params:', params);
       return NextResponse.json(
         errorResponse('Session ID is required', 'VALIDATION_ERROR'),
         { status: 400 }
       );
     }
 
+    console.log('[Files API] Fetching files for session:', sessionId);
+
     await connectDB();
     const session = await TelemedicineSession.findOne({ sessionId }).lean();
 
     if (!session) {
+      console.error('[Files API] Session not found:', sessionId);
       return NextResponse.json(
         errorResponse('Session not found', 'NOT_FOUND'),
         { status: 404 }
       );
     }
+
+    console.log('[Files API] Found session, returning files:', session.sharedFiles?.length || 0);
 
     return NextResponse.json(successResponse({
       files: session.sharedFiles || []

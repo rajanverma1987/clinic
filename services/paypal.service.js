@@ -186,10 +186,10 @@ export async function createPayPalSubscription(
   }
 
   const data = await response.json();
-  
+
   // Find approval URL in links
   const approvalLink = data.links?.find((link) => link.rel === 'approve');
-  
+
   if (!approvalLink || !data.id) {
     throw new Error('Failed to get approval URL from PayPal');
   }
@@ -267,12 +267,109 @@ export async function activatePayPalSubscription(subscriptionId) {
 }
 
 /**
+ * Retry failed PayPal payment with exponential backoff
+ * @param {string} subscriptionId - PayPal subscription ID
+ * @param {number} maxRetries - Maximum number of retry attempts (default: 3)
+ * @param {number} initialDelay - Initial delay in milliseconds (default: 1000)
+ * @returns {Promise<Object>} Payment result
+ */
+export async function retryPayPalPayment(subscriptionId, maxRetries = 3, initialDelay = 1000) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[PayPal] Retry attempt ${attempt}/${maxRetries} for subscription ${subscriptionId}`);
+
+      // Get subscription details to check status
+      const subscription = await getPayPalSubscription(subscriptionId);
+
+      // Check if subscription is active
+      if (subscription.status === 'ACTIVE') {
+        console.log(`[PayPal] Subscription ${subscriptionId} is already active`);
+        return { success: true, subscription };
+      }
+
+      // Try to activate subscription
+      if (subscription.status === 'APPROVAL_PENDING' || subscription.status === 'APPROVED') {
+        await activatePayPalSubscription(subscriptionId);
+
+        // Wait a bit and verify activation
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const updatedSubscription = await getPayPalSubscription(subscriptionId);
+
+        if (updatedSubscription.status === 'ACTIVE') {
+          console.log(`[PayPal] ✅ Successfully activated subscription ${subscriptionId} on attempt ${attempt}`);
+          return { success: true, subscription: updatedSubscription, attempts: attempt };
+        }
+      }
+
+      // If we get here, activation didn't work
+      throw new Error(`Subscription status: ${subscription.status}`);
+
+    } catch (error) {
+      lastError = error;
+      console.error(`[PayPal] Retry attempt ${attempt} failed:`, error.message);
+
+      // Don't retry on last attempt
+      if (attempt < maxRetries) {
+        // Exponential backoff: delay = initialDelay * 2^(attempt-1)
+        const delay = initialDelay * Math.pow(2, attempt - 1);
+        console.log(`[PayPal] Waiting ${delay}ms before next retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  // All retries failed
+  console.error(`[PayPal] ❌ All ${maxRetries} retry attempts failed for subscription ${subscriptionId}`);
+  throw new Error(`Failed to process PayPal payment after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
+}
+
+/**
+ * Process recurring payment with automatic retry
+ * @param {string} subscriptionId - PayPal subscription ID
+ * @param {Object} options - Retry options
+ * @returns {Promise<Object>} Payment result
+ */
+export async function processRecurringPayment(subscriptionId, options = {}) {
+  const {
+    maxRetries = 3,
+    initialDelay = 1000,
+    retryOnFailure = true
+  } = options;
+
+  try {
+    // First attempt
+    const subscription = await getPayPalSubscription(subscriptionId);
+
+    if (subscription.status === 'ACTIVE') {
+      return { success: true, subscription, attempts: 0 };
+    }
+
+    // If retry is enabled and payment failed, retry
+    if (retryOnFailure && (subscription.status === 'SUSPENDED' || subscription.status === 'CANCELLED')) {
+      return await retryPayPalPayment(subscriptionId, maxRetries, initialDelay);
+    }
+
+    return { success: false, subscription, error: `Subscription status: ${subscription.status}` };
+
+  } catch (error) {
+    // If retry is enabled, attempt retry
+    if (retryOnFailure) {
+      return await retryPayPalPayment(subscriptionId, maxRetries, initialDelay);
+    }
+
+    throw error;
+  }
+}
+
+/**
  * Handle PayPal webhook
  */
 export async function handlePayPalWebhook(payload, headers) {
   // Verify webhook signature (implementation depends on PayPal webhook verification)
   // For now, we'll process the webhook events
-  
+
   const eventType = payload.event_type;
   const resource = payload.resource;
 
@@ -290,7 +387,15 @@ export async function handlePayPalWebhook(payload, headers) {
       // Payment completed
       break;
     case 'PAYMENT.SALE.DENIED':
-      // Payment failed
+      // Payment failed - trigger retry logic
+      if (resource?.billing_agreement_id) {
+        console.log('[PayPal] Payment denied, attempting retry for subscription:', resource.billing_agreement_id);
+        try {
+          await retryPayPalPayment(resource.billing_agreement_id, 3, 2000);
+        } catch (error) {
+          console.error('[PayPal] Retry failed after webhook:', error);
+        }
+      }
       break;
     default:
       console.log('Unhandled PayPal webhook event:', eventType);

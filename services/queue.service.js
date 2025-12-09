@@ -83,7 +83,7 @@ async function calculateNextPosition(tenantId, doctorId, priority) {
 /**
  * Recalculate positions for a doctor's queue
  */
-async function recalculatePositions(tenantId, doctorId) {
+export async function recalculatePositions(tenantId, doctorId) {
   await connectDB();
 
   // Get all waiting entries for this doctor, ordered by priority and join time
@@ -179,9 +179,9 @@ export async function createQueueEntry(input, tenantId, userId) {
 
     // Update appointment status to IN_QUEUE only if it's not already ARRIVED or IN_PROGRESS
     const currentStatus = appointment.status;
-    if (currentStatus !== AppointmentStatus.ARRIVED && 
-        currentStatus !== AppointmentStatus.IN_PROGRESS && 
-        currentStatus !== AppointmentStatus.COMPLETED) {
+    if (currentStatus !== AppointmentStatus.ARRIVED &&
+      currentStatus !== AppointmentStatus.IN_PROGRESS &&
+      currentStatus !== AppointmentStatus.COMPLETED) {
       await Appointment.findByIdAndUpdate(input.appointmentId, {
         $set: { status: AppointmentStatus.IN_QUEUE },
       });
@@ -673,7 +673,7 @@ export async function getQueueStatistics(doctorId, tenantId, userId) {
   const averageWaitTime =
     completedToday.length > 0
       ? completedToday.reduce((sum, entry) => sum + (entry.actualWaitTime || 0), 0) /
-        completedToday.length
+      completedToday.length
       : 0;
 
   const totalToday = await Queue.countDocuments(

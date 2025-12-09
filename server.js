@@ -8,7 +8,8 @@ const { parse } = require('url');
 const next = require('next');
 const { Server } = require('socket.io');
 
-const dev = process.env.NODE_ENV !== 'production';
+// Check NODE_ENV, default to development if not set
+const dev = !process.env.NODE_ENV || process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || 'localhost';
 const port = parseInt(process.env.PORT || '5053', 10);
 
@@ -83,8 +84,8 @@ app.prepare().then(() => {
 
       console.log(`[Socket.IO] 📨 Chat message in session ${sessionId} from ${senderId}`);
 
-      // Broadcast to all clients in the session (including sender for confirmation)
-      io.to(`session:${sessionId}`).emit('chat-message', {
+      // Broadcast to all OTHER clients in the session (exclude sender to prevent duplicate)
+      socket.to(`session:${sessionId}`).emit('chat-message', {
         sessionId,
         message,
         senderId,

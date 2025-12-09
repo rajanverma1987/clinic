@@ -229,51 +229,88 @@ export async function createInvoice(input, tenantId, userId) {
   const patientPayable = totals.totalAmount - insuranceCoverage;
 
   // Create invoice using enriched items (with total and totalWithTax)
-  const invoice = await Invoice.create({
-    tenantId,
-    patientId: input.patientId,
-    appointmentId: input.appointmentId,
-    invoiceNumber,
-    invoiceDate: new Date(),
-    dueDate,
-    status: InvoiceStatus.DRAFT,
-    region: tenant.region,
-    items: totals.items, // Use enriched items from calculateInvoiceTotals
-    subtotal: totals.subtotal,
-    totalDiscount: totals.totalDiscount,
-    taxableAmount: totals.taxableAmount,
-    totalTax: totals.totalTax,
-    totalAmount: totals.totalAmount,
-    taxBreakdown: totals.taxBreakdown,
-    discountType: input.discountType,
-    discountValue: input.discountValue
-      ? parseAmount(input.discountValue, tenant.settings.currency)
-      : undefined,
-    discountReason: input.discountReason,
-    insuranceId: input.insuranceId,
-    insuranceCoverage,
-    patientPayable,
-    paidAmount: 0,
-    balanceAmount: patientPayable,
-    currency: tenant.settings.currency,
-    notes: input.notes,
-  });
+  // Use transaction-like approach with rollback capability
+  let invoice = null;
+  let inventoryReduced = false;
 
-  // Audit log
-  await AuditLogger.auditWrite(
-    'invoice',
-    invoice._id.toString(),
-    userId,
-    tenantId,
-    AuditAction.CREATE
-  );
+  try {
+    invoice = await Invoice.create({
+      tenantId,
+      patientId: input.patientId,
+      appointmentId: input.appointmentId,
+      invoiceNumber,
+      invoiceDate: new Date(),
+      dueDate,
+      status: InvoiceStatus.DRAFT,
+      region: tenant.region,
+      items: totals.items, // Use enriched items from calculateInvoiceTotals
+      subtotal: totals.subtotal,
+      totalDiscount: totals.totalDiscount,
+      taxableAmount: totals.taxableAmount,
+      totalTax: totals.totalTax,
+      totalAmount: totals.totalAmount,
+      taxBreakdown: totals.taxBreakdown,
+      discountType: input.discountType,
+      discountValue: input.discountValue
+        ? parseAmount(input.discountValue, tenant.settings.currency)
+        : undefined,
+      discountReason: input.discountReason,
+      insuranceId: input.insuranceId,
+      insuranceCoverage,
+      patientPayable,
+      paidAmount: 0,
+      balanceAmount: patientPayable,
+      currency: tenant.settings.currency,
+      notes: input.notes,
+    });
 
-  // Reduce inventory for medication items if invoice is not draft
-  if (input.status && input.status !== InvoiceStatus.DRAFT) {
-    await reduceInventoryForInvoice(invoice, tenantId, userId);
+    // Audit log
+    try {
+      await AuditLogger.auditWrite(
+        'invoice',
+        invoice._id.toString(),
+        userId,
+        tenantId,
+        AuditAction.CREATE
+      );
+    } catch (auditError) {
+      console.error('[Invoice] Failed to create audit log, but invoice created:', auditError);
+      // Don't fail invoice creation if audit log fails
+    }
+
+    // Reduce inventory for medication items if invoice is not draft
+    if (input.status && input.status !== InvoiceStatus.DRAFT) {
+      try {
+        await reduceInventoryForInvoice(invoice, tenantId, userId);
+        inventoryReduced = true;
+      } catch (inventoryError) {
+        console.error('[Invoice] Failed to reduce inventory:', inventoryError);
+        // Rollback: Delete invoice if inventory reduction fails
+        await Invoice.findByIdAndDelete(invoice._id);
+        throw new Error(`Failed to reduce inventory: ${inventoryError.message}. Invoice creation rolled back.`);
+      }
+    }
+
+    return invoice;
+  } catch (error) {
+    // Rollback: If invoice was created but something else failed, delete it
+    if (invoice && !inventoryReduced) {
+      try {
+        await Invoice.findByIdAndDelete(invoice._id);
+        console.log('[Invoice] Rolled back invoice creation due to error:', error.message);
+      } catch (rollbackError) {
+        console.error('[Invoice] Failed to rollback invoice deletion:', rollbackError);
+        // Mark invoice as failed for manual cleanup
+        if (invoice) {
+          await Invoice.findByIdAndUpdate(invoice._id, {
+            status: 'FAILED',
+            notes: `Invoice creation failed: ${error.message}. Requires manual cleanup.`
+          });
+        }
+      }
+    }
+    throw error;
   }
-
-  return invoice;
 }
 
 /**
@@ -305,7 +342,7 @@ async function reduceInventoryForInvoice(invoice, tenantId, userId) {
 
       // Find inventory item by prescription or drugId
       let inventoryItem = null;
-      
+
       if (item.prescriptionId) {
         // If we have prescriptionId, find the prescription and get drugId
         const Prescription = (await import('@/models/Prescription.js')).default;
@@ -321,7 +358,7 @@ async function reduceInventoryForInvoice(invoice, tenantId, userId) {
           const prescriptionItem = prescription.items.find(
             pi => pi.itemType === 'drug' && pi.drugId
           );
-          
+
           if (prescriptionItem && prescriptionItem.drugId) {
             // Find inventory item by drugId
             inventoryItem = await InventoryItem.findOne(
@@ -714,6 +751,95 @@ export async function listPayments(query, tenantId, userId) {
     .lean();
 
   return createPaginationResult(payments, total, page || 1, limit || 10);
+}
+
+/**
+ * Process refund for a payment
+ */
+export async function processRefund(paymentId, refundAmount, reason, tenantId, userId) {
+  await connectDB();
+
+  // Get payment
+  const payment = await Payment.findOne(
+    withTenant(tenantId, {
+      _id: paymentId,
+      deletedAt: null,
+    })
+  ).populate('invoiceId');
+
+  if (!payment) {
+    throw new Error('Payment not found');
+  }
+
+  // Validate refund amount
+  const refundAmountParsed = parseAmount(refundAmount, payment.currency);
+  if (refundAmountParsed <= 0) {
+    throw new Error('Refund amount must be greater than zero');
+  }
+
+  if (refundAmountParsed > payment.amount) {
+    throw new Error('Refund amount cannot exceed payment amount');
+  }
+
+  // Check if payment is refundable
+  if (payment.status !== PaymentStatus.COMPLETED) {
+    throw new Error('Only completed payments can be refunded');
+  }
+
+  // Create refund record
+  const refund = await Payment.create({
+    tenantId,
+    invoiceId: payment.invoiceId,
+    patientId: payment.patientId,
+    paymentNumber: await generatePaymentNumber(tenantId),
+    paymentDate: new Date(),
+    amount: -refundAmountParsed, // Negative amount for refund
+    currency: payment.currency,
+    paymentMethod: payment.paymentMethod,
+    status: PaymentStatus.COMPLETED,
+    paymentReference: `REFUND-${payment.paymentReference || payment.paymentNumber}`,
+    notes: `Refund for payment ${payment.paymentNumber}. Reason: ${reason || 'No reason provided'}`,
+    refundFor: paymentId,
+    refundReason: reason,
+    createdBy: userId,
+  });
+
+  // Update original payment
+  payment.refundedAmount = (payment.refundedAmount || 0) + refundAmountParsed;
+  payment.refundedAt = new Date();
+  if (payment.refundedAmount >= payment.amount) {
+    payment.status = PaymentStatus.REFUNDED;
+  } else {
+    payment.status = PaymentStatus.PARTIALLY_REFUNDED;
+  }
+  await payment.save();
+
+  // Update invoice balance
+  if (payment.invoiceId) {
+    const invoice = await Invoice.findById(payment.invoiceId);
+    if (invoice) {
+      invoice.paidAmount = Math.max(0, invoice.paidAmount - refundAmountParsed);
+      invoice.balanceAmount = invoice.totalAmount - invoice.paidAmount;
+
+      if (invoice.balanceAmount > 0) {
+        invoice.status = InvoiceStatus.PENDING;
+      }
+
+      await invoice.save();
+    }
+  }
+
+  // Audit log
+  await AuditLogger.auditWrite(
+    'payment',
+    refund._id.toString(),
+    userId,
+    tenantId,
+    AuditAction.CREATE,
+    { refundAmount: refundAmountParsed, originalPayment: paymentId, reason }
+  );
+
+  return refund;
 }
 
 /**

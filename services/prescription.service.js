@@ -16,6 +16,7 @@ import { withTenant } from '@/lib/db/tenant-helper.js';
 import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
 import { decryptField } from '@/lib/encryption/phi-encryption.js';
+import { recalculatePositions } from './queue.service.js';
 
 /**
  * Generate unique prescription number for a tenant
@@ -82,6 +83,27 @@ export async function createPrescription(input, tenantId, userId) {
   const tenant = await Tenant.findById(tenantId);
   if (!tenant) {
     throw new Error('Tenant not found');
+  }
+
+  // Check for duplicate prescription for same appointment
+  // Prevent creating multiple prescriptions for the same appointment
+  if (input.appointmentId) {
+    const existingPrescription = await Prescription.findOne(
+      withTenant(tenantId, {
+        appointmentId: input.appointmentId,
+        patientId: input.patientId,
+        doctorId: userId,
+        status: { $ne: 'CANCELLED' },
+        deletedAt: null,
+      })
+    ).lean();
+
+    if (existingPrescription) {
+      throw new Error(
+        `A prescription already exists for this appointment (${existingPrescription.prescriptionNumber}). ` +
+        `Please update the existing prescription instead of creating a new one.`
+      );
+    }
   }
 
   // Validate and enrich prescription items
@@ -188,6 +210,7 @@ export async function createPrescription(input, tenantId, userId) {
   );
 
   // Auto-complete queue entry if prescription is created for an in-progress queue entry
+  // Improved error handling to prevent silent failures
   try {
     const queueFilter = withTenant(tenantId, {
       patientId: input.patientId,
@@ -206,7 +229,7 @@ export async function createPrescription(input, tenantId, userId) {
     if (queueEntry) {
       // Mark queue entry as completed
       const now = new Date();
-      await Queue.findByIdAndUpdate(queueEntry._id, {
+      const queueUpdateResult = await Queue.findByIdAndUpdate(queueEntry._id, {
         $set: {
           status: QueueStatus.COMPLETED,
           completedAt: now,
@@ -214,28 +237,52 @@ export async function createPrescription(input, tenantId, userId) {
         },
       });
 
-      // Update appointment status if linked
-      if (queueEntry.appointmentId) {
-        await Appointment.findByIdAndUpdate(queueEntry.appointmentId, {
-          $set: {
-            status: AppointmentStatus.COMPLETED,
-            completedAt: now,
-          },
-        });
+      if (!queueUpdateResult) {
+        console.error(`[Prescription] Failed to update queue entry ${queueEntry._id} to completed status`);
+        // Log but don't fail prescription creation
+      } else {
+        console.log(`[Prescription] Successfully completed queue entry ${queueEntry._id}`);
       }
 
-      // Recalculate positions for the doctor's queue
-      // Import queue service function to recalculate positions
-      const queueService = await import('@/services/queue.service.js');
-      // We need to access the internal function, but it's not exported
-      // Instead, we'll just update the positions manually for simplicity
-      // The queue service will handle this on next fetch
+      // Update appointment status if linked
+      if (queueEntry.appointmentId) {
+        try {
+          const appointmentUpdateResult = await Appointment.findByIdAndUpdate(
+            queueEntry.appointmentId,
+            {
+              $set: {
+                status: AppointmentStatus.COMPLETED,
+                completedAt: now,
+              },
+            }
+          );
 
-      console.log(`Queue entry ${queueEntry._id} automatically marked as completed after prescription creation`);
+          if (!appointmentUpdateResult) {
+            console.error(`[Prescription] Failed to update appointment ${queueEntry.appointmentId} to completed status`);
+          } else {
+            console.log(`[Prescription] Successfully completed appointment ${queueEntry.appointmentId}`);
+          }
+        } catch (appointmentError) {
+          console.error(`[Prescription] Error updating appointment ${queueEntry.appointmentId}:`, appointmentError);
+          // Log error but don't fail prescription creation
+        }
+      }
+
+      // Recalculate positions for other queue entries
+      try {
+        await recalculatePositions(tenantId, userId);
+        console.log(`[Prescription] Successfully recalculated queue positions for doctor ${userId}`);
+      } catch (recalcError) {
+        console.error(`[Prescription] Failed to recalculate queue positions:`, recalcError);
+        // Log but don't fail - positions will be recalculated on next queue operation
+      }
+
+      console.log(`[Prescription] Queue entry ${queueEntry._id} automatically marked as completed after prescription creation`);
     }
   } catch (error) {
-    // Log error but don't fail prescription creation if queue update fails
-    console.error('Failed to auto-complete queue entry:', error);
+    // Log queue cleanup errors but don't fail prescription creation
+    console.error('[Prescription] Queue cleanup error (non-critical):', error);
+    // Prescription was created successfully, queue cleanup is secondary
   }
 
   // Convert to plain object and decrypt item instructions

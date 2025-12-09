@@ -309,10 +309,12 @@ function VideoConsultationRoomContent() {
     socket.on('chat-message', async (data) => {
       console.log('[Chat] 📨 Received message via Socket.IO:', data);
       
-      // Check if message is from current user (avoid duplicates)
+      // Check if message is from current user (avoid duplicates from Socket.IO)
+      // Note: We already added it to local state when sending, so skip Socket.IO echo
       const currentUserId = user?.userId || user?._id;
-      if (data.senderId === currentUserId) {
-        // This is our own message, might already be in state
+      if (data.senderId === currentUserId || data.senderId?.toString() === currentUserId?.toString()) {
+        // This is our own message - already in state from handleSendChatMessage
+        console.log('[Chat] Ignoring own message from Socket.IO:', data.senderId);
         return;
       }
 
@@ -417,9 +419,22 @@ function VideoConsultationRoomContent() {
       return;
     }
 
+    // Reset all connection states to allow reconnection
     setIsConnecting(true);
     setConnectionError(null);
     isConnectedRef.current = false;
+    setRemoteUserConnected(false);
+    setWaitingForRemoteUser(false);
+    
+    // Clean up any existing call manager before starting new connection
+    if (callManagerRef.current) {
+      try {
+        await callManagerRef.current.endCall();
+      } catch (error) {
+        console.warn('[VideoCall] Error cleaning up previous call:', error);
+      }
+      callManagerRef.current = null;
+    }
     
     try {
       // Check if browser supports WebRTC

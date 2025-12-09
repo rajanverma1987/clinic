@@ -3,7 +3,7 @@
 import React from 'react';
 
 export function Input({ label, error, helperText, className = '', disabled, ...props }) {
-  const baseClasses = `w-full px-4 py-2.5 text-base border rounded-lg transition-colors`;
+  const baseClasses = `w-full px-4 py-2.5 text-base border rounded-xl transition-colors`;
   
   const disabledClasses = disabled
     ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed opacity-60'

@@ -7,7 +7,7 @@
     "dev": "node server.js",
     "dev:next": "next dev -p 5053",
     "build": "next build",
-    "start": "NODE_ENV=production node server.js",
+    "start": "cross-env NODE_ENV=production node server.js",
     "start:next": "next start -p 5053",
     "lint": "next lint",
     "setup": "node -r dotenv/config scripts/setup.js dotenv_config_path=.env.local",
@@ -21,9 +21,14 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
+    "html2canvas": "^1.4.1",
     "joi": "^17.13.0",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.4",
+    "lucide-react": "^0.556.0",
     "mongoose": "^8.3.0",
     "next": "^14.2.0",
     "nodemailer": "^7.0.11",
@@ -33,6 +38,8 @@
     "simple-peer": "^9.11.1",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.4.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
