@@ -13,6 +13,7 @@ import { ChatPanel } from '@/components/telemedicine/ChatPanel';
 import { FileTransfer } from '@/components/telemedicine/FileTransfer';
 import { AuditLogger } from '@/lib/audit/audit-logger';
 import { deriveSharedKey, encryptMessage, decryptMessage, encryptFile, decryptFile } from '@/lib/encryption/e2ee';
+import { getUserFriendlyMessage, getConnectionQualityLabel, getConnectionStatusMessage } from '@/lib/utils/user-messages';
 
 function VideoConsultationRoomContent() {
   const router = useRouter();
@@ -106,7 +107,7 @@ function VideoConsultationRoomContent() {
           setConnectionError('Camera and microphone permissions are required. Please allow access and refresh the page.');
         } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
           // No devices found
-          setConnectionError('No camera or microphone found. Please connect a device and refresh the page.');
+          setConnectionError('No camera or microphone detected. Please connect a device and refresh the page.');
         } else {
           // Other error
           console.warn('[VideoCall] Permission request error (will retry on connect):', error);
@@ -136,7 +137,7 @@ function VideoConsultationRoomContent() {
             const now = new Date();
             if (now > expiresAt) {
               setSessionExpired(true);
-              setConnectionError('This session link has expired. Please request a new link.');
+              setConnectionError('This link has expired. Please request a new link.');
               return;
             }
           }
@@ -144,7 +145,7 @@ function VideoConsultationRoomContent() {
           // Check if one-time link was already used
           if (session.oneTimeToken && session.linkUsed && !user) {
             setSessionExpired(true);
-            setConnectionError('This session link has already been used. Please request a new link.');
+            setConnectionError('This link has already been used. Please request a new link.');
             return;
           }
 
@@ -174,7 +175,7 @@ function VideoConsultationRoomContent() {
               const now = new Date();
               if (now > expiresAt) {
                 setSessionExpired(true);
-                setConnectionError('This session has expired.');
+                setConnectionError('This session has expired. Please request a new link.');
                 return;
               }
             }
@@ -220,7 +221,7 @@ function VideoConsultationRoomContent() {
               }
             } else if (participant && participant.status === 'rejected') {
               setIsInWaitingRoom(false);
-              setConnectionError('You have been rejected from the waiting room.');
+              setConnectionError('Your request to join was declined.');
             }
           }
         } catch (error) {
@@ -436,14 +437,14 @@ function VideoConsultationRoomContent() {
       // For mobile, if RTCPeerConnection exists, assume WebRTC is supported
       // getUserMedia will be checked when we actually try to use it
       if (!hasRTCPeerConnection) {
-        const errorMsg = `WebRTC is not supported in this browser. RTCPeerConnection not found. Please use a modern browser like Chrome, Firefox, or Safari.`;
+        const errorMsg = `Your browser does not support video calls. Please use Chrome, Firefox, or Safari.`;
         console.error('[VideoCall] WebRTC not supported:', errorMsg);
         throw new Error(errorMsg);
       }
       
       // Only check getUserMedia on desktop (mobile might need permissions first)
       if (!isMobile && !hasGetUserMedia) {
-        const errorMsg = `getUserMedia is not available in this browser. Please use a modern browser like Chrome, Firefox, or Safari.`;
+        const errorMsg = `Your browser does not support video calls. Please use Chrome, Firefox, or Safari.`;
         console.error('[VideoCall] getUserMedia not supported:', errorMsg);
         throw new Error(errorMsg);
       }
@@ -477,7 +478,7 @@ function VideoConsultationRoomContent() {
 
           // Block if both permissions are denied
           if (cameraPermission.state === 'denied' && microphonePermission.state === 'denied') {
-            throw new Error('Camera and microphone permissions are denied. Please enable both in your browser settings:\n\n1. Click the lock/camera icon in your browser\'s address bar\n2. Set Camera and Microphone to "Allow"\n3. Refresh this page and try again');
+            throw new Error('Please allow camera and microphone access in your browser settings:\n\n1. Click the lock/camera icon in your browser\'s address bar\n2. Set Camera and Microphone to "Allow"\n3. Refresh this page and try again');
           }
         } catch (permError) {
           // Permission API might not be fully supported or query failed, continue anyway
@@ -498,7 +499,7 @@ function VideoConsultationRoomContent() {
         
         if (!sessionResponse.success || !sessionResponse.data) {
           setIsConnecting(false);
-          setConnectionError('Failed to load session details');
+          setConnectionError('Unable to load session details. Please refresh the page.');
           console.error('[VideoCall] Failed to load session:', sessionResponse);
           return;
         }
@@ -660,14 +661,14 @@ function VideoConsultationRoomContent() {
       if (!currentUserId || currentUserId === 'undefined') {
         console.error('[VideoCall] ❌ currentUserId is invalid:', currentUserId);
         setIsConnecting(false);
-        setConnectionError('Failed to identify user. Please refresh the page and try again.');
+        setConnectionError('Unable to identify you. Please refresh the page and try again.');
         return;
       }
       
       if (!remoteUserId || remoteUserId === 'undefined') {
         console.error('[VideoCall] ❌ remoteUserId is invalid:', remoteUserId);
         setIsConnecting(false);
-        setConnectionError('Failed to identify remote user. Please refresh the page and try again.');
+        setConnectionError('Unable to identify the other person. Please refresh the page and try again.');
         return;
       }
 
@@ -694,7 +695,8 @@ function VideoConsultationRoomContent() {
           
           // Handle reconnection attempts
           if (state.isReconnecting) {
-            setConnectionError(`Reconnecting... (Attempt ${state.reconnectAttempts})`);
+            const friendlyMsg = getUserFriendlyMessage('Reconnecting...', { attempts: state.reconnectAttempts });
+            setConnectionError(friendlyMsg);
             setIsConnecting(true);
             return;
           }
@@ -711,14 +713,18 @@ function VideoConsultationRoomContent() {
             setIsConnecting(false);
             isConnectedRef.current = false;
             setRemoteUserConnected(false);
-            // Don't show error if it's a normal disconnect
+            // Convert technical reason to user-friendly message
             if (state.status === 'disconnected' && state.reason && !state.reason.includes('ended')) {
-              setConnectionError(state.reason || 'Connection lost. Reconnecting...');
+              const friendlyMsg = getUserFriendlyMessage(state.reason);
+              setConnectionError(friendlyMsg);
+            } else if (state.status === 'disconnected') {
+              setConnectionError('The other person has left the call');
             }
           } else if (state.status === 'error' || state.status === 'failed') {
             setIsConnecting(false);
-            const errorMsg = state.error?.message || state.reason || 'Connection error occurred';
-            setConnectionError(errorMsg);
+            const technicalMsg = state.error?.message || state.reason || 'Connection error occurred';
+            const friendlyMsg = getUserFriendlyMessage(technicalMsg);
+            setConnectionError(friendlyMsg);
             // Don't set isConnected to false immediately - let reconnection try
           } else if (state.status === 'connecting') {
             // Keep connecting state
@@ -732,8 +738,9 @@ function VideoConsultationRoomContent() {
         onError: (error) => {
           console.error('Call manager error:', error);
           setIsConnecting(false);
-          const errorMsg = error?.message || (typeof error === 'string' ? error : 'Failed to start video call');
-          setConnectionError(errorMsg);
+          const technicalMsg = error?.message || (typeof error === 'string' ? error : 'Failed to start video call');
+          const friendlyMsg = getUserFriendlyMessage(technicalMsg);
+          setConnectionError(friendlyMsg);
         }
       });
 
@@ -812,9 +819,10 @@ function VideoConsultationRoomContent() {
         name: error?.name
       });
       setIsConnecting(false);
-      // Ensure error message is always a string
-      const errorMsg = error?.message || (typeof error === 'string' ? error : 'Failed to start video call');
-      setConnectionError(errorMsg);
+      // Convert technical error to user-friendly message
+      const technicalMsg = error?.message || (typeof error === 'string' ? error : 'Failed to start video call');
+      const friendlyMsg = getUserFriendlyMessage(technicalMsg);
+      setConnectionError(friendlyMsg);
       
       // Cleanup on error
       if (callManagerRef.current) {
@@ -1010,7 +1018,8 @@ function VideoConsultationRoomContent() {
       }
     } catch (error) {
       console.error('Screen share error:', error);
-      alert(error.message || 'Failed to share screen');
+      const errorMsg = error.message || 'Failed to share screen';
+      alert(getUserFriendlyMessage(errorMsg));
     }
   };
 
@@ -1325,7 +1334,7 @@ function VideoConsultationRoomContent() {
     
     try {
       await navigator.clipboard.writeText(patientLink);
-      alert('Patient video link copied to clipboard!');
+      alert('Video call link copied! You can now share it with the patient.');
     } catch (error) {
       setShowShareModal(true);
     }
@@ -1333,7 +1342,7 @@ function VideoConsultationRoomContent() {
 
   const handleSendEmail = async () => {
     if (!sessionData?.patientId?.email) {
-      alert('Patient email not available');
+      alert('Patient email address is not available. Please copy the link and share it manually.');
       return;
     }
 
@@ -1346,14 +1355,15 @@ function VideoConsultationRoomContent() {
       }, {}, true);
 
       if (response.success) {
-        alert('Patient video link sent via email!');
+        alert('Video call link sent to patient via email!');
         setShowShareModal(false);
       } else {
-        alert(response.error?.message || 'Failed to send email');
+        const errorMsg = response.error?.message || 'Failed to send email';
+        alert(getUserFriendlyMessage(errorMsg));
       }
     } catch (error) {
       console.error('Failed to send email:', error);
-      alert('Failed to send email. Please try copying the link manually.');
+      alert('Unable to send email. Please copy the link and share it manually.');
     }
   };
 
@@ -1388,9 +1398,9 @@ function VideoConsultationRoomContent() {
                     connectionQuality === 'GOOD' ? 'bg-blue-500' :
                     connectionQuality === 'FAIR' ? 'bg-yellow-500' :
                     'bg-red-500'
-                  }`} title={`Connection: ${connectionQuality}`}></div>
+                  }`} title={`Connection quality: ${getConnectionQualityLabel(connectionQuality)}`}></div>
                   {reconnectAttempts > 0 && (
-                    <span className="text-yellow-400 text-xs" title={`Reconnecting (${reconnectAttempts} attempts)`}>
+                    <span className="text-yellow-400 text-xs" title={`Reconnecting... (try ${reconnectAttempts} of 10)`}>
                       🔄
                     </span>
                   )}
@@ -1587,7 +1597,7 @@ function VideoConsultationRoomContent() {
                     <p className="text-white text-lg font-semibold mb-2">Waiting for {userRole === 'doctor' ? 'patient' : 'doctor'} to join...</p>
                     <p className="text-gray-400 text-sm">You're connected. Waiting for the other participant to join the call.</p>
                     {reconnectAttempts > 0 && (
-                      <p className="text-yellow-400 text-xs mt-2">Reconnecting... (Attempt {reconnectAttempts})</p>
+                      <p className="text-yellow-400 text-xs mt-2">Reconnecting... (try {reconnectAttempts} of 10)</p>
                     )}
                   </div>
                 </div>
@@ -1598,7 +1608,7 @@ function VideoConsultationRoomContent() {
                 <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-900/90 border border-yellow-700 rounded-lg px-4 py-2 z-30">
                   <p className="text-yellow-200 text-sm flex items-center space-x-2">
                     <span>⚠️</span>
-                    <span>Poor connection quality. Check your internet connection.</span>
+                    <span>Poor connection. Please check your internet connection.</span>
                   </p>
                 </div>
               )}
@@ -1716,8 +1726,8 @@ function VideoConsultationRoomContent() {
               })()}
               {connectionError && (
                 <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm max-w-md mx-auto">
-                  <p className="font-semibold">Connection Error:</p>
-                  <p>{typeof connectionError === 'string' ? connectionError : JSON.stringify(connectionError)}</p>
+                  <p className="font-semibold">Unable to Connect</p>
+                  <p>{typeof connectionError === 'string' ? connectionError : getUserFriendlyMessage(String(connectionError))}</p>
                 </div>
               )}
 
@@ -1777,9 +1787,9 @@ function VideoConsultationRoomContent() {
                   const link = `${window.location.origin}/telemedicine/${sessionId}?role=patient`;
                   try {
                     await navigator.clipboard.writeText(link);
-                    alert('Patient link copied to clipboard!');
+                    alert('Video call link copied! You can now share it with the patient.');
                   } catch (error) {
-                    alert('Failed to copy link');
+                    alert('Unable to copy link. Please select and copy it manually.');
                   }
                 }}
               >
@@ -1803,9 +1813,9 @@ function VideoConsultationRoomContent() {
                   const link = `${window.location.origin}/telemedicine/${sessionId}?role=doctor`;
                   try {
                     await navigator.clipboard.writeText(link);
-                    alert('Doctor link copied to clipboard!');
+                    alert('Video call link copied! You can now share it with the doctor.');
                   } catch (error) {
-                    alert('Failed to copy link');
+                    alert('Unable to copy link. Please select and copy it manually.');
                   }
                 }}
               >
