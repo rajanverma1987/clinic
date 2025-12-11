@@ -1,0 +1,511 @@
+/* LanguageSwitcher Premium Design Styles */
+
+.LanguageSwitcher {
+  position: relative;
+  display: inline-block;
+  overflow: visible;
+}
+
+/* Backdrop overlay */
+.LanguageSwitcher-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 10049 !important;
+  animation: fadeIn 0.2s ease-out;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Premium Button Styles */
+.LanguageSwitcher-button {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  overflow: hidden;
+  min-width: 100px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.LanguageSwitcher-button:active,
+.LanguageSwitcher-button:focus {
+  outline: none;
+  border: none;
+}
+
+.LanguageSwitcher-button-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Light variant - Glassmorphism */
+.LanguageSwitcher-button--light {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  border: none;
+  color: var(--color-neutral-800, #1a1a1a);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.LanguageSwitcher-button--light:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+  border: none;
+  color: var(--color-neutral-800, #1a1a1a);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-2px);
+}
+
+.LanguageSwitcher-button--light.is-open {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+  border: none;
+  color: var(--color-neutral-800, #1a1a1a);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.LanguageSwitcher-button--light .LanguageSwitcher-code {
+  display: block;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  color: var(--color-neutral-800, #1a1a1a);
+  transition: color 0.3s ease;
+  white-space: nowrap;
+}
+
+.LanguageSwitcher-button--light:hover .LanguageSwitcher-code {
+  color: var(--color-primary-700, #0f89c7);
+}
+
+/* Dark variant - Premium dark glass */
+.LanguageSwitcher-button--dark {
+  background: linear-gradient(135deg, rgba(45, 45, 45, 0.9) 0%, rgba(30, 30, 30, 0.8) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-neutral-50, #ffffff);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.LanguageSwitcher-button--dark:hover {
+  background: linear-gradient(135deg, rgba(60, 60, 60, 0.95) 0%, rgba(45, 45, 45, 0.9) 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-primary-300, #56ccf2);
+  box-shadow: 0 8px 30px rgba(45, 156, 219, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.LanguageSwitcher-button--dark.is-open {
+  background: linear-gradient(135deg, rgba(45, 156, 219, 0.15) 0%, rgba(45, 156, 219, 0.08) 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-primary-300, #56ccf2);
+  box-shadow: 0 8px 30px rgba(45, 156, 219, 0.25), 0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.LanguageSwitcher-button--dark .LanguageSwitcher-code {
+  display: block;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  color: var(--color-neutral-50, #ffffff);
+  transition: color 0.3s ease;
+  white-space: nowrap;
+}
+
+.LanguageSwitcher-button--dark:hover .LanguageSwitcher-code {
+  color: var(--color-primary-300, #56ccf2);
+}
+
+/* Size variants */
+.LanguageSwitcher-button--sm {
+  padding: 8px 12px;
+  min-width: 80px;
+  gap: 8px;
+}
+
+.LanguageSwitcher-button--sm .LanguageSwitcher-code {
+  font-size: 12px;
+}
+
+.LanguageSwitcher-button--md {
+  padding: 10px 16px;
+  min-width: 100px;
+  gap: 10px;
+}
+
+/* Flag wrapper with premium styling */
+.LanguageSwitcher-flag-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.LanguageSwitcher-button:hover .LanguageSwitcher-flag-wrapper {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(45, 156, 219, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.LanguageSwitcher-button--dark .LanguageSwitcher-flag-wrapper {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.LanguageSwitcher-button--dark:hover .LanguageSwitcher-flag-wrapper {
+  box-shadow: 0 4px 12px rgba(45, 156, 219, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.LanguageSwitcher-flag {
+  display: block;
+  line-height: 1;
+  font-size: 22px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.LanguageSwitcher-button:hover .LanguageSwitcher-flag {
+  transform: scale(1.05);
+}
+
+.LanguageSwitcher-flag--sm {
+  font-size: 18px;
+}
+
+.LanguageSwitcher-button--sm .LanguageSwitcher-flag-wrapper {
+  width: 28px;
+  height: 28px;
+}
+
+.LanguageSwitcher-flag--md {
+  font-size: 22px;
+}
+
+/* Icon wrapper */
+.LanguageSwitcher-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.LanguageSwitcher-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+.LanguageSwitcher-icon.is-open {
+  transform: rotate(180deg);
+}
+
+/* Ripple effect */
+.LanguageSwitcher-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(45, 156, 219, 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
+  opacity: 0;
+}
+
+.LanguageSwitcher-button:active .LanguageSwitcher-ripple {
+  width: 200px;
+  height: 200px;
+  opacity: 1;
+  transition: width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
+}
+
+/* Premium Dropdown */
+.LanguageSwitcher-dropdown {
+  position: fixed;
+  min-width: 220px;
+  max-width: calc(100vw - 32px);
+  border-radius: 20px;
+  z-index: 10050 !important;
+  overflow: visible;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Adjust dropdown position - now using fixed positioning, handled by JS */
+.LanguageSwitcher-dropdown.is-left-aligned {
+  /* Position handled by JavaScript */
+}
+
+.LanguageSwitcher-dropdown.is-top-aligned {
+  /* Position handled by JavaScript */
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Light dropdown */
+.LanguageSwitcher-dropdown--light {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Dark dropdown */
+.LanguageSwitcher-dropdown--dark {
+  background: linear-gradient(135deg, rgba(45, 45, 45, 0.95) 0%, rgba(30, 30, 30, 0.9) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.LanguageSwitcher-menu {
+  padding: 8px;
+}
+
+/* Premium Menu Items */
+.LanguageSwitcher-item {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  text-align: left;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  border-radius: 14px;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+
+.LanguageSwitcher-item:last-child {
+  margin-bottom: 0;
+}
+
+.LanguageSwitcher-item--sm {
+  font-size: var(--text-body-xs, 12px);
+  line-height: var(--text-body-xs-line-height, 16px);
+  padding: 12px 16px;
+}
+
+.LanguageSwitcher-item--md {
+  font-size: var(--text-body-sm, 14px);
+  line-height: var(--text-body-sm-line-height, 20px);
+  padding: 14px 18px;
+}
+
+/* Light item styles */
+.LanguageSwitcher-item--light {
+  color: var(--color-neutral-700, #4f4f4f);
+  background: transparent;
+}
+
+.LanguageSwitcher-item--light:hover {
+  background: linear-gradient(135deg, rgba(45, 156, 219, 0.08) 0%, rgba(45, 156, 219, 0.04) 100%);
+  color: var(--color-primary-700, #0f89c7);
+  transform: translateX(4px);
+}
+
+.LanguageSwitcher-item--light.is-active {
+  background: linear-gradient(135deg, rgba(45, 156, 219, 0.15) 0%, rgba(45, 156, 219, 0.1) 100%);
+  color: var(--color-primary-700, #0f89c7);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(45, 156, 219, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Dark item styles */
+.LanguageSwitcher-item--dark {
+  color: var(--color-neutral-50, #ffffff);
+  background: transparent;
+}
+
+.LanguageSwitcher-item--dark:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  color: var(--color-primary-300, #56ccf2);
+  transform: translateX(4px);
+}
+
+.LanguageSwitcher-item--dark.is-active {
+  background: linear-gradient(135deg, rgba(45, 156, 219, 0.2) 0%, rgba(45, 156, 219, 0.15) 100%);
+  color: var(--color-primary-300, #56ccf2);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(45, 156, 219, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Flag wrapper in items */
+.LanguageSwitcher-item-flag-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.LanguageSwitcher-item:hover .LanguageSwitcher-item-flag-wrapper {
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(45, 156, 219, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.LanguageSwitcher-item--dark .LanguageSwitcher-item-flag-wrapper {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.LanguageSwitcher-item-flag {
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.LanguageSwitcher-item:hover .LanguageSwitcher-item-flag {
+  transform: scale(1.05);
+}
+
+.LanguageSwitcher-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.LanguageSwitcher-item-name {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+  transition: color 0.3s ease;
+}
+
+.LanguageSwitcher-item-code {
+  font-size: var(--text-body-xs, 12px);
+  line-height: var(--text-body-xs-line-height, 16px);
+  display: block;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: opacity 0.3s ease;
+}
+
+.LanguageSwitcher-item-code.is-active {
+  opacity: 0.9;
+}
+
+.LanguageSwitcher-item-code:not(.is-active) {
+  opacity: 0.7;
+}
+
+/* Check icon wrapper */
+.LanguageSwitcher-item-check-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(45, 156, 219, 0.2) 0%, rgba(45, 156, 219, 0.1) 100%);
+  flex-shrink: 0;
+  animation: checkIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes checkIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.LanguageSwitcher-item-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke-width: 3;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Hover glow effect */
+.LanguageSwitcher-item-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(45, 156, 219, 0.1) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.LanguageSwitcher-item:hover .LanguageSwitcher-item-glow {
+  opacity: 1;
+}
