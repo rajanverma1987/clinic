@@ -746,6 +746,17 @@
     transform: scale(1.05);
   }
 
+  /* Prevent SVG color inheritance on hover */
+  svg[stroke='currentColor'] {
+    color: inherit;
+  }
+
+  /* Prevent unwanted color changes on SVG hover */
+  .group:hover svg[stroke='currentColor'],
+  *:hover svg[stroke='currentColor'] {
+    color: inherit !important;
+  }
+
   /* Generic icon hover - applies primary tint by default */
   svg {
     transition: filter 0.3s ease, transform 0.3s ease;

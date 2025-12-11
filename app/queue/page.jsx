@@ -4,8 +4,8 @@ import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { CompactLoader, Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
-import { Loader, CompactLoader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -397,11 +397,7 @@ export default function QueuePage() {
   }
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   return (
@@ -427,12 +423,7 @@ export default function QueuePage() {
               {loading ? (
                 <CompactLoader size='xs' />
               ) : (
-                <svg
-                  className='w-4 h-4'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
+                <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path
                     strokeLinecap='round'
                     strokeLinejoin='round'

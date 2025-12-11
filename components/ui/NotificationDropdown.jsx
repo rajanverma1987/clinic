@@ -17,6 +17,8 @@ export function NotificationDropdown({
   onMarkAllAsRead,
   size = 'md',
 }) {
+  // Ensure notifications is always an array
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState({});
   const [mounted, setMounted] = useState(false);
@@ -49,24 +51,28 @@ export function NotificationDropdown({
       const spaceOnTop = rect.top;
       const padding = 16;
 
-      // Calculate position
-      const alignRight =
-        spaceOnRight >= dropdownWidth + padding || spaceOnLeft < dropdownWidth + padding;
+      // Calculate position - always align to the right edge of the button
+      // Ensure dropdown stays within viewport bounds
+      let leftPosition = rect.right - dropdownWidth;
+
+      // If it would go off the left edge, align to left edge instead
+      if (leftPosition < padding) {
+        leftPosition = rect.left;
+      }
+
+      // If it would go off the right edge, align to right edge of viewport
+      if (leftPosition + dropdownWidth > viewportWidth - padding) {
+        leftPosition = viewportWidth - dropdownWidth - padding;
+      }
+
       const alignBottom =
         spaceOnBottom >= dropdownHeight + padding || spaceOnTop < dropdownHeight + padding;
 
       setDropdownStyle({
         position: 'fixed',
         zIndex: 10050,
-        ...(alignRight
-          ? {
-              right: `${viewportWidth - rect.right}px`,
-              left: 'auto',
-            }
-          : {
-              left: `${rect.left}px`,
-              right: 'auto',
-            }),
+        left: `${leftPosition}px`,
+        right: 'auto',
         ...(alignBottom
           ? {
               top: `${rect.bottom + 12}px`,
@@ -236,7 +242,7 @@ export function NotificationDropdown({
 
           {/* Notifications List */}
           <div className='NotificationDropdown-list'>
-            {notifications.length === 0 ? (
+            {safeNotifications.length === 0 ? (
               <div className='NotificationDropdown-empty'>
                 <svg
                   className='NotificationDropdown-empty-icon'
@@ -255,7 +261,7 @@ export function NotificationDropdown({
                 <p className='NotificationDropdown-empty-subtext'>You're all caught up!</p>
               </div>
             ) : (
-              notifications.map((notification) => {
+              safeNotifications.map((notification) => {
                 const itemClasses = [
                   'NotificationDropdown-item',
                   notification.unread ? 'is-unread' : '',
@@ -290,7 +296,7 @@ export function NotificationDropdown({
           </div>
 
           {/* Footer */}
-          {notifications.length > 0 && (
+          {safeNotifications.length > 0 && (
             <div className='NotificationDropdown-footer'>
               <button
                 type='button'

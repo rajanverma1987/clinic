@@ -494,53 +494,7 @@ export default function AppointmentsPage() {
   }
 
   if (loading) {
-    return (
-      <Layout>
-        <Card
-          elevated={true}
-          className='mb-8'
-          style={{
-            padding: 'var(--space-6)',
-          }}
-        >
-          <div
-            className='flex flex-col sm:flex-row sm:items-center sm:justify-between'
-            style={{ gap: 'var(--gap-6)' }}
-          >
-            <div className='flex-1'>
-              <h1
-                className='text-neutral-900'
-                style={{
-                  fontSize: '30px',
-                  lineHeight: '38px',
-                  letterSpacing: '-0.02em',
-                  fontWeight: '700',
-                  marginBottom: 'var(--space-2)',
-                }}
-              >
-                {t('appointments.title')}
-              </h1>
-              <p
-                className='text-neutral-600'
-                style={{
-                  fontSize: 'var(--text-body-md)',
-                  lineHeight: 'var(--text-body-md-line-height)',
-                  fontWeight: '400',
-                }}
-              >
-                {formatDateDisplay(new Date(), {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   return (

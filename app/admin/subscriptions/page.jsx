@@ -301,11 +301,7 @@ export default function AdminSubscriptionsPage() {
   }
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   // Show error message if not logged in or not super admin

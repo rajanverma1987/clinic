@@ -1,12 +1,12 @@
 'use client';
 
-import { Layout } from '@/components/layout/Layout';
 import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
-import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
@@ -102,11 +102,7 @@ export default function TelemedicinePage() {
   ];
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   return (

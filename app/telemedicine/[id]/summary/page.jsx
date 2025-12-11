@@ -34,11 +34,7 @@ export default function SessionSummaryPage() {
   };
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   if (!session) {

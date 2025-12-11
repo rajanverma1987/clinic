@@ -80,10 +80,11 @@ export function Layout({ children }) {
       )}
       <Sidebar />
       <main
-        className='flex-1'
+        className='flex-1 overflow-x-hidden'
         style={{
-          marginLeft: sidebarWidth,
+          marginLeft: '10px',
           transition: 'margin-left 0.3s ease',
+          maxWidth: `calc(100vw - 2rem)`,
         }}
       >
         {showSubscriptionBanner && subscription && (
@@ -111,7 +112,7 @@ export function Layout({ children }) {
         )}
         {/* Welcome Notification - shows after login */}
         <WelcomeNotification />
-        <div className='p-8'>{children}</div>
+        <div className='p-0 m-0'>{children}</div>
       </main>
     </div>
   );

@@ -381,7 +381,7 @@ export function Sidebar() {
 
   return (
     <div
-      className='bg-neutral-50 text-neutral-900 flex flex-col fixed left-0 top-0 border-r border-neutral-200'
+      className='text-neutral-900 flex flex-col fixed left-0 top-0 border-r border-neutral-200 relative overflow-hidden bg-gradient-to-br from-white via-neutral-50 to-primary-50'
       data-collapsed={isCollapsed}
       style={{
         width: isCollapsed ? '3.5rem' : '14rem',
@@ -397,9 +397,10 @@ export function Sidebar() {
     >
       {/* Header Section - Fixed at top */}
       <div
-        className='border-b border-neutral-200 flex-shrink-0 bg-neutral-50'
+        className='border-b border-neutral-200 flex-shrink-0 relative z-10'
         style={{
           padding: isCollapsed ? 'var(--space-3) var(--space-2)' : 'var(--space-4)',
+          background: 'transparent',
         }}
       >
         {!isCollapsed ? (
@@ -559,7 +560,7 @@ export function Sidebar() {
 
       {/* Navigation Section - Scrollable */}
       <nav
-        className='flex-1 p-3 overflow-y-auto overflow-x-hidden'
+        className='flex-1 p-3 overflow-y-auto overflow-x-hidden relative z-10'
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -586,7 +587,7 @@ export function Sidebar() {
                 isCollapsed ? 'justify-center px-2' : 'px-3'
               } py-2.5 rounded-lg text-body-sm font-medium ${
                 pathname === '/admin'
-                  ? 'bg-primary-100 text-primary-500 shadow-sm border-l-2 border-primary-500'
+                  ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
                   : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
               }`}
               title={isCollapsed ? t('admin.dashboard') : ''}
@@ -604,7 +605,7 @@ export function Sidebar() {
                 isCollapsed ? 'justify-center px-2' : 'px-3'
               } py-2.5 rounded-lg text-body-sm font-medium ${
                 pathname === '/admin/clients'
-                  ? 'bg-primary-100 text-primary-500 shadow-sm border-l-2 border-primary-500'
+                  ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
                   : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
               }`}
               title={isCollapsed ? t('admin.clients') : ''}
@@ -622,7 +623,7 @@ export function Sidebar() {
                 isCollapsed ? 'justify-center px-2' : 'px-3'
               } py-2.5 rounded-lg text-body-sm font-medium ${
                 pathname === '/admin/subscriptions'
-                  ? 'bg-primary-100 text-primary-500 shadow-sm border-l-2 border-primary-500'
+                  ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
                   : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
               }`}
               title={isCollapsed ? t('admin.subscriptions') : ''}
@@ -649,7 +650,7 @@ export function Sidebar() {
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   } py-2.5 rounded-lg text-body-sm font-medium ${
                     isActive
-                      ? 'bg-primary-100 text-primary-500 shadow-sm border-l-2 border-primary-500'
+                      ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
                       : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
                   }`}
                   title={isCollapsed ? displayLabel : ''}
@@ -678,7 +679,7 @@ export function Sidebar() {
                 isCollapsed ? 'justify-center px-2' : 'px-3'
               } py-2.5 rounded-lg text-body-sm font-medium ${
                 pathname === '/subscription' || pathname?.startsWith('/subscription/')
-                  ? 'bg-primary-100 text-primary-500 shadow-sm border-l-2 border-primary-500'
+                  ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
                   : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
               }`}
               title={isCollapsed ? t('subscription.title') : ''}
@@ -696,7 +697,7 @@ export function Sidebar() {
                 isCollapsed ? 'justify-center px-2' : 'px-3'
               } py-2.5 rounded-lg text-body-sm font-medium ${
                 pathname === '/payment-history'
-                  ? 'bg-primary-100 text-primary-500 shadow-sm border-l-2 border-primary-500'
+                  ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
                   : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
               }`}
               title={isCollapsed ? t('subscription.paymentHistory') : ''}
@@ -714,44 +715,89 @@ export function Sidebar() {
 
       {/* Footer Section - Fixed at bottom */}
       <div
-        className='border-t border-neutral-200 flex-shrink-0 bg-neutral-50'
+        className='border-t border-neutral-200 flex-shrink-0 relative z-10'
         style={{
           padding: isCollapsed ? 'var(--space-3) var(--space-2)' : 'var(--space-3)',
           display: 'flex',
           flexDirection: 'column',
           gap: 'var(--gap-2)',
+          background: 'transparent',
         }}
       >
-        {/* Toggle Button */}
+        {/* Premium Toggle Button */}
         <button
           onClick={handleToggle}
-          className={`w-full flex items-center ${
-            isCollapsed ? 'justify-center px-2' : 'px-3'
-          } py-2.5 rounded-lg text-body-sm font-medium bg-white border border-neutral-200 hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 text-neutral-700`}
+          className={`group relative w-full flex items-center transition-all duration-300 ${
+            isCollapsed ? 'justify-center px-2.5' : 'px-3'
+          } py-2.5 rounded-lg text-body-sm font-semibold bg-gradient-to-r from-white to-neutral-50 border border-neutral-200 hover:border-primary-300 hover:from-primary-50 hover:to-primary-100/50 text-neutral-700 hover:text-primary-700 shadow-sm hover:shadow-md`}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+          }}
         >
-          <span className={isCollapsed ? '' : 'mr-3'}>
+          {/* Shine effect on hover */}
+          <span
+            className='absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none animate-shine-once'
+            style={{
+              background:
+                'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+            }}
+          />
+
+          {/* Icon Container */}
+          <span
+            className={`flex items-center justify-center transition-transform duration-300 ${
+              isCollapsed ? '' : 'mr-3'
+            } ${isCollapsed ? 'w-5 h-5' : 'w-5 h-5'}`}
+          >
             {isCollapsed ? (
-              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <svg
+                className='w-5 h-5 transition-transform duration-300 group-hover:scale-110'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
                 <path
                   strokeLinecap='round'
                   strokeLinejoin='round'
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   d='M9 5l7 7-7 7'
                 />
               </svg>
             ) : (
-              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <svg
+                className='w-5 h-5 transition-transform duration-300 group-hover:scale-110'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
                 <path
                   strokeLinecap='round'
                   strokeLinejoin='round'
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   d='M15 19l-7-7 7-7'
                 />
               </svg>
             )}
           </span>
-          {!isCollapsed && <span>Collapse</span>}
+
+          {/* Text with fade animation */}
+          {!isCollapsed && (
+            <span className='relative z-10 transition-opacity duration-300 font-medium'>
+              Collapse
+            </span>
+          )}
+
+          {/* Active indicator dot when collapsed */}
+          {isCollapsed && (
+            <span
+              className='absolute top-1 right-1 w-1.5 h-1.5 bg-primary-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300'
+              style={{
+                boxShadow: '0 0 4px rgba(45, 156, 219, 0.6)',
+              }}
+            />
+          )}
         </button>
 
         {/* Logout Button */}

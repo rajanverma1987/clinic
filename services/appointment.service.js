@@ -3,20 +3,72 @@
  * Handles all appointment-related business logic
  */
 
+import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
+import { withTenant } from '@/lib/db/tenant-helper.js';
+import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
 import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
 import Patient from '@/models/Patient.js';
+import Queue, { QueuePriority, QueueStatus, QueueType } from '@/models/Queue.js';
+import Tenant from '@/models/Tenant.js';
 import User from '@/models/User.js';
-import Queue, { QueueType, QueuePriority, QueueStatus } from '@/models/Queue.js';
-import { withTenant } from '@/lib/db/tenant-helper.js';
-import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
-import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
+
+/**
+ * Check if a date is a holiday
+ */
+async function isHoliday(tenantId, date) {
+  await connectDB();
+
+  try {
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant || !tenant.settings || !tenant.settings.holidays) {
+      return false;
+    }
+
+    const holidays = tenant.settings.holidays || [];
+    const dateStr = date.toISOString().split('T')[0];
+    const dateYear = date.getFullYear();
+    const dateMonth = date.getMonth();
+    const dateDay = date.getDate();
+
+    return holidays.some((holiday) => {
+      const holidayDate = new Date(holiday.date);
+      const holidayYear = holidayDate.getFullYear();
+      const holidayMonth = holidayDate.getMonth();
+      const holidayDay = holidayDate.getDate();
+
+      // Check exact date match
+      if (holidayMonth === dateMonth && holidayDay === dateDay) {
+        // If recurring, match any year
+        if (holiday.isRecurring) {
+          return true;
+        }
+        // If not recurring, match exact year
+        if (holidayYear === dateYear) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+  } catch (error) {
+    console.error('Error checking holidays:', error);
+    return false; // Don't block appointments if holiday check fails
+  }
+}
 
 /**
  * Validate appointment time slot availability
  */
 async function isTimeSlotAvailable(tenantId, doctorId, startTime, endTime, excludeAppointmentId) {
   await connectDB();
+
+  // Check if the date is a holiday
+  const appointmentDate = new Date(startTime);
+  const isHolidayDate = await isHoliday(tenantId, appointmentDate);
+  if (isHolidayDate) {
+    return false; // Holiday dates are not available
+  }
 
   const conflictingAppointment = await Appointment.findOne(
     withTenant(tenantId, {
@@ -71,19 +123,26 @@ export async function createAppointment(input, tenantId, userId) {
   }
 
   // Parse dates
-  const appointmentDate = input.appointmentDate instanceof Date
-    ? input.appointmentDate
-    : new Date(input.appointmentDate);
+  const appointmentDate =
+    input.appointmentDate instanceof Date ? input.appointmentDate : new Date(input.appointmentDate);
 
-  const startTime = input.startTime instanceof Date
-    ? input.startTime
-    : new Date(input.startTime);
+  const startTime = input.startTime instanceof Date ? input.startTime : new Date(input.startTime);
 
   // Calculate end time
   const duration = input.duration || 30; // Default 30 minutes
   const endTime = input.endTime
-    ? (input.endTime instanceof Date ? input.endTime : new Date(input.endTime))
+    ? input.endTime instanceof Date
+      ? input.endTime
+      : new Date(input.endTime)
     : new Date(startTime.getTime() + duration * 60000);
+
+  // Check if the date is a holiday
+  const isHolidayDate = await isHoliday(tenantId, appointmentDate);
+  if (isHolidayDate) {
+    throw new Error(
+      'Appointments cannot be scheduled on holidays. Please select a different date.'
+    );
+  }
 
   // Validate time slot availability
   const isAvailable = await isTimeSlotAvailable(tenantId, input.doctorId, startTime, endTime);
@@ -94,9 +153,10 @@ export async function createAppointment(input, tenantId, userId) {
   // Calculate reminder time (default: 24 hours before)
   let reminderScheduledAt;
   if (input.reminderScheduledAt) {
-    reminderScheduledAt = input.reminderScheduledAt instanceof Date
-      ? input.reminderScheduledAt
-      : new Date(input.reminderScheduledAt);
+    reminderScheduledAt =
+      input.reminderScheduledAt instanceof Date
+        ? input.reminderScheduledAt
+        : new Date(input.reminderScheduledAt);
   } else {
     // Default: 24 hours before appointment
     reminderScheduledAt = new Date(startTime.getTime() - 24 * 60 * 60 * 1000);
@@ -107,7 +167,113 @@ export async function createAppointment(input, tenantId, userId) {
     ? AppointmentStatus.IN_QUEUE
     : AppointmentStatus.SCHEDULED;
 
-  // Create appointment
+  // Handle recurring appointments
+  if (input.isRecurring) {
+    const appointments = [];
+    const frequency = input.recurringFrequency || 'weekly';
+    const occurrences = input.recurringOccurrences || 4;
+    const endDate = input.recurringEndDate ? new Date(input.recurringEndDate) : null;
+
+    let currentDate = new Date(appointmentDate);
+    let currentStartTime = new Date(startTime);
+    let currentEndTime = new Date(endTime);
+    let count = 0;
+    const maxOccurrences = endDate ? 52 : occurrences; // Safety limit
+
+    while (count < maxOccurrences) {
+      // Check if we've passed the end date
+      if (endDate && currentDate > endDate) {
+        break;
+      }
+
+      // Check if this date is a holiday
+      const isHolidayDate = await isHoliday(tenantId, currentDate);
+      if (isHolidayDate) {
+        // Skip holidays and continue to next occurrence
+        // Calculate next occurrence before skipping
+        if (frequency === 'daily') {
+          currentDate.setDate(currentDate.getDate() + 1);
+          currentStartTime.setDate(currentStartTime.getDate() + 1);
+          currentEndTime.setDate(currentEndTime.getDate() + 1);
+        } else if (frequency === 'weekly') {
+          currentDate.setDate(currentDate.getDate() + 7);
+          currentStartTime.setDate(currentStartTime.getDate() + 7);
+          currentEndTime.setDate(currentEndTime.getDate() + 7);
+        } else if (frequency === 'biweekly') {
+          currentDate.setDate(currentDate.getDate() + 14);
+          currentStartTime.setDate(currentStartTime.getDate() + 14);
+          currentEndTime.setDate(currentEndTime.getDate() + 14);
+        } else if (frequency === 'monthly') {
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          currentStartTime.setMonth(currentStartTime.getMonth() + 1);
+          currentEndTime.setMonth(currentEndTime.getMonth() + 1);
+        }
+        continue; // Skip this date and try next
+      }
+
+      // Check time slot availability for this occurrence
+      const isAvailable = await isTimeSlotAvailable(
+        tenantId,
+        input.doctorId,
+        currentStartTime,
+        currentEndTime
+      );
+
+      if (isAvailable) {
+        const appointment = await Appointment.create({
+          tenantId,
+          patientId: input.patientId,
+          doctorId: input.doctorId,
+          appointmentDate: new Date(currentDate),
+          startTime: new Date(currentStartTime),
+          endTime: new Date(currentEndTime),
+          duration,
+          type: input.type || 'consultation',
+          status: initialStatus,
+          reason: input.reason,
+          notes: input.notes,
+          reminderScheduledAt: new Date(currentStartTime.getTime() - 24 * 60 * 60 * 1000),
+          reminderSent: false,
+          isTelemedicine: input.isTelemedicine || false,
+          telemedicineConsent: input.telemedicineConsent || false,
+        });
+        appointments.push(appointment);
+        count++;
+      }
+
+      // Calculate next occurrence
+      if (frequency === 'daily') {
+        currentDate.setDate(currentDate.getDate() + 1);
+        currentStartTime.setDate(currentStartTime.getDate() + 1);
+        currentEndTime.setDate(currentEndTime.getDate() + 1);
+      } else if (frequency === 'weekly') {
+        currentDate.setDate(currentDate.getDate() + 7);
+        currentStartTime.setDate(currentStartTime.getDate() + 7);
+        currentEndTime.setDate(currentEndTime.getDate() + 7);
+      } else if (frequency === 'biweekly') {
+        currentDate.setDate(currentDate.getDate() + 14);
+        currentStartTime.setDate(currentStartTime.getDate() + 14);
+        currentEndTime.setDate(currentEndTime.getDate() + 14);
+      } else if (frequency === 'monthly') {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        currentStartTime.setMonth(currentStartTime.getMonth() + 1);
+        currentEndTime.setMonth(currentEndTime.getMonth() + 1);
+      }
+    }
+
+    // Return the first appointment (for compatibility)
+    const appointment = appointments[0];
+
+    // Create queue entries and telemedicine sessions for all appointments if needed
+    if (input.isTelemedicine && appointments.length > 0) {
+      // Handle telemedicine for all recurring appointments
+      // (This will be handled in the API route)
+    }
+
+    return appointment;
+  }
+
+  // Create single appointment (non-recurring)
   const appointment = await Appointment.create({
     tenantId,
     patientId: input.patientId,
@@ -149,23 +315,22 @@ export async function createAppointment(input, tenantId, userId) {
         const { sendEmail } = await import('@/lib/email/email-service.js');
 
         // Create telemedicine session
-        const session = await createTelemedicineSession(
-          tenantId,
-          userId,
-          {
-            appointmentId: appointment._id.toString(),
-            patientId: appointment.patientId.toString(),
-            doctorId: appointment.doctorId.toString(),
-            scheduledStartTime: appointment.startTime,
-            scheduledEndTime: appointment.endTime,
-            sessionType: 'video_consultation',
-          }
-        );
+        const session = await createTelemedicineSession(tenantId, userId, {
+          appointmentId: appointment._id.toString(),
+          patientId: appointment.patientId.toString(),
+          doctorId: appointment.doctorId.toString(),
+          scheduledStartTime: appointment.startTime,
+          scheduledEndTime: appointment.endTime,
+          sessionType: 'video_consultation',
+        });
 
         // Send email to patient with video link
         if (patient.email) {
           // Get base URL without any path (remove /dashboard or other paths)
-          let baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+          let baseUrl =
+            process.env.NEXT_PUBLIC_APP_URL ||
+            process.env.NEXT_PUBLIC_BASE_URL ||
+            'http://localhost:3000';
           // Remove any path after the domain (e.g., /dashboard)
           try {
             const url = new URL(baseUrl);
@@ -182,11 +347,11 @@ export async function createAppointment(input, tenantId, userId) {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
-            day: 'numeric'
+            day: 'numeric',
           });
           const appointmentTime = new Date(appointment.startTime).toLocaleTimeString('en-US', {
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
           });
 
           await sendEmail({
@@ -228,7 +393,7 @@ export async function createAppointment(input, tenantId, userId) {
               Join your video consultation: ${videoLink}
               
               Please ensure you have a stable internet connection and allow camera/microphone access when prompted.
-            `
+            `,
           });
           console.log(`✅ Email sent to patient ${patient.email} with video link`);
         }
@@ -328,13 +493,13 @@ export async function listAppointments(query, tenantId, userId) {
     // Filter by both appointmentDate and startTime to catch all appointments on that date
     filter.$or = [
       { appointmentDate: { $gte: startOfDay, $lte: endOfDay } },
-      { startTime: { $gte: startOfDay, $lte: endOfDay } }
+      { startTime: { $gte: startOfDay, $lte: endOfDay } },
     ];
     console.log('Date filter (single date):', {
       date: query.date,
       startOfDay: startOfDay.toISOString(),
       endOfDay: endOfDay.toISOString(),
-      filter: filter.$or
+      filter: filter.$or,
     });
   } else if (query.startDate || query.endDate) {
     // When filtering by date range, check both appointmentDate and startTime
@@ -345,7 +510,7 @@ export async function listAppointments(query, tenantId, userId) {
       startDate: query.startDate,
       endDate: query.endDate,
       startDateParsed: startDate?.toISOString(),
-      endDateParsed: endDate?.toISOString()
+      endDateParsed: endDate?.toISOString(),
     });
 
     const orConditions = [];
@@ -430,21 +595,19 @@ export async function updateAppointment(appointmentId, input, tenantId, userId) 
 
   // Parse dates if provided
   if (input.appointmentDate) {
-    updateData.appointmentDate = input.appointmentDate instanceof Date
-      ? input.appointmentDate
-      : new Date(input.appointmentDate);
+    updateData.appointmentDate =
+      input.appointmentDate instanceof Date
+        ? input.appointmentDate
+        : new Date(input.appointmentDate);
   }
 
   if (input.startTime) {
-    updateData.startTime = input.startTime instanceof Date
-      ? input.startTime
-      : new Date(input.startTime);
+    updateData.startTime =
+      input.startTime instanceof Date ? input.startTime : new Date(input.startTime);
 
     // Recalculate end time if duration exists
     if (existing.duration) {
-      updateData.endTime = new Date(
-        updateData.startTime.getTime() + existing.duration * 60000
-      );
+      updateData.endTime = new Date(updateData.startTime.getTime() + existing.duration * 60000);
     }
   }
 
@@ -517,7 +680,9 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
 
       // Automatically create queue entry when patient arrives
       try {
-        console.log(`[Queue Creation] Starting queue creation for appointment ${appointmentId}, tenantId: ${tenantId}`);
+        console.log(
+          `[Queue Creation] Starting queue creation for appointment ${appointmentId}, tenantId: ${tenantId}`
+        );
 
         // Check if queue entry already exists
         const existingQueueEntry = await Queue.findOne(
@@ -528,14 +693,19 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
         );
 
         if (existingQueueEntry) {
-          console.log(`ℹ️ Queue entry already exists for appointment ${appointmentId}: ${existingQueueEntry.queueNumber} (status: ${existingQueueEntry.status})`);
+          console.log(
+            `ℹ️ Queue entry already exists for appointment ${appointmentId}: ${existingQueueEntry.queueNumber} (status: ${existingQueueEntry.status})`
+          );
           // If status is not active, reactivate it
-          if (existingQueueEntry.status === QueueStatus.COMPLETED || existingQueueEntry.status === QueueStatus.CANCELLED) {
+          if (
+            existingQueueEntry.status === QueueStatus.COMPLETED ||
+            existingQueueEntry.status === QueueStatus.CANCELLED
+          ) {
             await Queue.findByIdAndUpdate(existingQueueEntry._id, {
               $set: {
                 status: QueueStatus.WAITING,
                 joinedAt: now,
-              }
+              },
             });
             console.log(`✅ Reactivated queue entry for appointment ${appointmentId}`);
           }
@@ -566,7 +736,7 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
             ) {
               console.log(`⚠️ Queue creation conflict detected, checking if queue entry exists...`);
 
-              await new Promise(resolve => setTimeout(resolve, 200));
+              await new Promise((resolve) => setTimeout(resolve, 200));
 
               const checkAgain = await Queue.findOne(
                 withTenant(tenantId, {
@@ -576,10 +746,14 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
               );
 
               if (checkAgain) {
-                console.log(`✅ Queue entry exists for appointment ${appointmentId}: ${checkAgain.queueNumber}`);
+                console.log(
+                  `✅ Queue entry exists for appointment ${appointmentId}: ${checkAgain.queueNumber}`
+                );
               } else {
                 console.error('❌ Queue entry does not exist after conflict error');
-                console.error('Queue creation failed but continuing with appointment status update');
+                console.error(
+                  'Queue creation failed but continuing with appointment status update'
+                );
               }
             } else {
               console.error('❌ Error creating queue entry:', queueError.message);
@@ -605,7 +779,9 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
         if (finalCheck) {
           console.log(`✅ Queue entry exists despite error: ${finalCheck.queueNumber}`);
         } else {
-          console.warn('⚠️ Queue entry creation failed, but continuing with appointment status update');
+          console.warn(
+            '⚠️ Queue entry creation failed, but continuing with appointment status update'
+          );
         }
       }
       break;
@@ -627,9 +803,12 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
             .select('queueNumber')
             .lean();
 
-          const queueNumber = latest && latest.queueNumber
-            ? `Q-${(parseInt(latest.queueNumber.match(/Q-(\d+)/)?.[1] || '0', 10) + 1).toString().padStart(4, '0')}`
-            : 'Q-0001';
+          const queueNumber =
+            latest && latest.queueNumber
+              ? `Q-${(parseInt(latest.queueNumber.match(/Q-(\d+)/)?.[1] || '0', 10) + 1)
+                  .toString()
+                  .padStart(4, '0')}`
+              : 'Q-0001';
 
           const waitingCount = await Queue.countDocuments(
             withTenant(tenantId, {
@@ -744,4 +923,3 @@ export async function deleteAppointment(appointmentId, tenantId, userId) {
 
   return true;
 }
-

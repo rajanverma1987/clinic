@@ -14,3 +14,4 @@ export { Table } from './Table.jsx';
 export { Tabs } from './Tabs.jsx';
 export { Tag } from './Tag.jsx';
 export { Textarea } from './Textarea.jsx';
+export { Toggle } from './Toggle.jsx';

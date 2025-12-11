@@ -60,10 +60,10 @@ export function DashboardHeader({
   return (
     <Card
       elevated={true}
-      className='mb-8 border-2 border-neutral-100 relative'
+      className='border-2 border-neutral-100 relative [&>div]:px-0 [&>div]:py-0'
       style={{
         overflow: 'visible',
-        padding: 'var(--space-6)',
+        padding: '12px 12px 12px 10px',
         background:
           'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.98) 100%)',
         zIndex: 'var(--z-sticky-header, 21)',
@@ -73,8 +73,7 @@ export function DashboardHeader({
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-        marginTop: 0,
-        marginBottom: 'var(--space-8)',
+        margin: '0 0 16px 0',
       }}
     >
       {/* Premium Background Pattern */}

@@ -72,6 +72,10 @@ function NewAppointmentPageContent() {
     patientEmail: '',
     reason: '',
     notes: '',
+    isRecurring: false,
+    recurringFrequency: 'weekly',
+    recurringEndDate: '',
+    recurringOccurrences: 4,
   });
 
   useEffect(() => {
@@ -259,12 +263,25 @@ function NewAppointmentPageContent() {
         patientEmail: formData.patientEmail || undefined,
         reason: formData.reason || undefined,
         notes: formData.notes || undefined,
+        isRecurring: formData.isRecurring || false,
+        recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined,
+        recurringEndDate:
+          formData.isRecurring && formData.recurringEndDate ? formData.recurringEndDate : undefined,
+        recurringOccurrences:
+          formData.isRecurring && !formData.recurringEndDate
+            ? formData.recurringOccurrences
+            : undefined,
       };
 
       const response = await apiClient.post('/appointments', appointmentData);
       if (response.success) {
+        const appointmentCount = formData.isRecurring ? formData.recurringOccurrences || 4 : 1;
         showSuccess(
-          formData.isTelemedicine
+          formData.isRecurring
+            ? `${appointmentCount} recurring appointment${
+                appointmentCount > 1 ? 's' : ''
+              } scheduled successfully!`
+            : formData.isTelemedicine
             ? 'Video consultation scheduled! Email sent to patient.'
             : 'Appointment scheduled successfully!'
         );
@@ -324,11 +341,7 @@ function NewAppointmentPageContent() {
   }
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   return (
@@ -454,6 +467,125 @@ function NewAppointmentPageContent() {
                 { value: 'lab_test', label: 'Lab Test' },
               ]}
             />
+          </div>
+
+          {/* Recurring Appointment Option */}
+          <div className='md:col-span-2'>
+            <Card className='border-2 border-primary-100 bg-primary-50/30'>
+              <div className='flex items-start gap-4'>
+                <label className='flex items-center cursor-pointer flex-1'>
+                  <input
+                    type='checkbox'
+                    checked={formData.isRecurring}
+                    onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                    className='h-5 w-5 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                  />
+                  <div className='ml-3 flex-1'>
+                    <div className='flex items-center gap-2'>
+                      <svg
+                        className='w-5 h-5 text-primary-600'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+                        />
+                      </svg>
+                      <span className='text-sm font-semibold text-neutral-900'>
+                        Recurring Appointment
+                      </span>
+                    </div>
+                    <p className='text-xs text-neutral-600 mt-1'>
+                      Schedule multiple appointments automatically (useful for follow-ups)
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {formData.isRecurring && (
+                <div className='mt-4 pt-4 border-t border-primary-200 space-y-4'>
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div>
+                      <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                        Repeat Frequency
+                      </label>
+                      <Select
+                        value={formData.recurringFrequency}
+                        onChange={(e) =>
+                          setFormData({ ...formData, recurringFrequency: e.target.value })
+                        }
+                        options={[
+                          { value: 'daily', label: 'Daily' },
+                          { value: 'weekly', label: 'Weekly' },
+                          { value: 'biweekly', label: 'Bi-weekly (Every 2 weeks)' },
+                          { value: 'monthly', label: 'Monthly' },
+                        ]}
+                      />
+                    </div>
+                    <div>
+                      <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                        End Date (Optional)
+                      </label>
+                      <DatePicker
+                        value={formData.recurringEndDate}
+                        onChange={(e) =>
+                          setFormData({ ...formData, recurringEndDate: e.target.value })
+                        }
+                        min={formData.appointmentDate || new Date().toISOString().split('T')[0]}
+                      />
+                      <p className='text-xs text-neutral-500 mt-1'>
+                        Leave empty to use number of occurrences
+                      </p>
+                    </div>
+                  </div>
+                  {!formData.recurringEndDate && (
+                    <div>
+                      <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                        Number of Appointments
+                      </label>
+                      <Input
+                        type='number'
+                        min='2'
+                        max='52'
+                        value={formData.recurringOccurrences}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            recurringOccurrences: parseInt(e.target.value) || 4,
+                          })
+                        }
+                        placeholder='4'
+                      />
+                      <p className='text-xs text-neutral-500 mt-1'>
+                        Total number of appointments to create (2-52)
+                      </p>
+                    </div>
+                  )}
+                  <div className='bg-primary-100 border border-primary-200 rounded-lg p-3'>
+                    <p className='text-xs text-primary-700'>
+                      <strong>Note:</strong> {formData.recurringOccurrences || 4} appointment
+                      {formData.recurringOccurrences !== 1 ? 's' : ''} will be created{' '}
+                      {formData.recurringFrequency === 'daily'
+                        ? 'daily'
+                        : formData.recurringFrequency === 'weekly'
+                        ? 'weekly'
+                        : formData.recurringFrequency === 'biweekly'
+                        ? 'every 2 weeks'
+                        : 'monthly'}{' '}
+                      starting from {formData.appointmentDate || 'selected date'}
+                      {formData.recurringEndDate
+                        ? ` until ${formData.recurringEndDate}`
+                        : ` (${formData.recurringOccurrences || 4} total)`}
+                      .
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Card>
           </div>
 
           {/* Consultation Type - Video or In-Person */}
@@ -748,13 +880,7 @@ function NewAppointmentPageContent() {
 
 export default function NewAppointmentPage() {
   return (
-    <Suspense
-      fallback={
-        <Layout>
-          <Loader size='md' className='h-64' />
-        </Layout>
-      }
-    >
+    <Suspense fallback={<Loader fullScreen size='lg' />}>
       <NewAppointmentPageContent />
     </Suspense>
   );

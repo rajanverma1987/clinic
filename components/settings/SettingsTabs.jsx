@@ -91,6 +91,17 @@ const EmailIcon = () => (
   </svg>
 );
 
+const HolidayIcon = () => (
+  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <path
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      strokeWidth={2}
+      d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+    />
+  </svg>
+);
+
 export function SettingsTabs({ activeTab, setActiveTab, isClinicAdmin }) {
   const { t } = useI18n();
 
@@ -114,37 +125,46 @@ export function SettingsTabs({ activeTab, setActiveTab, isClinicAdmin }) {
       icon: <EmailIcon />,
       adminOnly: true,
     },
+    {
+      id: 'holidays',
+      label: 'Holidays',
+      icon: <HolidayIcon />,
+      adminOnly: false,
+    },
   ];
 
   // Filter tabs based on user role
   const tabs = allTabs.filter((tab) => !tab.adminOnly || isClinicAdmin);
 
   return (
-    <div className='border-b border-neutral-200' style={{ marginBottom: 'var(--space-8)' }}>
-      <nav className='flex overflow-x-auto' style={{ gap: 'var(--gap-1)' }}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`border-b-2 font-semibold text-body-sm flex items-center whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-primary-500 text-primary-500 bg-primary-50/50'
-                : 'border-transparent text-neutral-600 hover:text-neutral-900 hover:border-neutral-300'
-            }`}
-            style={{
-              paddingTop: 'var(--space-4)',
-              paddingBottom: 'var(--space-4)',
-              paddingLeft: 'var(--space-6)',
-              paddingRight: 'var(--space-6)',
-            }}
-          >
-            <span className='flex items-center' style={{ marginRight: 'var(--space-2)' }}>
-              {tab.icon}
-            </span>
-            {tab.label}
-          </button>
-        ))}
+    <div className='mb-6'>
+      <nav
+        className='flex items-center justify-start overflow-x-auto gap-2'
+        style={{ scrollbarWidth: 'none' }}
+      >
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                isActive
+                  ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
+                  : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
+              }`}
+            >
+              <span className={isActive ? 'text-green-600' : 'text-neutral-500'}>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </nav>
+      <style jsx>{`
+        nav::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }

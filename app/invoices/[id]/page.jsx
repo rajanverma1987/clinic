@@ -82,11 +82,7 @@ export default function InvoiceDetailPage() {
   }
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   if (!invoice) {

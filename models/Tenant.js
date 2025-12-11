@@ -116,6 +116,17 @@ const TenantSchema = new Schema(
           default: true,
         },
       },
+      holidays: [
+        {
+          id: String,
+          name: String,
+          date: Date,
+          isRecurring: {
+            type: Boolean,
+            default: false,
+          },
+        },
+      ],
     },
     isActive: {
       type: Boolean,
@@ -132,4 +143,3 @@ TenantSchema.index({ slug: 1 });
 TenantSchema.index({ region: 1 });
 
 export default mongoose.models.Tenant || mongoose.model('Tenant', TenantSchema);
-

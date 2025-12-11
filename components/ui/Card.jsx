@@ -15,12 +15,12 @@ export function Card({ title, children, className = '', actions, elevated = fals
   return (
     <div className={`${baseClasses} ${shadowClass} ${className}`}>
       {(title || actions) && (
-        <div className='px-6 py-4 border-b border-neutral-200 flex items-center justify-between'>
+        <div className='px-4 py-3 border-b border-neutral-200 flex items-center justify-between'>
           {title && <h3 className='text-h4 text-neutral-900'>{title}</h3>}
           {actions && <div>{actions}</div>}
         </div>
       )}
-      <div className='px-6 py-4'>{children}</div>
+      <div className='px-4 py-3'>{children}</div>
     </div>
   );
 }

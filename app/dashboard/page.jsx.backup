@@ -1,0 +1,2534 @@
+'use client';
+
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { Layout } from '@/components/layout/Layout';
+import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
+import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
+import { apiClient } from '@/lib/api/client';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  const { t } = useI18n();
+  const { currency, locale } = useSettings();
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [notifications, setNotifications] = useState([]); // Array of notification objects
+  const [chartData, setChartData] = useState({
+    revenue: null,
+    appointments: null,
+    patients: null,
+  });
+  const [loadingCharts, setLoadingCharts] = useState(true);
+  const [todayAppointments, setTodayAppointments] = useState([]);
+  const [recentPatients, setRecentPatients] = useState([]);
+  const [overdueInvoices, setOverdueInvoices] = useState([]);
+  const [lowStockList, setLowStockList] = useState([]);
+  const [loadingLists, setLoadingLists] = useState(true);
+  const [prescriptionRefills, setPrescriptionRefills] = useState([]);
+  const [queueStatus, setQueueStatus] = useState({ active: 0, waiting: 0, inProgress: 0 });
+  const [criticalAlerts, setCriticalAlerts] = useState([]);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await apiClient.get('/reports/dashboard');
+      if (response.success && response.data) {
+        setStats(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch dashboard stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
+  const fetchDashboardLists = useCallback(async () => {
+    try {
+      // Fetch today's appointments
+      const today = new Date().toISOString().split('T')[0];
+      const appointmentsResponse = await apiClient.get(`/appointments?date=${today}&limit=5`);
+      let fetchedAppointments = [];
+      if (appointmentsResponse.success && appointmentsResponse.data) {
+        const appointmentsData = appointmentsResponse.data?.data || appointmentsResponse.data || [];
+        fetchedAppointments = appointmentsData.slice(0, 5);
+        setTodayAppointments(fetchedAppointments);
+
+        // Check for urgent appointments (within next hour) and add to alerts
+        const now = new Date();
+        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+        const urgentAppointments = fetchedAppointments.filter((apt) => {
+          const aptTime = new Date(apt.appointmentDate || apt.date);
+          return aptTime >= now && aptTime <= oneHourLater;
+        });
+        if (urgentAppointments.length > 0) {
+          setCriticalAlerts((prev) => [
+            ...prev,
+            {
+              type: 'appointment',
+              severity: 'info',
+              message: `${urgentAppointments.length} appointment${
+                urgentAppointments.length > 1 ? 's' : ''
+              } starting within the next hour`,
+              count: urgentAppointments.length,
+            },
+          ]);
+        }
+      }
+
+      // Fetch recent patients
+      const patientsResponse = await apiClient.get(
+        '/patients?limit=5&sortBy=createdAt&sortOrder=desc'
+      );
+      if (patientsResponse.success && patientsResponse.data) {
+        setRecentPatients(patientsResponse.data.slice(0, 5));
+      }
+
+      // Fetch overdue invoices
+      const invoicesResponse = await apiClient.get('/invoices?status=pending&overdue=true&limit=5');
+      if (invoicesResponse.success && invoicesResponse.data) {
+        setOverdueInvoices(invoicesResponse.data.slice(0, 5));
+      }
+
+      // Fetch low stock items
+      const inventoryResponse = await apiClient.get('/inventory/low-stock?limit=5');
+      if (inventoryResponse.success && inventoryResponse.data) {
+        setLowStockList(inventoryResponse.data.slice(0, 5));
+      }
+
+      // Fetch prescription refills due (active prescriptions that may need refills)
+      try {
+        const prescriptionsResponse = await apiClient.get('/prescriptions?status=active&limit=5');
+        if (prescriptionsResponse.success && prescriptionsResponse.data) {
+          const prescriptions =
+            prescriptionsResponse.data?.data || prescriptionsResponse.data || [];
+          // Filter for prescriptions that might need refills (you can add more logic here)
+          setPrescriptionRefills(prescriptions.slice(0, 5));
+        }
+      } catch (err) {
+        console.error('Failed to fetch prescription refills:', err);
+      }
+
+      // Fetch queue status
+      try {
+        const queueResponse = await apiClient.get('/queue?status=waiting&limit=100');
+        if (queueResponse.success && queueResponse.data) {
+          const queueData = queueResponse.data?.data || queueResponse.data || [];
+          const active = queueData.filter(
+            (q) => q.status === 'waiting' || q.status === 'in_progress'
+          ).length;
+          const waiting = queueData.filter((q) => q.status === 'waiting').length;
+          const inProgress = queueData.filter((q) => q.status === 'in_progress').length;
+          setQueueStatus({ active, waiting, inProgress });
+        }
+      } catch (err) {
+        console.error('Failed to fetch queue status:', err);
+      }
+
+      // Build critical alerts (will be updated after all data is fetched)
+      const alerts = [];
+      if (overdueInvoices && overdueInvoices.length > 0) {
+        alerts.push({
+          type: 'invoice',
+          severity: 'warning',
+          message: `${overdueInvoices.length} overdue invoice${
+            overdueInvoices.length > 1 ? 's' : ''
+          } require attention`,
+          count: overdueInvoices.length,
+        });
+      }
+      if (lowStockList && lowStockList.length > 0) {
+        alerts.push({
+          type: 'inventory',
+          severity: 'error',
+          message: `${lowStockList.length} item${
+            lowStockList.length > 1 ? 's' : ''
+          } running low on stock`,
+          count: lowStockList.length,
+        });
+      }
+      setCriticalAlerts(alerts);
+    } catch (error) {
+      console.error('Failed to fetch dashboard lists:', error);
+    } finally {
+      setLoadingLists(false);
+    }
+  }, []);
+
+  const fetchChartData = useCallback(async () => {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 14); // Last 14 days
+
+      // Fetch revenue trend
+      try {
+        const revenueParams = new URLSearchParams({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          groupBy: 'day',
+        });
+        const revenueResponse = await apiClient.get(`/reports/revenue?${revenueParams}`);
+        if (revenueResponse.success && revenueResponse.data) {
+          setChartData((prev) => ({
+            ...prev,
+            revenue: revenueResponse.data.timeSeries || [],
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch revenue chart:', err);
+      }
+
+      // Fetch appointment trend
+      try {
+        const appointmentParams = new URLSearchParams({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          groupBy: 'day',
+        });
+        const appointmentResponse = await apiClient.get(
+          `/reports/appointments?${appointmentParams}`
+        );
+        if (appointmentResponse.success && appointmentResponse.data) {
+          setChartData((prev) => ({
+            ...prev,
+            appointments: appointmentResponse.data.timeSeries || [],
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch appointment chart:', err);
+      }
+
+      // Fetch patient growth
+      try {
+        const patientParams = new URLSearchParams({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          groupBy: 'day',
+          includeNewPatients: 'true',
+        });
+        const patientResponse = await apiClient.get(`/reports/patients?${patientParams}`);
+        if (patientResponse.success && patientResponse.data) {
+          setChartData((prev) => ({
+            ...prev,
+            patients: patientResponse.data.timeSeries || [],
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch patient chart:', err);
+      }
+    } catch (error) {
+      console.error('Failed to fetch chart data:', error);
+    } finally {
+      setLoadingCharts(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    if (!user) {
+      const timer = setTimeout(() => {
+        router.push('/login');
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+
+    if (user) {
+      fetchStats();
+      fetchChartData();
+      fetchDashboardLists();
+    }
+  }, [loading, user, router, fetchStats, fetchChartData, fetchDashboardLists]);
+
+  // Chart rendering functions
+  const renderBarChart = (data, color = 'primary', height = 200) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className='flex items-center justify-center h-[220px] text-neutral-400'>
+          <p>No data available</p>
+        </div>
+      );
+    }
+
+    const chartData = data.slice(-14);
+    const maxBarValue = Math.max(...chartData.map((d) => d.value || d.total || d.count || 0), 1);
+    const chartHeight = height;
+
+    const colorClasses = {
+      primary: 'bg-primary-500 hover:bg-primary-600',
+      secondary: 'bg-secondary-500 hover:bg-secondary-600',
+      warning: 'bg-status-warning hover:bg-status-warning/80',
+    };
+
+    return (
+      <div className='relative'>
+        <div className='flex items-end h-[220px] border-b border-l border-neutral-200 pl-8 pr-4 pb-8'>
+          <div className='absolute left-0 top-0 bottom-8 flex flex-col justify-between text-xs text-neutral-500'>
+            {[100, 75, 50, 25, 0].map((percent) => (
+              <span key={percent} className='transform -translate-x-full pr-2'>
+                {Math.round((maxBarValue * percent) / 100)}
+              </span>
+            ))}
+          </div>
+
+          <div className='flex-1 flex items-end justify-between gap-1.5'>
+            {chartData.map((item, index) => {
+              const value = item.value || item.total || item.count || 0;
+              const percentage = (value / maxBarValue) * 100;
+              const barHeight = (percentage / 100) * chartHeight;
+
+              return (
+                <div key={index} className='flex-1 flex flex-col items-center group relative'>
+                  <div
+                    className={`w-full ${
+                      colorClasses[color] || colorClasses.primary
+                    } rounded-t cursor-pointer`}
+                    style={{
+                      height: `${Math.max(barHeight, value > 0 ? 2 : 0)}px`,
+                      minHeight: value > 0 ? '2px' : '0',
+                    }}
+                    title={`${new Date(item.period || item.date).toLocaleDateString()}: ${value}`}
+                  />
+                  <div className='absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-neutral-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10'>
+                    {value}
+                  </div>
+                  <span className='text-xs text-neutral-600 mt-2 text-center leading-tight'>
+                    {(() => {
+                      const date = new Date(item.period || item.date);
+                      if (chartData.length <= 7) {
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      } else {
+                        return date.toLocaleDateString('en-US', { month: 'short' });
+                      }
+                    })()}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const formatCurrency = (amount) => {
+    return formatCurrencyUtil(amount, currency, locale);
+  };
+
+  const formatDateDisplay = () => {
+    const date = new Date();
+    return date.toLocaleDateString(locale || 'en-US', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  // Redirect if not authenticated (non-blocking)
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
+  if (loading) {
+    return <Loader fullScreen size='lg' />;
+  }
+
+  // Show empty state while redirecting
+  if (!user) {
+    return null;
+  }
+
+  if (loadingStats) {
+    return (
+      <Layout>
+        <div className='mb-10 relative'>
+          <div className='flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4'>
+            <div>
+              <h1
+                className='text-neutral-900 mb-3'
+                style={{
+                  fontSize: '40px',
+                  lineHeight: '48px',
+                  letterSpacing: '-0.02em',
+                  fontWeight: '700',
+                }}
+              >
+                {t('dashboard.title')}
+              </h1>
+              <p
+                className='text-neutral-700'
+                style={{
+                  fontSize: '18px',
+                  lineHeight: '28px',
+                  letterSpacing: '-0.01em',
+                  fontWeight: '400',
+                }}
+              >
+                {t('dashboard.welcome')},{' '}
+                <span className='font-semibold text-primary-500'>{user?.firstName}</span>!
+              </p>
+            </div>
+          </div>
+        </div>
+        <Loader size='lg' text='Loading statistics...' className='h-64' />
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <DashboardHeader
+        title='Dashboard Overview'
+        subtitle={formatDateDisplay()}
+        notifications={Array.isArray(notifications) ? notifications : []}
+        unreadCount={
+          Array.isArray(notifications) ? notifications.filter((n) => n?.unread).length : 0
+        }
+      />
+
+      {/* Quick Actions Section */}
+      <div className='mb-8' style={{ marginBottom: 'var(--space-8)' }}>
+        <Card
+          elevated={true}
+          className='border-2 border-neutral-100 bg-gradient-to-br from-white to-neutral-50'
+        >
+          <div className='p-6'>
+            <div className='flex items-center mb-4' style={{ gap: 'var(--gap-2)' }}>
+              <div className='w-2 h-2 bg-primary-500 rounded-full'></div>
+              <h2
+                className='text-neutral-900'
+                style={{
+                  fontSize: '18px',
+                  lineHeight: '24px',
+                  fontWeight: '700',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Quick Actions
+              </h2>
+            </div>
+            <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
+              <button
+                onClick={() => router.push('/appointments/new')}
+                className='flex flex-col items-center justify-center p-4 rounded-lg border-2 border-primary-200 bg-white hover:border-primary-500 hover:bg-primary-50 transition-all duration-300 group'
+                style={{ minHeight: '100px' }}
+              >
+                <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary-500 transition-colors'>
+                  <svg
+                    className='w-5 h-5 no-tint'
+                    fill='none'
+                    stroke='#2D9CDB'
+                    viewBox='0 0 24 24'
+                    style={{ transition: 'stroke 0.3s ease' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.stroke = '#FFFFFF')}
+                    onMouseLeave={(e) => (e.currentTarget.style.stroke = '#2D9CDB')}
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+                    />
+                  </svg>
+                </div>
+                <span className='text-sm font-semibold text-neutral-700 group-hover:text-primary-600'>
+                  New Appointment
+                </span>
+              </button>
+              <button
+                onClick={() => router.push('/patients?new=true')}
+                className='flex flex-col items-center justify-center p-4 rounded-lg border-2 border-primary-200 bg-white hover:border-primary-500 hover:bg-primary-50 transition-all duration-300 group'
+                style={{ minHeight: '100px' }}
+              >
+                <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary-500 transition-colors'>
+                  <svg
+                    className='w-5 h-5 no-tint'
+                    fill='none'
+                    stroke='#2D9CDB'
+                    viewBox='0 0 24 24'
+                    style={{ transition: 'stroke 0.3s ease' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.stroke = '#FFFFFF')}
+                    onMouseLeave={(e) => (e.currentTarget.style.stroke = '#2D9CDB')}
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z'
+                    />
+                  </svg>
+                </div>
+                <span className='text-sm font-semibold text-neutral-700 group-hover:text-primary-600'>
+                  New Patient
+                </span>
+              </button>
+              <button
+                onClick={() => router.push('/prescriptions/new')}
+                className='flex flex-col items-center justify-center p-4 rounded-lg border-2 border-primary-200 bg-white hover:border-primary-500 hover:bg-primary-50 transition-all duration-300 group'
+                style={{ minHeight: '100px' }}
+              >
+                <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary-500 transition-colors'>
+                  <svg
+                    className='w-5 h-5 no-tint'
+                    fill='none'
+                    stroke='#2D9CDB'
+                    viewBox='0 0 24 24'
+                    style={{ transition: 'stroke 0.3s ease' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.stroke = '#FFFFFF')}
+                    onMouseLeave={(e) => (e.currentTarget.style.stroke = '#2D9CDB')}
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z'
+                    />
+                  </svg>
+                </div>
+                <span className='text-sm font-semibold text-neutral-700 group-hover:text-primary-600'>
+                  New Prescription
+                </span>
+              </button>
+              <button
+                onClick={() => router.push('/queue')}
+                className='flex flex-col items-center justify-center p-4 rounded-lg border-2 border-primary-200 bg-white hover:border-primary-500 hover:bg-primary-50 transition-all duration-300 group'
+                style={{ minHeight: '100px' }}
+              >
+                <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-primary-500 transition-colors'>
+                  <svg
+                    className='w-5 h-5 no-tint'
+                    fill='none'
+                    stroke='#2D9CDB'
+                    viewBox='0 0 24 24'
+                    style={{ transition: 'stroke 0.3s ease' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.stroke = '#FFFFFF')}
+                    onMouseLeave={(e) => (e.currentTarget.style.stroke = '#2D9CDB')}
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'
+                    />
+                  </svg>
+                </div>
+                <span className='text-sm font-semibold text-neutral-700 group-hover:text-primary-600'>
+                  View Queue
+                </span>
+              </button>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Critical Alerts Section */}
+      {criticalAlerts.length > 0 && (
+        <div className='mb-10'>
+          <Card
+            elevated={true}
+            className='overflow-hidden relative'
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+              border: '1px solid rgba(245,158,11,0.2)',
+            }}
+          >
+            <div
+              className='absolute top-0 right-0 opacity-30'
+              style={{
+                width: '400px',
+                height: '400px',
+                background: 'radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%)',
+                transform: 'translate(30%, -30%)',
+              }}
+            />
+            <div className='relative z-10 p-6'>
+              <div className='flex items-center gap-3 mb-6'>
+                <div
+                  className='rounded-lg'
+                  style={{
+                    width: '4px',
+                    height: '24px',
+                    background: 'linear-gradient(180deg, #F59E0B 0%, #D97706 100%)',
+                  }}
+                />
+                <div
+                  className='flex items-center justify-center rounded-xl'
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    background:
+                      'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.08))',
+                  }}
+                >
+                  <svg className='w-5 h-5' fill='none' stroke='#F59E0B' viewBox='0 0 24 24'>
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+                    />
+                  </svg>
+                </div>
+                <h2
+                  className='text-neutral-900 font-bold'
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Critical Alerts
+                </h2>
+              </div>
+              <div className='space-y-3'>
+                {criticalAlerts.map((alert, index) => (
+                  <div
+                    key={index}
+                    className='group flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 hover:shadow-md'
+                    style={{
+                      background:
+                        alert.severity === 'error'
+                          ? 'linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.03))'
+                          : alert.severity === 'warning'
+                          ? 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.03))'
+                          : 'linear-gradient(135deg, rgba(45,156,219,0.08), rgba(45,156,219,0.03))',
+                      borderColor:
+                        alert.severity === 'error'
+                          ? 'rgba(239,68,68,0.3)'
+                          : alert.severity === 'warning'
+                          ? 'rgba(245,158,11,0.3)'
+                          : 'rgba(45,156,219,0.3)',
+                      boxShadow:
+                        alert.severity === 'error'
+                          ? '0 2px 8px rgba(239,68,68,0.1)'
+                          : alert.severity === 'warning'
+                          ? '0 2px 8px rgba(245,158,11,0.1)'
+                          : '0 2px 8px rgba(45,156,219,0.1)',
+                    }}
+                  >
+                    <div className='flex items-center gap-4 flex-1'>
+                      <div
+                        className='flex items-center justify-center rounded-xl'
+                        style={{
+                          width: '44px',
+                          height: '44px',
+                          background:
+                            alert.severity === 'error'
+                              ? 'rgba(239,68,68,0.15)'
+                              : alert.severity === 'warning'
+                              ? 'rgba(245,158,11,0.15)'
+                              : 'rgba(45,156,219,0.15)',
+                        }}
+                      >
+                        <div
+                          className='w-3 h-3 rounded-full'
+                          style={{
+                            backgroundColor:
+                              alert.severity === 'error'
+                                ? '#EF4444'
+                                : alert.severity === 'warning'
+                                ? '#F59E0B'
+                                : '#2D9CDB',
+                            boxShadow:
+                              alert.severity === 'error'
+                                ? '0 0 8px rgba(239,68,68,0.5)'
+                                : alert.severity === 'warning'
+                                ? '0 0 8px rgba(245,158,11,0.5)'
+                                : '0 0 8px rgba(45,156,219,0.5)',
+                          }}
+                        />
+                      </div>
+                      <span
+                        className='font-semibold'
+                        style={{
+                          fontSize: '15px',
+                          lineHeight: '22px',
+                          color: '#1F2937',
+                        }}
+                      >
+                        {alert.message}
+                      </span>
+                    </div>
+                    <div
+                      className='flex items-center justify-center rounded-xl font-bold'
+                      style={{
+                        minWidth: '48px',
+                        height: '32px',
+                        padding: '0 12px',
+                        background:
+                          alert.severity === 'error'
+                            ? 'linear-gradient(135deg, #EF4444, #DC2626)'
+                            : alert.severity === 'warning'
+                            ? 'linear-gradient(135deg, #F59E0B, #D97706)'
+                            : 'linear-gradient(135deg, #2D9CDB, #0F89C7)',
+                        color: '#FFFFFF',
+                        fontSize: '13px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      {alert.count}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Key Statistics Cards */}
+      {stats && (
+        <div className='mb-10'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-5'>
+            {/* Today's Appointments Card */}
+            <Card
+              className='group relative overflow-hidden cursor-pointer transition-all duration-300'
+              elevated={true}
+              onClick={() => router.push('/appointments')}
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+                border: '1px solid rgba(45,156,219,0.15)',
+                minHeight: '160px',
+                transform: 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(45,156,219,0.15)';
+                e.currentTarget.style.borderColor = 'rgba(45,156,219,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '';
+                e.currentTarget.style.borderColor = 'rgba(45,156,219,0.15)';
+              }}
+            >
+              <div
+                className='absolute top-0 right-0 opacity-20'
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  background: 'radial-gradient(circle, rgba(45,156,219,0.2) 0%, transparent 70%)',
+                  transform: 'translate(20%, -20%)',
+                }}
+              />
+              <div className='relative z-10 p-5'>
+                <div className='flex items-start justify-between mb-4'>
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2 mb-3'>
+                      <div
+                        className='rounded-lg'
+                        style={{
+                          width: '3px',
+                          height: '16px',
+                          background: 'linear-gradient(180deg, #2D9CDB 0%, #0F89C7 100%)',
+                        }}
+                      />
+                      <p
+                        className='text-primary-600 font-semibold'
+                        style={{
+                          fontSize: '11px',
+                          lineHeight: '16px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                        }}
+                      >
+                        {t('dashboard.todayAppointments')}
+                      </p>
+                    </div>
+                    <p
+                      className='text-neutral-900 mb-1'
+                      style={{
+                        fontSize: '32px',
+                        lineHeight: '40px',
+                        letterSpacing: '-0.03em',
+                        fontWeight: '800',
+                      }}
+                    >
+                      {stats.todayAppointments}
+                    </p>
+                    <p
+                      className='text-neutral-500'
+                      style={{
+                        fontSize: '13px',
+                        lineHeight: '18px',
+                      }}
+                    >
+                      {t('dashboard.activeToday')}
+                    </p>
+                  </div>
+                  <div
+                    className='flex items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110'
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      background: 'linear-gradient(135deg, #2D9CDB 0%, #0F89C7 100%)',
+                      boxShadow: '0 4px 12px rgba(45,156,219,0.25)',
+                    }}
+                  >
+                    <svg
+                      className='w-5 h-5 no-tint'
+                      fill='none'
+                      stroke='#FFFFFF'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Today's Revenue Card */}
+            <Card
+              className='group relative overflow-hidden cursor-pointer transition-all duration-300'
+              elevated={true}
+              onClick={() => router.push('/reports')}
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+                border: '1px solid rgba(39,174,96,0.15)',
+                minHeight: '160px',
+                transform: 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(39,174,96,0.15)';
+                e.currentTarget.style.borderColor = 'rgba(39,174,96,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '';
+                e.currentTarget.style.borderColor = 'rgba(39,174,96,0.15)';
+              }}
+            >
+              <div
+                className='absolute top-0 right-0 opacity-20'
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  background: 'radial-gradient(circle, rgba(39,174,96,0.2) 0%, transparent 70%)',
+                  transform: 'translate(20%, -20%)',
+                }}
+              />
+              <div className='relative z-10 p-5'>
+                <div className='flex items-start justify-between mb-4'>
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2 mb-3'>
+                      <div
+                        className='rounded-lg'
+                        style={{
+                          width: '3px',
+                          height: '16px',
+                          background: 'linear-gradient(180deg, #27AE60 0%, #229954 100%)',
+                        }}
+                      />
+                      <p
+                        className='text-secondary-600 font-semibold'
+                        style={{
+                          fontSize: '11px',
+                          lineHeight: '16px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                        }}
+                      >
+                        Today's Revenue
+                      </p>
+                    </div>
+                    <p
+                      className='text-neutral-900 mb-1'
+                      style={{
+                        fontSize: '28px',
+                        lineHeight: '36px',
+                        letterSpacing: '-0.03em',
+                        fontWeight: '800',
+                      }}
+                    >
+                      {formatCurrency(stats.todayRevenue || 0)}
+                    </p>
+                    <p
+                      className='text-neutral-500'
+                      style={{
+                        fontSize: '13px',
+                        lineHeight: '18px',
+                      }}
+                    >
+                      Collected today
+                    </p>
+                  </div>
+                  <div
+                    className='flex items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110'
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      background: 'linear-gradient(135deg, #27AE60 0%, #229954 100%)',
+                      boxShadow: '0 4px 12px rgba(39,174,96,0.25)',
+                    }}
+                  >
+                    <svg
+                      className='w-5 h-5 no-tint'
+                      fill='none'
+                      stroke='#FFFFFF'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Month Revenue Card */}
+            <Card
+              className='group relative overflow-hidden cursor-pointer transition-all duration-300'
+              elevated={true}
+              onClick={() => router.push('/reports')}
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+                border: '1px solid rgba(39,174,96,0.15)',
+                minHeight: '160px',
+                transform: 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(39,174,96,0.15)';
+                e.currentTarget.style.borderColor = 'rgba(39,174,96,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '';
+                e.currentTarget.style.borderColor = 'rgba(39,174,96,0.15)';
+              }}
+            >
+              <div
+                className='absolute top-0 right-0 opacity-20'
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  background: 'radial-gradient(circle, rgba(39,174,96,0.2) 0%, transparent 70%)',
+                  transform: 'translate(20%, -20%)',
+                }}
+              />
+              <div className='relative z-10 p-5'>
+                <div className='flex items-start justify-between mb-4'>
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2 mb-3'>
+                      <div
+                        className='rounded-lg'
+                        style={{
+                          width: '3px',
+                          height: '16px',
+                          background: 'linear-gradient(180deg, #27AE60 0%, #229954 100%)',
+                        }}
+                      />
+                      <p
+                        className='text-secondary-600 font-semibold'
+                        style={{
+                          fontSize: '11px',
+                          lineHeight: '16px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                        }}
+                      >
+                        {t('dashboard.monthRevenue')}
+                      </p>
+                    </div>
+                    <p
+                      className='text-neutral-900 mb-1'
+                      style={{
+                        fontSize: '28px',
+                        lineHeight: '36px',
+                        letterSpacing: '-0.03em',
+                        fontWeight: '800',
+                      }}
+                    >
+                      {formatCurrency(stats.monthRevenue)}
+                    </p>
+                    <p
+                      className='text-neutral-500'
+                      style={{
+                        fontSize: '13px',
+                        lineHeight: '18px',
+                      }}
+                    >
+                      {t('dashboard.thisMonth')}
+                    </p>
+                  </div>
+                  <div
+                    className='flex items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110'
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      background: 'linear-gradient(135deg, #27AE60 0%, #229954 100%)',
+                      boxShadow: '0 4px 12px rgba(39,174,96,0.25)',
+                    }}
+                  >
+                    <svg
+                      className='w-5 h-5 no-tint'
+                      fill='none'
+                      stroke='#FFFFFF'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* New Patients This Month Card */}
+            <Card
+              className='group relative overflow-hidden cursor-pointer transition-all duration-300'
+              elevated={true}
+              onClick={() => router.push('/patients')}
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+                border: '1px solid rgba(45,156,219,0.15)',
+                minHeight: '160px',
+                transform: 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(45,156,219,0.15)';
+                e.currentTarget.style.borderColor = 'rgba(45,156,219,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '';
+                e.currentTarget.style.borderColor = 'rgba(45,156,219,0.15)';
+              }}
+            >
+              <div
+                className='absolute top-0 right-0 opacity-20'
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  background: 'radial-gradient(circle, rgba(45,156,219,0.2) 0%, transparent 70%)',
+                  transform: 'translate(20%, -20%)',
+                }}
+              />
+              <div className='relative z-10 p-5'>
+                <div className='flex items-start justify-between mb-4'>
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2 mb-3'>
+                      <div
+                        className='rounded-lg'
+                        style={{
+                          width: '3px',
+                          height: '16px',
+                          background: 'linear-gradient(180deg, #2D9CDB 0%, #0F89C7 100%)',
+                        }}
+                      />
+                      <p
+                        className='text-primary-600 font-semibold'
+                        style={{
+                          fontSize: '11px',
+                          lineHeight: '16px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                        }}
+                      >
+                        New Patients
+                      </p>
+                    </div>
+                    <p
+                      className='text-neutral-900 mb-1'
+                      style={{
+                        fontSize: '32px',
+                        lineHeight: '40px',
+                        letterSpacing: '-0.03em',
+                        fontWeight: '800',
+                      }}
+                    >
+                      {stats.newPatientsThisMonth || 0}
+                    </p>
+                    <p
+                      className='text-neutral-500'
+                      style={{
+                        fontSize: '13px',
+                        lineHeight: '18px',
+                      }}
+                    >
+                      This month
+                    </p>
+                  </div>
+                  <div
+                    className='flex items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110'
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      background: 'linear-gradient(135deg, #2D9CDB 0%, #0F89C7 100%)',
+                      boxShadow: '0 4px 12px rgba(45,156,219,0.25)',
+                    }}
+                  >
+                    <svg
+                      className='w-5 h-5 no-tint'
+                      fill='none'
+                      stroke='#FFFFFF'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z'
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Total Patients Card */}
+            <Card
+              className='group relative overflow-hidden cursor-pointer transition-all duration-300'
+              elevated={true}
+              onClick={() => router.push('/patients')}
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+                border: '1px solid rgba(45,156,219,0.15)',
+                minHeight: '160px',
+                transform: 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(45,156,219,0.15)';
+                e.currentTarget.style.borderColor = 'rgba(45,156,219,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '';
+                e.currentTarget.style.borderColor = 'rgba(45,156,219,0.15)';
+              }}
+            >
+              <div
+                className='absolute top-0 right-0 opacity-20'
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  background: 'radial-gradient(circle, rgba(45,156,219,0.2) 0%, transparent 70%)',
+                  transform: 'translate(20%, -20%)',
+                }}
+              />
+              <div className='relative z-10 p-5'>
+                <div className='flex items-start justify-between mb-4'>
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2 mb-3'>
+                      <div
+                        className='rounded-lg'
+                        style={{
+                          width: '3px',
+                          height: '16px',
+                          background: 'linear-gradient(180deg, #2D9CDB 0%, #0F89C7 100%)',
+                        }}
+                      />
+                      <p
+                        className='text-primary-600 font-semibold'
+                        style={{
+                          fontSize: '11px',
+                          lineHeight: '16px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                        }}
+                      >
+                        {t('dashboard.totalPatients')}
+                      </p>
+                    </div>
+                    <p
+                      className='text-neutral-900 mb-1'
+                      style={{
+                        fontSize: '32px',
+                        lineHeight: '40px',
+                        letterSpacing: '-0.03em',
+                        fontWeight: '800',
+                      }}
+                    >
+                      {stats.totalPatients}
+                    </p>
+                    <p
+                      className='text-neutral-500'
+                      style={{
+                        fontSize: '13px',
+                        lineHeight: '18px',
+                      }}
+                    >
+                      {t('dashboard.allTime')}
+                    </p>
+                  </div>
+                  <div
+                    className='flex items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110'
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      background: 'linear-gradient(135deg, #2D9CDB 0%, #0F89C7 100%)',
+                      boxShadow: '0 4px 12px rgba(45,156,219,0.25)',
+                    }}
+                  >
+                    <svg
+                      className='w-5 h-5 no-tint'
+                      fill='none'
+                      stroke='#FFFFFF'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Pending Invoices Card */}
+            <Card
+              className='group relative overflow-hidden cursor-pointer transition-all duration-300'
+              elevated={true}
+              onClick={() => router.push('/invoices')}
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+                border: '1px solid rgba(245,158,11,0.15)',
+                minHeight: '160px',
+                transform: 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(245,158,11,0.15)';
+                e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '';
+                e.currentTarget.style.borderColor = 'rgba(245,158,11,0.15)';
+              }}
+            >
+              <div
+                className='absolute top-0 right-0 opacity-20'
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  background: 'radial-gradient(circle, rgba(245,158,11,0.2) 0%, transparent 70%)',
+                  transform: 'translate(20%, -20%)',
+                }}
+              />
+              <div className='relative z-10 p-5'>
+                <div className='flex items-start justify-between mb-4'>
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2 mb-3'>
+                      <div
+                        className='rounded-lg'
+                        style={{
+                          width: '3px',
+                          height: '16px',
+                          background: 'linear-gradient(180deg, #F59E0B 0%, #D97706 100%)',
+                        }}
+                      />
+                      <p
+                        className='text-status-warning font-semibold'
+                        style={{
+                          fontSize: '11px',
+                          lineHeight: '16px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                        }}
+                      >
+                        {t('dashboard.pendingInvoices')}
+                      </p>
+                    </div>
+                    <p
+                      className='text-neutral-900 mb-1'
+                      style={{
+                        fontSize: '32px',
+                        lineHeight: '40px',
+                        letterSpacing: '-0.03em',
+                        fontWeight: '800',
+                      }}
+                    >
+                      {stats.pendingInvoices}
+                    </p>
+                    <p
+                      className='text-neutral-500'
+                      style={{
+                        fontSize: '13px',
+                        lineHeight: '18px',
+                      }}
+                    >
+                      {t('dashboard.awaitingPayment')}
+                    </p>
+                  </div>
+                  <div
+                    className='flex items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110'
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                      boxShadow: '0 4px 12px rgba(245,158,11,0.25)',
+                    }}
+                  >
+                    <svg
+                      className='w-5 h-5 no-tint'
+                      fill='none'
+                      stroke='#FFFFFF'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Low Stock Items Card */}
+            <Card
+              className='group relative overflow-hidden cursor-pointer transition-all duration-300'
+              elevated={true}
+              onClick={() => router.push('/inventory')}
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+                border: '1px solid rgba(239,68,68,0.15)',
+                minHeight: '160px',
+                transform: 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(239,68,68,0.15)';
+                e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '';
+                e.currentTarget.style.borderColor = 'rgba(239,68,68,0.15)';
+              }}
+            >
+              <div
+                className='absolute top-0 right-0 opacity-20'
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  background: 'radial-gradient(circle, rgba(239,68,68,0.2) 0%, transparent 70%)',
+                  transform: 'translate(20%, -20%)',
+                }}
+              />
+              <div className='relative z-10 p-5'>
+                <div className='flex items-start justify-between mb-4'>
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2 mb-3'>
+                      <div
+                        className='rounded-lg'
+                        style={{
+                          width: '3px',
+                          height: '16px',
+                          background: 'linear-gradient(180deg, #EF4444 0%, #DC2626 100%)',
+                        }}
+                      />
+                      <p
+                        className='text-status-error font-semibold'
+                        style={{
+                          fontSize: '11px',
+                          lineHeight: '16px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                        }}
+                      >
+                        {t('dashboard.lowStockItems')}
+                      </p>
+                    </div>
+                    <p
+                      className='text-neutral-900 mb-1'
+                      style={{
+                        fontSize: '32px',
+                        lineHeight: '40px',
+                        letterSpacing: '-0.03em',
+                        fontWeight: '800',
+                      }}
+                    >
+                      {stats.lowStockItems}
+                    </p>
+                    <p
+                      className='text-neutral-500'
+                      style={{
+                        fontSize: '13px',
+                        lineHeight: '18px',
+                      }}
+                    >
+                      {t('dashboard.needsAttention')}
+                    </p>
+                  </div>
+                  <div
+                    className='flex items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110'
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                      boxShadow: '0 4px 12px rgba(239,68,68,0.25)',
+                    }}
+                  >
+                    <svg
+                      className='w-5 h-5 no-tint'
+                      fill='none'
+                      stroke='#FFFFFF'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Queue Status Card */}
+            <Card
+              className='group relative overflow-hidden cursor-pointer transition-all duration-300'
+              elevated={true}
+              onClick={() => router.push('/queue')}
+              style={{
+                background:
+                  'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+                border: '1px solid rgba(45,156,219,0.15)',
+                minHeight: '160px',
+                transform: 'translateY(0)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(45,156,219,0.15)';
+                e.currentTarget.style.borderColor = 'rgba(45,156,219,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '';
+                e.currentTarget.style.borderColor = 'rgba(45,156,219,0.15)';
+              }}
+            >
+              <div
+                className='absolute top-0 right-0 opacity-20'
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  background: 'radial-gradient(circle, rgba(45,156,219,0.2) 0%, transparent 70%)',
+                  transform: 'translate(20%, -20%)',
+                }}
+              />
+              <div className='relative z-10 p-5'>
+                <div className='flex items-start justify-between mb-4'>
+                  <div className='flex-1'>
+                    <div className='flex items-center gap-2 mb-3'>
+                      <div
+                        className='rounded-lg'
+                        style={{
+                          width: '3px',
+                          height: '16px',
+                          background: 'linear-gradient(180deg, #2D9CDB 0%, #0F89C7 100%)',
+                        }}
+                      />
+                      <p
+                        className='text-primary-600 font-semibold'
+                        style={{
+                          fontSize: '11px',
+                          lineHeight: '16px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                        }}
+                      >
+                        Queue Status
+                      </p>
+                    </div>
+                    <p
+                      className='text-neutral-900 mb-1'
+                      style={{
+                        fontSize: '32px',
+                        lineHeight: '40px',
+                        letterSpacing: '-0.03em',
+                        fontWeight: '800',
+                      }}
+                    >
+                      {queueStatus.active}
+                    </p>
+                    <p
+                      className='text-neutral-500'
+                      style={{
+                        fontSize: '13px',
+                        lineHeight: '18px',
+                      }}
+                    >
+                      {queueStatus.waiting} waiting, {queueStatus.inProgress} in progress
+                    </p>
+                  </div>
+                  <div
+                    className='flex items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110'
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      background: 'linear-gradient(135deg, #2D9CDB 0%, #0F89C7 100%)',
+                      boxShadow: '0 4px 12px rgba(45,156,219,0.25)',
+                    }}
+                  >
+                    <svg
+                      className='w-5 h-5 no-tint'
+                      fill='none'
+                      stroke='#FFFFFF'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4'
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Charts Section */}
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10'>
+        {/* Revenue Trend Chart */}
+        <Card
+          elevated={true}
+          className='overflow-hidden relative transition-all duration-300'
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+            border: '1px solid rgba(39,174,96,0.15)',
+            transform: 'translateY(0)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.boxShadow = '0 12px 24px rgba(39,174,96,0.12)';
+            e.currentTarget.style.borderColor = 'rgba(39,174,96,0.25)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '';
+            e.currentTarget.style.borderColor = 'rgba(39,174,96,0.15)';
+          }}
+        >
+          <div
+            className='absolute top-0 right-0 opacity-20'
+            style={{
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(39,174,96,0.15) 0%, transparent 70%)',
+              transform: 'translate(20%, -20%)',
+            }}
+          />
+          <div className='relative z-10 p-6'>
+            <div className='flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200'>
+              <div
+                className='rounded-lg'
+                style={{
+                  width: '4px',
+                  height: '24px',
+                  background: 'linear-gradient(180deg, #27AE60 0%, #229954 100%)',
+                }}
+              />
+              <div>
+                <h2
+                  className='text-neutral-900 font-bold mb-1'
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Revenue Trend
+                </h2>
+                <p
+                  className='text-neutral-500'
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                  }}
+                >
+                  Last 14 days performance
+                </p>
+              </div>
+            </div>
+            {loadingCharts ? (
+              <div className='flex items-center justify-center h-[220px]'>
+                <Loader size='md' inline />
+              </div>
+            ) : (
+              renderBarChart(chartData.revenue, 'secondary', 200)
+            )}
+          </div>
+        </Card>
+
+        {/* Appointment Trend Chart */}
+        <Card
+          elevated={true}
+          className='overflow-hidden relative transition-all duration-300'
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+            border: '1px solid rgba(45,156,219,0.15)',
+            transform: 'translateY(0)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.boxShadow = '0 12px 24px rgba(45,156,219,0.12)';
+            e.currentTarget.style.borderColor = 'rgba(45,156,219,0.25)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '';
+            e.currentTarget.style.borderColor = 'rgba(45,156,219,0.15)';
+          }}
+        >
+          <div
+            className='absolute top-0 right-0 opacity-20'
+            style={{
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(45,156,219,0.15) 0%, transparent 70%)',
+              transform: 'translate(20%, -20%)',
+            }}
+          />
+          <div className='relative z-10 p-6'>
+            <div className='flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200'>
+              <div
+                className='rounded-lg'
+                style={{
+                  width: '4px',
+                  height: '24px',
+                  background: 'linear-gradient(180deg, #2D9CDB 0%, #0F89C7 100%)',
+                }}
+              />
+              <div>
+                <h2
+                  className='text-neutral-900 font-bold mb-1'
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Appointment Trend
+                </h2>
+                <p
+                  className='text-neutral-500'
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                  }}
+                >
+                  Last 14 days performance
+                </p>
+              </div>
+            </div>
+            {loadingCharts ? (
+              <div className='flex items-center justify-center h-[220px]'>
+                <Loader size='md' inline />
+              </div>
+            ) : (
+              renderBarChart(chartData.appointments, 'primary', 200)
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Today's Appointments & Recent Activity Section */}
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10'>
+        {/* Today's Appointments List */}
+        <Card
+          elevated={true}
+          className='overflow-hidden relative'
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+            border: '1px solid rgba(45,156,219,0.15)',
+          }}
+        >
+          <div
+            className='absolute top-0 right-0 opacity-20'
+            style={{
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(45,156,219,0.15) 0%, transparent 70%)',
+              transform: 'translate(20%, -20%)',
+            }}
+          />
+          <div className='relative z-10 p-6'>
+            <div className='flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200'>
+              <div
+                className='rounded-lg'
+                style={{
+                  width: '4px',
+                  height: '24px',
+                  background: 'linear-gradient(180deg, #2D9CDB 0%, #0F89C7 100%)',
+                }}
+              />
+              <div>
+                <h2
+                  className='text-neutral-900 font-bold mb-1'
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Today's Appointments
+                </h2>
+                <p
+                  className='text-neutral-500'
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                  }}
+                >
+                  Upcoming appointments for today
+                </p>
+              </div>
+            </div>
+
+            {loadingLists ? (
+              <div className='flex items-center justify-center h-48'>
+                <Loader size='md' inline />
+              </div>
+            ) : todayAppointments && todayAppointments.length > 0 ? (
+              <div className='space-y-3'>
+                {todayAppointments.map((appointment, index) => (
+                  <div
+                    key={index}
+                    className='group flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md'
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(250,252,255,0.7))',
+                      borderColor: 'rgba(45,156,219,0.2)',
+                      boxShadow: '0 2px 4px rgba(45,156,219,0.08)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(45,156,219,0.4)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(45,156,219,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(45,156,219,0.2)';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(45,156,219,0.08)';
+                    }}
+                    onClick={() =>
+                      router.push(`/appointments/${appointment._id || appointment.id}`)
+                    }
+                  >
+                    <div className='flex items-center gap-4 flex-1'>
+                      <div
+                        className='flex items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110'
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          background:
+                            'linear-gradient(135deg, rgba(45,156,219,0.15), rgba(45,156,219,0.08))',
+                        }}
+                      >
+                        <svg
+                          className='w-6 h-6 no-tint'
+                          fill='none'
+                          stroke='#2D9CDB'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+                          />
+                        </svg>
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <p
+                          className='font-semibold text-neutral-900 truncate mb-1'
+                          style={{
+                            fontSize: '15px',
+                            lineHeight: '22px',
+                          }}
+                        >
+                          {appointment.patientName || 'Patient Name'}
+                        </p>
+                        <p
+                          className='text-neutral-500'
+                          style={{
+                            fontSize: '13px',
+                            lineHeight: '18px',
+                          }}
+                        >
+                          {appointment.reason || 'Consultation'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className='text-right' style={{ flexShrink: 0 }}>
+                      <p
+                        className='font-bold text-primary-600 mb-1'
+                        style={{
+                          fontSize: '15px',
+                          lineHeight: '22px',
+                        }}
+                      >
+                        {appointment.time ||
+                          new Date(appointment.appointmentDate).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                      </p>
+                      <p
+                        className='text-neutral-500 capitalize'
+                        style={{
+                          fontSize: '12px',
+                          lineHeight: '16px',
+                        }}
+                      >
+                        {appointment.status || 'Scheduled'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='flex flex-col items-center justify-center h-48 text-neutral-400'>
+                <svg
+                  className='w-16 h-16 mb-3 no-tint'
+                  fill='none'
+                  stroke='#D1D1D1'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+                  />
+                </svg>
+                <p className='text-sm'>No appointments scheduled for today</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Recent Patients List */}
+        <Card
+          elevated={true}
+          className='overflow-hidden relative'
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+            border: '1px solid rgba(39,174,96,0.15)',
+          }}
+        >
+          <div
+            className='absolute top-0 right-0 opacity-20'
+            style={{
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(39,174,96,0.15) 0%, transparent 70%)',
+              transform: 'translate(20%, -20%)',
+            }}
+          />
+          <div className='relative z-10 p-6'>
+            <div className='flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200'>
+              <div
+                className='rounded-lg'
+                style={{
+                  width: '4px',
+                  height: '24px',
+                  background: 'linear-gradient(180deg, #27AE60 0%, #229954 100%)',
+                }}
+              />
+              <div>
+                <h2
+                  className='text-neutral-900 font-bold mb-1'
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Recent Patients
+                </h2>
+                <p
+                  className='text-neutral-500'
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                  }}
+                >
+                  Newly registered patients
+                </p>
+              </div>
+            </div>
+
+            {loadingLists ? (
+              <div className='flex items-center justify-center h-48'>
+                <Loader size='md' inline />
+              </div>
+            ) : recentPatients && recentPatients.length > 0 ? (
+              <div className='space-y-3'>
+                {recentPatients.map((patient, index) => (
+                  <div
+                    key={index}
+                    className='group flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md'
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(250,252,255,0.7))',
+                      borderColor: 'rgba(39,174,96,0.2)',
+                      boxShadow: '0 2px 4px rgba(39,174,96,0.08)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(39,174,96,0.4)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(39,174,96,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(39,174,96,0.2)';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(39,174,96,0.08)';
+                    }}
+                    onClick={() => router.push(`/patients/${patient._id || patient.id}`)}
+                  >
+                    <div className='flex items-center gap-4 flex-1'>
+                      <div
+                        className='flex items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110'
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          background:
+                            'linear-gradient(135deg, rgba(39,174,96,0.15), rgba(39,174,96,0.08))',
+                        }}
+                      >
+                        <span
+                          className='font-bold text-secondary-600'
+                          style={{
+                            fontSize: '18px',
+                            lineHeight: '24px',
+                          }}
+                        >
+                          {patient.firstName?.charAt(0) || 'P'}
+                          {patient.lastName?.charAt(0) || 'N'}
+                        </span>
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <p
+                          className='font-semibold text-neutral-900 truncate mb-1'
+                          style={{
+                            fontSize: '15px',
+                            lineHeight: '22px',
+                          }}
+                        >
+                          {`${patient.firstName || ''} ${patient.lastName || ''}`.trim() ||
+                            'Patient Name'}
+                        </p>
+                        <p
+                          className='text-neutral-500'
+                          style={{
+                            fontSize: '13px',
+                            lineHeight: '18px',
+                          }}
+                        >
+                          {patient.email || patient.phone || 'No contact info'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className='text-right' style={{ flexShrink: 0 }}>
+                      <p
+                        className='text-neutral-500 mb-1'
+                        style={{
+                          fontSize: '12px',
+                          lineHeight: '16px',
+                        }}
+                      >
+                        Registered
+                      </p>
+                      <p
+                        className='font-medium text-neutral-700'
+                        style={{
+                          fontSize: '13px',
+                          lineHeight: '18px',
+                        }}
+                      >
+                        {new Date(patient.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='flex flex-col items-center justify-center h-48 text-neutral-400'>
+                <svg
+                  className='w-16 h-16 mb-3 no-tint'
+                  fill='none'
+                  stroke='#D1D1D1'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
+                  />
+                </svg>
+                <p className='text-sm'>No recent patients</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Prescription Refills & Overdue Invoices Section */}
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10'>
+        {/* Prescription Refills Due List */}
+        <Card
+          elevated={true}
+          className='overflow-hidden relative'
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+            border: '1px solid rgba(45,156,219,0.15)',
+          }}
+        >
+          <div
+            className='absolute top-0 right-0 opacity-20'
+            style={{
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(45,156,219,0.15) 0%, transparent 70%)',
+              transform: 'translate(20%, -20%)',
+            }}
+          />
+          <div className='relative z-10 p-6'>
+            <div className='flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200'>
+              <div
+                className='rounded-lg'
+                style={{
+                  width: '4px',
+                  height: '24px',
+                  background: 'linear-gradient(180deg, #2D9CDB 0%, #0F89C7 100%)',
+                }}
+              />
+              <div>
+                <h2
+                  className='text-neutral-900 font-bold mb-1'
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Prescription Refills
+                </h2>
+                <p
+                  className='text-neutral-500'
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                  }}
+                >
+                  Active prescriptions that may need refills
+                </p>
+              </div>
+            </div>
+
+            {loadingLists ? (
+              <div className='flex items-center justify-center h-48'>
+                <Loader size='md' inline />
+              </div>
+            ) : prescriptionRefills && prescriptionRefills.length > 0 ? (
+              <div className='space-y-3'>
+                {prescriptionRefills.map((prescription, index) => (
+                  <div
+                    key={index}
+                    className='group flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md'
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(250,252,255,0.7))',
+                      borderColor: 'rgba(45,156,219,0.2)',
+                      boxShadow: '0 2px 4px rgba(45,156,219,0.08)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(45,156,219,0.4)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(45,156,219,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(45,156,219,0.2)';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(45,156,219,0.08)';
+                    }}
+                    onClick={() =>
+                      router.push(`/prescriptions/${prescription._id || prescription.id}`)
+                    }
+                  >
+                    <div className='flex items-center gap-4 flex-1'>
+                      <div
+                        className='flex items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110'
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          background:
+                            'linear-gradient(135deg, rgba(45,156,219,0.15), rgba(45,156,219,0.08))',
+                        }}
+                      >
+                        <svg
+                          className='w-6 h-6 text-primary-600'
+                          fill='none'
+                          stroke='#2D9CDB'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z'
+                          />
+                        </svg>
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <p
+                          className='font-semibold text-neutral-900 truncate mb-1'
+                          style={{
+                            fontSize: '15px',
+                            lineHeight: '22px',
+                          }}
+                        >
+                          {prescription.patientName ||
+                            `Prescription #${prescription.prescriptionNumber || prescription.id}`}
+                        </p>
+                        <p
+                          className='text-neutral-500'
+                          style={{
+                            fontSize: '13px',
+                            lineHeight: '18px',
+                          }}
+                        >
+                          {prescription.status || 'Active'} •{' '}
+                          {prescription.medications?.length || 0} medication
+                          {prescription.medications?.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className='text-right' style={{ flexShrink: 0 }}>
+                      <svg
+                        className='w-5 h-5 text-primary-600 transition-transform duration-200 group-hover:translate-x-1'
+                        fill='none'
+                        stroke='#2D9CDB'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M9 5l7 7-7 7'
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='flex flex-col items-center justify-center h-48 text-neutral-400'>
+                <svg
+                  className='w-16 h-16 mb-3 no-tint'
+                  fill='none'
+                  stroke='#D1D1D1'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                  />
+                </svg>
+                <p className='text-sm'>No prescriptions requiring refills</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Overdue Invoices List */}
+        <Card
+          elevated={true}
+          className='overflow-hidden relative'
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+            border: '1px solid rgba(245,158,11,0.15)',
+          }}
+        >
+          <div
+            className='absolute top-0 right-0 opacity-20'
+            style={{
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%)',
+              transform: 'translate(20%, -20%)',
+            }}
+          />
+          <div className='relative z-10 p-6'>
+            <div className='flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200'>
+              <div
+                className='rounded-lg'
+                style={{
+                  width: '4px',
+                  height: '24px',
+                  background: 'linear-gradient(180deg, #F59E0B 0%, #D97706 100%)',
+                }}
+              />
+              <div>
+                <h2
+                  className='text-neutral-900 font-bold mb-1'
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Overdue Invoices
+                </h2>
+                <p
+                  className='text-neutral-500'
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                  }}
+                >
+                  Pending payments requiring attention
+                </p>
+              </div>
+            </div>
+
+            {loadingLists ? (
+              <div className='flex items-center justify-center h-48'>
+                <Loader size='md' inline />
+              </div>
+            ) : overdueInvoices && overdueInvoices.length > 0 ? (
+              <div className='space-y-3'>
+                {overdueInvoices.map((invoice, index) => (
+                  <div
+                    key={index}
+                    className='group flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md'
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(250,252,255,0.7))',
+                      borderColor: 'rgba(245,158,11,0.2)',
+                      boxShadow: '0 2px 4px rgba(245,158,11,0.08)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(245,158,11,0.4)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(245,158,11,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(245,158,11,0.2)';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(245,158,11,0.08)';
+                    }}
+                    onClick={() => router.push(`/invoices/${invoice._id || invoice.id}`)}
+                  >
+                    <div className='flex items-center gap-4 flex-1'>
+                      <div
+                        className='flex items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110'
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          background:
+                            'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.08))',
+                        }}
+                      >
+                        <svg
+                          className='w-6 h-6 no-tint'
+                          fill='none'
+                          stroke='#F59E0B'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                          />
+                        </svg>
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <p
+                          className='font-semibold text-neutral-900 truncate mb-1'
+                          style={{
+                            fontSize: '15px',
+                            lineHeight: '22px',
+                          }}
+                        >
+                          {invoice.patientName || `Invoice #${invoice.invoiceNumber || invoice.id}`}
+                        </p>
+                        <p
+                          className='text-neutral-500'
+                          style={{
+                            fontSize: '13px',
+                            lineHeight: '18px',
+                          }}
+                        >
+                          Due:{' '}
+                          {new Date(invoice.dueDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className='text-right' style={{ flexShrink: 0 }}>
+                      <p
+                        className='font-bold text-status-warning mb-1'
+                        style={{
+                          fontSize: '15px',
+                          lineHeight: '22px',
+                        }}
+                      >
+                        {formatCurrency(invoice.totalAmount || invoice.amount || 0)}
+                      </p>
+                      <p
+                        className='text-neutral-500'
+                        style={{
+                          fontSize: '12px',
+                          lineHeight: '16px',
+                        }}
+                      >
+                        {Math.floor(
+                          (new Date() - new Date(invoice.dueDate)) / (1000 * 60 * 60 * 24)
+                        )}{' '}
+                        days overdue
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='flex flex-col items-center justify-center h-48 text-neutral-400'>
+                <svg
+                  className='w-16 h-16 mb-3 no-tint'
+                  fill='none'
+                  stroke='#D1D1D1'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                  />
+                </svg>
+                <p className='text-sm'>No overdue invoices</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Low Stock Items List */}
+        <Card
+          elevated={true}
+          className='overflow-hidden relative'
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(250,252,255,0.95) 100%)',
+            border: '1px solid rgba(239,68,68,0.15)',
+          }}
+        >
+          <div
+            className='absolute top-0 right-0 opacity-20'
+            style={{
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)',
+              transform: 'translate(20%, -20%)',
+            }}
+          />
+          <div className='relative z-10 p-6'>
+            <div className='flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200'>
+              <div
+                className='rounded-lg'
+                style={{
+                  width: '4px',
+                  height: '24px',
+                  background: 'linear-gradient(180deg, #EF4444 0%, #DC2626 100%)',
+                }}
+              />
+              <div>
+                <h2
+                  className='text-neutral-900 font-bold mb-1'
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '28px',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  Low Stock Items
+                </h2>
+                <p
+                  className='text-neutral-500'
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                  }}
+                >
+                  Items requiring restock
+                </p>
+              </div>
+            </div>
+
+            {loadingLists ? (
+              <div className='flex items-center justify-center h-48'>
+                <Loader size='md' inline />
+              </div>
+            ) : lowStockList && lowStockList.length > 0 ? (
+              <div className='space-y-3'>
+                {lowStockList.map((item, index) => (
+                  <div
+                    key={index}
+                    className='group flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md'
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(250,252,255,0.7))',
+                      borderColor: 'rgba(239,68,68,0.2)',
+                      boxShadow: '0 2px 4px rgba(239,68,68,0.08)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(239,68,68,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(239,68,68,0.08)';
+                    }}
+                    onClick={() => router.push(`/inventory/items/${item._id || item.id}`)}
+                  >
+                    <div className='flex items-center gap-4 flex-1'>
+                      <div
+                        className='flex items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110'
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          background:
+                            'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.08))',
+                        }}
+                      >
+                        <svg
+                          className='w-6 h-6 no-tint'
+                          fill='none'
+                          stroke='#EF4444'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'
+                          />
+                        </svg>
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <p
+                          className='font-semibold text-neutral-900 truncate mb-1'
+                          style={{
+                            fontSize: '15px',
+                            lineHeight: '22px',
+                          }}
+                        >
+                          {item.name || item.itemName || 'Item Name'}
+                        </p>
+                        <p
+                          className='text-neutral-500'
+                          style={{
+                            fontSize: '13px',
+                            lineHeight: '18px',
+                          }}
+                        >
+                          SKU: {item.sku || item.code || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className='text-right' style={{ flexShrink: 0 }}>
+                      <p
+                        className='font-bold text-status-error mb-1'
+                        style={{
+                          fontSize: '15px',
+                          lineHeight: '22px',
+                        }}
+                      >
+                        {item.currentStock || item.quantity || 0} left
+                      </p>
+                      <p
+                        className='text-neutral-500'
+                        style={{
+                          fontSize: '12px',
+                          lineHeight: '16px',
+                        }}
+                      >
+                        Min: {item.minStock || item.minimumQuantity || 0}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='flex flex-col items-center justify-center h-48 text-neutral-400'>
+                <svg
+                  className='w-16 h-16 mb-3 no-tint'
+                  fill='none'
+                  stroke='#D1D1D1'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M5 13l4 4L19 7'
+                  />
+                </svg>
+                <p className='text-sm'>All items are well-stocked</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+    </Layout>
+  );
+}

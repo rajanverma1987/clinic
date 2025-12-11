@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
 import connectDB from '@/lib/db/connection';
+import { errorResponse, handleMongoError, successResponse } from '@/lib/utils/api-response';
+import { withAuth } from '@/middleware/auth';
 import Tenant from '@/models/Tenant';
-import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/api-response';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/settings
@@ -14,10 +14,7 @@ async function getHandler(req, user) {
     const tenant = await Tenant.findById(user.tenantId);
 
     if (!tenant) {
-      return NextResponse.json(
-        errorResponse('Tenant not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('Tenant not found', 'NOT_FOUND'), { status: 404 });
     }
 
     // Convert to plain object to ensure all nested fields (including clinicHours) are serialized
@@ -38,10 +35,9 @@ async function getHandler(req, user) {
       return NextResponse.json(handleMongoError(error), { status: 400 });
     }
 
-    return NextResponse.json(
-      errorResponse('Failed to fetch settings', 'INTERNAL_ERROR'),
-      { status: 500 }
-    );
+    return NextResponse.json(errorResponse('Failed to fetch settings', 'INTERNAL_ERROR'), {
+      status: 500,
+    });
   }
 }
 
@@ -56,10 +52,7 @@ async function putHandler(req, user) {
 
     const tenant = await Tenant.findById(user.tenantId);
     if (!tenant) {
-      return NextResponse.json(
-        errorResponse('Tenant not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('Tenant not found', 'NOT_FOUND'), { status: 404 });
     }
 
     // Update tenant fields
@@ -77,18 +70,24 @@ async function putHandler(req, user) {
       if (body.settings.prescriptionValidityDays !== undefined) {
         tenant.settings.prescriptionValidityDays = body.settings.prescriptionValidityDays;
       }
-      
+
       // Update nested objects only if they are provided (not undefined or null)
       if (body.settings.taxRules !== undefined && body.settings.taxRules !== null) {
         tenant.settings.taxRules = body.settings.taxRules;
         tenant.markModified('settings.taxRules');
       }
-      if (body.settings.complianceSettings !== undefined && body.settings.complianceSettings !== null) {
+      if (
+        body.settings.complianceSettings !== undefined &&
+        body.settings.complianceSettings !== null
+      ) {
         tenant.settings.complianceSettings = body.settings.complianceSettings;
         tenant.markModified('settings.complianceSettings');
       }
       if (body.settings.queueSettings !== undefined && body.settings.queueSettings !== null) {
-        tenant.settings.queueSettings = { ...tenant.settings.queueSettings, ...body.settings.queueSettings };
+        tenant.settings.queueSettings = {
+          ...tenant.settings.queueSettings,
+          ...body.settings.queueSettings,
+        };
         tenant.markModified('settings.queueSettings');
       }
       if (body.settings.clinicHours !== undefined && body.settings.clinicHours !== null) {
@@ -99,14 +98,19 @@ async function putHandler(req, user) {
         // Merge SMTP settings, only update password if provided
         const existingSmtp = tenant.settings.smtp || {};
         const newSmtp = { ...existingSmtp, ...body.settings.smtp };
-        
+
         // If password is not provided in the update, keep the existing one
         if (!body.settings.smtp.password || body.settings.smtp.password === '') {
           delete newSmtp.password;
         }
-        
+
         tenant.settings.smtp = newSmtp;
         tenant.markModified('settings.smtp');
+      }
+      if (body.settings.holidays !== undefined && body.settings.holidays !== null) {
+        // Update holidays array
+        tenant.settings.holidays = body.settings.holidays;
+        tenant.markModified('settings.holidays');
       }
     }
     if (body.isActive !== undefined) tenant.isActive = body.isActive;
@@ -141,4 +145,3 @@ async function putHandler(req, user) {
 
 export const GET = withAuth(getHandler);
 export const PUT = withAuth(putHandler);
-

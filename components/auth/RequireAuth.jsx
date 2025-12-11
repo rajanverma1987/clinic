@@ -1,6 +1,5 @@
 'use client';
 
-import { Layout } from '@/components/layout/Layout.jsx';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useRouter } from 'next/navigation';
@@ -21,19 +20,11 @@ export function RequireAuth({ children }) {
   }, [loading, user, router]);
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   if (!user) {
-    return (
-      <Layout>
-        <Loader size='md' text='Redirecting to login...' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' text='Redirecting to login...' />;
   }
 
   return <>{children}</>;

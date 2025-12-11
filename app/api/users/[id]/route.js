@@ -1,19 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
 import connectDB from '@/lib/db/connection';
-import User, { UserRole } from '@/models/User';
-import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/api-response';
+import { errorResponse, handleMongoError, successResponse } from '@/lib/utils/api-response';
+import { withAuth } from '@/middleware/auth';
+import User from '@/models/User';
+import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 
 /**
  * PUT /api/users/:id
  * Update a user
  */
-async function putHandler(
-  req,
-  user,
-  id
-) {
+async function putHandler(req, user, id) {
   try {
+    // Validate ID parameter
+    if (!id || id === 'undefined' || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(errorResponse('Invalid user ID', 'VALIDATION_ERROR'), {
+        status: 400,
+      });
+    }
+
     await connectDB();
     const body = await req.json();
 
@@ -23,10 +27,7 @@ async function putHandler(
     });
 
     if (!targetUser) {
-      return NextResponse.json(
-        errorResponse('User not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('User not found', 'NOT_FOUND'), { status: 404 });
     }
 
     // Update fields
@@ -68,12 +69,15 @@ async function putHandler(
  * DELETE /api/users/:id
  * Deactivate a user (soft delete)
  */
-async function deleteHandler(
-  req,
-  user,
-  id
-) {
+async function deleteHandler(req, user, id) {
   try {
+    // Validate ID parameter
+    if (!id || id === 'undefined' || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(errorResponse('Invalid user ID', 'VALIDATION_ERROR'), {
+        status: 400,
+      });
+    }
+
     await connectDB();
 
     const targetUser = await User.findOne({
@@ -82,10 +86,7 @@ async function deleteHandler(
     });
 
     if (!targetUser) {
-      return NextResponse.json(
-        errorResponse('User not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('User not found', 'NOT_FOUND'), { status: 404 });
     }
 
     // Soft delete - set isActive to false
@@ -113,23 +114,12 @@ async function deleteHandler(
   }
 }
 
-export async function PUT(
-  req,
-  context
-) {
+export async function PUT(req, context) {
   const params = await context.params;
-  return withAuth((req, user) => 
-    putHandler(req, user, params.id)
-  )(req);
+  return withAuth((req, user) => putHandler(req, user, params.id))(req);
 }
 
-export async function DELETE(
-  req,
-  context
-) {
+export async function DELETE(req, context) {
   const params = await context.params;
-  return withAuth((req, user) => 
-    deleteHandler(req, user, params.id)
-  )(req);
+  return withAuth((req, user) => deleteHandler(req, user, params.id))(req);
 }
-

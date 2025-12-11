@@ -48,24 +48,28 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
       const spaceOnTop = rect.top;
       const padding = 16;
 
-      // Calculate position
-      const alignRight =
-        spaceOnRight >= dropdownWidth + padding || spaceOnLeft < dropdownWidth + padding;
+      // Calculate position - align to the right edge of the button
+      // Ensure dropdown stays within viewport bounds
+      let leftPosition = rect.right - dropdownWidth;
+
+      // If it would go off the left edge, align to left edge instead
+      if (leftPosition < padding) {
+        leftPosition = rect.left;
+      }
+
+      // If it would go off the right edge, align to right edge of viewport
+      if (leftPosition + dropdownWidth > viewportWidth - padding) {
+        leftPosition = viewportWidth - dropdownWidth - padding;
+      }
+
       const alignBottom =
         spaceOnBottom >= dropdownHeight + padding || spaceOnTop < dropdownHeight + padding;
 
       setDropdownStyle({
         position: 'fixed',
         zIndex: 10050,
-        ...(alignRight
-          ? {
-              right: `${viewportWidth - rect.right}px`,
-              left: 'auto',
-            }
-          : {
-              left: `${rect.left}px`,
-              right: 'auto',
-            }),
+        left: `${leftPosition}px`,
+        right: 'auto',
         ...(alignBottom
           ? {
               top: `${rect.bottom + 12}px`,

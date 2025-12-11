@@ -1,8 +1,8 @@
 'use client';
 
 import { InvoicePrintPreview } from '@/components/invoices/InvoicePrintPreview';
-import { Layout } from '@/components/layout/Layout';
 import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
@@ -271,11 +271,7 @@ export default function InvoicesPage() {
   }
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   return (

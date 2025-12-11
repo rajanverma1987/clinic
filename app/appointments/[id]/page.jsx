@@ -64,11 +64,7 @@ export default function AppointmentDetailsPage({ params }) {
   );
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' text='Loading appointment details...' className='h-80' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' text='Loading appointment details...' />;
   }
 
   if (error || !appointment) {

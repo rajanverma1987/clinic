@@ -152,13 +152,16 @@ export function AuthProvider({ children }) {
         console.log('Auth check successful');
         // Map the response to match User interface
         const userData = response.data;
+        const userId = userData.id || userData.userId || '';
         setUser({
-          userId: userData.id || userData.userId || '',
+          userId: userId,
+          id: userId, // Add id for compatibility
           email: userData.email || '',
           firstName: userData.firstName || '',
           lastName: userData.lastName || '',
           role: userData.role || '',
           tenantId: userData.tenantId || '',
+          isActive: userData.isActive !== undefined ? userData.isActive : true,
         });
         // Initialize activity tracking after successful auth check
         if (typeof window !== 'undefined') {

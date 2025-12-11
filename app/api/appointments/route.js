@@ -1,16 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { createAppointmentSchema, appointmentQuerySchema } from '@/lib/validations/appointment';
-import {
-  createAppointment,
-  listAppointments,
-} from '@/services/appointment.service';
-import { createTelemedicineSession } from '@/services/telemedicine.service';
 import { sendVideoConsultationEmail } from '@/lib/email/email-service';
-import { successResponse, errorResponse, handleMongoError, validationErrorResponse } from '@/lib/utils/api-response';
-import { SessionType } from '@/models/TelemedicineSession';
+import {
+  errorResponse,
+  handleMongoError,
+  successResponse,
+  validationErrorResponse,
+} from '@/lib/utils/api-response';
+import { appointmentQuerySchema, createAppointmentSchema } from '@/lib/validations/appointment';
+import { withAuth } from '@/middleware/auth';
 import Patient from '@/models/Patient';
+import { SessionType } from '@/models/TelemedicineSession';
 import User from '@/models/User';
+import { createAppointment, listAppointments } from '@/services/appointment.service';
+import { createTelemedicineSession } from '@/services/telemedicine.service';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/appointments
@@ -44,10 +46,9 @@ async function getHandler(req, user) {
 
     const validationResult = appointmentQuerySchema.safeParse(queryParams);
     if (!validationResult.success) {
-      return NextResponse.json(
-        validationErrorResponse(validationResult.error.errors),
-        { status: 400 }
-      );
+      return NextResponse.json(validationErrorResponse(validationResult.error.errors), {
+        status: 400,
+      });
     }
 
     const result = await listAppointments(validationResult.data, user.tenantId, user.userId);
@@ -58,10 +59,9 @@ async function getHandler(req, user) {
       return NextResponse.json(handleMongoError(error), { status: 400 });
     }
 
-    return NextResponse.json(
-      errorResponse('Failed to fetch appointments', 'INTERNAL_ERROR'),
-      { status: 500 }
-    );
+    return NextResponse.json(errorResponse('Failed to fetch appointments', 'INTERNAL_ERROR'), {
+      status: 500,
+    });
   }
 }
 
@@ -84,33 +84,53 @@ async function postHandler(req, user) {
 
     const validationResult = createAppointmentSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        validationErrorResponse(validationResult.error.errors),
-        { status: 400 }
-      );
+      return NextResponse.json(validationErrorResponse(validationResult.error.errors), {
+        status: 400,
+      });
     }
 
     const appointment = await createAppointment(validationResult.data, user.tenantId, user.userId);
+
+    // For recurring appointments, fetch all created appointments
+    let allAppointments = [appointment];
+    if (body.isRecurring) {
+      try {
+        const appointmentsResponse = await apiClient.get(
+          `/appointments?patientId=${body.patientId}&doctorId=${body.doctorId}&startDate=${body.appointmentDate}&limit=100`
+        );
+        if (appointmentsResponse.success && appointmentsResponse.data) {
+          const appointmentsData =
+            appointmentsResponse.data?.data || appointmentsResponse.data || [];
+          // Get the most recent appointments (should include the recurring ones)
+          allAppointments = appointmentsData
+            .filter((apt) => {
+              const aptDate = new Date(apt.appointmentDate || apt.startTime);
+              const startDate = new Date(body.appointmentDate);
+              return aptDate >= startDate;
+            })
+            .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+            .slice(0, body.recurringOccurrences || 4);
+        }
+      } catch (err) {
+        console.error('Failed to fetch recurring appointments:', err);
+      }
+    }
 
     // If telemedicine appointment, create session and send email
     let telemedicineSession = null;
     if (body.isTelemedicine) {
       try {
         // Create telemedicine session
-        telemedicineSession = await createTelemedicineSession(
-          user.tenantId,
-          user.userId,
-          {
-            patientId: appointment.patientId.toString(),
-            doctorId: appointment.doctorId.toString(),
-            sessionType: SessionType.VIDEO,
-            scheduledStartTime: appointment.startTime,
-            scheduledEndTime: appointment.endTime,
-            appointmentId: appointment._id.toString(),
-            chatEnabled: true,
-            recordingConsent: body.telemedicineConsent || false,
-          }
-        );
+        telemedicineSession = await createTelemedicineSession(user.tenantId, user.userId, {
+          patientId: appointment.patientId.toString(),
+          doctorId: appointment.doctorId.toString(),
+          sessionType: SessionType.VIDEO,
+          scheduledStartTime: appointment.startTime,
+          scheduledEndTime: appointment.endTime,
+          appointmentId: appointment._id.toString(),
+          chatEnabled: true,
+          recordingConsent: body.telemedicineConsent || false,
+        });
 
         // Update appointment with telemedicine session ID
         appointment.telemedicineSessionId = telemedicineSession._id;
@@ -124,7 +144,10 @@ async function postHandler(req, user) {
           const patientName = `${patient.firstName} ${patient.lastName}`;
           const doctorName = `${doctor.firstName} ${doctor.lastName}`;
           // Get base URL without any path (remove /dashboard or other paths)
-          let baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+          let baseUrl =
+            process.env.NEXT_PUBLIC_APP_URL ||
+            process.env.NEXT_PUBLIC_BASE_URL ||
+            'http://localhost:3000';
           // Remove any path after the domain (e.g., /dashboard)
           try {
             const url = new URL(baseUrl);
@@ -200,6 +223,8 @@ async function postHandler(req, user) {
         isTelemedicine: appointment.isTelemedicine,
         telemedicineSessionId: telemedicineSession?._id?.toString(),
         createdAt: appointment.createdAt,
+        isRecurring: body.isRecurring || false,
+        recurringCount: body.isRecurring ? allAppointments.length : 1,
       }),
       { status: 201 }
     );
@@ -220,4 +245,3 @@ async function postHandler(req, user) {
 
 export const GET = withAuth(getHandler);
 export const POST = withAuth(postHandler);
-

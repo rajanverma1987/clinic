@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Toggle } from '@/components/ui/Toggle';
 import { useI18n } from '@/contexts/I18nContext';
 import { AvailabilityForm } from './AvailabilityForm';
 
@@ -16,55 +17,112 @@ export function ProfileTab({
 }) {
   const { t } = useI18n();
 
+  const getRoleLabel = (role) => {
+    const roles = {
+      super_admin: 'Super Admin',
+      clinic_admin: 'Clinic Admin',
+      doctor: 'Doctor',
+      nurse: 'Nurse',
+      receptionist: 'Receptionist',
+      accountant: 'Accountant',
+      pharmacist: 'Pharmacist',
+      staff: 'Staff',
+    };
+    return roles[role] || role;
+  };
+
   return (
-    <>
-      {/* Welcome Message */}
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <p
-          className='text-neutral-700'
-          style={{
-            fontSize: '18px',
-            lineHeight: '28px',
-            fontWeight: '400',
-          }}
-        >
-          Welcome,{' '}
-          <span className='font-semibold text-primary-500'>
-            {currentUser?.role === 'doctor'
-              ? `Dr. ${currentUser?.firstName} ${currentUser?.lastName}`
-              : `${currentUser?.firstName} ${currentUser?.lastName}`}
-          </span>
-          !
-        </p>
-      </div>
+    <div className='space-y-4'>
+      {/* Profile Header Card */}
+      <Card>
+        <div className='p-6'>
+          <div className='flex flex-col md:flex-row items-start md:items-center gap-6'>
+            {/* Avatar Section */}
+            <div className='flex-shrink-0'>
+              <div className='relative'>
+                <div className='w-20 h-20 bg-primary-500 rounded-full flex items-center justify-center shadow-md'>
+                  <svg
+                    className='w-10 h-10 text-white'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+                    />
+                  </svg>
+                </div>
+                <div
+                  className={`absolute bottom-0 right-0 w-5 h-5 rounded-full border-2 border-white ${
+                    currentUser?.isActive ? 'bg-green-500' : 'bg-red-500'
+                  }`}
+                />
+              </div>
+            </div>
 
-      {/* Premium Profile Card */}
-      <Card
-        elevated={true}
-        className='overflow-hidden relative'
-        style={{ marginBottom: 'var(--space-6)' }}
-      >
-        {/* Decorative Background Gradient */}
-        <div
-          className='absolute top-0 right-0 bg-gradient-to-br from-primary-100/30 to-secondary-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2'
-          style={{ width: 'var(--size-4xl)', height: 'var(--size-4xl)' }}
-        ></div>
+            {/* User Info Section */}
+            <div className='flex-1 min-w-0'>
+              <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
+                <div>
+                  <h2 className='text-2xl font-bold text-neutral-900 mb-2'>
+                    {currentUser?.role === 'doctor'
+                      ? `Dr. ${currentUser?.firstName} ${currentUser?.lastName}`
+                      : `${currentUser?.firstName} ${currentUser?.lastName}`}
+                  </h2>
+                  <div className='flex flex-wrap items-center gap-3 mb-2'>
+                    <span className='inline-flex items-center px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-semibold'>
+                      {getRoleLabel(currentUser?.role)}
+                    </span>
+                    <span className='text-sm text-neutral-600'>{currentUser?.email}</span>
+                  </div>
+                </div>
 
-        <div
-          className='relative z-10 flex flex-col sm:flex-row items-start sm:items-center'
-          style={{
-            gap: 'var(--gap-6)',
-            padding: 'var(--space-6)',
-          }}
-        >
-          {/* Avatar */}
-          <div className='relative flex-shrink-0'>
-            <div
-              className='bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-xl group-hover:shadow-2xl'
-              style={{ width: '80px', height: '80px' }}
-            >
+                {/* Status Toggle */}
+                <div className='flex items-center gap-3'>
+                  <div className='text-right'>
+                    <p className='text-xs text-neutral-500 mb-1'>Account Status</p>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${
+                        currentUser?.isActive
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {currentUser?.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <Toggle
+                    checked={currentUser?.isActive || false}
+                    onChange={onToggleStatus}
+                    disabled={saving}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className='flex gap-2 w-full md:w-auto'>
+              <Button variant='secondary' size='sm' className='flex-1 md:flex-none'>
+                Edit Profile
+              </Button>
+              <Button variant='danger' size='sm' className='flex-1 md:flex-none' onClick={logout}>
+                Logout
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Account Information */}
+      <Card>
+        <div className='p-5'>
+          <div className='flex items-center gap-2 mb-5'>
+            <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
               <svg
-                className='w-12 h-12 text-white'
+                className='w-4 h-4 text-primary-600'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -72,293 +130,112 @@ export function ProfileTab({
                 <path
                   strokeLinecap='round'
                   strokeLinejoin='round'
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
                 />
               </svg>
             </div>
-            {/* Status Indicator */}
-            <div
-              className={`absolute -bottom-1 -right-1 border-4 border-white rounded-full shadow-lg ${
-                currentUser?.isActive ? 'bg-secondary-500' : 'bg-status-error'
-              }`}
-              style={{ width: '20px', height: '20px' }}
-              title={currentUser?.isActive ? 'Active' : 'Inactive'}
-            ></div>
+            <h2 className='text-lg font-bold text-neutral-900'>Personal Information</h2>
           </div>
-
-          {/* User Info */}
-          <div className='flex-1 min-w-0'>
-            <div
-              className='flex items-center'
-              style={{
-                gap: 'var(--gap-3)',
-                marginBottom: 'var(--space-2)',
-              }}
-            >
-              <h3
-                className='text-neutral-900'
-                style={{
-                  fontSize: '24px',
-                  lineHeight: '32px',
-                  letterSpacing: '-0.01em',
-                  fontWeight: '700',
-                }}
-              >
-                {currentUser?.role === 'doctor'
-                  ? `Dr. ${currentUser?.firstName} ${currentUser?.lastName}`
-                  : `${currentUser?.firstName} ${currentUser?.lastName}`}
-              </h3>
-              {/* Status Indicator */}
-              <div
-                className={`${
-                  currentUser?.isActive ? 'bg-secondary-500' : 'bg-status-error'
-                } border-2 border-white rounded-full shadow-lg`}
-                style={{
-                  width: 'var(--space-3)',
-                  height: 'var(--space-3)',
-                }}
-                title={currentUser?.isActive ? 'Active' : 'Inactive'}
-              ></div>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                {t('auth.firstName')}
+              </label>
+              <Input value={currentUser?.firstName || ''} disabled />
             </div>
-            <div
-              className='flex items-center'
-              style={{
-                gap: 'var(--gap-2)',
-                marginBottom: 'var(--space-2)',
-              }}
-            >
-              <span
-                className='inline-flex items-center px-3 py-1.5 bg-primary-100 text-primary-700 rounded-lg font-semibold shadow-sm'
-                style={{ fontSize: '13px', lineHeight: '18px' }}
-              >
-                {currentUser?.role === 'super_admin'
-                  ? 'Super Admin'
-                  : currentUser?.role === 'clinic_admin'
-                  ? 'Clinic Admin'
-                  : currentUser?.role === 'doctor'
-                  ? 'Doctor'
-                  : currentUser?.role === 'staff'
-                  ? 'Staff'
-                  : currentUser?.role || 'User'}
-              </span>
-              <div className='flex items-center gap-2'>
-                <span
-                  className={`inline-flex items-center px-3 py-1.5 rounded-lg font-semibold shadow-sm ${
-                    currentUser?.isActive
-                      ? 'bg-secondary-100 text-secondary-700'
-                      : 'bg-status-error/20 text-status-error'
-                  }`}
-                  style={{ fontSize: '13px', lineHeight: '18px' }}
-                >
-                  {currentUser?.isActive ? 'Active' : 'Inactive'}
-                </span>
-                <label className='relative inline-flex items-center cursor-pointer'>
-                  <input
-                    type='checkbox'
-                    checked={currentUser?.isActive || false}
-                    onChange={onToggleStatus}
-                    disabled={saving}
-                    className='sr-only peer'
-                  />
-                  <div className="w-11 h-6 bg-neutral-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-secondary-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after: peer-checked:bg-secondary-500"></div>
-                </label>
-              </div>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                {t('auth.lastName')}
+              </label>
+              <Input value={currentUser?.lastName || ''} disabled />
             </div>
-            <div className='flex items-center gap-2 text-neutral-600'>
-              <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
-                />
-              </svg>
-              <p className='truncate' style={{ fontSize: '14px', lineHeight: '20px' }}>
-                {currentUser?.email}
-              </p>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                {t('auth.email')}
+              </label>
+              <Input value={currentUser?.email || ''} disabled />
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div
-            className='flex flex-row sm:flex-col w-full sm:w-auto'
-            style={{ gap: 'var(--gap-3)' }}
-          >
-            <Button
-              variant='secondary'
-              size='md'
-              className='flex-1 sm:flex-none whitespace-nowrap'
-              onClick={() => {
-                // Handle edit profile - could scroll to form or open modal
-                const formSection = document.getElementById('account-information');
-                if (formSection) {
-                  formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }}
-            >
-              <svg className='w-4 h-4 mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
-                />
-              </svg>
-              Edit Profile
-            </Button>
-            <Button
-              variant='danger'
-              size='sm'
-              className='flex-1 sm:flex-none whitespace-nowrap'
-              onClick={() => {
-                if (logout) {
-                  logout();
-                }
-              }}
-            >
-              <svg className='w-4 h-4 mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1'
-                />
-              </svg>
-              Logout
-            </Button>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>Role</label>
+              <Input value={getRoleLabel(currentUser?.role) || ''} disabled />
+            </div>
           </div>
         </div>
       </Card>
 
-      <Card elevated={true} id='account-information'>
-        <div style={{ marginBottom: 'var(--space-8)' }}>
-          <h2
-            className='text-neutral-900'
-            style={{
-              fontSize: '28px',
-              lineHeight: '36px',
-              letterSpacing: '-0.02em',
-              fontWeight: '700',
-              marginBottom: 'var(--space-2)',
-            }}
-          >
-            Account Information
-          </h2>
-          <p
-            className='text-neutral-600'
-            style={{
-              fontSize: '16px',
-              lineHeight: '24px',
-              fontWeight: '400',
-            }}
-          >
-            Manage your personal information and account settings
-          </p>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap-8)' }}>
-          <div>
-            <h3
-              className='text-neutral-900'
-              style={{
-                fontSize: '18px',
-                lineHeight: '24px',
-                fontWeight: '600',
-                marginBottom: 'var(--space-4)',
-              }}
-            >
-              Personal Information
-            </h3>
-            <div className='grid grid-cols-1 md:grid-cols-2' style={{ gap: 'var(--gap-6)' }}>
-              <div>
-                <label
-                  className='block text-neutral-700 font-semibold mb-2'
-                  style={{ fontSize: '14px', lineHeight: '20px' }}
-                >
-                  {t('auth.firstName')}
-                </label>
-                <Input value={currentUser?.firstName || ''} disabled />
-              </div>
-
-              <div>
-                <label
-                  className='block text-neutral-700 font-semibold mb-2'
-                  style={{ fontSize: '14px', lineHeight: '20px' }}
-                >
-                  {t('auth.lastName')}
-                </label>
-                <Input value={currentUser?.lastName || ''} disabled />
-              </div>
-
-              <div>
-                <label
-                  className='block text-neutral-700 font-semibold mb-2'
-                  style={{ fontSize: '14px', lineHeight: '20px' }}
-                >
-                  {t('auth.email')}
-                </label>
-                <Input value={currentUser?.email || ''} disabled />
-              </div>
-
-              <div>
-                <label
-                  className='block text-neutral-700 font-semibold mb-2'
-                  style={{ fontSize: '14px', lineHeight: '20px' }}
-                >
-                  Role
-                </label>
-                <Input value={currentUser?.role || ''} disabled />
-              </div>
+      {/* Change Password */}
+      <Card>
+        <div className='p-5'>
+          <div className='flex items-center gap-2 mb-5'>
+            <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
+              <svg
+                className='w-4 h-4 text-primary-600'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+                />
+              </svg>
             </div>
+            <h2 className='text-lg font-bold text-neutral-900'>Security</h2>
           </div>
-
-          <div
-            className='border-t border-neutral-200'
-            style={{
-              paddingTop: 'var(--space-8)',
-            }}
-          >
-            <h3
-              className='text-neutral-900'
-              style={{
-                fontSize: '18px',
-                lineHeight: '24px',
-                fontWeight: '600',
-                marginBottom: 'var(--space-4)',
-              }}
-            >
-              Change Password
-            </h3>
-            <div
-              className='max-w-md'
-              style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap-4)' }}
-            >
-              <Input
-                label='Current Password'
-                type='password'
-                placeholder='Enter current password'
-              />
-              <Input label='New Password' type='password' placeholder='Enter new password' />
-              <Input
-                label='Confirm New Password'
-                type='password'
-                placeholder='Confirm new password'
-              />
-              <Button size='md' className='whitespace-nowrap'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                Current Password
+              </label>
+              <Input type='password' placeholder='Enter current password' />
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                New Password
+              </label>
+              <Input type='password' placeholder='Enter new password' />
+            </div>
+            <div className='flex items-end'>
+              <Button size='sm' className='w-full'>
                 Update Password
               </Button>
             </div>
           </div>
+        </div>
+      </Card>
 
-          {/* Doctor Availability Settings - Only for Doctors */}
-          {currentUser?.role === 'doctor' && (
+      {/* Doctor Availability Settings */}
+      {currentUser?.role === 'doctor' && (
+        <Card>
+          <div className='p-5'>
+            <div className='flex items-center gap-2 mb-5'>
+              <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
+                <svg
+                  className='w-4 h-4 text-primary-600'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
+                  />
+                </svg>
+              </div>
+              <h2 className='text-lg font-bold text-neutral-900'>Availability Settings</h2>
+            </div>
             <AvailabilityForm
               availabilityForm={availabilityForm}
               setAvailabilityForm={setAvailabilityForm}
             />
-          )}
-        </div>
-      </Card>
-    </>
+          </div>
+        </Card>
+      )}
+    </div>
   );
 }

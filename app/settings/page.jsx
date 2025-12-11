@@ -5,6 +5,7 @@ import { ClinicHoursTab } from '@/components/settings/ClinicHoursTab';
 import { ComplianceTab } from '@/components/settings/ComplianceTab';
 import { DoctorsTab } from '@/components/settings/DoctorsTab';
 import { GeneralSettingsTab } from '@/components/settings/GeneralSettingsTab';
+import { HolidayManagementTab } from '@/components/settings/HolidayManagementTab';
 import { ProfileTab } from '@/components/settings/ProfileTab';
 import { QueueSettingsTab } from '@/components/settings/QueueSettingsTab';
 import { SettingsTabs } from '@/components/settings/SettingsTabs';
@@ -14,6 +15,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -30,8 +32,6 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(null);
   const [users, setUsers] = useState([]);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   // Form states
   const [clinicForm, setClinicForm] = useState({
@@ -262,7 +262,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
-      setError('Failed to load settings');
+      showError('Failed to load settings');
     } finally {
       setLoading(false);
     }
@@ -283,8 +283,6 @@ export default function SettingsPage() {
 
   const handleSaveGeneral = async () => {
     setSaving(true);
-    setError('');
-    setSuccess('');
     try {
       const response = await apiClient.put('/settings', {
         name: clinicForm.name,
@@ -297,13 +295,13 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        setSuccess('Clinic settings saved successfully');
+        showSuccess('Clinic settings saved successfully');
         fetchSettings();
       } else {
-        setError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || 'Failed to save settings');
       }
     } catch (error) {
-      setError(error.message || 'Failed to save settings');
+      showError(error.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -311,8 +309,6 @@ export default function SettingsPage() {
 
   const handleSaveCompliance = async () => {
     setSaving(true);
-    setError('');
-    setSuccess('');
     try {
       const response = await apiClient.put('/settings', {
         settings: {
@@ -326,13 +322,13 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        setSuccess('Compliance settings saved successfully');
+        showSuccess('Compliance settings saved successfully');
         fetchSettings();
       } else {
-        setError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || 'Failed to save settings');
       }
     } catch (error) {
-      setError(error.message || 'Failed to save settings');
+      showError(error.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -340,8 +336,6 @@ export default function SettingsPage() {
 
   const handleSaveQueue = async () => {
     setSaving(true);
-    setError('');
-    setSuccess('');
     try {
       const response = await apiClient.put('/settings', {
         settings: {
@@ -349,13 +343,13 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        setSuccess('Queue settings saved successfully');
+        showSuccess('Queue settings saved successfully');
         fetchSettings();
       } else {
-        setError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || 'Failed to save settings');
       }
     } catch (error) {
-      setError(error.message || 'Failed to save settings');
+      showError(error.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -363,8 +357,6 @@ export default function SettingsPage() {
 
   const handleSaveTax = async () => {
     setSaving(true);
-    setError('');
-    setSuccess('');
     try {
       const response = await apiClient.put('/settings', {
         settings: {
@@ -372,13 +364,13 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        setSuccess('Tax settings saved successfully');
+        showSuccess('Tax settings saved successfully');
         fetchSettings();
       } else {
-        setError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || 'Failed to save settings');
       }
     } catch (error) {
-      setError(error.message || 'Failed to save settings');
+      showError(error.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -386,8 +378,6 @@ export default function SettingsPage() {
 
   const handleSaveSmtp = async () => {
     setSaving(true);
-    setError('');
-    setSuccess('');
     try {
       // Only send password if it was changed (not empty)
       const smtpData = { ...smtpForm };
@@ -402,15 +392,15 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        setSuccess('SMTP settings saved successfully');
+        showSuccess('SMTP settings saved successfully');
         // Clear password field after save
         setSmtpForm({ ...smtpForm, password: '' });
         fetchSettings();
       } else {
-        setError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || 'Failed to save settings');
       }
     } catch (error) {
-      setError(error.message || 'Failed to save settings');
+      showError(error.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -418,8 +408,6 @@ export default function SettingsPage() {
 
   const handleSaveHours = async () => {
     setSaving(true);
-    setError('');
-    setSuccess('');
     try {
       // Validate clinicHours data before sending
       const validHours = clinicHours.map((hour) => ({
@@ -442,24 +430,25 @@ export default function SettingsPage() {
       ); // skipRedirect = true to prevent automatic logout
 
       if (response.success) {
-        setSuccess('Clinic hours saved successfully');
+        showSuccess('Clinic hours saved successfully');
         // Don't refetch immediately to avoid race conditions
         setTimeout(() => {
           fetchSettings();
         }, 500);
       } else {
         const errorMessage = response.error?.message || 'Failed to save settings';
-        setError(errorMessage);
         console.error('Failed to save clinic hours:', response.error);
 
         // If it's an auth error, show a more helpful message
         if (response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN') {
-          setError('Your session may have expired. Please try refreshing the page.');
+          showError('Your session may have expired. Please try refreshing the page.');
+        } else {
+          showError(errorMessage);
         }
       }
     } catch (error) {
       console.error('Error saving clinic hours:', error);
-      setError(error.message || 'Failed to save settings. Please try again.');
+      showError(error.message || 'Failed to save settings. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -512,13 +501,11 @@ export default function SettingsPage() {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
     try {
       console.log('Creating user with data:', { ...newUserForm, password: '***' });
       const response = await apiClient.post('/users', newUserForm);
       if (response.success) {
-        setSuccess('User created successfully');
+        showSuccess('User created successfully');
         setNewUserForm({
           firstName: '',
           lastName: '',
@@ -534,12 +521,15 @@ export default function SettingsPage() {
         const errorDetails = response.error?.details
           ? JSON.stringify(response.error.details, null, 2)
           : '';
-        setError(errorDetails ? `${errorMessage}\n\nDetails:\n${errorDetails}` : errorMessage);
+        const fullMessage = errorDetails
+          ? `${errorMessage}\n\nDetails:\n${errorDetails}`
+          : errorMessage;
+        showError(fullMessage);
         console.error('Failed to create user:', response.error);
       }
     } catch (error) {
       console.error('Error creating user:', error);
-      setError(error.message || 'Failed to create user');
+      showError(error.message || 'Failed to create user');
     }
   };
 
@@ -548,31 +538,55 @@ export default function SettingsPage() {
       const response = await apiClient.put(`/users/${userId}`, { isActive: !isActive });
       if (response.success) {
         fetchUsers();
-        setSuccess(`User ${!isActive ? 'activated' : 'deactivated'} successfully`);
+        showSuccess(`User ${!isActive ? 'activated' : 'deactivated'} successfully`);
+      } else {
+        const errorMessage =
+          typeof response.error === 'string'
+            ? response.error
+            : response.error?.message || 'Failed to update user';
+        showError(errorMessage);
       }
     } catch (error) {
-      setError(error.message || 'Failed to update user');
+      const errorMessage =
+        error?.message || (typeof error === 'string' ? error : 'Failed to update user');
+      showError(errorMessage);
     }
   };
 
-  const handleToggleMyStatus = async () => {
+  const handleToggleMyStatus = async (e) => {
     if (!currentUser) return;
+    e?.preventDefault?.();
     try {
       setSaving(true);
-      setError('');
-      const response = await apiClient.put(`/users/${currentUser.id}`, {
-        isActive: !currentUser.isActive,
+      const newStatus = !currentUser.isActive;
+      const userId = currentUser.userId || currentUser.id;
+      if (!userId) {
+        showError('User ID not found. Please refresh the page.');
+        setSaving(false);
+        return;
+      }
+      const response = await apiClient.put(`/users/${userId}`, {
+        isActive: newStatus,
       });
       if (response.success) {
+        showSuccess(`Status updated to ${newStatus ? 'Active' : 'Inactive'}`);
         // Refresh user data
-        window.location.reload(); // Simple refresh to update user context
-        setSuccess(`Status updated to ${!currentUser.isActive ? 'Active' : 'Inactive'}`);
+        setTimeout(() => {
+          window.location.reload(); // Simple refresh to update user context
+        }, 500);
       } else {
-        setError(response.error || 'Failed to update status');
+        const errorMessage =
+          typeof response.error === 'string'
+            ? response.error
+            : response.error?.message || 'Failed to update status';
+        showError(errorMessage);
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      setError('Failed to update status. Please try again.');
+      const errorMessage =
+        error?.message ||
+        (typeof error === 'string' ? error : 'Failed to update status. Please try again.');
+      showError(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -591,11 +605,7 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader size='md' className='h-64' />
-      </Layout>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   // Filter tabs based on user role
@@ -603,47 +613,17 @@ export default function SettingsPage() {
 
   return (
     <Layout>
-      {/* Premium Header */}
-      <div className='mb-10 relative'>
-        <div>
-          <h1
-            className='text-neutral-900 mb-3'
-            style={{
-              fontSize: '40px',
-              lineHeight: '48px',
-              letterSpacing: '-0.02em',
-              fontWeight: '700',
-            }}
-          >
-            {t('settings.title')}
-          </h1>
-          <p
-            className='text-neutral-700'
-            style={{
-              fontSize: '18px',
-              lineHeight: '28px',
-              letterSpacing: '-0.01em',
-              fontWeight: '400',
-            }}
-          >
-            {t('settings.description')}
-          </p>
-        </div>
+      {/* Header */}
+      <div className='mb-6'>
+        <h1 className='text-2xl font-bold text-neutral-900 mb-1'>
+          {t('settings.title') || 'Settings'}
+        </h1>
+        <p className='text-sm text-neutral-600'>
+          {t('settings.description') || 'Manage your clinic settings and preferences'}
+        </p>
       </div>
 
-      {(error || success) && (
-        <div
-          className={`mb-6 p-4 rounded-lg border ${
-            error
-              ? 'bg-status-error/10 border-status-error/30 text-status-error'
-              : 'bg-secondary-100 border-secondary-300 text-secondary-700'
-          }`}
-        >
-          {error || success}
-        </div>
-      )}
-
-      {/* Premium Tabs */}
+      {/* Tabs Navigation */}
       <SettingsTabs
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -742,6 +722,11 @@ export default function SettingsPage() {
           saving={saving}
           onSave={handleSaveSmtp}
         />
+      )}
+
+      {/* Holiday Management */}
+      {activeTab === 'holidays' && (
+        <HolidayManagementTab settings={settings} onUpdate={fetchSettings} />
       )}
     </Layout>
   );
