@@ -1,6 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Design Tokens - CSS Custom Properties */
+@layer base {
+  :root {
+    /* Primary Colors */
+    --color-primary-900: #0b67a0;
+    --color-primary-700: #0f89c7;
+    --color-primary-500: #2d9cdb;
+    --color-primary-300: #56ccf2;
+    --color-primary-100: #e6f7fe;
+
+    /* Secondary Colors */
+    --color-secondary-700: #1e874f;
+    --color-secondary-500: #27ae60;
+    --color-secondary-300: #6fcf97;
+    --color-secondary-100: #e8f8ef;
+
+    /* Neutral Colors */
+    --color-neutral-900: #1a1a1a;
+    --color-neutral-800: #2d2d2d;
+    --color-neutral-700: #4f4f4f;
+    --color-neutral-500: #828282;
+    --color-neutral-300: #d1d1d1;
+    --color-neutral-200: #e6e9ee;
+    --color-neutral-100: #f7fafc;
+    --color-neutral-50: #ffffff;
+
+    /* Status Colors */
+    --color-status-success: #27ae60;
+    --color-status-warning: #f2c94c;
+    --color-status-error: #eb5757;
+    --color-status-info: #2d9cdb;
+
+    /* Typography */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI',
+      'Helvetica Neue', Arial, sans-serif;
+
+    /* Spacing Scale */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+
+    /* Gap Scale (for flex/grid gaps) */
+    --gap-1: 4px;
+    --gap-2: 8px;
+    --gap-3: 12px;
+    --gap-4: 16px;
+    --gap-5: 20px;
+    --gap-6: 24px;
+    --gap-8: 32px;
+    --gap-10: 40px;
+    --gap-12: 48px;
+
+    /* Component Sizes */
+    --size-xs: 16px;
+    --size-sm: 20px;
+    --size-md: 24px;
+    --size-lg: 32px;
+    --size-xl: 40px;
+    --size-2xl: 48px;
+    --size-3xl: 64px;
+    --size-4xl: 80px;
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+    --radius-2xl: 16px;
+    --radius-full: 9999px;
+
+    /* Typography Sizes with Line Heights */
+    --text-body-xs: 12px;
+    --text-body-xs-line-height: 16px;
+    --text-body-sm: 14px;
+    --text-body-sm-line-height: 20px;
+    --text-body-md: 16px;
+    --text-body-md-line-height: 24px;
+    --text-body-lg: 18px;
+    --text-body-lg-line-height: 28px;
+  }
+
+  /* Apply Inter font globally with premium settings */
+  body {
+    font-family: var(--font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background-color: var(--color-neutral-50);
+    color: var(--color-neutral-900);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .dark body {
+    background-color: var(--color-neutral-900);
+    color: var(--color-primary-500);
+  }
+
+  /* Premium typography base */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  p {
+    letter-spacing: -0.01em;
+  }
+}
 
 @layer utilities {
   /* Animation keyframes */
@@ -64,19 +186,28 @@
   }
 
   @keyframes shake {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateX(0);
     }
-    10%, 30%, 50%, 70%, 90% {
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
       transform: translateX(-5px);
     }
-    20%, 40%, 60%, 80% {
+    20%,
+    40%,
+    60%,
+    80% {
       transform: translateX(5px);
     }
   }
 
   @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(0px);
     }
     50% {
@@ -85,11 +216,21 @@
   }
 
   @keyframes pulse-slow {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
       opacity: 0.5;
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 
@@ -109,6 +250,27 @@
 
   .animate-slide-up {
     animation: slide-up 0.6s ease-out;
+  }
+
+  /* Modal-specific faster animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   .animate-slide-in-left {
@@ -135,6 +297,10 @@
     animation: pulse-slow 3s ease-in-out infinite;
   }
 
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
   .animate-spin-slow {
     animation: spin-slow 8s linear infinite;
   }
@@ -153,6 +319,36 @@
 
   .animation-delay-1500 {
     animation-delay: 1.5s;
+  }
+
+  /* Smooth scrolling for all routes */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Prevent layout shift */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Ensure smooth rendering */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Essential loader animation - functional requirement */
+  @keyframes loader-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loader-spinner {
+    animation: loader-spin 0.8s linear infinite;
   }
 
   .animation-delay-3000 {
@@ -196,8 +392,72 @@
     }
   }
 
+  @keyframes shine {
+    0% {
+      transform: translateX(-100%) skewX(-15deg);
+    }
+    100% {
+      transform: translateX(200%) skewX(-15deg);
+    }
+  }
+
+  .animate-shine {
+    animation: shine 0.6s ease-in-out 1;
+  }
+
+  .animate-shine-once {
+    animation: shine 0.6s ease-in-out 1;
+  }
+
+  @keyframes border-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(45, 156, 219, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(45, 156, 219, 0.1);
+    }
+  }
+
+  @keyframes fill-slide {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(235, 87, 87, 0.7);
+    }
+    50% {
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 8px rgba(235, 87, 87, 0);
+    }
+  }
+
+  @keyframes slide-in-bg {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
+  .animate-border-glow {
+    animation: border-glow 2s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
   @keyframes gradient-shift {
-    0%, 100% {
+    0%,
+    100% {
       background-position: 0% 50%;
     }
     50% {
@@ -222,6 +482,10 @@
       transparent 100%
     );
     background-size: 1000px 100%;
+  }
+
+  .animate-shine-slow {
+    animation: shine-slow 3s ease-in-out infinite;
   }
 
   .animate-gradient {
@@ -264,7 +528,7 @@
 }
 
 /* Prevent sidebar expansion animations when collapsed */
-[data-collapsed="true"] {
+[data-collapsed='true'] {
   transition: none !important;
   width: 4rem !important;
   min-width: 4rem !important;
@@ -273,12 +537,12 @@
   will-change: auto !important;
 }
 
-[data-collapsed="true"] * {
+[data-collapsed='true'] * {
   transition: none !important;
 }
 
 /* Ensure sidebar cannot expand when collapsed */
-[data-collapsed="true"] {
+[data-collapsed='true'] {
   pointer-events: auto;
 }
 
@@ -292,3 +556,131 @@
   display: none;
 }
 
+/* Typography Utility Classes - Clinic Theme */
+@layer utilities {
+  /* Headings */
+  .text-h1 {
+    font-size: 32px;
+    line-height: 40px;
+    font-weight: 700;
+    font-family: var(--font-family);
+  }
+
+  .text-h2 {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 600;
+    font-family: var(--font-family);
+  }
+
+  .text-h3 {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 600;
+    font-family: var(--font-family);
+  }
+
+  .text-h4 {
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 600;
+    font-family: var(--font-family);
+  }
+
+  /* Body Text */
+  .text-body-lg {
+    font-size: 18px;
+    line-height: 28px;
+    font-weight: 400;
+    font-family: var(--font-family);
+  }
+
+  .text-body-md {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+    font-family: var(--font-family);
+  }
+
+  .text-body-sm {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    font-family: var(--font-family);
+  }
+
+  .text-body-xs {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    font-family: var(--font-family);
+  }
+
+  /* Button Label */
+  .text-button {
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 600;
+    font-family: var(--font-family);
+  }
+
+  /* Icon hover tint effects */
+  .icon-tint-hover {
+    transition: filter 0.3s ease, transform 0.3s ease;
+  }
+
+  /* When parent is hovered, tint the icon */
+  .group:hover .icon-tint-hover,
+  .group-hover .icon-tint-hover,
+  *:hover > .icon-tint-hover {
+    filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(186deg)
+      brightness(98%) contrast(96%);
+    transform: scale(1.05);
+  }
+
+  /* Primary color tint */
+  .icon-tint-primary {
+    transition: filter 0.3s ease, transform 0.3s ease;
+  }
+
+  .group:hover .icon-tint-primary,
+  .group-hover .icon-tint-primary,
+  *:hover > .icon-tint-primary {
+    filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(186deg)
+      brightness(98%) contrast(96%);
+    transform: scale(1.05);
+  }
+
+  /* Secondary color tint */
+  .icon-tint-secondary {
+    transition: filter 0.3s ease, transform 0.3s ease;
+  }
+
+  .group:hover .icon-tint-secondary,
+  .group-hover .icon-tint-secondary,
+  *:hover > .icon-tint-secondary {
+    filter: brightness(0) saturate(100%) invert(54%) sepia(95%) saturate(1234%) hue-rotate(120deg)
+      brightness(95%) contrast(87%);
+    transform: scale(1.05);
+  }
+
+  /* Generic icon hover - applies primary tint by default */
+  svg {
+    transition: filter 0.3s ease, transform 0.3s ease;
+  }
+
+  /* Apply tint to SVG icons in hoverable containers */
+  .group:hover svg:not(.no-tint),
+  .group-hover svg:not(.no-tint),
+  button:hover svg:not(.no-tint),
+  a:hover svg:not(.no-tint),
+  .hover\:tint:hover svg:not(.no-tint) {
+    filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(186deg)
+      brightness(98%) contrast(96%);
+  }
+
+  /* Keep original color for specific cases */
+  svg.no-tint {
+    filter: none !important;
+  }
+}
