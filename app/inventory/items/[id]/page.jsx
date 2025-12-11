@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useI18n } from '@/contexts/I18nContext';
-import { apiClient } from '@/lib/api/client';
 import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { Input } from '@/components/ui/Input';
+import { Loader } from '@/components/ui/Loader';
 import { Select } from '@/components/ui/Select';
 import { Tag } from '@/components/ui/Tag';
-import { DatePicker } from '@/components/ui/DatePicker';
 import { Textarea } from '@/components/ui/Textarea';
+import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
+import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function InventoryItemDetailPage() {
   const router = useRouter();
@@ -120,12 +121,22 @@ export default function InventoryItemDetailPage() {
     return 'success';
   };
 
-  if (authLoading || loading) {
+  // Redirect if not authenticated (non-blocking)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
+  // Show empty state while redirecting
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">{t('common.loading')}</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
@@ -133,17 +144,15 @@ export default function InventoryItemDetailPage() {
   if (error && !item) {
     return (
       <Layout>
-        <div className="mb-8">
-          <Button variant="outline" onClick={() => router.back()}>
+        <div className='mb-8'>
+          <Button variant='secondary' onClick={() => router.back()}>
             ← {t('common.back')}
           </Button>
         </div>
         <Card>
-          <div className="text-center py-8">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={() => router.push('/inventory')}>
-              Back to Inventory
-            </Button>
+          <div className='text-center py-8'>
+            <p className='text-status-error mb-4'>{error}</p>
+            <Button onClick={() => router.push('/inventory')}>Back to Inventory</Button>
           </div>
         </Card>
       </Layout>
@@ -156,40 +165,42 @@ export default function InventoryItemDetailPage() {
 
   return (
     <Layout>
-      <div className="mb-8">
-        <Button variant="outline" onClick={() => router.back()}>
+      <div className='mb-8'>
+        <Button variant='secondary' onClick={() => router.back()}>
           ← {t('common.back')}
         </Button>
       </div>
 
-      <div className="mb-8 flex items-center justify-between">
+      <div className='mb-8 flex items-center justify-between'>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{item.name}</h1>
-          <p className="text-gray-600 mt-2">
-            {item.code && <span className="mr-4">Code: {item.code}</span>}
-            <Tag variant={getStockStatus()} size="sm" className="ml-2">
+          <h1 className='text-3xl font-bold text-neutral-900'>{item.name}</h1>
+          <p className='text-neutral-600 mt-2'>
+            {item.code && <span className='mr-4'>Code: {item.code}</span>}
+            <Tag variant={getStockStatus()} size='sm' className='ml-2'>
               {item.totalQuantity <= item.lowStockThreshold ? 'Low Stock' : 'In Stock'}
             </Tag>
           </p>
         </div>
-        {!isEditing && (
-          <Button onClick={() => setIsEditing(true)}>
-            {t('common.edit')}
-          </Button>
-        )}
+        {!isEditing && <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>}
       </div>
 
       {error && (
-        <Card className="mb-6">
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3">
+        <Card className='mb-6'>
+          <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3'>
             {error}
           </div>
         </Card>
       )}
 
       <Card>
-        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+          className='space-y-6'
+        >
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <Input
               label={t('inventory.itemName')}
               value={isEditing ? formData.name || '' : item.name}
@@ -203,7 +214,7 @@ export default function InventoryItemDetailPage() {
               value={isEditing ? formData.code || '' : item.code || ''}
               onChange={(e) => setFormData({ ...formData, code: e.target.value })}
               disabled={!isEditing}
-              placeholder="e.g., MED-001"
+              placeholder='e.g., MED-001'
             />
 
             <Select
@@ -232,13 +243,13 @@ export default function InventoryItemDetailPage() {
             {!isEditing && (
               <>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className='block text-sm font-semibold text-neutral-900 mb-2'>
                     {t('inventory.currentStock')}
                   </label>
-                  <p className="text-lg font-medium text-gray-900">
+                  <p className='text-lg font-medium text-neutral-900'>
                     {item.totalQuantity} {item.unit}
                     {item.availableQuantity !== item.totalQuantity && (
-                      <span className="text-gray-500 ml-2">
+                      <span className='text-neutral-500 ml-2'>
                         ({item.availableQuantity} available)
                       </span>
                     )}
@@ -246,10 +257,10 @@ export default function InventoryItemDetailPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className='block text-sm font-semibold text-neutral-900 mb-2'>
                     Low Stock Threshold
                   </label>
-                  <p className="text-lg font-medium text-gray-900">
+                  <p className='text-lg font-medium text-neutral-900'>
                     {item.lowStockThreshold} {item.unit}
                   </p>
                 </div>
@@ -259,57 +270,80 @@ export default function InventoryItemDetailPage() {
             {isEditing && (
               <>
                 <Input
-                  label="Low Stock Threshold"
-                  type="number"
+                  label='Low Stock Threshold'
+                  type='number'
                   value={formData.lowStockThreshold?.toString() || ''}
-                  onChange={(e) => setFormData({ ...formData, lowStockThreshold: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lowStockThreshold: parseInt(e.target.value) || 0 })
+                  }
                   required
-                  min="0"
+                  min='0'
                 />
               </>
             )}
 
             <Input
               label={t('inventory.costPrice')}
-              type="number"
-              step="0.01"
-              value={isEditing 
-                ? formData.costPrice ? (formData.costPrice / 100).toFixed(2) : '' 
-                : item.costPrice ? formatCurrency(item.costPrice) : 'N/A'
+              type='number'
+              step='0.01'
+              value={
+                isEditing
+                  ? formData.costPrice
+                    ? (formData.costPrice / 100).toFixed(2)
+                    : ''
+                  : item.costPrice
+                  ? formatCurrency(item.costPrice)
+                  : 'N/A'
               }
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                costPrice: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : undefined 
-              })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  costPrice: e.target.value
+                    ? Math.round(parseFloat(e.target.value) * 100)
+                    : undefined,
+                })
+              }
               disabled={!isEditing}
-              placeholder="0.00"
+              placeholder='0.00'
             />
 
             <Input
               label={t('inventory.sellingPrice')}
-              type="number"
-              step="0.01"
-              value={isEditing 
-                ? formData.sellingPrice ? (formData.sellingPrice / 100).toFixed(2) : '' 
-                : item.sellingPrice ? formatCurrency(item.sellingPrice) : 'N/A'
+              type='number'
+              step='0.01'
+              value={
+                isEditing
+                  ? formData.sellingPrice
+                    ? (formData.sellingPrice / 100).toFixed(2)
+                    : ''
+                  : item.sellingPrice
+                  ? formatCurrency(item.sellingPrice)
+                  : 'N/A'
               }
-              onChange={(e) => setFormData({ 
-                ...formData, 
-                sellingPrice: e.target.value ? Math.round(parseFloat(e.target.value) * 100) : undefined 
-              })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  sellingPrice: e.target.value
+                    ? Math.round(parseFloat(e.target.value) * 100)
+                    : undefined,
+                })
+              }
               disabled={!isEditing}
-              placeholder="0.00"
+              placeholder='0.00'
             />
 
             <DatePicker
               label={t('inventory.expiryDate')}
-              value={isEditing && formData.expiryDate 
-                ? new Date(formData.expiryDate).toISOString().split('T')[0] 
-                : item.expiryDate 
-                  ? new Date(item.expiryDate).toISOString().split('T')[0] 
+              value={
+                isEditing && formData.expiryDate
+                  ? new Date(formData.expiryDate).toISOString().split('T')[0]
+                  : item.expiryDate
+                  ? new Date(item.expiryDate).toISOString().split('T')[0]
                   : ''
               }
-              onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value || undefined })}
+              onChange={(e) =>
+                setFormData({ ...formData, expiryDate: e.target.value || undefined })
+              }
               disabled={!isEditing}
             />
 
@@ -318,7 +352,7 @@ export default function InventoryItemDetailPage() {
               value={isEditing ? formData.batchNumber || '' : item.batchNumber || ''}
               onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
               disabled={!isEditing}
-              placeholder="e.g., BATCH-2024-001"
+              placeholder='e.g., BATCH-2024-001'
             />
 
             <Input
@@ -339,13 +373,13 @@ export default function InventoryItemDetailPage() {
           />
 
           {isEditing && (
-            <div className="flex gap-4 pt-4 border-t">
-              <Button type="submit" isLoading={saving}>
+            <div className='flex gap-4 pt-4 border-t'>
+              <Button type='submit' isLoading={saving} disabled={saving}>
                 {t('common.save')}
               </Button>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='secondary'
                 onClick={() => {
                   setIsEditing(false);
                   setFormData(item);
@@ -362,4 +396,3 @@ export default function InventoryItemDetailPage() {
     </Layout>
   );
 }
-

@@ -79,15 +79,16 @@ function SearchBarComponent({
     selectionRef.current = null;
   }, []);
 
+  // Base styles using theme colors
   const baseStyles = variant === 'minimal' 
     ? 'bg-transparent border-none focus:outline-none'
-    : 'bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+    : 'bg-white border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:shadow-focus';
 
   return (
     <div className={`relative flex items-center ${variant === 'default' ? 'w-full' : ''}`}>
       {showIcon && (
         <svg
-          className="absolute left-3 w-5 h-5 text-gray-400"
+          className="absolute left-3 w-5 h-5 text-neutral-500"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -104,8 +105,8 @@ function SearchBarComponent({
         ref={inputRef}
         type="search"
         className={`
-          w-full ${showIcon ? 'pl-10' : 'pl-4'} pr-4 py-2.5 
-          text-gray-900 placeholder-gray-400
+          w-full ${showIcon ? 'pl-10' : 'pl-4'} pr-4 py-3 
+          text-body-md text-neutral-900 placeholder:text-neutral-500
           ${baseStyles}
           ${className}
         `}

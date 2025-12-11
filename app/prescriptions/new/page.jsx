@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, useState, useMemo, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Layout } from '@/components/layout/Layout';
+import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
+import { PrescriptionFormPrintPreview } from '@/components/prescriptions/PrescriptionFormPrintPreview';
+import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Loader } from '@/components/ui/Loader';
+import { SimpleTextEditor } from '@/components/ui/SimpleTextEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { apiClient } from '@/lib/api/client';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { useFormAutoSave } from '@/hooks/useFormAutoSave.js';
-import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
-import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
-import { PrescriptionFormPrintPreview } from '@/components/prescriptions/PrescriptionFormPrintPreview';
-import { SimpleTextEditor } from '@/components/ui/SimpleTextEditor';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
+import { apiClient } from '@/lib/api/client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 
 function NewPrescriptionPageContent() {
   const router = useRouter();
@@ -27,7 +28,7 @@ function NewPrescriptionPageContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [clinicSettings, setClinicSettings] = useState(null);
-  
+
   // Get patientId from URL query parameter if present
   const patientIdFromUrl = searchParams?.get('patientId') || '';
   const [items, setItems] = useState([
@@ -73,52 +74,59 @@ function NewPrescriptionPageContent() {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // Auto-save form drafts
-  const { loadDraft, clearDraft, setSubmitting: setAutoSaveSubmitting } = useFormAutoSave({
+  const {
+    loadDraft,
+    clearDraft,
+    setSubmitting: setAutoSaveSubmitting,
+  } = useFormAutoSave({
     formData: { ...formData, items },
     formKey: 'new-prescription',
     enabled: true,
   });
 
   // Keyboard shortcuts - useMemo to ensure router is in scope
-  const keyboardShortcuts = useMemo(() => [
-    {
-      key: 's',
-      ctrlKey: true,
-      action: (e) => {
-        e.preventDefault();
-        const form = document.querySelector('form');
-        if (form) {
-          const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-          form.dispatchEvent(submitEvent);
-        }
+  const keyboardShortcuts = useMemo(
+    () => [
+      {
+        key: 's',
+        ctrlKey: true,
+        action: (e) => {
+          e.preventDefault();
+          const form = document.querySelector('form');
+          if (form) {
+            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+            form.dispatchEvent(submitEvent);
+          }
+        },
+        description: 'Save prescription (Ctrl+S)',
       },
-      description: 'Save prescription (Ctrl+S)',
-    },
-    {
-      key: 'Escape',
-      action: (e) => {
-        e.preventDefault();
-        router.back();
+      {
+        key: 'Escape',
+        action: (e) => {
+          e.preventDefault();
+          router.back();
+        },
+        description: 'Cancel (Esc)',
       },
-      description: 'Cancel (Esc)',
-    },
-  ], [router]);
-  
+    ],
+    [router]
+  );
+
   useKeyboardShortcuts(keyboardShortcuts);
 
   useEffect(() => {
     if (!authLoading && currentUser) {
       fetchData();
-      
+
       // Load draft if available (but don't override patientId from URL)
       const draft = loadDraft();
       if (draft) {
         if (draft.formData) {
-          setFormData((prev) => ({ 
-            ...prev, 
+          setFormData((prev) => ({
+            ...prev,
             ...draft.formData,
             // Preserve patientId from URL if provided
-            patientId: patientIdFromUrl || draft.formData.patientId || prev.patientId
+            patientId: patientIdFromUrl || draft.formData.patientId || prev.patientId,
           }));
         }
         if (draft.items && Array.isArray(draft.items)) {
@@ -132,9 +140,9 @@ function NewPrescriptionPageContent() {
   useEffect(() => {
     if (patientIdFromUrl && patients.length > 0) {
       // Verify patient exists in the list before setting
-      const patientExists = patients.some(p => p._id === patientIdFromUrl);
+      const patientExists = patients.some((p) => p._id === patientIdFromUrl);
       if (patientExists) {
-        setFormData(prev => ({ ...prev, patientId: patientIdFromUrl }));
+        setFormData((prev) => ({ ...prev, patientId: patientIdFromUrl }));
       }
     }
   }, [patientIdFromUrl, patients]);
@@ -147,20 +155,20 @@ function NewPrescriptionPageContent() {
         const settingsResponse = await apiClient.get('/settings');
         if (settingsResponse.success && settingsResponse.data) {
           setClinicSettings(settingsResponse.data);
-          
+
           // Auto-calculate validUntil date based on prescription validity days
           const validityDays = settingsResponse.data.settings?.prescriptionValidityDays || 30;
           const today = new Date();
           const validUntilDate = new Date(today);
           validUntilDate.setDate(validUntilDate.getDate() + validityDays);
-          
+
           // Format as YYYY-MM-DD for date input
           const validUntilStr = validUntilDate.toISOString().split('T')[0];
-          
+
           // Only set if validUntil is not already set (don't override user input)
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            validUntil: prev.validUntil || validUntilStr
+            validUntil: prev.validUntil || validUntilStr,
           }));
         }
       } catch (err) {
@@ -168,31 +176,37 @@ function NewPrescriptionPageContent() {
       }
 
       // Fetch appointments with in_progress status to get patients
-      const appointmentsResponse = await apiClient.get('/appointments?status=in_progress&limit=100');
-      
+      const appointmentsResponse = await apiClient.get(
+        '/appointments?status=in_progress&limit=100'
+      );
+
       // Extract unique patient IDs from appointments
       let patientIds = [];
       if (appointmentsResponse.success && appointmentsResponse.data) {
-        const appointmentsData = Array.isArray(appointmentsResponse.data) 
-          ? appointmentsResponse.data 
+        const appointmentsData = Array.isArray(appointmentsResponse.data)
+          ? appointmentsResponse.data
           : appointmentsResponse.data?.data || [];
-        
-        patientIds = [...new Set(
-          appointmentsData.map((apt) => {
-            if (typeof apt.patientId === 'string') return apt.patientId;
-            if (apt.patientId?._id) return apt.patientId._id;
-            return null;
-          }).filter((id) => id !== null)
-        )];
+
+        patientIds = [
+          ...new Set(
+            appointmentsData
+              .map((apt) => {
+                if (typeof apt.patientId === 'string') return apt.patientId;
+                if (apt.patientId?._id) return apt.patientId._id;
+                return null;
+              })
+              .filter((id) => id !== null)
+          ),
+        ];
       }
 
       // Fetch all patients
       const allPatientsResponse = await apiClient.get('/patients?limit=100');
       let allPatients = [];
-      
+
       if (allPatientsResponse.success && allPatientsResponse.data) {
-        allPatients = Array.isArray(allPatientsResponse.data) 
-          ? allPatientsResponse.data 
+        allPatients = Array.isArray(allPatientsResponse.data)
+          ? allPatientsResponse.data
           : allPatientsResponse.data?.data || [];
       }
 
@@ -202,7 +216,7 @@ function NewPrescriptionPageContent() {
       if (patientIds.length > 0) {
         filteredPatients = allPatients.filter((p) => patientIds.includes(p._id));
       }
-      
+
       // If patientId is in URL, add that patient to the list if not already included
       if (patientIdFromUrl) {
         const urlPatient = allPatients.find((p) => p._id === patientIdFromUrl);
@@ -210,7 +224,7 @@ function NewPrescriptionPageContent() {
           filteredPatients.push(urlPatient);
         }
       }
-      
+
       setPatients(filteredPatients);
 
       // Fetch drugs from inventory (medications) - use type=medicine (not medication)
@@ -219,7 +233,7 @@ function NewPrescriptionPageContent() {
       if (drugsResponse.success && drugsResponse.data) {
         // Handle pagination structure - API returns { success: true, data: { data: [...], pagination: {...} } }
         let drugsList = [];
-        
+
         // Check if response.data has a data property (pagination structure) - this is the most common case
         if (drugsResponse.data.data && Array.isArray(drugsResponse.data.data)) {
           drugsList = drugsResponse.data.data
@@ -244,7 +258,7 @@ function NewPrescriptionPageContent() {
               strength: item.strength,
             }));
         }
-        
+
         console.log('Extracted drugs list:', drugsList.length, 'drugs found');
         setDrugs(drugsList);
       } else {
@@ -285,15 +299,15 @@ function NewPrescriptionPageContent() {
     setItems((prevItems) => {
       const updated = [...prevItems];
       updated[index] = { ...updated[index], [field]: value };
-      
+
       // If drugId changed, update drugName
       if (field === 'drugId' && value) {
-        const drug = drugs.find(d => d._id === value);
+        const drug = drugs.find((d) => d._id === value);
         if (drug) {
           updated[index].drugName = drug.name;
         }
       }
-      
+
       return updated;
     });
   };
@@ -317,7 +331,7 @@ function NewPrescriptionPageContent() {
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const itemType = item.itemType || 'drug';
-        
+
         if (itemType === 'drug') {
           if (!item.drugId || (typeof item.drugId === 'string' && item.drugId.trim() === '')) {
             setError(`Item ${i + 1}: Please select a drug`);
@@ -326,21 +340,30 @@ function NewPrescriptionPageContent() {
             return;
           }
         } else if (itemType === 'lab') {
-          if (!item.labTestCode || (typeof item.labTestCode === 'string' && item.labTestCode.trim() === '')) {
+          if (
+            !item.labTestCode ||
+            (typeof item.labTestCode === 'string' && item.labTestCode.trim() === '')
+          ) {
             setError(`Item ${i + 1}: Please select a lab test`);
             setSubmitting(false);
             setAutoSaveSubmitting(false);
             return;
           }
         } else if (itemType === 'procedure') {
-          if (!item.procedureName || (typeof item.procedureName === 'string' && item.procedureName.trim() === '')) {
+          if (
+            !item.procedureName ||
+            (typeof item.procedureName === 'string' && item.procedureName.trim() === '')
+          ) {
             setError(`Item ${i + 1}: Please enter a procedure name`);
             setSubmitting(false);
             setAutoSaveSubmitting(false);
             return;
           }
         } else if (itemType === 'other') {
-          if (!item.itemName || (typeof item.itemName === 'string' && item.itemName.trim() === '')) {
+          if (
+            !item.itemName ||
+            (typeof item.itemName === 'string' && item.itemName.trim() === '')
+          ) {
             setError(`Item ${i + 1}: Please enter an item name`);
             setSubmitting(false);
             setAutoSaveSubmitting(false);
@@ -350,7 +373,7 @@ function NewPrescriptionPageContent() {
       }
 
       // Calculate validUntil if not provided (default to 30 days from now)
-      const validUntil = formData.validUntil 
+      const validUntil = formData.validUntil
         ? new Date(formData.validUntil).toISOString()
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -359,7 +382,7 @@ function NewPrescriptionPageContent() {
         appointmentId: formData.appointmentId || undefined,
         clinicalNoteId: formData.clinicalNoteId || undefined,
         status: 'active', // Set to active when creating prescription (not draft)
-        items: items.map(item => {
+        items: items.map((item) => {
           const baseItem = {
             itemType: item.itemType || 'drug',
             instructions: item.instructions || undefined,
@@ -419,7 +442,7 @@ function NewPrescriptionPageContent() {
     setAutoSaveSubmitting(true);
 
     try {
-      const validUntil = formData.validUntil 
+      const validUntil = formData.validUntil
         ? new Date(formData.validUntil).toISOString()
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -427,7 +450,7 @@ function NewPrescriptionPageContent() {
         patientId: formData.patientId,
         appointmentId: formData.appointmentId || undefined,
         clinicalNoteId: formData.clinicalNoteId || undefined,
-        items: items.map(item => {
+        items: items.map((item) => {
           const baseItem = {
             itemType: item.itemType || 'drug',
             instructions: item.instructions || undefined,
@@ -484,7 +507,7 @@ function NewPrescriptionPageContent() {
 
   // Print preview handler
   const handlePrintPreview = () => {
-    const selectedPatient = patients.find(p => p._id === formData.patientId);
+    const selectedPatient = patients.find((p) => p._id === formData.patientId);
     if (!selectedPatient) {
       alert('Please select a patient first');
       return;
@@ -492,12 +515,22 @@ function NewPrescriptionPageContent() {
     setShowPrintPreview(true);
   };
 
-  if (authLoading || loading) {
+  // Redirect if not authenticated (non-blocking)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
+  // Show empty state while redirecting
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">{t('common.loading')}</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
@@ -522,169 +555,206 @@ function NewPrescriptionPageContent() {
           }
         }
       `}</style>
-    <Layout>
-        <div className="mb-6">
-        <Button variant="outline" onClick={() => router.back()} className="mb-4">
-          ← {t('common.back')}
-        </Button>
-        <h1 className="text-2xl font-bold text-gray-900">{t('prescriptions.createPrescription')}</h1>
-      </div>
-
-      {/* Two-column layout: Form on left, Patient details on right */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column: Main form */}
-        <div className="lg:col-span-2">
-      <Card>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="patientId" className="block text-sm font-medium text-gray-700 mb-1">
-                {t('appointments.patient')} *
-              </label>
-              <select
-                id="patientId"
-                required
-                value={formData.patientId}
-                onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={patients.length === 0}
-              >
-                <option value="">
-                  {patients.length === 0 
-                    ? 'No patients with in-progress appointments available' 
-                    : `${t('common.select')} ${t('appointments.patient').toLowerCase()}`
-                  }
-                </option>
-                {patients.map((patient) => (
-                  <option key={patient._id} value={patient._id}>
-                    {patient.patientId} - {patient.firstName} {patient.lastName}
-                  </option>
-                ))}
-              </select>
-              {patients.length === 0 && !loading && (
-                <p className="mt-1 text-sm text-gray-500">
-                  Only patients with appointments in progress can receive prescriptions. Start an appointment from the Queue page first.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="validUntil" className="block text-sm font-medium text-gray-700 mb-1">
-                Valid Until *
-              </label>
-              <Input
-                id="validUntil"
-                type="date"
-                value={formData.validUntil}
-                onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="diagnosis" className="block text-sm font-medium text-gray-700 mb-1">
-                Diagnosis
-              </label>
-              <Input
-                id="diagnosis"
-                value={formData.diagnosis}
-                onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-                placeholder="Enter diagnosis"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="refillsAllowed" className="block text-sm font-medium text-gray-700 mb-1">
-                Refills Allowed
-              </label>
-              <Input
-                id="refillsAllowed"
-                type="number"
-                min="0"
-                value={formData.refillsAllowed}
-                onChange={(e) => setFormData({ ...formData, refillsAllowed: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="additionalInstructions" className="block text-sm font-medium text-gray-700 mb-1">
-              Additional Instructions
-            </label>
-            <SimpleTextEditor
-              value={formData.additionalInstructions}
-              onChange={(value) => setFormData({ ...formData, additionalInstructions: value })}
-              placeholder="Enter additional instructions for the patient"
-              rows={4}
-            />
-          </div>
-
-          <div className="border-t pt-4">
-            <PrescriptionItemsTable
-              items={items}
-              drugs={drugs}
-              labTests={labTests}
-              onUpdate={updateItem}
-              onUpdateItem={updateItemComplete}
-              onRemove={removeItem}
-              onAdd={addItem}
-            />
-          </div>
-
-          <div className="flex justify-end gap-4 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => router.back()}>
-              Cancel
-            </Button>
-            <Button type="button" variant="outline" onClick={handleSaveDraft} isLoading={submitting}>
-              Save as Draft
-            </Button>
-            <Button type="button" variant="outline" onClick={handlePrintPreview}>
-              Print
-            </Button>
-            <Button type="submit" isLoading={submitting}>
-              Create Prescription
-            </Button>
-          </div>
-        </form>
-      </Card>
+      <Layout>
+        <div className='mb-6'>
+          <Button variant='secondary' onClick={() => router.back()} className='mb-4'>
+            ← {t('common.back')}
+          </Button>
+          <h1 className='text-2xl font-bold text-neutral-900'>
+            {t('prescriptions.createPrescription')}
+          </h1>
         </div>
 
-        {/* Right column: Patient Details Panel */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-4">
-            <PatientDetailsPanel patientId={formData.patientId} />
+        {/* Two-column layout: Form on left, Patient details on right */}
+        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+          {/* Left column: Main form */}
+          <div className='lg:col-span-2'>
+            <Card>
+              <form onSubmit={handleSubmit} className='space-y-3' noValidate>
+                {error && (
+                  <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded'>
+                    {error}
+                  </div>
+                )}
+
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <div>
+                    <label
+                      htmlFor='patientId'
+                      className='block text-sm font-medium text-neutral-700 mb-1'
+                    >
+                      {t('appointments.patient')} *
+                    </label>
+                    <select
+                      id='patientId'
+                      required
+                      value={formData.patientId}
+                      onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                      className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                      disabled={patients.length === 0}
+                    >
+                      <option value=''>
+                        {patients.length === 0
+                          ? 'No patients with in-progress appointments available'
+                          : `${t('common.select')} ${t('appointments.patient').toLowerCase()}`}
+                      </option>
+                      {patients.map((patient) => (
+                        <option key={patient._id} value={patient._id}>
+                          {patient.patientId} - {patient.firstName} {patient.lastName}
+                        </option>
+                      ))}
+                    </select>
+                    {patients.length === 0 && !loading && (
+                      <p className='mt-1 text-sm text-neutral-500'>
+                        Only patients with appointments in progress can receive prescriptions. Start
+                        an appointment from the Queue page first.
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor='validUntil'
+                      className='block text-sm font-medium text-neutral-700 mb-1'
+                    >
+                      Valid Until *
+                    </label>
+                    <Input
+                      id='validUntil'
+                      type='date'
+                      value={formData.validUntil}
+                      onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor='diagnosis'
+                      className='block text-sm font-medium text-neutral-700 mb-1'
+                    >
+                      Diagnosis
+                    </label>
+                    <Input
+                      id='diagnosis'
+                      value={formData.diagnosis}
+                      onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
+                      placeholder='Enter diagnosis'
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor='refillsAllowed'
+                      className='block text-sm font-medium text-neutral-700 mb-1'
+                    >
+                      Refills Allowed
+                    </label>
+                    <Input
+                      id='refillsAllowed'
+                      type='number'
+                      min='0'
+                      value={formData.refillsAllowed}
+                      onChange={(e) =>
+                        setFormData({ ...formData, refillsAllowed: parseInt(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor='additionalInstructions'
+                    className='block text-sm font-medium text-neutral-700 mb-1'
+                  >
+                    Additional Instructions
+                  </label>
+                  <SimpleTextEditor
+                    value={formData.additionalInstructions}
+                    onChange={(value) =>
+                      setFormData({ ...formData, additionalInstructions: value })
+                    }
+                    placeholder='Enter additional instructions for the patient'
+                    rows={4}
+                  />
+                </div>
+
+                <div className='border-t pt-4'>
+                  <PrescriptionItemsTable
+                    items={items}
+                    drugs={drugs}
+                    labTests={labTests}
+                    onUpdate={updateItem}
+                    onUpdateItem={updateItemComplete}
+                    onRemove={removeItem}
+                    onAdd={addItem}
+                  />
+                </div>
+
+                <div className='flex justify-end gap-4 pt-4 border-t'>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={() => router.back()}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={handleSaveDraft}
+                    isLoading={submitting}
+                    disabled={submitting}
+                  >
+                    Save as Draft
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={handlePrintPreview}
+                    disabled={submitting}
+                  >
+                    Print
+                  </Button>
+                  <Button type='submit' isLoading={submitting} disabled={submitting}>
+                    Create Prescription
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+
+          {/* Right column: Patient Details Panel */}
+          <div className='lg:col-span-1'>
+            <div className='sticky top-4'>
+              <PatientDetailsPanel patientId={formData.patientId} />
+            </div>
           </div>
         </div>
-      </div>
 
-      <PrescriptionFormPrintPreview
-        isOpen={showPrintPreview}
-        onClose={() => setShowPrintPreview(false)}
-        formData={formData}
-        items={items}
-        patients={patients}
-        clinicSettings={clinicSettings}
-      />
-    </Layout>
+        <PrescriptionFormPrintPreview
+          isOpen={showPrintPreview}
+          onClose={() => setShowPrintPreview(false)}
+          formData={formData}
+          items={items}
+          patients={patients}
+          clinicSettings={clinicSettings}
+        />
+      </Layout>
     </>
   );
 }
 
 export default function NewPrescriptionPage() {
   return (
-    <Suspense fallback={
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading...</div>
-        </div>
-      </Layout>
-    }>
+    <Suspense
+      fallback={
+        <Layout>
+          <Loader size='md' className='h-64' />
+        </Layout>
+      }
+    >
       <NewPrescriptionPageContent />
     </Suspense>
   );

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -15,11 +16,7 @@ export function ProtectedRoute({ children }) {
   }, [user, loading, router]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   if (!user) {
@@ -28,4 +25,3 @@ export function ProtectedRoute({ children }) {
 
   return <>{children}</>;
 }
-

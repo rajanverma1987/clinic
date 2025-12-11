@@ -5,8 +5,8 @@
  * Manages user authentication state
  */
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client.js';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext(undefined);
 
@@ -113,26 +113,30 @@ export function AuthProvider({ children }) {
   }, [user, updateLastActivity]);
 
   const checkAuth = async () => {
-    // Set a timeout to prevent infinite loading
+    // Fast exit if no token - don't block rendering
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    // Set a shorter timeout for API calls to prevent long blocking
     const timeoutId = setTimeout(() => {
       setLoading(false);
-      console.warn('Auth check timeout');
-    }, 10000); // 10 second timeout
+      console.warn('Auth check timeout - proceeding without user');
+      // Don't clear user if token exists, just stop loading
+    }, 3000); // 3 second timeout for faster UX
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      if (!token) {
-        clearTimeout(timeoutId);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
       // Try to get user info - skip redirect during auth check
       let response = await apiClient.get('/auth/me', undefined, true);
-      
+
       // If failed with 401/403, try to refresh token
-      if (!response.success && (response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN')) {
+      if (
+        !response.success &&
+        (response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN')
+      ) {
         console.log('Auth failed, attempting token refresh...');
         const refreshed = await apiClient.refreshToken();
         if (refreshed) {
@@ -164,7 +168,8 @@ export function AuthProvider({ children }) {
         console.log('Auth check failed:', response.error);
         setUser(null);
         // Only clear tokens if refresh also failed or wasn't attempted
-        const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+        const refreshToken =
+          typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
         if (!refreshToken) {
           // No refresh token available, clear everything
           if (typeof window !== 'undefined') {
@@ -177,7 +182,8 @@ export function AuthProvider({ children }) {
       console.error('Auth check error:', error);
       setUser(null);
       // Only clear tokens if we're sure auth is impossible
-      const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+      const refreshToken =
+        typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
       if (!refreshToken) {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken');
@@ -365,4 +371,3 @@ export function useAuth() {
   }
   return context;
 }
-

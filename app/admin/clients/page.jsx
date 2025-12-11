@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Layout } from '@/components/layout/Layout';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
+import { Select } from '@/components/ui/Select';
+import { Table } from '@/components/ui/Table';
+import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Table } from '@/components/ui/Table';
-import { Tag } from '@/components/ui/Tag';
-import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function AdminClientsPage() {
   const router = useRouter();
@@ -100,7 +101,7 @@ export default function AdminClientsPage() {
 
       if (response.success && response.data) {
         setShowUpdateModal(false);
-        
+
         // If plan requires payment, show PayPal approval URL
         if (response.data.requiresPayment && response.data.approvalUrl) {
           setPaymentUrl(response.data.approvalUrl);
@@ -108,7 +109,7 @@ export default function AdminClientsPage() {
         } else {
           alert('Subscription updated successfully');
         }
-        
+
         setCurrentClient(null);
         setSelectedPlanId('');
         fetchClients();
@@ -122,10 +123,16 @@ export default function AdminClientsPage() {
   };
 
   const handleToggleClientAccess = async (client) => {
-    if (!window.confirm(
-      `Are you sure you want to ${client.isActive ? 'deactivate' : 'activate'} this client? ` +
-      `${client.isActive ? 'They will lose access to their account.' : 'They will regain access to their account.'}`
-    )) {
+    if (
+      !window.confirm(
+        `Are you sure you want to ${client.isActive ? 'deactivate' : 'activate'} this client? ` +
+          `${
+            client.isActive
+              ? 'They will lose access to their account.'
+              : 'They will regain access to their account.'
+          }`
+      )
+    ) {
       return;
     }
 
@@ -165,13 +172,14 @@ export default function AdminClientsPage() {
       header: 'Subscription',
       accessor: (row) => {
         if (!row.subscription || !row.subscription.planId) {
-          return <Tag variant="default">No Subscription</Tag>;
+          return <Tag variant='default'>No Subscription</Tag>;
         }
         return (
           <div>
-            <div className="font-medium">{row.subscription.planId.name}</div>
-            <div className="text-sm text-gray-500">
-              {formatCurrency(row.subscription.planId.price)}/{row.subscription.planId.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}
+            <div className='font-medium'>{row.subscription.planId.name}</div>
+            <div className='text-sm text-neutral-500'>
+              {formatCurrency(row.subscription.planId.price)}/
+              {row.subscription.planId.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}
             </div>
           </div>
         );
@@ -209,17 +217,13 @@ export default function AdminClientsPage() {
     {
       header: 'Actions',
       accessor: (row) => (
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleUpdateSubscription(row)}
-          >
+        <div className='flex gap-2'>
+          <Button variant='secondary' size='sm' onClick={() => handleUpdateSubscription(row)}>
             Update Subscription
           </Button>
           <Button
-            variant={row.isActive ? 'outline' : 'primary'}
-            size="sm"
+            variant={row.isActive ? 'secondary' : 'primary'}
+            size='sm'
             onClick={() => handleToggleClientAccess(row)}
           >
             {row.isActive ? 'Remove Access' : 'Restore Access'}
@@ -229,12 +233,15 @@ export default function AdminClientsPage() {
     },
   ];
 
-  if (authLoading || loading) {
+  // Redirect handled in useEffect above
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading...</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
@@ -245,47 +252,45 @@ export default function AdminClientsPage() {
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-        <p className="text-gray-600 mt-2">Manage all clinic clients and their subscriptions</p>
+      <div className='mb-8'>
+        <h1 className='text-3xl font-bold text-neutral-900'>Clients</h1>
+        <p className='text-neutral-600 mt-2'>Manage all clinic clients and their subscriptions</p>
       </div>
 
       <Card>
-        <Table
-          data={clients}
-          columns={columns}
-          emptyMessage="No clients found"
-        />
+        <Table data={clients} columns={columns} emptyMessage='No clients found' />
       </Card>
 
       {/* Update Subscription Modal */}
       {showUpdateModal && currentClient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="max-w-md w-full mx-4">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Update Subscription</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                Client: <span className="font-medium">{currentClient.name}</span>
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <Card className='max-w-md w-full mx-4'>
+            <div className='p-6'>
+              <h2 className='text-xl font-semibold mb-4'>Update Subscription</h2>
+              <p className='text-sm text-neutral-600 mb-4'>
+                Client: <span className='font-medium'>{currentClient.name}</span>
               </p>
-              
-              <div className="mb-4">
+
+              <div className='mb-4'>
                 <Select
-                  label="Select New Plan"
+                  label='Select New Plan'
                   value={selectedPlanId}
                   onChange={(e) => setSelectedPlanId(e.target.value)}
                   required
-                  placeholder="-- Select Plan --"
+                  placeholder='-- Select Plan --'
                   options={[
                     { value: '', label: '-- Select Plan --' },
                     ...plans.map((plan) => ({
                       value: plan._id,
-                      label: `${plan.name} - ${formatCurrency(plan.price)}/${plan.billingCycle === 'MONTHLY' ? 'month' : 'year'}`,
+                      label: `${plan.name} - ${formatCurrency(plan.price)}/${
+                        plan.billingCycle === 'MONTHLY' ? 'month' : 'year'
+                      }`,
                     })),
                   ]}
                 />
               </div>
 
-              <div className="flex gap-4">
+              <div className='flex gap-4'>
                 <Button
                   onClick={handleSubmitUpdateSubscription}
                   disabled={!selectedPlanId || updatingClientId === currentClient._id}
@@ -294,7 +299,7 @@ export default function AdminClientsPage() {
                   Update Subscription
                 </Button>
                 <Button
-                  variant="outline"
+                  variant='secondary'
                   onClick={() => {
                     setShowUpdateModal(false);
                     setCurrentClient(null);
@@ -312,37 +317,37 @@ export default function AdminClientsPage() {
 
       {/* Payment URL Modal - Shows PayPal approval link for client */}
       {showPaymentUrlModal && paymentUrl && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="max-w-2xl w-full mx-4">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-4 text-green-600">
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <Card className='max-w-2xl w-full mx-4'>
+            <div className='p-6'>
+              <h2 className='text-xl font-semibold mb-4 text-secondary-600'>
                 ✅ Subscription Created - Payment Required
               </h2>
-              
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-                <p className="text-sm text-blue-800 mb-2">
+
+              <div className='bg-primary-100 border-l-4 border-primary-500 p-4 mb-4'>
+                <p className='text-sm text-primary-700 mb-2'>
                   <strong>PayPal subscription created successfully!</strong>
                 </p>
-                <p className="text-sm text-blue-700">
-                  The client needs to complete payment to activate their subscription. 
-                  Send them the payment link below.
+                <p className='text-sm text-primary-600'>
+                  The client needs to complete payment to activate their subscription. Send them the
+                  payment link below.
                 </p>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className='mb-4'>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
                   Payment Link (Send to Client):
                 </label>
-                <div className="flex gap-2">
+                <div className='flex gap-2'>
                   <input
-                    type="text"
+                    type='text'
                     readOnly
                     value={paymentUrl}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
+                    className='flex-1 px-3 py-2 border border-neutral-300 rounded-lg bg-neutral-100 text-sm font-mono'
                   />
                   <Button
-                    variant="outline"
-                    size="sm"
+                    variant='secondary'
+                    size='sm'
                     onClick={() => {
                       navigator.clipboard.writeText(paymentUrl);
                       alert('Payment link copied to clipboard!');
@@ -353,29 +358,29 @@ export default function AdminClientsPage() {
                 </div>
               </div>
 
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                <p className="text-sm text-yellow-800">
-                  <strong>⚠️ Important:</strong> The subscription status is PENDING until the client completes payment.
-                  Features will be disabled until payment is received.
+              <div className='bg-status-warning/10 border-l-4 border-status-warning p-4 mb-4'>
+                <p className='text-sm text-status-warning'>
+                  <strong>⚠️ Important:</strong> The subscription status is PENDING until the client
+                  completes payment. Features will be disabled until payment is received.
                 </p>
               </div>
 
-              <div className="flex gap-4">
+              <div className='flex gap-4'>
                 <Button
                   onClick={() => {
                     window.open(paymentUrl, '_blank');
                   }}
-                  className="flex-1"
+                  className='flex-1'
                 >
                   Open Payment Link
                 </Button>
                 <Button
-                  variant="outline"
+                  variant='secondary'
                   onClick={() => {
                     setShowPaymentUrlModal(false);
                     setPaymentUrl('');
                   }}
-                  className="flex-1"
+                  className='flex-1'
                 >
                   Close
                 </Button>
@@ -387,4 +392,3 @@ export default function AdminClientsPage() {
     </Layout>
   );
 }
-

@@ -1,24 +1,28 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { Layout } from '@/components/layout/Layout';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { Input } from '@/components/ui/Input';
+import { CompactLoader, Loader } from '@/components/ui/Loader';
+import { PhoneInput } from '@/components/ui/PhoneInput';
+import { SearchBar } from '@/components/ui/SearchBar';
+import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Table } from '@/components/ui/Table';
-import { SearchBar } from '@/components/ui/SearchBar';
-import { PhoneInput } from '@/components/ui/PhoneInput';
-import { DatePicker } from '@/components/ui/DatePicker';
 import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function PatientsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const { locale } = useSettings();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -36,21 +40,54 @@ export default function PatientsPage() {
   });
   const [countryCode, setCountryCode] = useState('+1');
   const [submitting, setSubmitting] = useState(false);
+  // Mock notifications - replace with real API call later
+  const [notifications] = useState([
+    {
+      id: '1',
+      type: 'appointment',
+      title: 'New Appointment Scheduled',
+      message: 'Dr. Smith has a new appointment with John Doe at 2:00 PM',
+      createdAt: new Date(Date.now() - 30 * 60000), // 30 minutes ago
+      unread: true,
+    },
+    {
+      id: '2',
+      type: 'prescription',
+      title: 'Prescription Ready',
+      message: 'Prescription #1234 is ready for pickup',
+      createdAt: new Date(Date.now() - 2 * 3600000), // 2 hours ago
+      unread: true,
+    },
+  ]);
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
+  const formatDateDisplay = () => {
+    const date = new Date();
+    return date.toLocaleDateString(locale || 'en-US', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
 
   useEffect(() => {
     if (!authLoading && user) {
       // Fetch settings to get default country code
       fetchSettings();
-      
+
       // Initial load - use normal loading
       if (!searchTerm && currentPage === 1) {
         fetchPatients(false);
       } else {
         // Search or pagination - use search loading to avoid unmounting SearchBar
-        const timeoutId = setTimeout(() => {
-          fetchPatients(true);
-        }, searchTerm ? 300 : 0);
-        
+        const timeoutId = setTimeout(
+          () => {
+            fetchPatients(true);
+          },
+          searchTerm ? 300 : 0
+        );
+
         return () => clearTimeout(timeoutId);
       }
     }
@@ -74,7 +111,7 @@ export default function PatientsPage() {
   const fetchSettings = async () => {
     try {
       const response = await apiClient.get('/settings');
-      
+
       if (response.success && response.data) {
         // Set default country code based on region
         const defaultCode = getCountryCodeFromRegion(response.data.region);
@@ -102,11 +139,11 @@ export default function PatientsPage() {
       }
 
       const response = await apiClient.get(`/patients?${params}`);
-      
+
       console.log('Patients API Response:', response);
       console.log('Response data:', response.data);
       console.log('Response data.data:', response.data?.data);
-      
+
       if (response.success && response.data) {
         // Handle pagination structure - data is inside response.data.data
         const patientsList = response.data.data || [];
@@ -184,13 +221,19 @@ export default function PatientsPage() {
       header: t('common.actions'),
       accessor: (row) => (
         <Button
-          size="sm"
-          variant="secondary"
+          size='md'
+          variant='secondary'
           onClick={(e) => handleQuickAppointment(row._id, e)}
-          title="Quickly add appointment for this patient"
+          title='Quickly add appointment for this patient'
+          className='whitespace-nowrap'
         >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+            <path
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              strokeWidth={2}
+              d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+            />
           </svg>
           {t('appointments.bookAppointment') || 'Add Appointment'}
         </Button>
@@ -198,40 +241,76 @@ export default function PatientsPage() {
     },
   ];
 
-  if (authLoading || (loading && !searchTerm)) {
+  // Redirect if not authenticated (non-blocking)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
+  // Show empty state while redirecting or loading initial data
+  if (!user) {
+    return null;
+  }
+
+  if (loading && !searchTerm) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">{t('common.loading')}</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('patients.title')}</h1>
-          <p className="text-gray-600 mt-2">{t('patients.managePatientRecords')}</p>
-        </div>
-        <Button onClick={() => setShowModal(true)}>+ {t('patients.addPatient')}</Button>
-      </div>
+      <DashboardHeader
+        title={t('patients.title')}
+        subtitle={formatDateDisplay()}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onNotificationClick={(notification) => {
+          console.log('Notification clicked:', notification);
+          // Handle notification click - navigate to relevant page
+        }}
+        onMarkAsRead={(notificationId) => {
+          console.log('Mark as read:', notificationId);
+          // Handle mark as read - update notification status
+        }}
+        onMarkAllAsRead={() => {
+          console.log('Mark all as read');
+          // Handle mark all as read
+        }}
+        actionButton={
+          <Button
+            onClick={() => setShowModal(true)}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('patients.addPatient')}
+          </Button>
+        }
+      />
 
-      <Card className="mb-6">
+      <Card className='mb-6'>
         <SearchBar
           placeholder={t('patients.searchPlaceholder')}
           value={searchTerm}
           onChange={handleSearchChange}
-          className="w-full"
+          className='w-full'
         />
         {searchLoading && (
-          <div className="mt-2 text-sm text-gray-500 flex items-center">
-            <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Searching...
+          <div className='mt-2 text-body-sm text-neutral-500 flex items-center'>
+            <CompactLoader size='xs' />
+            <span
+              className='text-body-sm text-neutral-500'
+              style={{
+                fontSize: 'var(--text-body-sm)',
+                lineHeight: 'var(--text-body-sm-line-height)',
+              }}
+            >
+              Searching...
+            </span>
           </div>
         )}
       </Card>
@@ -245,21 +324,25 @@ export default function PatientsPage() {
         />
 
         {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between">
+          <div className='mt-4 flex items-center justify-between'>
             <Button
-              variant="outline"
+              variant='secondary'
+              size='md'
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
+              className='whitespace-nowrap'
             >
               {t('common.previous')}
             </Button>
-            <span className="text-sm text-gray-600">
+            <span className='text-body-sm text-neutral-700'>
               {t('common.page')} {currentPage} {t('common.of')} {totalPages}
             </span>
             <Button
-              variant="outline"
+              variant='secondary'
+              size='md'
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
+              className='whitespace-nowrap'
             >
               {t('common.next')}
             </Button>
@@ -268,8 +351,8 @@ export default function PatientsPage() {
       </Card>
 
       {showModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        <div
+          className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
           onClick={(e) => {
             // Close modal if clicking on the backdrop
             if (e.target === e.currentTarget) {
@@ -277,10 +360,10 @@ export default function PatientsPage() {
             }
           }}
         >
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-2xl font-bold mb-3">{t('patients.addNewPatient')}</h2>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+          <div className='bg-neutral-50 rounded-lg p-6 w-full max-w-md shadow-lg'>
+            <h2 className='text-h2 text-neutral-900 mb-3'>{t('patients.addNewPatient')}</h2>
+            <form onSubmit={handleSubmit} className='space-y-3' noValidate>
+              <div className='grid grid-cols-2 gap-3'>
                 <Input
                   label={t('auth.firstName')}
                   value={formData.firstName}
@@ -306,7 +389,7 @@ export default function PatientsPage() {
 
               <Input
                 label={t('auth.email')}
-                type="email"
+                type='email'
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
@@ -319,29 +402,39 @@ export default function PatientsPage() {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('patients.gender')}</label>
+                <label className='block text-body-sm font-medium text-neutral-900 mb-1'>
+                  {t('patients.gender')}
+                </label>
                 <select
                   value={formData.gender}
                   onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className='w-full px-3 py-3 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-900 focus:outline-none focus:border-primary-500 focus:shadow-focus'
                   required
                 >
-                  <option value="male">{t('common.male')}</option>
-                  <option value="female">{t('common.female')}</option>
-                  <option value="other">{t('common.other')}</option>
+                  <option value='male'>{t('common.male')}</option>
+                  <option value='female'>{t('common.female')}</option>
+                  <option value='other'>{t('common.other')}</option>
                 </select>
               </div>
 
-              <div className="flex gap-4">
+              <div className='flex gap-4'>
                 <Button
-                  type="button"
-                  variant="outline"
+                  type='button'
+                  variant='secondary'
+                  size='md'
                   onClick={() => setShowModal(false)}
-                  className="flex-1"
+                  disabled={submitting}
+                  className='flex-1'
                 >
                   {t('common.cancel')}
                 </Button>
-                <Button type="submit" isLoading={submitting} className="flex-1">
+                <Button
+                  type='submit'
+                  isLoading={submitting}
+                  disabled={submitting}
+                  size='md'
+                  className='flex-1'
+                >
                   {t('patients.createPatient')}
                 </Button>
               </div>
@@ -352,4 +445,3 @@ export default function PatientsPage() {
     </Layout>
   );
 }
-

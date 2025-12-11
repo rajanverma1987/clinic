@@ -95,7 +95,10 @@
     "passwordResetCodeSent": "Password reset code sent to your email.",
     "enterSecretCode": "Enter the secret code sent to your email and your new password.",
     "passwordResetInstructions": "Enter your email address and we'll send you a secret code to reset your password.",
-    "redirectingToLogin": "Redirecting to login..."
+    "redirectingToLogin": "Redirecting to login...",
+    "confirmLogout": "Confirm Sign Out",
+    "logoutConfirmMessage": "Are you sure you want to sign out? You will need to sign in again to access your account.",
+    "signOut": "Sign Out"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -421,12 +424,14 @@
   },
   "homepage": {
     "heroTitle": "Streamline Your Clinic",
-    "heroSubtitle": "Management Effortlessly",
-    "heroDescription": "A comprehensive, HIPAA/GDPR-compliant clinic management system designed for modern healthcare practices. Manage patients, appointments, prescriptions, billing, and more in one platform.",
+    "heroSubtitle": "Management Made Effortless",
+    "heroDescription": "Everything you need to run your clinic smoothly, all in one place. From scheduling appointments to managing patient records, we've got you covered. HIPAA and GDPR compliant, so your data stays secure.",
     "startFreeTrial": "Start Free Trial",
     "scheduleDemo": "Schedule Demo",
     "featuresTitle": "Everything You Need to Run Your Clinic",
     "featuresDescription": "Powerful features designed to help healthcare professionals deliver better patient care while managing their practice efficiently.",
+    "viewMore": "View More",
+    "viewLess": "View Less",
     "patientManagement": "Patient Management",
     "patientManagementDesc": "Complete patient records with encrypted PHI, medical history, allergies, and medications. Auto-generated patient IDs and comprehensive search capabilities.",
     "appointmentScheduling": "Appointment Scheduling",
@@ -578,4 +583,3 @@
     "draft": "Draft"
   }
 }
-

@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import { useI18n } from '@/contexts/I18nContext';
+import { CompactLoader } from './Loader';
 
 export function Button({
   variant = 'primary',
@@ -11,56 +12,128 @@ export function Button({
   children,
   ...props
 }) {
+  const { t } = useI18n();
+  // Base styles with theme specifications
   const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap';
+    'inline-flex items-center justify-center text-button rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap relative overflow-hidden border-0';
 
+  // Variants following theme specifications
   const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 active:bg-blue-800',
-    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500 active:bg-gray-300',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:bg-red-800',
-    outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500 active:bg-gray-100',
+    // Primary: bg-primary-500, hover: green gradient overlay (left to right), text: white, permanent white border
+    primary:
+      'bg-primary-500 text-white border-2 border-white focus:ring-primary-500 active:bg-secondary-700 shadow-md group relative overflow-hidden z-0',
+    // Secondary: Single blue border, white bg, hover: green gradient with blue border maintained
+    secondary:
+      'bg-white border-2 border-primary-500 text-primary-500 group-hover:!text-white focus:ring-primary-500 shadow-md group relative overflow-hidden z-0 transition-all duration-300',
+    // Danger: bg-status-error, hover: darker red gradient (left to right)
+    danger:
+      'bg-status-error text-white border-2 border-status-error focus:ring-status-error shadow-md group relative overflow-hidden z-0',
+    // Logout: light red background, white text, red gradient on hover
+    logout:
+      'bg-status-error text-white border-2 border-status-error focus:ring-status-error active:bg-status-error/90 shadow-md group relative overflow-hidden z-0',
+    // Outline: border neutral-300, bg white, text neutral-900, hover: primary blue gradient
+    outline:
+      'border-2 border-neutral-300 bg-white text-neutral-900 group-hover:!border-primary-500 focus:ring-primary-500 group relative overflow-hidden z-0',
   };
 
+  // Sizes with theme padding (12px vertical, 20px horizontal per theme spec)
   const sizes = {
-    sm: 'px-4 py-2 text-sm font-medium',
-    md: 'px-5 py-2.5 text-base font-semibold',
-    lg: 'px-6 py-3 text-lg font-semibold',
+    sm: 'px-5 py-3 text-body-sm font-semibold min-h-[40px]', // 12px py-3, 20px px-5
+    md: 'px-5 py-3 text-button min-h-[44px]', // 12px py-3, 20px px-5 (theme standard: 12px 20px)
+    lg: 'px-6 py-4 text-body-md font-semibold min-h-[52px]', // 16px py-4, 24px px-6
   };
+
+  // Disabled state - only override when explicitly disabled (not just loading)
+  const isDisabled = disabled || isLoading;
+  const disabledStyles = isDisabled
+    ? '!bg-neutral-300 !text-white cursor-not-allowed hover:!bg-neutral-300 hover:!opacity-50'
+    : '';
 
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-      disabled={disabled || isLoading}
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${disabledStyles} ${className}`}
+      disabled={isDisabled}
       {...props}
     >
-      {isLoading ? (
-        <>
-          <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          Loading...
-        </>
-      ) : (
-        children
+      {/* Green gradient hover effect - slides in from left to right for Primary */}
+      {variant === 'primary' && (
+        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
       )}
+
+      {/* Green gradient hover effect for Secondary - doesn't cover border */}
+      {variant === 'secondary' && (
+        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
+      )}
+
+      {/* Red gradient hover effect for Danger */}
+      {variant === 'danger' && (
+        <span className='absolute inset-[2px] bg-gradient-to-r from-[#C54141] to-[#A03030] opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
+      )}
+
+      {/* Red gradient hover effect for Logout */}
+      {variant === 'logout' && (
+        <span className='absolute inset-[2px] bg-gradient-to-r from-status-error to-status-error/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
+      )}
+
+      {/* Primary blue gradient hover effect for Outline */}
+      {variant === 'outline' && (
+        <span className='absolute inset-[2px] bg-gradient-to-r from-primary-500 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
+      )}
+
+      {/* Shine effect overlay for Primary button */}
+      {variant === 'primary' && (
+        <span className='absolute inset-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 rounded-md'>
+          <span
+            className='absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shine-once'
+            style={{ width: '50%' }}
+          ></span>
+        </span>
+      )}
+
+      {/* Shine effect overlay for Secondary button */}
+      {variant === 'secondary' && (
+        <span className='absolute inset-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 rounded-md'>
+          <span
+            className='absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shine-once'
+            style={{ width: '50%' }}
+          ></span>
+        </span>
+      )}
+
+      {/* Shine effect overlay for Logout button */}
+      {variant === 'logout' && (
+        <span className='absolute inset-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 rounded-md'>
+          <span
+            className='absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shine-once'
+            style={{ width: '50%' }}
+          ></span>
+        </span>
+      )}
+
+      {/* Content with relative z-index */}
+      <span
+        className={`relative z-10 flex items-center justify-center ${
+          variant === 'secondary' ||
+          variant === 'outline' ||
+          variant === 'primary' ||
+          variant === 'danger' ||
+          variant === 'logout'
+            ? 'group-hover:text-white'
+            : ''
+        }`}
+      >
+        {isLoading ? (
+          <span className='flex items-center' style={{ gap: 'var(--gap-2)' }}>
+            <CompactLoader
+              size='sm'
+              variant={variant === 'secondary' || variant === 'outline' ? 'primary' : 'white'}
+            />
+            <span>{t('common.loading')}</span>
+          </span>
+        ) : (
+          children
+        )}
+      </span>
     </button>
   );
 }
-

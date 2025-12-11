@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { apiClient } from '@/lib/api/client';
 import { showError } from '@/lib/utils/toast';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
-const formatDate = (value) =>
-  value ? new Date(value).toLocaleDateString() : '—';
+const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
 
 const formatTime = (value) =>
   value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -32,10 +32,9 @@ export default function AppointmentDetailsPage({ params }) {
         }
       } catch (err) {
         console.error('Failed to fetch appointment details:', err);
-        const message =
-          err?.message?.includes('not found')
-            ? 'Appointment not found'
-            : 'Failed to load appointment details';
+        const message = err?.message?.includes('not found')
+          ? 'Appointment not found'
+          : 'Failed to load appointment details';
         setError(message);
         showError(message);
       } finally {
@@ -49,7 +48,9 @@ export default function AppointmentDetailsPage({ params }) {
   const patientFullName = useMemo(
     () =>
       appointment
-        ? `${appointment.patientId?.firstName || ''} ${appointment.patientId?.lastName || ''}`.trim()
+        ? `${appointment.patientId?.firstName || ''} ${
+            appointment.patientId?.lastName || ''
+          }`.trim()
         : '',
     [appointment]
   );
@@ -65,9 +66,7 @@ export default function AppointmentDetailsPage({ params }) {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-80">
-          <p className="text-gray-500">Loading appointment details...</p>
-        </div>
+        <Loader size='md' text='Loading appointment details...' className='h-80' />
       </Layout>
     );
   }
@@ -75,14 +74,14 @@ export default function AppointmentDetailsPage({ params }) {
   if (error || !appointment) {
     return (
       <Layout>
-        <div className="max-w-3xl mx-auto">
+        <div className='max-w-3xl mx-auto'>
           <Card>
-            <div className="text-center py-12">
-              <p className="text-lg font-semibold text-gray-900 mb-2">Appointment unavailable</p>
-              <p className="text-gray-600 mb-6">
+            <div className='text-center py-12'>
+              <p className='text-lg font-semibold text-neutral-900 mb-2'>Appointment unavailable</p>
+              <p className='text-neutral-600 mb-6'>
                 {error || 'We could not find the appointment you were looking for.'}
               </p>
-              <Button variant="outline" onClick={() => router.push('/appointments')}>
+              <Button variant='secondary' onClick={() => router.push('/appointments')}>
                 Back to Appointments
               </Button>
             </div>
@@ -94,16 +93,16 @@ export default function AppointmentDetailsPage({ params }) {
 
   return (
     <Layout>
-      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+      <div className='mb-6 flex items-center justify-between flex-wrap gap-3'>
         <div>
-          <Button variant="outline" onClick={() => router.back()}>
+          <Button variant='secondary' onClick={() => router.back()}>
             ← Back
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">Appointment Details</h1>
-          <p className="text-gray-600">Appointment ID: {appointment._id}</p>
+          <h1 className='text-3xl font-bold text-neutral-900 mt-4'>Appointment Details</h1>
+          <p className='text-neutral-600'>Appointment ID: {appointment._id}</p>
         </div>
         <Tag
-          size="lg"
+          size='lg'
           variant={
             appointment.status === 'completed'
               ? 'success'
@@ -116,101 +115,111 @@ export default function AppointmentDetailsPage({ params }) {
         </Tag>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Patient Information</h2>
-            <Tag variant="default" size="sm">
+          <div className='flex items-center justify-between mb-4'>
+            <h2 className='text-lg font-semibold text-neutral-900'>Patient Information</h2>
+            <Tag variant='default' size='sm'>
               {appointment.patientId?.patientId || 'Unknown ID'}
             </Tag>
           </div>
-          <div className="space-y-3 text-sm text-gray-700">
+          <div className='space-y-3 text-sm text-neutral-700'>
             <p>
-              <span className="font-medium text-gray-900">Name:</span> {patientFullName || '—'}
+              <span className='font-medium text-neutral-900'>Name:</span> {patientFullName || '—'}
             </p>
             <p>
-              <span className="font-medium text-gray-900">Phone:</span>{' '}
+              <span className='font-medium text-neutral-900'>Phone:</span>{' '}
               {appointment.patientId?.phone || '—'}
             </p>
             <p>
-              <span className="font-medium text-gray-900">Email:</span>{' '}
+              <span className='font-medium text-neutral-900'>Email:</span>{' '}
               {appointment.patientId?.email || '—'}
             </p>
           </div>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Doctor Information</h2>
+          <div className='flex items-center justify-between mb-4'>
+            <h2 className='text-lg font-semibold text-neutral-900'>Doctor Information</h2>
           </div>
-          <div className="space-y-3 text-sm text-gray-700">
+          <div className='space-y-3 text-sm text-neutral-700'>
             <p>
-              <span className="font-medium text-gray-900">Doctor:</span> {doctorFullName || '—'}
+              <span className='font-medium text-neutral-900'>Doctor:</span> {doctorFullName || '—'}
             </p>
             <p>
-              <span className="font-medium text-gray-900">Email:</span>{' '}
+              <span className='font-medium text-neutral-900'>Email:</span>{' '}
               {appointment.doctorId?.email || '—'}
             </p>
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6'>
         <Card>
-          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-1">
+          <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
             Date
           </h3>
-          <p className="text-2xl font-bold text-gray-900">{formatDate(appointment.appointmentDate)}</p>
+          <p className='text-2xl font-bold text-neutral-900'>
+            {formatDate(appointment.appointmentDate)}
+          </p>
         </Card>
         <Card>
-          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-1">
+          <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
             Time
           </h3>
-          <p className="text-xl font-semibold text-gray-900">
+          <p className='text-xl font-semibold text-neutral-900'>
             {formatTime(appointment.startTime)} – {formatTime(appointment.endTime)}
           </p>
         </Card>
         <Card>
-          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-1">
+          <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
             Duration
           </h3>
-          <p className="text-2xl font-bold text-gray-900">{appointment.duration || 30} mins</p>
+          <p className='text-2xl font-bold text-neutral-900'>{appointment.duration || 30} mins</p>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
         <Card>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Reason</h3>
-          <p className="text-gray-700">{appointment.reason || 'Not provided'}</p>
+          <h3 className='text-lg font-semibold text-neutral-900 mb-3'>Reason</h3>
+          <p className='text-neutral-700'>{appointment.reason || 'Not provided'}</p>
         </Card>
 
         <Card>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Notes</h3>
-          <p className="text-gray-700 whitespace-pre-wrap">
+          <h3 className='text-lg font-semibold text-neutral-900 mb-3'>Notes</h3>
+          <p className='text-neutral-700 whitespace-pre-wrap'>
             {appointment.notes || 'No additional notes'}
           </p>
         </Card>
       </div>
 
       {appointment.isTelemedicine && (
-        <Card className="border-blue-200 bg-blue-50">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <Card className='border-primary-200 bg-primary-100'>
+          <div className='flex items-start gap-4'>
+            <div className='p-3 bg-primary-100 rounded-full'>
+              <svg
+                className='w-6 h-6 text-primary-600'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
                 <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
                   strokeWidth={2}
-                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
                 />
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Telemedicine Session</h3>
-              <p className="text-gray-700 mt-2">
-                Session ID: <span className="font-mono text-sm">{appointment.telemedicineSessionId || 'Pending'}</span>
+              <h3 className='text-lg font-semibold text-neutral-900'>Telemedicine Session</h3>
+              <p className='text-neutral-700 mt-2'>
+                Session ID:{' '}
+                <span className='font-mono text-sm'>
+                  {appointment.telemedicineSessionId || 'Pending'}
+                </span>
               </p>
-              <p className="text-gray-700 mt-1">
+              <p className='text-neutral-700 mt-1'>
                 Consent: {appointment.telemedicineConsent ? 'Captured' : 'Not captured'}
               </p>
             </div>
@@ -220,4 +229,3 @@ export default function AppointmentDetailsPage({ params }) {
     </Layout>
   );
 }
-

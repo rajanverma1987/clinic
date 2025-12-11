@@ -1,15 +1,21 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { Card } from '@/components/ui/Card';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Compact calendar component showing available appointment slots for a selected date
  * Displays time slots for a single day with availability
  */
-export default function AppointmentCalendar({ selectedDoctorId, selectedDate, onSlotSelect, settings }) {
+export default function AppointmentCalendar({
+  selectedDoctorId,
+  selectedDate,
+  onSlotSelect,
+  settings,
+}) {
   const { t } = useI18n();
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -22,45 +28,54 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
   // Get slot duration from Queue Settings (Average Consultation Time), default to 30 minutes
   const slotDuration = settings?.queueSettings?.averageConsultationTime || 30; // minutes
 
-  const formatDateForApi = useCallback((date) => {
-    try {
-      return new Intl.DateTimeFormat('en-CA', {
-        timeZone: settings?.timezone || 'UTC',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(date);
-    } catch {
-      return date.toISOString().split('T')[0];
-    }
-  }, [settings?.timezone]);
+  const formatDateForApi = useCallback(
+    (date) => {
+      try {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: settings?.timezone || 'UTC',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(date);
+      } catch {
+        return date.toISOString().split('T')[0];
+      }
+    },
+    [settings?.timezone]
+  );
 
-  const formatDateDisplay = useCallback((date) => {
-    try {
-      return new Intl.DateTimeFormat(settings?.locale || 'en-US', {
-        timeZone: settings?.timezone || 'UTC',
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }).format(date);
-    } catch {
-      return date.toLocaleDateString();
-    }
-  }, [settings?.locale, settings?.timezone]);
+  const formatDateDisplay = useCallback(
+    (date) => {
+      try {
+        return new Intl.DateTimeFormat(settings?.locale || 'en-US', {
+          timeZone: settings?.timezone || 'UTC',
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        }).format(date);
+      } catch {
+        return date.toLocaleDateString();
+      }
+    },
+    [settings?.locale, settings?.timezone]
+  );
 
-  const formatTimeDisplay = useCallback((date) => {
-    try {
-      return new Intl.DateTimeFormat(settings?.locale || 'en-US', {
-        timeZone: settings?.timezone || 'UTC',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      }).format(date);
-    } catch {
-      return date.toLocaleTimeString();
-    }
-  }, [settings?.locale, settings?.timezone]);
+  const formatTimeDisplay = useCallback(
+    (date) => {
+      try {
+        return new Intl.DateTimeFormat(settings?.locale || 'en-US', {
+          timeZone: settings?.timezone || 'UTC',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        }).format(date);
+      } catch {
+        return date.toLocaleTimeString();
+      }
+    },
+    [settings?.locale, settings?.timezone]
+  );
 
   // Update currentDate when selectedDate prop changes
   useEffect(() => {
@@ -111,31 +126,33 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
 
       if (response.success && response.data) {
         // Handle both array and paginated response formats
-        const appointmentsData = Array.isArray(response.data) 
-          ? response.data 
-          : (response.data?.data || []);
+        const appointmentsData = Array.isArray(response.data)
+          ? response.data
+          : response.data?.data || [];
         // Filter appointments to only include active statuses
         // Include 'in_queue' for video consultations that go directly to queue
         const activeStatuses = ['scheduled', 'confirmed', 'arrived', 'in_progress', 'in_queue'];
-        const allAppointments = appointmentsData.filter(apt => 
+        const allAppointments = appointmentsData.filter((apt) =>
           activeStatuses.includes(apt.status)
         );
-        
+
         // Filter appointments to only those on the selected date
-        const appointments = allAppointments.filter(apt => {
+        const appointments = allAppointments.filter((apt) => {
           // Try both appointmentDate and startTime fields
-          const aptDate = apt.appointmentDate ? new Date(apt.appointmentDate) : new Date(apt.startTime);
+          const aptDate = apt.appointmentDate
+            ? new Date(apt.appointmentDate)
+            : new Date(apt.startTime);
           const aptDateKey = formatDateForApi(aptDate);
-          
+
           // Also check if startTime falls on the selected date
           const aptStartDate = new Date(apt.startTime);
           const aptStartDateKey = formatDateForApi(aptStartDate);
           return aptDateKey === dateKey || aptStartDateKey === dateKey;
         });
-                
+
         // Generate slots for the selected date
         const slots = generateTimeSlots(currentDate);
-        
+
         // Initialize all slots as available first
         slots.forEach((slot) => {
           slot.available = true;
@@ -160,31 +177,43 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
           // Get appointment time in minutes from midnight (using clinic timezone)
           // Convert UTC times to clinic timezone for accurate comparison
           const clinicTimezone = settings?.timezone || 'UTC';
-          
+
           // Get hours/minutes in clinic timezone
-          const aptStartInClinicTz = new Date(aptStart.toLocaleString('en-US', { timeZone: clinicTimezone }));
-          const aptEndInClinicTz = new Date(aptEnd.toLocaleString('en-US', { timeZone: clinicTimezone }));
-          
+          const aptStartInClinicTz = new Date(
+            aptStart.toLocaleString('en-US', { timeZone: clinicTimezone })
+          );
+          const aptEndInClinicTz = new Date(
+            aptEnd.toLocaleString('en-US', { timeZone: clinicTimezone })
+          );
+
           // Use the original date but extract time in clinic timezone
-          const aptStartHours = parseInt(new Intl.DateTimeFormat('en-US', {
-            timeZone: clinicTimezone,
-            hour: 'numeric',
-            hour12: false
-          }).format(aptStart));
-          const aptStartMinutes = parseInt(new Intl.DateTimeFormat('en-US', {
-            timeZone: clinicTimezone,
-            minute: 'numeric'
-          }).format(aptStart));
-          const aptEndHours = parseInt(new Intl.DateTimeFormat('en-US', {
-            timeZone: clinicTimezone,
-            hour: 'numeric',
-            hour12: false
-          }).format(aptEnd));
-          const aptEndMinutes = parseInt(new Intl.DateTimeFormat('en-US', {
-            timeZone: clinicTimezone,
-            minute: 'numeric'
-          }).format(aptEnd));
-          
+          const aptStartHours = parseInt(
+            new Intl.DateTimeFormat('en-US', {
+              timeZone: clinicTimezone,
+              hour: 'numeric',
+              hour12: false,
+            }).format(aptStart)
+          );
+          const aptStartMinutes = parseInt(
+            new Intl.DateTimeFormat('en-US', {
+              timeZone: clinicTimezone,
+              minute: 'numeric',
+            }).format(aptStart)
+          );
+          const aptEndHours = parseInt(
+            new Intl.DateTimeFormat('en-US', {
+              timeZone: clinicTimezone,
+              hour: 'numeric',
+              hour12: false,
+            }).format(aptEnd)
+          );
+          const aptEndMinutes = parseInt(
+            new Intl.DateTimeFormat('en-US', {
+              timeZone: clinicTimezone,
+              minute: 'numeric',
+            }).format(aptEnd)
+          );
+
           const aptStartTimeMinutes = aptStartHours * 60 + aptStartMinutes;
           const aptEndTimeMinutes = aptEndHours * 60 + aptEndMinutes;
 
@@ -192,35 +221,44 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
           slots.forEach((slot, slotIdx) => {
             // Get slot time in minutes from midnight (using clinic timezone)
             const clinicTimezone = settings?.timezone || 'UTC';
-            
+
             // Extract hours/minutes from slot in clinic timezone
-            const slotStartHours = parseInt(new Intl.DateTimeFormat('en-US', {
-              timeZone: clinicTimezone,
-              hour: 'numeric',
-              hour12: false
-            }).format(slot.start));
-            const slotStartMinutes = parseInt(new Intl.DateTimeFormat('en-US', {
-              timeZone: clinicTimezone,
-              minute: 'numeric'
-            }).format(slot.start));
-            const slotEndHours = parseInt(new Intl.DateTimeFormat('en-US', {
-              timeZone: clinicTimezone,
-              hour: 'numeric',
-              hour12: false
-            }).format(slot.end));
-            const slotEndMinutes = parseInt(new Intl.DateTimeFormat('en-US', {
-              timeZone: clinicTimezone,
-              minute: 'numeric'
-            }).format(slot.end));
-            
+            const slotStartHours = parseInt(
+              new Intl.DateTimeFormat('en-US', {
+                timeZone: clinicTimezone,
+                hour: 'numeric',
+                hour12: false,
+              }).format(slot.start)
+            );
+            const slotStartMinutes = parseInt(
+              new Intl.DateTimeFormat('en-US', {
+                timeZone: clinicTimezone,
+                minute: 'numeric',
+              }).format(slot.start)
+            );
+            const slotEndHours = parseInt(
+              new Intl.DateTimeFormat('en-US', {
+                timeZone: clinicTimezone,
+                hour: 'numeric',
+                hour12: false,
+              }).format(slot.end)
+            );
+            const slotEndMinutes = parseInt(
+              new Intl.DateTimeFormat('en-US', {
+                timeZone: clinicTimezone,
+                minute: 'numeric',
+              }).format(slot.end)
+            );
+
             const slotStartTimeMinutes = slotStartHours * 60 + slotStartMinutes;
             const slotEndTimeMinutes = slotEndHours * 60 + slotEndMinutes;
-            
+
             // Simple overlap check: two time ranges overlap if:
             // slotStart < aptEnd AND aptStart < slotEnd
             // This covers all cases: partial overlap, complete containment, exact match
-            const slotOverlaps = slotStartTimeMinutes < aptEndTimeMinutes && aptStartTimeMinutes < slotEndTimeMinutes;
-            
+            const slotOverlaps =
+              slotStartTimeMinutes < aptEndTimeMinutes && aptStartTimeMinutes < slotEndTimeMinutes;
+
             if (slotOverlaps) {
               slot.available = false;
               slot.booked = true;
@@ -242,7 +280,7 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
           const slotMinute = slot.start.getMinutes();
           const slotDate = new Date(currentDate);
           slotDate.setHours(slotHour, slotMinute, 0, 0);
-          
+
           // Check if this slot is in the past (only if selected date is today)
           let isPastSlot = false;
           if (isToday) {
@@ -254,11 +292,11 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
             // If the entire day is in the past, all slots are past
             isPastSlot = true;
           }
-          
+
           // Explicitly preserve booked and available status from the slot object
           const isBooked = slot.booked === true;
           const isAvailable = slot.available === true && !isBooked && !isPastSlot;
-          
+
           return {
             ...slot, // This includes available and booked properties
             start: new Date(slotDate),
@@ -273,13 +311,12 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
             isPast: isPastSlot,
           };
         });
-        
 
         setAvailableSlots(formattedSlots);
       } else {
         // Still generate slots even if no appointments
         const slots = generateTimeSlots(currentDate);
-        
+
         // Get current date/time for past slot detection
         const now = new Date();
         const today = new Date();
@@ -287,13 +324,13 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
         const selectedDay = new Date(currentDate);
         selectedDay.setHours(0, 0, 0, 0);
         const isToday = selectedDay.getTime() === today.getTime();
-        
+
         const formattedSlots = slots.map((slot) => {
           const slotHour = slot.start.getHours();
           const slotMinute = slot.start.getMinutes();
           const slotDate = new Date(currentDate);
           slotDate.setHours(slotHour, slotMinute, 0, 0);
-          
+
           // Check if this slot is in the past (only if selected date is today)
           let isPastSlot = false;
           if (isToday) {
@@ -305,7 +342,7 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
             // If the entire day is in the past, all slots are past
             isPastSlot = true;
           }
-          
+
           return {
             ...slot,
             date: new Date(currentDate),
@@ -323,7 +360,7 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
       console.error('Failed to fetch availability:', error);
       // Generate empty slots on error
       const slots = generateTimeSlots(currentDate);
-      
+
       // Get current date/time for past slot detection
       const now = new Date();
       const today = new Date();
@@ -331,13 +368,13 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
       const selectedDay = new Date(currentDate);
       selectedDay.setHours(0, 0, 0, 0);
       const isToday = selectedDay.getTime() === today.getTime();
-      
+
       const formattedSlots = slots.map((slot) => {
         const slotHour = slot.start.getHours();
         const slotMinute = slot.start.getMinutes();
         const slotDate = new Date(currentDate);
         slotDate.setHours(slotHour, slotMinute, 0, 0);
-        
+
         // Check if this slot is in the past (only if selected date is today)
         let isPastSlot = false;
         if (isToday) {
@@ -349,7 +386,7 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
           // If the entire day is in the past, all slots are past
           isPastSlot = true;
         }
-        
+
         return {
           ...slot,
           date: new Date(currentDate),
@@ -419,38 +456,39 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
   const isPast = selectedDay < today;
 
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
+    <Card className='p-4'>
+      <div className='flex items-center justify-between mb-4'>
+        <h3 className='text-lg font-semibold text-neutral-900'>
           {t('appointments.availabilityCalendar') || 'Availability Calendar'}
         </h3>
       </div>
 
       {!selectedDoctorId ? (
-        <div className="text-center py-8 text-gray-500 text-sm">
-          {t('appointments.selectDoctorToViewAvailability') || 'Select a doctor to view availability'}
+        <div className='text-center py-8 text-neutral-500 text-sm'>
+          {t('appointments.selectDoctorToViewAvailability') ||
+            'Select a doctor to view availability'}
         </div>
       ) : (
         <>
           {/* Date Selector */}
-          <div className="mb-4 flex items-center gap-2 flex-wrap">
+          <div className='mb-4 flex items-center gap-2 flex-wrap'>
             <button
               onClick={goToPreviousDay}
-              className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+              className='px-2 py-1 text-sm border border-neutral-300 rounded hover:bg-neutral-100'
               title={t('appointments.previousDay') || 'Previous Day'}
             >
               ←
             </button>
             <input
-              type="date"
+              type='date'
               value={formatDateForApi(currentDate)}
               onChange={handleDateChange}
               min={formatDateForApi(today)}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className='px-3 py-1.5 text-sm border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
             />
             <button
               onClick={goToNextDay}
-              className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+              className='px-2 py-1 text-sm border border-neutral-300 rounded hover:bg-neutral-100'
               title={t('appointments.nextDay') || 'Next Day'}
             >
               →
@@ -458,34 +496,33 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
             {!isToday && (
               <button
                 onClick={goToToday}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                className='px-3 py-1.5 text-sm border border-neutral-300 rounded hover:bg-neutral-100'
               >
                 {t('appointments.today') || 'Today'}
               </button>
             )}
-            <div className="ml-auto text-sm text-gray-600">
-              {formatDateDisplay(currentDate)}
-            </div>
+            <div className='ml-auto text-sm text-neutral-600'>{formatDateDisplay(currentDate)}</div>
           </div>
 
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              <div className="text-gray-500 text-sm">{t('common.loading')}</div>
+            <div className='text-center py-8'>
+              <Loader size='sm' inline />
             </div>
           ) : (
             <>
               {/* Time Slots Grid */}
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-96 overflow-y-auto">
+              <div className='grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-96 overflow-y-auto'>
                 {availableSlots.map((slot, idx) => {
                   const slotHour = slot.hour;
                   const slotMinute = slot.minute;
-                  const timeStr = `${slotHour.toString().padStart(2, '0')}:${slotMinute.toString().padStart(2, '0')}`;
-                  
+                  const timeStr = `${slotHour.toString().padStart(2, '0')}:${slotMinute
+                    .toString()
+                    .padStart(2, '0')}`;
+
                   // Explicitly check booked status and past slot status
                   const isBooked = slot?.booked === true;
                   const isPastSlot = slot?.isPast === true;
-                  const isAvailable = slot ? (slot.available && !isBooked && !isPastSlot) : false;
+                  const isAvailable = slot ? slot.available && !isBooked && !isPastSlot : false;
                   const isSelected =
                     selectedSlot &&
                     selectedSlot.dateKey === slot.dateKey &&
@@ -497,22 +534,26 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
                   let slotClass = '';
                   let slotTitle = '';
                   let slotIcon = '○';
-                  
+
                   if (isSelected && !isBooked && !isPastSlot) {
-                    slotClass = 'bg-blue-600 text-white border-blue-600 cursor-pointer';
-                    slotTitle = `${timeStr} - ${t('appointments.available') || 'Available'} (${t('appointments.selected') || 'Selected'})`;
+                    slotClass = 'bg-primary-600 text-white border-primary-600 cursor-pointer';
+                    slotTitle = `${timeStr} - ${t('appointments.available') || 'Available'} (${
+                      t('appointments.selected') || 'Selected'
+                    })`;
                     slotIcon = '✓';
                   } else if (isBooked) {
                     // Booked slots should always be red and disabled
-                    slotClass = 'bg-red-100 text-red-700 border-red-300 cursor-not-allowed opacity-75';
+                    slotClass =
+                      'bg-status-error/10 text-status-error border-status-error/30 cursor-not-allowed opacity-75';
                     slotTitle = `${timeStr} - ${t('appointments.booked') || 'Booked'}`;
                     slotIcon = '●';
                   } else if (isPastSlot) {
-                    slotClass = 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed';
+                    slotClass = 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed';
                     slotTitle = `${timeStr} - ${t('appointments.past') || 'Past'}`;
                     slotIcon = '—';
                   } else if (isAvailable) {
-                    slotClass = 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 cursor-pointer';
+                    slotClass =
+                      'bg-secondary-100 text-secondary-700 border-secondary-300 hover:bg-secondary-100 cursor-pointer';
                     slotTitle = `${timeStr} - ${t('appointments.available') || 'Available'}`;
                     slotIcon = '○';
                   } else {
@@ -526,12 +567,12 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
                       key={idx}
                       onClick={() => handleSlotClick(slot)}
                       disabled={isBooked || !isAvailable || isPastSlot}
-                      className={`py-2 px-3 text-xs rounded border transition-colors font-medium ${slotClass}`}
+                      className={`py-2 px-3 text-xs rounded border font-medium ${slotClass}`}
                       title={slotTitle}
                     >
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs font-semibold">{timeStr}</span>
-                        <span className="text-base mt-0.5">{slotIcon}</span>
+                      <div className='flex flex-col items-center'>
+                        <span className='text-xs font-semibold'>{timeStr}</span>
+                        <span className='text-base mt-0.5'>{slotIcon}</span>
                       </div>
                     </button>
                   );
@@ -539,18 +580,22 @@ export default function AppointmentCalendar({ selectedDoctorId, selectedDate, on
               </div>
 
               {/* Legend */}
-              <div className="mt-4 flex items-center justify-center gap-4 text-xs flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 bg-green-50 border border-green-300 rounded"></div>
-                  <span className="text-gray-600">{t('appointments.available') || 'Available'}</span>
+              <div className='mt-4 flex items-center justify-center gap-4 text-xs flex-wrap'>
+                <div className='flex items-center gap-1.5'>
+                  <div className='w-3 h-3 bg-green-50 border border-green-300 rounded'></div>
+                  <span className='text-neutral-600'>
+                    {t('appointments.available') || 'Available'}
+                  </span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 bg-red-100 border border-red-300 rounded"></div>
-                  <span className="text-gray-600">{t('appointments.booked') || 'Booked'}</span>
+                <div className='flex items-center gap-1.5'>
+                  <div className='w-3 h-3 bg-red-100 border border-red-300 rounded'></div>
+                  <span className='text-neutral-600'>{t('appointments.booked') || 'Booked'}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 bg-gray-100 border border-gray-200 rounded"></div>
-                  <span className="text-gray-600">{t('appointments.pastUnavailable') || 'Past/Unavailable'}</span>
+                <div className='flex items-center gap-1.5'>
+                  <div className='w-3 h-3 bg-gray-100 border border-gray-200 rounded'></div>
+                  <span className='text-neutral-600'>
+                    {t('appointments.pastUnavailable') || 'Past/Unavailable'}
+                  </span>
                 </div>
               </div>
             </>

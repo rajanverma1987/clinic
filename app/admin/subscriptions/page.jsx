@@ -1,17 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useI18n } from '@/contexts/I18nContext';
-import { apiClient } from '@/lib/api/client';
 import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Loader } from '@/components/ui/Loader';
 import { Select } from '@/components/ui/Select';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
+import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
+import { apiClient } from '@/lib/api/client';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 // Available features that can be included/excluded in subscription plans
 const AVAILABLE_FEATURES = [
@@ -49,9 +50,9 @@ export default function AdminSubscriptionsPage() {
     description: '',
     price: '',
     currency: 'USD',
-      billingCycle: 'MONTHLY',
-      paypalPlanId: '',
-      features: [],
+    billingCycle: 'MONTHLY',
+    paypalPlanId: '',
+    features: [],
     maxUsers: '',
     maxPatients: '',
     maxStorageGB: '',
@@ -227,18 +228,16 @@ export default function AdminSubscriptionsPage() {
       header: 'Plan Name',
       accessor: (row) => (
         <div>
-          <div className="font-medium">{row.name}</div>
-          <div className="text-xs text-gray-500 font-mono mt-1">
-            ID: {row._id}
-          </div>
-          <div className="flex gap-2 mt-1">
+          <div className='font-medium'>{row.name}</div>
+          <div className='text-xs text-neutral-500 font-mono mt-1'>ID: {row._id}</div>
+          <div className='flex gap-2 mt-1'>
             {row.isPopular && (
-              <Tag variant="success" size="sm">
+              <Tag variant='success' size='sm'>
                 Popular
               </Tag>
             )}
             {row.isHidden && (
-              <Tag variant="default" size="sm">
+              <Tag variant='default' size='sm'>
                 Hidden
               </Tag>
             )}
@@ -251,7 +250,7 @@ export default function AdminSubscriptionsPage() {
       accessor: (row) => (
         <div>
           {formatPrice(row.price, row.currency)}
-          <span className="text-gray-500 text-sm ml-1">
+          <span className='text-neutral-500 text-sm ml-1'>
             /{row.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}
           </span>
         </div>
@@ -260,15 +259,13 @@ export default function AdminSubscriptionsPage() {
     {
       header: 'Features',
       accessor: (row) => (
-        <div className="text-sm text-gray-600">
-          {row.features.length} features
-        </div>
+        <div className='text-sm text-neutral-600'>{row.features.length} features</div>
       ),
     },
     {
       header: 'Limits',
       accessor: (row) => (
-        <div className="text-sm text-gray-600">
+        <div className='text-sm text-neutral-600'>
           {row.maxUsers && <div>Users: {row.maxUsers}</div>}
           {row.maxPatients && <div>Patients: {row.maxPatients.toLocaleString()}</div>}
           {row.maxStorageGB && <div>Storage: {row.maxStorageGB}GB</div>}
@@ -278,22 +275,18 @@ export default function AdminSubscriptionsPage() {
     {
       header: 'Actions',
       accessor: (row) => (
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleEdit(row)}
-          >
+        <div className='flex gap-2'>
+          <Button variant='secondary' size='sm' onClick={() => handleEdit(row)}>
             Edit
           </Button>
           <Button
-            variant="outline"
-            size="sm"
+            variant='secondary'
+            size='sm'
             onClick={() => {
               navigator.clipboard.writeText(row._id);
               alert('Plan ID copied to clipboard!');
             }}
-            title="Copy Plan ID for manual assignment"
+            title='Copy Plan ID for manual assignment'
           >
             Copy ID
           </Button>
@@ -302,12 +295,15 @@ export default function AdminSubscriptionsPage() {
     },
   ];
 
-  if (authLoading || loading) {
+  // Redirect handled in useEffect above
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading...</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
@@ -316,10 +312,10 @@ export default function AdminSubscriptionsPage() {
   if (!user) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-red-600 mb-2">Access Denied</h2>
-            <p className="text-gray-500 mb-4">Please log in to access this page.</p>
+        <div className='flex items-center justify-center h-64'>
+          <div className='text-center'>
+            <h2 className='text-xl font-semibold text-status-error mb-2'>Access Denied</h2>
+            <p className='text-neutral-500 mb-4'>Please log in to access this page.</p>
             <Button onClick={() => router.push('/login')}>Go to Login</Button>
           </div>
         </div>
@@ -330,10 +326,12 @@ export default function AdminSubscriptionsPage() {
   if (user.role !== 'super_admin') {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-red-600 mb-2">Access Denied</h2>
-            <p className="text-gray-500 mb-4">You need super admin privileges to access this page.</p>
+        <div className='flex items-center justify-center h-64'>
+          <div className='text-center'>
+            <h2 className='text-xl font-semibold text-status-error mb-2'>Access Denied</h2>
+            <p className='text-neutral-500 mb-4'>
+              You need super admin privileges to access this page.
+            </p>
             <Button onClick={() => router.push('/dashboard')}>Go to Dashboard</Button>
           </div>
         </div>
@@ -343,54 +341,56 @@ export default function AdminSubscriptionsPage() {
 
   return (
     <Layout>
-      <div className="mb-8 flex items-center justify-between">
+      <div className='mb-8 flex items-center justify-between'>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Subscription Plans</h1>
-          <p className="text-gray-600 mt-2">Manage subscription plans for clients</p>
+          <h1 className='text-3xl font-bold text-neutral-900'>Subscription Plans</h1>
+          <p className='text-neutral-600 mt-2'>Manage subscription plans for clients</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => fetchPlans()}>
+        <div className='flex gap-3'>
+          <Button variant='secondary' onClick={() => fetchPlans()}>
             Refresh
           </Button>
-        <Button onClick={() => {
-          if (showForm) {
-            handleCancel();
-          } else {
-            setShowForm(true);
-            setEditingPlanId(null);
-          }
-        }}>
-          {showForm ? 'Cancel' : '+ Create Plan'}
-        </Button>
+          <Button
+            onClick={() => {
+              if (showForm) {
+                handleCancel();
+              } else {
+                setShowForm(true);
+                setEditingPlanId(null);
+              }
+            }}
+          >
+            {showForm ? 'Cancel' : '+ Create Plan'}
+          </Button>
         </div>
       </div>
 
       {showForm && (
-        <Card className="mb-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <h2 className="text-xl font-semibold mb-4">
+        <Card className='mb-6'>
+          <form onSubmit={handleSubmit} className='space-y-6' noValidate>
+            <h2 className='text-xl font-semibold mb-4'>
               {editingPlanId ? 'Edit Subscription Plan' : 'Create Subscription Plan'}
             </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               <Input
-                label="Plan Name"
+                label='Plan Name'
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
 
               <Input
-                label="Price (in dollars)"
-                type="number"
-                step="0.01"
+                label='Price (in dollars)'
+                type='number'
+                step='0.01'
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 required
               />
 
               <Select
-                label="Currency"
+                label='Currency'
                 value={formData.currency}
                 onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
                 options={[
@@ -403,7 +403,7 @@ export default function AdminSubscriptionsPage() {
               />
 
               <Select
-                label="Billing Cycle"
+                label='Billing Cycle'
                 value={formData.billingCycle}
                 onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value })}
                 options={[
@@ -414,87 +414,93 @@ export default function AdminSubscriptionsPage() {
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className='md:col-span-2'>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
                 PayPal Plan ID (optional - for payment integration)
               </label>
-              <div className="flex gap-2">
+              <div className='flex gap-2'>
                 <Input
                   value={formData.paypalPlanId}
                   onChange={(e) => setFormData({ ...formData, paypalPlanId: e.target.value })}
-                  placeholder="e.g., P-7L918936KP7498103NEXRFNY"
-                  className="flex-1"
+                  placeholder='e.g., P-7L918936KP7498103NEXRFNY'
+                  className='flex-1'
                 />
                 <Button
-                  type="button"
-                  variant="outline"
+                  type='button'
+                  variant='secondary'
                   onClick={handleCreatePayPalPlan}
-                  disabled={!formData.name || !formData.price || parseFloat(formData.price) <= 0 || creatingPayPalPlan}
+                  disabled={
+                    !formData.name ||
+                    !formData.price ||
+                    parseFloat(formData.price) <= 0 ||
+                    creatingPayPalPlan
+                  }
                   isLoading={creatingPayPalPlan}
-                  title="Create PayPal billing plan automatically"
+                  title='Create PayPal billing plan automatically'
                 >
                   Create PayPal Plan
                 </Button>
               </div>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className='text-sm text-neutral-500 mt-1'>
                 {formData.paypalPlanId ? (
-                  <span className="text-green-600 font-medium">✓ PayPal integration configured</span>
+                  <span className='text-secondary-600 font-medium'>
+                    ✓ PayPal integration configured
+                  </span>
                 ) : (
                   <span>
-                    Leave empty for free plans. For paid plans, click "Create PayPal Plan" button or enter manually.
+                    Leave empty for free plans. For paid plans, click "Create PayPal Plan" button or
+                    enter manually.
                   </span>
                 )}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               <Input
-                label="Max Users (optional)"
-                type="number"
+                label='Max Users (optional)'
+                type='number'
                 value={formData.maxUsers}
                 onChange={(e) => setFormData({ ...formData, maxUsers: e.target.value })}
               />
 
               <Input
-                label="Max Patients (optional)"
-                type="number"
+                label='Max Patients (optional)'
+                type='number'
                 value={formData.maxPatients}
                 onChange={(e) => setFormData({ ...formData, maxPatients: e.target.value })}
               />
 
               <Input
-                label="Max Storage GB (optional)"
-                type="number"
+                label='Max Storage GB (optional)'
+                type='number'
                 value={formData.maxStorageGB}
                 onChange={(e) => setFormData({ ...formData, maxStorageGB: e.target.value })}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
                 Description (optional)
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className='w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                 rows={2}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Features
-              </label>
-              <div className="border border-gray-300 rounded-lg p-4 max-h-96 overflow-y-auto bg-gray-50">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label className='block text-sm font-medium text-neutral-700 mb-3'>Features</label>
+              <div className='border border-neutral-300 rounded-lg p-4 max-h-96 overflow-y-auto bg-neutral-100'>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
                   {AVAILABLE_FEATURES.map((feature) => (
                     <label
                       key={feature}
-                      className="flex items-center space-x-2 p-2 rounded hover:bg-gray-100 cursor-pointer"
+                      className='flex items-center space-x-2 p-2 rounded hover:bg-neutral-100 cursor-pointer'
                     >
                       <input
-                        type="checkbox"
+                        type='checkbox'
                         checked={formData.features.includes(feature)}
                         onChange={(e) => {
                           if (e.target.checked) {
@@ -509,59 +515,59 @@ export default function AdminSubscriptionsPage() {
                             });
                           }
                         }}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
                       />
-                      <span className="text-sm text-gray-700">{feature}</span>
+                      <span className='text-sm text-neutral-700'>{feature}</span>
                     </label>
                   ))}
                 </div>
                 {formData.features.length === 0 && (
-                  <p className="text-sm text-gray-500 mt-2 text-center">
+                  <p className='text-sm text-neutral-500 mt-2 text-center'>
                     Select features to include in this plan
                   </p>
                 )}
               </div>
               {formData.features.length > 0 && (
-                <p className="text-sm text-gray-500 mt-2">
+                <p className='text-sm text-neutral-500 mt-2'>
                   {formData.features.length} feature(s) selected
                 </p>
               )}
             </div>
 
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center">
+            <div className='flex flex-col gap-3'>
+              <div className='flex items-center'>
                 <input
-                  type="checkbox"
-                  id="isPopular"
+                  type='checkbox'
+                  id='isPopular'
                   checked={formData.isPopular}
                   onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
                 />
-                <label htmlFor="isPopular" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor='isPopular' className='ml-2 block text-sm text-neutral-700'>
                   Mark as popular plan
                 </label>
               </div>
-              <div className="flex items-center">
+              <div className='flex items-center'>
                 <input
-                  type="checkbox"
-                  id="isHidden"
+                  type='checkbox'
+                  id='isHidden'
                   checked={formData.isHidden}
                   onChange={(e) => setFormData({ ...formData, isHidden: e.target.checked })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
                 />
-                <label htmlFor="isHidden" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor='isHidden' className='ml-2 block text-sm text-neutral-700'>
                   Hide from Pricing Page
                 </label>
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <Button type="submit" isLoading={submitting}>
+            <div className='flex gap-4'>
+              <Button type='submit' isLoading={submitting} disabled={submitting}>
                 {editingPlanId ? 'Update Plan' : 'Create Plan'}
               </Button>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='secondary'
                 onClick={handleCancel}
                 disabled={submitting}
               >
@@ -574,24 +580,20 @@ export default function AdminSubscriptionsPage() {
 
       <Card>
         {plans.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-500 mb-4">No subscription plans found</p>
-            <Button onClick={() => fetchPlans()} variant="outline">
+          <div className='p-8 text-center'>
+            <p className='text-neutral-500 mb-4'>No subscription plans found</p>
+            <Button onClick={() => fetchPlans()} variant='secondary'>
               Refresh
             </Button>
           </div>
         ) : (
           <>
-            <div className="p-4 border-b border-gray-200">
-              <p className="text-sm text-gray-600">
+            <div className='p-4 border-b border-neutral-200'>
+              <p className='text-sm text-neutral-600'>
                 Showing {plans.length} subscription plan(s)
               </p>
             </div>
-            <Table
-              data={plans}
-              columns={columns}
-              emptyMessage="No subscription plans found"
-            />
+            <Table data={plans} columns={columns} emptyMessage='No subscription plans found' />
           </>
         )}
       </Card>

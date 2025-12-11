@@ -1,18 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { InvoicePrintPreview } from '@/components/invoices/InvoicePrintPreview';
+import { Layout } from '@/components/layout/Layout';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
+import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { apiClient } from '@/lib/api/client';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Table } from '@/components/ui/Table';
-import { InvoicePrintPreview } from '@/components/invoices/InvoicePrintPreview';
-import { showSuccess, showError } from '@/lib/utils/toast';
 import { useSettings } from '@/hooks/useSettings';
+import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { showError, showSuccess } from '@/lib/utils/toast';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function InvoicesPage() {
   const router = useRouter();
@@ -71,7 +73,11 @@ export default function InvoicesPage() {
   };
 
   const handleDelete = async (invoiceId, invoiceNumber) => {
-    if (!confirm(`Are you sure you want to delete invoice ${invoiceNumber}? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete invoice ${invoiceNumber}? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
@@ -120,8 +126,7 @@ export default function InvoicesPage() {
     { header: t('invoices.invoiceHash'), accessor: 'invoiceNumber' },
     {
       header: t('appointments.patient'),
-      accessor: (row) =>
-        `${row.patientId?.firstName || ''} ${row.patientId?.lastName || ''}`,
+      accessor: (row) => `${row.patientId?.firstName || ''} ${row.patientId?.lastName || ''}`,
     },
     {
       header: t('invoices.status'),
@@ -129,12 +134,12 @@ export default function InvoicesPage() {
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
             row.status === 'paid'
-              ? 'bg-green-100 text-green-800'
+              ? 'bg-secondary-100 text-secondary-700'
               : row.status === 'pending'
-              ? 'bg-yellow-100 text-yellow-800'
+              ? 'bg-status-warning/10 text-status-warning'
               : row.status === 'draft'
-              ? 'bg-gray-100 text-gray-800'
-              : 'bg-gray-100 text-gray-800'
+              ? 'bg-neutral-100 text-neutral-700'
+              : 'bg-neutral-100 text-neutral-700'
           }`}
         >
           {getStatusLabel(row.status)}
@@ -156,96 +161,139 @@ export default function InvoicesPage() {
     {
       header: t('common.actions'),
       accessor: (row) => (
-        <div className="flex gap-2">
+        <div className='flex gap-2'>
           {row.status === 'draft' && (
             <>
               <Button
-                variant="outline"
-                size="sm"
+                variant='secondary'
+                size='md'
                 onClick={(e) => {
                   e.stopPropagation();
                   router.push(`/invoices/${row._id}/edit`);
                 }}
-                title="Edit Invoice"
-                className="p-2"
+                title='Edit Invoice'
+                className='whitespace-nowrap'
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
+                  />
                 </svg>
+                Edit
               </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant='secondary'
+                size='md'
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete(row._id, row.invoiceNumber);
                 }}
                 isLoading={deletingInvoiceId === row._id}
-                className="text-red-600 hover:text-red-700 border-red-300 p-2"
-                title="Delete Invoice"
+                disabled={deletingInvoiceId === row._id}
+                className='whitespace-nowrap text-status-error border-status-error/30 hover:bg-status-error/10'
+                title='Delete Invoice'
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                  />
                 </svg>
+                Delete
               </Button>
             </>
           )}
           {row.status !== 'paid' && (
             <Button
-              variant="outline"
-              size="sm"
+              variant='secondary'
+              size='md'
               onClick={(e) => {
                 e.stopPropagation();
                 handleMarkPaid(row._id, row.invoiceNumber);
               }}
               isLoading={markingPaidId === row._id}
-              className="text-green-600 hover:text-green-700 border-green-300 p-2"
-              title="Mark as Paid"
+              disabled={markingPaidId === row._id}
+              className='whitespace-nowrap'
+              title='Mark as Paid'
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                />
               </svg>
+              Mark Paid
             </Button>
           )}
           <Button
-            variant="outline"
-            size="sm"
+            variant='secondary'
+            size='md'
             onClick={(e) => {
               e.stopPropagation();
               setPrintInvoiceId(row._id);
               setShowPrintPreview(true);
             }}
-            title="Print Invoice"
-            className="p-2"
+            title='Print Invoice'
+            className='whitespace-nowrap'
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z'
+              />
             </svg>
+            Print
           </Button>
         </div>
       ),
     },
   ];
 
-  if (authLoading || loading) {
+  // Redirect if not authenticated (non-blocking)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
+  // Show empty state while redirecting
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">{t('common.loading')}</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('invoices.title')}</h1>
-          <p className="text-gray-600 mt-2">{t('invoices.invoiceList')}</p>
-        </div>
-        <Button onClick={() => router.push('/invoices/new')}>+ {t('invoices.createInvoice')}</Button>
-      </div>
+      <DashboardHeader
+        title={t('invoices.title')}
+        subtitle={t('invoices.invoiceList')}
+        actionButton={
+          <Button
+            onClick={() => router.push('/invoices/new')}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('invoices.createInvoice')}
+          </Button>
+        }
+      />
 
       <Card>
         <Table
@@ -267,4 +315,3 @@ export default function InvoicesPage() {
     </Layout>
   );
 }
-

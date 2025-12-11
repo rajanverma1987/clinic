@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { Layout } from '@/components/layout/Layout';
+import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
+import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Table } from '@/components/ui/Table';
-import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
-import { showSuccess, showError } from '@/lib/utils/toast';
+import { showError, showSuccess } from '@/lib/utils/toast';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function PrescriptionsPage() {
   const router = useRouter();
@@ -80,7 +82,7 @@ export default function PrescriptionsPage() {
     if (!confirm('Are you sure you want to activate this prescription?')) {
       return;
     }
-    
+
     try {
       const response = await apiClient.post(`/prescriptions/${prescriptionId}/activate`);
       if (response.success) {
@@ -100,23 +102,22 @@ export default function PrescriptionsPage() {
     { header: t('prescriptions.title') + ' #', accessor: 'prescriptionNumber' },
     {
       header: t('appointments.patient'),
-      accessor: (row) =>
-        `${row.patientId?.firstName || ''} ${row.patientId?.lastName || ''}`,
+      accessor: (row) => `${row.patientId?.firstName || ''} ${row.patientId?.lastName || ''}`,
     },
     {
       header: t('prescriptions.status'),
       accessor: (row) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
+          className={`px-2 py-1 rounded-full text-body-xs font-medium ${
             row.status === 'active'
-              ? 'bg-green-100 text-green-800'
+              ? 'bg-secondary-100 text-secondary-700'
               : row.status === 'dispensed'
-              ? 'bg-blue-100 text-blue-800'
+              ? 'bg-primary-100 text-primary-700'
               : row.status === 'draft'
-              ? 'bg-yellow-100 text-yellow-800'
+              ? 'bg-status-warning/20 text-status-warning'
               : row.status === 'cancelled'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-gray-100 text-gray-800'
+              ? 'bg-status-error/20 text-status-error'
+              : 'bg-neutral-100 text-neutral-700'
           }`}
         >
           {getStatusLabel(row.status)}
@@ -130,36 +131,39 @@ export default function PrescriptionsPage() {
     {
       header: 'Actions',
       accessor: (row) => (
-        <div className="flex gap-2">
+        <div className='flex gap-2'>
           {row.status === 'draft' && (
             <Button
-              variant="primary"
-              size="sm"
+              variant='primary'
+              size='md'
               onClick={(e) => {
                 e.stopPropagation();
                 handleActivate(row._id);
               }}
+              className='whitespace-nowrap'
             >
               {t('prescriptions.activate') || 'Activate'}
             </Button>
           )}
           <Button
-            variant="outline"
-            size="sm"
+            variant='secondary'
+            size='md'
             onClick={(e) => {
               e.stopPropagation();
               handleEdit(row._id);
             }}
+            className='whitespace-nowrap'
           >
             Edit
           </Button>
           <Button
-            variant="outline"
-            size="sm"
+            variant='secondary'
+            size='md'
             onClick={(e) => {
               e.stopPropagation();
               handlePrint(row._id);
             }}
+            className='whitespace-nowrap'
           >
             Print
           </Button>
@@ -168,25 +172,42 @@ export default function PrescriptionsPage() {
     },
   ];
 
-  if (authLoading || loading) {
+  // Redirect if not authenticated (non-blocking)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
+  // Show empty state while redirecting
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">{t('common.loading')}</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('prescriptions.title')}</h1>
-          <p className="text-gray-600 mt-2">{t('prescriptions.prescriptionList')}</p>
-        </div>
-        <Button onClick={() => router.push('/prescriptions/new')}>+ {t('prescriptions.createPrescription')}</Button>
-      </div>
+      <DashboardHeader
+        title={t('prescriptions.title')}
+        subtitle={t('prescriptions.prescriptionList')}
+        actionButton={
+          <Button
+            onClick={() => router.push('/prescriptions/new')}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('prescriptions.createPrescription')}
+          </Button>
+        }
+      />
 
       <Card>
         <Table
@@ -205,4 +226,3 @@ export default function PrescriptionsPage() {
     </Layout>
   );
 }
-

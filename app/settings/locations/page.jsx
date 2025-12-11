@@ -1,14 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function LocationsPage() {
   const router = useRouter();
@@ -50,9 +49,9 @@ export default function LocationsPage() {
       header: 'Location Name',
       accessor: (row) => (
         <div>
-          <div className="font-medium">{row.name}</div>
+          <div className='font-medium'>{row.name}</div>
           {row.isMain && (
-            <Tag variant="success" size="sm" className="mt-1">
+            <Tag variant='success' size='sm' className='mt-1'>
               Main Location
             </Tag>
           )}
@@ -73,12 +72,12 @@ export default function LocationsPage() {
     {
       header: 'Actions',
       accessor: (row) => (
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+        <div className='flex gap-2'>
+          <Button variant='secondary' size='sm'>
             Edit
           </Button>
           {!row.isMain && (
-            <Button variant="outline" size="sm">
+            <Button variant='secondary' size='sm'>
               {row.isActive ? 'Deactivate' : 'Activate'}
             </Button>
           )}
@@ -89,90 +88,84 @@ export default function LocationsPage() {
 
   return (
     <Layout>
-      <div className="mb-8 flex items-center justify-between">
+      <div className='mb-8 flex items-center justify-between'>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Multi-Location Management</h1>
-          <p className="text-gray-600 mt-2">Manage multiple clinic locations</p>
+          <h1 className='text-3xl font-bold text-neutral-900'>Multi-Location Management</h1>
+          <p className='text-neutral-600 mt-2'>Manage multiple clinic locations</p>
         </div>
-        <Button onClick={() => setShowModal(true)}>
-          + Add Location
-        </Button>
+        <Button onClick={() => setShowModal(true)}>+ Add Location</Button>
       </div>
 
       <Card>
-        <Table
-          data={locations}
-          columns={columns}
-          emptyMessage="No locations found"
-        />
+        <Table data={locations} columns={columns} emptyMessage='No locations found' />
       </Card>
 
       {/* Add Location Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="max-w-md w-full mx-4">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Add New Location</h2>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <Card className='max-w-md w-full mx-4'>
+            <div className='p-6'>
+              <h2 className='text-xl font-semibold mb-4'>Add New Location</h2>
+
+              <form onSubmit={handleSubmit} className='space-y-4' noValidate>
                 <Input
-                  label="Location Name"
+                  label='Location Name'
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  placeholder="e.g., Downtown Branch"
+                  placeholder='e.g., Downtown Branch'
                 />
 
                 <Input
-                  label="Address"
+                  label='Address'
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   required
-                  placeholder="Street address"
+                  placeholder='Street address'
                 />
 
                 <Input
-                  label="Phone"
+                  label='Phone'
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   required
-                  placeholder="+1234567890"
+                  placeholder='+1234567890'
                 />
 
                 <Input
-                  label="Email"
-                  type="email"
+                  label='Email'
+                  type='email'
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
-                  placeholder="location@clinic.com"
+                  placeholder='location@clinic.com'
                 />
 
-                <div className="flex items-center">
+                <div className='flex items-center'>
                   <input
-                    type="checkbox"
-                    id="isMain"
+                    type='checkbox'
+                    id='isMain'
                     checked={formData.isMain}
                     onChange={(e) => setFormData({ ...formData, isMain: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
                   />
-                  <label htmlFor="isMain" className="ml-2 block text-sm text-gray-700">
+                  <label htmlFor='isMain' className='ml-2 block text-sm text-neutral-700'>
                     Set as main location
                   </label>
                 </div>
 
-                <div className="flex gap-4 pt-4">
-                  <Button type="submit" className="flex-1">
+                <div className='flex gap-4 pt-4'>
+                  <Button type='submit' className='flex-1'>
                     Add Location
                   </Button>
                   <Button
-                    type="button"
-                    variant="outline"
+                    type='button'
+                    variant='secondary'
                     onClick={() => {
                       setShowModal(false);
                       setFormData({ name: '', address: '', phone: '', email: '', isMain: false });
                     }}
-                    className="flex-1"
+                    className='flex-1'
                   >
                     Cancel
                   </Button>
@@ -185,4 +178,3 @@ export default function LocationsPage() {
     </Layout>
   );
 }
-

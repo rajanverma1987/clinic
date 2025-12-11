@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { generatePrescriptionPrintHTML } from '@/components/prescriptions/PrescriptionPrintTemplate';
+import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { generatePrescriptionPrintHTML } from '@/components/prescriptions/PrescriptionPrintTemplate';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function PrescriptionPrintPage() {
   const router = useRouter();
@@ -85,7 +86,9 @@ export default function PrescriptionPrintPage() {
       const appointmentId = prescription.appointmentId?._id || prescription.appointmentId;
       if (appointmentId) {
         try {
-          const noteResponse = await apiClient.get(`/clinical-notes?appointmentId=${appointmentId}&limit=1`);
+          const noteResponse = await apiClient.get(
+            `/clinical-notes?appointmentId=${appointmentId}&limit=1`
+          );
           if (noteResponse.success && noteResponse.data) {
             const noteData = noteResponse.data?.data || noteResponse.data;
             if (Array.isArray(noteData) && noteData[0]) {
@@ -98,26 +101,40 @@ export default function PrescriptionPrintPage() {
       }
 
       // Calculate patient age
-      const age = patient.dateOfBirth 
-        ? Math.floor((new Date().getTime() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      const age = patient.dateOfBirth
+        ? Math.floor(
+            (new Date().getTime() - new Date(patient.dateOfBirth).getTime()) /
+              (365.25 * 24 * 60 * 60 * 1000)
+          )
         : undefined;
 
       // Format clinic address
-      const clinicAddress = clinicSettings?.settings?.address 
-        ? `${clinicSettings.settings.address.street || ''}, ${clinicSettings.settings.address.city || ''} - ${clinicSettings.settings.address.zipCode || ''}.`
+      const clinicAddress = clinicSettings?.settings?.address
+        ? `${clinicSettings.settings.address.street || ''}, ${
+            clinicSettings.settings.address.city || ''
+          } - ${clinicSettings.settings.address.zipCode || ''}.`
         : '';
 
       // Format clinic timing
       const clinicTiming = clinicSettings?.settings?.clinicHours
         ? clinicSettings.settings.clinicHours
             .filter((h) => h.isOpen)
-            .map((h) => `${h.day}: ${h.timeSlots?.[0]?.startTime || ''} - ${h.timeSlots?.[0]?.endTime || ''}`)
+            .map(
+              (h) =>
+                `${h.day}: ${h.timeSlots?.[0]?.startTime || ''} - ${
+                  h.timeSlots?.[0]?.endTime || ''
+                }`
+            )
             .join(', ')
         : '';
 
       // Format visit date
       const visitDate = prescription.createdAt || new Date().toISOString();
-      const visitTime = new Date(visitDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const visitTime = new Date(visitDate).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
 
       // Prepare print data
       const printData = {
@@ -125,8 +142,10 @@ export default function PrescriptionPrintPage() {
         clinicAddress: clinicAddress,
         clinicPhone: clinicSettings?.settings?.phone || '',
         clinicTiming: clinicTiming,
-        doctorName: prescription.doctorId 
-          ? `${prescription.doctorId.firstName || ''} ${prescription.doctorId.lastName || ''}`.trim()
+        doctorName: prescription.doctorId
+          ? `${prescription.doctorId.firstName || ''} ${
+              prescription.doctorId.lastName || ''
+            }`.trim()
           : `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim(),
         doctorQualification: '',
         doctorRegNo: '',
@@ -135,45 +154,67 @@ export default function PrescriptionPrintPage() {
         patientName: `${patient.firstName || ''} ${patient.lastName || ''}`.trim(),
         patientAge: age ? `${age} Y` : undefined,
         patientGender: patient.gender?.charAt(0).toUpperCase() || '',
-        patientAddress: patient.address 
+        patientAddress: patient.address
           ? `${patient.address.street || ''}, ${patient.address.city || ''}`.trim()
           : '',
-        weight: clinicalNote?.vitalSigns?.weight ? `${clinicalNote.vitalSigns.weight} kg` : undefined,
-        height: clinicalNote?.vitalSigns?.height ? `${clinicalNote.vitalSigns.height} cms` : undefined,
+        weight: clinicalNote?.vitalSigns?.weight
+          ? `${clinicalNote.vitalSigns.weight} kg`
+          : undefined,
+        height: clinicalNote?.vitalSigns?.height
+          ? `${clinicalNote.vitalSigns.height} cms`
+          : undefined,
         bloodPressure: clinicalNote?.vitalSigns?.bloodPressure || undefined,
         referredBy: undefined,
         knownHistory: patient.medicalHistory ? [patient.medicalHistory] : [],
         visitDate: visitDate,
         visitTime: visitTime,
-        chiefComplaints: clinicalNote?.soap?.subjective 
+        chiefComplaints: clinicalNote?.soap?.subjective
           ? clinicalNote.soap.subjective.split('\n').filter((s) => s.trim())
           : [],
         clinicalFindings: clinicalNote?.soap?.objective
           ? clinicalNote.soap.objective.split('\n').filter((s) => s.trim())
           : [],
         notes: clinicalNote?.soap?.plan || prescription.additionalInstructions || undefined,
-        diagnosis: prescription.diagnosis 
+        diagnosis: prescription.diagnosis
           ? prescription.diagnosis.split(',').map((d) => d.trim())
           : [],
-        procedures: prescription.items?.filter(i => i.itemType === 'procedure').map(i => i.procedureName || '') || [],
-        items: (prescription.items || []).map(item => {
+        procedures:
+          prescription.items
+            ?.filter((i) => i.itemType === 'procedure')
+            .map((i) => i.procedureName || '') || [],
+        items: (prescription.items || []).map((item) => {
           const form = item.form?.toUpperCase() || '';
-          const name = item.itemType === 'drug' 
-            ? `${form === 'TABLET' ? 'TAB.' : form === 'CAPSULE' ? 'CAP.' : ''} ${item.drugName || ''}`.trim()
-            : item.itemType === 'lab'
-            ? item.labTestName || ''
-            : item.itemType === 'procedure'
-            ? item.procedureName || ''
-            : item.itemName || '';
-          
-          const dosage = item.itemType === 'drug' && item.frequency
-            ? `${item.quantity || 1} ${item.frequency}${item.takeBeforeMeal ? ' (Before Food)' : item.takeAfterMeal ? ' (After Food)' : item.takeWithFood ? ' (With Food)' : ''}`
-            : '';
-          
-          const duration = item.itemType === 'drug' && item.duration
-            ? `${item.duration} Days (Tot:${item.quantity || 1} ${form === 'TABLET' ? 'Tab' : form === 'CAPSULE' ? 'Cap' : 'Unit'})`
-            : '';
-          
+          const name =
+            item.itemType === 'drug'
+              ? `${form === 'TABLET' ? 'TAB.' : form === 'CAPSULE' ? 'CAP.' : ''} ${
+                  item.drugName || ''
+                }`.trim()
+              : item.itemType === 'lab'
+              ? item.labTestName || ''
+              : item.itemType === 'procedure'
+              ? item.procedureName || ''
+              : item.itemName || '';
+
+          const dosage =
+            item.itemType === 'drug' && item.frequency
+              ? `${item.quantity || 1} ${item.frequency}${
+                  item.takeBeforeMeal
+                    ? ' (Before Food)'
+                    : item.takeAfterMeal
+                    ? ' (After Food)'
+                    : item.takeWithFood
+                    ? ' (With Food)'
+                    : ''
+                }`
+              : '';
+
+          const duration =
+            item.itemType === 'drug' && item.duration
+              ? `${item.duration} Days (Tot:${item.quantity || 1} ${
+                  form === 'TABLET' ? 'Tab' : form === 'CAPSULE' ? 'Cap' : 'Unit'
+                })`
+              : '';
+
           return {
             itemType: item.itemType,
             name,
@@ -184,12 +225,18 @@ export default function PrescriptionPrintPage() {
             instructions: item.instructions,
           };
         }),
-        investigations: prescription.items?.filter(i => i.itemType === 'lab').map(i => i.labTestName || '') || [],
-        advice: prescription.additionalInstructions 
+        investigations:
+          prescription.items?.filter((i) => i.itemType === 'lab').map((i) => i.labTestName || '') ||
+          [],
+        advice: prescription.additionalInstructions
           ? prescription.additionalInstructions.split('\n').filter((a) => a.trim())
           : [],
-        followUp: prescription.validUntil 
-          ? new Date(prescription.validUntil).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        followUp: prescription.validUntil
+          ? new Date(prescription.validUntil).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            })
           : undefined,
         additionalInstructions: undefined,
       };
@@ -205,21 +252,17 @@ export default function PrescriptionPrintPage() {
   };
 
   if (authLoading || loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-500">{t('common.loading')}</div>
-      </div>
-    );
+    return <Loader fullScreen size='lg' />;
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">{error}</div>
+      <div className='flex items-center justify-center h-screen'>
+        <div className='text-center'>
+          <div className='text-status-error mb-4'>{error}</div>
           <button
             onClick={() => router.back()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className='px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600'
           >
             Go Back
           </button>
@@ -228,11 +271,5 @@ export default function PrescriptionPrintPage() {
     );
   }
 
-  return (
-    <div 
-      dangerouslySetInnerHTML={{ __html: printHtml }}
-      className="print-container"
-    />
-  );
+  return <div dangerouslySetInnerHTML={{ __html: printHtml }} className='print-container' />;
 }
-

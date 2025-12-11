@@ -34,16 +34,16 @@ export function SubscriptionExpiredBanner({
   // Trial expiring soon warning (3 days or less)
   if (subscriptionStatus === 'ACTIVE' && trialDaysRemaining && trialDaysRemaining <= 3) {
     return (
-      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+      <div className="bg-status-warning/10 border-l-4 border-status-warning p-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-status-warning" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-yellow-700">
+              <p className="text-sm text-status-warning">
                 <strong>Your free trial expires in {trialDaysRemaining} {trialDaysRemaining === 1 ? 'day' : 'days'}!</strong>
                 {' '}Upgrade now to continue using all features without interruption.
               </p>
@@ -53,7 +53,7 @@ export function SubscriptionExpiredBanner({
             <Button
               size="sm"
               onClick={() => router.push('/subscription')}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white"
+              className="bg-status-warning hover:bg-status-warning/90 text-white"
             >
               Upgrade Now
             </Button>
@@ -66,16 +66,16 @@ export function SubscriptionExpiredBanner({
   // Subscription expired, suspended, or cancelled
   if (subscriptionStatus === 'EXPIRED' || subscriptionStatus === 'SUSPENDED' || subscriptionStatus === 'CANCELLED') {
     return (
-      <div className="bg-red-50 border-l-4 border-red-400 p-4">
+      <div className="bg-status-error/10 border-l-4 border-status-error p-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-status-error" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">
+              <p className="text-sm text-status-error">
                 <strong>Your subscription is {subscriptionStatus.toLowerCase()}!</strong>
                 {' '}Please renew your subscription to continue using the system.
                 {expiryDate && ` Your subscription expired on ${new Date(expiryDate).toLocaleDateString()}.`}
@@ -86,7 +86,7 @@ export function SubscriptionExpiredBanner({
             <Button
               size="sm"
               onClick={() => router.push('/subscription')}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-status-error hover:bg-status-error/90 text-white"
             >
               Renew Now
             </Button>

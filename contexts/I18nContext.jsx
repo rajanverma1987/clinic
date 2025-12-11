@@ -1,9 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getTranslation, extractLocale, supportedLocales } from '@/lib/i18n/index.js';
-import { useAuth } from './AuthContext.jsx';
 import { apiClient } from '@/lib/api/client.js';
+import { extractLocale, getTranslation, supportedLocales } from '@/lib/i18n/index.js';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from './AuthContext.jsx';
 
 const I18nContext = createContext(undefined);
 
@@ -11,16 +11,22 @@ export function I18nProvider({ children }) {
   const { user } = useAuth();
   const [locale, setLocaleState] = useState('en');
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  // Mark component as mounted to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load locale from tenant settings or localStorage
   useEffect(() => {
+    if (!mounted) return;
+
     const loadLocale = async () => {
       try {
         // Try to get locale from localStorage first (for faster initial render)
-        const storedLocale = typeof window !== 'undefined' 
-          ? localStorage.getItem('locale') 
-          : null;
-        
+        const storedLocale = typeof window !== 'undefined' ? localStorage.getItem('locale') : null;
+
         if (storedLocale && supportedLocales.includes(storedLocale)) {
           setLocaleState(storedLocale);
           setLoading(false);
@@ -60,32 +66,32 @@ export function I18nProvider({ children }) {
     };
 
     loadLocale();
-  }, [user]);
+  }, [user, mounted]);
 
   const setLocale = (newLocale) => {
     setLocaleState(newLocale);
     if (typeof window !== 'undefined') {
       localStorage.setItem('locale', newLocale);
     }
-    
+
     // Optionally update tenant settings if user is logged in
     if (user) {
       // This is async and we don't need to wait for it
-      apiClient.put('/settings', {
-        settings: {
-          locale: newLocale === 'en' ? 'en-US' : 
-                  newLocale === 'es' ? 'es-ES' : 
-                  'fr-CA',
-        },
-      }).catch(error => {
-        console.error('Failed to update tenant locale:', error);
-      });
+      apiClient
+        .put('/settings', {
+          settings: {
+            locale: newLocale === 'en' ? 'en-US' : newLocale === 'es' ? 'es-ES' : 'fr-CA',
+          },
+        })
+        .catch((error) => {
+          console.error('Failed to update tenant locale:', error);
+        });
     }
   };
 
   const t = (key, params) => {
     let translation = getTranslation(key, locale);
-    
+
     // Replace parameters in translation
     if (params) {
       Object.entries(params).forEach(([paramKey, paramValue]) => {
@@ -95,7 +101,7 @@ export function I18nProvider({ children }) {
         );
       });
     }
-    
+
     return translation;
   };
 
@@ -113,4 +119,3 @@ export function useI18n() {
   }
   return context;
 }
-

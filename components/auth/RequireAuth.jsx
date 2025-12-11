@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Layout } from '@/components/layout/Layout.jsx';
+import { Loader } from '@/components/ui/Loader';
+import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 /**
  * Component that requires authentication
@@ -22,12 +23,7 @@ export function RequireAuth({ children }) {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <div className="text-gray-500">Loading...</div>
-          </div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
@@ -35,13 +31,10 @@ export function RequireAuth({ children }) {
   if (!user) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Redirecting to login...</div>
-        </div>
+        <Loader size='md' text='Redirecting to login...' className='h-64' />
       </Layout>
     );
   }
 
   return <>{children}</>;
 }
-

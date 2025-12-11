@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { Modal } from '@/components/ui/Modal';
+import { Loader } from '@/components/ui/Loader';
 import { generateInvoicePrintHTML } from './InvoicePrintTemplate';
 
 export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
@@ -101,7 +102,7 @@ export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
       <div className="p-4">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="text-gray-500">Loading invoice...</div>
+            <Loader size='md' text='Loading invoice...' inline />
           </div>
         ) : invoiceData ? (
           <>
@@ -111,19 +112,19 @@ export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
                 clinicSettings: clinicSettings || {},
                 currency: clinicSettings?.settings?.currency || clinicSettings?.currency || 'USD',
               })}
-              className="w-full h-[600px] border border-gray-300 rounded"
+              className="w-full h-[600px] border border-neutral-300 rounded"
               title="Invoice Preview"
             />
             <div className="flex justify-end gap-4 mt-4">
               <button
                 onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                className="px-4 py-2 border border-neutral-300 rounded hover:bg-neutral-100"
               >
                 Close
               </button>
               <button
                 onClick={handlePrint}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
               >
                 Print
               </button>
@@ -131,17 +132,17 @@ export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
           </>
         ) : (
           <div className="text-center py-8">
-            <div className="text-red-600 font-medium mb-2">
+            <div className="text-status-error font-medium mb-2">
               Failed to load invoice
             </div>
             {error && (
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-neutral-600">
                 {error}
               </div>
             )}
             <button
               onClick={fetchInvoiceData}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="mt-4 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
             >
               Retry
             </button>

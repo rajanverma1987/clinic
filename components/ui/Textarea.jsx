@@ -16,30 +16,34 @@ export function Textarea({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
+        <label className="block text-body-sm font-medium text-neutral-900 mb-1">
           {label}
         </label>
       )}
       <div className="relative">
         <textarea
           className={`
-            w-full px-4 py-2.5 border rounded-lg 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors
+            w-full px-3 py-3 border rounded-lg text-body-md
+            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:shadow-focus
             resize-none
-            ${error ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'}
+            ${error 
+              ? 'border-status-error bg-white focus:ring-status-error focus:border-status-error' 
+              : 'border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-500 hover:border-neutral-300'
+            }
+            ${props.disabled ? 'bg-neutral-100 border-neutral-300 text-neutral-500 cursor-not-allowed opacity-60' : ''}
             ${className}
           `}
           maxLength={maxLength}
           {...props}
         />
         {showCount && maxLength && (
-          <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+          <div className="absolute bottom-2 right-2 text-body-xs text-neutral-500">
             {currentLength}/{maxLength}
           </div>
         )}
       </div>
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
+      {error && <p className="mt-1 text-body-sm text-status-error">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-body-sm text-neutral-500">{helperText}</p>}
     </div>
   );
 }

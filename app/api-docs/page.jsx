@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Tabs } from '@/components/ui/Tabs';
+import { Card } from '@/components/ui/Card';
+import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
 
 export default function APIDocsPage() {
   const { user } = useAuth();
@@ -51,7 +50,11 @@ export default function APIDocsPage() {
       items: [
         { method: 'GET', path: '/api/prescriptions', description: 'List prescriptions' },
         { method: 'POST', path: '/api/prescriptions', description: 'Create prescription' },
-        { method: 'POST', path: '/api/prescriptions/{id}/dispense', description: 'Dispense medication' },
+        {
+          method: 'POST',
+          path: '/api/prescriptions/{id}/dispense',
+          description: 'Dispense medication',
+        },
       ],
     },
     {
@@ -83,47 +86,45 @@ export default function APIDocsPage() {
 
   const getMethodColor = (method) => {
     const colors = {
-      GET: 'bg-blue-100 text-blue-800',
-      POST: 'bg-green-100 text-green-800',
-      PUT: 'bg-yellow-100 text-yellow-800',
-      DELETE: 'bg-red-100 text-red-800',
+      GET: 'bg-primary-100 text-primary-700',
+      POST: 'bg-secondary-100 text-secondary-700',
+      PUT: 'bg-status-warning/10 text-status-warning',
+      DELETE: 'bg-status-error/10 text-status-error',
     };
-    return colors[method] || 'bg-gray-100 text-gray-800';
+    return colors[method] || 'bg-neutral-100 text-neutral-700';
   };
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">API Documentation</h1>
-        <p className="text-gray-600 mt-2">Integrate Doctor's Clinic with your applications</p>
+      <div className='mb-8'>
+        <h1 className='text-3xl font-bold text-gray-900'>API Documentation</h1>
+        <p className='text-neutral-600 mt-2'>Integrate Doctor's Clinic with your applications</p>
       </div>
 
       {/* API Key Section */}
-      <Card className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">API Authentication</h2>
-        <p className="text-gray-600 mb-4">
+      <Card className='mb-8'>
+        <h2 className='text-xl font-semibold mb-4'>API Authentication</h2>
+        <p className='text-neutral-600 mb-4'>
           Use your API key to authenticate requests to the Doctor's Clinic API.
         </p>
 
         {!showToken ? (
-          <Button onClick={generateToken}>
-            Generate API Key
-          </Button>
+          <Button onClick={generateToken}>Generate API Key</Button>
         ) : (
-          <div className="space-y-4">
+          <div className='space-y-4'>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Your API Key (Keep this secret!)
               </label>
-              <div className="flex gap-2">
+              <div className='flex gap-2'>
                 <input
-                  type="text"
+                  type='text'
                   readOnly
                   value={apiToken}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"
+                  className='flex-1 px-3 py-2 border border-neutral-300 rounded-lg bg-neutral-100 font-mono text-sm'
                 />
                 <Button
-                  variant="outline"
+                  variant='secondary'
                   onClick={() => {
                     navigator.clipboard.writeText(apiToken);
                     alert('API key copied to clipboard!');
@@ -133,11 +134,11 @@ export default function APIDocsPage() {
                 </Button>
               </div>
             </div>
-            
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-              <p className="text-sm text-yellow-800">
-                <strong>⚠️ Security:</strong> Never share your API key or commit it to version control.
-                Store it securely in environment variables.
+
+            <div className='bg-status-warning/10 border-l-4 border-status-warning p-4'>
+              <p className='text-sm text-status-warning'>
+                <strong>⚠️ Security:</strong> Never share your API key or commit it to version
+                control. Store it securely in environment variables.
               </p>
             </div>
           </div>
@@ -145,11 +146,11 @@ export default function APIDocsPage() {
       </Card>
 
       {/* Quick Start */}
-      <Card className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Quick Start</h2>
-        <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-          <pre className="text-sm">
-{`// JavaScript/Node.js Example
+      <Card className='mb-8'>
+        <h2 className='text-xl font-semibold mb-4'>Quick Start</h2>
+        <div className='bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto'>
+          <pre className='text-sm'>
+            {`// JavaScript/Node.js Example
 const response = await fetch('https://yourapp.com/api/patients', {
   method: 'GET',
   headers: {
@@ -166,24 +167,31 @@ console.log(data);`}
 
       {/* API Endpoints */}
       <Card>
-        <h2 className="text-xl font-semibold mb-6">API Endpoints</h2>
-        
-        <div className="space-y-8">
+        <h2 className='text-xl font-semibold mb-6'>API Endpoints</h2>
+
+        <div className='space-y-8'>
           {endpoints.map((category) => (
             <div key={category.category}>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+              <h3 className='text-lg font-semibold text-gray-900 mb-4 border-b pb-2'>
                 {category.category}
               </h3>
-              
-              <div className="space-y-3">
+
+              <div className='space-y-3'>
                 {category.items.map((endpoint, idx) => (
-                  <div key={idx} className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg">
-                    <span className={`px-3 py-1 rounded-md text-xs font-semibold ${getMethodColor(endpoint.method)}`}>
+                  <div
+                    key={idx}
+                    className='flex items-start gap-4 p-3 hover:bg-neutral-100 rounded-lg'
+                  >
+                    <span
+                      className={`px-3 py-1 rounded-md text-xs font-semibold ${getMethodColor(
+                        endpoint.method
+                      )}`}
+                    >
                       {endpoint.method}
                     </span>
-                    <div className="flex-1">
-                      <code className="text-sm font-mono text-gray-800">{endpoint.path}</code>
-                      <p className="text-sm text-gray-600 mt-1">{endpoint.description}</p>
+                    <div className='flex-1'>
+                      <code className='text-sm font-mono text-gray-800'>{endpoint.path}</code>
+                      <p className='text-sm text-neutral-600 mt-1'>{endpoint.description}</p>
                     </div>
                   </div>
                 ))}
@@ -192,11 +200,11 @@ console.log(data);`}
           ))}
         </div>
 
-        <div className="mt-8 pt-6 border-t">
-          <h3 className="text-lg font-semibold mb-4">Response Format</h3>
-          <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-            <pre className="text-sm">
-{`// Success Response
+        <div className='mt-8 pt-6 border-t'>
+          <h3 className='text-lg font-semibold mb-4'>Response Format</h3>
+          <div className='bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto'>
+            <pre className='text-sm'>
+              {`// Success Response
 {
   "success": true,
   "data": { ... }
@@ -216,12 +224,12 @@ console.log(data);`}
       </Card>
 
       {/* Rate Limits */}
-      <Card className="mt-6">
-        <h2 className="text-xl font-semibold mb-4">Rate Limits</h2>
-        <p className="text-gray-600 mb-4">
+      <Card className='mt-6'>
+        <h2 className='text-xl font-semibold mb-4'>Rate Limits</h2>
+        <p className='text-neutral-600 mb-4'>
           API requests are limited based on your subscription plan:
         </p>
-        <ul className="space-y-2 text-sm text-gray-700">
+        <ul className='space-y-2 text-sm text-gray-700'>
           <li>• Free Trial: 100 requests/hour</li>
           <li>• Basic: 1,000 requests/hour</li>
           <li>• Professional: 10,000 requests/hour</li>
@@ -231,4 +239,3 @@ console.log(data);`}
     </Layout>
   );
 }
-

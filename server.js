@@ -13,7 +13,7 @@ const dev = !process.env.NODE_ENV || process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || 'localhost';
 const port = parseInt(process.env.PORT || '5053', 10);
 
-const app = next({ dev, hostname, port });
+const app = next({ dev, hostname });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
@@ -33,9 +33,9 @@ app.prepare().then(() => {
     cors: {
       origin: process.env.NEXT_PUBLIC_APP_URL || '*',
       methods: ['GET', 'POST'],
-      credentials: true
+      credentials: true,
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
   });
 
   // Socket.IO connection handling
@@ -55,7 +55,7 @@ app.prepare().then(() => {
       // Notify others in the session
       socket.to(`session:${sessionId}`).emit('user-joined', {
         socketId: socket.id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     });
 
@@ -68,7 +68,7 @@ app.prepare().then(() => {
         // Notify others in the session
         socket.to(`session:${sessionId}`).emit('user-left', {
           socketId: socket.id,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     });
@@ -91,7 +91,7 @@ app.prepare().then(() => {
         senderId,
         senderName: senderName || 'Unknown',
         timestamp: timestamp || new Date().toISOString(),
-        encrypted: encrypted || false
+        encrypted: encrypted || false,
       });
     });
 
@@ -102,7 +102,7 @@ app.prepare().then(() => {
         socket.to(`session:${sessionId}`).emit('typing', {
           senderId,
           isTyping,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     });

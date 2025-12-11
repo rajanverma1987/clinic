@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { Layout } from '@/components/layout/Layout';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
+import { Table } from '@/components/ui/Table';
+import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Table } from '@/components/ui/Table';
-import { Tag } from '@/components/ui/Tag';
-import { Button } from '@/components/ui/Button';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function PaymentHistoryPage() {
   const router = useRouter();
@@ -33,14 +35,14 @@ export default function PaymentHistoryPage() {
     try {
       setLoading(true);
       // Get subscription
-          const subResponse = await apiClient.get('/subscriptions');
-          if (subResponse.success && subResponse.data) {
-            setSubscription(subResponse.data);
-            // Get payments for this subscription
-            if (subResponse.data._id) {
-              const paymentsResponse = await apiClient.get(
-                `/subscriptions/${subResponse.data._id}?type=payments`
-              );
+      const subResponse = await apiClient.get('/subscriptions');
+      if (subResponse.success && subResponse.data) {
+        setSubscription(subResponse.data);
+        // Get payments for this subscription
+        if (subResponse.data._id) {
+          const paymentsResponse = await apiClient.get(
+            `/subscriptions/${subResponse.data._id}?type=payments`
+          );
           if (paymentsResponse.success && paymentsResponse.data) {
             setPayments(paymentsResponse.data);
           }
@@ -70,46 +72,44 @@ export default function PaymentHistoryPage() {
     });
   };
 
-      const getStatusVariant = (status) => {
-        switch (status.toUpperCase()) {
-          case 'COMPLETED':
-          case 'PAID':
-            return 'success';
-          case 'PENDING':
-            return 'warning';
-          case 'FAILED':
-          case 'CANCELLED':
-            return 'danger';
-          default:
-            return 'default';
-        }
-      };
+  const getStatusVariant = (status) => {
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+      case 'PAID':
+        return 'success';
+      case 'PENDING':
+        return 'warning';
+      case 'FAILED':
+      case 'CANCELLED':
+        return 'danger';
+      default:
+        return 'default';
+    }
+  };
 
   const columns = [
     {
       header: 'Date',
       accessor: (row) => (
-        <div className="text-sm">
+        <div className='text-sm'>
           {row.paidAt ? formatDate(row.paidAt) : formatDate(row.createdAt)}
         </div>
       ),
     },
     {
       header: 'Amount',
-      accessor: (row) => (
-        <div className="font-medium">{formatPrice(row.amount, row.currency)}</div>
-      ),
+      accessor: (row) => <div className='font-medium'>{formatPrice(row.amount, row.currency)}</div>,
     },
     {
       header: 'Method',
       accessor: (row) => (
-        <div className="text-sm text-gray-600 capitalize">{row.paymentMethod.toLowerCase()}</div>
+        <div className='text-sm text-neutral-600 capitalize'>{row.paymentMethod.toLowerCase()}</div>
       ),
     },
     {
       header: 'Status',
       accessor: (row) => (
-        <Tag variant={getStatusVariant(row.status)} size="sm">
+        <Tag variant={getStatusVariant(row.status)} size='sm'>
           {row.status}
         </Tag>
       ),
@@ -117,19 +117,29 @@ export default function PaymentHistoryPage() {
     {
       header: 'Transaction ID',
       accessor: (row) => (
-        <div className="text-xs text-gray-500 font-mono">
+        <div className='text-xs text-neutral-500 font-mono'>
           {row.paypalTransactionId || row.paypalOrderId || '-'}
         </div>
       ),
     },
   ];
 
-  if (authLoading || loading) {
+  // Redirect if not authenticated (non-blocking)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
+  // Show empty state while redirecting
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">{t('common.loading')}</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
@@ -140,22 +150,22 @@ export default function PaymentHistoryPage() {
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{t('subscription.paymentHistory')}</h1>
-        <p className="text-gray-600 mt-2">{t('subscription.paymentHistoryDesc')}</p>
-      </div>
+      <DashboardHeader
+        title={t('subscription.paymentHistory')}
+        subtitle={t('subscription.paymentHistoryDesc')}
+      />
 
       {subscription && (
-        <Card className="mb-6 p-4">
-          <div className="flex items-center justify-between">
+        <Card className='mb-6 p-4'>
+          <div className='flex items-center justify-between'>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{subscription.planId.name}</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className='text-lg font-semibold text-neutral-900'>{subscription.planId.name}</h3>
+              <p className='text-sm text-neutral-600'>
                 {formatPrice(subscription.planId.price, subscription.planId.currency)} /{' '}
                 {subscription.planId.billingCycle === 'MONTHLY' ? 'month' : 'year'}
               </p>
             </div>
-            <Button variant="outline" onClick={() => router.push('/subscription')}>
+            <Button variant='secondary' onClick={() => router.push('/subscription')}>
               {t('subscription.viewDetails')}
             </Button>
           </div>
@@ -164,21 +174,24 @@ export default function PaymentHistoryPage() {
 
       <Card>
         {payments.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-500">{t('subscription.noPaymentsFound')}</p>
+          <div className='p-8 text-center'>
+            <p className='text-neutral-500'>{t('subscription.noPaymentsFound')}</p>
           </div>
         ) : (
           <>
-            <div className="p-4 border-b border-gray-200">
-              <p className="text-sm text-gray-600">
+            <div className='p-4 border-b border-neutral-200'>
+              <p className='text-sm text-neutral-600'>
                 {t('subscription.totalPayments')}: {payments.length}
               </p>
             </div>
-            <Table data={payments} columns={columns} emptyMessage={t('subscription.noPaymentsFound')} />
+            <Table
+              data={payments}
+              columns={columns}
+              emptyMessage={t('subscription.noPaymentsFound')}
+            />
           </>
         )}
       </Card>
     </Layout>
   );
 }
-

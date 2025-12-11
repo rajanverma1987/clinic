@@ -1,19 +1,20 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useI18n } from '@/contexts/I18nContext';
-import { apiClient } from '@/lib/api/client';
 import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
 import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
 import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Loader } from '@/components/ui/Loader';
 import { SimpleTextEditor } from '@/components/ui/SimpleTextEditor';
+import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
+import { apiClient } from '@/lib/api/client';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function EditPrescriptionPage() {
   const router = useRouter();
@@ -57,30 +58,33 @@ export default function EditPrescriptionPage() {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // Keyboard shortcuts
-  const keyboardShortcuts = useMemo(() => [
-    {
-      key: 's',
-      ctrlKey: true,
-      action: (e) => {
-        e.preventDefault();
-        const form = document.querySelector('form');
-        if (form) {
-          const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-          form.dispatchEvent(submitEvent);
-        }
+  const keyboardShortcuts = useMemo(
+    () => [
+      {
+        key: 's',
+        ctrlKey: true,
+        action: (e) => {
+          e.preventDefault();
+          const form = document.querySelector('form');
+          if (form) {
+            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+            form.dispatchEvent(submitEvent);
+          }
+        },
+        description: 'Save prescription (Ctrl+S)',
       },
-      description: 'Save prescription (Ctrl+S)',
-    },
-    {
-      key: 'Escape',
-      action: (e) => {
-        e.preventDefault();
-        router.back();
+      {
+        key: 'Escape',
+        action: (e) => {
+          e.preventDefault();
+          router.back();
+        },
+        description: 'Cancel (Esc)',
       },
-      description: 'Cancel (Esc)',
-    },
-  ], [router]);
-  
+    ],
+    [router]
+  );
+
   useKeyboardShortcuts(keyboardShortcuts);
 
   useEffect(() => {
@@ -96,17 +100,17 @@ export default function EditPrescriptionPage() {
   useEffect(() => {
     if (drugs.length > 0 && items.length > 0) {
       // Check if any item has a drugId that needs to be synced
-      setItems(prevItems => {
+      setItems((prevItems) => {
         let hasChanges = false;
-        const updatedItems = prevItems.map(item => {
+        const updatedItems = prevItems.map((item) => {
           if (item.itemType === 'drug' && item.drugId) {
             const drugIdStr = String(item.drugId).trim();
             // Try to find the drug in the list by matching _id
-            const drug = drugs.find(d => {
+            const drug = drugs.find((d) => {
               const drugId = String(d._id).trim();
               return drugId === drugIdStr;
             });
-            
+
             if (drug) {
               // Ensure drugId is exactly matching the drug's _id (as string)
               const correctDrugId = String(drug._id).trim();
@@ -128,13 +132,13 @@ export default function EditPrescriptionPage() {
             } else {
               console.warn('Drug not found in list:', {
                 drugId: drugIdStr,
-                availableIds: drugs.slice(0, 5).map(d => String(d._id)),
+                availableIds: drugs.slice(0, 5).map((d) => String(d._id)),
               });
             }
           }
           return item;
         });
-        
+
         // Only update if there were actual changes to prevent infinite loops
         return hasChanges ? updatedItems : prevItems;
       });
@@ -146,7 +150,7 @@ export default function EditPrescriptionPage() {
       const response = await apiClient.get(`/prescriptions/${prescriptionId}`);
       if (response.success && response.data) {
         const prescription = response.data;
-        
+
         // Populate form data
         setFormData({
           patientId: prescription.patientId?._id || prescription.patientId || '',
@@ -154,7 +158,7 @@ export default function EditPrescriptionPage() {
           clinicalNoteId: prescription.clinicalNoteId?._id || prescription.clinicalNoteId || '',
           diagnosis: prescription.diagnosis || '',
           additionalInstructions: prescription.additionalInstructions || '',
-          validUntil: prescription.validUntil 
+          validUntil: prescription.validUntil
             ? new Date(prescription.validUntil).toISOString().split('T')[0]
             : '',
           refillsAllowed: prescription.refillsAllowed || 0,
@@ -162,7 +166,7 @@ export default function EditPrescriptionPage() {
 
         // Populate items
         if (prescription.items && Array.isArray(prescription.items)) {
-          const mappedItems = prescription.items.map(item => {
+          const mappedItems = prescription.items.map((item) => {
             // Extract drugId and ensure it's a string
             let drugIdValue = '';
             if (item.drugId) {
@@ -174,14 +178,14 @@ export default function EditPrescriptionPage() {
                 drugIdValue = String(item.drugId);
               }
             }
-            
+
             console.log('Prescription item drugId:', {
               original: item.drugId,
               normalized: drugIdValue,
               type: typeof item.drugId,
               isObject: typeof item.drugId === 'object',
             });
-            
+
             return {
               itemType: item.itemType || 'drug',
               drugId: drugIdValue,
@@ -209,23 +213,25 @@ export default function EditPrescriptionPage() {
               itemDescription: item.itemDescription || '',
             };
           });
-          
+
           console.log('Mapped prescription items:', mappedItems);
           setItems(mappedItems);
         } else {
           // Default item if none exist
-          setItems([{
-            itemType: 'drug',
-            drugId: '',
-            drugName: '',
-            frequency: 'twice daily',
-            duration: 7,
-            quantity: 1,
-            unit: 'tablets',
-            instructions: '',
-            takeWithFood: false,
-            allowSubstitution: true,
-          }]);
+          setItems([
+            {
+              itemType: 'drug',
+              drugId: '',
+              drugName: '',
+              frequency: 'twice daily',
+              duration: 7,
+              quantity: 1,
+              unit: 'tablets',
+              instructions: '',
+              takeWithFood: false,
+              allowSubstitution: true,
+            },
+          ]);
         }
       } else {
         setError('Prescription not found');
@@ -252,10 +258,10 @@ export default function EditPrescriptionPage() {
       // Fetch all patients (for edit, we show all patients)
       const allPatientsResponse = await apiClient.get('/patients?limit=1000');
       let allPatients = [];
-      
+
       if (allPatientsResponse.success && allPatientsResponse.data) {
-        allPatients = Array.isArray(allPatientsResponse.data) 
-          ? allPatientsResponse.data 
+        allPatients = Array.isArray(allPatientsResponse.data)
+          ? allPatientsResponse.data
           : allPatientsResponse.data?.data || [];
       }
 
@@ -265,7 +271,7 @@ export default function EditPrescriptionPage() {
       const drugsResponse = await apiClient.get('/inventory/items?type=medicine&limit=1000');
       if (drugsResponse.success && drugsResponse.data) {
         let drugsList = [];
-        
+
         if (drugsResponse.data.data && Array.isArray(drugsResponse.data.data)) {
           drugsList = drugsResponse.data.data
             .filter((item) => item.type === 'medicine')
@@ -287,9 +293,12 @@ export default function EditPrescriptionPage() {
               strength: item.strength,
             }));
         }
-        
+
         console.log('Fetched drugs list:', drugsList.length, 'drugs');
-        console.log('Sample drug IDs:', drugsList.slice(0, 3).map(d => ({ id: d._id, name: d.name })));
+        console.log(
+          'Sample drug IDs:',
+          drugsList.slice(0, 3).map((d) => ({ id: d._id, name: d.name }))
+        );
         setDrugs(drugsList);
       }
     } catch (error) {
@@ -327,16 +336,16 @@ export default function EditPrescriptionPage() {
     setItems((prevItems) => {
       const updated = [...prevItems];
       updated[index] = { ...updated[index], [field]: value };
-      
+
       if (field === 'drugId' && value) {
-        const drug = drugs.find(d => String(d._id) === String(value));
+        const drug = drugs.find((d) => String(d._id) === String(value));
         if (drug) {
           updated[index].drugName = drug.name;
           updated[index].form = drug.form || '';
           updated[index].strength = drug.strength || '';
         }
       }
-      
+
       return updated;
     });
   };
@@ -359,7 +368,7 @@ export default function EditPrescriptionPage() {
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const itemType = item.itemType || 'drug';
-        
+
         if (itemType === 'drug') {
           if (!item.drugId || (typeof item.drugId === 'string' && item.drugId.trim() === '')) {
             setError(`Item ${i + 1}: Please select a drug`);
@@ -367,19 +376,28 @@ export default function EditPrescriptionPage() {
             return;
           }
         } else if (itemType === 'lab') {
-          if (!item.labTestCode || (typeof item.labTestCode === 'string' && item.labTestCode.trim() === '')) {
+          if (
+            !item.labTestCode ||
+            (typeof item.labTestCode === 'string' && item.labTestCode.trim() === '')
+          ) {
             setError(`Item ${i + 1}: Please select a lab test`);
             setSubmitting(false);
             return;
           }
         } else if (itemType === 'procedure') {
-          if (!item.procedureName || (typeof item.procedureName === 'string' && item.procedureName.trim() === '')) {
+          if (
+            !item.procedureName ||
+            (typeof item.procedureName === 'string' && item.procedureName.trim() === '')
+          ) {
             setError(`Item ${i + 1}: Please enter a procedure name`);
             setSubmitting(false);
             return;
           }
         } else if (itemType === 'other') {
-          if (!item.itemName || (typeof item.itemName === 'string' && item.itemName.trim() === '')) {
+          if (
+            !item.itemName ||
+            (typeof item.itemName === 'string' && item.itemName.trim() === '')
+          ) {
             setError(`Item ${i + 1}: Please enter an item name`);
             setSubmitting(false);
             return;
@@ -387,12 +405,12 @@ export default function EditPrescriptionPage() {
         }
       }
 
-      const validUntil = formData.validUntil 
+      const validUntil = formData.validUntil
         ? new Date(formData.validUntil).toISOString()
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const prescriptionData = {
-        items: items.map(item => {
+        items: items.map((item) => {
           const baseItem = {
             itemType: item.itemType || 'drug',
             instructions: item.instructions || undefined,
@@ -447,53 +465,65 @@ export default function EditPrescriptionPage() {
     setShowPrintPreview(true);
   };
 
-  if (authLoading || loading) {
+  // Redirect if not authenticated (non-blocking)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
+  // Show empty state while redirecting
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">{t('common.loading')}</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="mb-6">
-        <Button variant="outline" onClick={() => router.back()} className="mb-4">
+      <div className='mb-6'>
+        <Button variant='secondary' onClick={() => router.back()} className='mb-4'>
           ← {t('common.back')}
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Prescription</h1>
+        <h1 className='text-2xl font-bold text-neutral-900'>Edit Prescription</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+        <div className='lg:col-span-2'>
           <Card>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className='space-y-6' noValidate>
               {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded">
+                <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded'>
                   {error}
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                 <div>
-                  <label htmlFor="patientId" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor='patientId'
+                    className='block text-sm font-medium text-neutral-700 mb-2'
+                  >
                     {t('appointments.patient')} *
                   </label>
                   <select
-                    id="patientId"
+                    id='patientId'
                     required
                     value={formData.patientId}
                     onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                     disabled={patients.length === 0}
                   >
-                    <option value="">
-                      {patients.length === 0 
-                        ? 'No patients available' 
-                        : `${t('common.select')} ${t('appointments.patient').toLowerCase()}`
-                      }
+                    <option value=''>
+                      {patients.length === 0
+                        ? 'No patients available'
+                        : `${t('common.select')} ${t('appointments.patient').toLowerCase()}`}
                     </option>
                     {patients.map((patient) => (
                       <option key={patient._id} value={patient._id}>
@@ -504,12 +534,15 @@ export default function EditPrescriptionPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="validUntil" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor='validUntil'
+                    className='block text-sm font-medium text-neutral-700 mb-2'
+                  >
                     Valid Until *
                   </label>
                   <Input
-                    id="validUntil"
-                    type="date"
+                    id='validUntil'
+                    type='date'
                     value={formData.validUntil}
                     onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
                     required
@@ -517,44 +550,55 @@ export default function EditPrescriptionPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="diagnosis" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor='diagnosis'
+                    className='block text-sm font-medium text-neutral-700 mb-2'
+                  >
                     Diagnosis
                   </label>
                   <Input
-                    id="diagnosis"
+                    id='diagnosis'
                     value={formData.diagnosis}
                     onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-                    placeholder="Enter diagnosis"
+                    placeholder='Enter diagnosis'
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="refillsAllowed" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor='refillsAllowed'
+                    className='block text-sm font-medium text-neutral-700 mb-2'
+                  >
                     Refills Allowed
                   </label>
                   <Input
-                    id="refillsAllowed"
-                    type="number"
-                    min="0"
+                    id='refillsAllowed'
+                    type='number'
+                    min='0'
                     value={formData.refillsAllowed}
-                    onChange={(e) => setFormData({ ...formData, refillsAllowed: parseInt(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, refillsAllowed: parseInt(e.target.value) || 0 })
+                    }
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="additionalInstructions" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor='additionalInstructions'
+                  className='block text-sm font-medium text-neutral-700 mb-2'
+                >
                   Additional Instructions
                 </label>
                 <SimpleTextEditor
                   value={formData.additionalInstructions}
                   onChange={(value) => setFormData({ ...formData, additionalInstructions: value })}
-                  placeholder="Enter additional instructions for the patient"
+                  placeholder='Enter additional instructions for the patient'
                   rows={4}
                 />
               </div>
 
-              <div className="border-t pt-6">
+              <div className='border-t pt-6'>
                 <PrescriptionItemsTable
                   items={items}
                   drugs={drugs}
@@ -566,14 +610,24 @@ export default function EditPrescriptionPage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-4 pt-6 border-t">
-                <Button type="button" variant="outline" onClick={() => router.back()}>
+              <div className='flex justify-end gap-4 pt-6 border-t'>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  onClick={() => router.back()}
+                  disabled={submitting}
+                >
                   Cancel
                 </Button>
-                <Button type="button" variant="outline" onClick={handlePrint}>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  onClick={handlePrint}
+                  disabled={submitting}
+                >
                   Print
                 </Button>
-                <Button type="submit" isLoading={submitting}>
+                <Button type='submit' isLoading={submitting} disabled={submitting}>
                   Update Prescription
                 </Button>
               </div>
@@ -581,8 +635,8 @@ export default function EditPrescriptionPage() {
           </Card>
         </div>
 
-        <div className="lg:col-span-1">
-          <div className="sticky top-4">
+        <div className='lg:col-span-1'>
+          <div className='sticky top-4'>
             <PatientDetailsPanel patientId={formData.patientId} />
           </div>
         </div>
@@ -596,4 +650,3 @@ export default function EditPrescriptionPage() {
     </Layout>
   );
 }
-

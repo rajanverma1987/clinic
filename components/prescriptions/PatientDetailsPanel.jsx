@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client.js';
 import { Card } from '@/components/ui/Card.jsx';
+import { Loader } from '@/components/ui/Loader';
 
 export function PatientDetailsPanel({ patientId }) {
   const [patient, setPatient] = useState(null);
@@ -66,7 +67,7 @@ export function PatientDetailsPanel({ patientId }) {
   if (loading) {
     return (
       <Card className="p-4">
-        <div className="text-sm text-gray-500">Loading patient details...</div>
+        <Loader size='sm' text='Loading patient details...' />
       </Card>
     );
   }

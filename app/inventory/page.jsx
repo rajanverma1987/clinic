@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { Layout } from '@/components/layout/Layout';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
+import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Table } from '@/components/ui/Table';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function InventoryPage() {
   const router = useRouter();
@@ -41,11 +43,9 @@ export default function InventoryPage() {
         } else if (response.data?.data) {
           itemsList = response.data.data;
         }
-        
+
         if (showLowStock) {
-          itemsList = itemsList.filter(
-            (item) => item.totalQuantity <= item.lowStockThreshold
-          );
+          itemsList = itemsList.filter((item) => item.totalQuantity <= item.lowStockThreshold);
         }
         setItems(itemsList);
       }
@@ -74,8 +74,8 @@ export default function InventoryPage() {
         <span
           className={
             row.totalQuantity <= row.lowStockThreshold
-              ? 'text-red-600 font-medium'
-              : 'text-gray-900'
+              ? 'text-status-error font-medium'
+              : 'text-neutral-900'
           }
         >
           {row.totalQuantity} / {row.availableQuantity} available
@@ -92,36 +92,53 @@ export default function InventoryPage() {
     },
   ];
 
-  if (authLoading || loading) {
+  // Redirect if not authenticated (non-blocking)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
+  // Show empty state while redirecting
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">{t('common.loading')}</div>
-        </div>
+        <Loader size='md' className='h-64' />
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('inventory.title')}</h1>
-          <p className="text-gray-600 mt-2">{t('inventory.items')}</p>
-        </div>
-        <Button onClick={() => router.push('/inventory/items/new')}>+ {t('inventory.addItem')}</Button>
-      </div>
+      <DashboardHeader
+        title={t('inventory.title')}
+        subtitle={t('inventory.items')}
+        actionButton={
+          <Button
+            onClick={() => router.push('/inventory/items/new')}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('inventory.addItem')}
+          </Button>
+        }
+      />
 
-      <Card className="mb-6">
-        <div className="flex items-center gap-4">
-          <label className="flex items-center">
+      <Card className='mb-6'>
+        <div className='flex items-center gap-4'>
+          <label className='flex items-center'>
             <input
-              type="checkbox"
+              type='checkbox'
               checked={showLowStock}
               onChange={(e) => setShowLowStock(e.target.checked)}
-              className="mr-2"
+              className='mr-2'
             />
-            <span className="text-sm text-gray-700">{t('inventory.lowStock')}</span>
+            <span className='text-sm text-neutral-700'>{t('inventory.lowStock')}</span>
           </label>
         </div>
       </Card>
@@ -137,4 +154,3 @@ export default function InventoryPage() {
     </Layout>
   );
 }
-

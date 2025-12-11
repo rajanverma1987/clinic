@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const COUNTRY_CODES = [
   { code: '+1', country: 'US' },
@@ -45,36 +45,34 @@ export function PhoneInput({
 
   return (
     <div className={`w-full ${className}`}>
-      {label && (
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
-          {label}
-        </label>
-      )}
-      <div className={`
-        flex items-center border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors
+      {label && <label className='block text-sm font-semibold text-gray-900 mb-2'>{label}</label>}
+      <div
+        className={`
+        flex items-center border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500
         ${error ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-      `}>
+      `}
+      >
         {/* Country Code Dropdown */}
-        <div className="relative">
+        <div className='relative'>
           <button
-            type="button"
+            type='button'
             onClick={() => !disabled && setShowDropdown(!showDropdown)}
             disabled={disabled}
-            className="flex items-center px-3 py-2.5 border-r border-gray-300 hover:bg-gray-50 rounded-l-lg transition-colors"
+            className='flex items-center px-3 py-2.5 border-r border-gray-300 hover:bg-gray-50 rounded-l-lg'
           >
-            <span className="text-gray-700 font-medium mr-1">{countryCode}</span>
+            <span className='text-gray-700 font-medium mr-1'>{countryCode}</span>
             <svg
-              className={`w-4 h-4 text-gray-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              className={`w-4 h-4 text-gray-400 ${showDropdown ? 'rotate-180' : ''}`}
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
             >
               <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                strokeLinecap='round'
+                strokeLinejoin='round'
                 strokeWidth={2}
-                d="M19 9l-7 7-7-7"
+                d='M19 9l-7 7-7-7'
               />
             </svg>
           </button>
@@ -83,21 +81,25 @@ export function PhoneInput({
           {showDropdown && (
             <>
               <div
-                className="fixed inset-0 z-10"
+                className='fixed inset-0'
+                style={{ zIndex: 'var(--z-dropdown-backdrop-high, 10051)' }}
                 onClick={() => setShowDropdown(false)}
               />
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto">
+              <div
+                className='absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto'
+                style={{ zIndex: 'var(--z-dropdown-menu, 15)' }}
+              >
                 {COUNTRY_CODES.map((item) => (
                   <button
                     key={item.code}
-                    type="button"
+                    type='button'
                     onClick={() => handleCountryCodeChange(item.code)}
-                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors ${
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 ${
                       countryCode === item.code ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                     }`}
                   >
-                    <span className="font-medium">{item.code}</span>
-                    <span className="ml-2 text-gray-500 text-sm">{item.country}</span>
+                    <span className='font-medium'>{item.code}</span>
+                    <span className='ml-2 text-gray-500 text-sm'>{item.country}</span>
                   </button>
                 ))}
               </div>
@@ -107,17 +109,16 @@ export function PhoneInput({
 
         {/* Phone Number Input */}
         <input
-          type="tel"
+          type='tel'
           value={value}
           onChange={handlePhoneChange}
           placeholder={placeholder}
           disabled={disabled}
           required={required}
-          className="flex-1 px-4 py-2.5 border-none focus:outline-none bg-transparent text-gray-900 placeholder-gray-400"
+          className='flex-1 px-4 py-2.5 border-none focus:outline-none bg-transparent text-gray-900 placeholder-gray-400'
         />
       </div>
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && <p className='mt-1 text-sm text-red-600'>{error}</p>}
     </div>
   );
 }
-
