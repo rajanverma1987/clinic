@@ -47,7 +47,7 @@ export function SubscriptionCard({
     >
       {/* Popular Badge */}
       {isPopular && (
-        <div className='absolute -top-4 left-1/2 transform -translate-x-1/2 z-10'>
+        <div className='absolute -top-4 left-1/2 z-10' style={{ marginLeft: '-50%' }}>
           <div className='bg-gradient-to-r from-primary-700 to-primary-500 text-white px-6 py-1.5 rounded-full text-sm font-semibold shadow-md'>
             {t('pricing.mostPopular')}
           </div>
@@ -56,7 +56,7 @@ export function SubscriptionCard({
 
       {/* Current Plan Badge */}
       {isCurrent && (
-        <div className='absolute -top-4 left-1/2 transform -translate-x-1/2 z-10'>
+        <div className='absolute -top-4 left-1/2 z-10' style={{ marginLeft: '-50%' }}>
           <div className='bg-gradient-to-r from-secondary-700 to-secondary-500 text-white px-6 py-1.5 rounded-full text-sm font-semibold shadow-md'>
             {t('pricing.currentPlan')}
           </div>

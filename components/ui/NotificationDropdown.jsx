@@ -258,7 +258,7 @@ export function NotificationDropdown({
                   />
                 </svg>
                 <p className='NotificationDropdown-empty-text'>No notifications</p>
-                <p className='NotificationDropdown-empty-subtext'>You're all caught up!</p>
+                <p className='NotificationDropdown-empty-subtext'>You&apos;re all caught up!</p>
               </div>
             ) : (
               safeNotifications.map((notification) => {

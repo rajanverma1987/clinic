@@ -483,166 +483,181 @@ export default function EditPrescriptionPage() {
 
   return (
     <Layout>
-      <div className='mb-6'>
-        <Button variant='secondary' onClick={() => router.back()} className='mb-4'>
-          ← {t('common.back')}
-        </Button>
-        <h1 className='text-2xl font-bold text-neutral-900'>Edit Prescription</h1>
-      </div>
-
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-        <div className='lg:col-span-2'>
-          <Card>
-            <form onSubmit={handleSubmit} className='space-y-6' noValidate>
-              {error && (
-                <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded'>
-                  {error}
-                </div>
-              )}
-
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                <div>
-                  <label
-                    htmlFor='patientId'
-                    className='block text-sm font-medium text-neutral-700 mb-2'
-                  >
-                    {t('appointments.patient')} *
-                  </label>
-                  <select
-                    id='patientId'
-                    required
-                    value={formData.patientId}
-                    onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-                    className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
-                    disabled={patients.length === 0}
-                  >
-                    <option value=''>
-                      {patients.length === 0
-                        ? 'No patients available'
-                        : `${t('common.select')} ${t('appointments.patient').toLowerCase()}`}
-                    </option>
-                    {patients.map((patient) => (
-                      <option key={patient._id} value={patient._id}>
-                        {patient.patientId} - {patient.firstName} {patient.lastName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor='validUntil'
-                    className='block text-sm font-medium text-neutral-700 mb-2'
-                  >
-                    Valid Until *
-                  </label>
-                  <Input
-                    id='validUntil'
-                    type='date'
-                    value={formData.validUntil}
-                    onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor='diagnosis'
-                    className='block text-sm font-medium text-neutral-700 mb-2'
-                  >
-                    Diagnosis
-                  </label>
-                  <Input
-                    id='diagnosis'
-                    value={formData.diagnosis}
-                    onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-                    placeholder='Enter diagnosis'
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor='refillsAllowed'
-                    className='block text-sm font-medium text-neutral-700 mb-2'
-                  >
-                    Refills Allowed
-                  </label>
-                  <Input
-                    id='refillsAllowed'
-                    type='number'
-                    min='0'
-                    value={formData.refillsAllowed}
-                    onChange={(e) =>
-                      setFormData({ ...formData, refillsAllowed: parseInt(e.target.value) || 0 })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor='additionalInstructions'
-                  className='block text-sm font-medium text-neutral-700 mb-2'
-                >
-                  Additional Instructions
-                </label>
-                <SimpleTextEditor
-                  value={formData.additionalInstructions}
-                  onChange={(value) => setFormData({ ...formData, additionalInstructions: value })}
-                  placeholder='Enter additional instructions for the patient'
-                  rows={4}
-                />
-              </div>
-
-              <div className='border-t pt-6'>
-                <PrescriptionItemsTable
-                  items={items}
-                  drugs={drugs}
-                  labTests={labTests}
-                  onUpdate={updateItem}
-                  onUpdateItem={updateItemComplete}
-                  onRemove={removeItem}
-                  onAdd={addItem}
-                />
-              </div>
-
-              <div className='flex justify-end gap-4 pt-6 border-t'>
-                <Button
-                  type='button'
-                  variant='secondary'
-                  onClick={() => router.back()}
-                  disabled={submitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type='button'
-                  variant='secondary'
-                  onClick={handlePrint}
-                  disabled={submitting}
-                >
-                  Print
-                </Button>
-                <Button type='submit' isLoading={submitting} disabled={submitting}>
-                  Update Prescription
-                </Button>
-              </div>
-            </form>
-          </Card>
+      <div style={{ padding: '0 10px' }}>
+        <div className='mb-6' style={{ paddingTop: '10px' }}>
+          <button
+            onClick={() => router.back()}
+            className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 mb-4'
+            aria-label={t('common.back')}
+          >
+            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M15 19l-7-7 7-7'
+              />
+            </svg>
+          </button>
+          <h1 className='text-2xl font-bold text-neutral-900'>Edit Prescription</h1>
         </div>
 
-        <div className='lg:col-span-1'>
-          <div className='sticky top-4'>
-            <PatientDetailsPanel patientId={formData.patientId} />
+        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+          <div className='lg:col-span-2'>
+            <Card>
+              <form onSubmit={handleSubmit} className='space-y-6' noValidate>
+                {error && (
+                  <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded'>
+                    {error}
+                  </div>
+                )}
+
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                  <div>
+                    <label
+                      htmlFor='patientId'
+                      className='block text-sm font-medium text-neutral-700 mb-2'
+                    >
+                      {t('appointments.patient')} *
+                    </label>
+                    <select
+                      id='patientId'
+                      required
+                      value={formData.patientId}
+                      onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                      className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                      disabled={patients.length === 0}
+                    >
+                      <option value=''>
+                        {patients.length === 0
+                          ? 'No patients available'
+                          : `${t('common.select')} ${t('appointments.patient').toLowerCase()}`}
+                      </option>
+                      {patients.map((patient) => (
+                        <option key={patient._id} value={patient._id}>
+                          {patient.patientId} - {patient.firstName} {patient.lastName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor='validUntil'
+                      className='block text-sm font-medium text-neutral-700 mb-2'
+                    >
+                      Valid Until *
+                    </label>
+                    <Input
+                      id='validUntil'
+                      type='date'
+                      value={formData.validUntil}
+                      onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor='diagnosis'
+                      className='block text-sm font-medium text-neutral-700 mb-2'
+                    >
+                      Diagnosis
+                    </label>
+                    <Input
+                      id='diagnosis'
+                      value={formData.diagnosis}
+                      onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
+                      placeholder='Enter diagnosis'
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor='refillsAllowed'
+                      className='block text-sm font-medium text-neutral-700 mb-2'
+                    >
+                      Refills Allowed
+                    </label>
+                    <Input
+                      id='refillsAllowed'
+                      type='number'
+                      min='0'
+                      value={formData.refillsAllowed}
+                      onChange={(e) =>
+                        setFormData({ ...formData, refillsAllowed: parseInt(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor='additionalInstructions'
+                    className='block text-sm font-medium text-neutral-700 mb-2'
+                  >
+                    Additional Instructions
+                  </label>
+                  <SimpleTextEditor
+                    value={formData.additionalInstructions}
+                    onChange={(value) =>
+                      setFormData({ ...formData, additionalInstructions: value })
+                    }
+                    placeholder='Enter additional instructions for the patient'
+                    rows={4}
+                  />
+                </div>
+
+                <div className='border-t pt-6'>
+                  <PrescriptionItemsTable
+                    items={items}
+                    drugs={drugs}
+                    labTests={labTests}
+                    onUpdate={updateItem}
+                    onUpdateItem={updateItemComplete}
+                    onRemove={removeItem}
+                    onAdd={addItem}
+                  />
+                </div>
+
+                <div className='flex justify-end gap-4 pt-6 border-t'>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={() => router.back()}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={handlePrint}
+                    disabled={submitting}
+                  >
+                    Print
+                  </Button>
+                  <Button type='submit' isLoading={submitting} disabled={submitting}>
+                    Update Prescription
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+
+          <div className='lg:col-span-1'>
+            <div className='sticky top-4'>
+              <PatientDetailsPanel patientId={formData.patientId} />
+            </div>
           </div>
         </div>
-      </div>
 
-      <PrescriptionPrintPreview
-        prescriptionId={prescriptionId}
-        isOpen={showPrintPreview}
-        onClose={() => setShowPrintPreview(false)}
-      />
+        <PrescriptionPrintPreview
+          prescriptionId={prescriptionId}
+          isOpen={showPrintPreview}
+          onClose={() => setShowPrintPreview(false)}
+        />
+      </div>
     </Layout>
   );
 }

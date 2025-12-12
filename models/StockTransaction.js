@@ -22,7 +22,6 @@ const StockTransactionSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
     },
     inventoryItemId: {
       type: Schema.Types.ObjectId,

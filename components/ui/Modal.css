@@ -1,0 +1,164 @@
+/* Premium Modal Component Styles */
+/* Uses theme colors and design system tokens */
+
+.Modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(45, 156, 219, 0.08) 0%, rgba(39, 174, 96, 0.08) 50%, rgba(245, 158, 11, 0.05) 100%), rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  z-index: var(--z-modal-backdrop, 10040);
+  animation: Modal-fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes Modal-fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.Modal-container {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.98) 50%, rgba(255, 255, 255, 0.98) 100%);
+  border: 2px solid rgba(229, 231, 235, 0.8);
+  border-radius: var(--radius-2xl);
+  box-shadow: 
+    0 32px 64px -12px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(45, 156, 219, 0.15),
+    0 0 40px rgba(45, 156, 219, 0.1);
+  animation: Modal-slideUpScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+.Modal-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #2D9CDB 0%, #27AE60 50%, #F59E0B 100%);
+  z-index: 1;
+}
+
+.Modal-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232D9CDB' fill-opacity='0.015' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.02;
+}
+
+@keyframes Modal-slideUpScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  50% {
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.Modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-6);
+  border-bottom: 2px solid var(--color-neutral-100);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.95) 100%);
+  position: relative;
+  z-index: 10;
+}
+
+.Modal-title {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-3);
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 800;
+  color: var(--color-neutral-900);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.Modal-title-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2D9CDB 0%, #56CCF2 100%);
+  box-shadow: 0 4px 16px rgba(45, 156, 219, 0.4), 0 0 0 1px rgba(45, 156, 219, 0.2);
+  position: relative;
+}
+
+.Modal-title-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-xl);
+  background: radial-gradient(circle, rgba(45, 156, 219, 0.6) 0%, transparent 70%);
+  filter: blur(4px);
+  opacity: 0.5;
+}
+
+.Modal-close {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-neutral-400);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 10;
+}
+
+.Modal-close:hover {
+  color: white;
+  background: var(--color-status-error);
+}
+
+.Modal-close::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-xl);
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%);
+  filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.Modal-close:hover::before {
+  opacity: 1;
+}
+
+.Modal-content {
+  padding: var(--space-6);
+  position: relative;
+  z-index: 10;
+}
+
+.Modal-content-no-header {
+  padding: var(--space-6);
+  position: relative;
+  z-index: 10;
+}
+

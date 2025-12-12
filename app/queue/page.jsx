@@ -402,49 +402,51 @@ export default function QueuePage() {
 
   return (
     <Layout>
-      <DashboardHeader
-        title={t('queue.queueManagement')}
-        subtitle={formatDateDisplay()}
-        notifications={notifications}
-        actionButton={
-          <>
-            <Button
-              variant='secondary'
-              onClick={() => setShowCompleted(!showCompleted)}
-              className='flex items-center gap-2'
-            >
-              {showCompleted ? 'Hide Completed' : 'Show Completed'}
-            </Button>
-            <Button
-              onClick={() => fetchQueue(false)}
-              disabled={loading}
-              className='flex items-center gap-2'
-            >
-              {loading ? (
-                <CompactLoader size='xs' />
-              ) : (
-                <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                  />
-                </svg>
-              )}
-              {loading ? t('common.loading') : 'Refresh Queue'}
-            </Button>
-          </>
-        }
-      />
-
-      <Card>
-        <Table
-          data={queueEntries.sort((a, b) => a.position - b.position)}
-          columns={columns}
-          emptyMessage={t('common.noDataFound')}
+      <div style={{ padding: '0 10px' }}>
+        <DashboardHeader
+          title={t('queue.queueManagement')}
+          subtitle={formatDateDisplay()}
+          notifications={notifications}
+          actionButton={
+            <>
+              <Button
+                variant='secondary'
+                onClick={() => setShowCompleted(!showCompleted)}
+                className='flex items-center gap-2'
+              >
+                {showCompleted ? 'Hide Completed' : 'Show Completed'}
+              </Button>
+              <Button
+                onClick={() => fetchQueue(false)}
+                disabled={loading}
+                className='flex items-center gap-2'
+              >
+                {loading ? (
+                  <CompactLoader size='xs' />
+                ) : (
+                  <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+                    />
+                  </svg>
+                )}
+                {loading ? t('common.loading') : 'Refresh Queue'}
+              </Button>
+            </>
+          }
         />
-      </Card>
+
+        <Card>
+          <Table
+            data={queueEntries.sort((a, b) => a.position - b.position)}
+            columns={columns}
+            emptyMessage={t('common.noDataFound')}
+          />
+        </Card>
+      </div>
     </Layout>
   );
 }

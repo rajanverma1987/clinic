@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
 import { apiClient } from '@/lib/api/client';
+import { useCallback, useState } from 'react';
 
 export function useDashboardLists() {
   const [todayAppointments, setTodayAppointments] = useState([]);
@@ -9,6 +9,7 @@ export function useDashboardLists() {
   const [prescriptionRefills, setPrescriptionRefills] = useState([]);
   const [queueStatus, setQueueStatus] = useState({ active: 0, waiting: 0, inProgress: 0 });
   const [criticalAlerts, setCriticalAlerts] = useState([]);
+  const [expiringLots, setExpiringLots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -16,14 +17,16 @@ export function useDashboardLists() {
     try {
       setLoading(true);
       setError(null);
+      setCriticalAlerts([]); // Reset alerts at start
+
+      const alerts = []; // Build alerts array
 
       // Fetch today's appointments
       const today = new Date().toISOString().split('T')[0];
       const appointmentsResponse = await apiClient.get(`/appointments?date=${today}&limit=5`);
       let fetchedAppointments = [];
       if (appointmentsResponse.success && appointmentsResponse.data) {
-        const appointmentsData =
-          appointmentsResponse.data?.data || appointmentsResponse.data || [];
+        const appointmentsData = appointmentsResponse.data?.data || appointmentsResponse.data || [];
         fetchedAppointments = appointmentsData.slice(0, 5);
         setTodayAppointments(fetchedAppointments);
 
@@ -35,17 +38,14 @@ export function useDashboardLists() {
           return aptTime >= now && aptTime <= oneHourLater;
         });
         if (urgentAppointments.length > 0) {
-          setCriticalAlerts((prev) => [
-            ...prev,
-            {
-              type: 'appointment',
-              severity: 'info',
-              message: `${urgentAppointments.length} appointment${
-                urgentAppointments.length > 1 ? 's' : ''
-              } starting within the next hour`,
-              count: urgentAppointments.length,
-            },
-          ]);
+          alerts.push({
+            type: 'appointment',
+            severity: 'info',
+            message: `${urgentAppointments.length} appointment${
+              urgentAppointments.length > 1 ? 's' : ''
+            } starting within the next hour`,
+            count: urgentAppointments.length,
+          });
         }
       }
 
@@ -65,15 +65,14 @@ export function useDashboardLists() {
 
         // Add to alerts
         if (invoices.length > 0) {
-          setCriticalAlerts((prev) => [
-            ...prev,
-            {
-              type: 'invoice',
-              severity: 'warning',
-              message: `${invoices.length} overdue invoice${invoices.length > 1 ? 's' : ''} require attention`,
-              count: invoices.length,
-            },
-          ]);
+          alerts.push({
+            type: 'invoice',
+            severity: 'warning',
+            message: `${invoices.length} overdue invoice${
+              invoices.length > 1 ? 's' : ''
+            } require attention`,
+            count: invoices.length,
+          });
         }
       }
 
@@ -85,15 +84,12 @@ export function useDashboardLists() {
 
         // Add to alerts
         if (items.length > 0) {
-          setCriticalAlerts((prev) => [
-            ...prev,
-            {
-              type: 'inventory',
-              severity: 'error',
-              message: `${items.length} item${items.length > 1 ? 's' : ''} running low on stock`,
-              count: items.length,
-            },
-          ]);
+          alerts.push({
+            type: 'inventory',
+            severity: 'error',
+            message: `${items.length} item${items.length > 1 ? 's' : ''} running low on stock`,
+            count: items.length,
+          });
         }
       }
 
@@ -101,7 +97,8 @@ export function useDashboardLists() {
       try {
         const prescriptionsResponse = await apiClient.get('/prescriptions?status=active&limit=5');
         if (prescriptionsResponse.success && prescriptionsResponse.data) {
-          const prescriptions = prescriptionsResponse.data?.data || prescriptionsResponse.data || [];
+          const prescriptions =
+            prescriptionsResponse.data?.data || prescriptionsResponse.data || [];
           setPrescriptionRefills(prescriptions.slice(0, 5));
         }
       } catch (err) {
@@ -123,9 +120,34 @@ export function useDashboardLists() {
       } catch (err) {
         console.error('Failed to fetch queue status:', err);
       }
+
+      // Fetch expiring lots
+      try {
+        const lotsResponse = await apiClient.get('/inventory/lots?expiringSoon=true');
+        if (lotsResponse.success && lotsResponse.data) {
+          const lots = lotsResponse.data || [];
+          setExpiringLots(lots.slice(0, 5));
+
+          // Add to alerts if there are expiring lots
+          if (lots.length > 0) {
+            alerts.push({
+              type: 'lot',
+              severity: 'warning',
+              message: `${lots.length} lot${lots.length > 1 ? 's' : ''} expiring soon`,
+              count: lots.length,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch expiring lots:', err);
+      }
+
+      // Set all alerts at once at the end
+      setCriticalAlerts(alerts);
     } catch (err) {
       console.error('Failed to fetch dashboard lists:', err);
       setError(err);
+      setCriticalAlerts([]); // Clear alerts on error
     } finally {
       setLoading(false);
     }
@@ -139,6 +161,7 @@ export function useDashboardLists() {
     prescriptionRefills,
     queueStatus,
     criticalAlerts,
+    expiringLots,
     loading,
     error,
     fetchDashboardLists,

@@ -46,7 +46,7 @@ export function Button({
   // Disabled state - only override when explicitly disabled (not just loading)
   const isDisabled = disabled || isLoading;
   const disabledStyles = isDisabled
-    ? '!bg-neutral-300 !text-white cursor-not-allowed hover:!bg-neutral-300 hover:!opacity-50'
+    ? '!bg-neutral-300 !text-white cursor-not-allowed hover:!bg-neutral-300 hover:!opacity-50 hover:!opacity-50'
     : '';
 
   return (
@@ -55,29 +55,29 @@ export function Button({
       disabled={isDisabled}
       {...props}
     >
-      {/* Green gradient hover effect - slides in from left to right for Primary */}
+      {/* Green gradient hover effect - fades in for Primary */}
       {variant === 'primary' && (
-        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
+        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md z-[1]'></span>
       )}
 
       {/* Green gradient hover effect for Secondary - doesn't cover border */}
       {variant === 'secondary' && (
-        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
+        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md z-[1]'></span>
       )}
 
       {/* Red gradient hover effect for Danger */}
       {variant === 'danger' && (
-        <span className='absolute inset-[2px] bg-gradient-to-r from-[#C54141] to-[#A03030] opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
+        <span className='absolute inset-[2px] bg-gradient-to-r from-[#C54141] to-[#A03030] opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md z-[1]'></span>
       )}
 
       {/* Red gradient hover effect for Logout */}
       {variant === 'logout' && (
-        <span className='absolute inset-[2px] bg-gradient-to-r from-status-error to-status-error/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
+        <span className='absolute inset-[2px] bg-gradient-to-r from-status-error to-status-error/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md z-[1]'></span>
       )}
 
       {/* Primary blue gradient hover effect for Outline */}
       {variant === 'outline' && (
-        <span className='absolute inset-[2px] bg-gradient-to-r from-primary-500 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out rounded-md'></span>
+        <span className='absolute inset-[2px] bg-gradient-to-r from-primary-500 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md z-[1]'></span>
       )}
 
       {/* Shine effect overlay for Primary button */}

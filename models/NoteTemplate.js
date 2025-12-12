@@ -6,7 +6,6 @@ const NoteTemplateSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
     },
     doctorId: {
       type: Schema.Types.ObjectId,

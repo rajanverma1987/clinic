@@ -10,10 +10,12 @@ import { HeroSection } from '@/components/marketing/HeroSection';
 import { ProductGallerySection } from '@/components/marketing/ProductGallerySection';
 import { TestimonialsSection } from '@/components/marketing/TestimonialsSection';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 function HomePage() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [showAllFeatures, setShowAllFeatures] = useState(false);
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
   const [cardsPerView, setCardsPerView] = useState(3); // Default for SSR
@@ -37,9 +39,16 @@ function HomePage() {
     setMounted(true);
   }, []);
 
+  // Redirect authenticated users to dashboard
   useEffect(() => {
-    // Only run on client side after mount
-    if (typeof window === 'undefined' || !mounted) return;
+    if (!authLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    // Only run on client side after mount and when not authenticated
+    if (typeof window === 'undefined' || !mounted || authLoading || user) return;
 
     let timeoutId;
     const updateCardsPerView = () => {
@@ -69,9 +78,12 @@ function HomePage() {
       clearTimeout(timeoutId);
       window.removeEventListener('resize', updateCardsPerView);
     };
-  }, [mounted]);
+  }, [mounted, authLoading, user]);
 
   useEffect(() => {
+    // Only run when not authenticated
+    if (authLoading || user) return;
+
     const interval = setInterval(() => {
       setCurrentTestimonialIndex((prev) => {
         const totalTestimonials = 6;
@@ -81,12 +93,17 @@ function HomePage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [cardsPerView]);
+  }, [cardsPerView, authLoading, user]);
+
+  // Show loading or nothing while redirecting authenticated users
+  if (authLoading || user) {
+    return null;
+  }
 
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50 relative'>
       <Header />
-      <main className='flex-1 min-h-[calc(100vh-200px)]'>
+      <main className='flex-1 min-h-[calc(100vh-200px)]' style={{ paddingTop: '80px' }}>
         <HeroSection onContactClick={handleContactClick} />
         <FeaturesSection
           showAllFeatures={showAllFeatures}

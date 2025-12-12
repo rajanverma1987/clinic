@@ -98,14 +98,14 @@ export default function APIDocsPage() {
     <Layout>
       <div className='mb-8'>
         <h1 className='text-3xl font-bold text-gray-900'>API Documentation</h1>
-        <p className='text-neutral-600 mt-2'>Integrate Doctor's Clinic with your applications</p>
+        <p className='text-neutral-600 mt-2'>Integrate Doctor&apos;s Clinic with your applications</p>
       </div>
 
       {/* API Key Section */}
       <Card className='mb-8'>
         <h2 className='text-xl font-semibold mb-4'>API Authentication</h2>
         <p className='text-neutral-600 mb-4'>
-          Use your API key to authenticate requests to the Doctor's Clinic API.
+          Use your API key to authenticate requests to the Doctor&apos;s Clinic API.
         </p>
 
         {!showToken ? (

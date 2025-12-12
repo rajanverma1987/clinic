@@ -120,7 +120,7 @@ export default function ContactPage() {
                     clipRule='evenodd'
                   />
                 </svg>
-                <span>We're Here to Help</span>
+                <span>We&apos;re Here to Help</span>
               </div>
 
               <h1
@@ -144,7 +144,7 @@ export default function ContactPage() {
                   fontWeight: '400',
                 }}
               >
-                Have a question or need help? We're here to assist you.
+                Have a question or need help? We&apos;re here to assist you.
               </p>
             </div>
           </div>
@@ -499,7 +499,7 @@ export default function ContactPage() {
                           paddingBottom: '12px',
                         }}
                       >
-                        Thank you for your message! We'll get back to you soon.
+                        Thank you for your message! We&apos;ll get back to you soon.
                       </div>
                     )}
 

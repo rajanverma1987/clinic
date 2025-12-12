@@ -276,38 +276,40 @@ export default function InvoicesPage() {
 
   return (
     <Layout>
-      <DashboardHeader
-        title={t('invoices.title')}
-        subtitle={t('invoices.invoiceList')}
-        actionButton={
-          <Button
-            onClick={() => router.push('/invoices/new')}
-            variant='primary'
-            size='md'
-            className='whitespace-nowrap'
-          >
-            + {t('invoices.createInvoice')}
-          </Button>
-        }
-      />
-
-      <Card>
-        <Table
-          data={invoices}
-          columns={columns}
-          onRowClick={(row) => router.push(`/invoices/${row._id}`)}
-          emptyMessage={t('common.noDataFound')}
+      <div style={{ padding: '0 10px' }}>
+        <DashboardHeader
+          title={t('invoices.title')}
+          subtitle={t('invoices.invoiceList')}
+          actionButton={
+            <Button
+              onClick={() => router.push('/invoices/new')}
+              variant='primary'
+              size='md'
+              className='whitespace-nowrap'
+            >
+              + {t('invoices.createInvoice')}
+            </Button>
+          }
         />
-      </Card>
 
-      <InvoicePrintPreview
-        invoiceId={printInvoiceId}
-        isOpen={showPrintPreview}
-        onClose={() => {
-          setShowPrintPreview(false);
-          setPrintInvoiceId(null);
-        }}
-      />
+        <Card>
+          <Table
+            data={invoices}
+            columns={columns}
+            onRowClick={(row) => router.push(`/invoices/${row._id}`)}
+            emptyMessage={t('common.noDataFound')}
+          />
+        </Card>
+
+        <InvoicePrintPreview
+          invoiceId={printInvoiceId}
+          isOpen={showPrintPreview}
+          onClose={() => {
+            setShowPrintPreview(false);
+            setPrintInvoiceId(null);
+          }}
+        />
+      </div>
     </Layout>
   );
 }

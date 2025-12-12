@@ -35,7 +35,7 @@ export async function POST(req) {
 
     // Find user by email (check across all tenants for security)
     const user = await User.findOne({ email: email.toLowerCase() });
-    
+
     // Always return success to prevent email enumeration
     if (!user) {
       return NextResponse.json(
@@ -48,21 +48,26 @@ export async function POST(req) {
     // Generate 6-digit secret code
     const secretCode = Math.floor(100000 + Math.random() * 900000).toString();
 
+    // Build query for invalidating existing codes
+    const invalidateQuery = {
+      email: email.toLowerCase(),
+      used: false,
+    };
+    // Only add tenantId filter if user has one (exclude super_admin)
+    if (user.tenantId) {
+      invalidateQuery.tenantId = user.tenantId;
+    } else {
+      invalidateQuery.tenantId = null;
+    }
+
     // Invalidate any existing reset codes for this user
-    await PasswordReset.updateMany(
-      {
-        email: email.toLowerCase(),
-        tenantId: user.tenantId,
-        used: false,
-      },
-      { used: true }
-    );
+    await PasswordReset.updateMany(invalidateQuery, { used: true });
 
     // Create new password reset record
     await PasswordReset.create({
       email: email.toLowerCase(),
       secretCode,
-      tenantId: user.tenantId,
+      tenantId: user.tenantId || null, // Allow null for super_admin
       expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
       used: false,
     });
@@ -72,7 +77,7 @@ export async function POST(req) {
     const emailSent = await sendPasswordResetEmail(
       email.toLowerCase(),
       secretCode,
-      user.tenantId
+      user.tenantId || null
     );
 
     if (!emailSent) {

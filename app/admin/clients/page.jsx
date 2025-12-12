@@ -248,143 +248,145 @@ export default function AdminClientsPage() {
 
   return (
     <Layout>
-      <div className='mb-8'>
-        <h1 className='text-3xl font-bold text-neutral-900'>Clients</h1>
-        <p className='text-neutral-600 mt-2'>Manage all clinic clients and their subscriptions</p>
-      </div>
-
-      <Card>
-        <Table data={clients} columns={columns} emptyMessage='No clients found' />
-      </Card>
-
-      {/* Update Subscription Modal */}
-      {showUpdateModal && currentClient && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
-          <Card className='max-w-md w-full mx-4'>
-            <div className='p-6'>
-              <h2 className='text-xl font-semibold mb-4'>Update Subscription</h2>
-              <p className='text-sm text-neutral-600 mb-4'>
-                Client: <span className='font-medium'>{currentClient.name}</span>
-              </p>
-
-              <div className='mb-4'>
-                <Select
-                  label='Select New Plan'
-                  value={selectedPlanId}
-                  onChange={(e) => setSelectedPlanId(e.target.value)}
-                  required
-                  placeholder='-- Select Plan --'
-                  options={[
-                    { value: '', label: '-- Select Plan --' },
-                    ...plans.map((plan) => ({
-                      value: plan._id,
-                      label: `${plan.name} - ${formatCurrency(plan.price)}/${
-                        plan.billingCycle === 'MONTHLY' ? 'month' : 'year'
-                      }`,
-                    })),
-                  ]}
-                />
-              </div>
-
-              <div className='flex gap-4'>
-                <Button
-                  onClick={handleSubmitUpdateSubscription}
-                  disabled={!selectedPlanId || updatingClientId === currentClient._id}
-                  isLoading={updatingClientId === currentClient._id}
-                >
-                  Update Subscription
-                </Button>
-                <Button
-                  variant='secondary'
-                  onClick={() => {
-                    setShowUpdateModal(false);
-                    setCurrentClient(null);
-                    setSelectedPlanId('');
-                  }}
-                  disabled={updatingClientId === currentClient._id}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </Card>
+      <div style={{ padding: '0 10px' }}>
+        <div className='mb-8'>
+          <h1 className='text-3xl font-bold text-neutral-900'>Clients</h1>
+          <p className='text-neutral-600 mt-2'>Manage all clinic clients and their subscriptions</p>
         </div>
-      )}
 
-      {/* Payment URL Modal - Shows PayPal approval link for client */}
-      {showPaymentUrlModal && paymentUrl && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
-          <Card className='max-w-2xl w-full mx-4'>
-            <div className='p-6'>
-              <h2 className='text-xl font-semibold mb-4 text-secondary-600'>
-                ✅ Subscription Created - Payment Required
-              </h2>
+        <Card>
+          <Table data={clients} columns={columns} emptyMessage='No clients found' />
+        </Card>
 
-              <div className='bg-primary-100 border-l-4 border-primary-500 p-4 mb-4'>
-                <p className='text-sm text-primary-700 mb-2'>
-                  <strong>PayPal subscription created successfully!</strong>
+        {/* Update Subscription Modal */}
+        {showUpdateModal && currentClient && (
+          <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+            <Card className='max-w-md w-full mx-4'>
+              <div className='p-6'>
+                <h2 className='text-xl font-semibold mb-4'>Update Subscription</h2>
+                <p className='text-sm text-neutral-600 mb-4'>
+                  Client: <span className='font-medium'>{currentClient.name}</span>
                 </p>
-                <p className='text-sm text-primary-600'>
-                  The client needs to complete payment to activate their subscription. Send them the
-                  payment link below.
-                </p>
-              </div>
 
-              <div className='mb-4'>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  Payment Link (Send to Client):
-                </label>
-                <div className='flex gap-2'>
-                  <input
-                    type='text'
-                    readOnly
-                    value={paymentUrl}
-                    className='flex-1 px-3 py-2 border border-neutral-300 rounded-lg bg-neutral-100 text-sm font-mono'
+                <div className='mb-4'>
+                  <Select
+                    label='Select New Plan'
+                    value={selectedPlanId}
+                    onChange={(e) => setSelectedPlanId(e.target.value)}
+                    required
+                    placeholder='-- Select Plan --'
+                    options={[
+                      { value: '', label: '-- Select Plan --' },
+                      ...plans.map((plan) => ({
+                        value: plan._id,
+                        label: `${plan.name} - ${formatCurrency(plan.price)}/${
+                          plan.billingCycle === 'MONTHLY' ? 'month' : 'year'
+                        }`,
+                      })),
+                    ]}
                   />
+                </div>
+
+                <div className='flex gap-4'>
+                  <Button
+                    onClick={handleSubmitUpdateSubscription}
+                    disabled={!selectedPlanId || updatingClientId === currentClient._id}
+                    isLoading={updatingClientId === currentClient._id}
+                  >
+                    Update Subscription
+                  </Button>
                   <Button
                     variant='secondary'
-                    size='sm'
                     onClick={() => {
-                      navigator.clipboard.writeText(paymentUrl);
-                      alert('Payment link copied to clipboard!');
+                      setShowUpdateModal(false);
+                      setCurrentClient(null);
+                      setSelectedPlanId('');
                     }}
+                    disabled={updatingClientId === currentClient._id}
                   >
-                    Copy Link
+                    Cancel
                   </Button>
                 </div>
               </div>
+            </Card>
+          </div>
+        )}
 
-              <div className='bg-status-warning/10 border-l-4 border-status-warning p-4 mb-4'>
-                <p className='text-sm text-status-warning'>
-                  <strong>⚠️ Important:</strong> The subscription status is PENDING until the client
-                  completes payment. Features will be disabled until payment is received.
-                </p>
-              </div>
+        {/* Payment URL Modal - Shows PayPal approval link for client */}
+        {showPaymentUrlModal && paymentUrl && (
+          <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+            <Card className='max-w-2xl w-full mx-4'>
+              <div className='p-6'>
+                <h2 className='text-xl font-semibold mb-4 text-secondary-600'>
+                  ✅ Subscription Created - Payment Required
+                </h2>
 
-              <div className='flex gap-4'>
-                <Button
-                  onClick={() => {
-                    window.open(paymentUrl, '_blank');
-                  }}
-                  className='flex-1'
-                >
-                  Open Payment Link
-                </Button>
-                <Button
-                  variant='secondary'
-                  onClick={() => {
-                    setShowPaymentUrlModal(false);
-                    setPaymentUrl('');
-                  }}
-                  className='flex-1'
-                >
-                  Close
-                </Button>
+                <div className='bg-primary-100 border-l-4 border-primary-500 p-4 mb-4'>
+                  <p className='text-sm text-primary-700 mb-2'>
+                    <strong>PayPal subscription created successfully!</strong>
+                  </p>
+                  <p className='text-sm text-primary-600'>
+                    The client needs to complete payment to activate their subscription. Send them
+                    the payment link below.
+                  </p>
+                </div>
+
+                <div className='mb-4'>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    Payment Link (Send to Client):
+                  </label>
+                  <div className='flex gap-2'>
+                    <input
+                      type='text'
+                      readOnly
+                      value={paymentUrl}
+                      className='flex-1 px-3 py-2 border border-neutral-300 rounded-lg bg-neutral-100 text-sm font-mono'
+                    />
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      onClick={() => {
+                        navigator.clipboard.writeText(paymentUrl);
+                        alert('Payment link copied to clipboard!');
+                      }}
+                    >
+                      Copy Link
+                    </Button>
+                  </div>
+                </div>
+
+                <div className='bg-status-warning/10 border-l-4 border-status-warning p-4 mb-4'>
+                  <p className='text-sm text-status-warning'>
+                    <strong>⚠️ Important:</strong> The subscription status is PENDING until the
+                    client completes payment. Features will be disabled until payment is received.
+                  </p>
+                </div>
+
+                <div className='flex gap-4'>
+                  <Button
+                    onClick={() => {
+                      window.open(paymentUrl, '_blank');
+                    }}
+                    className='flex-1'
+                  >
+                    Open Payment Link
+                  </Button>
+                  <Button
+                    variant='secondary'
+                    onClick={() => {
+                      setShowPaymentUrlModal(false);
+                      setPaymentUrl('');
+                    }}
+                    className='flex-1'
+                  >
+                    Close
+                  </Button>
+                </div>
               </div>
-            </div>
-          </Card>
-        </div>
-      )}
+            </Card>
+          </div>
+        )}
+      </div>
     </Layout>
   );
 }

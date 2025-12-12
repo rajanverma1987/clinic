@@ -14,7 +14,10 @@ export function VideoControls({
   onEndCall,
 }) {
   return (
-    <div className='absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 sm:gap-3 md:gap-4 bg-gray-900/80 backdrop-blur-sm px-2 sm:px-4 py-2 sm:py-3 rounded-full flex-wrap justify-center max-w-[95vw]'>
+    <div
+      className='absolute bottom-2 sm:bottom-4 left-1/2 flex items-center gap-2 sm:gap-3 md:gap-4 bg-gray-900/80 backdrop-blur-sm px-2 sm:px-4 py-2 sm:py-3 rounded-full flex-wrap justify-center max-w-[95vw]'
+      style={{ marginLeft: '-50%' }}
+    >
       {/* Mute/Unmute Button */}
       <button
         onClick={onToggleMute}

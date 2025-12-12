@@ -116,7 +116,8 @@ export function DataSecuritySection() {
           background:
             'radial-gradient(circle, rgba(45, 156, 219, 0.12) 0%, rgba(45, 156, 219, 0.04) 40%, transparent 70%)',
           filter: 'blur(80px)',
-          transform: 'translate(30%, -30%)',
+          top: '-180px',
+          right: '-180px',
         }}
       ></div>
       <div
@@ -127,7 +128,8 @@ export function DataSecuritySection() {
           background:
             'radial-gradient(circle, rgba(39, 174, 96, 0.12) 0%, rgba(39, 174, 96, 0.04) 40%, transparent 70%)',
           filter: 'blur(80px)',
-          transform: 'translate(-30%, 30%)',
+          bottom: '-150px',
+          left: '-150px',
         }}
       ></div>
 
@@ -163,7 +165,7 @@ export function DataSecuritySection() {
                 fontWeight: '400',
               }}
             >
-              Protecting your clinic's sensitive information is a top priority.
+              Protecting your clinic&apos;s sensitive information is a top priority.
             </p>
 
             <div className='space-y-5'>

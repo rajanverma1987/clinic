@@ -110,7 +110,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
       // Center if neither side has enough space
       popup.style.left = '50%';
       popup.style.right = 'auto';
-      popup.style.transform = 'translateX(-50%)';
+      popup.style.marginLeft = '-50%';
     }
   }, [isOpen, buttonRef]);
 
@@ -197,7 +197,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
                   d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
                 />
               </svg>
-              <h3 className='font-bold text-lg'>Today's Appointments</h3>
+              <h3 className='font-bold text-lg'>Today&apos;s Appointments</h3>
             </div>
             <button
               onClick={onClose}
@@ -238,7 +238,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
                 />
               </svg>
               <p className='text-neutral-500 font-medium mb-1'>No appointments today</p>
-              <p className='text-neutral-400 text-sm text-center'>You're all caught up! 🎉</p>
+              <p className='text-neutral-400 text-sm text-center'>You&apos;re all caught up! 🎉</p>
             </div>
           ) : (
             <div className='p-3 space-y-2'>

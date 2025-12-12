@@ -27,7 +27,6 @@ const QueueSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
     },
     
     // Queue Entry Type

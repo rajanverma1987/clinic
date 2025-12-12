@@ -110,43 +110,45 @@ export default function InventoryPage() {
 
   return (
     <Layout>
-      <DashboardHeader
-        title={t('inventory.title')}
-        subtitle={t('inventory.items')}
-        actionButton={
-          <Button
-            onClick={() => router.push('/inventory/items/new')}
-            variant='primary'
-            size='md'
-            className='whitespace-nowrap'
-          >
-            + {t('inventory.addItem')}
-          </Button>
-        }
-      />
-
-      <Card className='mb-6'>
-        <div className='flex items-center gap-4'>
-          <label className='flex items-center'>
-            <input
-              type='checkbox'
-              checked={showLowStock}
-              onChange={(e) => setShowLowStock(e.target.checked)}
-              className='mr-2'
-            />
-            <span className='text-sm text-neutral-700'>{t('inventory.lowStock')}</span>
-          </label>
-        </div>
-      </Card>
-
-      <Card>
-        <Table
-          data={items}
-          columns={columns}
-          onRowClick={(row) => router.push(`/inventory/items/${row._id}`)}
-          emptyMessage={t('common.noDataFound')}
+      <div style={{ padding: '0 10px' }}>
+        <DashboardHeader
+          title={t('inventory.title')}
+          subtitle={t('inventory.items')}
+          actionButton={
+            <Button
+              onClick={() => router.push('/inventory/items/new')}
+              variant='primary'
+              size='md'
+              className='whitespace-nowrap'
+            >
+              + {t('inventory.addItem')}
+            </Button>
+          }
         />
-      </Card>
+
+        <Card className='mb-6'>
+          <div className='flex items-center gap-4'>
+            <label className='flex items-center'>
+              <input
+                type='checkbox'
+                checked={showLowStock}
+                onChange={(e) => setShowLowStock(e.target.checked)}
+                className='mr-2'
+              />
+              <span className='text-sm text-neutral-700'>{t('inventory.lowStock')}</span>
+            </label>
+          </div>
+        </Card>
+
+        <Card>
+          <Table
+            data={items}
+            columns={columns}
+            onRowClick={(row) => router.push(`/inventory/items/${row._id}`)}
+            emptyMessage={t('common.noDataFound')}
+          />
+        </Card>
+      </div>
     </Layout>
   );
 }

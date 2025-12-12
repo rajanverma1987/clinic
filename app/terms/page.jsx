@@ -35,7 +35,7 @@ export default function TermsPage() {
                 1. Agreement to Terms
               </h2>
               <p className='text-neutral-700 mb-4'>
-                By accessing or using Doctor's Clinic (&quot;Service&quot;), you agree to be bound
+                By accessing or using Doctor&apos;s Clinic (&quot;Service&quot;), you agree to be bound
                 by these Terms of Service (&quot;Terms&quot;). If you disagree with any part of
                 these terms, you may not access the Service.
               </p>
@@ -50,7 +50,7 @@ export default function TermsPage() {
                 2. Description of Service
               </h2>
               <p className='text-neutral-700 mb-4'>
-                Doctor's Clinic is a cloud-based clinic management system that provides:
+                Doctor&apos;s Clinic is a cloud-based clinic management system that provides:
               </p>
               <ul className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'>
                 <li>Patient management and medical records</li>
@@ -115,7 +115,7 @@ export default function TermsPage() {
               </h2>
               <h3 className='text-xl font-semibold text-neutral-900 mb-3'>5.1 HIPAA Compliance</h3>
               <p className='text-neutral-700 mb-4'>
-                As a healthcare provider using Doctor's Clinic, you are responsible for:
+                As a healthcare provider using Doctor&apos;s Clinic, you are responsible for:
               </p>
               <ul className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'>
                 <li>Complying with all applicable HIPAA regulations</li>
@@ -139,7 +139,7 @@ export default function TermsPage() {
               </h2>
               <p className='text-neutral-700 mb-4'>
                 The Service and its original content, features, and functionality are owned by
-                Doctor's Clinic and are protected by international copyright, trademark, patent,
+                Doctor&apos;s Clinic and are protected by international copyright, trademark, patent,
                 trade secret, and other intellectual property laws.
               </p>
               <p className='text-neutral-700 mb-4'>
@@ -239,7 +239,7 @@ export default function TermsPage() {
             <section className='mb-8'>
               <h2 className='text-2xl font-semibold text-neutral-900 mb-4'>11. Indemnification</h2>
               <p className='text-neutral-700'>
-                You agree to indemnify, defend, and hold harmless Doctor's Clinic and its officers,
+                You agree to indemnify, defend, and hold harmless Doctor&apos;s Clinic and its officers,
                 directors, employees, and agents from and against any claims, liabilities, damages,
                 losses, and expenses, including reasonable attorneys&apos; fees, arising out of or
                 in any way connected with your use of the Service, violation of these Terms, or

@@ -146,48 +146,52 @@ export default function PaymentHistoryPage() {
 
   return (
     <Layout>
-      <DashboardHeader
-        title={t('subscription.paymentHistory')}
-        subtitle={t('subscription.paymentHistoryDesc')}
-      />
+      <div style={{ padding: '0 10px' }}>
+        <DashboardHeader
+          title={t('subscription.paymentHistory')}
+          subtitle={t('subscription.paymentHistoryDesc')}
+        />
 
-      {subscription && (
-        <Card className='mb-6 p-4'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <h3 className='text-lg font-semibold text-neutral-900'>{subscription.planId.name}</h3>
-              <p className='text-sm text-neutral-600'>
-                {formatPrice(subscription.planId.price, subscription.planId.currency)} /{' '}
-                {subscription.planId.billingCycle === 'MONTHLY' ? 'month' : 'year'}
-              </p>
+        {subscription && (
+          <Card className='mb-6 p-4'>
+            <div className='flex items-center justify-between'>
+              <div>
+                <h3 className='text-lg font-semibold text-neutral-900'>
+                  {subscription.planId.name}
+                </h3>
+                <p className='text-sm text-neutral-600'>
+                  {formatPrice(subscription.planId.price, subscription.planId.currency)} /{' '}
+                  {subscription.planId.billingCycle === 'MONTHLY' ? 'month' : 'year'}
+                </p>
+              </div>
+              <Button variant='secondary' onClick={() => router.push('/subscription')}>
+                {t('subscription.viewDetails')}
+              </Button>
             </div>
-            <Button variant='secondary' onClick={() => router.push('/subscription')}>
-              {t('subscription.viewDetails')}
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      <Card>
-        {payments.length === 0 ? (
-          <div className='p-8 text-center'>
-            <p className='text-neutral-500'>{t('subscription.noPaymentsFound')}</p>
-          </div>
-        ) : (
-          <>
-            <div className='p-4 border-b border-neutral-200'>
-              <p className='text-sm text-neutral-600'>
-                {t('subscription.totalPayments')}: {payments.length}
-              </p>
-            </div>
-            <Table
-              data={payments}
-              columns={columns}
-              emptyMessage={t('subscription.noPaymentsFound')}
-            />
-          </>
+          </Card>
         )}
-      </Card>
+
+        <Card>
+          {payments.length === 0 ? (
+            <div className='p-8 text-center'>
+              <p className='text-neutral-500'>{t('subscription.noPaymentsFound')}</p>
+            </div>
+          ) : (
+            <>
+              <div className='p-4 border-b border-neutral-200'>
+                <p className='text-sm text-neutral-600'>
+                  {t('subscription.totalPayments')}: {payments.length}
+                </p>
+              </div>
+              <Table
+                data={payments}
+                columns={columns}
+                emptyMessage={t('subscription.noPaymentsFound')}
+              />
+            </>
+          )}
+        </Card>
+      </div>
     </Layout>
   );
 }

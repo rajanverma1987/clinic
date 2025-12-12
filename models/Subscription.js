@@ -14,7 +14,6 @@ const SubscriptionSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
     },
     planId: {
       type: Schema.Types.ObjectId,

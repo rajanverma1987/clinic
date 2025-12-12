@@ -88,7 +88,8 @@ export default function LocationsPage() {
 
   return (
     <Layout>
-      <div className='mb-8 flex items-center justify-between'>
+      <div style={{ padding: '0 10px' }}>
+        <div className='mb-8 flex items-center justify-between'>
         <div>
           <h1 className='text-3xl font-bold text-neutral-900'>Multi-Location Management</h1>
           <p className='text-neutral-600 mt-2'>Manage multiple clinic locations</p>
@@ -175,6 +176,7 @@ export default function LocationsPage() {
           </Card>
         </div>
       )}
+      </div>
     </Layout>
   );
 }

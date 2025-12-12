@@ -613,121 +613,123 @@ export default function SettingsPage() {
 
   return (
     <Layout>
-      {/* Header */}
-      <div className='mb-6'>
-        <h1 className='text-2xl font-bold text-neutral-900 mb-1'>
-          {t('settings.title') || 'Settings'}
-        </h1>
-        <p className='text-sm text-neutral-600'>
-          {t('settings.description') || 'Manage your clinic settings and preferences'}
-        </p>
+      <div style={{ padding: '0 10px' }}>
+        {/* Header */}
+        <div className='mb-6'>
+          <h1 className='text-2xl font-bold text-neutral-900 mb-1'>
+            {t('settings.title') || 'Settings'}
+          </h1>
+          <p className='text-sm text-neutral-600'>
+            {t('settings.description') || 'Manage your clinic settings and preferences'}
+          </p>
+        </div>
+
+        {/* Tabs Navigation */}
+        <SettingsTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isClinicAdmin={isClinicAdmin}
+        />
+
+        {/* Profile Settings */}
+        {activeTab === 'profile' && (
+          <ProfileTab
+            currentUser={currentUser}
+            logout={logout}
+            saving={saving}
+            onToggleStatus={handleToggleMyStatus}
+            availabilityForm={availabilityForm}
+            setAvailabilityForm={setAvailabilityForm}
+          />
+        )}
+
+        {/* General Settings - Admin Only */}
+        {activeTab === 'general' && (
+          <GeneralSettingsTab
+            isClinicAdmin={isClinicAdmin}
+            clinicForm={clinicForm}
+            setClinicForm={setClinicForm}
+            saving={saving}
+            onSave={handleSaveGeneral}
+          />
+        )}
+
+        {/* Compliance Settings - Admin Only */}
+        {activeTab === 'compliance' && (
+          <ComplianceTab
+            isClinicAdmin={isClinicAdmin}
+            complianceForm={complianceForm}
+            setComplianceForm={setComplianceForm}
+            saving={saving}
+            onSave={handleSaveCompliance}
+          />
+        )}
+
+        {/* Doctors & Staff - Admin Only */}
+        {activeTab === 'doctors' && (
+          <DoctorsTab
+            isClinicAdmin={isClinicAdmin}
+            users={users}
+            newUserForm={newUserForm}
+            setNewUserForm={setNewUserForm}
+            showNewUserForm={showNewUserForm}
+            setShowNewUserForm={setShowNewUserForm}
+            generatedPassword={generatedPassword}
+            setGeneratedPassword={setGeneratedPassword}
+            onGeneratePassword={generatePassword}
+            onCreateUser={handleCreateUser}
+            onToggleUserStatus={handleToggleUserStatus}
+          />
+        )}
+
+        {/* Clinic Hours */}
+        {activeTab === 'hours' && (
+          <ClinicHoursTab
+            clinicHours={clinicHours}
+            updateClinicHour={updateClinicHour}
+            addTimeSlot={addTimeSlot}
+            removeTimeSlot={removeTimeSlot}
+            updateTimeSlot={updateTimeSlot}
+            saving={saving}
+            onSave={handleSaveHours}
+          />
+        )}
+
+        {/* Queue Settings */}
+        {activeTab === 'queue' && (
+          <QueueSettingsTab
+            queueForm={queueForm}
+            setQueueForm={setQueueForm}
+            saving={saving}
+            onSave={handleSaveQueue}
+          />
+        )}
+
+        {/* Tax Settings */}
+        {activeTab === 'tax' && (
+          <TaxSettingsTab
+            taxForm={taxForm}
+            setTaxForm={setTaxForm}
+            saving={saving}
+            onSave={handleSaveTax}
+          />
+        )}
+
+        {/* SMTP/Email Settings */}
+        {activeTab === 'smtp' && (
+          <SMTPSettingsTab
+            smtpForm={smtpForm}
+            setSmtpForm={setSmtpForm}
+            saving={saving}
+            onSave={handleSaveSmtp}
+          />
+        )}
+
+        {/* Holiday Management */}
+        {activeTab === 'holidays' && (
+          <HolidayManagementTab settings={settings} onUpdate={fetchSettings} />
+        )}
       </div>
-
-      {/* Tabs Navigation */}
-      <SettingsTabs
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        isClinicAdmin={isClinicAdmin}
-      />
-
-      {/* Profile Settings */}
-      {activeTab === 'profile' && (
-        <ProfileTab
-          currentUser={currentUser}
-          logout={logout}
-          saving={saving}
-          onToggleStatus={handleToggleMyStatus}
-          availabilityForm={availabilityForm}
-          setAvailabilityForm={setAvailabilityForm}
-        />
-      )}
-
-      {/* General Settings - Admin Only */}
-      {activeTab === 'general' && (
-        <GeneralSettingsTab
-          isClinicAdmin={isClinicAdmin}
-          clinicForm={clinicForm}
-          setClinicForm={setClinicForm}
-          saving={saving}
-          onSave={handleSaveGeneral}
-        />
-      )}
-
-      {/* Compliance Settings - Admin Only */}
-      {activeTab === 'compliance' && (
-        <ComplianceTab
-          isClinicAdmin={isClinicAdmin}
-          complianceForm={complianceForm}
-          setComplianceForm={setComplianceForm}
-          saving={saving}
-          onSave={handleSaveCompliance}
-        />
-      )}
-
-      {/* Doctors & Staff - Admin Only */}
-      {activeTab === 'doctors' && (
-        <DoctorsTab
-          isClinicAdmin={isClinicAdmin}
-          users={users}
-          newUserForm={newUserForm}
-          setNewUserForm={setNewUserForm}
-          showNewUserForm={showNewUserForm}
-          setShowNewUserForm={setShowNewUserForm}
-          generatedPassword={generatedPassword}
-          setGeneratedPassword={setGeneratedPassword}
-          onGeneratePassword={generatePassword}
-          onCreateUser={handleCreateUser}
-          onToggleUserStatus={handleToggleUserStatus}
-        />
-      )}
-
-      {/* Clinic Hours */}
-      {activeTab === 'hours' && (
-        <ClinicHoursTab
-          clinicHours={clinicHours}
-          updateClinicHour={updateClinicHour}
-          addTimeSlot={addTimeSlot}
-          removeTimeSlot={removeTimeSlot}
-          updateTimeSlot={updateTimeSlot}
-          saving={saving}
-          onSave={handleSaveHours}
-        />
-      )}
-
-      {/* Queue Settings */}
-      {activeTab === 'queue' && (
-        <QueueSettingsTab
-          queueForm={queueForm}
-          setQueueForm={setQueueForm}
-          saving={saving}
-          onSave={handleSaveQueue}
-        />
-      )}
-
-      {/* Tax Settings */}
-      {activeTab === 'tax' && (
-        <TaxSettingsTab
-          taxForm={taxForm}
-          setTaxForm={setTaxForm}
-          saving={saving}
-          onSave={handleSaveTax}
-        />
-      )}
-
-      {/* SMTP/Email Settings */}
-      {activeTab === 'smtp' && (
-        <SMTPSettingsTab
-          smtpForm={smtpForm}
-          setSmtpForm={setSmtpForm}
-          saving={saving}
-          onSave={handleSaveSmtp}
-        />
-      )}
-
-      {/* Holiday Management */}
-      {activeTab === 'holidays' && (
-        <HolidayManagementTab settings={settings} onUpdate={fetchSettings} />
-      )}
     </Layout>
   );
 }

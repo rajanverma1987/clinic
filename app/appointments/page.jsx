@@ -499,213 +499,217 @@ export default function AppointmentsPage() {
 
   return (
     <Layout>
-      <DashboardHeader
-        title={t('appointments.title')}
-        subtitle={formatDateDisplay(new Date(), {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })}
-        notifications={notifications}
-        actionButton={
-          <Button
-            onClick={() => router.push('/appointments/new')}
-            variant='primary'
-            size='md'
-            className='whitespace-nowrap'
-          >
-            + {t('appointments.bookAppointment')}
-          </Button>
-        }
-      />
+      <div style={{ padding: '0 10px' }}>
+        <DashboardHeader
+          title={t('appointments.title')}
+          subtitle={formatDateDisplay(new Date(), {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+          notifications={notifications}
+          actionButton={
+            <Button
+              onClick={() => router.push('/appointments/new')}
+              variant='primary'
+              size='md'
+              className='whitespace-nowrap'
+            >
+              + {t('appointments.bookAppointment')}
+            </Button>
+          }
+        />
 
-      {/* Filters Section */}
-      <Card className='mb-6 p-4'>
-        <div className='flex flex-wrap items-end gap-4'>
-          {/* Doctor Filter - Only for clinic_admin */}
-          {(user?.role === 'clinic_admin' || user?.role === 'super_admin') && (
+        {/* Filters Section */}
+        <Card className='mb-6 p-4'>
+          <div className='flex flex-wrap items-end gap-4'>
+            {/* Doctor Filter - Only for clinic_admin */}
+            {(user?.role === 'clinic_admin' || user?.role === 'super_admin') && (
+              <div className='flex-1 min-w-[200px]'>
+                <label className='block text-body-sm font-medium text-neutral-900 mb-1'>
+                  {t('appointments.filterByDoctor') || 'Filter by Doctor'}
+                </label>
+                <select
+                  value={selectedDoctorId}
+                  onChange={(e) => {
+                    setSelectedDoctorId(e.target.value);
+                    setCurrentPage(1); // Reset to first page when filter changes
+                  }}
+                  className='w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
+                >
+                  <option value=''>{t('appointments.allDoctors') || 'All Doctors'}</option>
+                  {doctors && Array.isArray(doctors) && doctors.length > 0 ? (
+                    doctors.map((doctor) => {
+                      // Handle both id and _id properties
+                      const doctorId = doctor.id || doctor._id?.toString() || '';
+                      const doctorName =
+                        `${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() ||
+                        doctor.email ||
+                        'Unknown Doctor';
+                      return (
+                        <option key={doctorId} value={doctorId}>
+                          {doctorName}
+                        </option>
+                      );
+                    })
+                  ) : (
+                    <option value='' disabled>
+                      {doctors === null || doctors === undefined
+                        ? t('appointments.loadingDoctors') || 'Loading doctors...'
+                        : t('appointments.noDoctorsAvailable') || 'No doctors available'}
+                    </option>
+                  )}
+                </select>
+              </div>
+            )}
+
+            {/* Status Filter - For all roles */}
             <div className='flex-1 min-w-[200px]'>
               <label className='block text-body-sm font-medium text-neutral-900 mb-1'>
-                {t('appointments.filterByDoctor') || 'Filter by Doctor'}
+                {t('appointments.filterByStatus') || 'Filter by Status'}
               </label>
               <select
-                value={selectedDoctorId}
+                value={selectedStatus}
                 onChange={(e) => {
-                  setSelectedDoctorId(e.target.value);
+                  setSelectedStatus(e.target.value);
                   setCurrentPage(1); // Reset to first page when filter changes
                 }}
                 className='w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
               >
-                <option value=''>{t('appointments.allDoctors') || 'All Doctors'}</option>
-                {doctors && Array.isArray(doctors) && doctors.length > 0 ? (
-                  doctors.map((doctor) => {
-                    // Handle both id and _id properties
-                    const doctorId = doctor.id || doctor._id?.toString() || '';
-                    const doctorName =
-                      `${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() ||
-                      doctor.email ||
-                      'Unknown Doctor';
-                    return (
-                      <option key={doctorId} value={doctorId}>
-                        {doctorName}
-                      </option>
-                    );
-                  })
-                ) : (
-                  <option value='' disabled>
-                    {doctors === null || doctors === undefined
-                      ? t('appointments.loadingDoctors') || 'Loading doctors...'
-                      : t('appointments.noDoctorsAvailable') || 'No doctors available'}
-                  </option>
-                )}
+                <option value=''>{t('appointments.allStatuses') || 'All Statuses'}</option>
+                <option value='scheduled'>{t('appointments.scheduled')}</option>
+                <option value='confirmed'>{t('appointments.confirmed')}</option>
+                <option value='in_progress'>{t('appointments.inProgress')}</option>
+                <option value='completed'>{t('appointments.completed')}</option>
+                <option value='cancelled'>{t('appointments.cancelled')}</option>
               </select>
             </div>
-          )}
 
-          {/* Status Filter - For all roles */}
-          <div className='flex-1 min-w-[200px]'>
-            <label className='block text-body-sm font-medium text-neutral-900 mb-1'>
-              {t('appointments.filterByStatus') || 'Filter by Status'}
-            </label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value);
-                setCurrentPage(1); // Reset to first page when filter changes
-              }}
-              className='w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
-            >
-              <option value=''>{t('appointments.allStatuses') || 'All Statuses'}</option>
-              <option value='scheduled'>{t('appointments.scheduled')}</option>
-              <option value='confirmed'>{t('appointments.confirmed')}</option>
-              <option value='in_progress'>{t('appointments.inProgress')}</option>
-              <option value='completed'>{t('appointments.completed')}</option>
-              <option value='cancelled'>{t('appointments.cancelled')}</option>
-            </select>
+            {/* Toggle Calendar Button - For receptionist and doctor */}
+            {(user?.role === 'receptionist' ||
+              user?.role === 'doctor' ||
+              user?.role === 'clinic_admin' ||
+              user?.role === 'super_admin') && (
+              <div className='flex items-end'>
+                <Button
+                  variant='secondary'
+                  size='md'
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  className='whitespace-nowrap'
+                >
+                  {showCalendar ? t('appointments.hideCalendar') : t('appointments.showCalendar')}
+                </Button>
+              </div>
+            )}
           </div>
+        </Card>
 
-          {/* Toggle Calendar Button - For receptionist and doctor */}
-          {(user?.role === 'receptionist' ||
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
+          <Card className='bg-primary-100 border border-primary-300'>
+            <p className='text-body-sm font-medium text-primary-700 mb-2'>Today&apos;s Appointments</p>
+            <div className='flex items-baseline gap-3'>
+              <p className='text-h1 font-bold text-primary-900'>
+                {statsLoading ? '—' : todayCount}
+              </p>
+              <span className='text-body-sm text-primary-700'>
+                {formatDateDisplay(new Date(), { year: 'numeric', month: 'short', day: 'numeric' })}
+              </span>
+            </div>
+            <p className='text-body-xs text-primary-500 mt-3'>
+              Includes all appointments scheduled for today
+            </p>
+          </Card>
+
+          <Card className='bg-secondary-100 border border-secondary-300'>
+            <p className='text-body-sm font-medium text-secondary-700 mb-2'>
+              Tomorrow&apos;s Appointments
+            </p>
+            <div className='flex items-baseline gap-3'>
+              <p className='text-h1 font-bold text-secondary-700'>
+                {statsLoading ? '—' : tomorrowCount}
+              </p>
+              <span className='text-body-sm text-secondary-700'>
+                {formatDateDisplay(new Date(new Date().setDate(new Date().getDate() + 1)), {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+            </div>
+            <p className='text-body-xs text-secondary-500 mt-3'>
+              Scheduled visits and video consultations for tomorrow
+            </p>
+          </Card>
+        </div>
+
+        {/* Calendar Section - Show for receptionist, doctor, and clinic_admin */}
+        {showCalendar &&
+          (user?.role === 'receptionist' ||
             user?.role === 'doctor' ||
             user?.role === 'clinic_admin' ||
             user?.role === 'super_admin') && (
-            <div className='flex items-end'>
+            <div className='mb-6'>
+              <AppointmentCalendar
+                selectedDoctorId={selectedDoctorId || (user?.role === 'doctor' ? user.userId : '')}
+                selectedDate={new Date()}
+                onSlotSelect={(slot) => {
+                  // Navigate to new appointment page with pre-filled data
+                  const dateStr = slot.date.toISOString().split('T')[0];
+                  const startTimeStr = slot.startTime.toISOString();
+                  const endTimeStr = slot.endTime.toISOString();
+                  const doctorIdParam =
+                    selectedDoctorId || (user?.role === 'doctor' ? user.userId : '') || '';
+
+                  // Build URL with query parameters
+                  const params = new URLSearchParams();
+                  if (doctorIdParam) params.append('doctorId', doctorIdParam);
+                  params.append('date', dateStr);
+                  params.append('startTime', startTimeStr);
+                  params.append('endTime', endTimeStr);
+
+                  router.push(`/appointments/new?${params.toString()}`);
+                }}
+                settings={settings?.settings}
+              />
+            </div>
+          )}
+
+        <Card>
+          <Table
+            data={appointments}
+            columns={columns}
+            onRowClick={(row) => router.push(`/appointments/${row._id}`)}
+            emptyMessage={t('common.noDataFound')}
+          />
+
+          {totalPages > 1 && (
+            <div className='mt-4 flex items-center justify-between'>
               <Button
                 variant='secondary'
                 size='md'
-                onClick={() => setShowCalendar(!showCalendar)}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
                 className='whitespace-nowrap'
               >
-                {showCalendar ? t('appointments.hideCalendar') : t('appointments.showCalendar')}
+                {t('common.previous')}
+              </Button>
+              <span className='text-body-sm text-neutral-700'>
+                {t('common.page')} {currentPage} {t('common.of')} {totalPages}
+              </span>
+              <Button
+                variant='secondary'
+                size='md'
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className='whitespace-nowrap'
+              >
+                {t('common.next')}
               </Button>
             </div>
           )}
-        </div>
-      </Card>
-
-      <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
-        <Card className='bg-primary-100 border border-primary-300'>
-          <p className='text-body-sm font-medium text-primary-700 mb-2'>Today's Appointments</p>
-          <div className='flex items-baseline gap-3'>
-            <p className='text-h1 font-bold text-primary-900'>{statsLoading ? '—' : todayCount}</p>
-            <span className='text-body-sm text-primary-700'>
-              {formatDateDisplay(new Date(), { year: 'numeric', month: 'short', day: 'numeric' })}
-            </span>
-          </div>
-          <p className='text-body-xs text-primary-500 mt-3'>
-            Includes all appointments scheduled for today
-          </p>
-        </Card>
-
-        <Card className='bg-secondary-100 border border-secondary-300'>
-          <p className='text-body-sm font-medium text-secondary-700 mb-2'>
-            Tomorrow's Appointments
-          </p>
-          <div className='flex items-baseline gap-3'>
-            <p className='text-h1 font-bold text-secondary-700'>
-              {statsLoading ? '—' : tomorrowCount}
-            </p>
-            <span className='text-body-sm text-secondary-700'>
-              {formatDateDisplay(new Date(new Date().setDate(new Date().getDate() + 1)), {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })}
-            </span>
-          </div>
-          <p className='text-body-xs text-secondary-500 mt-3'>
-            Scheduled visits and video consultations for tomorrow
-          </p>
         </Card>
       </div>
-
-      {/* Calendar Section - Show for receptionist, doctor, and clinic_admin */}
-      {showCalendar &&
-        (user?.role === 'receptionist' ||
-          user?.role === 'doctor' ||
-          user?.role === 'clinic_admin' ||
-          user?.role === 'super_admin') && (
-          <div className='mb-6'>
-            <AppointmentCalendar
-              selectedDoctorId={selectedDoctorId || (user?.role === 'doctor' ? user.userId : '')}
-              selectedDate={new Date()}
-              onSlotSelect={(slot) => {
-                // Navigate to new appointment page with pre-filled data
-                const dateStr = slot.date.toISOString().split('T')[0];
-                const startTimeStr = slot.startTime.toISOString();
-                const endTimeStr = slot.endTime.toISOString();
-                const doctorIdParam =
-                  selectedDoctorId || (user?.role === 'doctor' ? user.userId : '') || '';
-
-                // Build URL with query parameters
-                const params = new URLSearchParams();
-                if (doctorIdParam) params.append('doctorId', doctorIdParam);
-                params.append('date', dateStr);
-                params.append('startTime', startTimeStr);
-                params.append('endTime', endTimeStr);
-
-                router.push(`/appointments/new?${params.toString()}`);
-              }}
-              settings={settings?.settings}
-            />
-          </div>
-        )}
-
-      <Card>
-        <Table
-          data={appointments}
-          columns={columns}
-          onRowClick={(row) => router.push(`/appointments/${row._id}`)}
-          emptyMessage={t('common.noDataFound')}
-        />
-
-        {totalPages > 1 && (
-          <div className='mt-4 flex items-center justify-between'>
-            <Button
-              variant='secondary'
-              size='md'
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className='whitespace-nowrap'
-            >
-              {t('common.previous')}
-            </Button>
-            <span className='text-body-sm text-neutral-700'>
-              {t('common.page')} {currentPage} {t('common.of')} {totalPages}
-            </span>
-            <Button
-              variant='secondary'
-              size='md'
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className='whitespace-nowrap'
-            >
-              {t('common.next')}
-            </Button>
-          </div>
-        )}
-      </Card>
     </Layout>
   );
 }

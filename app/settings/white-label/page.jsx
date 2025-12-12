@@ -37,7 +37,8 @@ export default function WhiteLabelPage() {
 
   return (
     <Layout>
-      <div className='mb-8'>
+      <div style={{ padding: '0 10px' }}>
+        <div className='mb-8'>
         <div className='flex items-center justify-between'>
           <div>
             <h1 className='text-3xl font-bold text-neutral-900'>White Label Solution</h1>
@@ -78,14 +79,14 @@ export default function WhiteLabelPage() {
 
         {/* Branding Removal */}
         <Card>
-          <h2 className='text-xl font-semibold mb-6'>Doctor's Clinic Branding</h2>
+          <h2 className='text-xl font-semibold mb-6'>Doctor&apos;s Clinic Branding</h2>
 
           <div className='space-y-4'>
             <div className='flex items-center justify-between p-4 bg-neutral-100 rounded-lg'>
               <div>
-                <h3 className='font-medium text-neutral-900'>Remove Doctor's Clinic Branding</h3>
+                <h3 className='font-medium text-neutral-900'>Remove Doctor&apos;s Clinic Branding</h3>
                 <p className='text-sm text-neutral-600 mt-1'>
-                  Hide all Doctor's Clinic logos, names, and references from the application
+                  Hide all Doctor&apos;s Clinic logos, names, and references from the application
                 </p>
               </div>
               <label className='relative inline-flex items-center cursor-pointer'>
@@ -166,6 +167,7 @@ export default function WhiteLabelPage() {
           </Button>
         </div>
       </form>
+      </div>
     </Layout>
   );
 }

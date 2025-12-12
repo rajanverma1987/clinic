@@ -1,7 +1,6 @@
 'use client';
 
 import { useI18n } from '@/contexts/I18nContext';
-import Image from 'next/image';
 
 /**
  * Premium Medical Loader Component for Healthcare Platform
@@ -96,7 +95,7 @@ export function Loader({
         }}
       />
 
-      {/* Clinic Logo in center */}
+      {/* Clinic Logo in center - Simple Medical Cross */}
       <div
         className='absolute inset-0 flex items-center justify-center'
         style={{
@@ -104,18 +103,42 @@ export function Loader({
         }}
       >
         <div
-          style={{ position: 'relative', width: currentSize.spinner, height: currentSize.spinner }}
+          style={{
+            position: 'relative',
+            width: currentSize.spinner,
+            height: currentSize.spinner,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          <Image
-            src='/images/favicon_io/apple-touch-icon.png'
-            alt='Loading'
-            fill
+          <svg
+            width={currentSize.spinner}
+            height={currentSize.spinner}
+            viewBox='0 0 24 24'
+            fill='none'
+            xmlns='http://www.w3.org/2000/svg'
             style={{
-              objectFit: 'contain',
               animation: 'logo-pulse 2s ease-in-out infinite',
             }}
-            unoptimized
-          />
+          >
+            <rect
+              x='10'
+              y='4'
+              width='4'
+              height='16'
+              rx='2'
+              fill={colors.main}
+            />
+            <rect
+              x='4'
+              y='10'
+              width='16'
+              height='4'
+              rx='2'
+              fill={colors.main}
+            />
+          </svg>
         </div>
       </div>
 

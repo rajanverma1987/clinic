@@ -337,7 +337,8 @@ export default function AdminSubscriptionsPage() {
 
   return (
     <Layout>
-      <div className='mb-8 flex items-center justify-between'>
+      <div style={{ padding: '0 10px' }}>
+        <div className='mb-8 flex items-center justify-between'>
         <div>
           <h1 className='text-3xl font-bold text-neutral-900'>Subscription Plans</h1>
           <p className='text-neutral-600 mt-2'>Manage subscription plans for clients</p>
@@ -444,7 +445,7 @@ export default function AdminSubscriptionsPage() {
                   </span>
                 ) : (
                   <span>
-                    Leave empty for free plans. For paid plans, click "Create PayPal Plan" button or
+                    Leave empty for free plans. For paid plans, click &quot;Create PayPal Plan&quot; button or
                     enter manually.
                   </span>
                 )}
@@ -593,6 +594,7 @@ export default function AdminSubscriptionsPage() {
           </>
         )}
       </Card>
+      </div>
     </Layout>
   );
 }

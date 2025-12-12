@@ -14,11 +14,11 @@ export function DashboardListCard({
   if (loading) {
     return (
       <Card className={`dashboard-list-card dashboard-list-card-${colorScheme}`}>
-        <div className="p-6 relative z-10">
-          <div className="skeleton skeleton-text w-40 mb-6" />
-          <div className="space-y-3">
+        <div className='relative z-10' style={{ padding: '24px 24px 24px 10px' }}>
+          <div className='skeleton skeleton-text w-40 mb-6' />
+          <div className='space-y-3'>
             {[1, 2, 3].map((i) => (
-              <div key={i} className="skeleton" style={{ height: '80px' }} />
+              <div key={i} className='skeleton' style={{ height: '80px' }} />
             ))}
           </div>
         </div>
@@ -37,27 +37,26 @@ export function DashboardListCard({
         style={{
           width: '300px',
           height: '300px',
-          top: 0,
-          right: 0,
-          transform: 'translate(40%, -40%)',
+          top: '-120px',
+          right: '-120px',
         }}
       />
 
       {/* Content */}
-      <div className="relative z-10 p-6">
+      <div className='relative z-10' style={{ padding: '24px 24px 24px 10px' }}>
         {/* Header */}
-        <div className="section-header">
+        <div className='section-header'>
           <div className={`accent-bar accent-bar-${colorScheme}`} />
-          <h2 className="section-title">{title}</h2>
+          <h2 className='section-title'>{title}</h2>
         </div>
 
         {/* List */}
         {data && data.length > 0 ? (
-          <div className="space-y-3">{data.map((item, index) => renderItem(item, index))}</div>
+          <div className='space-y-3'>{data.map((item, index) => renderItem(item, index))}</div>
         ) : (
-          <div className="empty-state">
-            {EmptyIcon && <div className="empty-state-icon">{EmptyIcon}</div>}
-            <p className="text-neutral-500 text-body-sm">{emptyMessage}</p>
+          <div className='empty-state'>
+            {EmptyIcon && <div className='empty-state-icon'>{EmptyIcon}</div>}
+            <p className='text-neutral-500 text-body-sm'>{emptyMessage}</p>
           </div>
         )}
       </div>

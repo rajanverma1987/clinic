@@ -17,7 +17,10 @@
     "admin:quick": "node -r dotenv/config scripts/create-default-admin.js dotenv_config_path=.env.local",
     "seed:plans": "node -r dotenv/config scripts/seed-subscription-plans.js dotenv_config_path=.env.local",
     "seed:patients": "node -r dotenv/config scripts/seed-patients.js dotenv_config_path=.env.local",
-    "setup:paypal-plans": "node -r dotenv/config scripts/setup-paypal-plans.js dotenv_config_path=.env.local"
+    "setup:paypal-plans": "node -r dotenv/config scripts/setup-paypal-plans.js dotenv_config_path=.env.local",
+    "cleanup:users:dry-run": "node -r dotenv/config scripts/cleanup-duplicate-users.js --dry-run dotenv_config_path=.env.local",
+    "cleanup:users:execute": "node -r dotenv/config scripts/cleanup-duplicate-users.js --execute dotenv_config_path=.env.local",
+    "reset:password": "node -r dotenv/config scripts/reset-admin-password.js dotenv_config_path=.env.local"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

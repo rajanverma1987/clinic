@@ -3,19 +3,19 @@
 export function generatePrescriptionPrintHTML(data) {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true,
     });
   };
 
@@ -216,7 +216,9 @@ export function generatePrescriptionPrintHTML(data) {
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) rotate(-45deg);
+      margin-top: -50%;
+      margin-left: -50%;
+      transform: rotate(-45deg);
       font-size: 72pt;
       color: rgba(0, 0, 0, 0.05);
       z-index: -1;
@@ -261,90 +263,137 @@ export function generatePrescriptionPrintHTML(data) {
     <!-- Patient Section -->
     <div class="patient-section">
       <div class="patient-left">
-        <div class="patient-id">ID: ${data.patientId} - ${data.patientName}${data.patientGender ? ` (${data.patientGender.charAt(0).toUpperCase()})` : ''}${data.patientAge ? ` / ${data.patientAge} Y` : ''}</div>
-        ${data.patientAddress ? `<div class="patient-details">Address: ${data.patientAddress}</div>` : ''}
-        ${data.weight || data.height || data.bloodPressure ? `
+        <div class="patient-id">ID: ${data.patientId} - ${data.patientName}${
+    data.patientGender ? ` (${data.patientGender.charAt(0).toUpperCase()})` : ''
+  }${data.patientAge ? ` / ${data.patientAge} Y` : ''}</div>
+        ${
+          data.patientAddress
+            ? `<div class="patient-details">Address: ${data.patientAddress}</div>`
+            : ''
+        }
+        ${
+          data.weight || data.height || data.bloodPressure
+            ? `
           <div class="patient-vitals">
-            ${data.weight ? `Weight(kg): ${data.weight}` : ''}${data.weight && data.height ? ', ' : ''}
-            ${data.height ? `Height (cms): ${data.height}` : ''}${(data.weight || data.height) && data.bloodPressure ? ', ' : ''}
+            ${data.weight ? `Weight(kg): ${data.weight}` : ''}${
+                data.weight && data.height ? ', ' : ''
+              }
+            ${data.height ? `Height (cms): ${data.height}` : ''}${
+                (data.weight || data.height) && data.bloodPressure ? ', ' : ''
+              }
             ${data.bloodPressure ? `BP: ${data.bloodPressure} mmHg` : ''}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         ${data.referredBy ? `<div>Referred By: ${data.referredBy}</div>` : ''}
-        ${data.knownHistory && data.knownHistory.length > 0 ? `
+        ${
+          data.knownHistory && data.knownHistory.length > 0
+            ? `
           <div style="margin-top: 5px;">
             <div style="font-weight: bold;">Known History Of</div>
             <ul style="list-style: none; padding-left: 0; margin-top: 3px;">
-              ${data.knownHistory.map(h => `<li>* ${h}</li>`).join('')}
+              ${data.knownHistory.map((h) => `<li>* ${h}</li>`).join('')}
             </ul>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
       <div class="patient-right">
-        <div>Date: ${formatDate(data.visitDate)}${data.visitTime ? `, ${formatTime(data.visitDate)}` : ''}</div>
+        <div>Date: ${formatDate(data.visitDate)}${
+    data.visitTime ? `, ${formatTime(data.visitDate)}` : ''
+  }</div>
       </div>
     </div>
     
     <div class="section-divider"></div>
     
     <!-- Clinical Section -->
-    ${(data.chiefComplaints && data.chiefComplaints.length > 0) || (data.clinicalFindings && data.clinicalFindings.length > 0) ? `
+    ${
+      (data.chiefComplaints && data.chiefComplaints.length > 0) ||
+      (data.clinicalFindings && data.clinicalFindings.length > 0)
+        ? `
       <div class="clinical-section">
-        ${data.chiefComplaints && data.chiefComplaints.length > 0 ? `
+        ${
+          data.chiefComplaints && data.chiefComplaints.length > 0
+            ? `
           <div class="clinical-left">
             <div class="section-title">Chief Complaints</div>
             <div class="section-content">
               <ul>
-                ${data.chiefComplaints.map(cc => `<li>${cc}</li>`).join('')}
+                ${data.chiefComplaints.map((cc) => `<li>${cc}</li>`).join('')}
               </ul>
             </div>
           </div>
-        ` : ''}
-        ${data.clinicalFindings && data.clinicalFindings.length > 0 ? `
+        `
+            : ''
+        }
+        ${
+          data.clinicalFindings && data.clinicalFindings.length > 0
+            ? `
           <div class="clinical-right">
             <div class="section-title">Clinical Findings</div>
             <div class="section-content">
               <ul>
-                ${data.clinicalFindings.map(cf => `<li>${cf}</li>`).join('')}
+                ${data.clinicalFindings.map((cf) => `<li>${cf}</li>`).join('')}
               </ul>
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
-    ` : ''}
+    `
+        : ''
+    }
     
-    ${data.notes ? `
+    ${
+      data.notes
+        ? `
       <div class="section-divider"></div>
       <div style="margin-bottom: 10px;">
         <div class="section-title">Notes:</div>
         <div class="section-content">${data.notes}</div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
     
-    ${data.diagnosis && data.diagnosis.length > 0 ? `
+    ${
+      data.diagnosis && data.diagnosis.length > 0
+        ? `
       <div style="margin-bottom: 10px;">
         <div class="section-title">Diagnosis:</div>
         <div class="section-content">
           <ul>
-            ${data.diagnosis.map(d => `<li>${d}</li>`).join('')}
+            ${data.diagnosis.map((d) => `<li>${d}</li>`).join('')}
           </ul>
         </div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
     
-    ${data.procedures && data.procedures.length > 0 ? `
+    ${
+      data.procedures && data.procedures.length > 0
+        ? `
       <div style="margin-bottom: 10px;">
         <div class="section-title">Procedures conducted</div>
         <div class="section-content">
           <ul>
-            ${data.procedures.map(p => `<li>${p}</li>`).join('')}
+            ${data.procedures.map((p) => `<li>${p}</li>`).join('')}
           </ul>
         </div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
     
     <!-- Prescription Table - Only show drugs -->
-    ${data.items && data.items.filter(item => item.itemType === 'drug').length > 0 ? `
+    ${
+      data.items && data.items.filter((item) => item.itemType === 'drug').length > 0
+        ? `
       <div style="margin: 15px 0;">
         <div class="section-title" style="margin-bottom: 8px;">R</div>
         <table class="prescription-table">
@@ -357,18 +406,32 @@ export function generatePrescriptionPrintHTML(data) {
             </tr>
           </thead>
           <tbody>
-            ${data.items.filter(item => item.itemType === 'drug').map((item, index) => {
-              const medicineName = `${item.name}${item.dosage ? ` ${item.dosage}` : ''}`;
-              
-              const dosage = item.frequency
-                ? `${item.quantity || 1} ${item.frequency}${item.instructions ? ` (${item.instructions})` : ''}`
-                : item.instructions || '-';
-              
-              const duration = item.duration
-                ? `${item.duration} Days${item.quantity ? ` (Tot:${item.quantity} ${item.name.includes('TAB') ? 'Tab' : item.name.includes('CAP') ? 'Cap' : 'Unit'})` : ''}`
-                : '-';
-              
-              return `
+            ${data.items
+              .filter((item) => item.itemType === 'drug')
+              .map((item, index) => {
+                const medicineName = `${item.name}${item.dosage ? ` ${item.dosage}` : ''}`;
+
+                const dosage = item.frequency
+                  ? `${item.quantity || 1} ${item.frequency}${
+                      item.instructions ? ` (${item.instructions})` : ''
+                    }`
+                  : item.instructions || '-';
+
+                const duration = item.duration
+                  ? `${item.duration} Days${
+                      item.quantity
+                        ? ` (Tot:${item.quantity} ${
+                            item.name.includes('TAB')
+                              ? 'Tab'
+                              : item.name.includes('CAP')
+                              ? 'Cap'
+                              : 'Unit'
+                          })`
+                        : ''
+                    }`
+                  : '-';
+
+                return `
                 <tr>
                   <td>${index + 1})</td>
                   <td>${medicineName}</td>
@@ -376,56 +439,78 @@ export function generatePrescriptionPrintHTML(data) {
                   <td>${duration}</td>
                 </tr>
               `;
-            }).join('')}
+              })
+              .join('')}
           </tbody>
         </table>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
     
-    ${data.investigations && data.investigations.length > 0 ? `
+    ${
+      data.investigations && data.investigations.length > 0
+        ? `
       <div style="margin-bottom: 10px;">
         <div class="section-title">Investigations:</div>
         <div class="section-content">
           <ul>
-            ${data.investigations.map(i => `<li>${i}</li>`).join('')}
+            ${data.investigations.map((i) => `<li>${i}</li>`).join('')}
           </ul>
         </div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
     
-    ${data.advice && data.advice.length > 0 ? `
+    ${
+      data.advice && data.advice.length > 0
+        ? `
       <div style="margin-bottom: 10px;">
         <div class="section-title">Advice Given:</div>
         <div class="section-content">
-          ${data.advice.length === 1 && data.advice[0].includes('<') ? 
-            // If single item contains HTML, render it directly
-            data.advice[0] :
-            // Otherwise render as list
-            `<ul>${data.advice.map(a => `<li>${a}</li>`).join('')}</ul>`
+          ${
+            data.advice.length === 1 && data.advice[0].includes('<')
+              ? // If single item contains HTML, render it directly
+                data.advice[0]
+              : // Otherwise render as list
+                `<ul>${data.advice.map((a) => `<li>${a}</li>`).join('')}</ul>`
           }
         </div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
     
-    ${data.followUp ? `
+    ${
+      data.followUp
+        ? `
       <div style="margin-bottom: 10px;">
         <div class="section-title">Follow Up: ${data.followUp}</div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
     
-    ${data.additionalInstructions ? `
+    ${
+      data.additionalInstructions
+        ? `
       <div style="margin-bottom: 10px;">
         <div class="section-title">Additional Instructions:</div>
         <div class="section-content">${data.additionalInstructions}</div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
     
     <!-- Footer -->
     <div class="footer">
       <div class="signature-section">
         <div class="signature-line">
           <div style="font-weight: bold; margin-bottom: 5px;">Signature</div>
-          <div>Dr. ${data.doctorName}${data.doctorQualification ? ` ${data.doctorQualification}` : ''}</div>
+          <div>Dr. ${data.doctorName}${
+    data.doctorQualification ? ` ${data.doctorQualification}` : ''
+  }</div>
         </div>
       </div>
     </div>
@@ -434,4 +519,3 @@ export function generatePrescriptionPrintHTML(data) {
 </html>
   `;
 }
-

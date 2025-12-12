@@ -20,7 +20,6 @@ const UserSchema = new Schema(
         // tenantId is not required for super_admin users
         return this.role !== UserRole.SUPER_ADMIN;
       },
-      index: true,
     },
     email: {
       type: String,

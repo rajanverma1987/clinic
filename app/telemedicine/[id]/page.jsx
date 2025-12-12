@@ -1679,7 +1679,10 @@ function VideoConsultationRoomContent() {
 
               {/* Connection Quality Warning */}
               {isConnected && connectionQuality === 'POOR' && (
-                <div className='absolute top-4 left-1/2 transform -translate-x-1/2 bg-status-warning/20 border border-status-warning/50 rounded-lg px-4 py-2 z-30'>
+                <div
+                  className='absolute top-4 left-1/2 bg-status-warning/20 border border-status-warning/50 rounded-lg px-4 py-2 z-30'
+                  style={{ marginLeft: '-50%' }}
+                >
                   <p className='text-status-warning/90 text-sm flex items-center space-x-2'>
                     <span>⚠️</span>
                     <span>Poor connection. Please check your internet connection.</span>
@@ -1788,12 +1791,12 @@ function VideoConsultationRoomContent() {
                 return (
                   <div className='text-neutral-500 text-xs mt-3 px-2 max-w-md space-y-1'>
                     <p>
-                      💡 <strong>On Mobile:</strong> A permission popup will appear. Tap "Allow" for
+                      💡 <strong>On Mobile:</strong> A permission popup will appear. Tap &quot;Allow&quot; for
                       both camera and microphone.
                     </p>
                     <p>
                       💡 <strong>If denied:</strong> Look for the camera/microphone icon in your
-                      browser's address bar and tap "Allow"
+                      browser&apos;s address bar and tap &quot;Allow&quot;
                     </p>
                   </div>
                 );
@@ -1812,7 +1815,9 @@ function VideoConsultationRoomContent() {
               {/* Permission Status Indicator */}
               {!hasCameraPermission || !hasMicrophonePermission ? (
                 <div className='mt-4 p-4 bg-status-warning/10 border border-status-warning/30 rounded-lg text-sm max-w-md mx-auto'>
-                  <p className='font-semibold text-status-warning/80 mb-2'>⚠️ Permissions Required</p>
+                  <p className='font-semibold text-status-warning/80 mb-2'>
+                    ⚠️ Permissions Required
+                  </p>
                   <ul className='text-status-warning/90 space-y-1 text-xs'>
                     {!hasCameraPermission && <li>❌ Camera permission denied</li>}
                     {!hasMicrophonePermission && <li>❌ Microphone permission denied</li>}

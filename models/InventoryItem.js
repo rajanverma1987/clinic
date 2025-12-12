@@ -14,7 +14,6 @@ const InventoryItemSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
     },
     
     // Item Details

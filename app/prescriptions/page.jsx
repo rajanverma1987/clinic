@@ -190,35 +190,37 @@ export default function PrescriptionsPage() {
 
   return (
     <Layout>
-      <DashboardHeader
-        title={t('prescriptions.title')}
-        subtitle={t('prescriptions.prescriptionList')}
-        actionButton={
-          <Button
-            onClick={() => router.push('/prescriptions/new')}
-            variant='primary'
-            size='md'
-            className='whitespace-nowrap'
-          >
-            + {t('prescriptions.createPrescription')}
-          </Button>
-        }
-      />
-
-      <Card>
-        <Table
-          data={prescriptions}
-          columns={columns}
-          onRowClick={(row) => router.push(`/prescriptions/${row._id}`)}
-          emptyMessage={t('common.noDataFound')}
+      <div style={{ padding: '0 10px' }}>
+        <DashboardHeader
+          title={t('prescriptions.title')}
+          subtitle={t('prescriptions.prescriptionList')}
+          actionButton={
+            <Button
+              onClick={() => router.push('/prescriptions/new')}
+              variant='primary'
+              size='md'
+              className='whitespace-nowrap'
+            >
+              + {t('prescriptions.createPrescription')}
+            </Button>
+          }
         />
-      </Card>
 
-      <PrescriptionPrintPreview
-        prescriptionId={printPrescriptionId}
-        isOpen={showPrintPreview}
-        onClose={handleClosePrintPreview}
-      />
+        <Card>
+          <Table
+            data={prescriptions}
+            columns={columns}
+            onRowClick={(row) => router.push(`/prescriptions/${row._id}`)}
+            emptyMessage={t('common.noDataFound')}
+          />
+        </Card>
+
+        <PrescriptionPrintPreview
+          prescriptionId={printPrescriptionId}
+          isOpen={showPrintPreview}
+          onClose={handleClosePrintPreview}
+        />
+      </div>
     </Layout>
   );
 }

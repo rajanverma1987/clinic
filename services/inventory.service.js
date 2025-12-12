@@ -493,3 +493,84 @@ export async function deleteInventoryItem(itemId, tenantId, userId) {
   return true;
 }
 
+/**
+ * Get all lots/batches from inventory items
+ * Returns flattened list of all batches with item information
+ */
+export async function getAllLots(tenantId, userId, filters = {}) {
+  await connectDB();
+
+  const query = withTenant(tenantId, {
+    deletedAt: null,
+    isActive: true,
+    'batches.0': { $exists: true }, // Only items with batches
+  });
+
+  // Filter by expiring soon (within next 30 days)
+  if (filters.expiringSoon) {
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    query['batches.expiryDate'] = {
+      $lte: thirtyDaysFromNow,
+      $gte: new Date(), // Not expired yet
+    };
+  }
+
+  // Filter by expired
+  if (filters.expired) {
+    query['batches.expiryDate'] = { $lt: new Date() };
+  }
+
+  const items = await InventoryItem.find(query)
+    .populate('primarySupplierId', 'name')
+    .lean();
+
+  // Flatten batches into lots array
+  const lots = [];
+  const now = new Date();
+  const thirtyDaysFromNow = new Date();
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+  for (const item of items) {
+    if (!item.batches || item.batches.length === 0) continue;
+
+    for (const batch of item.batches) {
+      const expiryDate = new Date(batch.expiryDate);
+      const isExpired = expiryDate < now;
+      const isExpiringSoon = expiryDate <= thirtyDaysFromNow && expiryDate >= now;
+      const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+
+      lots.push({
+        _id: `${item._id}_${batch.batchNumber}`, // Composite ID
+        itemId: item._id.toString(),
+        itemName: item.name,
+        itemCode: item.code,
+        itemType: item.type,
+        batchNumber: batch.batchNumber,
+        expiryDate: expiryDate,
+        quantity: batch.quantity,
+        purchasePrice: batch.purchasePrice,
+        purchaseDate: batch.purchaseDate,
+        supplierId: batch.supplierId,
+        supplierName: item.primarySupplierId?.name || null,
+        isExpired,
+        isExpiringSoon,
+        daysUntilExpiry: isExpired ? 0 : daysUntilExpiry,
+        unit: item.unit,
+        location: item.location,
+      });
+    }
+  }
+
+  // Sort by expiry date (expired first, then expiring soon, then by date)
+  lots.sort((a, b) => {
+    if (a.isExpired && !b.isExpired) return -1;
+    if (!a.isExpired && b.isExpired) return 1;
+    if (a.isExpiringSoon && !b.isExpiringSoon) return -1;
+    if (!a.isExpiringSoon && b.isExpiringSoon) return 1;
+    return new Date(a.expiryDate) - new Date(b.expiryDate);
+  });
+
+  return lots;
+}
+

@@ -104,7 +104,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                Welcome to Doctor's Clinic (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We are committed to
+                Welcome to Doctor&apos;s Clinic (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We are committed to
                 protecting your privacy and ensuring the security of your
                 personal information and Protected Health Information (PHI). This
                 Privacy Policy explains how we collect, use, disclose, and
@@ -119,7 +119,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                By using Doctor's Clinic, you agree to the collection and use of
+                By using Doctor&apos;s Clinic, you agree to the collection and use of
                 information in accordance with this policy. We comply with
                 applicable data protection laws, including HIPAA (Health Insurance
                 Portability and Accountability Act) in the United States and GDPR

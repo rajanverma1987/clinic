@@ -20,7 +20,6 @@ const TelemedicineSessionSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
     },
 
     sessionId: {

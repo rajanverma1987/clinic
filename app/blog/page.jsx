@@ -122,7 +122,7 @@ export default function BlogPage() {
                 Blog & Resources
               </h1>
               <p className='text-xl text-neutral-600 max-w-2xl mx-auto'>
-                Learn about clinic management, best practices, and how Doctor's Clinic can transform
+                Learn about clinic management, best practices, and how Doctor&apos;s Clinic can transform
                 your practice
               </p>
             </div>

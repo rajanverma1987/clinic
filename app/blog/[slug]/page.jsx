@@ -268,7 +268,7 @@ export default function BlogPostPage({ params }) {
                 Ready to Transform Your Clinic?
               </h3>
               <p className='text-primary-100 mb-6'>
-                Start your free trial today and see how Doctor's Clinic can streamline your
+                Start your free trial today and see how Doctor&apos;s Clinic can streamline your
                 operations.
               </p>
               <Link

@@ -438,7 +438,7 @@ export default function SupportPage() {
                   fontWeight: '400',
                 }}
               >
-                Everything you need to know about Doctor's Clinic
+                Everything you need to know about Doctor&apos;s Clinic
               </p>
             </div>
 
@@ -620,7 +620,7 @@ export default function SupportPage() {
                 marginBottom: '32px',
               }}
             >
-              Our support team is here to help you get the most out of Doctor's Clinic
+              Our support team is here to help you get the most out of Doctor&apos;s Clinic
             </p>
             <Link href='/support/contact'>
               <Button variant='secondary' size='md' className='whitespace-nowrap'>

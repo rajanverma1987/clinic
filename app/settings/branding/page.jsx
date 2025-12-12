@@ -37,9 +37,10 @@ export default function BrandingPage() {
 
   return (
     <Layout>
-      <div className='mb-8'>
+      <div style={{ padding: '0 10px' }}>
+        <div className='mb-8'>
         <h1 className='text-3xl font-bold text-neutral-900'>Custom Branding</h1>
-        <p className='text-neutral-600 mt-2'>Customize the look and feel of your clinic's portal</p>
+        <p className='text-neutral-600 mt-2'>Customize the look and feel of your clinic&apos;s portal</p>
       </div>
 
       <form onSubmit={handleSubmit} className='space-y-6' noValidate>
@@ -193,6 +194,7 @@ export default function BrandingPage() {
           </Button>
         </div>
       </form>
+      </div>
     </Layout>
   );
 }

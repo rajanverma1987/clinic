@@ -29,7 +29,8 @@ export function HeroSection({ onContactClick }) {
           background:
             'radial-gradient(circle, rgba(45, 156, 219, 0.12) 0%, rgba(45, 156, 219, 0.04) 40%, transparent 70%)',
           filter: 'blur(80px)',
-          transform: 'translate(30%, -30%)',
+          top: '-150px',
+          right: '-150px',
         }}
       ></div>
       <div
@@ -40,7 +41,8 @@ export function HeroSection({ onContactClick }) {
           background:
             'radial-gradient(circle, rgba(39, 174, 96, 0.12) 0%, rgba(39, 174, 96, 0.04) 40%, transparent 70%)',
           filter: 'blur(80px)',
-          transform: 'translate(-30%, 30%)',
+          bottom: '-150px',
+          left: '-150px',
         }}
       ></div>
 

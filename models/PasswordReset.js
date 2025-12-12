@@ -17,8 +17,7 @@ const PasswordResetSchema = new Schema(
     tenantId: {
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
-      required: true,
-      index: true,
+      required: false, // Allow null for super_admin users
     },
     expiresAt: {
       type: Date,
@@ -36,9 +35,11 @@ const PasswordResetSchema = new Schema(
   }
 );
 
-// Compound index for email + tenantId + used
-PasswordResetSchema.index({ email: 1, tenantId: 1, used: 1 });
-PasswordResetSchema.index({ secretCode: 1, tenantId: 1 });
+// Compound index for email + tenantId + used (sparse to handle null tenantId)
+PasswordResetSchema.index({ email: 1, tenantId: 1, used: 1 }, { sparse: true });
+PasswordResetSchema.index({ secretCode: 1, tenantId: 1 }, { sparse: true });
+// Additional index for super_admin (email only, no tenantId)
+PasswordResetSchema.index({ email: 1, used: 1 });
 
 export default mongoose.models.PasswordReset || mongoose.model('PasswordReset', PasswordResetSchema);
 

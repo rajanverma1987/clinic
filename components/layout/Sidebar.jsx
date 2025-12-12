@@ -32,10 +32,16 @@ export function Sidebar() {
   // Mark component as mounted and sync with localStorage
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem('sidebarCollapsed');
-    const shouldCollapse = saved === 'true';
-    setIsCollapsed(shouldCollapse);
-    isCollapsedRef.current = shouldCollapse;
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('sidebarCollapsed') : null;
+      const shouldCollapse = saved === 'true';
+      setIsCollapsed(shouldCollapse);
+      isCollapsedRef.current = shouldCollapse;
+    } catch (error) {
+      console.warn('Failed to read sidebar state from localStorage:', error);
+      setIsCollapsed(false);
+      isCollapsedRef.current = false;
+    }
   }, []);
 
   // Modern SVG icon components
@@ -300,6 +306,12 @@ export function Sidebar() {
       requiredFeature: 'Inventory Management',
     },
     {
+      href: '/inventory/lots',
+      label: 'Lots',
+      icon: IconInventory,
+      requiredFeature: 'Inventory Management',
+    },
+    {
       href: '/reports',
       labelKey: 'reports.title',
       icon: IconReports,
@@ -348,15 +360,19 @@ export function Sidebar() {
 
   // Ensure collapsed state persists during navigation - prevent any expansion
   useEffect(() => {
-    const saved = localStorage.getItem('sidebarCollapsed');
-    if (saved === 'true' && !isCollapsed) {
-      // Force collapsed state immediately if it should be collapsed
-      setIsCollapsed(true);
-      isCollapsedRef.current = true;
-    } else if (saved !== 'true' && isCollapsed && saved !== null) {
-      // Only allow expansion if explicitly not collapsed in storage
-      setIsCollapsed(false);
-      isCollapsedRef.current = false;
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('sidebarCollapsed') : null;
+      if (saved === 'true' && !isCollapsed) {
+        // Force collapsed state immediately if it should be collapsed
+        setIsCollapsed(true);
+        isCollapsedRef.current = true;
+      } else if (saved !== 'true' && isCollapsed && saved !== null) {
+        // Only allow expansion if explicitly not collapsed in storage
+        setIsCollapsed(false);
+        isCollapsedRef.current = false;
+      }
+    } catch (error) {
+      console.warn('Failed to sync sidebar state with localStorage:', error);
     }
   }, [pathname, isCollapsed]);
 
@@ -381,7 +397,7 @@ export function Sidebar() {
 
   return (
     <div
-      className='text-neutral-900 flex flex-col fixed left-0 top-0 border-r border-neutral-200 relative overflow-hidden bg-gradient-to-br from-white via-neutral-50 to-primary-50'
+      className='text-neutral-900 flex flex-col sticky top-0 border-r border-neutral-200 relative overflow-hidden bg-gradient-to-br from-white via-neutral-50 to-primary-50'
       data-collapsed={isCollapsed}
       style={{
         width: isCollapsed ? '3.5rem' : '14rem',
@@ -390,9 +406,12 @@ export function Sidebar() {
         height: '100vh',
         flexShrink: 0,
         flexGrow: 0,
-        transition: isCollapsed ? 'none' : 'width 0.3s, min-width 0.3s, max-width 0.3s',
+        transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.5s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         overflow: 'hidden',
         zIndex: 'var(--z-sidebar, 1000)',
+        willChange: 'width, min-width, max-width',
+        transform: 'translateZ(0)', // Enable hardware acceleration
+        WebkitTransition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.5s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
       {/* Header Section - Fixed at top */}
@@ -401,6 +420,7 @@ export function Sidebar() {
         style={{
           padding: isCollapsed ? 'var(--space-3) var(--space-2)' : 'var(--space-4)',
           background: 'transparent',
+          transition: 'padding 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {!isCollapsed ? (
@@ -592,10 +612,10 @@ export function Sidebar() {
               }`}
               title={isCollapsed ? t('admin.dashboard') : ''}
             >
-              <span className={isCollapsed ? '' : 'mr-3'}>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}>
                 <IconAdmin />
               </span>
-              <span className={isCollapsed ? 'hidden' : ''}>{t('admin.dashboard')}</span>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>{t('admin.dashboard')}</span>
             </Link>
             <Link
               href='/admin/clients'
@@ -610,10 +630,10 @@ export function Sidebar() {
               }`}
               title={isCollapsed ? t('admin.clients') : ''}
             >
-              <span className={isCollapsed ? '' : 'mr-3'}>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}>
                 <IconClients />
               </span>
-              <span className={isCollapsed ? 'hidden' : ''}>{t('admin.clients')}</span>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>{t('admin.clients')}</span>
             </Link>
             <Link
               href='/admin/subscriptions'
@@ -628,10 +648,10 @@ export function Sidebar() {
               }`}
               title={isCollapsed ? t('admin.subscriptions') : ''}
             >
-              <span className={isCollapsed ? '' : 'mr-3'}>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}>
                 <IconSubscriptions />
               </span>
-              <span className={isCollapsed ? 'hidden' : ''}>{t('admin.subscriptions')}</span>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>{t('admin.subscriptions')}</span>
             </Link>
           </>
         ) : (
@@ -658,7 +678,7 @@ export function Sidebar() {
                   <span className={`${isCollapsed ? '' : 'mr-3'}`}>
                     {item.icon && <item.icon />}
                   </span>
-                  <span className={isCollapsed ? 'hidden' : ''}>{displayLabel}</span>
+                  <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>{displayLabel}</span>
                 </Link>
               );
             })}
@@ -684,10 +704,10 @@ export function Sidebar() {
               }`}
               title={isCollapsed ? t('subscription.title') : ''}
             >
-              <span className={isCollapsed ? '' : 'mr-3'}>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}>
                 <IconSubscription />
               </span>
-              <span className={isCollapsed ? 'hidden' : ''}>{t('subscription.title')}</span>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>{t('subscription.title')}</span>
             </Link>
             <Link
               href='/payment-history'
@@ -702,10 +722,10 @@ export function Sidebar() {
               }`}
               title={isCollapsed ? t('subscription.paymentHistory') : ''}
             >
-              <span className={isCollapsed ? '' : 'mr-3'}>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}>
                 <IconPaymentHistory />
               </span>
-              <span className={isCollapsed ? 'hidden' : ''}>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
                 {t('subscription.paymentHistory')}
               </span>
             </Link>
@@ -727,7 +747,7 @@ export function Sidebar() {
         {/* Premium Toggle Button */}
         <button
           onClick={handleToggle}
-          className={`group relative w-full flex items-center transition-all duration-300 ${
+          className={`group relative w-full flex items-center transition-all duration-400 ease-in-out ${
             isCollapsed ? 'justify-center px-2.5' : 'px-3'
           } py-2.5 rounded-lg text-body-sm font-semibold bg-gradient-to-r from-white to-neutral-50 border border-neutral-200 hover:border-primary-300 hover:from-primary-50 hover:to-primary-100/50 text-neutral-700 hover:text-primary-700 shadow-sm hover:shadow-md`}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -809,10 +829,10 @@ export function Sidebar() {
           title={isCollapsed ? t('auth.logout') : ''}
         >
           <span className={`flex items-center ${isCollapsed ? '' : 'w-full'}`}>
-            <span className={isCollapsed ? '' : 'mr-3'}>
+            <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}>
               <IconLogout />
             </span>
-            {!isCollapsed && <span>{t('auth.logout')}</span>}
+            {!isCollapsed && <span className='transition-all duration-300 ease-in-out opacity-100'>{t('auth.logout')}</span>}
           </span>
         </Button>
       </div>

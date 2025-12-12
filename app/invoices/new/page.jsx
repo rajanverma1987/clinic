@@ -362,13 +362,13 @@ export default function NewInvoicePage() {
 
   // Redirect if not authenticated (non-blocking)
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !currentUser) {
       router.push('/login');
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, currentUser, router]);
 
   // Show empty state while redirecting
-  if (!user) {
+  if (!currentUser) {
     return null;
   }
 
@@ -378,311 +378,328 @@ export default function NewInvoicePage() {
 
   return (
     <Layout>
-      <div className='mb-8'>
-        <Button variant='secondary' onClick={() => router.back()} className='mb-4'>
-          ← {t('common.back')}
-        </Button>
-        <h1 className='text-3xl font-bold text-neutral-900'>{t('invoices.createInvoice')}</h1>
-        <p className='text-neutral-600 mt-2'>{t('invoices.invoiceList')}</p>
-      </div>
-
-      <Card>
-        <form onSubmit={handleSubmit} className='space-y-3' noValidate>
-          {error && (
-            <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded'>
-              {error}
-            </div>
-          )}
-
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            <div>
-              <label
-                htmlFor='patientId'
-                className='block text-sm font-medium text-neutral-700 mb-1'
-              >
-                Patient *
-              </label>
-              <select
-                id='patientId'
-                required
-                value={formData.patientId}
-                onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-                className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
-                disabled={patients.length === 0}
-              >
-                <option value=''>
-                  {patients.length === 0 ? 'No patients available' : 'Select a patient'}
-                </option>
-                {patients.map((patient) => (
-                  <option key={patient._id} value={patient._id}>
-                    {patient.patientId} - {patient.firstName} {patient.lastName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label
-                htmlFor='invoiceDate'
-                className='block text-sm font-medium text-neutral-700 mb-1'
-              >
-                Invoice Date *
-              </label>
-              <Input
-                id='invoiceDate'
-                type='date'
-                required
-                value={formData.invoiceDate}
-                onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
+      <div style={{ padding: '0 10px' }}>
+        <div className='mb-8' style={{ paddingTop: '10px' }}>
+          <button
+            onClick={() => router.back()}
+            className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 mb-4'
+            style={{ marginLeft: '10px' }}
+            aria-label={t('common.back')}
+          >
+            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M19 12H5M12 19l-7-7 7-7'
               />
-            </div>
+            </svg>
+          </button>
+          <h1 className='text-3xl font-bold text-neutral-900'>{t('invoices.createInvoice')}</h1>
+          <p className='text-neutral-600 mt-2'>{t('invoices.invoiceList')}</p>
+        </div>
 
-            <div>
-              <label htmlFor='dueDate' className='block text-sm font-medium text-neutral-700 mb-1'>
-                Due Date
-              </label>
-              <Input
-                id='dueDate'
-                type='date'
-                value={formData.dueDate}
-                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              />
-            </div>
-          </div>
+        <Card>
+          <form onSubmit={handleSubmit} className='space-y-3' noValidate>
+            {error && (
+              <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded'>
+                {error}
+              </div>
+            )}
 
-          <div className='border-t pt-4'>
-            <div className='flex items-center justify-between mb-3'>
-              <h2 className='text-xl font-semibold'>Invoice Items</h2>
-              <Button type='button' variant='secondary' onClick={addItem}>
-                + Add Item
-              </Button>
-            </div>
-
-            <div className='overflow-x-auto'>
-              <table className='min-w-full divide-y divide-neutral-200 border border-neutral-200 rounded-lg'>
-                <thead className='bg-neutral-100'>
-                  <tr>
-                    <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                      #
-                    </th>
-                    <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                      Type
-                    </th>
-                    <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                      Description
-                    </th>
-                    <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                      Quantity
-                    </th>
-                    <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                      Unit Price
-                    </th>
-                    <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                      Discount (%)
-                    </th>
-                    <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                      Tax Rate (%)
-                    </th>
-                    <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                      Total
-                    </th>
-                    <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className='bg-white divide-y divide-gray-200'>
-                  {items.map((item, index) => (
-                    <tr key={index} className='hover:bg-neutral-100'>
-                      <td className='px-4 py-2 text-sm text-neutral-900'>{index + 1}</td>
-                      <td className='px-4 py-2 text-sm'>
-                        <select
-                          required
-                          value={item.type}
-                          onChange={(e) => updateItem(index, 'type', e.target.value)}
-                          className='w-full px-2 py-1 text-xs border border-neutral-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500'
-                        >
-                          <option value='consultation'>Consultation</option>
-                          <option value='procedure'>Procedure</option>
-                          <option value='medication'>Medication</option>
-                          <option value='lab_test'>Lab Test</option>
-                          <option value='other'>Other</option>
-                        </select>
-                      </td>
-                      <td className='px-4 py-2 text-sm'>
-                        <Input
-                          required
-                          value={item.description}
-                          onChange={(e) => updateItem(index, 'description', e.target.value)}
-                          placeholder='Item description'
-                          className='text-xs w-full'
-                        />
-                      </td>
-                      <td className='px-4 py-2 text-sm'>
-                        <Input
-                          type='number'
-                          min='1'
-                          required
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateItem(index, 'quantity', parseInt(e.target.value) || 1)
-                          }
-                          className='text-xs w-20'
-                        />
-                      </td>
-                      <td className='px-4 py-2 text-sm'>
-                        <Input
-                          type='number'
-                          min='0'
-                          step='0.01'
-                          required
-                          value={item.unitPrice}
-                          onChange={(e) =>
-                            updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)
-                          }
-                          className='text-xs w-24'
-                        />
-                      </td>
-                      <td className='px-4 py-2 text-sm'>
-                        <Input
-                          type='number'
-                          min='0'
-                          max='100'
-                          value={item.discount || 0}
-                          onChange={(e) =>
-                            updateItem(index, 'discount', parseFloat(e.target.value) || 0)
-                          }
-                          className='text-xs w-20'
-                        />
-                      </td>
-                      <td className='px-4 py-2 text-sm'>
-                        <Input
-                          type='number'
-                          min='0'
-                          max='100'
-                          value={item.taxRate || 0}
-                          onChange={(e) =>
-                            updateItem(index, 'taxRate', parseFloat(e.target.value) || 0)
-                          }
-                          className='text-xs w-20'
-                        />
-                      </td>
-                      <td className='px-4 py-2 text-sm font-medium text-neutral-900'>
-                        {formatCurrencyUtil(calculateItemTotal(item).total, currency, locale)}
-                      </td>
-                      <td className='px-4 py-2 text-sm'>
-                        {items.length > 1 && (
-                          <Button
-                            type='button'
-                            variant='secondary'
-                            size='sm'
-                            onClick={() => removeItem(index)}
-                            className='text-status-error hover:text-status-error/80 text-xs'
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className='border-t pt-6'>
-            <h2 className='text-xl font-semibold mb-4'>Invoice Discount</h2>
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  Discount Type
+                <label
+                  htmlFor='patientId'
+                  className='block text-sm font-medium text-neutral-700 mb-1'
+                >
+                  Patient *
                 </label>
                 <select
-                  value={formData.discountType}
-                  onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
+                  id='patientId'
+                  required
+                  value={formData.patientId}
+                  onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  disabled={patients.length === 0}
                 >
-                  <option value='percentage'>Percentage</option>
-                  <option value='fixed'>Fixed Amount</option>
+                  <option value=''>
+                    {patients.length === 0 ? 'No patients available' : 'Select a patient'}
+                  </option>
+                  {patients.map((patient) => (
+                    <option key={patient._id} value={patient._id}>
+                      {patient.patientId} - {patient.firstName} {patient.lastName}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  Discount Value
+                <label
+                  htmlFor='invoiceDate'
+                  className='block text-sm font-medium text-neutral-700 mb-1'
+                >
+                  Invoice Date *
                 </label>
                 <Input
-                  type='number'
-                  min='0'
-                  value={formData.discountValue}
-                  onChange={(e) =>
-                    setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })
-                  }
+                  id='invoiceDate'
+                  type='date'
+                  required
+                  value={formData.invoiceDate}
+                  onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Reason</label>
+                <label
+                  htmlFor='dueDate'
+                  className='block text-sm font-medium text-neutral-700 mb-1'
+                >
+                  Due Date
+                </label>
                 <Input
-                  value={formData.discountReason}
-                  onChange={(e) => setFormData({ ...formData, discountReason: e.target.value })}
-                  placeholder='Discount reason'
+                  id='dueDate'
+                  type='date'
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 />
               </div>
             </div>
-          </div>
 
-          <div className='border-t pt-6'>
-            <h2 className='text-xl font-semibold mb-4'>Summary</h2>
-            <div className='bg-neutral-100 p-4 rounded-lg space-y-2'>
-              <div className='flex justify-between'>
-                <span>Subtotal:</span>
-                <span>{formatCurrencyUtil(totals.subtotal, currency, locale)}</span>
+            <div className='border-t pt-4'>
+              <div className='flex items-center justify-between mb-3'>
+                <h2 className='text-xl font-semibold'>Invoice Items</h2>
+                <Button type='button' variant='secondary' onClick={addItem}>
+                  + Add Item
+                </Button>
               </div>
-              <div className='flex justify-between'>
-                <span>Discount:</span>
-                <span>-{formatCurrencyUtil(totals.invoiceDiscount, currency, locale)}</span>
-              </div>
-              <div className='flex justify-between'>
-                <span>Tax:</span>
-                <span>{formatCurrencyUtil(totals.totalTax, currency, locale)}</span>
-              </div>
-              <div className='flex justify-between text-lg font-bold border-t pt-2'>
-                <span>Total:</span>
-                <span>{formatCurrencyUtil(totals.finalTotal, currency, locale)}</span>
+
+              <div className='overflow-x-auto'>
+                <table className='min-w-full divide-y divide-neutral-200 border border-neutral-200 rounded-lg'>
+                  <thead className='bg-neutral-100'>
+                    <tr>
+                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        #
+                      </th>
+                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        Type
+                      </th>
+                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        Description
+                      </th>
+                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        Quantity
+                      </th>
+                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        Unit Price
+                      </th>
+                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        Discount (%)
+                      </th>
+                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        Tax Rate (%)
+                      </th>
+                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        Total
+                      </th>
+                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className='bg-white divide-y divide-gray-200'>
+                    {items.map((item, index) => (
+                      <tr key={index} className='hover:bg-neutral-100'>
+                        <td className='px-4 py-2 text-sm text-neutral-900'>{index + 1}</td>
+                        <td className='px-4 py-2 text-sm'>
+                          <select
+                            required
+                            value={item.type}
+                            onChange={(e) => updateItem(index, 'type', e.target.value)}
+                            className='w-full px-2 py-1 text-xs border border-neutral-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500'
+                          >
+                            <option value='consultation'>Consultation</option>
+                            <option value='procedure'>Procedure</option>
+                            <option value='medication'>Medication</option>
+                            <option value='lab_test'>Lab Test</option>
+                            <option value='other'>Other</option>
+                          </select>
+                        </td>
+                        <td className='px-4 py-2 text-sm'>
+                          <Input
+                            required
+                            value={item.description}
+                            onChange={(e) => updateItem(index, 'description', e.target.value)}
+                            placeholder='Item description'
+                            className='text-xs w-full'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-sm'>
+                          <Input
+                            type='number'
+                            min='1'
+                            required
+                            value={item.quantity}
+                            onChange={(e) =>
+                              updateItem(index, 'quantity', parseInt(e.target.value) || 1)
+                            }
+                            className='text-xs w-20'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-sm'>
+                          <Input
+                            type='number'
+                            min='0'
+                            step='0.01'
+                            required
+                            value={item.unitPrice}
+                            onChange={(e) =>
+                              updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)
+                            }
+                            className='text-xs w-24'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-sm'>
+                          <Input
+                            type='number'
+                            min='0'
+                            max='100'
+                            value={item.discount || 0}
+                            onChange={(e) =>
+                              updateItem(index, 'discount', parseFloat(e.target.value) || 0)
+                            }
+                            className='text-xs w-20'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-sm'>
+                          <Input
+                            type='number'
+                            min='0'
+                            max='100'
+                            value={item.taxRate || 0}
+                            onChange={(e) =>
+                              updateItem(index, 'taxRate', parseFloat(e.target.value) || 0)
+                            }
+                            className='text-xs w-20'
+                          />
+                        </td>
+                        <td className='px-4 py-2 text-sm font-medium text-neutral-900'>
+                          {formatCurrencyUtil(calculateItemTotal(item).total, currency, locale)}
+                        </td>
+                        <td className='px-4 py-2 text-sm'>
+                          {items.length > 1 && (
+                            <Button
+                              type='button'
+                              variant='secondary'
+                              size='sm'
+                              onClick={() => removeItem(index)}
+                              className='text-status-error hover:text-status-error/80 text-xs'
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
 
-          <div>
-            <label htmlFor='notes' className='block text-sm font-medium text-neutral-700 mb-2'>
-              Notes
-            </label>
-            <textarea
-              id='notes'
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
-              rows={3}
-              placeholder='Additional notes'
-            />
-          </div>
+            <div className='border-t pt-6'>
+              <h2 className='text-xl font-semibold mb-4'>Invoice Discount</h2>
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    Discount Type
+                  </label>
+                  <select
+                    value={formData.discountType}
+                    onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
+                    className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  >
+                    <option value='percentage'>Percentage</option>
+                    <option value='fixed'>Fixed Amount</option>
+                  </select>
+                </div>
 
-          <div className='flex justify-end gap-4 pt-6 border-t'>
-            <Button
-              type='button'
-              variant='secondary'
-              onClick={() => router.back()}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button type='submit' isLoading={submitting} disabled={submitting}>
-              Create Invoice
-            </Button>
-          </div>
-        </form>
-      </Card>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    Discount Value
+                  </label>
+                  <Input
+                    type='number'
+                    min='0'
+                    value={formData.discountValue}
+                    onChange={(e) =>
+                      setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>Reason</label>
+                  <Input
+                    value={formData.discountReason}
+                    onChange={(e) => setFormData({ ...formData, discountReason: e.target.value })}
+                    placeholder='Discount reason'
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className='border-t pt-6'>
+              <h2 className='text-xl font-semibold mb-4'>Summary</h2>
+              <div className='bg-neutral-100 p-4 rounded-lg space-y-2'>
+                <div className='flex justify-between'>
+                  <span>Subtotal:</span>
+                  <span>{formatCurrencyUtil(totals.subtotal, currency, locale)}</span>
+                </div>
+                <div className='flex justify-between'>
+                  <span>Discount:</span>
+                  <span>-{formatCurrencyUtil(totals.invoiceDiscount, currency, locale)}</span>
+                </div>
+                <div className='flex justify-between'>
+                  <span>Tax:</span>
+                  <span>{formatCurrencyUtil(totals.totalTax, currency, locale)}</span>
+                </div>
+                <div className='flex justify-between text-lg font-bold border-t pt-2'>
+                  <span>Total:</span>
+                  <span>{formatCurrencyUtil(totals.finalTotal, currency, locale)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor='notes' className='block text-sm font-medium text-neutral-700 mb-2'>
+                Notes
+              </label>
+              <textarea
+                id='notes'
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                rows={3}
+                placeholder='Additional notes'
+              />
+            </div>
+
+            <div className='flex justify-end gap-4 pt-6 border-t'>
+              <Button
+                type='button'
+                variant='secondary'
+                onClick={() => router.back()}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button type='submit' isLoading={submitting} disabled={submitting}>
+                Create Invoice
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
     </Layout>
   );
 }

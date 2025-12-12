@@ -25,7 +25,8 @@ export function CTASection({ user }) {
           background:
             'radial-gradient(circle, rgba(45, 156, 219, 0.12) 0%, rgba(45, 156, 219, 0.04) 40%, transparent 70%)',
           filter: 'blur(80px)',
-          transform: 'translate(30%, -30%)',
+          top: '-150px',
+          right: '-150px',
         }}
       ></div>
       <div
@@ -36,7 +37,8 @@ export function CTASection({ user }) {
           background:
             'radial-gradient(circle, rgba(39, 174, 96, 0.12) 0%, rgba(39, 174, 96, 0.04) 40%, transparent 70%)',
           filter: 'blur(80px)',
-          transform: 'translate(-30%, 30%)',
+          bottom: '-150px',
+          left: '-150px',
         }}
       ></div>
 
@@ -223,7 +225,7 @@ export function CTASection({ user }) {
                 >
                   {contact.value}
                 </p>
-                <div className='mt-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0'>
+                <div className='mt-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-95 group-hover:scale-100'>
                   <svg
                     className='w-5 h-5 mx-auto text-primary-600'
                     fill='none'
@@ -257,7 +259,7 @@ export function CTASection({ user }) {
                 <span className='flex items-center gap-2'>
                   Send Us a Message
                   <svg
-                    className='w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300'
+                    className='w-4 h-4 transform group-hover:scale-110 transition-transform duration-300'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'

@@ -1,7 +1,6 @@
 'use client';
 
 import { CalendarPopup } from '@/components/notifications/CalendarPopup';
-import { Card } from '@/components/ui/Card';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { useI18n } from '@/contexts/I18nContext';
@@ -58,9 +57,8 @@ export function DashboardHeader({
   );
 
   return (
-    <Card
-      elevated={true}
-      className='border-2 border-neutral-100 relative [&>div]:px-0 [&>div]:py-0'
+    <div
+      className='bg-white rounded-[10px] border-2 border-neutral-100 relative shadow-lg'
       style={{
         overflow: 'visible',
         padding: '12px 12px 12px 10px',
@@ -198,6 +196,6 @@ export function DashboardHeader({
         onClose={() => setShowCalendar(false)}
         buttonRef={calendarButtonRef}
       />
-    </Card>
+    </div>
   );
 }

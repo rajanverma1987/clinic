@@ -15,7 +15,6 @@ const PaymentSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
     },
     invoiceId: {
       type: Schema.Types.ObjectId,

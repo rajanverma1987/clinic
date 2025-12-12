@@ -22,13 +22,22 @@ export async function registerUser(input) {
 
   let tenantId = input.tenantId;
 
-  // If no tenantId provided and user is clinic_admin, create a new tenant
+  // For clinic_admin registration (new tenant creation), check email globally first
   if (!tenantId && role === UserRole.CLINIC_ADMIN) {
+    // Check if email already exists globally (across all tenants)
+    const existingUser = await User.findOne({
+      email: input.email.toLowerCase(),
+    });
+
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
+
     // Generate a unique slug from email
     const baseSlug = input.email.toLowerCase().split('@')[0].replace(/[^a-z0-9]/g, '-');
     let slug = baseSlug;
     let counter = 1;
-    
+
     // Ensure slug is unique
     while (await Tenant.findOne({ slug })) {
       slug = `${baseSlug}-${counter}`;
@@ -51,9 +60,9 @@ export async function registerUser(input) {
 
     // Auto-assign Free Trial subscription to new clinic
     try {
-      const freeTrialPlan = await SubscriptionPlan.findOne({ 
+      const freeTrialPlan = await SubscriptionPlan.findOne({
         name: 'Free Trial',
-        status: PlanStatus.ACTIVE 
+        status: PlanStatus.ACTIVE
       });
 
       if (freeTrialPlan) {
@@ -90,18 +99,27 @@ export async function registerUser(input) {
     if (!tenant.isActive) {
       throw new Error('Tenant is not active');
     }
+
+    // For users joining an existing tenant, check email within that tenant
+    const existingUser = await User.findOne({
+      email: input.email.toLowerCase(),
+      tenantId: tenantId,
+    });
+
+    if (existingUser) {
+      throw new Error('User with this email already exists in this tenant');
+    }
   } else if (role !== UserRole.SUPER_ADMIN) {
     throw new Error('Tenant ID is required for non-admin users');
-  }
+  } else {
+    // For super_admin, check email globally
+    const existingUser = await User.findOne({
+      email: input.email.toLowerCase(),
+    });
 
-  // Check if user already exists
-  const existingUser = await User.findOne({
-    email: input.email.toLowerCase(),
-    ...(tenantId && { tenantId: tenantId }),
-  });
-
-  if (existingUser) {
-    throw new Error('User with this email already exists');
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
   }
 
   // Create user

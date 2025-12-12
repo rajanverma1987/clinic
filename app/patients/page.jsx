@@ -259,185 +259,187 @@ export default function PatientsPage() {
 
   return (
     <Layout>
-      <DashboardHeader
-        title={t('patients.title')}
-        subtitle={formatDateDisplay()}
-        notifications={notifications}
-        unreadCount={unreadCount}
-        onNotificationClick={(notification) => {
-          console.log('Notification clicked:', notification);
-          // Handle notification click - navigate to relevant page
-        }}
-        onMarkAsRead={(notificationId) => {
-          console.log('Mark as read:', notificationId);
-          // Handle mark as read - update notification status
-        }}
-        onMarkAllAsRead={() => {
-          console.log('Mark all as read');
-          // Handle mark all as read
-        }}
-        actionButton={
-          <Button
-            onClick={() => setShowModal(true)}
-            variant='primary'
-            size='md'
-            className='whitespace-nowrap'
-          >
-            + {t('patients.addPatient')}
-          </Button>
-        }
-      />
-
-      <Card className='mb-6'>
-        <SearchBar
-          placeholder={t('patients.searchPlaceholder')}
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className='w-full'
-        />
-        {searchLoading && (
-          <div className='mt-2 text-body-sm text-neutral-500 flex items-center'>
-            <CompactLoader size='xs' />
-            <span
-              className='text-body-sm text-neutral-500'
-              style={{
-                fontSize: 'var(--text-body-sm)',
-                lineHeight: 'var(--text-body-sm-line-height)',
-              }}
-            >
-              Searching...
-            </span>
-          </div>
-        )}
-      </Card>
-
-      <Card>
-        <Table
-          data={patients}
-          columns={columns}
-          onRowClick={(row) => router.push(`/patients/${row._id}`)}
-          emptyMessage={t('patients.noPatientsFound')}
-        />
-
-        {totalPages > 1 && (
-          <div className='mt-4 flex items-center justify-between'>
-            <Button
-              variant='secondary'
-              size='md'
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className='whitespace-nowrap'
-            >
-              {t('common.previous')}
-            </Button>
-            <span className='text-body-sm text-neutral-700'>
-              {t('common.page')} {currentPage} {t('common.of')} {totalPages}
-            </span>
-            <Button
-              variant='secondary'
-              size='md'
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className='whitespace-nowrap'
-            >
-              {t('common.next')}
-            </Button>
-          </div>
-        )}
-      </Card>
-
-      {showModal && (
-        <div
-          className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
-          onClick={(e) => {
-            // Close modal if clicking on the backdrop
-            if (e.target === e.currentTarget) {
-              setShowModal(false);
-            }
+      <div style={{ padding: '0 10px' }}>
+        <DashboardHeader
+          title={t('patients.title')}
+          subtitle={formatDateDisplay()}
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onNotificationClick={(notification) => {
+            console.log('Notification clicked:', notification);
+            // Handle notification click - navigate to relevant page
           }}
-        >
-          <div className='bg-neutral-50 rounded-lg p-6 w-full max-w-md shadow-lg'>
-            <h2 className='text-h2 text-neutral-900 mb-3'>{t('patients.addNewPatient')}</h2>
-            <form onSubmit={handleSubmit} className='space-y-3' noValidate>
-              <div className='grid grid-cols-2 gap-3'>
-                <Input
-                  label={t('auth.firstName')}
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+          onMarkAsRead={(notificationId) => {
+            console.log('Mark as read:', notificationId);
+            // Handle mark as read - update notification status
+          }}
+          onMarkAllAsRead={() => {
+            console.log('Mark all as read');
+            // Handle mark all as read
+          }}
+          actionButton={
+            <Button
+              onClick={() => setShowModal(true)}
+              variant='primary'
+              size='md'
+              className='whitespace-nowrap'
+            >
+              + {t('patients.addPatient')}
+            </Button>
+          }
+        />
+
+        <Card className='mb-6'>
+          <SearchBar
+            placeholder={t('patients.searchPlaceholder')}
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className='w-full'
+          />
+          {searchLoading && (
+            <div className='mt-2 text-body-sm text-neutral-500 flex items-center'>
+              <CompactLoader size='xs' />
+              <span
+                className='text-body-sm text-neutral-500'
+                style={{
+                  fontSize: 'var(--text-body-sm)',
+                  lineHeight: 'var(--text-body-sm-line-height)',
+                }}
+              >
+                Searching...
+              </span>
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <Table
+            data={patients}
+            columns={columns}
+            onRowClick={(row) => router.push(`/patients/${row._id}`)}
+            emptyMessage={t('patients.noPatientsFound')}
+          />
+
+          {totalPages > 1 && (
+            <div className='mt-4 flex items-center justify-between'>
+              <Button
+                variant='secondary'
+                size='md'
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className='whitespace-nowrap'
+              >
+                {t('common.previous')}
+              </Button>
+              <span className='text-body-sm text-neutral-700'>
+                {t('common.page')} {currentPage} {t('common.of')} {totalPages}
+              </span>
+              <Button
+                variant='secondary'
+                size='md'
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className='whitespace-nowrap'
+              >
+                {t('common.next')}
+              </Button>
+            </div>
+          )}
+        </Card>
+
+        {showModal && (
+          <div
+            className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+            onClick={(e) => {
+              // Close modal if clicking on the backdrop
+              if (e.target === e.currentTarget) {
+                setShowModal(false);
+              }
+            }}
+          >
+            <div className='bg-neutral-50 rounded-lg p-6 w-full max-w-md shadow-lg'>
+              <h2 className='text-h2 text-neutral-900 mb-3'>{t('patients.addNewPatient')}</h2>
+              <form onSubmit={handleSubmit} className='space-y-3' noValidate>
+                <div className='grid grid-cols-2 gap-3'>
+                  <Input
+                    label={t('auth.firstName')}
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    required
+                  />
+                  <Input
+                    label={t('auth.lastName')}
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <PhoneInput
+                  label={t('patients.phone')}
+                  value={formData.phone}
+                  onChange={(value) => setFormData({ ...formData, phone: value })}
+                  countryCode={countryCode}
+                  onCountryCodeChange={setCountryCode}
                   required
                 />
+
                 <Input
-                  label={t('auth.lastName')}
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  label={t('auth.email')}
+                  type='email'
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+
+                <DatePicker
+                  label={t('patients.dateOfBirth')}
+                  value={formData.dateOfBirth}
+                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                   required
                 />
-              </div>
 
-              <PhoneInput
-                label={t('patients.phone')}
-                value={formData.phone}
-                onChange={(value) => setFormData({ ...formData, phone: value })}
-                countryCode={countryCode}
-                onCountryCodeChange={setCountryCode}
-                required
-              />
+                <div>
+                  <label className='block text-body-sm font-medium text-neutral-900 mb-1'>
+                    {t('patients.gender')}
+                  </label>
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    className='w-full px-3 py-3 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-900 focus:outline-none focus:border-primary-500 focus:shadow-focus'
+                    required
+                  >
+                    <option value='male'>{t('common.male')}</option>
+                    <option value='female'>{t('common.female')}</option>
+                    <option value='other'>{t('common.other')}</option>
+                  </select>
+                </div>
 
-              <Input
-                label={t('auth.email')}
-                type='email'
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-
-              <DatePicker
-                label={t('patients.dateOfBirth')}
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                required
-              />
-
-              <div>
-                <label className='block text-body-sm font-medium text-neutral-900 mb-1'>
-                  {t('patients.gender')}
-                </label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                  className='w-full px-3 py-3 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-900 focus:outline-none focus:border-primary-500 focus:shadow-focus'
-                  required
-                >
-                  <option value='male'>{t('common.male')}</option>
-                  <option value='female'>{t('common.female')}</option>
-                  <option value='other'>{t('common.other')}</option>
-                </select>
-              </div>
-
-              <div className='flex gap-4'>
-                <Button
-                  type='button'
-                  variant='secondary'
-                  size='md'
-                  onClick={() => setShowModal(false)}
-                  disabled={submitting}
-                  className='flex-1'
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  type='submit'
-                  isLoading={submitting}
-                  disabled={submitting}
-                  size='md'
-                  className='flex-1'
-                >
-                  {t('patients.createPatient')}
-                </Button>
-              </div>
-            </form>
+                <div className='flex gap-4'>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    size='md'
+                    onClick={() => setShowModal(false)}
+                    disabled={submitting}
+                    className='flex-1'
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    type='submit'
+                    isLoading={submitting}
+                    disabled={submitting}
+                    size='md'
+                    className='flex-1'
+                  >
+                    {t('patients.createPatient')}
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </Layout>
   );
 }

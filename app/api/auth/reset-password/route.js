@@ -44,14 +44,22 @@ export async function POST(req) {
       );
     }
 
-    // Find valid reset code
-    const resetRecord = await PasswordReset.findOne({
+    // Build query to find reset code
+    const resetQuery = {
       email: email.toLowerCase(),
-      tenantId: user.tenantId,
       secretCode,
       used: false,
       expiresAt: { $gt: new Date() },
-    });
+    };
+    // Handle tenantId (null for super_admin, specific value for others)
+    if (user.tenantId) {
+      resetQuery.tenantId = user.tenantId;
+    } else {
+      resetQuery.tenantId = null;
+    }
+
+    // Find valid reset code
+    const resetRecord = await PasswordReset.findOne(resetQuery);
 
     if (!resetRecord) {
       return NextResponse.json(
@@ -68,15 +76,19 @@ export async function POST(req) {
     resetRecord.used = true;
     await resetRecord.save();
 
+    // Build query for invalidating other codes
+    const invalidateQuery = {
+      email: email.toLowerCase(),
+      used: false,
+    };
+    if (user.tenantId) {
+      invalidateQuery.tenantId = user.tenantId;
+    } else {
+      invalidateQuery.tenantId = null;
+    }
+
     // Invalidate all other reset codes for this user
-    await PasswordReset.updateMany(
-      {
-        email: email.toLowerCase(),
-        tenantId: user.tenantId,
-        used: false,
-      },
-      { used: true }
-    );
+    await PasswordReset.updateMany(invalidateQuery, { used: true });
 
     return NextResponse.json(
       successResponse({

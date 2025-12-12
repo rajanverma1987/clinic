@@ -22,7 +22,6 @@ const PrescriptionSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
     },
     patientId: {
       type: Schema.Types.ObjectId,

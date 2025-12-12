@@ -140,17 +140,26 @@ export default function InventoryItemDetailPage() {
   if (error && !item) {
     return (
       <Layout>
-        <div className='mb-8'>
-          <Button variant='secondary' onClick={() => router.back()}>
-            ← {t('common.back')}
-          </Button>
-        </div>
-        <Card>
-          <div className='text-center py-8'>
-            <p className='text-status-error mb-4'>{error}</p>
-            <Button onClick={() => router.push('/inventory')}>Back to Inventory</Button>
+        <div style={{ padding: '0 10px' }}>
+          <div className='mb-8' style={{ paddingTop: '10px' }}>
+            <button
+              onClick={() => router.back()}
+              className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
+              style={{ marginLeft: '10px' }}
+              aria-label={t('common.back')}
+            >
+              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 12H5M12 19l-7-7 7-7' />
+              </svg>
+            </button>
           </div>
-        </Card>
+          <Card>
+            <div className='text-center py-8'>
+              <p className='text-status-error mb-4'>{error}</p>
+              <Button onClick={() => router.push('/inventory')}>Back to Inventory</Button>
+            </div>
+          </Card>
+        </div>
       </Layout>
     );
   }
@@ -161,10 +170,16 @@ export default function InventoryItemDetailPage() {
 
   return (
     <Layout>
-      <div className='mb-8'>
-        <Button variant='secondary' onClick={() => router.back()}>
-          ← {t('common.back')}
-        </Button>
+      <div className='mb-8' style={{ paddingTop: '10px' }}>
+        <button
+          onClick={() => router.back()}
+          className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
+          aria-label={t('common.back')}
+        >
+          <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 19l-7-7 7-7' />
+          </svg>
+        </button>
       </div>
 
       <div className='mb-8 flex items-center justify-between'>

@@ -89,139 +89,156 @@ export default function AppointmentDetailsPage({ params }) {
 
   return (
     <Layout>
-      <div className='mb-6 flex items-center justify-between flex-wrap gap-3'>
-        <div>
-          <Button variant='secondary' onClick={() => router.back()}>
-            ← Back
-          </Button>
-          <h1 className='text-3xl font-bold text-neutral-900 mt-4'>Appointment Details</h1>
-          <p className='text-neutral-600'>Appointment ID: {appointment._id}</p>
-        </div>
-        <Tag
-          size='lg'
-          variant={
-            appointment.status === 'completed'
-              ? 'success'
-              : appointment.status === 'cancelled'
-              ? 'danger'
-              : 'default'
-          }
+      <div style={{ padding: '0 10px' }}>
+        <div
+          className='mb-6 flex items-center justify-between flex-wrap gap-3'
+          style={{ paddingTop: '10px' }}
         >
-          {appointment.status.replace(/_/g, ' ')}
-        </Tag>
-      </div>
-
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
-        <Card>
-          <div className='flex items-center justify-between mb-4'>
-            <h2 className='text-lg font-semibold text-neutral-900'>Patient Information</h2>
-            <Tag variant='default' size='sm'>
-              {appointment.patientId?.patientId || 'Unknown ID'}
-            </Tag>
-          </div>
-          <div className='space-y-3 text-sm text-neutral-700'>
-            <p>
-              <span className='font-medium text-neutral-900'>Name:</span> {patientFullName || '—'}
-            </p>
-            <p>
-              <span className='font-medium text-neutral-900'>Phone:</span>{' '}
-              {appointment.patientId?.phone || '—'}
-            </p>
-            <p>
-              <span className='font-medium text-neutral-900'>Email:</span>{' '}
-              {appointment.patientId?.email || '—'}
-            </p>
-          </div>
-        </Card>
-
-        <Card>
-          <div className='flex items-center justify-between mb-4'>
-            <h2 className='text-lg font-semibold text-neutral-900'>Doctor Information</h2>
-          </div>
-          <div className='space-y-3 text-sm text-neutral-700'>
-            <p>
-              <span className='font-medium text-neutral-900'>Doctor:</span> {doctorFullName || '—'}
-            </p>
-            <p>
-              <span className='font-medium text-neutral-900'>Email:</span>{' '}
-              {appointment.doctorId?.email || '—'}
-            </p>
-          </div>
-        </Card>
-      </div>
-
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6'>
-        <Card>
-          <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
-            Date
-          </h3>
-          <p className='text-2xl font-bold text-neutral-900'>
-            {formatDate(appointment.appointmentDate)}
-          </p>
-        </Card>
-        <Card>
-          <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
-            Time
-          </h3>
-          <p className='text-xl font-semibold text-neutral-900'>
-            {formatTime(appointment.startTime)} – {formatTime(appointment.endTime)}
-          </p>
-        </Card>
-        <Card>
-          <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
-            Duration
-          </h3>
-          <p className='text-2xl font-bold text-neutral-900'>{appointment.duration || 30} mins</p>
-        </Card>
-      </div>
-
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
-        <Card>
-          <h3 className='text-lg font-semibold text-neutral-900 mb-3'>Reason</h3>
-          <p className='text-neutral-700'>{appointment.reason || 'Not provided'}</p>
-        </Card>
-
-        <Card>
-          <h3 className='text-lg font-semibold text-neutral-900 mb-3'>Notes</h3>
-          <p className='text-neutral-700 whitespace-pre-wrap'>
-            {appointment.notes || 'No additional notes'}
-          </p>
-        </Card>
-      </div>
-
-      {appointment.isTelemedicine && (
-        <Card className='border-primary-200 bg-primary-100'>
-          <div className='flex items-start gap-4'>
-            <div className='p-3 bg-primary-100 rounded-full'>
-              <svg
-                className='w-6 h-6 text-primary-600'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
+          <div>
+            <button
+              onClick={() => router.back()}
+              className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
+              aria-label='Back'
+            >
+              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
                   strokeLinecap='round'
                   strokeLinejoin='round'
                   strokeWidth={2}
-                  d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+                  d='M15 19l-7-7 7-7'
                 />
               </svg>
-            </div>
-            <div>
-              <h3 className='text-lg font-semibold text-neutral-900'>Telemedicine Session</h3>
-              <p className='text-neutral-700 mt-2'>
-                Session ID:{' '}
-                <span className='font-mono text-sm'>
-                  {appointment.telemedicineSessionId || 'Pending'}
-                </span>
-              </p>
-              <p className='text-neutral-700 mt-1'>
-                Consent: {appointment.telemedicineConsent ? 'Captured' : 'Not captured'}
-              </p>
-            </div>
+            </button>
+            <h1 className='text-3xl font-bold text-neutral-900 mt-4'>Appointment Details</h1>
+            <p className='text-neutral-600'>Appointment ID: {appointment._id}</p>
           </div>
-        </Card>
-      )}
+          <Tag
+            size='lg'
+            variant={
+              appointment.status === 'completed'
+                ? 'success'
+                : appointment.status === 'cancelled'
+                ? 'danger'
+                : 'default'
+            }
+          >
+            {appointment.status.replace(/_/g, ' ')}
+          </Tag>
+        </div>
+
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
+          <Card>
+            <div className='flex items-center justify-between mb-4'>
+              <h2 className='text-lg font-semibold text-neutral-900'>Patient Information</h2>
+              <Tag variant='default' size='sm'>
+                {appointment.patientId?.patientId || 'Unknown ID'}
+              </Tag>
+            </div>
+            <div className='space-y-3 text-sm text-neutral-700'>
+              <p>
+                <span className='font-medium text-neutral-900'>Name:</span> {patientFullName || '—'}
+              </p>
+              <p>
+                <span className='font-medium text-neutral-900'>Phone:</span>{' '}
+                {appointment.patientId?.phone || '—'}
+              </p>
+              <p>
+                <span className='font-medium text-neutral-900'>Email:</span>{' '}
+                {appointment.patientId?.email || '—'}
+              </p>
+            </div>
+          </Card>
+
+          <Card>
+            <div className='flex items-center justify-between mb-4'>
+              <h2 className='text-lg font-semibold text-neutral-900'>Doctor Information</h2>
+            </div>
+            <div className='space-y-3 text-sm text-neutral-700'>
+              <p>
+                <span className='font-medium text-neutral-900'>Doctor:</span>{' '}
+                {doctorFullName || '—'}
+              </p>
+              <p>
+                <span className='font-medium text-neutral-900'>Email:</span>{' '}
+                {appointment.doctorId?.email || '—'}
+              </p>
+            </div>
+          </Card>
+        </div>
+
+        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6'>
+          <Card>
+            <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
+              Date
+            </h3>
+            <p className='text-2xl font-bold text-neutral-900'>
+              {formatDate(appointment.appointmentDate)}
+            </p>
+          </Card>
+          <Card>
+            <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
+              Time
+            </h3>
+            <p className='text-xl font-semibold text-neutral-900'>
+              {formatTime(appointment.startTime)} – {formatTime(appointment.endTime)}
+            </p>
+          </Card>
+          <Card>
+            <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
+              Duration
+            </h3>
+            <p className='text-2xl font-bold text-neutral-900'>{appointment.duration || 30} mins</p>
+          </Card>
+        </div>
+
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
+          <Card>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-3'>Reason</h3>
+            <p className='text-neutral-700'>{appointment.reason || 'Not provided'}</p>
+          </Card>
+
+          <Card>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-3'>Notes</h3>
+            <p className='text-neutral-700 whitespace-pre-wrap'>
+              {appointment.notes || 'No additional notes'}
+            </p>
+          </Card>
+        </div>
+
+        {appointment.isTelemedicine && (
+          <Card className='border-primary-200 bg-primary-100'>
+            <div className='flex items-start gap-4'>
+              <div className='p-3 bg-primary-100 rounded-full'>
+                <svg
+                  className='w-6 h-6 text-primary-600'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className='text-lg font-semibold text-neutral-900'>Telemedicine Session</h3>
+                <p className='text-neutral-700 mt-2'>
+                  Session ID:{' '}
+                  <span className='font-mono text-sm'>
+                    {appointment.telemedicineSessionId || 'Pending'}
+                  </span>
+                </p>
+                <p className='text-neutral-700 mt-1'>
+                  Consent: {appointment.telemedicineConsent ? 'Captured' : 'Not captured'}
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
     </Layout>
   );
 }

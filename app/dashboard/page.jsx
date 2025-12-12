@@ -15,8 +15,10 @@ import { AppointmentListItem } from './components/AppointmentListItem';
 import { ChartCard } from './components/ChartCard';
 import { CriticalAlerts } from './components/CriticalAlerts';
 import { DashboardListCard } from './components/DashboardListCard';
+import { DashboardSkeleton } from './components/DashboardSkeleton';
 import { InventoryListItem } from './components/InventoryListItem';
 import { InvoiceListItem } from './components/InvoiceListItem';
+import { LotListItem } from './components/LotListItem';
 import { PatientListItem } from './components/PatientListItem';
 import { PrescriptionListItem } from './components/PrescriptionListItem';
 import { QuickActions } from './components/QuickActions';
@@ -47,6 +49,7 @@ export default function DashboardPage() {
     prescriptionRefills,
     queueStatus,
     criticalAlerts,
+    expiringLots,
     loading: listsLoading,
     fetchDashboardLists,
   } = useDashboardLists();
@@ -75,238 +78,303 @@ export default function DashboardPage() {
       return () => clearTimeout(timer);
     }
 
+    // Fetch data when user is available
     if (user) {
       fetchStats();
       fetchChartData();
       fetchDashboardLists();
     }
-  }, [authLoading, user, router, fetchStats, fetchChartData, fetchDashboardLists]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, router]); // Functions are stable from useCallback hooks
 
   // Loading states
   if (authLoading) {
-    return <Loader fullScreen size='lg' />;
+    return (
+      <Layout>
+        <Loader fullScreen size='lg' />
+      </Layout>
+    );
   }
 
   if (!user) {
-    return null;
-  }
-
-  if (statsLoading) {
     return (
       <Layout>
-        <div className='mb-10'>
-          <h1 className='text-h1 text-neutral-900 mb-3'>{t('dashboard.title')}</h1>
-          <p className='text-body-lg text-neutral-700'>
-            {t('dashboard.welcome')},{' '}
-            <span className='font-semibold text-primary-500'>{user?.firstName}</span>!
-          </p>
+        <div className='flex items-center justify-center min-h-screen'>
+          <Loader size='lg' text='Redirecting to login...' />
         </div>
-        <Loader size='lg' text='Loading dashboard...' className='h-64' />
+      </Layout>
+    );
+  }
+
+  // Show skeleton when initial data is loading
+  const isInitialLoading = statsLoading || chartsLoading || listsLoading;
+
+  if (isInitialLoading) {
+    return (
+      <Layout>
+        <DashboardSkeleton />
       </Layout>
     );
   }
 
   return (
     <Layout>
-      {/* Dashboard Header */}
-      <DashboardHeader
-        title='Dashboard Overview'
-        subtitle={formatDateDisplay()}
-        notifications={[]}
-        unreadCount={0}
-      />
-
-      {/* Quick Actions */}
-      <div className='mb-6'>
-        <QuickActions onNavigate={(path) => router.push(path)} />
-      </div>
-
-      {/* Critical Alerts */}
-      {criticalAlerts && criticalAlerts.length > 0 && (
-        <div className='mb-10'>
-          <CriticalAlerts alerts={criticalAlerts} />
+      <div style={{ padding: '0 10px' }}>
+        {/* Dashboard Header */}
+        <div style={{ marginBottom: 'var(--space-6)' }}>
+          <DashboardHeader
+            title='Dashboard Overview'
+            subtitle={formatDateDisplay()}
+            notifications={criticalAlerts.map((alert, index) => ({
+              id: `alert-${index}`,
+              type: alert.type || 'system',
+              title: alert.message || 'Alert',
+              message: alert.message || '',
+              unread: true,
+              createdAt: new Date().toISOString(),
+            }))}
+            unreadCount={criticalAlerts.length}
+            onNotificationClick={(notification) => {
+              // Handle notification click - navigate based on type
+              if (notification.type === 'appointment') {
+                router.push('/appointments');
+              } else if (notification.type === 'invoice') {
+                router.push('/invoices');
+              } else if (notification.type === 'inventory') {
+                router.push('/inventory');
+              } else if (notification.type === 'lot') {
+                router.push('/inventory/lots');
+              }
+            }}
+            onMarkAsRead={(id) => {
+              // Mark individual notification as read
+              console.log('Mark as read:', id);
+            }}
+            onMarkAllAsRead={() => {
+              // Mark all notifications as read
+              console.log('Mark all as read');
+            }}
+          />
         </div>
-      )}
 
-      {/* Key Statistics Cards */}
-      <div className='mb-8'>
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-          <StatsCard
+        {/* Quick Actions */}
+        <div style={{ marginBottom: 'var(--space-6)' }}>
+          <QuickActions onNavigate={(path) => router.push(path)} loading={false} />
+        </div>
+
+        {/* Critical Alerts */}
+        {criticalAlerts && criticalAlerts.length > 0 && (
+          <div style={{ marginBottom: 'var(--space-10)' }}>
+            <CriticalAlerts alerts={criticalAlerts} />
+          </div>
+        )}
+
+        {/* Key Statistics Cards */}
+        <div style={{ marginBottom: 'var(--space-8)' }}>
+          <div
+            className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+            style={{ gap: 'var(--gap-4)' }}
+          >
+            <StatsCard
+              title="Today's Appointments"
+              value={stats?.todayAppointments || 0}
+              trend={stats?.appointmentsTrend}
+              icon='calendar'
+              colorScheme='primary'
+              onClick={() => router.push('/appointments')}
+              loading={statsLoading}
+            />
+            <StatsCard
+              title="Today's Revenue"
+              value={formatCurrency(stats?.todayRevenue || 0)}
+              trend={stats?.revenueTrend}
+              icon='revenue'
+              colorScheme='secondary'
+              onClick={() => router.push('/reports')}
+              loading={statsLoading}
+            />
+            <StatsCard
+              title='Active Patients'
+              value={stats?.activePatients || 0}
+              trend={stats?.patientsTrend}
+              icon='patients'
+              colorScheme='primary'
+              onClick={() => router.push('/patients')}
+              loading={statsLoading}
+            />
+            <StatsCard
+              title='New Patients (This Month)'
+              value={stats?.newPatientsThisMonth || 0}
+              trend={stats?.newPatientsTrend}
+              icon='patients'
+              colorScheme='secondary'
+              onClick={() => router.push('/patients')}
+              loading={statsLoading}
+            />
+            <StatsCard
+              title='Completed Today'
+              value={stats?.completedToday || 0}
+              trend={stats?.completionTrend}
+              icon='calendar'
+              colorScheme='primary'
+              onClick={() => router.push('/appointments')}
+              loading={statsLoading}
+            />
+            <StatsCard
+              title='Pending Invoices'
+              value={stats?.pendingInvoices || 0}
+              trend={stats?.invoicesTrend}
+              icon='invoice'
+              colorScheme='warning'
+              onClick={() => router.push('/invoices')}
+              loading={statsLoading}
+            />
+            <StatsCard
+              title='Low Stock Items'
+              value={lowStockList?.length || 0}
+              icon='inventory'
+              colorScheme='error'
+              onClick={() => router.push('/inventory')}
+              loading={listsLoading}
+            />
+            <StatsCard
+              title='Queue Status'
+              value={queueStatus?.active || 0}
+              icon='queue'
+              colorScheme='primary'
+              onClick={() => router.push('/queue')}
+              loading={listsLoading}
+            />
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div style={{ marginBottom: 'var(--space-10)' }}>
+          <div className='grid grid-cols-1 lg:grid-cols-2' style={{ gap: 'var(--gap-6)' }}>
+            <ChartCard
+              title='Revenue Trend (Last 14 Days)'
+              data={chartData.revenue}
+              colorScheme='secondary'
+              loading={chartsLoading}
+            />
+            <ChartCard
+              title='Appointment Trend (Last 14 Days)'
+              data={chartData.appointments}
+              colorScheme='primary'
+              loading={chartsLoading}
+            />
+          </div>
+        </div>
+
+        {/* Lists Section - 3 columns */}
+        <div
+          className='grid grid-cols-1 lg:grid-cols-3'
+          style={{ gap: 'var(--gap-6)', marginBottom: 'var(--space-10)' }}
+        >
+          {/* Today's Appointments */}
+          <DashboardListCard
             title="Today's Appointments"
-            value={stats?.todayAppointments || 0}
-            trend={stats?.appointmentsTrend}
-            icon='calendar'
+            data={todayAppointments}
+            loading={listsLoading}
             colorScheme='primary'
-            onClick={() => router.push('/appointments')}
-            loading={statsLoading}
+            emptyMessage='No appointments scheduled for today'
+            renderItem={(appointment) => (
+              <AppointmentListItem
+                key={appointment._id || appointment.id}
+                appointment={appointment}
+                onClick={() => router.push(`/appointments/${appointment._id || appointment.id}`)}
+              />
+            )}
           />
-          <StatsCard
-            title="Today's Revenue"
-            value={formatCurrency(stats?.todayRevenue || 0)}
-            trend={stats?.revenueTrend}
-            icon='revenue'
+
+          {/* Recent Patients */}
+          <DashboardListCard
+            title='Recent Patients'
+            data={recentPatients}
+            loading={listsLoading}
             colorScheme='secondary'
-            onClick={() => router.push('/reports')}
-            loading={statsLoading}
+            emptyMessage='No recent patients'
+            renderItem={(patient) => (
+              <PatientListItem
+                key={patient._id || patient.id}
+                patient={patient}
+                onClick={() => router.push(`/patients/${patient._id || patient.id}`)}
+              />
+            )}
           />
-          <StatsCard
-            title='Active Patients'
-            value={stats?.activePatients || 0}
-            trend={stats?.patientsTrend}
-            icon='patients'
+
+          {/* Prescription Refills */}
+          <DashboardListCard
+            title='Active Prescriptions'
+            data={prescriptionRefills}
+            loading={listsLoading}
             colorScheme='primary'
-            onClick={() => router.push('/patients')}
-            loading={statsLoading}
+            emptyMessage='No active prescriptions'
+            renderItem={(prescription) => (
+              <PrescriptionListItem
+                key={prescription._id || prescription.id}
+                prescription={prescription}
+                onClick={() => router.push(`/prescriptions/${prescription._id || prescription.id}`)}
+              />
+            )}
           />
-          <StatsCard
-            title='New Patients (This Month)'
-            value={stats?.newPatientsThisMonth || 0}
-            trend={stats?.newPatientsTrend}
-            icon='patients'
-            colorScheme='secondary'
-            onClick={() => router.push('/patients')}
-            loading={statsLoading}
-          />
-          <StatsCard
-            title='Completed Today'
-            value={stats?.completedToday || 0}
-            trend={stats?.completionTrend}
-            icon='calendar'
-            colorScheme='primary'
-            onClick={() => router.push('/appointments')}
-            loading={statsLoading}
-          />
-          <StatsCard
-            title='Pending Invoices'
-            value={stats?.pendingInvoices || 0}
-            trend={stats?.invoicesTrend}
-            icon='invoice'
+        </div>
+
+        {/* Second Row Lists - 2 columns */}
+        <div className='grid grid-cols-1 lg:grid-cols-2' style={{ gap: 'var(--gap-6)' }}>
+          {/* Overdue Invoices */}
+          <DashboardListCard
+            title='Overdue Invoices'
+            data={overdueInvoices}
+            loading={listsLoading}
             colorScheme='warning'
-            onClick={() => router.push('/invoices')}
-            loading={statsLoading}
+            emptyMessage='No overdue invoices'
+            renderItem={(invoice) => (
+              <InvoiceListItem
+                key={invoice._id || invoice.id}
+                invoice={invoice}
+                onClick={() => router.push(`/invoices/${invoice._id || invoice.id}`)}
+                formatCurrency={formatCurrency}
+              />
+            )}
           />
-          <StatsCard
+
+          {/* Low Stock Items */}
+          <DashboardListCard
             title='Low Stock Items'
-            value={lowStockList?.length || 0}
-            icon='inventory'
+            data={lowStockList}
+            loading={listsLoading}
             colorScheme='error'
-            onClick={() => router.push('/inventory')}
-            loading={listsLoading}
-          />
-          <StatsCard
-            title='Queue Status'
-            value={queueStatus?.active || 0}
-            icon='queue'
-            colorScheme='primary'
-            onClick={() => router.push('/queue')}
-            loading={listsLoading}
+            emptyMessage='All items are well stocked'
+            renderItem={(item) => (
+              <InventoryListItem
+                key={item._id || item.id}
+                item={item}
+                onClick={() => router.push(`/inventory/items/${item._id || item.id}`)}
+              />
+            )}
           />
         </div>
-      </div>
 
-      {/* Charts Section */}
-      <div className='mb-10'>
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-          <ChartCard
-            title='Revenue Trend (Last 14 Days)'
-            data={chartData.revenue}
-            colorScheme='secondary'
-            loading={chartsLoading}
-          />
-          <ChartCard
-            title='Appointment Trend (Last 14 Days)'
-            data={chartData.appointments}
-            colorScheme='primary'
-            loading={chartsLoading}
-          />
-        </div>
-      </div>
-
-      {/* Lists Section - 3 columns */}
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10'>
-        {/* Today's Appointments */}
-        <DashboardListCard
-          title="Today's Appointments"
-          data={todayAppointments}
-          loading={listsLoading}
-          colorScheme='primary'
-          emptyMessage='No appointments scheduled for today'
-          renderItem={(appointment) => (
-            <AppointmentListItem
-              key={appointment._id || appointment.id}
-              appointment={appointment}
-              onClick={() => router.push(`/appointments/${appointment._id || appointment.id}`)}
+        {/* Expiring Lots Section */}
+        {expiringLots && expiringLots.length > 0 && (
+          <div style={{ marginBottom: 'var(--space-10)' }}>
+            <DashboardListCard
+              title='Expiring Lots (Next 30 Days)'
+              data={expiringLots}
+              loading={listsLoading}
+              colorScheme='warning'
+              emptyMessage='No lots expiring soon'
+              renderItem={(lot) => (
+                <LotListItem
+                  key={lot._id || lot.batchNumber}
+                  lot={lot}
+                  onClick={() => router.push(`/inventory/lots`)}
+                />
+              )}
             />
-          )}
-        />
-
-        {/* Recent Patients */}
-        <DashboardListCard
-          title='Recent Patients'
-          data={recentPatients}
-          loading={listsLoading}
-          colorScheme='secondary'
-          emptyMessage='No recent patients'
-          renderItem={(patient) => (
-            <PatientListItem
-              key={patient._id || patient.id}
-              patient={patient}
-              onClick={() => router.push(`/patients/${patient._id || patient.id}`)}
-            />
-          )}
-        />
-
-        {/* Prescription Refills */}
-        <DashboardListCard
-          title='Active Prescriptions'
-          data={prescriptionRefills}
-          loading={listsLoading}
-          colorScheme='primary'
-          emptyMessage='No active prescriptions'
-          renderItem={(prescription) => (
-            <PrescriptionListItem
-              key={prescription._id || prescription.id}
-              prescription={prescription}
-              onClick={() => router.push(`/prescriptions/${prescription._id || prescription.id}`)}
-            />
-          )}
-        />
-      </div>
-
-      {/* Second Row Lists - 2 columns */}
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        {/* Overdue Invoices */}
-        <DashboardListCard
-          title='Overdue Invoices'
-          data={overdueInvoices}
-          loading={listsLoading}
-          colorScheme='warning'
-          emptyMessage='No overdue invoices'
-          renderItem={(invoice) => (
-            <InvoiceListItem
-              key={invoice._id || invoice.id}
-              invoice={invoice}
-              onClick={() => router.push(`/invoices/${invoice._id || invoice.id}`)}
-              formatCurrency={formatCurrency}
-            />
-          )}
-        />
-
-        {/* Low Stock Items */}
-        <DashboardListCard
-          title='Low Stock Items'
-          data={lowStockList}
-          loading={listsLoading}
-          colorScheme='error'
-          emptyMessage='All items are well stocked'
-          renderItem={(item) => (
-            <InventoryListItem
-              key={item._id || item.id}
-              item={item}
-              onClick={() => router.push(`/inventory/items/${item._id || item.id}`)}
-            />
-          )}
-        />
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -346,317 +346,159 @@ function NewAppointmentPageContent() {
 
   return (
     <Layout>
-      <div className='mb-8'>
-        <Button variant='secondary' onClick={() => router.back()}>
-          ← {t('common.back')}
-        </Button>
-      </div>
-
-      <div className='mb-8'>
-        <h1 className='text-3xl font-bold text-neutral-900'>{t('appointments.bookAppointment')}</h1>
-        <p className='text-neutral-600 mt-2'>{t('appointments.appointmentList')}</p>
-      </div>
-
-      <Card>
-        <form onSubmit={handleSubmit} className='space-y-6' noValidate>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-            <div className='md:col-span-2'>
-              <PatientSelector
-                patients={patients}
-                selectedPatientId={formData.patientId}
-                onSelect={(patientId) => {
-                  // Find the selected patient to get their email
-                  const selectedPatient = patients.find(
-                    (p) => p._id === patientId || p.id === patientId
-                  );
-                  setFormData((prev) => ({
-                    ...prev,
-                    patientId,
-                    // Auto-populate email if Video Consultation is enabled
-                    patientEmail:
-                      formData.isTelemedicine && selectedPatient?.email
-                        ? selectedPatient.email
-                        : prev.patientEmail,
-                  }));
-                }}
-                onAddNew={() => router.push('/patients')}
-                label={t('appointments.patient')}
-                required
-                placeholder='Search by name, ID, or phone number...'
+      <div style={{ padding: '0 10px' }}>
+        <div className='mb-8' style={{ paddingTop: '10px' }}>
+          <button
+            onClick={() => router.back()}
+            className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
+            style={{ marginLeft: '10px' }}
+            aria-label={t('common.back')}
+          >
+            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M15 19l-7-7 7-7'
               />
-            </div>
+            </svg>
+          </button>
+        </div>
 
-            <div>
-              <Select
-                label={t('appointments.doctor')}
-                value={formData.doctorId}
-                onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
-                required
-                placeholder={`${t('common.select')} ${t('appointments.doctor').toLowerCase()}`}
-                options={[
-                  {
-                    value: '',
-                    label: `${t('common.select')} ${t('appointments.doctor').toLowerCase()}`,
-                    disabled: true,
-                  },
-                  ...doctors.map((doctor) => ({
-                    value: doctor.id, // Use 'id' field from API
-                    label: `Dr. ${doctor.firstName} ${doctor.lastName}`,
-                  })),
-                ]}
-              />
-              {doctors.length === 0 && (
-                <p className='text-sm text-neutral-500 mt-1'>
-                  No doctors available. Add doctors in Settings → Doctors & Staff.
-                </p>
-              )}
-            </div>
+        <div className='mb-8'>
+          <h1 className='text-3xl font-bold text-neutral-900'>
+            {t('appointments.bookAppointment')}
+          </h1>
+          <p className='text-neutral-600 mt-2'>{t('appointments.appointmentList')}</p>
+        </div>
 
-            <div>
-              <DatePicker
-                label={t('appointments.selectDate') + ' *'}
-                required
-                value={formData.appointmentDate}
-                onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor='startTime'
-                className='block text-sm font-medium text-neutral-700 mb-2'
-              >
-                {t('appointments.time')} *
-              </label>
-              <Input
-                id='startTime'
-                type='time'
-                required
-                value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-              />
-            </div>
-
-            <Select
-              label={`${t('appointments.duration')} (${t('appointments.minutes')})`}
-              value={formData.duration}
-              onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-              required
-              options={[
-                { value: '15', label: `15 ${t('appointments.minutes')}` },
-                { value: '30', label: `30 ${t('appointments.minutes')}` },
-                { value: '45', label: `45 ${t('appointments.minutes')}` },
-                { value: '60', label: `60 ${t('appointments.minutes')}` },
-                { value: '90', label: `90 ${t('appointments.minutes')}` },
-                { value: '120', label: `120 ${t('appointments.minutes')}` },
-              ]}
-            />
-
-            <Select
-              label={t('appointments.appointmentType')}
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              required
-              options={[
-                { value: 'consultation', label: 'Consultation' },
-                { value: 'follow_up', label: 'Follow-up' },
-                { value: 'checkup', label: 'Checkup' },
-                { value: 'emergency', label: 'Emergency' },
-                { value: 'procedure', label: 'Procedure' },
-                { value: 'lab_test', label: 'Lab Test' },
-              ]}
-            />
-          </div>
-
-          {/* Recurring Appointment Option */}
-          <div className='md:col-span-2'>
-            <Card className='border-2 border-primary-100 bg-primary-50/30'>
-              <div className='flex items-start gap-4'>
-                <label className='flex items-center cursor-pointer flex-1'>
-                  <input
-                    type='checkbox'
-                    checked={formData.isRecurring}
-                    onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
-                    className='h-5 w-5 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
-                  />
-                  <div className='ml-3 flex-1'>
-                    <div className='flex items-center gap-2'>
-                      <svg
-                        className='w-5 h-5 text-primary-600'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                        />
-                      </svg>
-                      <span className='text-sm font-semibold text-neutral-900'>
-                        Recurring Appointment
-                      </span>
-                    </div>
-                    <p className='text-xs text-neutral-600 mt-1'>
-                      Schedule multiple appointments automatically (useful for follow-ups)
-                    </p>
-                  </div>
-                </label>
+        <Card>
+          <form onSubmit={handleSubmit} className='space-y-6' noValidate>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+              <div className='md:col-span-2'>
+                <PatientSelector
+                  patients={patients}
+                  selectedPatientId={formData.patientId}
+                  onSelect={(patientId) => {
+                    // Find the selected patient to get their email
+                    const selectedPatient = patients.find(
+                      (p) => p._id === patientId || p.id === patientId
+                    );
+                    setFormData((prev) => ({
+                      ...prev,
+                      patientId,
+                      // Auto-populate email if Video Consultation is enabled
+                      patientEmail:
+                        formData.isTelemedicine && selectedPatient?.email
+                          ? selectedPatient.email
+                          : prev.patientEmail,
+                    }));
+                  }}
+                  onAddNew={() => router.push('/patients')}
+                  label={t('appointments.patient')}
+                  required
+                  placeholder='Search by name, ID, or phone number...'
+                />
               </div>
 
-              {formData.isRecurring && (
-                <div className='mt-4 pt-4 border-t border-primary-200 space-y-4'>
-                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                    <div>
-                      <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                        Repeat Frequency
-                      </label>
-                      <Select
-                        value={formData.recurringFrequency}
-                        onChange={(e) =>
-                          setFormData({ ...formData, recurringFrequency: e.target.value })
-                        }
-                        options={[
-                          { value: 'daily', label: 'Daily' },
-                          { value: 'weekly', label: 'Weekly' },
-                          { value: 'biweekly', label: 'Bi-weekly (Every 2 weeks)' },
-                          { value: 'monthly', label: 'Monthly' },
-                        ]}
-                      />
-                    </div>
-                    <div>
-                      <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                        End Date (Optional)
-                      </label>
-                      <DatePicker
-                        value={formData.recurringEndDate}
-                        onChange={(e) =>
-                          setFormData({ ...formData, recurringEndDate: e.target.value })
-                        }
-                        min={formData.appointmentDate || new Date().toISOString().split('T')[0]}
-                      />
-                      <p className='text-xs text-neutral-500 mt-1'>
-                        Leave empty to use number of occurrences
-                      </p>
-                    </div>
-                  </div>
-                  {!formData.recurringEndDate && (
-                    <div>
-                      <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                        Number of Appointments
-                      </label>
-                      <Input
-                        type='number'
-                        min='2'
-                        max='52'
-                        value={formData.recurringOccurrences}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            recurringOccurrences: parseInt(e.target.value) || 4,
-                          })
-                        }
-                        placeholder='4'
-                      />
-                      <p className='text-xs text-neutral-500 mt-1'>
-                        Total number of appointments to create (2-52)
-                      </p>
-                    </div>
-                  )}
-                  <div className='bg-primary-100 border border-primary-200 rounded-lg p-3'>
-                    <p className='text-xs text-primary-700'>
-                      <strong>Note:</strong> {formData.recurringOccurrences || 4} appointment
-                      {formData.recurringOccurrences !== 1 ? 's' : ''} will be created{' '}
-                      {formData.recurringFrequency === 'daily'
-                        ? 'daily'
-                        : formData.recurringFrequency === 'weekly'
-                        ? 'weekly'
-                        : formData.recurringFrequency === 'biweekly'
-                        ? 'every 2 weeks'
-                        : 'monthly'}{' '}
-                      starting from {formData.appointmentDate || 'selected date'}
-                      {formData.recurringEndDate
-                        ? ` until ${formData.recurringEndDate}`
-                        : ` (${formData.recurringOccurrences || 4} total)`}
-                      .
-                    </p>
-                  </div>
-                </div>
-              )}
-            </Card>
-          </div>
-
-          {/* Consultation Type - Video or In-Person */}
-          <div className='md:col-span-2'>
-            <label className='block text-sm font-medium text-neutral-700 mb-3'>
-              Consultation Method *
-            </label>
-
-            {/* If Telemedicine not available, show only In-Person (disabled) */}
-            {!hasTelemedicine ? (
               <div>
-                <div className='p-4 border-2 border-primary-500 bg-primary-100 rounded-lg opacity-75 cursor-not-allowed'>
-                  <div className='flex items-center space-x-3'>
-                    <div className='w-12 h-12 rounded-lg flex items-center justify-center bg-primary-600'>
-                      <svg
-                        className='w-6 h-6 text-white'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
-                        />
-                      </svg>
-                    </div>
-                    <div className='text-left flex-1'>
-                      <div className='font-semibold text-neutral-900'>In-Person Visit</div>
-                      <div className='text-sm text-neutral-600'>Patient visits clinic</div>
-                    </div>
-                    <div className='flex items-center gap-2 px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-full'>
-                      ✓ Selected
-                    </div>
-                  </div>
-                </div>
+                <Select
+                  label={t('appointments.doctor')}
+                  value={formData.doctorId}
+                  onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
+                  required
+                  placeholder={`${t('common.select')} ${t('appointments.doctor').toLowerCase()}`}
+                  options={[
+                    {
+                      value: '',
+                      label: `${t('common.select')} ${t('appointments.doctor').toLowerCase()}`,
+                      disabled: true,
+                    },
+                    ...doctors.map((doctor) => ({
+                      value: doctor.id, // Use 'id' field from API
+                      label: `Dr. ${doctor.firstName} ${doctor.lastName}`,
+                    })),
+                  ]}
+                />
+                {doctors.length === 0 && (
+                  <p className='text-sm text-neutral-500 mt-1'>
+                    No doctors available. Add doctors in Settings → Doctors & Staff.
+                  </p>
+                )}
+              </div>
 
-                {/* Upgrade Notice */}
-                <div className='mt-4 p-4 bg-gradient-to-r from-primary-100 to-primary-100 border border-primary-200 rounded-lg'>
-                  <div className='flex items-start gap-3'>
-                    <div className='flex-shrink-0'>
-                      <svg
-                        className='w-6 h-6 text-purple-600'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
-                        />
-                      </svg>
-                    </div>
-                    <div className='flex-1'>
-                      <h4 className='font-semibold text-neutral-900 mb-1'>
-                        Video Consultations Not Available
-                      </h4>
-                      <p className='text-sm text-neutral-700 mb-3'>
-                        Upgrade your subscription to enable secure video consultations with patients
-                        remotely.
-                      </p>
-                      <button
-                        type='button'
-                        onClick={() => router.push('/subscription')}
-                        className='inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg'
-                      >
+              <div>
+                <DatePicker
+                  label={t('appointments.selectDate') + ' *'}
+                  required
+                  value={formData.appointmentDate}
+                  onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor='startTime'
+                  className='block text-sm font-medium text-neutral-700 mb-2'
+                >
+                  {t('appointments.time')} *
+                </label>
+                <Input
+                  id='startTime'
+                  type='time'
+                  required
+                  value={formData.startTime}
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                />
+              </div>
+
+              <Select
+                label={`${t('appointments.duration')} (${t('appointments.minutes')})`}
+                value={formData.duration}
+                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                required
+                options={[
+                  { value: '15', label: `15 ${t('appointments.minutes')}` },
+                  { value: '30', label: `30 ${t('appointments.minutes')}` },
+                  { value: '45', label: `45 ${t('appointments.minutes')}` },
+                  { value: '60', label: `60 ${t('appointments.minutes')}` },
+                  { value: '90', label: `90 ${t('appointments.minutes')}` },
+                  { value: '120', label: `120 ${t('appointments.minutes')}` },
+                ]}
+              />
+
+              <Select
+                label={t('appointments.appointmentType')}
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                required
+                options={[
+                  { value: 'consultation', label: 'Consultation' },
+                  { value: 'follow_up', label: 'Follow-up' },
+                  { value: 'checkup', label: 'Checkup' },
+                  { value: 'emergency', label: 'Emergency' },
+                  { value: 'procedure', label: 'Procedure' },
+                  { value: 'lab_test', label: 'Lab Test' },
+                ]}
+              />
+            </div>
+
+            {/* Recurring Appointment Option */}
+            <div className='md:col-span-2'>
+              <Card className='border-2 border-primary-100 bg-primary-50/30'>
+                <div className='flex items-start gap-4'>
+                  <label className='flex items-center cursor-pointer flex-1'>
+                    <input
+                      type='checkbox'
+                      checked={formData.isRecurring}
+                      onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                      className='h-5 w-5 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                    />
+                    <div className='ml-3 flex-1'>
+                      <div className='flex items-center gap-2'>
                         <svg
-                          className='w-4 h-4'
+                          className='w-5 h-5 text-primary-600'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -665,215 +507,393 @@ function NewAppointmentPageContent() {
                             strokeLinecap='round'
                             strokeLinejoin='round'
                             strokeWidth={2}
-                            d='M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z'
+                            d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
                           />
                         </svg>
-                        Upgrade Plan
-                      </button>
+                        <span className='text-sm font-semibold text-neutral-900'>
+                          Recurring Appointment
+                        </span>
+                      </div>
+                      <p className='text-xs text-neutral-600 mt-1'>
+                        Schedule multiple appointments automatically (useful for follow-ups)
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {formData.isRecurring && (
+                  <div className='mt-4 pt-4 border-t border-primary-200 space-y-4'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                      <div>
+                        <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                          Repeat Frequency
+                        </label>
+                        <Select
+                          value={formData.recurringFrequency}
+                          onChange={(e) =>
+                            setFormData({ ...formData, recurringFrequency: e.target.value })
+                          }
+                          options={[
+                            { value: 'daily', label: 'Daily' },
+                            { value: 'weekly', label: 'Weekly' },
+                            { value: 'biweekly', label: 'Bi-weekly (Every 2 weeks)' },
+                            { value: 'monthly', label: 'Monthly' },
+                          ]}
+                        />
+                      </div>
+                      <div>
+                        <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                          End Date (Optional)
+                        </label>
+                        <DatePicker
+                          value={formData.recurringEndDate}
+                          onChange={(e) =>
+                            setFormData({ ...formData, recurringEndDate: e.target.value })
+                          }
+                          min={formData.appointmentDate || new Date().toISOString().split('T')[0]}
+                        />
+                        <p className='text-xs text-neutral-500 mt-1'>
+                          Leave empty to use number of occurrences
+                        </p>
+                      </div>
+                    </div>
+                    {!formData.recurringEndDate && (
+                      <div>
+                        <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                          Number of Appointments
+                        </label>
+                        <Input
+                          type='number'
+                          min='2'
+                          max='52'
+                          value={formData.recurringOccurrences}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              recurringOccurrences: parseInt(e.target.value) || 4,
+                            })
+                          }
+                          placeholder='4'
+                        />
+                        <p className='text-xs text-neutral-500 mt-1'>
+                          Total number of appointments to create (2-52)
+                        </p>
+                      </div>
+                    )}
+                    <div className='bg-primary-100 border border-primary-200 rounded-lg p-3'>
+                      <p className='text-xs text-primary-700'>
+                        <strong>Note:</strong> {formData.recurringOccurrences || 4} appointment
+                        {formData.recurringOccurrences !== 1 ? 's' : ''} will be created{' '}
+                        {formData.recurringFrequency === 'daily'
+                          ? 'daily'
+                          : formData.recurringFrequency === 'weekly'
+                          ? 'weekly'
+                          : formData.recurringFrequency === 'biweekly'
+                          ? 'every 2 weeks'
+                          : 'monthly'}{' '}
+                        starting from {formData.appointmentDate || 'selected date'}
+                        {formData.recurringEndDate
+                          ? ` until ${formData.recurringEndDate}`
+                          : ` (${formData.recurringOccurrences || 4} total)`}
+                        .
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </div>
+
+            {/* Consultation Type - Video or In-Person */}
+            <div className='md:col-span-2'>
+              <label className='block text-sm font-medium text-neutral-700 mb-3'>
+                Consultation Method *
+              </label>
+
+              {/* If Telemedicine not available, show only In-Person (disabled) */}
+              {!hasTelemedicine ? (
+                <div>
+                  <div className='p-4 border-2 border-primary-500 bg-primary-100 rounded-lg opacity-75 cursor-not-allowed'>
+                    <div className='flex items-center space-x-3'>
+                      <div className='w-12 h-12 rounded-lg flex items-center justify-center bg-primary-600'>
+                        <svg
+                          className='w-6 h-6 text-white'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
+                          />
+                        </svg>
+                      </div>
+                      <div className='text-left flex-1'>
+                        <div className='font-semibold text-neutral-900'>In-Person Visit</div>
+                        <div className='text-sm text-neutral-600'>Patient visits clinic</div>
+                      </div>
+                      <div className='flex items-center gap-2 px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-full'>
+                        ✓ Selected
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Upgrade Notice */}
+                  <div className='mt-4 p-4 bg-gradient-to-r from-primary-100 to-primary-100 border border-primary-200 rounded-lg'>
+                    <div className='flex items-start gap-3'>
+                      <div className='flex-shrink-0'>
+                        <svg
+                          className='w-6 h-6 text-purple-600'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+                          />
+                        </svg>
+                      </div>
+                      <div className='flex-1'>
+                        <h4 className='font-semibold text-neutral-900 mb-1'>
+                          Video Consultations Not Available
+                        </h4>
+                        <p className='text-sm text-neutral-700 mb-3'>
+                          Upgrade your subscription to enable secure video consultations with
+                          patients remotely.
+                        </p>
+                        <button
+                          type='button'
+                          onClick={() => router.push('/subscription')}
+                          className='inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg'
+                        >
+                          <svg
+                            className='w-4 h-4'
+                            fill='none'
+                            stroke='currentColor'
+                            viewBox='0 0 24 24'
+                          >
+                            <path
+                              strokeLinecap='round'
+                              strokeLinejoin='round'
+                              strokeWidth={2}
+                              d='M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z'
+                            />
+                          </svg>
+                          Upgrade Plan
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              /* Show both options if Telemedicine is available */
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                <button
-                  type='button'
-                  onClick={() =>
-                    setFormData({ ...formData, isTelemedicine: false, telemedicineConsent: false })
-                  }
-                  className={`p-4 border-2 rounded-lg ${
-                    !formData.isTelemedicine
-                      ? 'border-primary-500 bg-primary-100'
-                      : 'border-neutral-300 hover:border-neutral-400'
-                  }`}
-                >
-                  <div className='flex items-center space-x-3'>
-                    <div
-                      className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                        !formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200'
-                      }`}
-                    >
-                      <svg
-                        className={`w-6 h-6 ${
-                          !formData.isTelemedicine ? 'text-white' : 'text-neutral-600'
+              ) : (
+                /* Show both options if Telemedicine is available */
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <button
+                    type='button'
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        isTelemedicine: false,
+                        telemedicineConsent: false,
+                      })
+                    }
+                    className={`p-4 border-2 rounded-lg ${
+                      !formData.isTelemedicine
+                        ? 'border-primary-500 bg-primary-100'
+                        : 'border-neutral-300 hover:border-neutral-400'
+                    }`}
+                  >
+                    <div className='flex items-center space-x-3'>
+                      <div
+                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                          !formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200'
                         }`}
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
                       >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
-                        />
-                      </svg>
+                        <svg
+                          className={`w-6 h-6 ${
+                            !formData.isTelemedicine ? 'text-white' : 'text-neutral-600'
+                          }`}
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
+                          />
+                        </svg>
+                      </div>
+                      <div className='text-left'>
+                        <div className='font-semibold text-neutral-900'>In-Person Visit</div>
+                        <div className='text-sm text-neutral-600'>Patient visits clinic</div>
+                      </div>
                     </div>
-                    <div className='text-left'>
-                      <div className='font-semibold text-neutral-900'>In-Person Visit</div>
-                      <div className='text-sm text-neutral-600'>Patient visits clinic</div>
-                    </div>
-                  </div>
-                </button>
+                  </button>
 
-                <button
-                  type='button'
-                  onClick={() => {
-                    // When Video Consultation is selected, auto-populate email from patient
-                    const selectedPatient = patients.find(
-                      (p) => p._id === formData.patientId || p.id === formData.patientId
-                    );
-                    setFormData((prev) => ({
-                      ...prev,
-                      isTelemedicine: true,
-                      // Auto-populate email from patient collection
-                      patientEmail: selectedPatient?.email || prev.patientEmail,
-                    }));
-                  }}
-                  className={`p-4 border-2 rounded-lg ${
-                    formData.isTelemedicine
-                      ? 'border-primary-500 bg-primary-100'
-                      : 'border-neutral-300 hover:border-neutral-400'
-                  }`}
-                >
-                  <div className='flex items-center space-x-3'>
-                    <div
-                      className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                        formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200'
-                      }`}
-                    >
-                      <svg
-                        className={`w-6 h-6 ${
-                          formData.isTelemedicine ? 'text-white' : 'text-neutral-600'
+                  <button
+                    type='button'
+                    onClick={() => {
+                      // When Video Consultation is selected, auto-populate email from patient
+                      const selectedPatient = patients.find(
+                        (p) => p._id === formData.patientId || p.id === formData.patientId
+                      );
+                      setFormData((prev) => ({
+                        ...prev,
+                        isTelemedicine: true,
+                        // Auto-populate email from patient collection
+                        patientEmail: selectedPatient?.email || prev.patientEmail,
+                      }));
+                    }}
+                    className={`p-4 border-2 rounded-lg ${
+                      formData.isTelemedicine
+                        ? 'border-primary-500 bg-primary-100'
+                        : 'border-neutral-300 hover:border-neutral-400'
+                    }`}
+                  >
+                    <div className='flex items-center space-x-3'>
+                      <div
+                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                          formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200'
                         }`}
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
+                      >
+                        <svg
+                          className={`w-6 h-6 ${
+                            formData.isTelemedicine ? 'text-white' : 'text-neutral-600'
+                          }`}
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+                          />
+                        </svg>
+                      </div>
+                      <div className='text-left'>
+                        <div className='font-semibold text-neutral-900'>Video Consultation</div>
+                        <div className='text-sm text-neutral-600'>Remote via video call</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Telemedicine Email & Consent - HIPAA/GDPR Compliance */}
+            {formData.isTelemedicine && (
+              <div className='md:col-span-2 space-y-4'>
+                {/* Email Address for Video Link */}
+                <div>
+                  <Input
+                    label='Patient Email Address *'
+                    type='email'
+                    value={formData.patientEmail}
+                    onChange={(e) => setFormData({ ...formData, patientEmail: e.target.value })}
+                    required
+                    placeholder='patient@example.com'
+                  />
+                  <p className='text-sm text-neutral-600 mt-1'>
+                    📧 An email with the secure video consultation link will be sent to this address
+                  </p>
+                </div>
+
+                {/* Compliance Notice */}
+                <div className='bg-primary-100 border-l-4 border-primary-400 p-4 rounded'>
+                  <div className='flex items-start'>
+                    <div className='flex-shrink-0'>
+                      <svg
+                        className='h-5 w-5 text-primary-400'
+                        viewBox='0 0 20 20'
+                        fill='currentColor'
                       >
                         <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+                          fillRule='evenodd'
+                          d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z'
+                          clipRule='evenodd'
                         />
                       </svg>
                     </div>
-                    <div className='text-left'>
-                      <div className='font-semibold text-neutral-900'>Video Consultation</div>
-                      <div className='text-sm text-neutral-600'>Remote via video call</div>
+                    <div className='ml-3 flex-1'>
+                      <h4 className='text-sm font-semibold text-primary-900 mb-2'>
+                        Video Consultation - Privacy & Compliance
+                      </h4>
+                      <ul className='text-sm text-primary-700 space-y-1 mb-3'>
+                        <li>• Video calls are encrypted end-to-end</li>
+                        <li>• Sessions are HIPAA and GDPR compliant</li>
+                        <li>• Data is stored securely on our servers</li>
+                        <li>• Patient consent is required and recorded</li>
+                        <li>• All sessions are logged for compliance</li>
+                        <li>• Automated email will be sent with session details</li>
+                      </ul>
+
+                      <label className='flex items-center'>
+                        <input
+                          type='checkbox'
+                          checked={formData.telemedicineConsent}
+                          onChange={(e) =>
+                            setFormData({ ...formData, telemedicineConsent: e.target.checked })
+                          }
+                          className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                          required={formData.isTelemedicine}
+                        />
+                        <span className='ml-2 text-sm font-medium text-primary-900'>
+                          Patient consents to video consultation and understands their rights under
+                          HIPAA/GDPR *
+                        </span>
+                      </label>
                     </div>
                   </div>
-                </button>
+                </div>
               </div>
             )}
-          </div>
 
-          {/* Telemedicine Email & Consent - HIPAA/GDPR Compliance */}
-          {formData.isTelemedicine && (
-            <div className='md:col-span-2 space-y-4'>
-              {/* Email Address for Video Link */}
-              <div>
-                <Input
-                  label='Patient Email Address *'
-                  type='email'
-                  value={formData.patientEmail}
-                  onChange={(e) => setFormData({ ...formData, patientEmail: e.target.value })}
-                  required
-                  placeholder='patient@example.com'
-                />
-                <p className='text-sm text-neutral-600 mt-1'>
-                  📧 An email with the secure video consultation link will be sent to this address
-                </p>
-              </div>
-
-              {/* Compliance Notice */}
-              <div className='bg-primary-100 border-l-4 border-primary-400 p-4 rounded'>
-                <div className='flex items-start'>
-                  <div className='flex-shrink-0'>
-                    <svg
-                      className='h-5 w-5 text-primary-400'
-                      viewBox='0 0 20 20'
-                      fill='currentColor'
-                    >
-                      <path
-                        fillRule='evenodd'
-                        d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z'
-                        clipRule='evenodd'
-                      />
-                    </svg>
-                  </div>
-                  <div className='ml-3 flex-1'>
-                    <h4 className='text-sm font-semibold text-primary-900 mb-2'>
-                      Video Consultation - Privacy & Compliance
-                    </h4>
-                    <ul className='text-sm text-primary-700 space-y-1 mb-3'>
-                      <li>• Video calls are encrypted end-to-end</li>
-                      <li>• Sessions are HIPAA and GDPR compliant</li>
-                      <li>• Data is stored securely on our servers</li>
-                      <li>• Patient consent is required and recorded</li>
-                      <li>• All sessions are logged for compliance</li>
-                      <li>• Automated email will be sent with session details</li>
-                    </ul>
-
-                    <label className='flex items-center'>
-                      <input
-                        type='checkbox'
-                        checked={formData.telemedicineConsent}
-                        onChange={(e) =>
-                          setFormData({ ...formData, telemedicineConsent: e.target.checked })
-                        }
-                        className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
-                        required={formData.isTelemedicine}
-                      />
-                      <span className='ml-2 text-sm font-medium text-primary-900'>
-                        Patient consents to video consultation and understands their rights under
-                        HIPAA/GDPR *
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </div>
+            <div>
+              <label htmlFor='reason' className='block text-sm font-medium text-neutral-700 mb-2'>
+                {t('appointments.reason')}
+              </label>
+              <Input
+                id='reason'
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                placeholder='Brief reason for the appointment'
+              />
             </div>
-          )}
 
-          <div>
-            <label htmlFor='reason' className='block text-sm font-medium text-neutral-700 mb-2'>
-              {t('appointments.reason')}
-            </label>
-            <Input
-              id='reason'
-              value={formData.reason}
-              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-              placeholder='Brief reason for the appointment'
-            />
-          </div>
+            <div>
+              <Textarea
+                label={t('appointments.notes')}
+                rows={4}
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder='Additional notes about the appointment'
+              />
+            </div>
 
-          <div>
-            <Textarea
-              label={t('appointments.notes')}
-              rows={4}
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder='Additional notes about the appointment'
-            />
-          </div>
-
-          <div className='flex gap-4'>
-            <Button type='submit' isLoading={submitting} disabled={submitting}>
-              {t('appointments.bookAppointment')}
-            </Button>
-            <Button
-              type='button'
-              variant='secondary'
-              onClick={() => router.back()}
-              disabled={submitting}
-            >
-              {t('common.cancel')}
-            </Button>
-          </div>
-        </form>
-      </Card>
+            <div className='flex gap-4'>
+              <Button type='submit' isLoading={submitting} disabled={submitting}>
+                {t('appointments.bookAppointment')}
+              </Button>
+              <Button
+                type='button'
+                variant='secondary'
+                onClick={() => router.back()}
+                disabled={submitting}
+              >
+                {t('common.cancel')}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
     </Layout>
   );
 }

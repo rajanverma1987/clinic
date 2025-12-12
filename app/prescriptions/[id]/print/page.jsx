@@ -257,7 +257,7 @@ export default function PrescriptionPrintPage() {
 
   if (error) {
     return (
-      <div className='flex items-center justify-center h-screen'>
+      <div className='flex items-center justify-center h-screen' style={{ paddingTop: '10px' }}>
         <div className='text-center'>
           <div className='text-status-error mb-4'>{error}</div>
           <button

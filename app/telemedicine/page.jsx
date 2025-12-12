@@ -107,174 +107,178 @@ export default function TelemedicinePage() {
 
   return (
     <Layout>
-      <DashboardHeader
-        title='Telemedicine'
-        subtitle='Virtual consultations and video calls'
-        actionButton={
-          <Button onClick={() => router.push('/appointments/new')} variant='primary' size='md'>
-            + Book Appointment
-          </Button>
-        }
-      />
+      <div style={{ padding: '0 10px' }}>
+        <DashboardHeader
+          title='Telemedicine'
+          subtitle='Virtual consultations and video calls'
+          actionButton={
+            <Button onClick={() => router.push('/appointments/new')} variant='primary' size='md'>
+              + Book Appointment
+            </Button>
+          }
+        />
 
-      {/* Quick Stats */}
-      <div className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-8'>
-        <Card>
-          <div className='p-6'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <p className='text-sm text-neutral-600'>Today's Sessions</p>
-                <p className='text-2xl font-bold text-neutral-900 mt-1'>
-                  {
-                    sessions.filter(
-                      (s) =>
-                        new Date(s.scheduledStartTime).toDateString() === new Date().toDateString()
-                    ).length
-                  }
-                </p>
-              </div>
-              <div className='w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center'>
-                <svg
-                  className='w-6 h-6 text-primary-600'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
-                  />
-                </svg>
+        {/* Quick Stats */}
+        <div className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-8'>
+          <Card>
+            <div className='p-6'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm text-neutral-600'>Today&apos;s Sessions</p>
+                  <p className='text-2xl font-bold text-neutral-900 mt-1'>
+                    {
+                      sessions.filter(
+                        (s) =>
+                          new Date(s.scheduledStartTime).toDateString() ===
+                          new Date().toDateString()
+                      ).length
+                    }
+                  </p>
+                </div>
+                <div className='w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center'>
+                  <svg
+                    className='w-6 h-6 text-primary-600'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card>
-          <div className='p-6'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <p className='text-sm text-neutral-600'>In Progress</p>
-                <p className='text-2xl font-bold text-secondary-600 mt-1'>
-                  {sessions.filter((s) => s.status === 'IN_PROGRESS').length}
-                </p>
-              </div>
-              <div className='w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center'>
-                <div className='w-3 h-3 bg-secondary-500 rounded-full'></div>
+          <Card>
+            <div className='p-6'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm text-neutral-600'>In Progress</p>
+                  <p className='text-2xl font-bold text-secondary-600 mt-1'>
+                    {sessions.filter((s) => s.status === 'IN_PROGRESS').length}
+                  </p>
+                </div>
+                <div className='w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center'>
+                  <div className='w-3 h-3 bg-secondary-500 rounded-full'></div>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card>
-          <div className='p-6'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <p className='text-sm text-neutral-600'>Scheduled</p>
-                <p className='text-2xl font-bold text-neutral-900 mt-1'>
-                  {sessions.filter((s) => s.status === 'SCHEDULED').length}
-                </p>
-              </div>
-              <div className='w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center'>
-                <svg
-                  className='w-6 h-6 text-primary-600'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-                  />
-                </svg>
+          <Card>
+            <div className='p-6'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm text-neutral-600'>Scheduled</p>
+                  <p className='text-2xl font-bold text-neutral-900 mt-1'>
+                    {sessions.filter((s) => s.status === 'SCHEDULED').length}
+                  </p>
+                </div>
+                <div className='w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center'>
+                  <svg
+                    className='w-6 h-6 text-primary-600'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card>
-          <div className='p-6'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <p className='text-sm text-neutral-600'>Completed</p>
-                <p className='text-2xl font-bold text-neutral-900 mt-1'>
-                  {sessions.filter((s) => s.status === 'COMPLETED').length}
-                </p>
-              </div>
-              <div className='w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center'>
-                <svg
-                  className='w-6 h-6 text-neutral-600'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-                  />
-                </svg>
+          <Card>
+            <div className='p-6'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm text-neutral-600'>Completed</p>
+                  <p className='text-2xl font-bold text-neutral-900 mt-1'>
+                    {sessions.filter((s) => s.status === 'COMPLETED').length}
+                  </p>
+                </div>
+                <div className='w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center'>
+                  <svg
+                    className='w-6 h-6 text-neutral-600'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Sessions List */}
-      <Card>
-        <div className='p-4 border-b border-neutral-200'>
-          <h2 className='text-lg font-semibold'>All Sessions</h2>
+          </Card>
         </div>
 
-        <Table
-          data={sessions}
-          columns={columns}
-          emptyMessage='No telemedicine sessions found. Schedule your first video consultation!'
-        />
-      </Card>
-
-      {/* Setup Notice if no sessions */}
-      {sessions.length === 0 && !loading && (
-        <Card className='mt-6'>
-          <div className='p-8 text-center'>
-            <div className='w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-              <svg
-                className='w-8 h-8 text-primary-600'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-                />
-              </svg>
-            </div>
-            <h3 className='text-lg font-semibold text-neutral-900 mb-2'>
-              Get Started with Telemedicine
-            </h3>
-            <p className='text-neutral-600 mb-6 max-w-md mx-auto'>
-              Schedule video consultations from the appointments page. Select "Video Consultation"
-              when booking to enable remote care with secure, HIPAA-compliant video calls.
-            </p>
-            <div className='flex gap-4 justify-center'>
-              <Button onClick={() => router.push('/appointments/new')}>
-                Book Video Consultation
-              </Button>
-              <Button variant='secondary' size='md' onClick={() => router.push('/appointments')}>
-                View Appointments
-              </Button>
-            </div>
+        {/* Sessions List */}
+        <Card>
+          <div className='p-4 border-b border-neutral-200'>
+            <h2 className='text-lg font-semibold'>All Sessions</h2>
           </div>
+
+          <Table
+            data={sessions}
+            columns={columns}
+            emptyMessage='No telemedicine sessions found. Schedule your first video consultation!'
+          />
         </Card>
-      )}
+
+        {/* Setup Notice if no sessions */}
+        {sessions.length === 0 && !loading && (
+          <Card className='mt-6'>
+            <div className='p-8 text-center'>
+              <div className='w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+                <svg
+                  className='w-8 h-8 text-primary-600'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                  />
+                </svg>
+              </div>
+              <h3 className='text-lg font-semibold text-neutral-900 mb-2'>
+                Get Started with Telemedicine
+              </h3>
+              <p className='text-neutral-600 mb-6 max-w-md mx-auto'>
+                Schedule video consultations from the appointments page. Select &quot;Video
+                Consultation&quot; when booking to enable remote care with secure, HIPAA-compliant
+                video calls.
+              </p>
+              <div className='flex gap-4 justify-center'>
+                <Button onClick={() => router.push('/appointments/new')}>
+                  Book Video Consultation
+                </Button>
+                <Button variant='secondary' size='md' onClick={() => router.push('/appointments')}>
+                  View Appointments
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
     </Layout>
   );
 }
