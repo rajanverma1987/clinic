@@ -154,7 +154,7 @@ export function NotificationDropdown({
     switch (type) {
       case 'appointment':
         return (
-          <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
             <path
               strokeLinecap='round'
               strokeLinejoin='round'
@@ -165,7 +165,7 @@ export function NotificationDropdown({
         );
       case 'prescription':
         return (
-          <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
             <path
               strokeLinecap='round'
               strokeLinejoin='round'
@@ -176,7 +176,7 @@ export function NotificationDropdown({
         );
       case 'reminder':
         return (
-          <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
             <path
               strokeLinecap='round'
               strokeLinejoin='round'
@@ -188,7 +188,7 @@ export function NotificationDropdown({
       case 'system':
       default:
         return (
-          <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
             <path
               strokeLinecap='round'
               strokeLinejoin='round'

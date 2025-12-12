@@ -1587,10 +1587,12 @@ function VideoConsultationRoomContent() {
               title='Share video link with patient'
             >
               <svg
-                className='w-4 h-4 sm:w-5 sm:h-5'
+                width='20px'
+                height='20px'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
+                style={{ minWidth: '16px', minHeight: '16px' }}
               >
                 <path
                   strokeLinecap='round'

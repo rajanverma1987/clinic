@@ -1,44 +1,40 @@
 'use client';
 
-import { useI18n } from '@/contexts/I18nContext';
-
 /**
- * Premium Medical Loader Component for Healthcare Platform
+ * Global Premium Medical Loader Component for Healthcare Platform
  * Use this loader across the entire platform - no custom loaders allowed
  */
 export function Loader({
   size = 'md',
-  text,
+  text, // Deprecated: kept for backward compatibility, not rendered
   fullScreen = false,
   className = '',
   variant = 'primary',
   inline = false,
 }) {
-  const { t } = useI18n();
-
   const sizeClasses = {
     xs: {
-      spinner: '20px',
+      spinner: 20,
       pulse: '32px',
       border: '2px',
     },
     sm: {
-      spinner: '24px',
+      spinner: 24,
       pulse: '40px',
       border: '2px',
     },
     md: {
-      spinner: '32px',
+      spinner: 32,
       pulse: '52px',
       border: '3px',
     },
     lg: {
-      spinner: '40px',
+      spinner: 40,
       pulse: '64px',
       border: '3px',
     },
     xl: {
-      spinner: '48px',
+      spinner: 48,
       pulse: '76px',
       border: '4px',
     },
@@ -65,22 +61,9 @@ export function Loader({
   const currentSize = sizeClasses[size] || sizeClasses.md;
   const colors = variantColors[variant] || variantColors.primary;
 
-  // Safe text retrieval with fallback
-  let displayText = text;
-  if (!displayText && t) {
-    try {
-      displayText = t('common.loading');
-    } catch (error) {
-      displayText = 'Loading...';
-    }
-  }
-  if (!displayText) {
-    displayText = 'Loading...';
-  }
-
   const spinner = (
     <div
-      className='relative flex-shrink-0'
+      className='relative flex-shrink-0 flex items-center justify-center'
       style={{
         width: currentSize.pulse,
         height: currentSize.pulse,
@@ -95,51 +78,48 @@ export function Loader({
         }}
       />
 
-      {/* Clinic Logo in center - Simple Medical Cross */}
+      {/* Medical Symbol: Blue Cross with White Staff and Green Snake (matches favicon/sidebar) */}
       <div
         className='absolute inset-0 flex items-center justify-center'
         style={{
           animation: 'fade-pulse 2s ease-in-out infinite',
         }}
       >
-        <div
+        <svg
+          width={currentSize.spinner}
+          height={currentSize.spinner}
+          viewBox='0 0 24 24'
+          fill='none'
+          xmlns='http://www.w3.org/2000/svg'
           style={{
-            position: 'relative',
-            width: currentSize.spinner,
-            height: currentSize.spinner,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            animation: 'logo-pulse 2s ease-in-out infinite',
           }}
         >
-          <svg
-            width={currentSize.spinner}
-            height={currentSize.spinner}
-            viewBox='0 0 24 24'
+          {/* Blue Cross Background (rounded ends) */}
+          <rect x='10' y='4' width='4' height='16' rx='2' fill='#2D9CDB' />
+          <rect x='4' y='10' width='16' height='4' rx='2' fill='#2D9CDB' />
+          
+          {/* White Staff (vertical line in center of cross) */}
+          <rect x='11' y='6' width='2' height='12' rx='1' fill='#FFFFFF' />
+          
+          {/* Green Snake (coiled around staff in S-pattern) */}
+          <path
+            d='M 12 7 Q 10 8 10 10 Q 10 12 12 13 Q 14 14 14 16 Q 14 18 12 19'
+            stroke='#27AE60'
+            strokeWidth='1.8'
             fill='none'
-            xmlns='http://www.w3.org/2000/svg'
-            style={{
-              animation: 'logo-pulse 2s ease-in-out infinite',
-            }}
-          >
-            <rect
-              x='10'
-              y='4'
-              width='4'
-              height='16'
-              rx='2'
-              fill={colors.main}
-            />
-            <rect
-              x='4'
-              y='10'
-              width='16'
-              height='4'
-              rx='2'
-              fill={colors.main}
-            />
-          </svg>
-        </div>
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          />
+          <path
+            d='M 12 7 Q 14 8 14 10 Q 14 12 12 13 Q 10 14 10 16 Q 10 18 12 19'
+            stroke='#27AE60'
+            strokeWidth='1.8'
+            fill='none'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          />
+        </svg>
       </div>
 
       {/* Blue spinning ring outside */}
@@ -152,6 +132,7 @@ export function Loader({
           bottom: '-4px',
           width: `calc(${currentSize.pulse} + 8px)`,
           height: `calc(${currentSize.pulse} + 8px)`,
+          zIndex: 1,
         }}
       >
         <div
@@ -159,7 +140,7 @@ export function Loader({
           style={{
             borderWidth: currentSize.border,
             borderStyle: 'solid',
-            borderTopColor: '#2D9CDB',
+            borderTopColor: colors.main,
             borderRightColor: 'transparent',
             borderBottomColor: 'transparent',
             borderLeftColor: 'transparent',
@@ -185,49 +166,7 @@ export function Loader({
           backdropFilter: 'blur(12px)',
         }}
       >
-        <div className='flex flex-col items-center' style={{ gap: '24px' }}>
-          {spinner}
-          {displayText && (
-            <div className='flex flex-col items-center' style={{ gap: '8px' }}>
-              <p
-                className='font-semibold text-center'
-                style={{
-                  color: '#1A1A1A',
-                  fontSize: '16px',
-                  lineHeight: '24px',
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                {displayText}
-              </p>
-              <div className='flex items-center' style={{ gap: '6px' }}>
-                <div
-                  className='w-2 h-2 rounded-full'
-                  style={{
-                    backgroundColor: colors.main,
-                    animation: 'dot-bounce 1.4s infinite ease-in-out both',
-                    animationDelay: '-0.32s',
-                  }}
-                />
-                <div
-                  className='w-2 h-2 rounded-full'
-                  style={{
-                    backgroundColor: colors.main,
-                    animation: 'dot-bounce 1.4s infinite ease-in-out both',
-                    animationDelay: '-0.16s',
-                  }}
-                />
-                <div
-                  className='w-2 h-2 rounded-full'
-                  style={{
-                    backgroundColor: colors.main,
-                    animation: 'dot-bounce 1.4s infinite ease-in-out both',
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        {spinner}
 
         <style jsx>{`
           @keyframes medical-spin {
@@ -272,19 +211,6 @@ export function Loader({
               opacity: 1;
             }
           }
-
-          @keyframes dot-bounce {
-            0%,
-            80%,
-            100% {
-              transform: scale(0);
-              opacity: 0.5;
-            }
-            40% {
-              transform: scale(1);
-              opacity: 1;
-            }
-          }
         `}</style>
       </div>
     );
@@ -292,21 +218,9 @@ export function Loader({
 
   return (
     <div
-      className={`flex flex-col items-center justify-center ${className}`}
-      style={{ gap: '16px' }}
+      className={`flex items-center justify-center ${className}`}
     >
       {spinner}
-      {displayText && (
-        <p
-          className='text-neutral-700 font-medium text-center'
-          style={{
-            fontSize: '14px',
-            lineHeight: '20px',
-          }}
-        >
-          {displayText}
-        </p>
-      )}
 
       <style jsx>{`
         @keyframes medical-spin {

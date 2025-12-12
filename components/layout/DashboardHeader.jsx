@@ -129,7 +129,9 @@ export function DashboardHeader({
                   title='View today appointments'
                 >
                   <svg
-                    className='w-4 h-4 text-primary-500 group-hover:text-primary-600 transition-colors'
+                    width='20px'
+                    height='20px'
+                    className='text-primary-500 group-hover:text-primary-600 transition-colors'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'

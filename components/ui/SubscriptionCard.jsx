@@ -98,7 +98,7 @@ export function SubscriptionCard({
           {billingCycle === 'YEARLY' && isPaid && originalPrice && originalPrice !== price && (
             <div className='flex items-center gap-2 mt-2'>
               <span className='inline-flex items-center bg-secondary-100 text-secondary-700 px-3 py-1 rounded-full text-sm font-bold'>
-                <svg className='w-4 h-4 mr-1' fill='currentColor' viewBox='0 0 20 20'>
+                <svg width='16px' height='16px' className='mr-1' fill='currentColor' viewBox='0 0 20 20'>
                   <path
                     fillRule='evenodd'
                     d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
@@ -119,7 +119,9 @@ export function SubscriptionCard({
                 <li key={index} className='flex items-start group'>
                   <div className='flex-shrink-0 w-5 h-5 rounded-full bg-secondary-100 flex items-center justify-center mr-3 mt-0.5 group-hover:bg-secondary-200 transition-colors'>
                     <svg
-                      className='w-3 h-3 text-secondary-600'
+                      width='12px'
+                      height='12px'
+                      className='text-secondary-600'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -140,7 +142,7 @@ export function SubscriptionCard({
             {maxUsers && (
               <li className='flex items-start group'>
                 <div className='flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center mr-3 mt-0.5 group-hover:bg-primary-200 transition-colors'>
-                  <svg className='w-3 h-3 text-primary-600' fill='currentColor' viewBox='0 0 20 20'>
+                  <svg width='12px' height='12px' className='text-primary-600' fill='currentColor' viewBox='0 0 20 20'>
                     <path d='M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z' />
                   </svg>
                 </div>
@@ -153,7 +155,7 @@ export function SubscriptionCard({
             {maxPatients && (
               <li className='flex items-start group'>
                 <div className='flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center mr-3 mt-0.5 group-hover:bg-primary-200 transition-colors'>
-                  <svg className='w-3 h-3 text-primary-700' fill='currentColor' viewBox='0 0 20 20'>
+                  <svg width='12px' height='12px' className='text-primary-700' fill='currentColor' viewBox='0 0 20 20'>
                     <path
                       fillRule='evenodd'
                       d='M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z'
@@ -173,7 +175,9 @@ export function SubscriptionCard({
               <li className='flex items-start group'>
                 <div className='flex-shrink-0 w-5 h-5 rounded-full bg-status-warning/20 flex items-center justify-center mr-3 mt-0.5 group-hover:bg-status-warning/30 transition-colors'>
                   <svg
-                    className='w-3 h-3 text-status-warning'
+                    width='12px'
+                    height='12px'
+                    className='text-status-warning'
                     fill='currentColor'
                     viewBox='0 0 20 20'
                   >

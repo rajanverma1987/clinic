@@ -103,8 +103,8 @@ export default function ContactPage() {
                   paddingBottom: '10px',
                   marginBottom: '32px',
                   gap: '10px',
-                  fontSize: '13px',
-                  lineHeight: '18px',
+                  fontSize: '14px',
+                  lineHeight: '20px',
                   letterSpacing: '0.01em',
                   fontWeight: '500',
                 }}
@@ -126,8 +126,8 @@ export default function ContactPage() {
               <h1
                 className='text-neutral-900'
                 style={{
-                  fontSize: '56px',
-                  lineHeight: '64px',
+                  fontSize: '32px',
+                  lineHeight: '40px',
                   letterSpacing: '-0.02em',
                   fontWeight: '700',
                   marginBottom: '24px',
@@ -138,8 +138,8 @@ export default function ContactPage() {
               <p
                 className='text-neutral-700 max-w-3xl mx-auto'
                 style={{
-                  fontSize: '20px',
-                  lineHeight: '32px',
+                  fontSize: '18px',
+                  lineHeight: '28px',
                   letterSpacing: '-0.01em',
                   fontWeight: '400',
                 }}
@@ -174,7 +174,7 @@ export default function ContactPage() {
                       fontSize: '24px',
                       lineHeight: '32px',
                       letterSpacing: '-0.01em',
-                      fontWeight: '700',
+                      fontWeight: '600',
                       marginBottom: '24px',
                     }}
                   >

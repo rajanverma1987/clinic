@@ -3,20 +3,6 @@
 import React from 'react';
 
 /**
- * Table Component - Clinic Theme
- * Follows theme specifications for tables
- */
-export function Table({ children, className = '', ...props }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className={`w-full border-collapse ${className}`} {...props}>
-        {children}
-      </table>
-    </div>
-  );
-}
-
-/**
  * Table Header Component
  * Header row: bg-primary-100, text-primary-700, weight: 600, height: 48px
  */
@@ -106,6 +92,76 @@ export function TableCell({ children, className = '', ...props }) {
     >
       {children}
     </td>
+  );
+}
+
+/**
+ * Table Component - Clinic Theme
+ * Follows theme specifications for tables
+ * 
+ * Supports two usage patterns:
+ * 1. Children-based: <Table><thead>...</thead></Table>
+ * 2. Data-driven: <Table data={[]} columns={[]} />
+ */
+export function Table({ 
+  children, 
+  className = '', 
+  data, 
+  columns, 
+  emptyMessage = 'No data available',
+  onRowClick,
+  ...props 
+}) {
+  // Data-driven table rendering
+  if (data !== undefined && columns !== undefined) {
+    return (
+      <div className="overflow-x-auto">
+        <table className={`w-full border-collapse ${className}`} {...props}>
+          <TableHeader>
+            <TableHeaderRow>
+              {columns.map((column, index) => (
+                <TableHeaderCell key={index}>
+                  {column.header}
+                </TableHeaderCell>
+              ))}
+            </TableHeaderRow>
+          </TableHeader>
+          <TableBody>
+            {data.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="text-center py-8 text-neutral-500">
+                  {emptyMessage}
+                </TableCell>
+              </TableRow>
+            ) : (
+              data.map((row, rowIndex) => (
+                <TableRow
+                  key={row._id || row.id || rowIndex}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
+                  {columns.map((column, colIndex) => (
+                    <TableCell key={colIndex}>
+                      {typeof column.accessor === 'function'
+                        ? column.accessor(row)
+                        : row[column.accessor] || ''}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </table>
+      </div>
+    );
+  }
+
+  // Children-based table rendering (backward compatibility)
+  return (
+    <div className="overflow-x-auto">
+      <table className={`w-full border-collapse ${className}`} {...props}>
+        {children}
+      </table>
+    </div>
   );
 }
 

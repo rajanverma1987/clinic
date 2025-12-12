@@ -1,4 +1,4 @@
-/* Custom Neumorphic Checkbox Styles */
+/* Custom Neumorphic Checkbox Styles - Using Theme Colors */
 
 .checkbox-container {
   position: relative;
@@ -8,12 +8,12 @@
   width: var(--size);
   display: block;
   height: var(--size);
-  background-color: #6b7280;
+  background-color: var(--color-neutral-500);
   border-radius: 100%;
   padding: 4px;
   color: white;
-  box-shadow: 1.5px 1.5px 3px #0e0e0e, -1.5px -1.5px 3px rgba(95, 94, 94, 0.25),
-    inset 0px 0px 0px #0e0e0e, inset 0px -0px 0px #5f5e5e;
+  box-shadow: 1.5px 1.5px 3px var(--color-neutral-900), -1.5px -1.5px 3px rgba(95, 94, 94, 0.25),
+    inset 0px 0px 0px var(--color-neutral-900), inset 0px -0px 0px var(--color-neutral-300);
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -31,8 +31,8 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  box-shadow: 1.5px 1.5px 3px #0e0e0e, -1.5px -1.5px 3px rgba(95, 94, 94, 0.25),
-    inset 0px 0px 0px #0e0e0e, inset 0px -0px 0px #5f5e5e;
+  box-shadow: 1.5px 1.5px 3px var(--color-neutral-900), -1.5px -1.5px 3px rgba(95, 94, 94, 0.25),
+    inset 0px 0px 0px var(--color-neutral-900), inset 0px -0px 0px var(--color-neutral-300);
   transition: all ease 0.3s;
   padding: 7px;
   display: flex;
@@ -56,16 +56,16 @@
   transform: scale(1);
 }
 
-/* Checked state - Blue background */
+/* Checked state - Primary theme color background */
 .checkbox-container:has(input:checked) {
-  background-color: #3b82f6;
-  box-shadow: 1.5px 1.5px 3px rgba(30, 58, 138, 0.3), -1.5px -1.5px 3px rgba(96, 165, 250, 0.25),
-    inset 0px 0px 0px rgba(30, 58, 138, 0.2), inset 0px -0px 0px rgba(96, 165, 250, 0.2);
+  background-color: var(--color-primary-500);
+  box-shadow: 1.5px 1.5px 3px rgba(11, 103, 160, 0.3), -1.5px -1.5px 3px rgba(86, 204, 242, 0.25),
+    inset 0px 0px 0px rgba(11, 103, 160, 0.2), inset 0px -0px 0px rgba(86, 204, 242, 0.2);
 }
 
 .checkbox-container:has(input:checked) .checkmark {
-  box-shadow: 0px 0px 0px #0e0e0e, 0px 0px 0px rgba(95, 94, 94, 0.25), inset 1.5px 1.5px 3px #0e0e0e,
-    inset -1.5px -1.5px 3px #5f5e5e;
+  box-shadow: 0px 0px 0px var(--color-neutral-900), 0px 0px 0px rgba(95, 94, 94, 0.25),
+    inset 1.5px 1.5px 3px var(--color-neutral-900), inset -1.5px -1.5px 3px var(--color-neutral-300);
 }
 
 .checkbox-container:has(input:checked) .checkmark svg {
@@ -74,30 +74,30 @@
 
 /* Size variants */
 .checkbox-container.size-sm {
-  --size: 28px;
-  padding: 3px;
-}
-
-.checkbox-container.size-sm .checkmark {
-  padding: 5px;
-}
-
-.checkbox-container.size-md {
-  --size: 44px;
+  --size: 40px;
   padding: 4px;
 }
 
-.checkbox-container.size-md .checkmark {
-  padding: 7px;
+.checkbox-container.size-sm .checkmark {
+  padding: 6px;
 }
 
-.checkbox-container.size-lg {
-  --size: 56px;
+.checkbox-container.size-md {
+  --size: 48px;
   padding: 5px;
 }
 
+.checkbox-container.size-md .checkmark {
+  padding: 8px;
+}
+
+.checkbox-container.size-lg {
+  --size: 60px;
+  padding: 6px;
+}
+
 .checkbox-container.size-lg .checkmark {
-  padding: 9px;
+  padding: 10px;
 }
 
 /* Disabled state */

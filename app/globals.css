@@ -562,12 +562,21 @@
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   }
 
-  .hover-glow {
-    transition: box-shadow 0.3s ease;
+  /* Prevent SVG changes in primary buttons */
+  button.bg-primary-500 [class*="svg"],
+  button.bg-primary-500 svg {
+    transition: none !important;
+    transform: none !important;
   }
-
-  .hover-glow:hover {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  
+  button.bg-primary-500:hover [class*="svg"],
+  button.bg-primary-500:hover svg,
+  button.bg-primary-500.group-hover [class*="svg"],
+  button.bg-primary-500.group-hover svg {
+    transform: none !important;
+    color: currentColor !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
   }
 
   /* Gradient text */
@@ -706,6 +715,7 @@
     font-weight: 400;
     font-family: var(--font-family);
   }
+
 
   /* Button Label */
   .text-button {

@@ -7,8 +7,9 @@
   background: linear-gradient(135deg, rgba(45, 156, 219, 0.08) 0%, rgba(39, 174, 96, 0.08) 50%, rgba(245, 158, 11, 0.05) 100%), rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  z-index: var(--z-modal-backdrop, 10040);
+  z-index: var(--z-modal-backdrop, 10050);
   animation: Modal-fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
 }
 
 @keyframes Modal-fadeIn {

@@ -115,18 +115,104 @@ export function AuthProvider({ children }) {
   const checkAuth = async () => {
     // Fast exit if no token - don't block rendering
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    if (!token) {
+    const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+    
+    // If no access token but we have refresh token, try to refresh first
+    if (!token && refreshToken) {
+      console.log('No access token, attempting refresh...');
+      const refreshed = await apiClient.refreshToken();
+      if (refreshed) {
+        console.log('Token refreshed successfully on page load');
+        // Token refreshed, continue with auth check
+        const newToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (newToken) {
+          apiClient.setToken(newToken);
+        } else {
+          // Refresh succeeded but no token stored, clear everything
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+          }
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+      } else {
+        // Refresh failed, try to restore from stored user info as fallback
+        const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            // Set user temporarily while we try to validate
+            setUser(userData);
+            // Try one more time to get user info
+            const response = await apiClient.get('/auth/me', undefined, true);
+            if (response.success && response.data) {
+              // Success, update user info
+              const userData = response.data;
+              const userId = userData.id || userData.userId || '';
+              const userInfo = {
+                userId: userId,
+                id: userId,
+                email: userData.email || '',
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                role: userData.role || '',
+                tenantId: userData.tenantId || '',
+                isActive: userData.isActive !== undefined ? userData.isActive : true,
+              };
+              setUser(userInfo);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+                lastActivityRef.current = Date.now();
+              }
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.error('Error restoring user:', e);
+          }
+        }
+        // All attempts failed, clear everything
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
+        }
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+    } else if (!token && !refreshToken) {
+      // No tokens at all, clear user
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('userInfo');
+      }
       setUser(null);
       setLoading(false);
       return;
+    }
+    
+    // Ensure token is set in apiClient
+    if (token) {
+      apiClient.setToken(token);
     }
 
     // Set a shorter timeout for API calls to prevent long blocking
     const timeoutId = setTimeout(() => {
       setLoading(false);
-      console.warn('Auth check timeout - proceeding without user');
-      // Don't clear user if token exists, just stop loading
-    }, 3000); // 3 second timeout for faster UX
+      console.warn('Auth check timeout - proceeding with stored user if available');
+      // If we have stored user info and tokens, keep user logged in
+      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
+      if (storedUser && (token || refreshToken)) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          console.log('Using stored user info due to timeout');
+        } catch (e) {
+          console.error('Error parsing stored user:', e);
+        }
+      }
+    }, 5000); // 5 second timeout - increased for better reliability
 
     try {
       // Try to get user info - skip redirect during auth check
@@ -153,7 +239,7 @@ export function AuthProvider({ children }) {
         // Map the response to match User interface
         const userData = response.data;
         const userId = userData.id || userData.userId || '';
-        setUser({
+        const userInfo = {
           userId: userId,
           id: userId, // Add id for compatibility
           email: userData.email || '',
@@ -162,35 +248,118 @@ export function AuthProvider({ children }) {
           role: userData.role || '',
           tenantId: userData.tenantId || '',
           isActive: userData.isActive !== undefined ? userData.isActive : true,
-        });
-        // Initialize activity tracking after successful auth check
+        };
+        setUser(userInfo);
+        // Store user info for persistence
         if (typeof window !== 'undefined') {
+          localStorage.setItem('userInfo', JSON.stringify(userInfo));
           lastActivityRef.current = Date.now();
         }
       } else {
         console.log('Auth check failed:', response.error);
-        setUser(null);
-        // Only clear tokens if refresh also failed or wasn't attempted
-        const refreshToken =
+        // Try one more refresh attempt before giving up
+        const currentRefreshToken =
           typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
-        if (!refreshToken) {
+        if (currentRefreshToken) {
+          console.log('Attempting final token refresh after auth failure...');
+          const refreshed = await apiClient.refreshToken();
+          if (refreshed) {
+            // Retry auth check after refresh
+            const retryResponse = await apiClient.get('/auth/me', undefined, true);
+            if (retryResponse.success && retryResponse.data) {
+              const userData = retryResponse.data;
+              const userId = userData.id || userData.userId || '';
+              const userInfo = {
+                userId: userId,
+                id: userId,
+                email: userData.email || '',
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                role: userData.role || '',
+                tenantId: userData.tenantId || '',
+                isActive: userData.isActive !== undefined ? userData.isActive : true,
+              };
+              setUser(userInfo);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+                lastActivityRef.current = Date.now();
+              }
+              clearTimeout(timeoutId);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+        // All attempts failed - but keep user if we have stored info and refresh token
+        const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
+        if (storedUser && currentRefreshToken) {
+          // Keep user logged in with stored info if refresh token exists
+          try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            console.log('Keeping user logged in with stored info');
+          } catch (e) {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+        // Only clear tokens if no refresh token available
+        if (!currentRefreshToken) {
           // No refresh token available, clear everything
           if (typeof window !== 'undefined') {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
           }
         }
       }
     } catch (error) {
       console.error('Auth check error:', error);
-      setUser(null);
-      // Only clear tokens if we're sure auth is impossible
+      // Try refresh token as last resort
       const refreshToken =
         typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+      if (refreshToken) {
+        try {
+          const refreshed = await apiClient.refreshToken();
+          if (refreshed) {
+            // Retry auth check after refresh
+            const retryResponse = await apiClient.get('/auth/me', undefined, true);
+            if (retryResponse.success && retryResponse.data) {
+              const userData = retryResponse.data;
+              const userId = userData.id || userData.userId || '';
+              const userInfo = {
+                userId: userId,
+                id: userId,
+                email: userData.email || '',
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                role: userData.role || '',
+                tenantId: userData.tenantId || '',
+                isActive: userData.isActive !== undefined ? userData.isActive : true,
+              };
+              setUser(userInfo);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+                lastActivityRef.current = Date.now();
+              }
+              clearTimeout(timeoutId);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (refreshError) {
+          console.error('Refresh token attempt failed:', refreshError);
+        }
+      }
+      // All attempts failed
+      setUser(null);
+      // Only clear tokens if we're sure auth is impossible
       if (!refreshToken) {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
         }
       }
     } finally {
@@ -205,9 +374,13 @@ export function AuthProvider({ children }) {
       const response = await apiClient.post('/auth/login', { email, password });
 
       if (response.success && response.data) {
+        // Store tokens immediately
         apiClient.setToken(response.data.accessToken);
         if (typeof window !== 'undefined') {
           localStorage.setItem('refreshToken', response.data.refreshToken);
+          localStorage.setItem('accessToken', response.data.accessToken); // Ensure it's stored
+          // Store user info for persistence
+          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
           lastActivityRef.current = Date.now(); // Initialize activity tracking
         }
         setUser(response.data.user);
@@ -228,12 +401,20 @@ export function AuthProvider({ children }) {
 
   const register = async (data) => {
     try {
-      const response = await apiClient.post('/auth/register', data);
+      // Ensure clinic_admin role for public registration (they create the clinic)
+      const registrationData = {
+        ...data,
+        role: 'clinic_admin', // Only clinic admins can register (they create the clinic)
+      };
+
+      const response = await apiClient.post('/auth/register', registrationData);
 
       if (response.success && response.data) {
         apiClient.setToken(response.data.accessToken);
         if (typeof window !== 'undefined') {
           localStorage.setItem('refreshToken', response.data.refreshToken);
+          localStorage.setItem('accessToken', response.data.accessToken);
+          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
           lastActivityRef.current = Date.now(); // Initialize activity tracking
         }
         setUser(response.data.user);

@@ -58,7 +58,11 @@
 }
 
 .Toast--error {
-  border-color: var(--color-status-error);
+  background: var(--color-primary-100);
+  border-left: 4px solid var(--color-primary-500);
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
 }
 
 .Toast-icon {
@@ -87,8 +91,8 @@
 }
 
 .Toast-icon--error {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--color-status-error);
+  background: transparent;
+  color: var(--color-primary-500);
 }
 
 .Toast-content {

@@ -46,7 +46,7 @@ export function Sidebar() {
 
   // Modern SVG icon components
   const IconDashboard = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -57,7 +57,7 @@ export function Sidebar() {
   );
 
   const IconPatients = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -68,7 +68,7 @@ export function Sidebar() {
   );
 
   const IconAppointments = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -79,7 +79,7 @@ export function Sidebar() {
   );
 
   const IconQueue = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -90,7 +90,7 @@ export function Sidebar() {
   );
 
   const IconPrescriptions = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -101,7 +101,7 @@ export function Sidebar() {
   );
 
   const IconInvoices = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -112,7 +112,7 @@ export function Sidebar() {
   );
 
   const IconInventory = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -123,7 +123,7 @@ export function Sidebar() {
   );
 
   const IconReports = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -134,7 +134,7 @@ export function Sidebar() {
   );
 
   const IconSettings = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -151,7 +151,7 @@ export function Sidebar() {
   );
 
   const IconAPI = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -162,7 +162,7 @@ export function Sidebar() {
   );
 
   const IconLocation = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -179,7 +179,7 @@ export function Sidebar() {
   );
 
   const IconBranding = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -190,7 +190,7 @@ export function Sidebar() {
   );
 
   const IconTelemedicine = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -201,7 +201,7 @@ export function Sidebar() {
   );
 
   const IconLogout = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -212,7 +212,7 @@ export function Sidebar() {
   );
 
   const IconAdmin = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -223,7 +223,7 @@ export function Sidebar() {
   );
 
   const IconClients = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -234,7 +234,7 @@ export function Sidebar() {
   );
 
   const IconSubscriptions = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -245,7 +245,7 @@ export function Sidebar() {
   );
 
   const IconSubscription = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -256,7 +256,7 @@ export function Sidebar() {
   );
 
   const IconPaymentHistory = () => (
-    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+    <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
       <path
         strokeLinecap='round'
         strokeLinejoin='round'
@@ -653,6 +653,42 @@ export function Sidebar() {
               </span>
               <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>{t('admin.subscriptions')}</span>
             </Link>
+            <Link
+              href='/admin/users'
+              onClick={handleLinkClick}
+              prefetch={false}
+              className={`flex items-center ${
+                isCollapsed ? 'justify-center px-2' : 'px-3'
+              } py-2.5 rounded-lg text-body-sm font-medium ${
+                pathname === '/admin/users'
+                  ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
+                  : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
+              }`}
+              title={isCollapsed ? 'All Users' : ''}
+            >
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}>
+                <IconPatients />
+              </span>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>All Users</span>
+            </Link>
+            <Link
+              href='/admin/create-admin'
+              onClick={handleLinkClick}
+              prefetch={false}
+              className={`flex items-center ${
+                isCollapsed ? 'justify-center px-2' : 'px-3'
+              } py-2.5 rounded-lg text-body-sm font-medium ${
+                pathname === '/admin/create-admin'
+                  ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
+                  : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
+              }`}
+              title={isCollapsed ? 'Create Admin' : ''}
+            >
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}>
+                <IconAdmin />
+              </span>
+              <span className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>Create Admin</span>
+            </Link>
           </>
         ) : (
           /* Regular menu items for non-admin users */
@@ -773,7 +809,9 @@ export function Sidebar() {
           >
             {isCollapsed ? (
               <svg
-                className='w-5 h-5 transition-transform duration-300 group-hover:scale-110'
+                width='20px'
+                height='20px'
+                className='transition-transform duration-300 group-hover:scale-110'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -787,7 +825,9 @@ export function Sidebar() {
               </svg>
             ) : (
               <svg
-                className='w-5 h-5 transition-transform duration-300 group-hover:scale-110'
+                width='20px'
+                height='20px'
+                className='transition-transform duration-300 group-hover:scale-110'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'

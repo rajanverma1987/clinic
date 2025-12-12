@@ -190,8 +190,8 @@ export default function PricingPage() {
                   paddingBottom: '10px',
                   marginBottom: '32px',
                   gap: '10px',
-                  fontSize: '13px',
-                  lineHeight: '18px',
+                  fontSize: '14px',
+                  lineHeight: '20px',
                   letterSpacing: '0.01em',
                   fontWeight: '500',
                 }}
@@ -214,8 +214,8 @@ export default function PricingPage() {
               <h1
                 className='text-neutral-900'
                 style={{
-                  fontSize: '56px',
-                  lineHeight: '64px',
+                  fontSize: '32px',
+                  lineHeight: '40px',
                   letterSpacing: '-0.02em',
                   fontWeight: '700',
                   marginBottom: '24px',
@@ -226,8 +226,8 @@ export default function PricingPage() {
               <p
                 className='text-neutral-700 max-w-3xl mx-auto'
                 style={{
-                  fontSize: '20px',
-                  lineHeight: '32px',
+                  fontSize: '18px',
+                  lineHeight: '28px',
                   letterSpacing: '-0.01em',
                   fontWeight: '400',
                   marginBottom: '48px',
@@ -241,50 +241,37 @@ export default function PricingPage() {
                 className='inline-flex items-center bg-white border-2 border-neutral-200 rounded-xl shadow-md hover:shadow-lg'
                 style={{ padding: '4px' }}
               >
-                <button
+                <Button
+                  type='button'
                   onClick={() => setBillingCycle('MONTHLY')}
-                  className={`rounded-lg font-semibold ${
-                    billingCycle === 'MONTHLY'
-                      ? 'bg-primary-500 text-white shadow-md scale-105'
-                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
-                  }`}
-                  style={{
-                    paddingLeft: '24px',
-                    paddingRight: '24px',
-                    paddingTop: '10px',
-                    paddingBottom: '10px',
-                  }}
+                  variant={billingCycle === 'MONTHLY' ? 'primary' : 'outline'}
+                  size='md'
+                  className={billingCycle === 'MONTHLY' ? '' : 'bg-white'}
                 >
                   {t('pricing.monthly')}
-                </button>
-                <button
+                </Button>
+                <Button
+                  type='button'
                   onClick={() => setBillingCycle('YEARLY')}
-                  className={`rounded-lg font-semibold relative ${
-                    billingCycle === 'YEARLY'
-                      ? 'bg-primary-500 text-white shadow-md scale-105'
-                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
-                  }`}
-                  style={{
-                    paddingLeft: '24px',
-                    paddingRight: '24px',
-                    paddingTop: '10px',
-                    paddingBottom: '10px',
-                  }}
+                  variant={billingCycle === 'YEARLY' ? 'primary' : 'outline'}
+                  size='md'
+                  className={`relative ${billingCycle === 'YEARLY' ? '' : 'bg-white'}`}
                 >
                   {t('pricing.yearly')}
                   <span
-                    className='absolute -top-2 -right-2 bg-secondary-500 text-white text-body-xs font-bold rounded-full shadow-sm'
+                    className='absolute -top-2 -right-2 bg-secondary-500 text-white font-bold rounded-full shadow-sm'
                     style={{
                       paddingLeft: '6px',
                       paddingRight: '6px',
                       paddingTop: '2px',
                       paddingBottom: '2px',
                       fontSize: '10px',
+                      lineHeight: '14px',
                     }}
                   >
                     {t('pricing.save20')}
                   </span>
-                </button>
+                </Button>
               </div>
             </div>
           </div>

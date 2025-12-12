@@ -4,6 +4,7 @@ import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
@@ -128,12 +129,11 @@ export default function InventoryPage() {
 
         <Card className='mb-6'>
           <div className='flex items-center gap-4'>
-            <label className='flex items-center'>
-              <input
-                type='checkbox'
+            <label className='flex items-center gap-3 cursor-pointer'>
+              <Checkbox
                 checked={showLowStock}
                 onChange={(e) => setShowLowStock(e.target.checked)}
-                className='mr-2'
+                size='sm'
               />
               <span className='text-sm text-neutral-700'>{t('inventory.lowStock')}</span>
             </label>

@@ -3,6 +3,7 @@
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
@@ -488,14 +489,13 @@ function NewAppointmentPageContent() {
             <div className='md:col-span-2'>
               <Card className='border-2 border-primary-100 bg-primary-50/30'>
                 <div className='flex items-start gap-4'>
-                  <label className='flex items-center cursor-pointer flex-1'>
-                    <input
-                      type='checkbox'
+                  <label className='flex items-center cursor-pointer flex-1 gap-3'>
+                    <Checkbox
                       checked={formData.isRecurring}
                       onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
-                      className='h-5 w-5 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                      size='md'
                     />
-                    <div className='ml-3 flex-1'>
+                    <div className='flex-1'>
                       <div className='flex items-center gap-2'>
                         <svg
                           className='w-5 h-5 text-primary-600'
@@ -835,17 +835,16 @@ function NewAppointmentPageContent() {
                         <li>• Automated email will be sent with session details</li>
                       </ul>
 
-                      <label className='flex items-center'>
-                        <input
-                          type='checkbox'
+                      <label className='flex items-center gap-3'>
+                        <Checkbox
                           checked={formData.telemedicineConsent}
                           onChange={(e) =>
                             setFormData({ ...formData, telemedicineConsent: e.target.checked })
                           }
-                          className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                          size='sm'
                           required={formData.isTelemedicine}
                         />
-                        <span className='ml-2 text-sm font-medium text-primary-900'>
+                        <span className='text-sm font-medium text-primary-900 cursor-pointer'>
                           Patient consents to video consultation and understands their rights under
                           HIPAA/GDPR *
                         </span>

@@ -1,8 +1,10 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Select } from '@/components/ui/Select';
@@ -338,29 +340,28 @@ export default function AdminSubscriptionsPage() {
   return (
     <Layout>
       <div style={{ padding: '0 10px' }}>
-        <div className='mb-8 flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold text-neutral-900'>Subscription Plans</h1>
-          <p className='text-neutral-600 mt-2'>Manage subscription plans for clients</p>
-        </div>
-        <div className='flex gap-3'>
-          <Button variant='secondary' onClick={() => fetchPlans()}>
-            Refresh
-          </Button>
-          <Button
-            onClick={() => {
-              if (showForm) {
-                handleCancel();
-              } else {
-                setShowForm(true);
-                setEditingPlanId(null);
-              }
-            }}
-          >
-            {showForm ? 'Cancel' : '+ Create Plan'}
-          </Button>
-        </div>
-      </div>
+        <PageHeader
+          title='Subscription Plans'
+          description='Manage subscription plans for clients'
+          actionButtons={[
+            <Button key='refresh' variant='secondary' onClick={() => fetchPlans()}>
+              Refresh
+            </Button>,
+            <Button
+              key='toggle'
+              onClick={() => {
+                if (showForm) {
+                  handleCancel();
+                } else {
+                  setShowForm(true);
+                  setEditingPlanId(null);
+                }
+              }}
+            >
+              {showForm ? 'Cancel' : '+ Create Plan'}
+            </Button>,
+          ]}
+        />
 
       {showForm && (
         <Card className='mb-6'>
@@ -494,10 +495,9 @@ export default function AdminSubscriptionsPage() {
                   {AVAILABLE_FEATURES.map((feature) => (
                     <label
                       key={feature}
-                      className='flex items-center space-x-2 p-2 rounded hover:bg-neutral-100 cursor-pointer'
+                      className='flex items-center gap-3 p-2 rounded hover:bg-neutral-100 cursor-pointer'
                     >
-                      <input
-                        type='checkbox'
+                      <Checkbox
                         checked={formData.features.includes(feature)}
                         onChange={(e) => {
                           if (e.target.checked) {
@@ -512,7 +512,7 @@ export default function AdminSubscriptionsPage() {
                             });
                           }
                         }}
-                        className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                        size='sm'
                       />
                       <span className='text-sm text-neutral-700'>{feature}</span>
                     </label>
@@ -532,27 +532,25 @@ export default function AdminSubscriptionsPage() {
             </div>
 
             <div className='flex flex-col gap-3'>
-              <div className='flex items-center'>
-                <input
-                  type='checkbox'
+              <div className='flex items-center gap-3'>
+                <Checkbox
                   id='isPopular'
                   checked={formData.isPopular}
                   onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
-                  className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                  size='sm'
                 />
-                <label htmlFor='isPopular' className='ml-2 block text-sm text-neutral-700'>
+                <label htmlFor='isPopular' className='block text-sm text-neutral-700 cursor-pointer'>
                   Mark as popular plan
                 </label>
               </div>
-              <div className='flex items-center'>
-                <input
-                  type='checkbox'
+              <div className='flex items-center gap-3'>
+                <Checkbox
                   id='isHidden'
                   checked={formData.isHidden}
                   onChange={(e) => setFormData({ ...formData, isHidden: e.target.checked })}
-                  className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                  size='sm'
                 />
-                <label htmlFor='isHidden' className='ml-2 block text-sm text-neutral-700'>
+                <label htmlFor='isHidden' className='block text-sm text-neutral-700 cursor-pointer'>
                   Hide from Pricing Page
                 </label>
               </div>

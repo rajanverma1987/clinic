@@ -78,6 +78,12 @@ export default function DashboardPage() {
       return () => clearTimeout(timer);
     }
 
+    // Redirect super admin to admin dashboard
+    if (user && user.role === 'super_admin') {
+      router.push('/admin');
+      return;
+    }
+
     // Fetch data when user is available
     if (user) {
       fetchStats();

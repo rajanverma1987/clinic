@@ -8,20 +8,41 @@ import { successResponse, errorResponse, handleMongoError, validationErrorRespon
 /**
  * GET /api/users
  * List users (doctors, staff) for the tenant
+ * Super admin can see all users across all tenants
  */
 async function getHandler(req, user) {
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const role = searchParams.get('role');
+    const tenantId = searchParams.get('tenantId'); // For super admin to filter by tenant
 
-    const query = { tenantId: user.tenantId };
+    // Build query based on user role
+    let query = {};
+    
+    if (user.role === 'super_admin') {
+      // Super admin can see all users
+      if (tenantId) {
+        query.tenantId = tenantId;
+      } else {
+        // Show all users including super admins (tenantId: null)
+        query.$or = [
+          { tenantId: { $exists: true, $ne: null } },
+          { role: UserRole.SUPER_ADMIN }
+        ];
+      }
+    } else {
+      // Regular users see only their tenant's users
+      query.tenantId = user.tenantId;
+    }
+
     if (role) {
       query.role = role;
     }
 
     const users = await User.find(query)
       .select('-password')
+      .populate('tenantId', 'name slug') // Populate tenant info for super admin
       .sort({ createdAt: -1 })
       .lean();
 
@@ -36,6 +57,8 @@ async function getHandler(req, user) {
           isActive: u.isActive,
           lastLoginAt: u.lastLoginAt,
           createdAt: u.createdAt,
+          tenantId: u.tenantId ? (typeof u.tenantId === 'object' ? u.tenantId._id.toString() : u.tenantId.toString()) : null,
+          tenantName: u.tenantId && typeof u.tenantId === 'object' ? u.tenantId.name : null,
         })),
       })
     );
@@ -53,21 +76,94 @@ async function getHandler(req, user) {
 
 /**
  * POST /api/users
- * Create a new user (doctor/staff)
+ * Create a new user (doctor/staff/admin)
+ * Super admin can create super_admin or clinic_admin
+ * Clinic admin can create doctor, manager, staff
  */
 async function postHandler(req, user) {
   try {
     await connectDB();
     const body = await req.json();
 
-    // Validate input - convert tenantId to string for validation
+    // Determine target role
+    const targetRole = body.role || UserRole.DOCTOR;
+    
+    // Role-based access control
+    if (user.role !== 'super_admin') {
+      // Clinic admins can only create: doctor, manager, nurse, receptionist, accountant, pharmacist
+      const allowedRoles = [
+        UserRole.DOCTOR,
+        UserRole.MANAGER,
+        UserRole.NURSE,
+        UserRole.RECEPTIONIST,
+        UserRole.ACCOUNTANT,
+        UserRole.PHARMACIST,
+      ];
+      if (!allowedRoles.includes(targetRole)) {
+        return NextResponse.json(
+          errorResponse(`You don't have permission to create ${targetRole} accounts`, 'FORBIDDEN'),
+          { status: 403 }
+        );
+      }
+    } else {
+      // Super admin can create: super_admin, clinic_admin
+      // For other roles, they need to be within a tenant context
+      if (targetRole === UserRole.SUPER_ADMIN || targetRole === UserRole.CLINIC_ADMIN) {
+        // Super admin creating another admin - allowed
+      } else if (!user.tenantId) {
+        // Super admin without tenant context can't create tenant-specific roles
+        return NextResponse.json(
+          errorResponse('Super admin must specify a tenant to create clinic users', 'INVALID_REQUEST'),
+          { status: 400 }
+        );
+      }
+    }
+
+    // Determine tenantId for new user
+    let targetTenantId = null;
+    
+    if (targetRole === UserRole.SUPER_ADMIN) {
+      // Super admin has no tenantId
+      targetTenantId = null;
+    } else if (targetRole === UserRole.CLINIC_ADMIN) {
+      // Clinic admin needs a tenant - if super admin is creating, they need to provide tenantId
+      if (user.role === 'super_admin') {
+        if (body.tenantId) {
+          // Assign to existing tenant
+          const Tenant = (await import('@/models/Tenant.js')).default;
+          const tenant = await Tenant.findById(body.tenantId);
+          if (!tenant) {
+            return NextResponse.json(
+              errorResponse('Tenant not found', 'NOT_FOUND'),
+              { status: 404 }
+            );
+          }
+          targetTenantId = body.tenantId;
+        } else {
+          // Creating clinic admin without tenant - would need clinic info
+          // For now, require tenantId
+          return NextResponse.json(
+            errorResponse('Tenant ID is required when creating clinic admin', 'INVALID_REQUEST'),
+            { status: 400 }
+          );
+        }
+      } else {
+        // Clinic admin creating another clinic admin - use same tenant
+        targetTenantId = user.tenantId;
+      }
+    } else {
+      // All other roles use the creator's tenantId
+      targetTenantId = user.tenantId;
+    }
+
+    // Validate input
     const validationResult = registerSchema.safeParse({
       email: body.email,
       password: body.password,
       firstName: body.firstName,
       lastName: body.lastName,
-      role: body.role || UserRole.DOCTOR,
-      tenantId: user.tenantId ? user.tenantId.toString() : undefined,
+      role: targetRole,
+      tenantId: targetTenantId ? targetTenantId.toString() : undefined,
     });
 
     if (!validationResult.success) {
@@ -78,10 +174,20 @@ async function postHandler(req, user) {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({
-      email: body.email.toLowerCase(),
-      tenantId: user.tenantId,
-    });
+    let existingUser;
+    if (targetRole === UserRole.SUPER_ADMIN) {
+      // Super admin - check globally (no tenantId)
+      existingUser = await User.findOne({
+        email: body.email.toLowerCase(),
+        role: UserRole.SUPER_ADMIN,
+      });
+    } else {
+      // Other roles - check within tenant
+      existingUser = await User.findOne({
+        email: body.email.toLowerCase(),
+        tenantId: targetTenantId,
+      });
+    }
 
     if (existingUser) {
       return NextResponse.json(
@@ -90,10 +196,10 @@ async function postHandler(req, user) {
       );
     }
 
-    // Check subscription user limit (skip for super_admin)
-    if (user.role !== 'super_admin') {
+    // Check subscription user limit (skip for super_admin and when creating super_admin)
+    if (user.role !== 'super_admin' && targetRole !== UserRole.SUPER_ADMIN && targetTenantId) {
       const { checkUserLimit } = await import('@/services/subscription-check.service');
-      const limitCheck = await checkUserLimit(user.tenantId.toString());
+      const limitCheck = await checkUserLimit(targetTenantId.toString());
       if (!limitCheck.hasAccess) {
         return NextResponse.json(
           errorResponse(limitCheck.reason || 'User limit reached', 'SUBSCRIPTION_LIMIT'),
@@ -108,8 +214,8 @@ async function postHandler(req, user) {
       password: body.password,
       firstName: body.firstName,
       lastName: body.lastName,
-      role: body.role || UserRole.DOCTOR,
-      tenantId: user.tenantId,
+      role: targetRole,
+      tenantId: targetTenantId,
     });
 
     return NextResponse.json(
@@ -120,6 +226,7 @@ async function postHandler(req, user) {
         lastName: newUser.lastName,
         role: newUser.role,
         isActive: newUser.isActive,
+        tenantId: newUser.tenantId ? newUser.tenantId.toString() : null,
       }),
       { status: 201 }
     );
@@ -140,4 +247,3 @@ async function postHandler(req, user) {
 
 export const GET = withAuth(getHandler);
 export const POST = withAuth(postHandler);
-

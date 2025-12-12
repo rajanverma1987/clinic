@@ -1,8 +1,10 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
@@ -89,13 +91,13 @@ export default function LocationsPage() {
   return (
     <Layout>
       <div style={{ padding: '0 10px' }}>
-        <div className='mb-8 flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold text-neutral-900'>Multi-Location Management</h1>
-          <p className='text-neutral-600 mt-2'>Manage multiple clinic locations</p>
-        </div>
-        <Button onClick={() => setShowModal(true)}>+ Add Location</Button>
-      </div>
+        <PageHeader
+          title='Multi-Location Management'
+          description='Manage multiple clinic locations'
+          actionButton={
+            <Button onClick={() => setShowModal(true)}>+ Add Location</Button>
+          }
+        />
 
       <Card>
         <Table data={locations} columns={columns} emptyMessage='No locations found' />
@@ -142,15 +144,14 @@ export default function LocationsPage() {
                   placeholder='location@clinic.com'
                 />
 
-                <div className='flex items-center'>
-                  <input
-                    type='checkbox'
+                <div className='flex items-center gap-3'>
+                  <Checkbox
                     id='isMain'
                     checked={formData.isMain}
                     onChange={(e) => setFormData({ ...formData, isMain: e.target.checked })}
-                    className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                    size='sm'
                   />
-                  <label htmlFor='isMain' className='ml-2 block text-sm text-neutral-700'>
+                  <label htmlFor='isMain' className='block text-sm text-neutral-700 cursor-pointer'>
                     Set as main location
                   </label>
                 </div>

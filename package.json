@@ -14,6 +14,8 @@
     "admin:list": "node -r dotenv/config scripts/manage-admin.js list dotenv_config_path=.env.local",
     "admin:create": "node -r dotenv/config scripts/manage-admin.js create dotenv_config_path=.env.local",
     "admin:reset": "node -r dotenv/config scripts/manage-admin.js reset dotenv_config_path=.env.local",
+    "admin:verify": "node -r dotenv/config scripts/manage-admin.js verify dotenv_config_path=.env.local",
+    "admin:health": "node -r dotenv/config scripts/manage-admin.js health dotenv_config_path=.env.local",
     "admin:quick": "node -r dotenv/config scripts/create-default-admin.js dotenv_config_path=.env.local",
     "seed:plans": "node -r dotenv/config scripts/seed-subscription-plans.js dotenv_config_path=.env.local",
     "seed:patients": "node -r dotenv/config scripts/seed-patients.js dotenv_config_path=.env.local",

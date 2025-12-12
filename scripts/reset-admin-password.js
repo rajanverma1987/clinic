@@ -38,13 +38,38 @@ async function resetPassword() {
 
     console.log(`Found user: ${user.firstName} ${user.lastName} (${user.role})`);
     console.log(`Email: ${user.email}`);
-    console.log(`Active: ${user.isActive}\n`);
+    console.log(`Active: ${user.isActive}`);
+    console.log(`Tenant ID: ${user.tenantId || 'N/A (Super Admin)'}\n`);
+
+    // Get old password hash for comparison
+    const oldPasswordHash = user.password ? user.password.substring(0, 20) + '...' : 'NOT SET';
+    console.log(`Old password hash: ${oldPasswordHash}`);
 
     // Update password
+    console.log('\nUpdating password...');
     user.password = newPassword;
     await user.save();
 
-    console.log('✅ Password updated successfully!\n');
+    // Verify the password was hashed correctly
+    const updatedUser = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const newPasswordHash = updatedUser.password ? updatedUser.password.substring(0, 20) + '...' : 'NOT SET';
+    const hashPrefix = updatedUser.password ? updatedUser.password.substring(0, 4) : 'N/A';
+    
+    console.log(`New password hash: ${newPasswordHash}`);
+    console.log(`Hash format: ${hashPrefix} (should be $2a$, $2b$, or $2y$)`);
+    
+    // Test the password
+    const testResult = await updatedUser.comparePassword(newPassword);
+    console.log(`Password test result: ${testResult ? '✅ VALID' : '❌ INVALID'}\n`);
+
+    if (!testResult) {
+      console.error('❌ WARNING: Password was set but validation test failed!');
+      console.error('This indicates a problem with password hashing.\n');
+      await mongoose.connection.close();
+      process.exit(1);
+    }
+
+    console.log('✅ Password updated and verified successfully!\n');
     console.log(`You can now login with:`);
     console.log(`  Email: ${user.email}`);
     console.log(`  Password: ${newPassword}\n`);

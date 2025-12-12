@@ -182,7 +182,9 @@ export default function LoginPage() {
               {error && (
                 <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm animate-fade-in slide-in-right'>
                   <svg
-                    className='w-5 h-5 text-status-error mt-0.5 flex-shrink-0'
+                    width='20px'
+                    height='20px'
+                    className='text-status-error mt-0.5 flex-shrink-0'
                     fill='currentColor'
                     viewBox='0 0 20 20'
                   >
@@ -206,7 +208,9 @@ export default function LoginPage() {
                 <div className='relative'>
                   <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
                     <svg
-                      className='h-5 w-5 text-primary-500'
+                      width='20px'
+                      height='20px'
+                      className='text-neutral-900'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -242,7 +246,9 @@ export default function LoginPage() {
                 <div className='relative'>
                   <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
                     <svg
-                      className='h-5 w-5 text-primary-500'
+                      width='20px'
+                      height='20px'
+                      className='text-neutral-900'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -272,7 +278,9 @@ export default function LoginPage() {
                   >
                     {showPassword ? (
                       <svg
-                        className='h-5 w-5'
+                        width='20px'
+                        height='20px'
+                        className=''
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -286,7 +294,9 @@ export default function LoginPage() {
                       </svg>
                     ) : (
                       <svg
-                        className='h-5 w-5'
+                        width='20px'
+                        height='20px'
+                        className=''
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -329,7 +339,9 @@ export default function LoginPage() {
                   className='text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center group transition-colors'
                 >
                   <svg
-                    className='w-4 h-4 mr-1 group-hover:translate-x-1 transition-transform'
+                    width='16px'
+                    height='16px'
+                    className='mr-1 group-hover:translate-x-1 transition-transform'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -350,25 +362,25 @@ export default function LoginPage() {
                 variant='primary'
                 isLoading={isLoading}
                 disabled={isLoading}
-                className='w-full hover-glow group'
+                className='w-full'
                 size='lg'
               >
-                <span className='flex items-center justify-center'>
-                  <svg
-                    className='w-5 h-5 mr-2 group-hover:translate-x-1 transition-transform'
-                    fill='none'
-                    stroke='currentColor'
-                    viewBox='0 0 24 24'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M13 7l5 5m0 0l-5 5m5-5H6'
-                    />
-                  </svg>
-                  {t('auth.signIn')}
-                </span>
+                <svg
+                  width='20px'
+                  height='20px'
+                  className='mr-2'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M13 7l5 5m0 0l-5 5m5-5H6'
+                  />
+                </svg>
+                {t('auth.signIn')}
               </Button>
             </form>
 
@@ -384,7 +396,7 @@ export default function LoginPage() {
                   type='button'
                   className='w-full inline-flex justify-center items-center px-4 py-2.5 border-2 border-neutral-200 rounded-lg shadow-sm bg-white text-sm font-semibold text-neutral-800 hover:bg-primary-50 hover:border-primary-300 hover:shadow-md hover:text-primary-700 transition-all duration-300 group'
                 >
-                  <svg className='w-5 h-5 group-hover:scale-110' viewBox='0 0 24 24'>
+                  <svg width='20px' height='20px' className='group-hover:scale-110' viewBox='0 0 24 24'>
                     <path
                       fill='#4285F4'
                       d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z'
@@ -409,7 +421,9 @@ export default function LoginPage() {
                   className='w-full inline-flex justify-center items-center px-4 py-2.5 border-2 border-neutral-200 rounded-lg shadow-sm bg-white text-sm font-semibold text-neutral-800 hover:bg-secondary-50 hover:border-secondary-300 hover:shadow-md hover:text-secondary-700 group'
                 >
                   <svg
-                    className='w-5 h-5 group-hover:scale-110 transition-transform'
+                    width='20px'
+                    height='20px'
+                    className='group-hover:scale-110 transition-transform'
                     fill='currentColor'
                     viewBox='0 0 24 24'
                   >
@@ -428,6 +442,16 @@ export default function LoginPage() {
                   className='text-primary-600 hover:text-primary-700 font-bold transition-colors'
                 >
                   {t('auth.createAccount')}
+                </Link>
+              </p>
+              <p className='text-neutral-500 mt-2' style={{ fontSize: '10px', lineHeight: '14px' }}>
+                By signing in, you agree to our{' '}
+                <Link
+                  href='/legal'
+                  className='text-primary-600 hover:text-primary-700 font-medium underline'
+                  style={{ fontSize: '10px' }}
+                >
+                  Legal Information & Disclaimers
                 </Link>
               </p>
             </div>

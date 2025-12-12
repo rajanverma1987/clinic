@@ -17,8 +17,18 @@ import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
 export async function registerUser(input) {
   await connectDB();
 
-  // Set default role if not provided (for public registration)
+  // Public registration only allows clinic_admin accounts (they create the clinic)
+  // Doctors and staff are created by clinic admins after registration
   const role = input.role || UserRole.CLINIC_ADMIN;
+  
+  // Enforce clinic_admin-only for public registration
+  if (input.role && input.role !== UserRole.CLINIC_ADMIN && input.role !== UserRole.SUPER_ADMIN) {
+    // Only allow clinic_admin or super_admin (super_admin should use admin creation)
+    if (input.role !== UserRole.SUPER_ADMIN) {
+      console.warn(`Invalid role ${input.role} for public registration, defaulting to clinic_admin`);
+      const role = UserRole.CLINIC_ADMIN;
+    }
+  }
 
   let tenantId = input.tenantId;
 
@@ -33,8 +43,31 @@ export async function registerUser(input) {
       throw new Error('User with this email already exists');
     }
 
-    // Generate a unique slug from email
-    const baseSlug = input.email.toLowerCase().split('@')[0].replace(/[^a-z0-9]/g, '-');
+    // Validate all required clinic information
+    if (!input.clinicName || !input.clinicName.trim()) {
+      throw new Error('Clinic name is required');
+    }
+    if (!input.address || !input.address.trim()) {
+      throw new Error('Clinic address is required');
+    }
+    if (!input.city || !input.city.trim()) {
+      throw new Error('City is required');
+    }
+    if (!input.state || !input.state.trim()) {
+      throw new Error('State/Province is required');
+    }
+    if (!input.zipCode || !input.zipCode.trim()) {
+      throw new Error('ZIP/Postal code is required');
+    }
+    if (!input.phone || !input.phone.trim()) {
+      throw new Error('Clinic phone number is required');
+    }
+
+    // Generate a unique slug from clinic name
+    const baseSlug = input.clinicName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
     let slug = baseSlug;
     let counter = 1;
 
@@ -44,16 +77,24 @@ export async function registerUser(input) {
       counter++;
     }
 
-    // Create a new tenant for the clinic
+    // Format locale properly if provided
+    let formattedLocale = input.locale || 'en-US';
+    if (formattedLocale && !formattedLocale.includes('-')) {
+      // If locale is just language code (e.g., 'en'), format it properly
+      const { formatLocale } = await import('@/lib/i18n/index.js');
+      formattedLocale = formatLocale(formattedLocale);
+    }
+
+    // Create a new tenant for the clinic with all provided information
     const tenant = await Tenant.create({
-      name: `${input.firstName} ${input.lastName}'s Clinic`,
+      name: input.clinicName.trim(),
       slug: slug,
-      region: 'US', // Default region, can be updated later
+      region: input.region || 'US',
       isActive: true,
       settings: {
-        locale: 'en-US',
-        timezone: 'America/New_York',
-        currency: 'USD',
+        locale: formattedLocale,
+        timezone: input.timezone || 'America/New_York',
+        currency: input.currency || 'USD',
       },
     });
     tenantId = tenant._id;
@@ -173,13 +214,19 @@ export async function registerUser(input) {
 export async function loginUser(input) {
   await connectDB();
 
-  console.log('Login attempt for email:', input.email.toLowerCase());
+  // Normalize email and password (trim whitespace)
+  const normalizedEmail = input.email?.toLowerCase().trim();
+  const normalizedPassword = input.password?.trim();
+
+  console.log('Login attempt for email:', normalizedEmail);
   console.log('TenantId provided:', input.tenantId);
+  console.log('Password received length:', normalizedPassword?.length || 0);
+  console.log('Password received (first 3 chars):', normalizedPassword ? normalizedPassword.substring(0, 3) + '***' : 'N/A');
 
   // Find user by email first (without tenantId filter)
   // This allows us to find super_admin users regardless of tenantId
   let user = await User.findOne({
-    email: input.email.toLowerCase(),
+    email: normalizedEmail,
   }).select('+password');
 
   console.log('User found:', user ? {
@@ -206,9 +253,31 @@ export async function loginUser(input) {
     throw new Error('Account is deactivated');
   }
 
-  // Verify password
-  const isPasswordValid = await user.comparePassword(input.password);
+  // Verify password (use normalized password)
+  console.log('Verifying password...');
+  console.log('Password provided length:', normalizedPassword?.length || 0);
+  console.log('User password hash exists:', !!user.password);
+  console.log('User password hash length:', user.password?.length || 0);
+  console.log('User password hash prefix:', user.password ? user.password.substring(0, 7) : 'N/A');
+  console.log('User role:', user.role);
+  console.log('User is super_admin:', user.role === UserRole.SUPER_ADMIN);
+  
+  const isPasswordValid = await user.comparePassword(normalizedPassword);
+  console.log('Password validation result:', isPasswordValid);
+  
   if (!isPasswordValid) {
+    console.error('Password validation failed for user:', user.email);
+    console.error('User role:', user.role);
+    // Check if password hash is valid
+    if (!user.password || user.password.length < 10) {
+      console.error('WARNING: User password hash appears invalid or missing!');
+      console.error('Hash length:', user.password?.length || 0);
+    } else if (!user.password.startsWith('$2a$') && !user.password.startsWith('$2b$') && !user.password.startsWith('$2y$')) {
+      console.error('WARNING: Password hash format is invalid!');
+      console.error('Hash starts with:', user.password.substring(0, 10));
+      console.error('Expected format: $2a$, $2b$, or $2y$');
+      console.error('This user may need to reset their password.');
+    }
     throw new Error('Invalid email or password');
   }
 

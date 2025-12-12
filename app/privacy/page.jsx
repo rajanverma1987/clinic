@@ -11,7 +11,7 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50">
       <Header />
-      <main className="flex-1 pt-32 pb-24 px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 pb-24 px-4 sm:px-6 lg:px-8" style={{ paddingTop: '120px' }}>
         <div className="max-w-4xl mx-auto">
           {/* Back Link */}
           <div className="mb-8">
@@ -38,8 +38,8 @@ export default function PrivacyPage() {
             <h1 
               className="text-neutral-900 mb-4"
               style={{
-                fontSize: '48px',
-                lineHeight: '56px',
+                fontSize: '32px',
+                lineHeight: '40px',
                 letterSpacing: '-0.02em',
                 fontWeight: '700',
               }}

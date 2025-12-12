@@ -1,6 +1,7 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { ClinicHoursTab } from '@/components/settings/ClinicHoursTab';
 import { ComplianceTab } from '@/components/settings/ComplianceTab';
 import { DoctorsTab } from '@/components/settings/DoctorsTab';
@@ -11,6 +12,7 @@ import { QueueSettingsTab } from '@/components/settings/QueueSettingsTab';
 import { SettingsTabs } from '@/components/settings/SettingsTabs';
 import { SMTPSettingsTab } from '@/components/settings/SMTPSettingsTab';
 import { TaxSettingsTab } from '@/components/settings/TaxSettingsTab';
+import { Card } from '@/components/ui';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -615,14 +617,10 @@ export default function SettingsPage() {
     <Layout>
       <div style={{ padding: '0 10px' }}>
         {/* Header */}
-        <div className='mb-6'>
-          <h1 className='text-2xl font-bold text-neutral-900 mb-1'>
-            {t('settings.title') || 'Settings'}
-          </h1>
-          <p className='text-sm text-neutral-600'>
-            {t('settings.description') || 'Manage your clinic settings and preferences'}
-          </p>
-        </div>
+        <PageHeader
+          title={t('settings.title') || 'Settings'}
+          description={t('settings.description') || 'Manage your clinic settings and preferences'}
+        />
 
         {/* Tabs Navigation */}
         <SettingsTabs
@@ -633,14 +631,45 @@ export default function SettingsPage() {
 
         {/* Profile Settings */}
         {activeTab === 'profile' && (
-          <ProfileTab
-            currentUser={currentUser}
-            logout={logout}
-            saving={saving}
-            onToggleStatus={handleToggleMyStatus}
-            availabilityForm={availabilityForm}
-            setAvailabilityForm={setAvailabilityForm}
-          />
+          <div>
+            <ProfileTab
+              currentUser={currentUser}
+              logout={logout}
+              saving={saving}
+              onToggleStatus={handleToggleMyStatus}
+              availabilityForm={availabilityForm}
+              setAvailabilityForm={setAvailabilityForm}
+            />
+
+            {/* Create Manager Account - Only for Doctors and Clinic Admins */}
+            {(currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') && (
+              <Card className='mt-6'>
+                <div className='p-6'>
+                  <div className='flex items-center justify-between mb-4'>
+                    <div>
+                      <h3 className='text-lg font-semibold text-neutral-900'>Manager Accounts</h3>
+                      <p className='text-sm text-neutral-600 mt-1'>
+                        Create manager accounts for external use with limited access
+                      </p>
+                    </div>
+                    <Button
+                      variant='primary'
+                      onClick={() => router.push('/settings/create-manager')}
+                    >
+                      Create Manager
+                    </Button>
+                  </div>
+                  <div className='p-4 bg-blue-50 border border-blue-200 rounded-lg'>
+                    <p className='text-sm text-blue-800'>
+                      <strong>Manager accounts</strong> have limited access: can view appointments
+                      and queue (read-only), basic patient info (no PHI), but cannot access
+                      financial data or modify critical settings.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* General Settings - Admin Only */}

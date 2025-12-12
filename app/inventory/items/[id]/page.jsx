@@ -1,6 +1,7 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -148,7 +149,7 @@ export default function InventoryItemDetailPage() {
               style={{ marginLeft: '10px' }}
               aria-label={t('common.back')}
             >
-              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 12H5M12 19l-7-7 7-7' />
               </svg>
             </button>
@@ -176,24 +177,28 @@ export default function InventoryItemDetailPage() {
           className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
           aria-label={t('common.back')}
         >
-          <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
             <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 19l-7-7 7-7' />
           </svg>
         </button>
       </div>
 
-      <div className='mb-8 flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold text-neutral-900'>{item.name}</h1>
-          <p className='text-neutral-600 mt-2'>
+      <PageHeader
+        title={item.name}
+        subtitle={
+          <>
             {item.code && <span className='mr-4'>Code: {item.code}</span>}
             <Tag variant={getStockStatus()} size='sm' className='ml-2'>
               {item.totalQuantity <= item.lowStockThreshold ? 'Low Stock' : 'In Stock'}
             </Tag>
-          </p>
-        </div>
-        {!isEditing && <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>}
-      </div>
+          </>
+        }
+        actionButton={
+          !isEditing && (
+            <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>
+          )
+        }
+      />
 
       {error && (
         <Card className='mb-6'>

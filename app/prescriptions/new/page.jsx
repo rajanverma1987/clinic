@@ -775,6 +775,7 @@ function NewPrescriptionPageContent() {
                     </div>
                   )}
 
+
                   <div className='prescription-form-section'>
                     <h2 className='prescription-form-section-title'>Prescription Details</h2>
 

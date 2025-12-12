@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api/client.js';
-import { extractLocale, getTranslation, supportedLocales } from '@/lib/i18n/index.js';
+import { extractLocale, formatLocale, getTranslation, supportedLocales } from '@/lib/i18n/index.js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext.jsx';
 
@@ -80,7 +80,7 @@ export function I18nProvider({ children }) {
       apiClient
         .put('/settings', {
           settings: {
-            locale: newLocale === 'en' ? 'en-US' : newLocale === 'es' ? 'es-ES' : 'fr-CA',
+            locale: formatLocale(newLocale),
           },
         })
         .catch((error) => {

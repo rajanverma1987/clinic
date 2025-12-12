@@ -104,24 +104,37 @@ export default function BlogPage() {
   return (
     <div className='min-h-screen flex flex-col'>
       <Header />
-      <main className='flex-1' style={{ paddingTop: '80px' }}>
+      <main className='flex-1'>
         {/* Hero Section */}
-        <section className='pt-16 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-100 via-white to-primary-100'>
+        <section 
+          className='px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-100 via-white to-primary-100'
+          style={{
+            paddingTop: '140px',
+            paddingBottom: '64px',
+          }}
+        >
           <div className='max-w-7xl mx-auto'>
             <div className='text-center mb-16'>
               <h1
-                className='text-4xl md:text-5xl font-bold mb-6'
+                className='text-neutral-900'
                 style={{
-                  color: '#1A1A1A',
-                  fontSize: '48px',
-                  lineHeight: '56px',
+                  fontSize: '32px',
+                  lineHeight: '40px',
                   fontWeight: '700',
                   letterSpacing: '-0.02em',
+                  marginBottom: '24px',
                 }}
               >
                 Blog & Resources
               </h1>
-              <p className='text-xl text-neutral-600 max-w-2xl mx-auto'>
+              <p 
+                className='text-neutral-600 max-w-2xl mx-auto'
+                style={{
+                  fontSize: '18px',
+                  lineHeight: '28px',
+                  fontWeight: '400',
+                }}
+              >
                 Learn about clinic management, best practices, and how Doctor&apos;s Clinic can transform
                 your practice
               </p>
@@ -155,13 +168,33 @@ export default function BlogPage() {
                         </span>
                         <span className='text-sm text-neutral-500'>{post.readTime}</span>
                       </div>
-                      <h2 className='text-xl font-bold text-neutral-900 mb-4 group-hover:text-primary-600 transition-colors duration-200'>
+                      <h2 
+                        className='text-neutral-900 mb-4 group-hover:text-primary-600 transition-colors duration-200'
+                        style={{
+                          fontSize: '20px',
+                          lineHeight: '28px',
+                          fontWeight: '600',
+                        }}
+                      >
                         {post.title}
                       </h2>
-                      <p className='text-neutral-600 mb-6 line-clamp-3 leading-relaxed'>
+                      <p 
+                        className='text-neutral-600 mb-6 line-clamp-3'
+                        style={{
+                          fontSize: '16px',
+                          lineHeight: '24px',
+                          fontWeight: '400',
+                        }}
+                      >
                         {post.excerpt}
                       </p>
-                      <div className='flex items-center justify-between text-sm text-neutral-500 pt-2 border-t border-neutral-100'>
+                      <div 
+                        className='flex items-center justify-between text-neutral-500 pt-2 border-t border-neutral-100'
+                        style={{
+                          fontSize: '14px',
+                          lineHeight: '20px',
+                        }}
+                      >
                         <span>
                           {new Date(post.date).toLocaleDateString('en-US', {
                             year: 'numeric',

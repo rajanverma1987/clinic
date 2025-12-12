@@ -115,6 +115,7 @@ function FooterComponent() {
                   }}
                 >
                   {[
+                    { href: '/legal', label: t('footer.legalInfo') || 'Legal & Disclaimers' },
                     { href: '/privacy', label: t('footer.privacyPolicy') || 'Privacy Policy' },
                     { href: '/terms', label: t('footer.termsOfService') || 'Terms of Service' },
                     { href: '/support/contact', label: t('footer.contactUs') || 'Contact Us' },
@@ -254,7 +255,7 @@ function FooterComponent() {
             >
               <p
                 className='text-neutral-600 text-center sm:text-left'
-                style={{ fontSize: '12px', lineHeight: '18px' }}
+                style={{ fontSize: '10px', lineHeight: '14px' }}
               >
                 &copy; {currentYear} {t('footer.allRightsReserved') || 'All rights reserved'}.
               </p>
