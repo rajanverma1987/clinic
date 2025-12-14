@@ -5,7 +5,7 @@ export function FAQSection({ openFaqIndex, onFaqToggle }) {
     {
       question: 'Is data secure?',
       answer:
-        'Yes, we use end-to-end encryption, HIPAA-compliant hosting on AWS servers, and implement strict security measures to protect all patient data.',
+        'Yes, we use end-to-end encryption, HIPAA-compliant, and implement strict security measures to protect all patient data.',
     },
     {
       question: 'Can multiple doctors use it?',

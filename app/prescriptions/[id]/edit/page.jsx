@@ -14,7 +14,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function EditPrescriptionPage() {
   const router = useRouter();
@@ -87,65 +87,7 @@ export default function EditPrescriptionPage() {
 
   useKeyboardShortcuts(keyboardShortcuts);
 
-  useEffect(() => {
-    if (!authLoading && currentUser && prescriptionId) {
-      // Fetch both in parallel - they're independent
-      fetchData();
-      fetchPrescription();
-    }
-  }, [authLoading, currentUser, prescriptionId]);
-
-  // Sync items after drugs are loaded to ensure drugId matches
-  // This ensures that when drugs load, any items with drugId are properly matched
-  useEffect(() => {
-    if (drugs.length > 0 && items.length > 0) {
-      // Check if any item has a drugId that needs to be synced
-      setItems((prevItems) => {
-        let hasChanges = false;
-        const updatedItems = prevItems.map((item) => {
-          if (item.itemType === 'drug' && item.drugId) {
-            const drugIdStr = String(item.drugId).trim();
-            // Try to find the drug in the list by matching _id
-            const drug = drugs.find((d) => {
-              const drugId = String(d._id).trim();
-              return drugId === drugIdStr;
-            });
-
-            if (drug) {
-              // Ensure drugId is exactly matching the drug's _id (as string)
-              const correctDrugId = String(drug._id).trim();
-              if (item.drugId !== correctDrugId) {
-                console.log('Syncing drugId:', {
-                  old: item.drugId,
-                  new: correctDrugId,
-                  drugName: drug.name,
-                });
-                hasChanges = true;
-                return {
-                  ...item,
-                  drugId: correctDrugId,
-                  drugName: drug.name || item.drugName,
-                  form: drug.form || item.form,
-                  strength: drug.strength || item.strength,
-                };
-              }
-            } else {
-              console.warn('Drug not found in list:', {
-                drugId: drugIdStr,
-                availableIds: drugs.slice(0, 5).map((d) => String(d._id)),
-              });
-            }
-          }
-          return item;
-        });
-
-        // Only update if there were actual changes to prevent infinite loops
-        return hasChanges ? updatedItems : prevItems;
-      });
-    }
-  }, [drugs]); // Only re-run when drugs change
-
-  const fetchPrescription = async () => {
+  const fetchPrescription = useCallback(async () => {
     try {
       const response = await apiClient.get(`/prescriptions/${prescriptionId}`);
       if (response.success && response.data) {
@@ -240,9 +182,9 @@ export default function EditPrescriptionPage() {
       console.error('Failed to fetch prescription:', error);
       setError('Failed to load prescription');
     }
-  };
+  }, [prescriptionId]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch clinic settings for print
@@ -306,7 +248,67 @@ export default function EditPrescriptionPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!authLoading && currentUser && prescriptionId) {
+      // Fetch both in parallel - they're independent
+      fetchData();
+      fetchPrescription();
+    }
+  }, [authLoading, currentUser, prescriptionId, fetchData, fetchPrescription]);
+
+  // Sync items after drugs are loaded to ensure drugId matches
+  // This ensures that when drugs load, any items with drugId are properly matched
+  useEffect(() => {
+    if (drugs.length > 0) {
+      // Check if any item has a drugId that needs to be synced
+      setItems((prevItems) => {
+        if (prevItems.length === 0) return prevItems;
+        
+        let hasChanges = false;
+        const updatedItems = prevItems.map((item) => {
+          if (item.itemType === 'drug' && item.drugId) {
+            const drugIdStr = String(item.drugId).trim();
+            // Try to find the drug in the list by matching _id
+            const drug = drugs.find((d) => {
+              const drugId = String(d._id).trim();
+              return drugId === drugIdStr;
+            });
+
+            if (drug) {
+              // Ensure drugId is exactly matching the drug's _id (as string)
+              const correctDrugId = String(drug._id).trim();
+              if (item.drugId !== correctDrugId) {
+                console.log('Syncing drugId:', {
+                  old: item.drugId,
+                  new: correctDrugId,
+                  drugName: drug.name,
+                });
+                hasChanges = true;
+                return {
+                  ...item,
+                  drugId: correctDrugId,
+                  drugName: drug.name || item.drugName,
+                  form: drug.form || item.form,
+                  strength: drug.strength || item.strength,
+                };
+              }
+            } else {
+              console.warn('Drug not found in list:', {
+                drugId: drugIdStr,
+                availableIds: drugs.slice(0, 5).map((d) => String(d._id)),
+              });
+            }
+          }
+          return item;
+        });
+
+        // Only update if there were actual changes to prevent infinite loops
+        return hasChanges ? updatedItems : prevItems;
+      });
+    }
+  }, [drugs]); // Only re-run when drugs change
 
   const addItem = () => {
     setItems([
@@ -467,13 +469,13 @@ export default function EditPrescriptionPage() {
 
   // Redirect if not authenticated (non-blocking)
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !currentUser) {
       router.push('/login');
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, currentUser, router]);
 
   // Show empty state while redirecting
-  if (!user) {
+  if (!currentUser) {
     return null;
   }
 

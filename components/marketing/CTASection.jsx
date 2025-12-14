@@ -91,7 +91,7 @@ export function CTASection({ user }) {
           {[
             {
               title: 'Email',
-              value: 'support@clinic.com',
+              value: 'support@doctorsclinic.services',
               icon: (
                 <svg
                   style={{ width: '32px', height: '32px' }}
@@ -107,7 +107,7 @@ export function CTASection({ user }) {
                   />
                 </svg>
               ),
-              link: 'mailto:support@clinic.com',
+              link: 'mailto:support@doctorsclinic.services',
               bgGradient: 'from-primary-100 to-primary-50',
               iconBg: 'bg-primary-500',
             },

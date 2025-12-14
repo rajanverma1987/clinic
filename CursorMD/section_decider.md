@@ -287,7 +287,7 @@ Reason: SEO + long-term traffic.
 
 **Contact Methods:**
 
-- Email: support@clinic.com (mailto link)
+- Email: support@doctorsclinic.services (mailto link)
 - Phone: +1 (555) 123-4567 (tel link)
 - WhatsApp: +1 (555) 123-4567 (WhatsApp link)
 - Inquiry Form: Link to /support/contact page

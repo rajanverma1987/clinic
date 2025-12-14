@@ -64,22 +64,22 @@ export function Button({
       'bg-status-error text-white border-2 border-status-error focus:ring-status-error active:bg-status-error/90 shadow-md group-hover:shadow-none group relative overflow-hidden z-0',
   };
 
-  // Sizes with theme padding
+  // Sizes with theme padding (reduced by 10% - using closest standard Tailwind classes)
   const sizes = {
-    xs: 'px-3 py-1.5 text-body-xs font-semibold min-h-[32px]', // Extra small for chips, dense UIs
-    sm: 'px-5 py-3 text-body-sm font-semibold min-h-[40px]', // Small for tables, compact forms
-    md: 'px-5 py-3 text-button min-h-[44px]', // Medium - default everywhere
-    lg: 'px-6 py-4 text-body-md font-semibold min-h-[52px]', // Large for hero sections, onboarding
-    xl: 'px-8 py-5 text-body-lg font-semibold min-h-[60px]', // Extra large for prominent CTAs
+    xs: 'px-2.5 py-1.5 text-body-xs font-semibold min-h-[29px] [&_svg]:w-[9px] [&_svg]:h-[9px]', // Extra small for chips, dense UIs
+    sm: 'px-4 py-2.5 text-body-sm font-semibold min-h-[36px] [&_svg]:w-[14px] [&_svg]:h-[14px]', // Small for tables, compact forms
+    md: 'px-4 py-2.5 text-button min-h-[40px] [&_svg]:w-[18px] [&_svg]:h-[18px]', // Medium - default everywhere
+    lg: 'px-5 py-3 text-body-md font-semibold min-h-[47px] [&_svg]:w-[22px] [&_svg]:h-[22px]', // Large for hero sections, onboarding
+    xl: 'px-7 py-4 text-body-lg font-semibold min-h-[54px] [&_svg]:w-[26px] [&_svg]:h-[26px]', // Extra large for prominent CTAs
   };
 
-  // Icon-only button sizes (square aspect ratio)
+  // Icon-only button sizes (square aspect ratio, reduced by 10%)
   const iconOnlySizes = {
-    xs: 'w-8 h-8 p-0',
-    sm: 'w-10 h-10 p-0',
-    md: 'w-12 h-12 p-0',
-    lg: 'w-14 h-14 p-0',
-    xl: 'w-16 h-16 p-0',
+    xs: 'w-[28px] h-[28px] p-0 [&_svg]:w-[14px] [&_svg]:h-[14px]',
+    sm: 'w-[36px] h-[36px] p-0 [&_svg]:w-[18px] [&_svg]:h-[18px]',
+    md: 'w-[44px] h-[44px] p-0 [&_svg]:w-[22px] [&_svg]:h-[22px]',
+    lg: 'w-[52px] h-[52px] p-0 [&_svg]:w-[26px] [&_svg]:h-[26px]',
+    xl: 'w-[56px] h-[56px] p-0 [&_svg]:w-[28px] [&_svg]:h-[28px]',
   };
 
   // Disabled state - only override when explicitly disabled (not just loading)
@@ -112,7 +112,7 @@ export function Button({
   return (
     <button
       className={`${baseStyles} ${variants[variant]} ${sizeClasses} ${finalShapeClass} ${disabledStyles} ${className}`}
-      style={finalShapeClass === '' ? { borderRadius: '0.75rem' } : {}}
+      style={finalShapeClass === '' ? { borderRadius: '0.675rem' } : {}}
       disabled={isDisabled}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -120,14 +120,14 @@ export function Button({
     >
       {/* Green gradient hover effect - fades in for Primary */}
       {variant === 'primary' && (
-        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-[1]' style={{ borderRadius: '0.75rem' }}></span>
+        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-[1]' style={{ borderRadius: '0.675rem' }}></span>
       )}
 
       {/* Blue gradient hover effect for Secondary - fills left to right */}
       {variant === 'secondary' && (
         <span 
           className='absolute inset-[2px] z-[1] overflow-hidden'
-          style={{ borderRadius: '0.75rem' }}
+          style={{ borderRadius: '0.675rem' }}
         >
           <span 
             ref={secondaryFillRef}
@@ -147,7 +147,7 @@ export function Button({
 
       {/* Green gradient hover effect for Success */}
       {variant === 'success' && (
-        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-[1]' style={{ borderRadius: '0.75rem' }}></span>
+        <span className='absolute inset-[2px] bg-gradient-to-r from-secondary-500 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-[1]' style={{ borderRadius: '0.675rem' }}></span>
       )}
 
       {/* Yellow gradient hover effect for Warning */}

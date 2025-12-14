@@ -27,9 +27,9 @@ export function Input({ label, error, helperText, className = '', disabled, requ
     }
   }, [required, props.type, props.name, props.id, label]);
 
-  // Base classes with theme specifications
-  // Default: bg-white, border: neutral-300, radius: 8px, padding: 12px
-  const baseClasses = `w-full px-3 py-3 text-body-md border rounded-lg`;
+  // Base classes with theme specifications (reduced by 10%)
+  // Default: bg-white, border: neutral-300, radius: 7.2px, padding: 10.8px
+  const baseClasses = `w-full px-3 py-[10.8px] text-body-md border rounded-lg`;
 
   // States following clinic theme
   // Default: bg-white, border: neutral-300, text: neutral-900, placeholder: neutral-500

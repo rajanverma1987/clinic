@@ -51,37 +51,37 @@ const config = {
           'sans-serif',
         ],
       },
-      // Typography Sizes
+      // Typography Sizes (reduced by 10%)
       fontSize: {
-        h1: ['32px', { lineHeight: '40px', fontWeight: '700' }],
-        h2: ['24px', { lineHeight: '32px', fontWeight: '600' }],
-        h3: ['20px', { lineHeight: '28px', fontWeight: '600' }],
-        h4: ['18px', { lineHeight: '24px', fontWeight: '600' }],
-        'body-lg': ['18px', { lineHeight: '28px', fontWeight: '400' }],
-        'body-md': ['16px', { lineHeight: '24px', fontWeight: '400' }],
-        'body-sm': ['14px', { lineHeight: '20px', fontWeight: '400' }],
-        'body-xs': ['12px', { lineHeight: '16px', fontWeight: '400' }],
-        button: ['16px', { lineHeight: '20px', fontWeight: '600' }],
+        h1: ['29px', { lineHeight: '36px', fontWeight: '700' }],
+        h2: ['22px', { lineHeight: '29px', fontWeight: '600' }],
+        h3: ['18px', { lineHeight: '25px', fontWeight: '600' }],
+        h4: ['16px', { lineHeight: '22px', fontWeight: '600' }],
+        'body-lg': ['16px', { lineHeight: '25px', fontWeight: '400' }],
+        'body-md': ['14px', { lineHeight: '22px', fontWeight: '400' }],
+        'body-sm': ['13px', { lineHeight: '18px', fontWeight: '400' }],
+        'body-xs': ['11px', { lineHeight: '14px', fontWeight: '400' }],
+        button: ['14px', { lineHeight: '18px', fontWeight: '600' }],
       },
-      // Spacing Scale
+      // Spacing Scale (reduced by 10%)
       spacing: {
-        4: '4px',
-        8: '8px',
-        12: '12px',
-        16: '16px',
-        24: '24px',
-        32: '32px',
-        40: '40px',
-        48: '48px',
+        4: '3.6px',
+        8: '7.2px',
+        12: '10.8px',
+        16: '14.4px',
+        24: '21.6px',
+        32: '28.8px',
+        40: '36px',
+        48: '43.2px',
       },
-      // Border Radius
+      // Border Radius (reduced by 10%)
       borderRadius: {
-        DEFAULT: '8px',
-        button: '8px',
-        card: '10px',
-        input: '8px',
-        lg: '10px',
-        xl: '12px',
+        DEFAULT: '7.2px',
+        button: '7.2px',
+        card: '9px',
+        input: '7.2px',
+        lg: '9px',
+        xl: '10.8px',
       },
       // Custom Shadows - Clinic Theme
       boxShadow: {

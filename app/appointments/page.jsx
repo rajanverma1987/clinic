@@ -137,22 +137,6 @@ export default function AppointmentsPage() {
     [settings]
   );
 
-  const formatDateForApi = useCallback(
-    (date) => {
-      try {
-        return new Intl.DateTimeFormat('en-CA', {
-          timeZone: settings?.settings?.timezone || 'UTC',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        }).format(date);
-      } catch {
-        return date.toISOString().split('T')[0];
-      }
-    },
-    [settings]
-  );
-
   const fetchStats = useCallback(async () => {
     if (!settings) return; // Wait for settings to load
 
@@ -225,7 +209,7 @@ export default function AppointmentsPage() {
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '10',
+        limit: '50',
       });
 
       // Add filters

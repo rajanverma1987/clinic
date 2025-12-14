@@ -157,11 +157,11 @@ function FooterComponent() {
                 >
                   <li>
                     <a
-                      href='mailto:support@clinic.com'
+                      href='mailto:support@doctorsclinic.services'
                       className='text-neutral-600 hover:text-primary-600'
                       style={{ fontSize: '14px', lineHeight: '20px' }}
                     >
-                      support@clinic.com
+                      support@doctorsclinic.services
                     </a>
                   </li>
                 </ul>

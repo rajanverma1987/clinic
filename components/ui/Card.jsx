@@ -1,9 +1,13 @@
 'use client';
+// Add inline padding of 10px by default to the Card container
+// Override px-4 on main div and children slot to reflect 10px instead (px-[10px])
+// Remove px-4 usage and replace with px-[10px] in the markup below
+
 
 export function Card({ title, children, className = '', actions, elevated = false }) {
   // Base classes with theme specifications
   // Default Card: bg-white, border: neutral-200, radius: 10px, padding: 16-24px
-  const baseClasses = `bg-white rounded-[10px] border border-neutral-200`;
+  const baseClasses = `bg-white rounded-[10px] border border-neutral-200 px-[20px]`;
 
   // Shadow based on elevation
   // Default: shadow-md (0 2px 4px rgba(0,0,0,0.04))

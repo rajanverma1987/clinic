@@ -20,7 +20,7 @@ import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
+import { Button } from '@/components/ui/Button';
 export default function SettingsPage() {
   const router = useRouter();
   const { user: currentUser, loading: authLoading, logout } = useAuth();
