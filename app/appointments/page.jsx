@@ -15,6 +15,7 @@ import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { FaVideo, FaBuilding, FaCheck, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 export default function AppointmentsPage() {
   const router = useRouter();
@@ -209,7 +210,7 @@ export default function AppointmentsPage() {
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '50',
+        limit: '1000', // Show all appointments
       });
 
       // Add filters
@@ -376,26 +377,12 @@ export default function AppointmentsPage() {
         >
           {row.isTelemedicine ? (
             <>
-              <svg className='w-3 h-3' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
-                />
-              </svg>
+              <FaVideo className='w-3 h-3' />
               Video
             </>
           ) : (
             <>
-              <svg className='w-3 h-3' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
-                />
-              </svg>
+              <FaBuilding className='w-3 h-3' />
               In-Person
             </>
           )}
@@ -431,31 +418,31 @@ export default function AppointmentsPage() {
             {(row.status === 'scheduled' || row.status === 'confirmed') && (
               <>
                 <Button
-                  size='md'
+                  size='sm'
                   variant='secondary'
+                  iconOnly
                   isLoading={loadingAppointmentId === row._id}
                   disabled={loadingAppointmentId === row._id}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStatusChange(row._id, 'arrived', patientName);
                   }}
-                  title='Mark patient as arrived and add to queue'
-                  className='whitespace-nowrap'
+                  title={t('appointments.markArrived') || 'Mark as Arrived'}
                 >
-                  {t('appointments.markArrived')}
+                  <FaCheck />
                 </Button>
                 <Button
-                  size='md'
-                  variant='secondary'
+                  size='sm'
+                  variant='danger'
+                  iconOnly
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStatusChange(row._id, 'cancelled', patientName);
                   }}
                   disabled={loadingAppointmentId === row._id}
-                  title='Cancel this appointment'
-                  className='whitespace-nowrap text-status-error border-status-error/30 hover:bg-status-error/10'
+                  title={t('appointments.cancelAppointment') || 'Cancel Appointment'}
                 >
-                  {t('appointments.cancelAppointment') || 'Cancel Appointment'}
+                  <FaTimes />
                 </Button>
               </>
             )}
@@ -659,7 +646,6 @@ export default function AppointmentsPage() {
             </div>
           )}
 
-        <Card>
           <Table
             data={appointments}
             columns={columns}
@@ -671,28 +657,29 @@ export default function AppointmentsPage() {
             <div className='mt-4 flex items-center justify-between'>
               <Button
                 variant='secondary'
-                size='md'
+                size='sm'
+                iconOnly
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className='whitespace-nowrap'
+                title={t('common.previous') || 'Previous'}
               >
-                {t('common.previous')}
+                <FaChevronLeft />
               </Button>
               <span className='text-body-sm text-neutral-700'>
                 {t('common.page')} {currentPage} {t('common.of')} {totalPages}
               </span>
               <Button
                 variant='secondary'
-                size='md'
+                size='sm'
+                iconOnly
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className='whitespace-nowrap'
+                title={t('common.next') || 'Next'}
               >
-                {t('common.next')}
+                <FaChevronRight />
               </Button>
             </div>
           )}
-        </Card>
       </div>
     </Layout>
   );

@@ -60,12 +60,11 @@ export function StatsCard({
 
       {/* Content */}
       <div className='relative z-10' style={{ padding: '24px 24px 24px 10px' }}>
-        {/* Accent bar */}
-        <span style={{display:'flex', gap:'10px'}}>
-        <div className={`accent-bar accent-bar-${colorScheme} mb-4`} />
-        {/* Label */}
-        <p style={{fontWeight:'bold',fontSize:'.9rem'}} className={`stat-label text-neutral-500 mb-2`}>{title}</p>
-      </span>
+        {/* Accent bar and Label */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <div className={`accent-bar accent-bar-${colorScheme}`} style={{ flexShrink: 0, height: '20px', width: '4px' }} />
+          <p className={`stat-label text-neutral-500`} style={{ margin: 0, fontSize: '11px', fontWeight: '600', lineHeight: '20px' }}>{title}</p>
+        </div>
         {/* Value with trend */}
         <div className='flex items-end justify-between mb-4'>
           <div className='stat-value text-neutral-900'>{value}</div>

@@ -127,7 +127,7 @@ export default function InventoryPage() {
           }
         />
 
-        <Card className='mb-6'>
+        <Card className='mb-6 px-[10px]'>
           <div className='flex items-center gap-4'>
             <label className='flex items-center gap-3 cursor-pointer'>
               <Checkbox
@@ -140,14 +140,12 @@ export default function InventoryPage() {
           </div>
         </Card>
 
-        <Card>
           <Table
             data={items}
             columns={columns}
             onRowClick={(row) => router.push(`/inventory/items/${row._id}`)}
             emptyMessage={t('common.noDataFound')}
           />
-        </Card>
       </div>
     </Layout>
   );

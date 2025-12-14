@@ -77,8 +77,14 @@ export default function AppointmentDetailsPage({ params }) {
               <p className='text-neutral-600 mb-6'>
                 {error || 'We could not find the appointment you were looking for.'}
               </p>
-              <Button variant='secondary' onClick={() => router.push('/appointments')}>
-                Back to Appointments
+              <Button
+                variant='secondary'
+                size='sm'
+                iconOnly
+                onClick={() => router.push('/appointments')}
+                title='Back to Appointments'
+              >
+                <FaChevronLeft />
               </Button>
             </div>
           </Card>

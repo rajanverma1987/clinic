@@ -1,8 +1,6 @@
 version: 1
 
 rules:
-
-
   - id: architecture
     description: "Base architecture rules."
     patterns:
@@ -109,7 +107,15 @@ rules:
       - "Keep region-specific logic isolated behind strategy interfaces."
       - "All new modules must support multi-clinic and multi-region out of the box."
 
-
+  - id: ui-design
+    description: "UI design rules."
+    patterns:
+      - "app/**"
+      - "components/**"
+    actions:
+      - "Use the latest UI design trends."
+      - Use the latest UI design trends. make sure the UI is responsive and mobile friendly."
+      - "use react-icons for icons."
 final rule 
 
 - id: final-rules

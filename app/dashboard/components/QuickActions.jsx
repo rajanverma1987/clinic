@@ -46,12 +46,12 @@ export function QuickActions({ onNavigate, loading = false }) {
       elevated={true}
       className='border-2 border-neutral-100 bg-gradient-to-br from-white to-neutral-50'
     >
-      <div style={{ padding: '24px 24px 24px 10px' }}>
-        <div className='flex items-center mb-4' style={{ gap: 'var(--gap-2)' }}>
+      <div style={{ padding: '16px 16px 16px 10px' }}>
+        <div className='flex items-center mb-3' style={{ gap: 'var(--gap-2)' }}>
           <div className='w-2 h-2 bg-primary-500 rounded-full'></div>
           <h2 className='text-neutral-900 text-h4'>Quick Actions</h2>
         </div>
-        <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
+        <div className='grid grid-cols-2 sm:grid-cols-4 gap-2'>
           <QuickActionButton
             icon={CalendarIcon}
             label='New Appointment'

@@ -3,7 +3,6 @@
 import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Input } from '@/components/ui/Input';
 import { CompactLoader, Loader } from '@/components/ui/Loader';
@@ -17,6 +16,7 @@ import { apiClient } from '@/lib/api/client';
 import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { FaCalendar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 export default function PatientsPage() {
   const router = useRouter();
@@ -40,26 +40,6 @@ export default function PatientsPage() {
   });
   const [countryCode, setCountryCode] = useState('+1');
   const [submitting, setSubmitting] = useState(false);
-  // Mock notifications - replace with real API call later
-  const [notifications] = useState([
-    {
-      id: '1',
-      type: 'appointment',
-      title: 'New Appointment Scheduled',
-      message: 'Dr. Smith has a new appointment with John Doe at 2:00 PM',
-      createdAt: new Date(Date.now() - 30 * 60000), // 30 minutes ago
-      unread: true,
-    },
-    {
-      id: '2',
-      type: 'prescription',
-      title: 'Prescription Ready',
-      message: 'Prescription #1234 is ready for pickup',
-      createdAt: new Date(Date.now() - 2 * 3600000), // 2 hours ago
-      unread: true,
-    },
-  ]);
-  const unreadCount = notifications.filter((n) => n.unread).length;
 
   const formatDateDisplay = () => {
     const date = new Date();
@@ -221,21 +201,13 @@ export default function PatientsPage() {
       header: t('common.actions'),
       accessor: (row) => (
         <Button
-          size='md'
+          size='sm'
           variant='secondary'
+          iconOnly
           onClick={(e) => handleQuickAppointment(row._id, e)}
-          title='Quickly add appointment for this patient'
-          className='whitespace-nowrap'
+          title={t('appointments.bookAppointment') || 'Add Appointment'}
         >
-          <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-            />
-          </svg>
-          {t('appointments.bookAppointment') || 'Add Appointment'}
+          <FaCalendar />
         </Button>
       ),
     },
@@ -263,20 +235,6 @@ export default function PatientsPage() {
         <DashboardHeader
           title={t('patients.title')}
           subtitle={formatDateDisplay()}
-          notifications={notifications}
-          unreadCount={unreadCount}
-          onNotificationClick={(notification) => {
-            console.log('Notification clicked:', notification);
-            // Handle notification click - navigate to relevant page
-          }}
-          onMarkAsRead={(notificationId) => {
-            console.log('Mark as read:', notificationId);
-            // Handle mark as read - update notification status
-          }}
-          onMarkAllAsRead={() => {
-            console.log('Mark all as read');
-            // Handle mark all as read
-          }}
           actionButton={
             <Button
               onClick={() => setShowModal(true)}
@@ -289,7 +247,6 @@ export default function PatientsPage() {
           }
         />
 
-        <Card className='mb-6'>
           <SearchBar
             placeholder={t('patients.searchPlaceholder')}
             value={searchTerm}
@@ -310,9 +267,7 @@ export default function PatientsPage() {
               </span>
             </div>
           )}
-        </Card>
 
-        <Card>
           <Table
             data={patients}
             columns={columns}
@@ -324,28 +279,29 @@ export default function PatientsPage() {
             <div className='mt-4 flex items-center justify-between'>
               <Button
                 variant='secondary'
-                size='md'
+                size='sm'
+                iconOnly
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className='whitespace-nowrap'
+                title={t('common.previous') || 'Previous'}
               >
-                {t('common.previous')}
+                <FaChevronLeft />
               </Button>
               <span className='text-body-sm text-neutral-700'>
                 {t('common.page')} {currentPage} {t('common.of')} {totalPages}
               </span>
               <Button
                 variant='secondary'
-                size='md'
+                size='sm'
+                iconOnly
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className='whitespace-nowrap'
+                title={t('common.next') || 'Next'}
               >
-                {t('common.next')}
+                <FaChevronRight />
               </Button>
             </div>
           )}
-        </Card>
 
         {showModal && (
           <div

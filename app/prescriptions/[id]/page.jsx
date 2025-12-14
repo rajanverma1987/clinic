@@ -11,6 +11,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { FaChevronLeft, FaEdit, FaPrint } from 'react-icons/fa';
 
 export default function PrescriptionDetailPage() {
   const router = useRouter();
@@ -90,7 +91,15 @@ export default function PrescriptionDetailPage() {
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
             <div className='text-status-error mb-4'>{error || 'Prescription not found'}</div>
-            <Button onClick={() => router.push('/prescriptions')}>Back to Prescriptions</Button>
+            <Button
+              variant='secondary'
+              size='sm'
+              iconOnly
+              onClick={() => router.push('/prescriptions')}
+              title='Back to Prescriptions'
+            >
+              <FaChevronLeft />
+            </Button>
           </div>
         </div>
       </Layout>
@@ -109,14 +118,7 @@ export default function PrescriptionDetailPage() {
             style={{ marginTop: '10px' }}
             aria-label={t('common.back')}
           >
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M15 19l-7-7 7-7'
-              />
-            </svg>
+            <FaChevronLeft className='w-5 h-5' />
           </button>
           <div className='flex items-center justify-between'>
             <div>
@@ -130,12 +132,21 @@ export default function PrescriptionDetailPage() {
             <div className='flex gap-2'>
               <Button
                 variant='secondary'
+                size='sm'
+                iconOnly
                 onClick={() => router.push(`/prescriptions/${prescriptionId}/edit`)}
+                title='Edit'
               >
-                Edit
+                <FaEdit />
               </Button>
-              <Button variant='secondary' onClick={() => setShowPrintPreview(true)}>
-                Print
+              <Button
+                variant='secondary'
+                size='sm'
+                iconOnly
+                onClick={() => setShowPrintPreview(true)}
+                title='Print'
+              >
+                <FaPrint />
               </Button>
             </div>
           </div>

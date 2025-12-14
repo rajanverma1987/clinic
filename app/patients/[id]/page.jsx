@@ -11,6 +11,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { FaChevronLeft, FaEdit, FaPlus } from 'react-icons/fa';
 
 export default function PatientDetailPage() {
   const router = useRouter();
@@ -192,7 +193,15 @@ export default function PatientDetailPage() {
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
             <p className='text-status-error mb-4'>Patient not found</p>
-            <Button onClick={() => router.push('/patients')}>Back to Patients</Button>
+            <Button
+              variant='secondary'
+              size='sm'
+              iconOnly
+              onClick={() => router.push('/patients')}
+              title='Back to Patients'
+            >
+              <FaChevronLeft />
+            </Button>
           </div>
         </div>
       </Layout>
@@ -211,8 +220,15 @@ export default function PatientDetailPage() {
     <Layout>
       <div style={{ padding: '0 10px' }}>
         <div className='mb-6' style={{ paddingTop: '10px' }}>
-          <Button variant='secondary' onClick={() => router.push('/patients')} className='mb-4'>
-            ← Back to Patients
+          <Button
+            variant='secondary'
+            size='sm'
+            iconOnly
+            onClick={() => router.push('/patients')}
+            className='mb-4'
+            title='Back to Patients'
+          >
+            <FaChevronLeft />
           </Button>
           <div className='flex items-center justify-between'>
             <div>
@@ -224,11 +240,23 @@ export default function PatientDetailPage() {
             <div className='flex gap-2'>
               {!isEditing ? (
                 <>
-                  <Button variant='secondary' onClick={() => setIsEditing(true)}>
-                    Edit Patient
+                  <Button
+                    variant='secondary'
+                    size='sm'
+                    iconOnly
+                    onClick={() => setIsEditing(true)}
+                    title='Edit Patient'
+                  >
+                    <FaEdit />
                   </Button>
-                  <Button onClick={() => router.push(`/appointments/new?patientId=${params.id}`)}>
-                    + New Appointment
+                  <Button
+                    variant='primary'
+                    size='sm'
+                    iconOnly
+                    onClick={() => router.push(`/appointments/new?patientId=${params.id}`)}
+                    title='New Appointment'
+                  >
+                    <FaPlus />
                   </Button>
                 </>
               ) : (

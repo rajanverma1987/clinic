@@ -15,8 +15,10 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { showSuccess, showError as showErrorToast } from '@/lib/utils/toast';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { FaChevronLeft } from 'react-icons/fa';
 
 export default function InventoryItemDetailPage() {
   const router = useRouter();
@@ -98,13 +100,18 @@ export default function InventoryItemDetailPage() {
       if (response.success) {
         setIsEditing(false);
         setError('');
-        fetchItem();
+        showSuccess('Inventory item updated successfully');
+        await fetchItem();
       } else {
-        setError(response.error?.message || 'Failed to update inventory item');
+        const errorMsg = response.error?.message || 'Failed to update inventory item';
+        setError(errorMsg);
+        showErrorToast(errorMsg);
       }
     } catch (error) {
       console.error('Failed to update inventory item:', error);
-      setError(error.message || 'Failed to update inventory item');
+      const errorMsg = error.message || 'Failed to update inventory item';
+      setError(errorMsg);
+      showErrorToast(errorMsg);
     } finally {
       setSaving(false);
     }
@@ -149,9 +156,7 @@ export default function InventoryItemDetailPage() {
               style={{ marginLeft: '10px' }}
               aria-label={t('common.back')}
             >
-              <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 12H5M12 19l-7-7 7-7' />
-              </svg>
+              <FaChevronLeft width='20px' height='20px' />
             </button>
           </div>
           <Card>
@@ -177,9 +182,7 @@ export default function InventoryItemDetailPage() {
           className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
           aria-label={t('common.back')}
         >
-          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 19l-7-7 7-7' />
-          </svg>
+          <FaChevronLeft className='w-5 h-5' />
         </button>
       </div>
 

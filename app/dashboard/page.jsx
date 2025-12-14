@@ -131,35 +131,6 @@ export default function DashboardPage() {
           <DashboardHeader
             title='Dashboard Overview'
             subtitle={formatDateDisplay()}
-            notifications={criticalAlerts.map((alert, index) => ({
-              id: `alert-${index}`,
-              type: alert.type || 'system',
-              title: alert.message || 'Alert',
-              message: alert.message || '',
-              unread: true,
-              createdAt: new Date().toISOString(),
-            }))}
-            unreadCount={criticalAlerts.length}
-            onNotificationClick={(notification) => {
-              // Handle notification click - navigate based on type
-              if (notification.type === 'appointment') {
-                router.push('/appointments');
-              } else if (notification.type === 'invoice') {
-                router.push('/invoices');
-              } else if (notification.type === 'inventory') {
-                router.push('/inventory');
-              } else if (notification.type === 'lot') {
-                router.push('/inventory/lots');
-              }
-            }}
-            onMarkAsRead={(id) => {
-              // Mark individual notification as read
-              console.log('Mark as read:', id);
-            }}
-            onMarkAllAsRead={() => {
-              // Mark all notifications as read
-              console.log('Mark all as read');
-            }}
           />
         </div>
 

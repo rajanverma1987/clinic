@@ -542,9 +542,9 @@ export default function AppointmentCalendar({
                     })`;
                     slotIcon = '✓';
                   } else if (isBooked) {
-                    // Booked slots should always be red and disabled
+                    // Booked slots should always be red/orange and disabled
                     slotClass =
-                      'bg-status-error/10 text-status-error border-status-error/30 cursor-not-allowed opacity-75';
+                      'bg-status-warning/20 text-status-warning border-status-warning/40 cursor-not-allowed opacity-90';
                     slotTitle = `${timeStr} - ${t('appointments.booked') || 'Booked'}`;
                     slotIcon = '●';
                   } else if (isPastSlot) {
@@ -588,7 +588,7 @@ export default function AppointmentCalendar({
                   </span>
                 </div>
                 <div className='flex items-center gap-1.5'>
-                  <div className='w-3 h-3 bg-red-100 border border-red-300 rounded'></div>
+                  <div className='w-3 h-3 bg-status-warning/20 border border-status-warning/40 rounded'></div>
                   <span className='text-neutral-600'>{t('appointments.booked') || 'Booked'}</span>
                 </div>
                 <div className='flex items-center gap-1.5'>

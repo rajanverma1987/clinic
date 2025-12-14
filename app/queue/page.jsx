@@ -14,6 +14,7 @@ import { apiClient } from '@/lib/api/client';
 import { showError } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { FaVideo, FaCheck, FaFilePrescription, FaSync, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 export default function QueuePage() {
   const router = useRouter();
@@ -26,7 +27,6 @@ export default function QueuePage() {
   const isInitialMountRef = useRef(true);
   const isFetchingRef = useRef(false);
   const currentDoctorIdRef = useRef('');
-  const [notifications, setNotifications] = useState(3); // Mock notification count
 
   const formatDateDisplay = () => {
     const date = new Date();
@@ -261,14 +261,22 @@ export default function QueuePage() {
                 <>
                   <Button
                     size='sm'
-                    variant='secondary'
-                    className='bg-primary-500 hover:bg-primary-700 text-white border-primary-500'
+                    variant='primary'
+                    iconOnly
                     onClick={async (e) => {
                       e.stopPropagation();
                       await handleStartVideo(row.appointmentId);
                     }}
+                    title='Start Video'
                   >
-                    Start Video
+                    <svg fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+                      />
+                    </svg>
                   </Button>
                   <Button
                     size='sm'
@@ -289,59 +297,59 @@ export default function QueuePage() {
               )}
               <Button
                 size='sm'
-                variant='primary'
-                className='!bg-secondary-500 hover:!bg-secondary-700 text-white border-secondary-500'
+                variant='success'
+                iconOnly
                 onClick={(e) => {
                   e.stopPropagation();
                   if (confirm('Complete this appointment and remove from queue?')) {
                     handleStatusChange(row._id, 'completed');
                   }
                 }}
+                title={t('queue.markComplete') || 'Mark Complete'}
               >
-                {t('queue.markComplete') || 'Mark Complete'}
+                <FaCheck />
               </Button>
             </>
           ) : row.appointmentId?.isTelemedicine ? (
             <>
-              <Button
-                size='sm'
-                className='bg-primary-500 hover:bg-primary-700 text-white'
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  await handleStartVideo(row.appointmentId);
-                }}
-              >
-                <svg className='mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
-                  />
-                </svg>
-                Start Video
-              </Button>
-              <Button
-                size='sm'
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  // Update queue status to in_progress
-                  await handleStatusChange(row._id, 'in_progress');
-                  // Navigate to prescription page with patient pre-filled
-                  const patientId = row.patientId?._id || row.patientId;
-                  if (patientId) {
-                    router.push(`/prescriptions/new?patientId=${patientId}`);
-                  } else {
-                    router.push('/prescriptions/new');
-                  }
-                }}
-              >
-                {t('appointments.startAppointment')}
-              </Button>
+                  <Button
+                    size='sm'
+                    variant='primary'
+                    iconOnly
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await handleStartVideo(row.appointmentId);
+                    }}
+                    title='Start Video'
+                  >
+                    <FaVideo />
+                  </Button>
+                  <Button
+                    size='sm'
+                    variant='secondary'
+                    iconOnly
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      // Update queue status to in_progress
+                      await handleStatusChange(row._id, 'in_progress');
+                      // Navigate to prescription page with patient pre-filled
+                      const patientId = row.patientId?._id || row.patientId;
+                      if (patientId) {
+                        router.push(`/prescriptions/new?patientId=${patientId}`);
+                      } else {
+                        router.push('/prescriptions/new');
+                      }
+                    }}
+                    title={t('appointments.startAppointment') || 'Start Appointment'}
+                  >
+                    <FaFilePrescription />
+                  </Button>
             </>
           ) : (
             <Button
               size='sm'
+              variant='secondary'
+              iconOnly
               onClick={async (e) => {
                 e.stopPropagation();
                 // Update queue status to in_progress
@@ -354,8 +362,9 @@ export default function QueuePage() {
                   router.push('/prescriptions/new');
                 }
               }}
+              title={t('appointments.startAppointment') || 'Start Appointment'}
             >
-              {t('appointments.startAppointment')}
+              <FaFilePrescription />
             </Button>
           )}
         </div>
@@ -385,34 +394,25 @@ export default function QueuePage() {
         <DashboardHeader
           title={t('queue.queueManagement')}
           subtitle={formatDateDisplay()}
-          notifications={notifications}
           actionButton={
             <>
               <Button
                 variant='secondary'
+                size='sm'
+                iconOnly
                 onClick={() => setShowCompleted(!showCompleted)}
-                className='flex items-center gap-2'
+                title={showCompleted ? 'Hide Completed' : 'Show Completed'}
               >
-                {showCompleted ? 'Hide Completed' : 'Show Completed'}
+                {showCompleted ? <FaChevronUp /> : <FaChevronDown />}
               </Button>
               <Button
+                size='sm'
+                iconOnly
                 onClick={() => fetchQueue(false)}
                 disabled={loading}
-                className='flex items-center gap-2'
+                title={loading ? t('common.loading') : 'Refresh Queue'}
               >
-                {loading ? (
-                  <CompactLoader size='xs' />
-                ) : (
-                  <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                    />
-                  </svg>
-                )}
-                {loading ? t('common.loading') : 'Refresh Queue'}
+                {loading ? <CompactLoader size='xs' /> : <FaSync />}
               </Button>
             </>
           }

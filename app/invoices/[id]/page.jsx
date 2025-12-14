@@ -13,6 +13,7 @@ import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { FaChevronLeft, FaPrint } from 'react-icons/fa';
 
 export default function InvoiceDetailPage() {
   const router = useRouter();
@@ -108,14 +109,7 @@ export default function InvoiceDetailPage() {
             style={{ marginLeft: '10px' }}
             aria-label={t('common.back')}
           >
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M15 19l-7-7 7-7'
-              />
-            </svg>
+            <FaChevronLeft className='w-5 h-5' />
           </button>
           <div className='flex items-center justify-between'>
             <div>
@@ -124,7 +118,15 @@ export default function InvoiceDetailPage() {
               </h1>
               <p className='text-neutral-600 mt-2'>Invoice Details</p>
             </div>
-            <Button onClick={() => setShowPrintPreview(true)}>Print Invoice</Button>
+            <Button
+              variant='secondary'
+              size='sm'
+              iconOnly
+              onClick={() => setShowPrintPreview(true)}
+              title='Print Invoice'
+            >
+              <FaPrint />
+            </Button>
           </div>
         </div>
 

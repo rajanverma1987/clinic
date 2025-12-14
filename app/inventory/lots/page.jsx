@@ -10,6 +10,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
+import { FaEye } from 'react-icons/fa';
 
 export default function LotsPage() {
   const router = useRouter();
@@ -106,8 +107,6 @@ export default function LotsPage() {
         <DashboardHeader
           title='Inventory Lots'
           subtitle='Manage and track inventory batches'
-          notifications={[]}
-          unreadCount={0}
         />
 
         {/* Filter Tabs */}
@@ -200,9 +199,11 @@ export default function LotsPage() {
                         <Button
                           variant='outline'
                           size='sm'
+                          iconOnly
                           onClick={() => router.push(`/inventory/items/${lot.itemId}`)}
+                          title='View Item'
                         >
-                          View Item
+                          <FaEye />
                         </Button>
                       </td>
                     </tr>

@@ -2,7 +2,7 @@
 
 /**
  * Welcome Notification Component
- * Shows a welcome notification when user logs in
+ * Shows a welcome notification when user logs in (only once per session)
  */
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,9 +15,18 @@ export function WelcomeNotification() {
   const hasShownWelcomeRef = useRef(false);
   const previousUserRef = useRef(null);
   const mountedRef = useRef(false);
+  const sessionWelcomeShownRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
+    
+    // Check if welcome was already shown in this session
+    if (typeof window !== 'undefined') {
+      const welcomeShown = sessionStorage.getItem('welcomeShown');
+      if (welcomeShown === 'true') {
+        sessionWelcomeShownRef.current = true;
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -25,12 +34,15 @@ export function WelcomeNotification() {
     if (!mountedRef.current || loading) return;
 
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-    const isAuthPage = currentPath === '/login' || currentPath === '/register';
+    const isAuthPage = currentPath === '/login' || currentPath === '/register' || currentPath === '/forgot-password';
 
-    // Reset refs when on auth pages
+    // Don't show on auth pages
     if (isAuthPage) {
-      hasShownWelcomeRef.current = false;
-      previousUserRef.current = null;
+      return;
+    }
+
+    // If welcome was already shown in this session, don't show again
+    if (sessionWelcomeShownRef.current) {
       return;
     }
 
@@ -45,9 +57,15 @@ export function WelcomeNotification() {
 
       // Show welcome notification after a short delay to ensure page is loaded
       const timer = setTimeout(() => {
-        if (mountedRef.current) {
+        if (mountedRef.current && !sessionWelcomeShownRef.current) {
           showWelcome(userName, 6000);
           hasShownWelcomeRef.current = true;
+          sessionWelcomeShownRef.current = true;
+          
+          // Mark as shown in session storage
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('welcomeShown', 'true');
+          }
         }
       }, 800);
 
@@ -61,9 +79,13 @@ export function WelcomeNotification() {
     if (user) {
       previousUserRef.current = user;
     } else {
-      // User logged out, reset
+      // User logged out, reset session flag
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('welcomeShown');
+      }
       hasShownWelcomeRef.current = false;
       previousUserRef.current = null;
+      sessionWelcomeShownRef.current = false;
     }
   }, [user, loading, showWelcome]);
 

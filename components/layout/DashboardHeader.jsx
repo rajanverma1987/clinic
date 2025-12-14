@@ -1,8 +1,6 @@
 'use client';
 
 import { CalendarPopup } from '@/components/notifications/CalendarPopup';
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
-import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { useRouter } from 'next/navigation';
@@ -12,11 +10,6 @@ export function DashboardHeader({
   title,
   subtitle,
   actionButton,
-  notifications = [],
-  unreadCount = 0,
-  onNotificationClick,
-  onMarkAsRead,
-  onMarkAllAsRead,
   showDate = true,
   dateOptions = {
     weekday: 'long',
@@ -156,37 +149,6 @@ export function DashboardHeader({
           }`}
           style={{ gap: 'var(--gap-3)' }}
         >
-          {/* Language Switcher */}
-          <div
-            className='bg-white/80 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md'
-            style={{
-              backdropFilter: 'blur(8px)',
-              overflow: 'visible',
-              position: 'relative',
-            }}
-          >
-            <LanguageSwitcher variant='light' size='sm' />
-          </div>
-
-          {/* Notification Dropdown */}
-          <div
-            className='bg-white/80 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md'
-            style={{
-              backdropFilter: 'blur(8px)',
-              overflow: 'visible',
-              position: 'relative',
-            }}
-          >
-            <NotificationDropdown
-              notifications={notifications}
-              unreadCount={unreadCount}
-              onNotificationClick={onNotificationClick}
-              onMarkAsRead={onMarkAsRead}
-              onMarkAllAsRead={onMarkAllAsRead}
-              size='sm'
-            />
-          </div>
-
           {/* Action Button */}
           {actionButton}
         </div>

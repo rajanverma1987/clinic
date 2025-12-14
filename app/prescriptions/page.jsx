@@ -13,6 +13,7 @@ import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { FaCheck, FaEdit, FaPrint } from 'react-icons/fa';
 
 export default function PrescriptionsPage() {
   const router = useRouter();
@@ -135,37 +136,40 @@ export default function PrescriptionsPage() {
           {row.status === 'draft' && (
             <Button
               variant='primary'
-              size='md'
+              size='sm'
+              iconOnly
               onClick={(e) => {
                 e.stopPropagation();
                 handleActivate(row._id);
               }}
-              className='whitespace-nowrap'
+              title={t('prescriptions.activate') || 'Activate'}
             >
-              {t('prescriptions.activate') || 'Activate'}
+              <FaCheck />
             </Button>
           )}
           <Button
             variant='secondary'
-            size='md'
+            size='sm'
+            iconOnly
             onClick={(e) => {
               e.stopPropagation();
               handleEdit(row._id);
             }}
-            className='whitespace-nowrap'
+            title='Edit'
           >
-            Edit
+            <FaEdit />
           </Button>
           <Button
             variant='secondary'
-            size='md'
+            size='sm'
+            iconOnly
             onClick={(e) => {
               e.stopPropagation();
               handlePrint(row._id);
             }}
-            className='whitespace-nowrap'
+            title='Print'
           >
-            Print
+            <FaPrint />
           </Button>
         </div>
       ),
@@ -206,14 +210,12 @@ export default function PrescriptionsPage() {
           }
         />
 
-        <Card>
           <Table
             data={prescriptions}
             columns={columns}
             onRowClick={(row) => router.push(`/prescriptions/${row._id}`)}
             emptyMessage={t('common.noDataFound')}
           />
-        </Card>
 
         <PrescriptionPrintPreview
           prescriptionId={printPrescriptionId}

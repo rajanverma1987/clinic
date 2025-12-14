@@ -266,9 +266,10 @@
   position: fixed;
   min-width: 220px;
   max-width: calc(100vw - 32px);
+  max-height: 180px;
   border-radius: 20px;
   z-index: 10050 !important;
-  overflow: visible;
+  overflow: hidden;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -325,6 +326,28 @@
 
 .LanguageSwitcher-menu {
   padding: 8px;
+  max-height: 164px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar for language menu */
+.LanguageSwitcher-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.LanguageSwitcher-menu::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.LanguageSwitcher-menu::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.LanguageSwitcher-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 /* Premium Menu Items */

@@ -15,11 +15,13 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FaTimes, FaPrint } from 'react-icons/fa';
 
 export default function EditPrescriptionPage() {
   const router = useRouter();
   const params = useParams();
   const prescriptionId = params?.id;
+  // Get user from auth context - alias as currentUser to avoid conflicts
   const { user: currentUser, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const [patients, setPatients] = useState([]);
@@ -46,15 +48,7 @@ export default function EditPrescriptionPage() {
     { code: 'VITD', name: 'Vitamin D' },
     { code: 'B12', name: 'Vitamin B12' },
   ]);
-  const [formData, setFormData] = useState({
-    patientId: '',
-    appointmentId: '',
-    clinicalNoteId: '',
-    diagnosis: '',
-    additionalInstructions: '',
-    validUntil: '',
-    refillsAllowed: 0,
-  });
+  const [formData, setFormData] = useState({ patientId: '', appointmentId: '', clinicalNoteId: '', diagnosis: '', additionalInstructions: '', validUntil: '', refillsAllowed: 0, });
   const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // Keyboard shortcuts
@@ -623,23 +617,13 @@ export default function EditPrescriptionPage() {
                 </div>
 
                 <div className='flex justify-end gap-4 pt-6 border-t'>
-                  <Button
-                    type='button'
-                    variant='secondary'
-                    onClick={() => router.back()}
-                    disabled={submitting}
-                  >
-                    Cancel
+                  <Button type='button' variant='secondary' size='sm' iconOnly onClick={() => router.back()} disabled={submitting} title='Cancel' >
+                    <FaTimes />
                   </Button>
-                  <Button
-                    type='button'
-                    variant='secondary'
-                    onClick={handlePrint}
-                    disabled={submitting}
-                  >
-                    Print
+                  <Button type='button' variant='secondary' size='sm' iconOnly onClick={handlePrint} disabled={submitting} title='Print' >
+                    <FaPrint />
                   </Button>
-                  <Button type='submit' isLoading={submitting} disabled={submitting}>
+                  <Button type='submit' isLoading={submitting} disabled={submitting} size='md'>
                     Update Prescription
                   </Button>
                 </div>
