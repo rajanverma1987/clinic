@@ -1,6 +1,9 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 import { useRef, useState } from 'react';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * Encrypted File Transfer Component
@@ -14,6 +17,7 @@ export function FileTransfer({
   isOpen = false,
   onClose,
 }) {
+  const { t } = useI18n();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
@@ -25,7 +29,7 @@ export function FileTransfer({
     // Validate file size (max 10MB for HIPAA compliance)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      alert('File size exceeds 10MB limit. Please select a smaller file.');
+      alert(t('errors.fileSizeExceeded'));
       return;
     }
 
@@ -65,8 +69,8 @@ export function FileTransfer({
 
       reader.readAsArrayBuffer(file);
     } catch (error) {
-      console.error('File upload error:', error);
-      alert('Failed to upload file. Please try again.');
+      logger.error('File upload error:', error);
+      alert(t('errors.fileUploadFailed'));
       setUploading(false);
       setUploadProgress(0);
     }
@@ -77,8 +81,8 @@ export function FileTransfer({
       // Download and decrypt file
       await onDownload(file);
     } catch (error) {
-      console.error('File download error:', error);
-      alert('Failed to download file. Please try again.');
+      logger.error('File download error:', error);
+      alert(t('errors.fileDownloadFailed'));
     }
   };
 
@@ -100,7 +104,13 @@ export function FileTransfer({
       {/* File Transfer Header */}
       <div className='bg-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-700'>
         <h3 className='text-white font-semibold'>File Transfer</h3>
-        <button onClick={onClose} className='text-gray-400 hover:text-white'>
+        <Button
+          variant='ghost'
+          size='xs'
+          iconOnly
+          onClick={onClose}
+          className='text-gray-400 hover:text-white'
+        >
           <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
             <path
               strokeLinecap='round'
@@ -109,7 +119,7 @@ export function FileTransfer({
               d='M6 18L18 6M6 6l12 12'
             />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Upload Section */}
@@ -177,7 +187,7 @@ export function FileTransfer({
               <button
                 onClick={() => handleDownload(file)}
                 className='ml-2 p-2 text-blue-400 hover:text-blue-300'
-                title='Download file'
+                title={t('telemedicine.downloadFile')}
               >
                 <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path

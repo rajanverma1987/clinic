@@ -2,6 +2,7 @@
 
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -12,6 +13,7 @@ import { useEffect } from 'react';
 export function RequireAuth({ children }) {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -24,7 +26,7 @@ export function RequireAuth({ children }) {
   }
 
   if (!user) {
-    return <Loader fullScreen size='lg' text='Redirecting to login...' />;
+    return <Loader fullScreen size='lg' text={t('auth.redirectingToLogin')} />;
   }
 
   return <>{children}</>;

@@ -88,7 +88,7 @@ function SearchBarComponent({
     <div className={`relative flex items-center ${variant === 'default' ? 'w-full' : ''}`}>
       {showIcon && (
         <svg
-          className="absolute left-3 w-5 h-5 text-neutral-500"
+          className="absolute left-3 icon icon-sm text-neutral-500"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

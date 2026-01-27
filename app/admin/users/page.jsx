@@ -1,19 +1,22 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +48,7 @@ export default function AdminUsersPage() {
     try {
       const response = await apiClient.get('/admin/clients');
       if (response.success && response.data) {
-        setTenants(Array.isArray(response.data) ? response.data : []);
+        setTenants(extractArrayData(response));
       }
     } catch (error) {
       console.error('Failed to fetch tenants:', error);
@@ -67,8 +70,8 @@ export default function AdminUsersPage() {
       const response = await apiClient.get(`/admin/users?${params.toString()}`);
 
       if (response.success && response.data) {
-        setUsers(response.data.data || []);
-        setPagination(response.data.pagination || pagination);
+        setUsers(extractArrayData(response));
+        setPagination(extractPaginationData(response));
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -79,11 +82,16 @@ export default function AdminUsersPage() {
 
   const handleToggleActive = async (userId, currentStatus) => {
     try {
-      // TODO: Implement user activation/deactivation API
-      alert(`Toggle user ${userId} to ${!currentStatus ? 'active' : 'inactive'}`);
-      fetchUsers();
+      const response = await apiClient.put(`/admin/users/${userId}`, { isActive: !currentStatus });
+      if (response?.success) {
+        showSuccess(currentStatus ? 'User deactivated' : 'User activated');
+        fetchUsers();
+      } else {
+        showError(response?.error?.message || 'Failed to update user status');
+      }
     } catch (error) {
       console.error('Failed to toggle user status:', error);
+      showError('Failed to update user status');
     }
   };
 
@@ -184,17 +192,21 @@ export default function AdminUsersPage() {
   ];
 
   return (
-    <Layout>
+    <Layout
+      title={t('admin.allUsersManagement')}
+      subtitle={t('admin.allUsersDescription')}
+      actionButton={
+        <div className='flex gap-2'>
+          <Button variant='secondary' onClick={() => router.push('/admin/activity-logs')}>
+            Activity logs
+          </Button>
+          <Button variant='primary' onClick={() => router.push('/admin')}>
+            Back to Dashboard
+          </Button>
+        </div>
+      }
+    >
       <div style={{ padding: '0 10px' }}>
-        <PageHeader
-          title='All Users Management'
-          description='Manage all users across all tenants'
-          actionButton={
-            <Button variant='primary' onClick={() => router.push('/admin')}>
-              Back to Dashboard
-            </Button>
-          }
-        />
 
         {/* Filters */}
         <Card className='mb-6'>
@@ -206,7 +218,7 @@ export default function AdminUsersPage() {
                 </label>
                 <Input
                   type='text'
-                  placeholder='Search by email, name, tenant...'
+                  placeholder={t('admin.searchUsersPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -285,7 +297,7 @@ export default function AdminUsersPage() {
               data={filteredUsers}
               columns={tableColumns}
               loading={loading}
-              emptyMessage='No users found'
+              emptyMessage={t('admin.noUsersFound')}
             />
             
             {/* Pagination */}

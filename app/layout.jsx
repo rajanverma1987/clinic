@@ -20,6 +20,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <script src="/sw-register.js" async />
+      </head>
       <body className="antialiased min-h-screen bg-neutral-50">
         <Providers>
               {children}

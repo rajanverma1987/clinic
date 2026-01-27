@@ -9,6 +9,7 @@ import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { AuditLogger } from '@/lib/audit/audit-logger.js';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * POST /api/telemedicine/sessions/[id]/files
@@ -94,7 +95,7 @@ export async function POST(
       ...fileData
     }));
   } catch (error) {
-    console.error('Error in POST /api/telemedicine/sessions/[id]/files:', error);
+    logger.error('Error in POST /api/telemedicine/sessions/[id]/files:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to upload file',
@@ -118,33 +119,33 @@ export async function GET(
     const sessionId = params?.id;
 
     if (!sessionId) {
-      console.error('[Files API] Missing sessionId in params:', params);
+      logger.error('[Files API] Missing sessionId in params:', params);
       return NextResponse.json(
         errorResponse('Session ID is required', 'VALIDATION_ERROR'),
         { status: 400 }
       );
     }
 
-    console.log('[Files API] Fetching files for session:', sessionId);
+    logger.info('[Files API] Fetching files for session:', sessionId);
 
     await connectDB();
     const session = await TelemedicineSession.findOne({ sessionId }).lean();
 
     if (!session) {
-      console.error('[Files API] Session not found:', sessionId);
+      logger.error('[Files API] Session not found:', sessionId);
       return NextResponse.json(
         errorResponse('Session not found', 'NOT_FOUND'),
         { status: 404 }
       );
     }
 
-    console.log('[Files API] Found session, returning files:', session.sharedFiles?.length || 0);
+    logger.info('[Files API] Found session, returning files:', session.sharedFiles?.length || 0);
 
     return NextResponse.json(successResponse({
       files: session.sharedFiles || []
     }));
   } catch (error) {
-    console.error('Error in GET /api/telemedicine/sessions/[id]/files:', error);
+    logger.error('Error in GET /api/telemedicine/sessions/[id]/files:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to fetch files',

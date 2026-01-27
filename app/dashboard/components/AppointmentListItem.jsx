@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarIcon, ClockIcon, ChevronRightIcon } from '@/components/icons';
+import { ClockIcon } from '@/components/icons';
 
 export function AppointmentListItem({ appointment, onClick }) {
   const appointmentTime = new Date(appointment.appointmentDate || appointment.date);
@@ -14,43 +14,44 @@ export function AppointmentListItem({ appointment, onClick }) {
     `${appointment.patientId?.firstName || ''} ${appointment.patientId?.lastName || ''}`.trim() ||
     'Unknown Patient';
 
-  const doctor =
-    appointment.doctorId?.name ||
-    `Dr. ${appointment.doctorId?.firstName || ''} ${appointment.doctorId?.lastName || ''}`.trim() ||
-    'Not assigned';
+  const firstName = appointment.patientId?.firstName || '';
+  const lastName = appointment.patientId?.lastName || '';
+  const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
 
   const reason = appointment.reason || appointment.type || 'General Consultation';
+  
+  const status = appointment.status || 'scheduled';
+  const isOngoing = status === 'in_progress' || status === 'arrived';
 
   return (
-    <div className="dashboard-list-item dashboard-list-item-primary group" onClick={onClick}>
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3 flex-1">
-          {/* Icon */}
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(45, 156, 219, 0.1)' }}
-          >
-            <CalendarIcon className="w-5 h-5 text-primary-500" />
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <h4 className="text-body-md font-semibold text-neutral-900 mb-1 truncate">
-              {patientName}
-            </h4>
-            <p className="text-body-sm text-neutral-600 mb-2 truncate">{reason}</p>
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-1 text-body-xs text-neutral-500">
-                <ClockIcon className="w-4 h-4" />
-                <span>{timeStr}</span>
-              </div>
-              <div className="text-body-xs text-neutral-500 truncate">{doctor}</div>
-            </div>
-          </div>
+    <div className="dashboard-appointment-item group" onClick={onClick}>
+      <div className="flex items-center gap-3">
+        {/* Patient Avatar */}
+        <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 border-2 border-primary-200">
+          <span className="text-primary-600 font-semibold text-sm">
+            {initials}
+          </span>
         </div>
 
-        {/* Arrow */}
-        <ChevronRightIcon className="w-5 h-5 text-neutral-400 group-hover:text-primary-500 transition-colors flex-shrink-0 ml-2" />
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <h4 className="text-body-sm font-semibold text-neutral-900 mb-0.5 truncate">
+            {patientName}
+          </h4>
+          <p className="text-body-xs text-neutral-600 truncate">{reason}</p>
+        </div>
+
+        {/* Time Badge */}
+        <div className={`time-badge ${isOngoing ? 'time-badge-ongoing' : ''}`}>
+          {isOngoing ? (
+            <span className="text-body-xs font-semibold">On Going</span>
+          ) : (
+            <div className="flex items-center gap-1">
+              <ClockIcon className="icon icon-xs" />
+              <span className="text-body-xs font-semibold">{timeStr}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

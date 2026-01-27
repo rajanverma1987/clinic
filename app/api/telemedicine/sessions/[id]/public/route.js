@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
-import {
-  getSessionById,
-} from '@/services/telemedicine.service';
+import { logger } from '@/lib/utils/logger.js';
+import { getSessionById } from '@/services/telemedicine.service';
 
 /**
  * GET /api/telemedicine/sessions/:id/public
@@ -47,7 +46,7 @@ export async function GET(
 
     return NextResponse.json(successResponse(publicSession));
   } catch (error) {
-    console.error('Error in GET /api/telemedicine/sessions/[id]/public:', error);
+    logger.error('Error in GET /api/telemedicine/sessions/[id]/public:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to fetch session',

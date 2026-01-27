@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './NotificationDropdown.css';
@@ -230,13 +231,13 @@ export function NotificationDropdown({
           <div className='NotificationDropdown-header'>
             <h3 className='NotificationDropdown-title'>Notifications</h3>
             {unreadCount > 0 && (
-              <button
-                type='button'
+              <Button
+                variant='link'
+                size='xs'
                 onClick={handleMarkAllAsRead}
-                className='NotificationDropdown-mark-all'
               >
                 Mark all as read
-              </button>
+              </Button>
             )}
           </div>
 

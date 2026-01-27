@@ -3,6 +3,7 @@ import { withAuth } from '@/middleware/auth';
 import connectDB from '@/lib/db/connection';
 import User from '@/models/User';
 import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/api-response';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/auth/me
@@ -26,8 +27,15 @@ async function handler(req, user) {
     // tenantId is an ObjectId at this point, not a populated object
     const userTenantId = userDoc.tenantId ? userDoc.tenantId.toString() : '';
     
-    // Populate tenant for response
-    await userDoc.populate('tenantId', 'name slug region settings');
+    // Populate tenant for response (handle case where tenantId might not exist)
+    try {
+      if (userDoc.tenantId) {
+        await userDoc.populate('tenantId', 'name slug region settings');
+      }
+    } catch (populateError) {
+      logger.error('Error populating tenant:', populateError);
+      // Continue without populated tenant - it's not critical
+    }
 
     // Verify tenant access - allow if user has no tenantId or if tenantIds match
     // Use the tenantId we extracted before populating
@@ -37,7 +45,7 @@ async function handler(req, user) {
     // Only check if both tenantIds exist and they don't match
     // Allow access if either is empty (no tenant restriction)
     if (dbTenantId && tokenTenantId && dbTenantId !== tokenTenantId) {
-      console.error('Tenant mismatch:', { 
+      logger.error('Tenant mismatch:', { 
         dbTenantId, 
         tokenTenantId, 
         userId: user.userId,
@@ -50,6 +58,24 @@ async function handler(req, user) {
       );
     }
 
+    // Safely get tenant data (might be populated object or null)
+    let tenantData = null;
+    if (userDoc.tenantId) {
+      if (typeof userDoc.tenantId === 'object' && userDoc.tenantId !== null) {
+        // Populated tenant object
+        tenantData = {
+          id: userDoc.tenantId._id?.toString() || userDoc.tenantId.id,
+          name: userDoc.tenantId.name,
+          slug: userDoc.tenantId.slug,
+          region: userDoc.tenantId.region,
+          settings: userDoc.tenantId.settings,
+        };
+      } else {
+        // Just the ID
+        tenantData = { id: userDoc.tenantId.toString() };
+      }
+    }
+
     return NextResponse.json(
       successResponse({
         id: userDoc._id.toString(),
@@ -58,19 +84,32 @@ async function handler(req, user) {
         lastName: userDoc.lastName,
         role: userDoc.role,
         tenantId: userTenantId,
-        tenant: userDoc.tenantId,
+        tenant: tenantData,
         isActive: userDoc.isActive,
         lastLoginAt: userDoc.lastLoginAt,
         createdAt: userDoc.createdAt,
       })
     );
   } catch (error) {
+    logger.error('[auth/me] Error:', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+      userId: user?.userId,
+      tenantId: user?.tenantId,
+    });
+
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
       return NextResponse.json(handleMongoError(error), { status: 400 });
     }
 
     return NextResponse.json(
-      errorResponse('Failed to fetch user profile', 'INTERNAL_ERROR'),
+      errorResponse(
+        'Failed to fetch user profile',
+        'INTERNAL_ERROR',
+        process.env.NODE_ENV === 'development' ? error.message : null
+      ),
       { status: 500 }
     );
   }

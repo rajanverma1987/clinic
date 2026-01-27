@@ -23,23 +23,32 @@ const StockTransactionSchema = new Schema(
       ref: 'Tenant',
       required: true,
     },
+    medicineId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Drug',
+      index: true,
+    },
+    batchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'StockBatch',
+      index: true,
+    },
+    // Legacy field for backward compatibility
     inventoryItemId: {
       type: Schema.Types.ObjectId,
       ref: 'InventoryItem',
-      required: true,
       index: true,
     },
     
     // Transaction Details
     transactionNumber: {
       type: String,
-      required: true,
       trim: true,
       index: true,
     },
     type: {
       type: String,
-      enum: Object.values(TransactionType),
+      enum: ['purchase', 'sale', 'return', 'adjustment', 'transfer', 'waste'],
       required: true,
       index: true,
     },
@@ -68,7 +77,21 @@ const StockTransactionSchema = new Schema(
       default: 'USD',
     },
     
-    // References
+    // Reference object as per NEW-PLANS.md
+    reference: {
+      type: {
+        type: String,
+        trim: true,
+      },
+      id: {
+        type: Schema.Types.ObjectId,
+      },
+      number: {
+        type: String,
+        trim: true,
+      },
+    },
+    // Legacy reference fields for backward compatibility
     supplierId: {
       type: Schema.Types.ObjectId,
       ref: 'Supplier',
@@ -83,15 +106,41 @@ const StockTransactionSchema = new Schema(
     },
     referenceNumber: String,
     
+    // Location tracking as per NEW-PLANS.md
+    fromLocation: {
+      type: String,
+      trim: true,
+    },
+    toLocation: {
+      type: String,
+      trim: true,
+    },
+    
     // Notes
     reason: String,
-    notes: String,
+    notes: {
+      type: String,
+      trim: true,
+    },
     
-    // Metadata
-    createdBy: {
+    // Timestamp as per NEW-PLANS.md
+    timestamp: {
+      type: Date,
+      default: Date.now,
+      required: true,
+      index: true,
+    },
+    // Performed by as per NEW-PLANS.md
+    performedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+      index: true,
+    },
+    // Legacy field for backward compatibility
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
     isActive: {
       type: Boolean,

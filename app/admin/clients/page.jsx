@@ -255,7 +255,7 @@ export default function AdminClientsPage() {
         </div>
 
         <Card>
-          <Table data={clients} columns={columns} emptyMessage='No clients found' />
+          <Table data={clients} columns={columns} emptyMessage={t('admin.noClientsFound')} />
         </Card>
 
         {/* Update Subscription Modal */}
@@ -274,9 +274,9 @@ export default function AdminClientsPage() {
                     value={selectedPlanId}
                     onChange={(e) => setSelectedPlanId(e.target.value)}
                     required
-                    placeholder='-- Select Plan --'
+                    placeholder={t('admin.selectPlanPlaceholder')}
                     options={[
-                      { value: '', label: '-- Select Plan --' },
+                      { value: '', label: t('admin.selectPlanPlaceholder') },
                       ...plans.map((plan) => ({
                         value: plan._id,
                         label: `${plan.name} - ${formatCurrency(plan.price)}/${

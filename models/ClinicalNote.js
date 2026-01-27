@@ -15,6 +15,12 @@ const ClinicalNoteSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
+      index: true,
+    },
+    // Auto-generated consultation number (e.g., "CON001234")
+    consultationNumber: {
+      type: String,
+      uppercase: true,
     },
     patientId: {
       type: Schema.Types.ObjectId,
@@ -30,6 +36,13 @@ const ClinicalNoteSchema = new Schema(
     doctorId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      required: true,
+      index: true,
+    },
+    // Consultation date as per NEW-PLANS.md
+    date: {
+      type: Date,
+      default: Date.now,
       required: true,
       index: true,
     },
@@ -98,6 +111,13 @@ const ClinicalNoteSchema = new Schema(
       ref: 'NoteTemplate',
     },
     
+    // Status as per NEW-PLANS.md
+    status: {
+      type: String,
+      enum: ['draft', 'completed', 'reviewed'],
+      default: 'draft',
+      index: true,
+    },
     // Versioning
     version: {
       type: Number,
@@ -106,6 +126,12 @@ const ClinicalNoteSchema = new Schema(
     previousVersionId: {
       type: Schema.Types.ObjectId,
       ref: 'ClinicalNote',
+    },
+    // Edit tracking as per NEW-PLANS.md
+    editedAt: Date,
+    editedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
     
     // Metadata
@@ -171,12 +197,35 @@ ClinicalNoteSchema.post('init', function () {
   }
 });
 
+// Pre-save hook to generate consultation number
+ClinicalNoteSchema.pre('save', async function (next) {
+  // Generate consultation number if not exists
+  if (!this.consultationNumber && this.tenantId) {
+    const { generateConsultationNumber } = await import('@/lib/utils/number-generator.js');
+    try {
+      this.consultationNumber = await generateConsultationNumber(this.tenantId);
+    } catch (error) {
+      console.error('Failed to generate consultation number:', error);
+      // Continue without number if generation fails
+    }
+  }
+  
+  // Set date if not provided
+  if (!this.date) {
+    this.date = new Date();
+  }
+  
+  next();
+});
+
 // Indexes
-ClinicalNoteSchema.index({ tenantId: 1, patientId: 1, createdAt: -1 });
-ClinicalNoteSchema.index({ tenantId: 1, doctorId: 1, createdAt: -1 });
+ClinicalNoteSchema.index({ tenantId: 1, patientId: 1, date: -1 });
+ClinicalNoteSchema.index({ tenantId: 1, doctorId: 1, date: -1 });
 ClinicalNoteSchema.index({ tenantId: 1, appointmentId: 1 });
 ClinicalNoteSchema.index({ tenantId: 1, deletedAt: 1 });
 ClinicalNoteSchema.index({ tenantId: 1, type: 1 });
+ClinicalNoteSchema.index({ tenantId: 1, status: 1 });
+ClinicalNoteSchema.index({ consultationNumber: 1 }, { unique: true, sparse: true });
 ClinicalNoteSchema.index({ previousVersionId: 1 }); // For version history
 
 export default mongoose.models.ClinicalNote || mongoose.model('ClinicalNote', ClinicalNoteSchema);

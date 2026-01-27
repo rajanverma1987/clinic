@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -145,13 +144,11 @@ export default function PaymentHistoryPage() {
   }
 
   return (
-    <Layout>
+    <Layout
+      title={t('subscription.paymentHistory')}
+      subtitle={t('subscription.paymentHistoryDesc')}
+    >
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title={t('subscription.paymentHistory')}
-          subtitle={t('subscription.paymentHistoryDesc')}
-        />
-
         {subscription && (
           <Card className='mb-6 p-4'>
             <div className='flex items-center justify-between'>

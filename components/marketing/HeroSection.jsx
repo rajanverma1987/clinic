@@ -146,7 +146,7 @@ export function HeroSection({ onContactClick }) {
 
             {/* CTA Buttons */}
             <div
-              className='flex flex-col sm:flex-row justify-center lg:justify-start items-center'
+              className='flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start items-center'
               style={{ gap: '20px', marginBottom: '64px' }}
             >
               <Button
@@ -173,6 +173,28 @@ export function HeroSection({ onContactClick }) {
                   />
                 </svg>
                 {t('homepage.startFreeTrial')}
+              </Button>
+              <Button
+                variant='secondary'
+                size='md'
+                className='w-full sm:w-auto whitespace-nowrap animate-button-pulse'
+                onClick={() => router.push('/doctors/register')}
+              >
+                <svg
+                  className='mr-2'
+                  style={{ width: '18px', height: '18px' }}
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+                  />
+                </svg>
+                {t('homepage.forDoctors')}
               </Button>
               <Button
                 variant='secondary'

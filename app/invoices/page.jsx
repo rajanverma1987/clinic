@@ -1,8 +1,8 @@
 'use client';
 
 import { InvoicePrintPreview } from '@/components/invoices/InvoicePrintPreview';
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
@@ -39,14 +40,8 @@ export default function InvoicesPage() {
     try {
       const response = await apiClient.get('/invoices');
       if (response.success && response.data) {
-        // Handle paginated response structure
-        if (response.data.data && Array.isArray(response.data.data)) {
-          setInvoices(response.data.data);
-        } else if (Array.isArray(response.data)) {
-          setInvoices(response.data);
-        } else {
-          setInvoices([]);
-        }
+        const invoicesList = extractArrayData(response);
+        setInvoices(invoicesList);
       } else {
         setInvoices([]);
       }
@@ -171,7 +166,7 @@ export default function InvoicesPage() {
                   e.stopPropagation();
                   router.push(`/invoices/${row._id}/edit`);
                 }}
-                title='Edit Invoice'
+                title={t('invoices.editTitle')}
                 className='whitespace-nowrap'
               >
                 <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -194,7 +189,7 @@ export default function InvoicesPage() {
                 isLoading={deletingInvoiceId === row._id}
                 disabled={deletingInvoiceId === row._id}
                 className='whitespace-nowrap text-status-error border-status-error/30 hover:bg-status-error/10'
-                title='Delete Invoice'
+                title={t('invoices.deleteTitle')}
               >
                 <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path
@@ -219,7 +214,7 @@ export default function InvoicesPage() {
               isLoading={markingPaidId === row._id}
               disabled={markingPaidId === row._id}
               className='whitespace-nowrap'
-              title='Mark as Paid'
+              title={t('invoices.markPaidTitle')}
             >
               <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
@@ -240,7 +235,7 @@ export default function InvoicesPage() {
               setPrintInvoiceId(row._id);
               setShowPrintPreview(true);
             }}
-            title='Print Invoice'
+            title={t('invoices.printTitle')}
             className='whitespace-nowrap'
           >
             <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -276,21 +271,23 @@ export default function InvoicesPage() {
 
   return (
     <Layout>
+      <PageHeader
+        title={t('invoices.title')}
+        subtitle={t('invoices.invoiceList')}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={
+          <Button
+            onClick={() => router.push('/invoices/new')}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('invoices.createInvoice')}
+          </Button>
+        }
+      />
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title={t('invoices.title')}
-          subtitle={t('invoices.invoiceList')}
-          actionButton={
-            <Button
-              onClick={() => router.push('/invoices/new')}
-              variant='primary'
-              size='md'
-              className='whitespace-nowrap'
-            >
-              + {t('invoices.createInvoice')}
-            </Button>
-          }
-        />
 
         <Card>
           <Table

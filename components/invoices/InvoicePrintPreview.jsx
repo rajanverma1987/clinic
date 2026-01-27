@@ -1,10 +1,12 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { Modal } from '@/components/ui/Modal';
 import { Loader } from '@/components/ui/Loader';
 import { generateInvoicePrintHTML } from './InvoicePrintTemplate';
+import { logger } from '@/lib/utils/logger.js';
 
 export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
   const [invoiceData, setInvoiceData] = useState(null);
@@ -37,33 +39,33 @@ export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
         return;
       }
       
-      console.log('Fetching invoice:', invoiceIdStr);
+      logger.info('Fetching invoice:', invoiceIdStr);
       // Fetch invoice and clinic settings in parallel
       const [invoiceResponse, settingsResponse] = await Promise.all([
         apiClient.get(`/invoices/${invoiceIdStr}`),
         apiClient.get('/settings'),
       ]);
 
-      console.log('Invoice response:', invoiceResponse);
-      console.log('Settings response:', settingsResponse);
+      logger.info('Invoice response:', invoiceResponse);
+      logger.info('Settings response:', settingsResponse);
 
       if (invoiceResponse.success && invoiceResponse.data) {
         setInvoiceData(invoiceResponse.data);
-        console.log('Invoice data set:', invoiceResponse.data);
+        logger.info('Invoice data set:', invoiceResponse.data);
       } else {
         const errorMessage = invoiceResponse?.error?.message || invoiceResponse?.error || 'Failed to load invoice';
         setError(errorMessage);
-        console.error('Failed to fetch invoice:', invoiceResponse);
+        logger.error('Failed to fetch invoice:', invoiceResponse);
       }
 
       if (settingsResponse.success && settingsResponse.data) {
         setClinicSettings(settingsResponse.data);
       } else {
         // Settings failure is not critical, we can still show invoice
-        console.warn('Failed to fetch clinic settings:', settingsResponse);
+        logger.warn('Failed to fetch clinic settings:', settingsResponse);
       }
     } catch (error) {
-      console.error('Failed to fetch invoice data:', error);
+      logger.error('Failed to fetch invoice data:', error);
       setError(error.message || 'Failed to load invoice');
     } finally {
       setLoading(false);
@@ -116,18 +118,20 @@ export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
               title="Invoice Preview"
             />
             <div className="flex justify-end gap-4 mt-4">
-              <button
+              <Button
+                variant='secondary'
+                size='sm'
                 onClick={onClose}
-                className="px-4 py-2 border border-neutral-300 rounded hover:bg-neutral-100"
               >
                 Close
-              </button>
-              <button
+              </Button>
+              <Button
+                variant='primary'
+                size='sm'
                 onClick={handlePrint}
-                className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
               >
                 Print
-              </button>
+              </Button>
             </div>
           </>
         ) : (
@@ -140,12 +144,14 @@ export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
                 {error}
               </div>
             )}
-            <button
+            <Button
+              variant='primary'
+              size='sm'
               onClick={fetchInvoiceData}
-              className="mt-4 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
+              className="mt-4"
             >
               Retry
-            </button>
+            </Button>
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-export function WarningIcon({ className = 'w-5 h-5', color = 'currentColor' }) {
+export function WarningIcon({ className = 'icon icon-sm', color = 'currentColor' }) {
   return (
     <svg
       className={className}

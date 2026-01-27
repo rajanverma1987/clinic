@@ -189,6 +189,8 @@ InvoiceSchema.index({ tenantId: 1, invoiceNumber: 1 }, { unique: true });
 InvoiceSchema.index({ tenantId: 1, patientId: 1, createdAt: -1 });
 InvoiceSchema.index({ tenantId: 1, status: 1 });
 InvoiceSchema.index({ tenantId: 1, invoiceDate: 1 });
+InvoiceSchema.index({ tenantId: 1, dueDate: 1 }); // For payment reminders
+InvoiceSchema.index({ tenantId: 1, status: 1, dueDate: 1 }); // For overdue invoices query
 InvoiceSchema.index({ tenantId: 1, deletedAt: 1 });
 
 export default mongoose.models.Invoice || mongoose.model('Invoice', InvoiceSchema);

@@ -1,8 +1,8 @@
 'use client';
 
 import AppointmentCalendar from '@/components/appointments/AppointmentCalendar';
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -72,19 +73,14 @@ export default function AppointmentsPage() {
 
           // Extract doctors from first response
           if (doctorsResponse.success && doctorsResponse.data) {
-            const doctorsList = doctorsResponse.data?.data || doctorsResponse.data || [];
-            if (Array.isArray(doctorsList)) {
-              allDoctors = [...allDoctors, ...doctorsList];
-            }
+            const doctorsList = extractArrayData(doctorsResponse);
+            allDoctors = [...allDoctors, ...doctorsList];
           }
 
           // Extract clinic_admins from second response
           if (clinicAdminsResponse.success && clinicAdminsResponse.data) {
-            const clinicAdminsList =
-              clinicAdminsResponse.data?.data || clinicAdminsResponse.data || [];
-            if (Array.isArray(clinicAdminsList)) {
-              allDoctors = [...allDoctors, ...clinicAdminsList];
-            }
+            const clinicAdminsList = extractArrayData(clinicAdminsResponse);
+            allDoctors = [...allDoctors, ...clinicAdminsList];
           }
 
           console.log('Combined doctors list:', allDoctors);
@@ -190,10 +186,8 @@ export default function AppointmentsPage() {
       ]);
 
       // Filter out video consultations from counts
-      const todayList =
-        todayResponse.success && todayResponse.data?.data ? todayResponse.data.data : [];
-      const tomorrowList =
-        tomorrowResponse.success && tomorrowResponse.data?.data ? tomorrowResponse.data.data : [];
+      const todayList = extractArrayData(todayResponse);
+      const tomorrowList = extractArrayData(tomorrowResponse);
 
       const todayTotal = todayList.filter(
         (apt) => !apt.isTelemedicine && apt.status !== 'arrived'
@@ -238,8 +232,7 @@ export default function AppointmentsPage() {
 
       const response = await apiClient.get(`/appointments?${params}`);
       if (response.success && response.data) {
-        // Handle pagination structure - data is inside response.data.data
-        const appointmentsList = response.data.data || [];
+        const appointmentsList = extractArrayData(response);
         // Filter out:
         // 1. Video consultations (isTelemedicine: true) - they go directly to queue
         // 2. Appointments with "arrived" status - they should only appear in queue
@@ -284,7 +277,7 @@ export default function AppointmentsPage() {
       if (response.success) {
         // Show success message based on status
         if (newStatus === 'arrived') {
-          showSuccess(`${patientName || 'Patient'} marked as arrived and added to the queue!`);
+          showSuccess(t('appointments.markedArrivedQueue', { name: patientName || 'Patient' }));
           // Refresh both appointments and stats
           // Small delay to ensure backend processing is complete
           setTimeout(() => {
@@ -293,21 +286,21 @@ export default function AppointmentsPage() {
             setLoadingAppointmentId(null);
           }, 500);
         } else if (newStatus === 'in_progress') {
-          showSuccess(`Appointment started for ${patientName || 'patient'}`);
+          showSuccess(t('appointments.startedFor', { name: patientName || 'patient' }));
           fetchAppointments();
           setLoadingAppointmentId(null);
         } else if (newStatus === 'completed') {
-          showSuccess(`Appointment completed for ${patientName || 'patient'}`);
+          showSuccess(t('appointments.completedFor', { name: patientName || 'patient' }));
           fetchAppointments();
           fetchStats();
           setLoadingAppointmentId(null);
         } else if (newStatus === 'cancelled') {
-          showSuccess(`Appointment cancelled for ${patientName || 'patient'}`);
+          showSuccess(t('appointments.cancelledFor', { name: patientName || 'patient' }));
           fetchAppointments();
           fetchStats();
           setLoadingAppointmentId(null);
         } else {
-          showSuccess('Appointment status updated successfully');
+          showSuccess(t('appointments.statusUpdatedSuccess'));
           fetchAppointments();
           setLoadingAppointmentId(null);
         }
@@ -316,7 +309,7 @@ export default function AppointmentsPage() {
         const errorMessage = response.error?.message || 'Failed to update appointment status';
         // If it's a duplicate queue error but appointment was updated, show success
         if (errorMessage.includes('duplicate') && errorMessage.includes('queue')) {
-          showSuccess(`${patientName || 'Patient'} marked as arrived. Already in queue.`);
+          showSuccess(t('appointments.markedArrivedAlready', { name: patientName || 'Patient' }));
           setTimeout(() => {
             fetchAppointments();
             fetchStats();
@@ -336,7 +329,7 @@ export default function AppointmentsPage() {
 
       // If it's a duplicate queue error, show a more user-friendly message
       if (errorMessage.includes('duplicate') && errorMessage.includes('queue')) {
-        showSuccess(`${patientName || 'Patient'} is already in queue.`);
+        showSuccess(t('appointments.alreadyInQueue', { name: patientName || 'Patient' }));
         setTimeout(() => {
           fetchAppointments();
           fetchStats();
@@ -455,7 +448,7 @@ export default function AppointmentsPage() {
                     e.stopPropagation();
                     handleStatusChange(row._id, 'arrived', patientName);
                   }}
-                  title='Mark patient as arrived and add to queue'
+                  title={t('appointments.markArrivedTooltip')}
                   className='whitespace-nowrap'
                 >
                   {t('appointments.markArrived')}
@@ -468,7 +461,7 @@ export default function AppointmentsPage() {
                     handleStatusChange(row._id, 'cancelled', patientName);
                   }}
                   disabled={loadingAppointmentId === row._id}
-                  title='Cancel this appointment'
+                  title={t('appointments.cancelTooltip')}
                   className='whitespace-nowrap text-status-error border-status-error/30 hover:bg-status-error/10'
                 >
                   {t('appointments.cancelAppointment') || 'Cancel Appointment'}
@@ -499,27 +492,28 @@ export default function AppointmentsPage() {
 
   return (
     <Layout>
+      <PageHeader
+        title={t('appointments.title')}
+        subtitle={formatDateDisplay(new Date(), {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={
+          <Button
+            onClick={() => router.push('/appointments/new')}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('appointments.bookAppointment')}
+          </Button>
+        }
+      />
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title={t('appointments.title')}
-          subtitle={formatDateDisplay(new Date(), {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
-          notifications={notifications}
-          actionButton={
-            <Button
-              onClick={() => router.push('/appointments/new')}
-              variant='primary'
-              size='md'
-              className='whitespace-nowrap'
-            >
-              + {t('appointments.bookAppointment')}
-            </Button>
-          }
-        />
 
         {/* Filters Section */}
         <Card className='mb-6 p-4'>

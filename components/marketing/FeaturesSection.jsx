@@ -34,7 +34,7 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
       icon: (
         <svg
           style={{ width: '28px', height: '28px' }}
-          className='text-secondary-600'
+          className='text-primary-700'
           fill='none'
           stroke='currentColor'
           viewBox='0 0 24 24'
@@ -46,8 +46,8 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
           <line x1='3' y1='10' x2='21' y2='10' />
         </svg>
       ),
-      bgColor: 'bg-secondary-50',
-      hoverColor: 'hover:border-secondary-300',
+      bgColor: 'bg-primary-50',
+      hoverColor: 'hover:border-primary-300',
     },
     {
       title: t('homepage.billingInvoicing'),
@@ -77,7 +77,7 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
       icon: (
         <svg
           style={{ width: '28px', height: '28px' }}
-          className='text-secondary-600'
+          className='text-primary-700'
           fill='none'
           stroke='currentColor'
           viewBox='0 0 24 24'
@@ -88,8 +88,8 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
           <line x1='6' y1='20' x2='6' y2='14' />
         </svg>
       ),
-      bgColor: 'bg-secondary-50',
-      hoverColor: 'hover:border-secondary-300',
+      bgColor: 'bg-primary-50',
+      hoverColor: 'hover:border-primary-300',
     },
     {
       title: t('homepage.automatedReminders'),
@@ -116,7 +116,7 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
       icon: (
         <svg
           style={{ width: '28px', height: '28px' }}
-          className='text-secondary-600'
+          className='text-primary-700'
           fill='none'
           stroke='currentColor'
           viewBox='0 0 24 24'
@@ -126,8 +126,8 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
           <polyline points='9 22 9 12 15 12 15 22' />
         </svg>
       ),
-      bgColor: 'bg-secondary-50',
-      hoverColor: 'hover:border-secondary-300',
+      bgColor: 'bg-primary-50',
+      hoverColor: 'hover:border-primary-300',
     },
     {
       title: t('homepage.clinicalNotes'),
@@ -158,7 +158,7 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
       icon: (
         <svg
           style={{ width: '28px', height: '28px' }}
-          className='text-secondary-600'
+          className='text-primary-700'
           fill='none'
           stroke='currentColor'
           viewBox='0 0 24 24'
@@ -170,8 +170,8 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
           <path d='M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5' />
         </svg>
       ),
-      bgColor: 'bg-secondary-50',
-      hoverColor: 'hover:border-secondary-300',
+      bgColor: 'bg-primary-50',
+      hoverColor: 'hover:border-primary-300',
       hidden: !showAllFeatures,
     },
     {
@@ -201,7 +201,7 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
       icon: (
         <svg
           style={{ width: '28px', height: '28px' }}
-          className='text-secondary-600'
+          className='text-primary-700'
           fill='none'
           stroke='currentColor'
           viewBox='0 0 24 24'
@@ -214,8 +214,8 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
           <path d='M13 12h8' />
         </svg>
       ),
-      bgColor: 'bg-secondary-50',
-      hoverColor: 'hover:border-secondary-300',
+      bgColor: 'bg-primary-50',
+      hoverColor: 'hover:border-primary-300',
       hidden: !showAllFeatures,
     },
     {
@@ -245,7 +245,7 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
       icon: (
         <svg
           style={{ width: '28px', height: '28px' }}
-          className='text-secondary-600'
+          className='text-primary-700'
           fill='none'
           stroke='currentColor'
           viewBox='0 0 24 24'
@@ -255,8 +255,8 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
           <line x1='12' y1='18' x2='12.01' y2='18' />
         </svg>
       ),
-      bgColor: 'bg-secondary-50',
-      hoverColor: 'hover:border-secondary-300',
+      bgColor: 'bg-primary-50',
+      hoverColor: 'hover:border-primary-300',
       hidden: !showAllFeatures,
     },
   ];
@@ -277,7 +277,7 @@ export function FeaturesSection({ showAllFeatures, onToggleFeatures }) {
         style={{ width: '500px', height: '500px', filter: 'blur(100px)' }}
       ></div>
       <div
-        className='absolute bottom-1/4 left-0 bg-secondary-100/30 rounded-full mix-blend-multiply filter opacity-40'
+        className='absolute bottom-1/4 left-0 bg-primary-100/30 rounded-full mix-blend-multiply filter opacity-40'
         style={{ width: '500px', height: '500px', filter: 'blur(100px)' }}
       ></div>
 

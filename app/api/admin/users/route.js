@@ -4,6 +4,7 @@ import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
 import User from '@/models/User';
 import Tenant from '@/models/Tenant';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/admin/users
@@ -79,7 +80,7 @@ async function getHandler(req, user) {
       })
     );
   } catch (error) {
-    console.error('Admin users error:', error);
+    logger.error('Admin users error:', error);
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to fetch users',

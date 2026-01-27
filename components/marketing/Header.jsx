@@ -80,7 +80,7 @@ export function Header() {
                   width={180}
                   height={50}
                   className='object-contain'
-                  style={{ width: '100%', height: '100%' }}
+                  style={{ width: '100%', height: 'auto', maxHeight: '50px' }}
                   priority
                   quality={90}
                   sizes='180px'
@@ -208,7 +208,7 @@ export function Header() {
                 </Button>
               </>
             ) : (
-              // Not logged in
+              // Not logged in – clinic/staff: Login, For Doctors, Get Started
               <>
                 <Button
                   variant='secondary'
@@ -218,6 +218,12 @@ export function Header() {
                 >
                   {t('auth.login')}
                 </Button>
+                <Link
+                  href='/doctors/register'
+                  className='whitespace-nowrap hidden sm:inline-flex px-5 py-2.5 text-sm font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors'
+                >
+                  {t('navigation.forDoctors')}
+                </Link>
                 <Button
                   variant='primary'
                   size='sm'
@@ -427,6 +433,13 @@ export function Header() {
                     >
                       {t('auth.login')}
                     </Button>
+                    <Link
+                      href='/doctors/register'
+                      onClick={() => setMobileMenuOpen(false)}
+                      className='w-full text-center px-5 py-2.5 text-sm font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors border-2 border-primary-200'
+                    >
+                      {t('navigation.forDoctors')}
+                    </Link>
                     <Button
                       variant='primary'
                       size='sm'

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './LanguageSwitcher.css';
 
-// Map locales to flag emojis and display names - Global language support
+// Best countries/regions where language change is needed – flag, name, code
 const localeData = {
   en: { flag: '🇺🇸', name: 'English', code: 'EN' },
   es: { flag: '🇪🇸', name: 'Español', code: 'ES' },
@@ -18,13 +18,6 @@ const localeData = {
   pt: { flag: '🇵🇹', name: 'Português', code: 'PT' },
   ja: { flag: '🇯🇵', name: '日本語', code: 'JA' },
   ru: { flag: '🇷🇺', name: 'Русский', code: 'RU' },
-  it: { flag: '🇮🇹', name: 'Italiano', code: 'IT' },
-  nl: { flag: '🇳🇱', name: 'Nederlands', code: 'NL' },
-  ko: { flag: '🇰🇷', name: '한국어', code: 'KO' },
-  tr: { flag: '🇹🇷', name: 'Türkçe', code: 'TR' },
-  pl: { flag: '🇵🇱', name: 'Polski', code: 'PL' },
-  th: { flag: '🇹🇭', name: 'ไทย', code: 'TH' },
-  vi: { flag: '🇻🇳', name: 'Tiếng Việt', code: 'VI' },
 };
 
 export function LanguageSwitcher({ variant = 'light', size = 'md' }) {

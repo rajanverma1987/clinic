@@ -20,7 +20,6 @@ const SubscriptionPaymentSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Subscription',
       required: true,
-      index: true,
     },
     tenantId: {
       type: Schema.Types.ObjectId,

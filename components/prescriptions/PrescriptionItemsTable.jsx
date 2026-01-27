@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { MedicineSearchInput } from './MedicineSearchInput';
 
 export function PrescriptionItemsTable({
   items,
@@ -114,17 +115,17 @@ export function PrescriptionItemsTable({
                 <td>
                   <div>
                     {item.itemType === 'drug' && (
-                      <select
-                        value={item.drugId ? String(item.drugId).trim() : ''}
-                        onChange={(e) => {
-                          const selectedValue = String(e.target.value).trim();
-                          const drug = drugs.find((d) => String(d._id).trim() === selectedValue);
-
+                      <MedicineSearchInput
+                        drugs={drugs}
+                        value={item.drugId || ''}
+                        onChange={(drugId) => {
+                          const drug = drugs.find((d) => String(d._id).trim() === String(drugId).trim());
+                          
                           // Use onUpdateItem to update all fields at once if available
                           if (onUpdateItem) {
                             const updatedItem = {
                               ...item,
-                              drugId: selectedValue,
+                              drugId: drugId,
                               drugName: drug ? drug.name : '',
                               form: drug ? drug.form || '' : '',
                               strength: drug ? drug.strength || '' : '',
@@ -132,7 +133,7 @@ export function PrescriptionItemsTable({
                             onUpdateItem(index, updatedItem);
                           } else {
                             // Fallback: update fields individually
-                            onUpdate(index, 'drugId', selectedValue);
+                            onUpdate(index, 'drugId', drugId);
                             if (drug) {
                               onUpdate(index, 'drugName', drug.name);
                               onUpdate(index, 'form', drug.form || '');
@@ -140,23 +141,23 @@ export function PrescriptionItemsTable({
                             }
                           }
                         }}
+                        onSelect={(drug) => {
+                          if (drug && onUpdateItem) {
+                            const updatedItem = {
+                              ...item,
+                              drugId: drug._id,
+                              drugName: drug.name,
+                              form: drug.form || '',
+                              strength: drug.strength || '',
+                            };
+                            onUpdateItem(index, updatedItem);
+                          }
+                        }}
+                        placeholder='Search medicine...'
                         className={`prescription-form-input ${
                           itemError ? 'border-status-error' : ''
                         }`}
-                        style={{
-                          fontSize: 'var(--text-body-xs)',
-                          padding: 'var(--space-2) var(--space-3)',
-                        }}
-                        required
-                      >
-                        <option value=''>Select drug</option>
-                        {drugs.map((drug) => (
-                          <option key={drug._id} value={String(drug._id)}>
-                            {drug.name} {drug.strength ? `(${drug.strength})` : ''}{' '}
-                            {drug.form ? `[${drug.form}]` : ''}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     )}
                     {item.itemType === 'lab' && (
                       <select

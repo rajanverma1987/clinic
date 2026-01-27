@@ -4,23 +4,28 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
+import { useI18n } from '@/contexts/I18nContext';
+import { SettingsTabHeader } from './SettingsTabHeader';
 
 export function QueueSettingsTab({ queueForm, setQueueForm, saving, onSave }) {
+  const { t } = useI18n();
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave();
-      }}
-      className='space-y-4'
-    >
+    <div className='space-y-4 text-left'>
+      <SettingsTabHeader title={t('settings.queueSettings')} />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave();
+        }}
+        className='space-y-4'
+      >
       {/* Queue Configuration */}
       <Card>
         <div className='p-5'>
           <div className='flex items-center gap-2 mb-5'>
             <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
               <svg
-                className='w-4 h-4 text-primary-600'
+                className='icon icon-xs text-primary-600'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -97,7 +102,7 @@ export function QueueSettingsTab({ queueForm, setQueueForm, saving, onSave }) {
           <div className='flex items-center gap-2 mb-5'>
             <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
               <svg
-                className='w-4 h-4 text-primary-600'
+                className='icon icon-xs text-primary-600'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -160,13 +165,7 @@ export function QueueSettingsTab({ queueForm, setQueueForm, saving, onSave }) {
           </div>
         </div>
       </Card>
-
-      {/* Action Buttons */}
-      <div className='flex justify-end gap-3 pt-2'>
-        <Button type='submit' isLoading={saving} disabled={saving}>
-          Save Changes
-        </Button>
-      </div>
     </form>
+    </div>
   );
 }

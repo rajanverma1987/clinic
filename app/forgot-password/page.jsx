@@ -16,7 +16,10 @@ export default function ForgotPasswordPage() {
   const { t } = useI18n();
   const [step, setStep] = useState('request');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [resetMethod, setResetMethod] = useState('email'); // 'email' or 'phone'
   const [secretCode, setSecretCode] = useState('');
+  const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -32,14 +35,20 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const response = await apiClient.post('/auth/forgot-password', { email });
+      const payload = { email }; // Clinic/staff/doctor only – email reset
+      const endpoint = '/auth/forgot-password';
+      
+      const response = await apiClient.post(endpoint, payload);
       if (response.success) {
-        setSuccess(response.data?.message || t('auth.passwordResetCodeSent'));
+        setSuccess(response.data?.message || t('auth.passwordResetCodeSent') || 'Reset code sent successfully');
         // In development, show the code if returned
         if (response.data?.secretCode) {
           setSuccess(
             `Code sent! Your secret code is: ${response.data.secretCode} (development only)`
           );
+        }
+        if (response.data?.otp) {
+          setOtp(response.data.otp);
         }
         setStep('verify');
       } else {
@@ -70,11 +79,10 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const response = await apiClient.post('/auth/reset-password', {
-        email,
-        secretCode,
-        newPassword,
-      });
+      const payload = { email, secretCode, newPassword }; // Clinic/staff/doctor only – email reset
+      const endpoint = '/auth/reset-password';
+      
+      const response = await apiClient.post(endpoint, payload);
 
       if (response.success) {
         setSuccess(t('auth.passwordResetSuccess'));
@@ -186,7 +194,7 @@ export default function ForgotPasswordPage() {
                 {error && (
                   <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm'>
                     <svg
-                      className='w-5 h-5 text-status-error mt-0.5 flex-shrink-0'
+                      className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
                       fill='currentColor'
                       viewBox='0 0 20 20'
                     >
@@ -206,41 +214,44 @@ export default function ForgotPasswordPage() {
                   </div>
                 )}
 
-                <div>
-                  <label
-                    htmlFor='email'
-                    className='block text-sm font-semibold text-neutral-800 mb-2'
-                  >
-                    {t('auth.emailAddress')}
-                  </label>
-                  <div className='relative'>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
-                      <svg
-                        className='h-5 w-5 text-primary-500'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
-                        />
-                      </svg>
+                {/* Clinic/staff/doctor only – email reset (no patient portal) */}
+                {
+                  <div>
+                    <label
+                      htmlFor='email'
+                      className='block text-sm font-semibold text-neutral-800 mb-2'
+                    >
+                      {t('auth.emailAddress')}
+                    </label>
+                    <div className='relative'>
+                      <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                        <svg
+                          className='h-5 w-5 text-primary-500'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
+                          />
+                        </svg>
+                      </div>
+                      <Input
+                        id='email'
+                        type='email'
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        placeholder={t('auth.emailPlaceholder') || 'Enter your email'}
+                        autoComplete='email'
+                        className='pl-10'
+                      />
                     </div>
-                    <Input
-                      id='email'
-                      type='email'
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      placeholder='you@example.com'
-                      autoComplete='email'
-                      className='pl-10'
-                    />
                   </div>
-                </div>
+                }
 
                 <Button
                   type='submit'
@@ -251,7 +262,7 @@ export default function ForgotPasswordPage() {
                   size='lg'
                 >
                   <svg
-                    className='w-5 h-5 mr-2'
+                    className='icon icon-sm mr-2'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -271,7 +282,7 @@ export default function ForgotPasswordPage() {
                     href='/login'
                     className='text-sm text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1'
                   >
-                    <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-xs' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path
                         strokeLinecap='round'
                         strokeLinejoin='round'
@@ -288,7 +299,7 @@ export default function ForgotPasswordPage() {
                 {error && (
                   <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm'>
                     <svg
-                      className='w-5 h-5 text-status-error mt-0.5 flex-shrink-0'
+                      className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
                       fill='currentColor'
                       viewBox='0 0 20 20'
                     >
@@ -321,7 +332,7 @@ export default function ForgotPasswordPage() {
                     value={secretCode}
                     onChange={(e) => setSecretCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     required
-                    placeholder='000000'
+                    placeholder={t('auth.codePlaceholder')}
                     maxLength={6}
                     className='text-center text-2xl tracking-widest font-mono'
                   />
@@ -359,7 +370,7 @@ export default function ForgotPasswordPage() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
-                      placeholder='••••••••'
+                      placeholder={t('auth.passwordPlaceholder')}
                       className='pl-10 pr-10'
                     />
                     <button
@@ -435,7 +446,7 @@ export default function ForgotPasswordPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      placeholder='••••••••'
+                      placeholder={t('auth.passwordPlaceholder')}
                       className='pl-10 pr-10'
                     />
                     <button
@@ -492,7 +503,7 @@ export default function ForgotPasswordPage() {
                 >
                   <span className='flex items-center justify-center'>
                     <svg
-                      className='w-5 h-5 mr-2'
+                      className='icon icon-sm mr-2'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -521,7 +532,7 @@ export default function ForgotPasswordPage() {
                     }}
                     className='text-sm text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1'
                   >
-                    <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-xs' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path
                         strokeLinecap='round'
                         strokeLinejoin='round'

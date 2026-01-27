@@ -1,4 +1,15 @@
+/**
+ * Appointment API Routes
+ * 
+ * Enterprise-grade API endpoints for appointment management with comprehensive
+ * validation, telemedicine integration, and notification handling.
+ * 
+ * @module app/api/appointments/route
+ * @since 1.0.0
+ */
+
 import { sendVideoConsultationEmail } from '@/lib/email/email-service';
+import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
 import {
   errorResponse,
   handleMongoError,
@@ -7,16 +18,54 @@ import {
 } from '@/lib/utils/api-response';
 import { appointmentQuerySchema, createAppointmentSchema } from '@/lib/validations/appointment';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { withRequestLogger } from '@/middleware/request-logger';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
 import Patient from '@/models/Patient';
 import { SessionType } from '@/models/TelemedicineSession';
 import User from '@/models/User';
 import { createAppointment, listAppointments } from '@/services/appointment.service';
 import { createTelemedicineSession } from '@/services/telemedicine.service';
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/appointments
- * List appointments with pagination and filters
+ * 
+ * List appointments with pagination, filtering, and sorting.
+ * Supports filtering by patient, doctor, status, type, and date range.
+ * 
+ * Query Parameters:
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 10, max: 100)
+ * - patientId: Filter by patient ID
+ * - doctorId: Filter by doctor ID
+ * - status: Filter by status (scheduled, confirmed, completed, cancelled, no_show)
+ * - type: Filter by type (consultation, follow_up, emergency, etc.)
+ * - startDate: Filter appointments from this date (ISO format)
+ * - endDate: Filter appointments until this date (ISO format)
+ * - date: Filter by specific date (ISO format)
+ * - isActive: Filter by active status (true/false)
+ * 
+ * @async
+ * @function getHandler
+ * @param {Request} req - HTTP request object
+ * @param {Object} user - Authenticated user object with tenantId and userId
+ * @returns {Promise<NextResponse>} Paginated list of appointments
+ * 
+ * @example
+ * GET /api/appointments?status=scheduled&doctorId=123&page=1&limit=20
+ * 
+ * @security
+ * - Requires APPOINTMENT:READ permission
+ * - Results filtered by tenantId (multi-tenant isolation)
+ * - Feature access check for Appointment Scheduling
+ * 
+ * @performance
+ * - Uses optimized queries with .lean()
+ * - Supports pagination to prevent large result sets
+ * - Indexed queries for date and status filters
  */
 async function getHandler(req, user) {
   // Check if Appointment Scheduling feature is available (skip for super_admin)
@@ -67,7 +116,67 @@ async function getHandler(req, user) {
 
 /**
  * POST /api/appointments
- * Create a new appointment
+ * 
+ * Create a new appointment with comprehensive validation, conflict detection,
+ * telemedicine session creation, and notification sending.
+ * 
+ * Request Body:
+ * - patientId: Patient ID (required)
+ * - doctorId: Doctor ID (required)
+ * - appointmentDate: Appointment date (required, ISO format)
+ * - startTime: Start time (required, ISO format)
+ * - endTime: End time (required, ISO format)
+ * - duration: Duration in minutes (optional, calculated if not provided)
+ * - type: Appointment type (required)
+ * - reason: Appointment reason (optional)
+ * - isTelemedicine: Whether it's a telemedicine appointment (default: false)
+ * - isRecurring: Whether it's a recurring appointment (default: false)
+ * - recurringOccurrences: Number of recurring occurrences (if recurring)
+ * - telemedicineConsent: Patient consent for recording (if telemedicine)
+ * - patientEmail: Patient email for notifications (optional)
+ * 
+ * @async
+ * @function postHandler
+ * @param {Request} req - HTTP request object with JSON body
+ * @param {Object} user - Authenticated user object with tenantId and userId
+ * @returns {Promise<NextResponse>} Created appointment object with 201 status
+ * 
+ * @example
+ * POST /api/appointments
+ * {
+ *   "patientId": "507f1f77bcf86cd799439011",
+ *   "doctorId": "507f1f77bcf86cd799439012",
+ *   "appointmentDate": "2026-01-27",
+ *   "startTime": "2026-01-27T10:00:00Z",
+ *   "endTime": "2026-01-27T10:30:00Z",
+ *   "type": "consultation",
+ *   "isTelemedicine": true,
+ *   "patientEmail": "patient@example.com"
+ * }
+ * 
+ * @security
+ * - Requires APPOINTMENT:CREATE permission
+ * - Feature access check for Appointment Scheduling
+ * - Conflict detection prevents double-booking
+ * - Holiday and schedule validation
+ * 
+ * @validation
+ * - Input validated against createAppointmentSchema
+ * - Date/time validation
+ * - Conflict detection with existing appointments
+ * - Holiday checking
+ * - Doctor schedule validation
+ * 
+ * @features
+ * - Automatic telemedicine session creation
+ * - Email notifications for telemedicine appointments
+ * - Recurring appointment support
+ * - Queue integration
+ * - Reminder scheduling
+ * 
+ * @audit
+ * - Appointment creation logged
+ * - PHI access logged for compliance
  */
 async function postHandler(req, user) {
   // Check if Appointment Scheduling feature is available (skip for super_admin)
@@ -91,29 +200,14 @@ async function postHandler(req, user) {
 
     const appointment = await createAppointment(validationResult.data, user.tenantId, user.userId);
 
-    // For recurring appointments, fetch all created appointments
-    let allAppointments = [appointment];
+    // For recurring appointments, the service already creates all occurrences
+    // We can fetch them if needed, but for now we'll just return the first one
+    // The frontend can query for all appointments if needed
+    let recurringCount = 1;
     if (body.isRecurring) {
-      try {
-        const appointmentsResponse = await apiClient.get(
-          `/appointments?patientId=${body.patientId}&doctorId=${body.doctorId}&startDate=${body.appointmentDate}&limit=100`
-        );
-        if (appointmentsResponse.success && appointmentsResponse.data) {
-          const appointmentsData =
-            appointmentsResponse.data?.data || appointmentsResponse.data || [];
-          // Get the most recent appointments (should include the recurring ones)
-          allAppointments = appointmentsData
-            .filter((apt) => {
-              const aptDate = new Date(apt.appointmentDate || apt.startTime);
-              const startDate = new Date(body.appointmentDate);
-              return aptDate >= startDate;
-            })
-            .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-            .slice(0, body.recurringOccurrences || 4);
-        }
-      } catch (err) {
-        console.error('Failed to fetch recurring appointments:', err);
-      }
+      // The service creates multiple appointments for recurring, but returns the first one
+      // We can estimate the count based on occurrences
+      recurringCount = body.recurringOccurrences || 4;
     }
 
     // If telemedicine appointment, create session and send email
@@ -172,40 +266,31 @@ async function postHandler(req, user) {
             user.tenantId
           );
 
-          console.log(`📧 Video consultation email sent to: ${body.patientEmail}`);
+          logger.info('Video consultation email sent', {
+            email: body.patientEmail,
+            appointmentId: appointment._id.toString(),
+            sessionId: telemedicineSession._id.toString(),
+          });
         }
       } catch (emailError) {
-        console.error('Failed to create session or send email:', emailError);
+        logger.error('Failed to create session or send email', emailError, {
+          appointmentId: appointment._id.toString(),
+        });
         // Don't fail appointment creation if email fails
       }
     } else {
-      // Send appointment confirmation email for regular appointments
+      // Send appointment confirmation notifications (email, SMS, in-app)
       try {
-        const { sendAppointmentConfirmationEmail } = await import('@/lib/email/email-service.js');
-        const patient = await Patient.findById(appointment.patientId);
-
-        if (patient?.email) {
-          const doctor = await User.findById(appointment.doctorId);
-          if (doctor) {
-            const patientName = `${patient.firstName} ${patient.lastName}`;
-            const doctorName = `${doctor.firstName} ${doctor.lastName}`;
-
-            await sendAppointmentConfirmationEmail(
-              patient.email,
-              patientName,
-              doctorName,
-              appointment.appointmentDate,
-              appointment.startTime,
-              appointment.type || 'consultation',
-              user.tenantId
-            );
-
-            console.log(`📧 Appointment confirmation email sent to: ${patient.email}`);
-          }
-        }
-      } catch (emailError) {
-        // Don't fail appointment creation if email fails
-        console.error('Failed to send appointment confirmation email:', emailError);
+        const { sendAppointmentConfirmation } = await import('@/services/appointment-notification.service.js');
+        await sendAppointmentConfirmation(appointment._id.toString(), user.tenantId);
+        logger.info('Appointment confirmation notifications sent', {
+          appointmentId: appointment._id.toString(),
+        });
+      } catch (notificationError) {
+        // Don't fail appointment creation if notifications fail
+        logger.error('Failed to send appointment confirmation notifications', notificationError, {
+          appointmentId: appointment._id.toString(),
+        });
       }
     }
 
@@ -224,7 +309,7 @@ async function postHandler(req, user) {
         telemedicineSessionId: telemedicineSession?._id?.toString(),
         createdAt: appointment.createdAt,
         isRecurring: body.isRecurring || false,
-        recurringCount: body.isRecurring ? allAppointments.length : 1,
+        recurringCount: recurringCount,
       }),
       { status: 201 }
     );
@@ -243,5 +328,44 @@ async function postHandler(req, user) {
   }
 }
 
-export const GET = withAuth(getHandler);
-export const POST = withAuth(postHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ * 
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates APPOINTMENT:READ permission
+ * 6. Handler - Executes business logic
+ */
+export const GET = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(
+      withAuth(
+        requirePermission(RESOURCES.APPOINTMENT, ACTIONS.READ)(getHandler)
+      )
+    )
+  )
+);
+
+/**
+ * Apply enterprise middleware stack to POST endpoint.
+ * 
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates APPOINTMENT:CREATE permission
+ * 6. Handler - Executes business logic
+ */
+export const POST = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(
+      withAuth(
+        requirePermission(RESOURCES.APPOINTMENT, ACTIONS.CREATE)(postHandler)
+      )
+    )
+  )
+);

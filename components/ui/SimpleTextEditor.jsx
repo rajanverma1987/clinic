@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/Button';
 
 export function SimpleTextEditor({
   value,
@@ -64,9 +65,11 @@ export function SimpleTextEditor({
     <div className="w-full">
       {/* Toolbar */}
       <div className="flex items-center gap-1 mb-2 p-2 bg-gray-50 border border-gray-300 rounded-t-lg">
-        <button
+        <Button
           type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+          variant="ghost"
+          size="xs"
+          className="px-3 py-1 text-sm min-h-0"
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('bold', false);
@@ -75,10 +78,12 @@ export function SimpleTextEditor({
           title="Bold (Ctrl+B)"
         >
           <strong>B</strong>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+          variant="ghost"
+          size="xs"
+          className="px-3 py-1 text-sm min-h-0"
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('italic', false);
@@ -87,10 +92,12 @@ export function SimpleTextEditor({
           title="Italic (Ctrl+I)"
         >
           <em>I</em>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+          variant="ghost"
+          size="xs"
+          className="px-3 py-1 text-sm min-h-0"
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('underline', false);
@@ -99,11 +106,13 @@ export function SimpleTextEditor({
           title="Underline (Ctrl+U)"
         >
           <u>U</u>
-        </button>
+        </Button>
         <div className="flex-1" />
-        <button
+        <Button
           type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+          variant="ghost"
+          size="xs"
+          className="px-3 py-1 text-sm min-h-0"
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('insertUnorderedList', false);
@@ -112,10 +121,12 @@ export function SimpleTextEditor({
           title="Bullet List"
         >
           •
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+          variant="ghost"
+          size="xs"
+          className="px-3 py-1 text-sm min-h-0"
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('insertOrderedList', false);
@@ -124,7 +135,7 @@ export function SimpleTextEditor({
           title="Numbered List"
         >
           1.
-        </button>
+        </Button>
       </div>
 
       {/* Editor */}

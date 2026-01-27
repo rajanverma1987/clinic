@@ -1,5 +1,7 @@
 'use client';
 
+import { logger } from '@/lib/utils/logger.js';
+
 export function VideoDisplay({ localVideoRef, remoteVideoRef, isVideoEnabled, isScreenSharing }) {
   return (
     <>
@@ -16,7 +18,7 @@ export function VideoDisplay({ localVideoRef, remoteVideoRef, isVideoEnabled, is
         }}
         onLoadedMetadata={(e) => {
           if (e.target) {
-            e.target.play().catch((err) => console.warn('Video autoplay prevented:', err));
+            e.target.play().catch((err) => logger.warn('Video autoplay prevented:', err));
           }
         }}
       />

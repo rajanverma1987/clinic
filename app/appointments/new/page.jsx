@@ -1,6 +1,8 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -154,8 +156,8 @@ function NewAppointmentPageContent() {
       const patientsResponse = await apiClient.get('/patients?limit=1000'); // Get more patients for appointment booking
 
       if (patientsResponse.success && patientsResponse.data) {
-        // Handle pagination structure - data is inside response.data.data
-        const patientsList = patientsResponse.data.data || [];
+        const { extractArrayData } = await import('@/lib/utils/api-response-extractor');
+        const patientsList = extractArrayData(patientsResponse);
         setPatients(Array.isArray(patientsList) ? patientsList : []);
       }
 
@@ -209,25 +211,25 @@ function NewAppointmentPageContent() {
     try {
       // Validate required fields
       if (!formData.patientId) {
-        showError('Please select a patient');
+        showError(t('errors.pleaseSelectPatient'));
         setSubmitting(false);
         return;
       }
 
       if (!formData.doctorId) {
-        showError('Please select a doctor');
+        showError(t('errors.pleaseSelectDoctor'));
         setSubmitting(false);
         return;
       }
 
       if (!formData.appointmentDate) {
-        showError('Please select an appointment date');
+        showError(t('errors.pleaseSelectDate'));
         setSubmitting(false);
         return;
       }
 
       if (!formData.startTime) {
-        showError('Please select a start time');
+        showError(t('errors.pleaseSelectTime'));
         setSubmitting(false);
         return;
       }
@@ -279,27 +281,23 @@ function NewAppointmentPageContent() {
         const appointmentCount = formData.isRecurring ? formData.recurringOccurrences || 4 : 1;
         showSuccess(
           formData.isRecurring
-            ? `${appointmentCount} recurring appointment${
-                appointmentCount > 1 ? 's' : ''
-              } scheduled successfully!`
+            ? t('appointments.recurringScheduled', { count: appointmentCount })
             : formData.isTelemedicine
-            ? 'Video consultation scheduled! Email sent to patient.'
-            : 'Appointment scheduled successfully!'
+            ? t('appointments.videoScheduled')
+            : t('appointments.scheduledSuccess')
         );
         setTimeout(() => {
           router.push('/appointments');
         }, 1500);
       } else {
-        // User-friendly error messages
-        const errorMsg = response.error?.message || 'Failed to create appointment';
+        const errorMsg = response.error?.message || t('errors.failedToCreateAppointment');
 
-        // Replace technical errors with user-friendly messages
         if (errorMsg.includes('Cast to ObjectId failed') || errorMsg.includes('ObjectId')) {
-          showError('Invalid selection. Please refresh the page and try again.');
+          showError(t('errors.invalidSelectionRefresh'));
         } else if (errorMsg.includes('validation') || errorMsg.includes('required')) {
-          showError('Please fill in all required fields correctly');
+          showError(t('errors.pleaseFillRequired'));
         } else if (errorMsg.includes('duplicate') || errorMsg.includes('exists')) {
-          showError('An appointment already exists for this time slot');
+          showError(t('errors.appointmentConflict'));
         } else {
           showError(errorMsg);
         }
@@ -307,18 +305,16 @@ function NewAppointmentPageContent() {
     } catch (error) {
       console.error('Appointment creation error:', error);
 
-      // User-friendly error messages for exceptions
-      let errorMsg = 'Failed to create appointment. Please try again.';
+      let errorMsg = t('errors.failedToCreateAppointmentRetry');
 
       if (error.message) {
         if (error.message.includes('Cast to ObjectId') || error.message.includes('ObjectId')) {
-          errorMsg = 'Invalid selection. Please refresh the page and try again.';
+          errorMsg = t('errors.invalidSelectionRefresh');
         } else if (error.message.includes('Network') || error.message.includes('fetch')) {
-          errorMsg = 'Network error. Please check your connection and try again.';
+          errorMsg = t('errors.networkError');
         } else if (error.message.includes('timeout')) {
-          errorMsg = 'Request timeout. Please try again.';
+          errorMsg = t('errors.requestTimeout');
         } else if (!error.message.includes('MongoDB') && !error.message.includes('Schema')) {
-          // Only show non-technical errors
           errorMsg = error.message;
         }
       }
@@ -347,32 +343,14 @@ function NewAppointmentPageContent() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        <div className='mb-8' style={{ paddingTop: '10px' }}>
-          <button
-            onClick={() => router.back()}
-            className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
-            style={{ marginLeft: '10px' }}
-            aria-label={t('common.back')}
-          >
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M15 19l-7-7 7-7'
-              />
-            </svg>
-          </button>
-        </div>
-
-        <div className='mb-8'>
-          <h1 className='text-3xl font-bold text-neutral-900'>
-            {t('appointments.bookAppointment')}
-          </h1>
-          <p className='text-neutral-600 mt-2'>{t('appointments.appointmentList')}</p>
-        </div>
-
+      <PageHeader
+        title={t('appointments.bookAppointment')}
+        subtitle={t('appointments.appointmentList')}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={<BackButton />}
+      />
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
         <Card>
           <form onSubmit={handleSubmit} className='space-y-6' noValidate>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
@@ -398,7 +376,7 @@ function NewAppointmentPageContent() {
                   onAddNew={() => router.push('/patients')}
                   label={t('appointments.patient')}
                   required
-                  placeholder='Search by name, ID, or phone number...'
+                  placeholder={t('appointments.searchPlaceholder')}
                 />
               </div>
 
@@ -498,7 +476,7 @@ function NewAppointmentPageContent() {
                     <div className='flex-1'>
                       <div className='flex items-center gap-2'>
                         <svg
-                          className='w-5 h-5 text-primary-600'
+                          className='icon icon-sm text-primary-600'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -573,7 +551,7 @@ function NewAppointmentPageContent() {
                               recurringOccurrences: parseInt(e.target.value) || 4,
                             })
                           }
-                          placeholder='4'
+                          placeholder={t('appointments.durationPlaceholder')}
                         />
                         <p className='text-xs text-neutral-500 mt-1'>
                           Total number of appointments to create (2-52)
@@ -616,7 +594,7 @@ function NewAppointmentPageContent() {
                     <div className='flex items-center space-x-3'>
                       <div className='w-12 h-12 rounded-lg flex items-center justify-center bg-primary-600'>
                         <svg
-                          className='w-6 h-6 text-white'
+                          className='icon icon-md text-white'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -644,7 +622,7 @@ function NewAppointmentPageContent() {
                     <div className='flex items-start gap-3'>
                       <div className='flex-shrink-0'>
                         <svg
-                          className='w-6 h-6 text-purple-600'
+                          className='icon icon-md text-purple-600'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -671,7 +649,7 @@ function NewAppointmentPageContent() {
                           className='inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg'
                         >
                           <svg
-                            className='w-4 h-4'
+                            className='icon icon-xs'
                             fill='none'
                             stroke='currentColor'
                             viewBox='0 0 24 24'
@@ -714,7 +692,7 @@ function NewAppointmentPageContent() {
                         }`}
                       >
                         <svg
-                          className={`w-6 h-6 ${
+                          className={`icon icon-md ${
                             !formData.isTelemedicine ? 'text-white' : 'text-neutral-600'
                           }`}
                           fill='none'
@@ -763,7 +741,7 @@ function NewAppointmentPageContent() {
                         }`}
                       >
                         <svg
-                          className={`w-6 h-6 ${
+                          className={`icon icon-md ${
                             formData.isTelemedicine ? 'text-white' : 'text-neutral-600'
                           }`}
                           fill='none'
@@ -799,7 +777,7 @@ function NewAppointmentPageContent() {
                     value={formData.patientEmail}
                     onChange={(e) => setFormData({ ...formData, patientEmail: e.target.value })}
                     required
-                    placeholder='patient@example.com'
+                    placeholder={t('appointments.patientEmailPlaceholder')}
                   />
                   <p className='text-sm text-neutral-600 mt-1'>
                     📧 An email with the secure video consultation link will be sent to this address
@@ -863,7 +841,7 @@ function NewAppointmentPageContent() {
                 id='reason'
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                placeholder='Brief reason for the appointment'
+                placeholder={t('appointments.reasonPlaceholder')}
               />
             </div>
 
@@ -873,7 +851,7 @@ function NewAppointmentPageContent() {
                 rows={4}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder='Additional notes about the appointment'
+                placeholder={t('appointments.notesPlaceholder')}
               />
             </div>
 

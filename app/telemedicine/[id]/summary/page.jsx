@@ -15,6 +15,10 @@ export default function SessionSummaryPage() {
   const sessionId = params.id;
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState('');
+  const [showRating, setShowRating] = useState(false);
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   useEffect(() => {
     fetchSession();
@@ -25,12 +29,71 @@ export default function SessionSummaryPage() {
       const response = await apiClient.get(`/telemedicine/sessions/${sessionId}`);
       if (response.success && response.data) {
         setSession(response.data);
+        // Check if patient has already rated
+        if (response.data.review) {
+          setRating(response.data.review.rating || 0);
+          setReview(response.data.review.reviewText || '');
+        } else {
+          setShowRating(true);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch session:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmitRating = async () => {
+    if (rating === 0) {
+      alert('Please select a rating');
+      return;
+    }
+    try {
+      setSubmittingRating(true);
+      const response = await apiClient.post(`/telemedicine/sessions/${sessionId}/review`, {
+        rating,
+        reviewText: review,
+      });
+      if (response.success) {
+        alert('Thank you for your feedback!');
+        setShowRating(false);
+        fetchSession();
+      } else {
+        alert('Failed to submit rating');
+      }
+    } catch (err) {
+      alert('Failed to submit rating');
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
+  const downloadSummary = () => {
+    // Generate and download consultation summary PDF
+    const summaryContent = `
+Consultation Summary
+Session ID: ${session.sessionId}
+Date: ${new Date(session.scheduledStartTime).toLocaleString()}
+Duration: ${session.duration || 'N/A'} minutes
+
+Patient: ${session.patientId?.firstName} ${session.patientId?.lastName}
+Doctor: Dr. ${session.doctorId?.firstName} ${session.doctorId?.lastName}
+
+${session.notes ? `Clinical Notes:\n${session.notes}\n\n` : ''}
+${session.diagnosis ? `Diagnosis:\n${session.diagnosis}\n\n` : ''}
+Connection Quality: ${session.connectionQuality || 'N/A'}
+    `.trim();
+    
+    const blob = new Blob([summaryContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `consultation-summary-${session.sessionId}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -177,25 +240,94 @@ export default function SessionSummaryPage() {
           </Card>
         </div>
 
+        {/* Rating Section (for Patients) */}
+        {showRating && !session.review && (
+          <Card className='mt-6 p-6 bg-gradient-to-br from-primary-50 to-blue-50 border-2 border-primary-200'>
+            <h3 className='text-xl font-bold text-neutral-900 mb-4 flex items-center gap-2'>
+              <svg className='icon icon-md text-primary-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'
+                />
+              </svg>
+              Rate This Consultation
+            </h3>
+            <div className='space-y-4'>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>Rating *</label>
+                <div className='flex items-center gap-2'>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type='button'
+                      onClick={() => setRating(star)}
+                      className='focus:outline-none'
+                    >
+                      <svg
+                        className={`w-8 h-8 transition-colors ${
+                          star <= rating ? 'text-yellow-400 fill-current' : 'text-neutral-300'
+                        }`}
+                        fill='currentColor'
+                        viewBox='0 0 20 20'
+                      >
+                        <path d='M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z' />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  Your Review (Optional)
+                </label>
+                <textarea
+                  className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                  rows={4}
+                  value={review}
+                  onChange={(e) => setReview(e.target.value)}
+                  placeholder='Share your experience with this consultation...'
+                />
+              </div>
+              <Button
+                variant='primary'
+                onClick={handleSubmitRating}
+                disabled={submittingRating || rating === 0}
+              >
+                {submittingRating ? 'Submitting...' : 'Submit Rating'}
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Actions */}
         <Card className='mt-6'>
-          <div className='flex items-center justify-between'>
+          <div className='flex items-center justify-between flex-wrap gap-4'>
             <div>
               <h3 className='font-semibold text-neutral-900'>Actions</h3>
               <p className='text-sm text-neutral-600'>Next steps for this consultation</p>
             </div>
-            <div className='flex gap-3'>
+            <div className='flex flex-wrap gap-3'>
               <Button
-                variant='secondary'
+                variant='primary'
                 onClick={() => {
                   const patientId = session.patientId?._id || session.patientId;
                   if (patientId) {
-                    router.push(`/prescriptions/new?patientId=${patientId}`);
+                    router.push(`/prescriptions/new?patientId=${patientId}&appointmentId=${session.appointmentId || ''}`);
                   } else {
                     router.push('/prescriptions/new');
                   }
                 }}
               >
+                <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                  />
+                </svg>
                 Create Prescription
               </Button>
               <Button
@@ -203,15 +335,44 @@ export default function SessionSummaryPage() {
                 onClick={() => {
                   const patientId = session.patientId?._id || session.patientId;
                   if (patientId) {
-                    router.push(`/appointments/new?patientId=${patientId}`);
+                    router.push(`/appointments/new?patientId=${patientId}&followUp=true`);
                   } else {
                     router.push('/appointments/new');
                   }
                 }}
               >
-                Schedule Follow-up
+                <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+                  />
+                </svg>
+                Book Follow-up
               </Button>
-              <Button onClick={() => window.print()}>Print Summary</Button>
+              <Button variant='outline' onClick={downloadSummary}>
+                <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                  />
+                </svg>
+                Download Summary
+              </Button>
+              <Button variant='outline' onClick={() => window.print()}>
+                <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z'
+                  />
+                </svg>
+                Print Summary
+              </Button>
             </div>
           </div>
         </Card>

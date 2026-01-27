@@ -1,7 +1,7 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -10,6 +10,7 @@ import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -37,13 +38,7 @@ export default function InventoryPage() {
 
       const response = await apiClient.get(`/inventory/items?${params}`);
       if (response.success && response.data) {
-        // Handle pagination structure - data might be inside response.data.data
-        let itemsList = [];
-        if (Array.isArray(response.data)) {
-          itemsList = response.data;
-        } else if (response.data?.data) {
-          itemsList = response.data.data;
-        }
+        let itemsList = extractArrayData(response);
 
         if (showLowStock) {
           itemsList = itemsList.filter((item) => item.totalQuantity <= item.lowStockThreshold);
@@ -111,21 +106,23 @@ export default function InventoryPage() {
 
   return (
     <Layout>
+      <PageHeader
+        title={t('inventory.title')}
+        subtitle={t('inventory.items')}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={
+          <Button
+            onClick={() => router.push('/inventory/items/new')}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('inventory.addItem')}
+          </Button>
+        }
+      />
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title={t('inventory.title')}
-          subtitle={t('inventory.items')}
-          actionButton={
-            <Button
-              onClick={() => router.push('/inventory/items/new')}
-              variant='primary'
-              size='md'
-              className='whitespace-nowrap'
-            >
-              + {t('inventory.addItem')}
-            </Button>
-          }
-        />
 
         <Card className='mb-6'>
           <div className='flex items-center gap-4'>

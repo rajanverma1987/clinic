@@ -2,9 +2,11 @@
 
 import '@/app/prescriptions/styles/prescription-form.css';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
 import { PrescriptionFormPrintPreview } from '@/components/prescriptions/PrescriptionFormPrintPreview';
 import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
@@ -14,6 +16,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useFormAutoSave } from '@/hooks/useFormAutoSave.js';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
@@ -68,10 +71,13 @@ function NewPrescriptionPageContent() {
     patientId: patientIdFromUrl, // Pre-fill from URL if provided
     appointmentId: '',
     clinicalNoteId: '',
+    symptoms: '',
     diagnosis: '',
     additionalInstructions: '',
     validUntil: '', // Will be auto-calculated from prescription date + validity days
     refillsAllowed: 0,
+    followUpDate: '',
+    digitalSignature: '',
   });
   const [currentAppointment, setCurrentAppointment] = useState(null);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
@@ -153,9 +159,7 @@ function NewPrescriptionPageContent() {
       );
 
       if (queueResponse.success && queueResponse.data) {
-        const queueData = Array.isArray(queueResponse.data)
-          ? queueResponse.data
-          : queueResponse.data?.data || [];
+        const queueData = extractArrayData(queueResponse);
 
         if (queueData.length > 0 && queueData[0].appointmentId) {
           const appointmentId =
@@ -185,9 +189,7 @@ function NewPrescriptionPageContent() {
       );
 
       if (appointmentsResponse.success && appointmentsResponse.data) {
-        const aptsData = Array.isArray(appointmentsResponse.data)
-          ? appointmentsResponse.data
-          : appointmentsResponse.data?.data || [];
+        const aptsData = extractArrayData(appointmentsResponse);
 
         if (aptsData.length > 0) {
           const appointment = aptsData[0];
@@ -302,9 +304,7 @@ function NewPrescriptionPageContent() {
       let allPatients = [];
 
       if (allPatientsResponse.success && allPatientsResponse.data) {
-        allPatients = Array.isArray(allPatientsResponse.data)
-          ? allPatientsResponse.data
-          : allPatientsResponse.data?.data || [];
+        allPatients = extractArrayData(allPatientsResponse);
       }
 
       // Filter patients to only include those with in_progress appointments
@@ -331,30 +331,17 @@ function NewPrescriptionPageContent() {
         // Handle pagination structure - API returns { success: true, data: { data: [...], pagination: {...} } }
         let drugsList = [];
 
-        // Check if response.data has a data property (pagination structure) - this is the most common case
-        if (drugsResponse.data.data && Array.isArray(drugsResponse.data.data)) {
-          drugsList = drugsResponse.data.data
-            .filter((item) => item.type === 'medicine') // Double-check it's a medicine
-            .map((item) => ({
-              _id: item._id,
-              name: item.name || item.brandName || 'Unknown',
-              genericName: item.genericName,
-              form: item.form || '',
-              strength: item.strength,
-            }));
-        }
-        // Check if response.data is directly an array (fallback)
-        else if (Array.isArray(drugsResponse.data)) {
-          drugsList = drugsResponse.data
-            .filter((item) => item.type === 'medicine')
-            .map((item) => ({
-              _id: item._id,
-              name: item.name || item.brandName || 'Unknown',
-              genericName: item.genericName,
-              form: item.form || '',
-              strength: item.strength,
-            }));
-        }
+        // Extract drugs data and filter for medicines
+        const allDrugs = extractArrayData(drugsResponse);
+        drugsList = allDrugs
+          .filter((item) => item.type === 'medicine') // Double-check it's a medicine
+          .map((item) => ({
+            _id: item._id,
+            name: item.name || item.brandName || 'Unknown',
+            genericName: item.genericName,
+            form: item.form || '',
+            strength: item.strength,
+          }));
 
         console.log('Extracted drugs list:', drugsList.length, 'drugs found');
         setDrugs(drugsList);
@@ -735,28 +722,14 @@ function NewPrescriptionPageContent() {
         }
       `}</style>
       <Layout>
-        <div style={{ padding: '0 10px' }}>
-          <div className='mb-6 flex items-center gap-4' style={{ paddingTop: '10px' }}>
-            <button
-              onClick={() => router.back()}
-              className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
-              style={{ marginLeft: '10px' }}
-              aria-label={t('common.back')}
-            >
-              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M19 12H5M12 19l-7-7 7-7'
-                />
-              </svg>
-            </button>
-            <h1 className='text-2xl font-bold text-neutral-900'>
-              {t('prescriptions.createPrescription')}
-            </h1>
-          </div>
-
+        <PageHeader
+          title={t('prescriptions.createPrescription')}
+          subtitle={t('prescriptions.prescriptionList')}
+          notifications={[]}
+          unreadCount={0}
+          actionButton={<BackButton />}
+        />
+        <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
           {/* Two-column layout: Form on left, Patient details on right */}
           <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
             {/* Left column: Main form */}
@@ -870,6 +843,21 @@ function NewPrescriptionPageContent() {
                       </div>
 
                       <div className='prescription-form-field'>
+                        <label htmlFor='symptoms' className='prescription-form-label'>
+                          Symptoms
+                        </label>
+                        <Input
+                          id='symptoms'
+                          value={formData.symptoms}
+                          onChange={(e) => setFormData({ ...formData, symptoms: e.target.value })}
+                          placeholder='e.g., Fever, Headache, Cough...'
+                        />
+                        <p className='prescription-form-help-text'>
+                          Patient-reported symptoms or complaints
+                        </p>
+                      </div>
+
+                      <div className='prescription-form-field'>
                         <label htmlFor='diagnosis' className='prescription-form-label'>
                           Diagnosis
                         </label>
@@ -877,10 +865,26 @@ function NewPrescriptionPageContent() {
                           id='diagnosis'
                           value={formData.diagnosis}
                           onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-                          placeholder='Enter diagnosis (e.g., Hypertension, Diabetes)'
+                          placeholder={t('prescriptions.diagnosisPlaceholder')}
                         />
                         <p className='prescription-form-help-text'>
                           Primary diagnosis or condition being treated
+                        </p>
+                      </div>
+
+                      <div className='prescription-form-field'>
+                        <label htmlFor='followUpDate' className='prescription-form-label'>
+                          Follow-up Date
+                        </label>
+                        <Input
+                          id='followUpDate'
+                          type='date'
+                          value={formData.followUpDate}
+                          onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
+                          min={new Date().toISOString().split('T')[0]}
+                        />
+                        <p className='prescription-form-help-text'>
+                          Recommended date for patient follow-up
                         </p>
                       </div>
 
@@ -899,12 +903,28 @@ function NewPrescriptionPageContent() {
                               refillsAllowed: parseInt(e.target.value) || 0,
                             })
                           }
-                          placeholder='0'
+                          placeholder={t('prescriptions.refillsPlaceholder')}
                         />
                         <p className='prescription-form-help-text'>
                           Number of times this prescription can be refilled
                         </p>
                       </div>
+                    </div>
+
+                    <div className='prescription-form-field' style={{ marginTop: 'var(--space-5)' }}>
+                      <label htmlFor='digitalSignature' className='prescription-form-label'>
+                        Digital Signature
+                      </label>
+                      <Input
+                        id='digitalSignature'
+                        type='text'
+                        value={formData.digitalSignature}
+                        onChange={(e) => setFormData({ ...formData, digitalSignature: e.target.value })}
+                        placeholder='Dr. Your Name (Type to sign)'
+                      />
+                      <p className='prescription-form-help-text'>
+                        Your name as it should appear on the prescription
+                      </p>
                     </div>
 
                     <div
@@ -919,7 +939,7 @@ function NewPrescriptionPageContent() {
                         onChange={(value) =>
                           setFormData({ ...formData, additionalInstructions: value })
                         }
-                        placeholder='Enter additional instructions for the patient'
+                        placeholder={t('prescriptions.instructionsPlaceholder')}
                         rows={4}
                       />
                       <p className='prescription-form-help-text'>
@@ -979,7 +999,44 @@ function NewPrescriptionPageContent() {
                       onClick={handlePrintPreview}
                       disabled={submitting || !formData.patientId}
                     >
+                      <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z' />
+                      </svg>
                       Print
+                    </Button>
+                    <Button
+                      type='button'
+                      variant='secondary'
+                      onClick={async () => {
+                        // Download prescription as PDF
+                        const selectedPatient = patients.find((p) => p._id === formData.patientId);
+                        if (!selectedPatient) {
+                          alert('Please select a patient first');
+                          return;
+                        }
+                        try {
+                          const response = await apiClient.post('/prescriptions/generate-pdf', {
+                            formData,
+                            items,
+                            patient: selectedPatient,
+                          });
+                          if (response.success && response.data?.pdfUrl) {
+                            window.open(response.data.pdfUrl, '_blank');
+                          } else {
+                            // Fallback: use print preview
+                            handlePrintPreview();
+                          }
+                        } catch (err) {
+                          // Fallback: use print preview
+                          handlePrintPreview();
+                        }
+                      }}
+                      disabled={submitting || !formData.patientId}
+                    >
+                      <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
+                      </svg>
+                      Download PDF
                     </Button>
                     <Button type='submit' isLoading={submitting} disabled={submitting}>
                       Create Prescription

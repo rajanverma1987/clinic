@@ -1,22 +1,16 @@
 'use client';
 
 import { CalendarPopup } from '@/components/notifications/CalendarPopup';
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
-import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { logger } from '@/lib/utils/logger.js';
 
 export function DashboardHeader({
   title,
   subtitle,
   actionButton,
-  notifications = [],
-  unreadCount = 0,
-  onNotificationClick,
-  onMarkAsRead,
-  onMarkAllAsRead,
   showDate = true,
   dateOptions = {
     weekday: 'long',
@@ -28,18 +22,8 @@ export function DashboardHeader({
   const router = useRouter();
   const { t } = useI18n();
   const { settings } = useSettings();
-  const [showRightSection, setShowRightSection] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarButtonRef = useRef(null);
-
-  // Show right section after mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowRightSection(true);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const formatDateDisplay = useCallback(
     (date, options) => {
@@ -49,7 +33,7 @@ export function DashboardHeader({
           ...options,
         }).format(date || new Date());
       } catch (error) {
-        console.error('Date formatting error:', error);
+        logger.error('Date formatting error:', error);
         return new Date(date || new Date()).toLocaleDateString('en-US', options);
       }
     },
@@ -126,12 +110,10 @@ export function DashboardHeader({
                     lineHeight: 'var(--text-body-md-line-height)',
                     fontWeight: '500',
                   }}
-                  title='View today appointments'
+                  title={t('dashboard.viewTodayAppointments')}
                 >
                   <svg
-                    width='20px'
-                    height='20px'
-                    className='text-primary-500 group-hover:text-primary-600 transition-colors'
+                    className='icon icon-sm text-primary-500 group-hover:text-primary-600 transition-colors'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -149,47 +131,12 @@ export function DashboardHeader({
             ))}
         </div>
 
-        {/* Right Section - Action Buttons */}
-        <div
-          className={`flex items-center transition-all duration-500 ${
-            showRightSection ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
-          }`}
-          style={{ gap: 'var(--gap-3)' }}
-        >
-          {/* Language Switcher */}
-          <div
-            className='bg-white/80 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md'
-            style={{
-              backdropFilter: 'blur(8px)',
-              overflow: 'visible',
-              position: 'relative',
-            }}
-          >
-            <LanguageSwitcher variant='light' size='sm' />
+        {/* Right Section - Action Button */}
+        {actionButton && (
+          <div className='flex items-center'>
+            {actionButton}
           </div>
-
-          {/* Notification Dropdown */}
-          <div
-            className='bg-white/80 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md'
-            style={{
-              backdropFilter: 'blur(8px)',
-              overflow: 'visible',
-              position: 'relative',
-            }}
-          >
-            <NotificationDropdown
-              notifications={notifications}
-              unreadCount={unreadCount}
-              onNotificationClick={onNotificationClick}
-              onMarkAsRead={onMarkAsRead}
-              onMarkAllAsRead={onMarkAllAsRead}
-              size='sm'
-            />
-          </div>
-
-          {/* Action Button */}
-          {actionButton}
-        </div>
+        )}
       </div>
 
       {/* Calendar Popup */}

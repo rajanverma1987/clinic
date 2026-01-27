@@ -1,7 +1,7 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { CompactLoader, Loader } from '@/components/ui/Loader';
@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -69,9 +70,7 @@ export default function QueuePage() {
         let allEntries = [];
 
         if (activeResponse.success && activeResponse.data) {
-          const activeList = Array.isArray(activeResponse.data)
-            ? activeResponse.data
-            : activeResponse.data?.data || [];
+          const activeList = extractArrayData(activeResponse);
           allEntries = [...activeList];
         }
 
@@ -85,9 +84,7 @@ export default function QueuePage() {
 
           const completedResponse = await apiClient.get(`/queue?${completedParams}`);
           if (completedResponse.success && completedResponse.data) {
-            const completedList = Array.isArray(completedResponse.data)
-              ? completedResponse.data
-              : completedResponse.data?.data || [];
+            const completedList = extractArrayData(completedResponse);
             allEntries = [...allEntries, ...completedList];
           }
         }
@@ -402,42 +399,43 @@ export default function QueuePage() {
 
   return (
     <Layout>
+      <PageHeader
+        title={t('queue.queueManagement')}
+        subtitle={formatDateDisplay()}
+        notifications={[]}
+        unreadCount={0}
+        actionButtons={[
+          <Button
+            key='toggle-completed'
+            variant='secondary'
+            onClick={() => setShowCompleted(!showCompleted)}
+            className='flex items-center gap-2'
+          >
+            {showCompleted ? 'Hide Completed' : 'Show Completed'}
+          </Button>,
+          <Button
+            key='refresh'
+            onClick={() => fetchQueue(false)}
+            disabled={loading}
+            className='flex items-center gap-2'
+          >
+            {loading ? (
+              <CompactLoader size='xs' />
+            ) : (
+              <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
+                />
+              </svg>
+            )}
+            {loading ? t('common.loading') : 'Refresh Queue'}
+          </Button>,
+        ]}
+      />
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title={t('queue.queueManagement')}
-          subtitle={formatDateDisplay()}
-          notifications={notifications}
-          actionButton={
-            <>
-              <Button
-                variant='secondary'
-                onClick={() => setShowCompleted(!showCompleted)}
-                className='flex items-center gap-2'
-              >
-                {showCompleted ? 'Hide Completed' : 'Show Completed'}
-              </Button>
-              <Button
-                onClick={() => fetchQueue(false)}
-                disabled={loading}
-                className='flex items-center gap-2'
-              >
-                {loading ? (
-                  <CompactLoader size='xs' />
-                ) : (
-                  <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                    />
-                  </svg>
-                )}
-                {loading ? t('common.loading') : 'Refresh Queue'}
-              </Button>
-            </>
-          }
-        />
 
         <Card>
           <Table

@@ -7,15 +7,20 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { SettingsTabHeader } from './SettingsTabHeader';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useEffect, useState } from 'react';
+import { logger } from '@/lib/utils/logger.js';
 
-export function HolidayManagementTab({ settings, onUpdate }) {
+export function HolidayManagementTab({ settings, onUpdate, showAddForm: controlledShowAdd, setShowAddForm: setControlledShowAdd }) {
   const { t } = useI18n();
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [internalShowAdd, setInternalShowAdd] = useState(false);
+  const showAddForm = controlledShowAdd !== undefined ? controlledShowAdd : internalShowAdd;
+  const setShowAddForm = setControlledShowAdd || setInternalShowAdd;
+  const addButtonInHeader = controlledShowAdd !== undefined;
   const [formData, setFormData] = useState({
     name: '',
     date: '',
@@ -35,7 +40,7 @@ export function HolidayManagementTab({ settings, onUpdate }) {
         setHolidays(response.data.settings?.holidays || []);
       }
     } catch (error) {
-      console.error('Failed to fetch holidays:', error);
+      logger.error('Failed to fetch holidays:', error);
     } finally {
       setLoading(false);
     }
@@ -60,20 +65,20 @@ export function HolidayManagementTab({ settings, onUpdate }) {
           recurringYear: new Date().getFullYear(),
         });
         setShowAddForm(false);
-        showSuccess('Holiday added successfully');
+        showSuccess(t('errors.holidayAdded'));
         if (onUpdate) onUpdate();
       } else {
-        showError(response.error?.message || 'Failed to add holiday');
+        showError(response.error?.message || t('errors.failedToAddHoliday'));
       }
     } catch (error) {
-      showError(error.message || 'Failed to add holiday');
+      showError(error.message || t('errors.failedToAddHoliday'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteHoliday = async (holidayId) => {
-    if (!confirm('Are you sure you want to delete this holiday?')) {
+    if (!confirm(t('errors.confirmDeleteHoliday'))) {
       return;
     }
     setSaving(true);
@@ -86,13 +91,13 @@ export function HolidayManagementTab({ settings, onUpdate }) {
       });
       if (response.success) {
         setHolidays(updatedHolidays);
-        showSuccess('Holiday deleted successfully');
+        showSuccess(t('errors.holidayDeleted'));
         if (onUpdate) onUpdate();
       } else {
-        showError(response.error?.message || 'Failed to delete holiday');
+        showError(response.error?.message || t('errors.failedToDeleteHoliday'));
       }
     } catch (error) {
-      showError(error.message || 'Failed to delete holiday');
+      showError(error.message || t('errors.failedToDeleteHoliday'));
     } finally {
       setSaving(false);
     }
@@ -107,23 +112,28 @@ export function HolidayManagementTab({ settings, onUpdate }) {
   }
 
   return (
-    <div className='space-y-4'>
-      <div className='flex justify-end'>
-        <Button
-          onClick={() => setShowAddForm(!showAddForm)}
-          variant={showAddForm ? 'secondary' : 'primary'}
-          size='sm'
-        >
-          {showAddForm ? 'Cancel' : '+ Add Holiday'}
-        </Button>
-      </div>
+    <div className='space-y-3 text-left'>
+      <SettingsTabHeader title={t('settings.holidaysClosures')} />
+      {!addButtonInHeader && (
+        <div className='flex justify-end'>
+          <Button
+            onClick={() => setShowAddForm(!showAddForm)}
+            variant={showAddForm ? 'secondary' : 'primary'}
+            size='sm'
+          >
+            {showAddForm ? t('common.cancel') : `+ ${t('settings.addHoliday')}`}
+          </Button>
+        </div>
+      )}
 
       {/* Add Holiday Form */}
       {showAddForm && (
         <Card>
-          <form onSubmit={handleAddHoliday} className='p-5 space-y-4'>
-            <h2 className='text-lg font-bold text-neutral-900 mb-4'>Add New Holiday</h2>
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <form onSubmit={handleAddHoliday} className='p-4 space-y-3'>
+            <h2 className='text-base font-bold text-neutral-900 mb-3'>
+              {t('settings.addNewHoliday')}
+            </h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
                   Holiday Name <span className='text-red-500'>*</span>
@@ -156,7 +166,7 @@ export function HolidayManagementTab({ settings, onUpdate }) {
               />
               <label className='text-sm text-neutral-700'>Recurring every year</label>
             </div>
-            <div className='flex gap-2 pt-3 border-t border-neutral-200'>
+            <div className='flex gap-2 pt-2 border-t border-neutral-200'>
               <Button type='submit' isLoading={saving} disabled={saving} className='flex-1'>
                 Add Holiday
               </Button>
@@ -183,11 +193,11 @@ export function HolidayManagementTab({ settings, onUpdate }) {
 
       {/* Holidays List */}
       <Card>
-        <div className='p-5'>
-          <div className='flex items-center gap-2 mb-4'>
+        <div className='p-4'>
+          <div className='flex items-center gap-2 mb-3'>
             <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
               <svg
-                className='w-4 h-4 text-primary-600'
+                className='icon icon-xs text-primary-600'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -200,7 +210,7 @@ export function HolidayManagementTab({ settings, onUpdate }) {
                 />
               </svg>
             </div>
-            <h2 className='text-lg font-bold text-neutral-900'>Holidays & Closures</h2>
+            <h2 className='text-lg font-bold text-neutral-900'>{t('settings.holidaysClosures')}</h2>
             <span className='text-sm text-neutral-500'>({holidays.length})</span>
           </div>
 
@@ -214,7 +224,7 @@ export function HolidayManagementTab({ settings, onUpdate }) {
                   d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
                 />
               </svg>
-              <p className='text-sm'>No holidays configured</p>
+              <p className='text-sm'>{t('settings.noHolidaysConfigured')}</p>
               <p className='text-xs mt-1'>
                 Add holidays to block appointment scheduling on those dates
               </p>
@@ -229,7 +239,7 @@ export function HolidayManagementTab({ settings, onUpdate }) {
                   <div className='flex items-center gap-3'>
                     <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
                       <svg
-                        className='w-4 h-4 text-primary-600'
+                        className='icon icon-xs text-primary-600'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'

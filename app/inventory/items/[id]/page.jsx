@@ -2,6 +2,7 @@
 
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -143,16 +144,7 @@ export default function InventoryItemDetailPage() {
       <Layout>
         <div style={{ padding: '0 10px' }}>
           <div className='mb-8' style={{ paddingTop: '10px' }}>
-            <button
-              onClick={() => router.back()}
-              className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
-              style={{ marginLeft: '10px' }}
-              aria-label={t('common.back')}
-            >
-              <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 12H5M12 19l-7-7 7-7' />
-              </svg>
-            </button>
+            <BackButton className='ml-2.5' />
           </div>
           <Card>
             <div className='text-center py-8'>
@@ -171,18 +163,6 @@ export default function InventoryItemDetailPage() {
 
   return (
     <Layout>
-      <div className='mb-8' style={{ paddingTop: '10px' }}>
-        <button
-          onClick={() => router.back()}
-          className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
-          aria-label={t('common.back')}
-        >
-          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 19l-7-7 7-7' />
-          </svg>
-        </button>
-      </div>
-
       <PageHeader
         title={item.name}
         subtitle={
@@ -193,13 +173,18 @@ export default function InventoryItemDetailPage() {
             </Tag>
           </>
         }
-        actionButton={
-          !isEditing && (
-            <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>
-          )
+        notifications={[]}
+        unreadCount={0}
+        actionButtons={
+          <>
+            <BackButton />
+            {!isEditing && (
+              <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>
+            )}
+          </>
         }
       />
-
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
       {error && (
         <Card className='mb-6'>
           <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3'>
@@ -409,6 +394,7 @@ export default function InventoryItemDetailPage() {
           )}
         </form>
       </Card>
+      </div>
     </Layout>
   );
 }

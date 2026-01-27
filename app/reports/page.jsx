@@ -1,7 +1,7 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
@@ -326,9 +326,13 @@ export default function ReportsPage() {
 
   return (
     <Layout>
+      <PageHeader
+        title={t('reports.title')}
+        subtitle={t('reports.description')}
+        notifications={[]}
+        unreadCount={0}
+      />
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader title={t('reports.title')} subtitle={t('reports.description')} />
-
         <div className='mb-4 flex gap-2 items-end'>
           <div className='flex-1'>
             <label className='block text-xs font-medium text-neutral-700 mb-1'>

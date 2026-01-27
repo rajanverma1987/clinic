@@ -13,7 +13,7 @@ export function Input({ label, error, helperText, className = '', disabled, requ
         inputRef.current.setAttribute('data-required', 'true');
         inputRef.current.setAttribute('aria-required', 'true');
       }
-      
+
       // Add validation rules based on input type
       if (props.type === 'email') {
         inputRef.current.setAttribute('data-validate', 'email');
@@ -29,7 +29,7 @@ export function Input({ label, error, helperText, className = '', disabled, requ
 
   // Base classes with theme specifications
   // Default: bg-white, border: neutral-300, radius: 8px, padding: 12px
-  const baseClasses = `w-full px-3 py-3 text-body-md border rounded-lg`;
+  const baseClasses = `w-full px-4 py-3.5 text-body-md border rounded-[10px]`;
 
   // States following clinic theme
   // Default: bg-white, border: neutral-300, text: neutral-900, placeholder: neutral-500
@@ -38,8 +38,8 @@ export function Input({ label, error, helperText, className = '', disabled, requ
   const disabledClasses = disabled
     ? 'bg-neutral-100 border-neutral-300 text-neutral-500 cursor-not-allowed opacity-60'
     : error
-    ? 'border-status-error bg-white focus:outline-none focus:ring-2 focus:ring-status-error focus:border-status-error'
-    : 'border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-500 hover:border-primary-300 focus:outline-none focus:border-primary-500 focus:shadow-focus focus:ring-2 focus:ring-primary-500/20';
+      ? 'border-status-error bg-white focus:outline-none focus:ring-2 focus:ring-status-error focus:border-status-error'
+      : 'border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-500 hover:border-primary-300 focus:outline-none focus:border-primary-500 focus:shadow-focus focus:ring-2 focus:ring-primary-500/20';
 
   return (
     <div className='w-full' data-input-wrapper>
@@ -67,16 +67,8 @@ export function Input({ label, error, helperText, className = '', disabled, requ
         // Remove required to prevent browser popup, we handle it via data-required
         required={false}
       />
-      {error && (
-        <p className='mt-0.5 text-body-sm text-status-error'>
-          {error}
-        </p>
-      )}
-      {helperText && !error && (
-        <p className='mt-0.5 text-body-sm text-neutral-500'>
-          {helperText}
-        </p>
-      )}
+      {error && <p className='mt-0.5 text-body-sm text-status-error'>{error}</p>}
+      {helperText && !error && <p className='mt-0.5 text-body-sm text-neutral-500'>{helperText}</p>}
     </div>
   );
 }

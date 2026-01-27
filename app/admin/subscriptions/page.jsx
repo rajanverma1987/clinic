@@ -1,7 +1,6 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -338,30 +337,29 @@ export default function AdminSubscriptionsPage() {
   }
 
   return (
-    <Layout>
+    <Layout
+      title='Subscription Plans'
+      subtitle='Manage subscription plans for clients'
+      actionButtons={[
+        <Button key='refresh' variant='secondary' onClick={() => fetchPlans()}>
+          Refresh
+        </Button>,
+        <Button
+          key='toggle'
+          onClick={() => {
+            if (showForm) {
+              handleCancel();
+            } else {
+              setShowForm(true);
+              setEditingPlanId(null);
+            }
+          }}
+        >
+          {showForm ? 'Cancel' : '+ Create Plan'}
+        </Button>,
+      ]}
+    >
       <div style={{ padding: '0 10px' }}>
-        <PageHeader
-          title='Subscription Plans'
-          description='Manage subscription plans for clients'
-          actionButtons={[
-            <Button key='refresh' variant='secondary' onClick={() => fetchPlans()}>
-              Refresh
-            </Button>,
-            <Button
-              key='toggle'
-              onClick={() => {
-                if (showForm) {
-                  handleCancel();
-                } else {
-                  setShowForm(true);
-                  setEditingPlanId(null);
-                }
-              }}
-            >
-              {showForm ? 'Cancel' : '+ Create Plan'}
-            </Button>,
-          ]}
-        />
 
       {showForm && (
         <Card className='mb-6'>

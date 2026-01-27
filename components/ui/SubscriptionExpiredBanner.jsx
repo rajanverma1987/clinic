@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Button } from './Button.jsx';
+import { logger } from '@/lib/utils/logger.js';
 
 export function SubscriptionExpiredBanner({
   subscriptionStatus,
@@ -12,15 +13,15 @@ export function SubscriptionExpiredBanner({
   const router = useRouter();
 
   const handleCompletePayment = () => {
-    console.log('Complete Payment clicked');
-    console.log('PayPal Approval URL:', paypalApprovalUrl);
+    logger.info('Complete Payment clicked');
+    logger.info('PayPal Approval URL:', paypalApprovalUrl);
     
     if (paypalApprovalUrl) {
-      console.log('Redirecting to PayPal:', paypalApprovalUrl);
+      logger.info('Redirecting to PayPal:', paypalApprovalUrl);
       // Redirect to PayPal approval page
       window.location.href = paypalApprovalUrl;
     } else {
-      console.log('No approval URL, redirecting to subscription page');
+      logger.info('No approval URL, redirecting to subscription page');
       // Fallback to subscription page
       router.push('/subscription');
     }

@@ -3,9 +3,12 @@
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { useI18n } from '@/contexts/I18nContext';
 import { useState } from 'react';
+import { logger } from '@/lib/utils/logger.js';
 
 export function ShareModal({ isOpen, onClose, sessionId, sessionData, onSendEmail }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const patientLink =
     typeof window !== 'undefined'
@@ -18,7 +21,7 @@ export function ShareModal({ isOpen, onClose, sessionId, sessionData, onSendEmai
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      logger.error('Failed to copy:', error);
     }
   };
 
@@ -32,7 +35,7 @@ export function ShareModal({ isOpen, onClose, sessionId, sessionData, onSendEmai
       await onSendEmail();
       onClose();
     } catch (error) {
-      console.error('Failed to send email:', error);
+      logger.error('Failed to send email:', error);
       alert('Unable to send email. Please copy the link and share it manually.');
     }
   };
@@ -40,7 +43,7 @@ export function ShareModal({ isOpen, onClose, sessionId, sessionData, onSendEmai
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title='Share Video Call Link'>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('telemedicine.shareVideoCallLink')}>
       <div className='space-y-4'>
         <p className='text-gray-600 text-sm'>
           Share this link with the patient to join the video consultation:

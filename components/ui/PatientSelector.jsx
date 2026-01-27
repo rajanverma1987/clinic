@@ -101,12 +101,15 @@ export function PatientSelector({
                 >
                   Change
                 </button>
-                <button
+                <Button
+                  variant='ghost'
+                  size='xs'
+                  iconOnly
                   type='button'
                   onClick={handleClear}
                   className='text-neutral-400 hover:text-neutral-600'
                 >
-                  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path
                       strokeLinecap='round'
                       strokeLinejoin='round'
@@ -114,7 +117,7 @@ export function PatientSelector({
                       d='M6 18L18 6M6 6l12 12'
                     />
                   </svg>
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -136,7 +139,7 @@ export function PatientSelector({
             />
             <div className='absolute right-3 top-1/2 -translate-y-1/2'>
               <svg
-                className='w-5 h-5 text-neutral-400'
+                className='icon icon-sm text-neutral-400'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -169,7 +172,7 @@ export function PatientSelector({
                 >
                   <div className='w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0'>
                     <svg
-                      className='w-5 h-5 text-white'
+                      className='icon icon-sm text-white'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -231,7 +234,7 @@ export function PatientSelector({
                       {selectedPatientId === patient._id && (
                         <div className='flex-shrink-0'>
                           <svg
-                            className='w-5 h-5 text-primary-600'
+                            className='icon icon-sm text-primary-600'
                             fill='currentColor'
                             viewBox='0 0 20 20'
                           >

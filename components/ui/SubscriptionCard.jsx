@@ -41,7 +41,7 @@ export function SubscriptionCard({
         isPopular
           ? 'border-primary-500 bg-gradient-to-br from-primary-50 to-white shadow-lg scale-105'
           : isCurrent
-          ? 'border-secondary-500 bg-gradient-to-br from-secondary-50 to-white'
+          ? 'border-primary-500 bg-gradient-to-br from-primary-50 to-white'
           : 'border-neutral-200 bg-white hover:border-primary-300'
       } ${className}`}
     >
@@ -97,7 +97,7 @@ export function SubscriptionCard({
           )}
           {billingCycle === 'YEARLY' && isPaid && originalPrice && originalPrice !== price && (
             <div className='flex items-center gap-2 mt-2'>
-              <span className='inline-flex items-center bg-secondary-100 text-secondary-700 px-3 py-1 rounded-full text-sm font-bold'>
+              <span className='inline-flex items-center bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-bold'>
                 <svg width='16px' height='16px' className='mr-1' fill='currentColor' viewBox='0 0 20 20'>
                   <path
                     fillRule='evenodd'
@@ -117,11 +117,11 @@ export function SubscriptionCard({
             {Array.isArray(features) &&
               features.map((feature, index) => (
                 <li key={index} className='flex items-start group'>
-                  <div className='flex-shrink-0 w-5 h-5 rounded-full bg-secondary-100 flex items-center justify-center mr-3 mt-0.5 group-hover:bg-secondary-200 transition-colors'>
-                    <svg
-                      width='12px'
-                      height='12px'
-                      className='text-secondary-600'
+                    <div className='flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center mr-3 mt-0.5 group-hover:bg-primary-300 transition-colors'>
+                      <svg
+                        width='12px'
+                        height='12px'
+                        className='text-primary-700'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'

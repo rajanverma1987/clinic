@@ -1,7 +1,7 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -40,26 +41,6 @@ export default function PatientsPage() {
   });
   const [countryCode, setCountryCode] = useState('+1');
   const [submitting, setSubmitting] = useState(false);
-  // Mock notifications - replace with real API call later
-  const [notifications] = useState([
-    {
-      id: '1',
-      type: 'appointment',
-      title: 'New Appointment Scheduled',
-      message: 'Dr. Smith has a new appointment with John Doe at 2:00 PM',
-      createdAt: new Date(Date.now() - 30 * 60000), // 30 minutes ago
-      unread: true,
-    },
-    {
-      id: '2',
-      type: 'prescription',
-      title: 'Prescription Ready',
-      message: 'Prescription #1234 is ready for pickup',
-      createdAt: new Date(Date.now() - 2 * 3600000), // 2 hours ago
-      unread: true,
-    },
-  ]);
-  const unreadCount = notifications.filter((n) => n.unread).length;
 
   const formatDateDisplay = () => {
     const date = new Date();
@@ -145,11 +126,11 @@ export default function PatientsPage() {
       console.log('Response data.data:', response.data?.data);
 
       if (response.success && response.data) {
-        // Handle pagination structure - data is inside response.data.data
-        const patientsList = response.data.data || [];
+        const patientsList = extractArrayData(response);
+        const pagination = extractPaginationData(response);
         console.log('Patients list:', patientsList);
-        setPatients(Array.isArray(patientsList) ? patientsList : []);
-        setTotalPages(response.data.totalPages || 1);
+        setPatients(patientsList);
+        setTotalPages(pagination.totalPages);
       }
     } catch (error) {
       console.error('Failed to fetch patients:', error);
@@ -224,7 +205,7 @@ export default function PatientsPage() {
           size='md'
           variant='secondary'
           onClick={(e) => handleQuickAppointment(row._id, e)}
-          title='Quickly add appointment for this patient'
+          title={t('patients.addAppointmentTooltip')}
           className='whitespace-nowrap'
         >
           <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -259,35 +240,23 @@ export default function PatientsPage() {
 
   return (
     <Layout>
+      <PageHeader
+        title={t('patients.title')}
+        subtitle={formatDateDisplay()}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={
+          <Button
+            onClick={() => setShowModal(true)}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('patients.addPatient')}
+          </Button>
+        }
+      />
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title={t('patients.title')}
-          subtitle={formatDateDisplay()}
-          notifications={notifications}
-          unreadCount={unreadCount}
-          onNotificationClick={(notification) => {
-            console.log('Notification clicked:', notification);
-            // Handle notification click - navigate to relevant page
-          }}
-          onMarkAsRead={(notificationId) => {
-            console.log('Mark as read:', notificationId);
-            // Handle mark as read - update notification status
-          }}
-          onMarkAllAsRead={() => {
-            console.log('Mark all as read');
-            // Handle mark all as read
-          }}
-          actionButton={
-            <Button
-              onClick={() => setShowModal(true)}
-              variant='primary'
-              size='md'
-              className='whitespace-nowrap'
-            >
-              + {t('patients.addPatient')}
-            </Button>
-          }
-        />
 
         <Card className='mb-6'>
           <SearchBar

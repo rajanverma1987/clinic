@@ -1,0 +1,36 @@
+'use client';
+
+import { Layout } from '@/components/layout/Layout';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+const items = [
+  { href: '/admin/reviews/dashboard', label: 'Reviews Dashboard', desc: 'All reviews, filter by rating/date/doctor, flagged, pending approval' },
+  { href: '/admin/reviews/actions', label: 'Review Actions', desc: 'Approve/reject, mark inappropriate, respond, delete fake, feature' },
+  { href: '/admin/reviews/analytics', label: 'Rating Analytics', desc: 'Average rating, doctor-wise, specialty-wise, trends, sentiment' },
+];
+
+export default function AdminReviewsPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (!authLoading && user?.role !== 'super_admin') router.push('/dashboard');
+  }, [authLoading, user, router]);
+  if (authLoading || user?.role !== 'super_admin') return null;
+  return (
+    <Layout title='Review & Rating Management' subtitle='Reviews dashboard, actions, analytics' actionButton={<Button variant='primary' onClick={() => router.push('/admin')}>Back to Dashboard</Button>}>
+      <div style={{ padding: '0 10px' }} className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+        {items.map(({ href, label, desc }) => (
+          <Card key={href} className='p-6'>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{label}</h3>
+            <p className='text-sm text-neutral-600 mb-4'>{desc}</p>
+            <Button variant='secondary' onClick={() => router.push(href)}>Open</Button>
+          </Card>
+        ))}
+      </div>
+    </Layout>
+  );
+}

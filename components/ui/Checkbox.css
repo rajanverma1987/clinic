@@ -4,17 +4,22 @@
   position: relative;
   display: inline-block;
   cursor: pointer;
-  --size: 44px;
+  --size: 24px;
   width: var(--size);
   display: block;
   height: var(--size);
   background-color: var(--color-neutral-500);
   border-radius: 100%;
-  padding: 4px;
+  padding: 3px;
   color: white;
-  box-shadow: 1.5px 1.5px 3px var(--color-neutral-900), -1.5px -1.5px 3px rgba(95, 94, 94, 0.25),
-    inset 0px 0px 0px var(--color-neutral-900), inset 0px -0px 0px var(--color-neutral-300);
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow:
+    1.5px 1.5px 3px var(--color-neutral-900),
+    -1.5px -1.5px 3px rgba(95, 94, 94, 0.25),
+    inset 0px 0px 0px var(--color-neutral-900),
+    inset 0px -0px 0px var(--color-neutral-300);
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .checkbox-container input {
@@ -31,10 +36,13 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  box-shadow: 1.5px 1.5px 3px var(--color-neutral-900), -1.5px -1.5px 3px rgba(95, 94, 94, 0.25),
-    inset 0px 0px 0px var(--color-neutral-900), inset 0px -0px 0px var(--color-neutral-300);
+  box-shadow:
+    1.5px 1.5px 3px var(--color-neutral-900),
+    -1.5px -1.5px 3px rgba(95, 94, 94, 0.25),
+    inset 0px 0px 0px var(--color-neutral-900),
+    inset 0px -0px 0px var(--color-neutral-300);
   transition: all ease 0.3s;
-  padding: 7px;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -59,13 +67,19 @@
 /* Checked state - Primary theme color background */
 .checkbox-container:has(input:checked) {
   background-color: var(--color-primary-500);
-  box-shadow: 1.5px 1.5px 3px rgba(11, 103, 160, 0.3), -1.5px -1.5px 3px rgba(86, 204, 242, 0.25),
-    inset 0px 0px 0px rgba(11, 103, 160, 0.2), inset 0px -0px 0px rgba(86, 204, 242, 0.2);
+  box-shadow:
+    1.5px 1.5px 3px rgba(11, 103, 160, 0.3),
+    -1.5px -1.5px 3px rgba(86, 204, 242, 0.25),
+    inset 0px 0px 0px rgba(11, 103, 160, 0.2),
+    inset 0px -0px 0px rgba(86, 204, 242, 0.2);
 }
 
 .checkbox-container:has(input:checked) .checkmark {
-  box-shadow: 0px 0px 0px var(--color-neutral-900), 0px 0px 0px rgba(95, 94, 94, 0.25),
-    inset 1.5px 1.5px 3px var(--color-neutral-900), inset -1.5px -1.5px 3px var(--color-neutral-300);
+  box-shadow:
+    0px 0px 0px var(--color-neutral-900),
+    0px 0px 0px rgba(95, 94, 94, 0.25),
+    inset 1.5px 1.5px 3px var(--color-neutral-900),
+    inset -1.5px -1.5px 3px var(--color-neutral-300);
 }
 
 .checkbox-container:has(input:checked) .checkmark svg {
@@ -74,30 +88,30 @@
 
 /* Size variants */
 .checkbox-container.size-sm {
-  --size: 40px;
-  padding: 4px;
+  --size: 20px;
+  padding: 2px;
 }
 
 .checkbox-container.size-sm .checkmark {
-  padding: 6px;
+  padding: 3px;
 }
 
 .checkbox-container.size-md {
-  --size: 48px;
-  padding: 5px;
+  --size: 24px;
+  padding: 3px;
 }
 
 .checkbox-container.size-md .checkmark {
-  padding: 8px;
+  padding: 4px;
 }
 
 .checkbox-container.size-lg {
-  --size: 60px;
-  padding: 6px;
+  --size: 32px;
+  padding: 4px;
 }
 
 .checkbox-container.size-lg .checkmark {
-  padding: 10px;
+  padding: 6px;
 }
 
 /* Disabled state */

@@ -12,6 +12,7 @@ import { WaitingRoom } from '@/components/telemedicine/WaitingRoom';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { AuditLogger } from '@/lib/audit/audit-logger';
 import {
@@ -31,6 +32,7 @@ function VideoConsultationRoomContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const authContext = useAuth();
   const user = authContext?.user || null;
   const sessionId = params.id;
@@ -64,14 +66,34 @@ function VideoConsultationRoomContent() {
   const [remoteUserConnected, setRemoteUserConnected] = useState(false); // Track if remote user is connected
   const [connectionQuality, setConnectionQuality] = useState('UNKNOWN'); // Connection quality indicator
   const [reconnectAttempts, setReconnectAttempts] = useState(0); // Track reconnection attempts
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
   const socketRef = useRef(null); // Socket.IO connection
 
   const videoContainerRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
   const callManagerRef = useRef(null);
   const isConnectedRef = useRef(false);
   const canvasRef = useRef(null); // For watermarking
+
+  // Attach stored streams to video elements when refs become ready (avoids missing stream if callback fired before mount)
+  useEffect(() => {
+    if (!isConnecting && !isConnected) return;
+    const attach = () => {
+      if (localStreamRef.current && localVideoRef.current && localVideoRef.current.srcObject !== localStreamRef.current) {
+        localVideoRef.current.srcObject = localStreamRef.current;
+      }
+      if (remoteStreamRef.current && remoteVideoRef.current && remoteVideoRef.current.srcObject !== remoteStreamRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+      }
+    };
+    attach();
+    const t = setTimeout(attach, 100);
+    return () => clearTimeout(t);
+  }, [isConnecting, isConnected]);
 
   // Session timer
   useEffect(() => {
@@ -788,11 +810,13 @@ function VideoConsultationRoomContent() {
         isInitiator,
         apiClient, // Pass apiClient instance
         onLocalStream: (stream) => {
+          localStreamRef.current = stream;
           if (localVideoRef.current) {
             localVideoRef.current.srcObject = stream;
           }
         },
         onRemoteStream: (stream) => {
+          remoteStreamRef.current = stream;
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = stream;
           }
@@ -1104,13 +1128,7 @@ function VideoConsultationRoomContent() {
       if (isScreenSharing) {
         await callManagerRef.current.stopScreenShare();
         setIsScreenSharing(false);
-
-        // Restore video element to object-cover for regular video
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.classList.remove('object-contain');
-          remoteVideoRef.current.classList.add('object-cover');
-          remoteVideoRef.current.style.backgroundColor = 'transparent';
-        }
+        // VideoDisplay uses isScreenSharing prop for layout – no DOM tweaks here
 
         // Audit log
         if (user) {
@@ -1127,13 +1145,7 @@ function VideoConsultationRoomContent() {
       } else {
         const stream = await callManagerRef.current.startScreenShare();
         setIsScreenSharing(true);
-
-        // Force video element to use object-contain for screen share
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.classList.remove('object-cover');
-          remoteVideoRef.current.classList.add('object-contain');
-          remoteVideoRef.current.style.backgroundColor = '#000';
-        }
+        // VideoDisplay uses isScreenSharing prop for object-contain / background – single source of truth
 
         // Apply watermark overlay to screen share video element
         if (remoteVideoRef.current && stream) {
@@ -1581,10 +1593,11 @@ function VideoConsultationRoomContent() {
             />
           )}
           {sessionData && user && userRole === 'doctor' && (
-            <button
+            <Button
+              variant='primary'
+              size='sm'
               onClick={handleShareLink}
-              className='flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800'
-              title='Share video link with patient'
+              title={t('telemedicine.shareVideoLink')}
             >
               <svg
                 width='20px'
@@ -1602,7 +1615,7 @@ function VideoConsultationRoomContent() {
                 />
               </svg>
               <span className='text-sm sm:text-base font-medium hidden sm:inline'>Share</span>
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -1635,6 +1648,16 @@ function VideoConsultationRoomContent() {
                   onToggleChat={setShowChat}
                   onToggleFileTransfer={setShowFileTransfer}
                   onEndCall={handleEndCall}
+                  isDoctor={userRole === 'doctor'}
+                  showPaymentButton={userRole === 'doctor' && sessionData?.appointmentId}
+                  onCollectPayment={() => {
+                    if (sessionData?.appointmentId) {
+                      const appointment = sessionData;
+                      const amount = appointment.consultationFee || 500;
+                      setPaymentAmount(amount);
+                      setShowPaymentModal(true);
+                    }
+                  }}
                 />
               )}
 
@@ -1852,24 +1875,78 @@ function VideoConsultationRoomContent() {
       {/* Share Link Modal */}
       <ShareModal
         isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
+        onClose={() => setShowPaymentModal(false)}
         sessionId={sessionId}
         sessionData={sessionData}
         onSendEmail={handleSendEmail}
       />
+
+      {/* Payment Collection Modal (Doctor Only) */}
+      {showPaymentModal && userRole === 'doctor' && (
+        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
+          <Card className='p-6 max-w-md w-full mx-4'>
+            <h3 className='text-lg font-bold text-neutral-900 mb-4'>Collect Payment</h3>
+            <div className='space-y-4'>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>Amount</label>
+                <Input
+                  type='number'
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
+                  min={0}
+                  step={0.01}
+                />
+              </div>
+              <div className='flex gap-3'>
+                <Button
+                  variant='primary'
+                  onClick={async () => {
+                    try {
+                      const response = await apiClient.post('/payments/initiate', {
+                        amount: paymentAmount,
+                        currency: 'USD',
+                        paymentMethod: 'card',
+                        appointmentId: sessionData?.appointmentId,
+                        patientId: sessionData?.patientId?._id || sessionData?.patientId,
+                        doctorId: sessionData?.doctorId?._id || sessionData?.doctorId,
+                      });
+                      if (response.success && response.data?.paymentUrl) {
+                        window.open(response.data.paymentUrl, '_blank');
+                        setShowPaymentModal(false);
+                      } else {
+                        alert('Failed to initiate payment');
+                      }
+                    } catch (err) {
+                      alert('Failed to collect payment');
+                    }
+                  }}
+                >
+                  Collect Payment
+                </Button>
+                <Button variant='secondary' onClick={() => setShowPaymentModal(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VideoConsultationRoomFallback() {
+  const { t } = useI18n();
+  return (
+    <div className='h-screen bg-gray-900 flex items-center justify-center'>
+      <Loader size='lg' variant='primary' text={t('telemedicine.loading')} />
     </div>
   );
 }
 
 export default function VideoConsultationRoom() {
   return (
-    <Suspense
-      fallback={
-        <div className='h-screen bg-gray-900 flex items-center justify-center'>
-          <Loader size='lg' variant='primary' text='Loading...' />
-        </div>
-      }
-    >
+    <Suspense fallback={<VideoConsultationRoomFallback />}>
       <VideoConsultationRoomContent />
     </Suspense>
   );

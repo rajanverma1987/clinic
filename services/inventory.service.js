@@ -1,6 +1,21 @@
 /**
- * Inventory service
- * Handles all inventory-related business logic
+ * Inventory Service
+ * 
+ * Enterprise-grade service for inventory management with comprehensive
+ * stock tracking, batch management, and transaction logging.
+ * 
+ * Features:
+ * - Inventory item management (medicines, supplies, equipment)
+ * - Stock level tracking with low stock alerts
+ * - Batch management with expiry tracking
+ * - Stock transactions (purchase, sale, adjustment, transfer)
+ * - Supplier integration
+ * - Multi-tenant isolation
+ * - Audit logging
+ * - Real-time stock updates
+ * 
+ * @module services/inventory.service
+ * @since 1.0.0
  */
 
 import connectDB from '@/lib/db/connection.js';
@@ -11,6 +26,8 @@ import { withTenant } from '@/lib/db/tenant-helper.js';
 import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 import { parseAmount } from './tax-engine.service.js';
 import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
+import { logger } from '@/lib/utils/logger.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Generate unique transaction number for a tenant

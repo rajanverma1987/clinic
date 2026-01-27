@@ -9,6 +9,7 @@ import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
+import { logger } from '@/lib/utils/logger.js';
 
 // In-memory signaling storage (use Redis in production)
 // Structure: { [sessionId]: { [userId]: [{ id, from, to, signal, timestamp }] } }
@@ -103,7 +104,7 @@ export async function POST(
     // Debug: Log all users in session after adding signal
     const allUserIds = Array.from(sessionStore.keys());
     const recipientQueue = sessionStore.get(to) || [];
-    console.log(`[Signaling API] POST ${sessionId}: Signal from ${from} to ${to}`, {
+    logger.info(`[Signaling API] POST ${sessionId}: Signal from ${from} to ${to}`, {
       signalType: signal.type || 'unknown',
       signalId,
       totalSignalsForRecipient: recipientQueue.length,
@@ -122,7 +123,7 @@ export async function POST(
       sent: true
     }));
   } catch (error) {
-    console.error('Error in POST /api/telemedicine/signaling/[id]:', error);
+    logger.error('Error in POST /api/telemedicine/signaling/[id]:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to send signal',
@@ -174,13 +175,13 @@ export async function GET(
     // Debug: Log all users in this session for troubleshooting
     if (sessionStore) {
       const allUserIds = Array.from(sessionStore.keys());
-      console.log(`[Signaling API] GET ${sessionId} - All users in session:`, allUserIds);
-      console.log(`[Signaling API] GET ${sessionId} - Requesting userId:`, userId);
-      console.log(`[Signaling API] GET ${sessionId} - Signals for this user:`, userSignals.length);
+      logger.info(`[Signaling API] GET ${sessionId} - All users in session:`, allUserIds);
+      logger.info(`[Signaling API] GET ${sessionId} - Requesting userId:`, userId);
+      logger.info(`[Signaling API] GET ${sessionId} - Signals for this user:`, userSignals.length);
 
       // Check if requesting user exists in session
       if (!sessionStore.has(userId)) {
-        console.warn(`[Signaling API] ⚠️ User ${userId} not found in session store. Available users:`, allUserIds);
+        logger.warn(`[Signaling API] ⚠️ User ${userId} not found in session store. Available users:`, allUserIds);
       }
 
       // Log signals for all users (for debugging)
@@ -188,7 +189,7 @@ export async function GET(
       for (const [uid, signals] of sessionStore.entries()) {
         totalSignalsInSession += signals.length;
         if (signals.length > 0) {
-          console.log(`[Signaling API] User ${uid} has ${signals.length} signal(s):`, signals.map(s => ({
+          logger.info(`[Signaling API] User ${uid} has ${signals.length} signal(s):`, signals.map(s => ({
             id: s.id,
             from: s.from,
             to: s.to,
@@ -199,13 +200,13 @@ export async function GET(
       }
 
       if (totalSignalsInSession === 0) {
-        console.warn(`[Signaling API] ⚠️ No signals in session ${sessionId} for any user. Doctor may not have connected yet.`);
+        logger.warn(`[Signaling API] ⚠️ No signals in session ${sessionId} for any user. Doctor may not have connected yet.`);
       }
     } else {
-      console.warn(`[Signaling API] ⚠️ Session store not found for ${sessionId}. This is normal if no signals have been sent yet.`);
+      logger.warn(`[Signaling API] ⚠️ Session store not found for ${sessionId}. This is normal if no signals have been sent yet.`);
     }
 
-    console.log(`[Signaling API] GET ${sessionId} for userId ${userId}:`, {
+    logger.info(`[Signaling API] GET ${sessionId} for userId ${userId}:`, {
       totalSignals: userSignals.length,
       lastSignalId,
       allSignalIds: userSignals.map(s => s.id)
@@ -220,7 +221,7 @@ export async function GET(
       }
     }
 
-    console.log(`[Signaling API] Returning ${signals.length} new signals for userId ${userId}`);
+    logger.info(`[Signaling API] Returning ${signals.length} new signals for userId ${userId}`);
 
     // Clear processed signals (keep only last 10 for debugging)
     if (sessionStore && sessionStore.has(userId)) {
@@ -238,7 +239,7 @@ export async function GET(
       }))
     }));
   } catch (error) {
-    console.error('Error in GET /api/telemedicine/signaling/[id]:', error);
+    logger.error('Error in GET /api/telemedicine/signaling/[id]:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to fetch signals',

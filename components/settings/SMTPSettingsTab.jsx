@@ -4,16 +4,21 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
+import { useI18n } from '@/contexts/I18nContext';
+import { SettingsTabHeader } from './SettingsTabHeader';
 
 export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave }) {
+  const { t } = useI18n();
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave();
-      }}
-      className='space-y-4'
-    >
+    <div className='space-y-4 text-left'>
+      <SettingsTabHeader title={t('settings.emailSettings') || 'Email Settings'} />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave();
+        }}
+        className='space-y-4'
+      >
       {/* Enable Toggle */}
       <Card>
         <div className='p-5'>
@@ -21,7 +26,7 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave }) {
             <div className='flex items-center gap-3 flex-1'>
               <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
                 <svg
-                  className='w-4 h-4 text-primary-600'
+                  className='icon icon-xs text-primary-600'
                   fill='none'
                   stroke='currentColor'
                   viewBox='0 0 24 24'
@@ -59,7 +64,7 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave }) {
               <div className='flex items-center gap-2 mb-4'>
                 <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
                   <svg
-                    className='w-4 h-4 text-primary-600'
+                    className='icon icon-xs text-primary-600'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -125,7 +130,7 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave }) {
               <div className='flex items-center gap-2 mb-4'>
                 <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
                   <svg
-                    className='w-4 h-4 text-primary-600'
+                    className='icon icon-xs text-primary-600'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -176,7 +181,7 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave }) {
               <div className='flex items-center gap-2 mb-4'>
                 <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
                   <svg
-                    className='w-4 h-4 text-primary-600'
+                    className='icon icon-xs text-primary-600'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -243,7 +248,7 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave }) {
               <div className='flex items-center gap-2 mb-4'>
                 <div className='w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center'>
                   <svg
-                    className='w-4 h-4 text-amber-600'
+                    className='icon icon-xs text-amber-600'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -279,17 +284,7 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave }) {
           </Card>
         </>
       )}
-
-      {/* Action Buttons */}
-      <div className='flex justify-end gap-3 pt-2'>
-        <Button
-          type='submit'
-          isLoading={saving}
-          disabled={smtpForm.enabled && (!smtpForm.host || !smtpForm.user || !smtpForm.fromEmail)}
-        >
-          Save Changes
-        </Button>
-      </div>
     </form>
+    </div>
   );
 }

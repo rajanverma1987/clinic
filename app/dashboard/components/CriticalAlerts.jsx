@@ -1,39 +1,40 @@
 'use client';
 
 import { WarningIcon } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
-function AlertItem({ alert }) {
+function AlertItem({ alert, onViewAll }) {
   const { type, severity, message, count } = alert;
 
   return (
     <div className={`alert-card alert-card-${severity} group`}>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-3 flex-1'>
-          {/* Badge */}
-          <div className={`alert-badge alert-badge-${severity}`}>
+      <div className='flex items-center justify-between gap-3'>
+        <div className='flex items-center gap-3 flex-1 min-w-0'>
+          <div className={`alert-badge alert-badge-${severity} flex-shrink-0`}>
             <WarningIcon
-              className='w-5 h-5'
+              className='icon icon-sm'
               color={
                 severity === 'error' ? '#EF4444' : severity === 'warning' ? '#F59E0B' : '#2D9CDB'
               }
             />
           </div>
-
-          {/* Message */}
-          <p className='text-body-sm font-medium text-neutral-900 flex-1'>{message}</p>
+          <p className='text-body-sm font-medium text-neutral-900 flex-1 truncate'>{message}</p>
         </div>
-
-        {/* Action Button */}
-        <button className={`alert-action-btn alert-action-btn-${severity}`}>
+        <Button
+          variant={severity === 'error' ? 'danger' : severity === 'warning' ? 'warning' : 'primary'}
+          size='sm'
+          className='flex-shrink-0'
+          onClick={() => onViewAll?.(alert)}
+        >
           View {count > 1 ? 'All' : ''}
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
-export function CriticalAlerts({ alerts = [] }) {
+export function CriticalAlerts({ alerts = [], onViewAll }) {
   if (!alerts || alerts.length === 0) {
     return null;
   }
@@ -60,20 +61,20 @@ export function CriticalAlerts({ alerts = [] }) {
       />
 
       {/* Content */}
-      <div className='relative z-10' style={{ padding: '24px 24px 24px 10px' }}>
+      <div className='relative z-10 p-4'>
         {/* Header */}
-        <div className='flex items-center gap-3 mb-6'>
+        <div className='flex items-center gap-2.5 mb-4 pb-3 border-b border-neutral-200'>
           <div className='accent-bar accent-bar-warning' />
           <div className='alert-badge alert-badge-warning'>
-            <WarningIcon className='w-5 h-5' color='#F59E0B' />
+            <WarningIcon className='icon icon-xs' color='#F59E0B' />
           </div>
           <h2 className='section-title'>Critical Alerts</h2>
         </div>
 
         {/* Alerts List */}
-        <div className='space-y-3'>
+        <div className='space-y-2'>
           {alerts.map((alert, index) => (
-            <AlertItem key={index} alert={alert} />
+            <AlertItem key={index} alert={alert} onViewAll={onViewAll} />
           ))}
         </div>
       </div>

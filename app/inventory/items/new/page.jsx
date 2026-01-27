@@ -1,6 +1,8 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -86,26 +88,14 @@ export default function NewInventoryItemPage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        <div className='mb-8' style={{ paddingTop: '10px' }}>
-          <button
-            onClick={() => router.back()}
-            className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 mb-4'
-            aria-label={t('common.back')}
-          >
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M15 19l-7-7 7-7'
-              />
-            </svg>
-          </button>
-          <h1 className='text-3xl font-bold text-neutral-900'>{t('inventory.addItem')}</h1>
-          <p className='text-neutral-600 mt-2'>{t('inventory.items')}</p>
-        </div>
-
+      <PageHeader
+        title={t('inventory.addItem')}
+        subtitle={t('inventory.items')}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={<BackButton />}
+      />
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
         <Card>
           <form onSubmit={handleSubmit} className='space-y-6' noValidate>
             {error && (
@@ -121,16 +111,16 @@ export default function NewInventoryItemPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  placeholder='e.g., Paracetamol 500mg'
+                  placeholder={t('inventory.itemNamePlaceholder')}
                 />
               </div>
 
               <div>
                 <Input
-                  label='Code'
+                  label={t('inventory.code')}
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder='e.g., MED-001'
+                  placeholder={t('inventory.codePlaceholder')}
                 />
               </div>
 
@@ -154,35 +144,33 @@ export default function NewInventoryItemPage() {
                   value={formData.unit}
                   onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                   required
-                  placeholder='e.g., box, bottle, pack'
+                  placeholder={t('inventory.unitPlaceholder')}
                 />
               </div>
 
               <div>
                 <Input
-                  label='Purchase Cost'
+                  label={t('inventory.costPrice')}
                   type='number'
                   step='0.01'
                   value={formData.costPrice}
                   onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-                  placeholder='0.00'
+                  placeholder={t('inventory.pricePlaceholder')}
                 />
-                <p className='text-sm text-neutral-500 mt-1'>Cost price per unit (what you pay)</p>
+                <p className='text-sm text-neutral-500 mt-1'>{t('inventory.costPriceHint')}</p>
               </div>
 
               <div>
                 <Input
-                  label='Selling Price *'
+                  label={t('inventory.sellingPrice') + ' *'}
                   type='number'
                   step='0.01'
                   value={formData.sellingPrice}
                   onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value })}
-                  placeholder='0.00'
+                  placeholder={t('inventory.pricePlaceholder')}
                   required
                 />
-                <p className='text-sm text-neutral-500 mt-1'>
-                  Selling price per unit (what customers pay)
-                </p>
+                <p className='text-sm text-neutral-500 mt-1'>{t('inventory.sellingPriceHint')}</p>
               </div>
 
               <div>
@@ -192,9 +180,9 @@ export default function NewInventoryItemPage() {
                   value={formData.currentStock}
                   onChange={(e) => setFormData({ ...formData, currentStock: e.target.value })}
                   required
-                  placeholder='0'
+                  placeholder={t('inventory.quantityPlaceholder')}
                 />
-                <p className='text-sm text-neutral-500 mt-1'>Initial stock quantity</p>
+                <p className='text-sm text-neutral-500 mt-1'>{t('inventory.initialStockHint')}</p>
               </div>
 
               <div>
@@ -204,7 +192,7 @@ export default function NewInventoryItemPage() {
                   value={formData.lowStockThreshold}
                   onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value })}
                   required
-                  placeholder='10'
+                  placeholder={t('inventory.minStockPlaceholder')}
                 />
                 <p className='text-sm text-neutral-500 mt-1'>{t('inventory.lowStockAlert')}</p>
               </div>
@@ -220,7 +208,7 @@ export default function NewInventoryItemPage() {
                   label={t('inventory.batchNumber')}
                   value={formData.batchNumber}
                   onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
-                  placeholder='e.g., BATCH-2024-001'
+                  placeholder={t('inventory.batchPlaceholder')}
                 />
               </div>
 
@@ -229,7 +217,7 @@ export default function NewInventoryItemPage() {
                   label={t('inventory.supplier')}
                   value={formData.supplier}
                   onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                  placeholder='Supplier name or ID'
+                  placeholder={t('inventory.supplierPlaceholder')}
                 />
               </div>
 

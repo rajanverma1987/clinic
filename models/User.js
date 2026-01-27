@@ -10,6 +10,8 @@ export const UserRole = {
   RECEPTIONIST: 'receptionist',
   ACCOUNTANT: 'accountant',
   PHARMACIST: 'pharmacist',
+  LAB_TECH: 'lab_tech', // Lab technician
+  PATIENT: 'patient', // Patient portal access
 };
 
 const UserSchema = new Schema(
@@ -27,7 +29,6 @@ const UserSchema = new Schema(
       required: true,
       lowercase: true,
       trim: true,
-      index: true,
     },
     password: {
       type: String,
@@ -53,9 +54,47 @@ const UserSchema = new Schema(
       type: Boolean,
       default: true,
     },
-    lastLoginAt: Date,
-    lastLoginIP: String,
-    passwordChangedAt: Date,
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended'],
+      default: 'active',
+      index: true,
+    },
+    // Two-factor authentication
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      select: false, // Don't return by default
+    },
+    // Profile information (as per NEW-PLANS.md)
+    phone: {
+      type: String,
+      trim: true,
+    },
+    avatar: {
+      type: String,
+    },
+    // Login tracking
+    lastLoginAt: {
+      type: Date,
+    },
+    lastLoginIP: {
+      type: String,
+    },
+    passwordChangedAt: {
+      type: Date,
+    },
+    // Failed login attempt tracking
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    accountLockedUntil: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

@@ -4,7 +4,7 @@ import { useI18n } from '@/contexts/I18nContext';
 
 // Icon components
 const ProfileIcon = () => (
-  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
     <path
       strokeLinecap='round'
       strokeLinejoin='round'
@@ -15,7 +15,7 @@ const ProfileIcon = () => (
 );
 
 const ClinicIcon = () => (
-  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
     <path
       strokeLinecap='round'
       strokeLinejoin='round'
@@ -26,7 +26,7 @@ const ClinicIcon = () => (
 );
 
 const ComplianceIcon = () => (
-  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
     <path
       strokeLinecap='round'
       strokeLinejoin='round'
@@ -37,7 +37,7 @@ const ComplianceIcon = () => (
 );
 
 const DoctorsIcon = () => (
-  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
     <path
       strokeLinecap='round'
       strokeLinejoin='round'
@@ -48,7 +48,7 @@ const DoctorsIcon = () => (
 );
 
 const HoursIcon = () => (
-  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
     <path
       strokeLinecap='round'
       strokeLinejoin='round'
@@ -59,7 +59,7 @@ const HoursIcon = () => (
 );
 
 const QueueIcon = () => (
-  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
     <path
       strokeLinecap='round'
       strokeLinejoin='round'
@@ -70,7 +70,7 @@ const QueueIcon = () => (
 );
 
 const TaxIcon = () => (
-  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
     <path
       strokeLinecap='round'
       strokeLinejoin='round'
@@ -81,7 +81,7 @@ const TaxIcon = () => (
 );
 
 const EmailIcon = () => (
-  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
     <path
       strokeLinecap='round'
       strokeLinejoin='round'
@@ -92,7 +92,7 @@ const EmailIcon = () => (
 );
 
 const HolidayIcon = () => (
-  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
     <path
       strokeLinecap='round'
       strokeLinejoin='round'
@@ -102,7 +102,7 @@ const HolidayIcon = () => (
   </svg>
 );
 
-export function SettingsTabs({ activeTab, setActiveTab, isClinicAdmin }) {
+export function SettingsTabs({ activeTab, setActiveTab, isClinicAdmin, actionButtons }) {
   const { t } = useI18n();
 
   // Define all tabs
@@ -137,9 +137,9 @@ export function SettingsTabs({ activeTab, setActiveTab, isClinicAdmin }) {
   const tabs = allTabs.filter((tab) => !tab.adminOnly || isClinicAdmin);
 
   return (
-    <div className='mb-6'>
+    <div className='mb-3 flex w-full flex-wrap items-center justify-between gap-2 py-2 text-left'>
       <nav
-        className='flex items-center justify-start overflow-x-auto gap-2'
+        className='flex min-w-0 flex-1 items-center justify-start overflow-x-auto gap-1.5 scrollbar-hide'
         style={{ scrollbarWidth: 'none' }}
       >
         {tabs.map((tab) => {
@@ -148,23 +148,23 @@ export function SettingsTabs({ activeTab, setActiveTab, isClinicAdmin }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 isActive
-                  ? 'bg-green-100 text-green-600 shadow-sm border-l-2 border-green-500'
+                  ? 'bg-primary-100 text-primary-700 shadow-sm border-l-2 border-primary-500'
                   : 'text-neutral-700 hover:bg-primary-50 hover:text-primary-600'
               }`}
             >
-              <span className={isActive ? 'text-green-600' : 'text-neutral-500'}>{tab.icon}</span>
+              <span className={isActive ? 'text-primary-700' : 'text-neutral-500'}>{tab.icon}</span>
               <span>{tab.label}</span>
             </button>
           );
         })}
       </nav>
-      <style jsx>{`
-        nav::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+      {actionButtons && (
+        <div className='flex items-center gap-2 flex-shrink-0'>
+          {actionButtons}
+        </div>
+      )}
     </div>
   );
 }

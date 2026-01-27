@@ -139,7 +139,7 @@ const TenantSchema = new Schema(
 );
 
 // Indexes
-TenantSchema.index({ slug: 1 });
+// Note: slug already has unique: true which creates an index automatically
 TenantSchema.index({ region: 1 });
 
 export default mongoose.models.Tenant || mongoose.model('Tenant', TenantSchema);

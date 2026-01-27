@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
+import { useI18n } from '@/contexts/I18nContext';
+import { SettingsTabHeader } from './SettingsTabHeader';
 
 export function DoctorsTab({
   isClinicAdmin,
@@ -18,6 +20,8 @@ export function DoctorsTab({
   onCreateUser,
   onToggleUserStatus,
 }) {
+  const { t } = useI18n();
+
   if (!isClinicAdmin) {
     return (
       <Card className='text-center py-12'>
@@ -37,10 +41,10 @@ export function DoctorsTab({
               />
             </svg>
           </div>
-          <h3 className='text-lg font-semibold text-neutral-900 mb-1'>Access Restricted</h3>
-          <p className='text-sm text-neutral-600'>
-            Only clinic administrators can manage doctors and staff.
-          </p>
+          <h3 className='text-lg font-semibold text-neutral-900 mb-1'>
+            {t('settings.accessRestricted')}
+          </h3>
+          <p className='text-sm text-neutral-600'>{t('settings.onlyClinicAdminDoctors')}</p>
         </div>
       </Card>
     );
@@ -59,23 +63,16 @@ export function DoctorsTab({
   };
 
   return (
-    <div className='space-y-4'>
-      <div className='flex justify-end'>
-        <Button
-          onClick={() => setShowNewUserForm(!showNewUserForm)}
-          variant={showNewUserForm ? 'secondary' : 'primary'}
-          size='sm'
-        >
-          {showNewUserForm ? 'Cancel' : '+ Add User'}
-        </Button>
-      </div>
-
+    <div className='space-y-3 text-left'>
+      <SettingsTabHeader title={t('settings.doctorsStaff')} />
       {/* Add User Form */}
       {showNewUserForm && (
         <Card>
-          <form onSubmit={onCreateUser} className='p-5 space-y-4'>
-            <h2 className='text-lg font-bold text-neutral-900 mb-4'>Add New User</h2>
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <form onSubmit={onCreateUser} className='p-4 space-y-3'>
+            <h2 className='text-base font-bold text-neutral-900 mb-3'>
+              {t('settings.addNewUser')}
+            </h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
               <Input
                 label='First Name *'
                 value={newUserForm.firstName}
@@ -173,11 +170,11 @@ export function DoctorsTab({
 
       {/* Staff Members List */}
       <Card>
-        <div className='p-5'>
-          <div className='flex items-center gap-2 mb-4'>
+        <div className='p-4'>
+          <div className='flex items-center gap-2 mb-3'>
             <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
               <svg
-                className='w-4 h-4 text-primary-600'
+                className='icon icon-xs text-primary-600'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -190,7 +187,7 @@ export function DoctorsTab({
                 />
               </svg>
             </div>
-            <h2 className='text-lg font-bold text-neutral-900'>Staff Members</h2>
+            <h2 className='text-lg font-bold text-neutral-900'>{t('settings.staffMembers')}</h2>
             <span className='text-sm text-neutral-500'>({users.length})</span>
           </div>
 

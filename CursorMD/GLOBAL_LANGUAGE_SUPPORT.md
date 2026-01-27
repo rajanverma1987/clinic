@@ -2,27 +2,22 @@
 
 ## 🌍 Overview
 
-The clinic management system now supports **17 languages** for global use, ensuring that users who don't speak English can use the system in their native language.
+The clinic management system supports **10 languages** in the language selector—those countries/regions where language change is most commonly needed. This keeps the UI focused and reduces clutter.
 
-## ✅ Supported Languages
+## ✅ Supported Languages (Language Selector)
+
+The selector shows only the best countries/regions where users typically need a local language:
 
 1. **English (EN)** 🇺🇸 - Default
-2. **Spanish (ES)** 🇪🇸 - Español
-3. **French (FR)** 🇫🇷 - Français
-4. **Hindi (HI)** 🇮🇳 - हिन्दी
-5. **Arabic (AR)** 🇸🇦 - العربية
-6. **Chinese (ZH)** 🇨🇳 - 中文
-7. **German (DE)** 🇩🇪 - Deutsch
-8. **Portuguese (PT)** 🇵🇹 - Português
-9. **Japanese (JA)** 🇯🇵 - 日本語
-10. **Russian (RU)** 🇷🇺 - Русский
-11. **Italian (IT)** 🇮🇹 - Italiano
-12. **Dutch (NL)** 🇳🇱 - Nederlands
-13. **Korean (KO)** 🇰🇷 - 한국어
-14. **Turkish (TR)** 🇹🇷 - Türkçe
-15. **Polish (PL)** 🇵🇱 - Polski
-16. **Thai (TH)** 🇹🇭 - ไทย
-17. **Vietnamese (VI)** 🇻🇳 - Tiếng Việt
+2. **Spanish (ES)** 🇪🇸 - España, Latin America
+3. **French (FR)** 🇫🇷 - France, Quebec, Francophone Africa
+4. **Hindi (HI)** 🇮🇳 - India
+5. **Arabic (AR)** 🇸🇦 - Middle East, North Africa
+6. **Chinese (ZH)** 🇨🇳 - China
+7. **German (DE)** 🇩🇪 - Germany, DACH
+8. **Portuguese (PT)** 🇵🇹 - Brazil, Portugal
+9. **Japanese (JA)** 🇯🇵 - Japan
+10. **Russian (RU)** 🇷🇺 - Russia, CIS
 
 ## 🔄 How Language Switching Works
 

@@ -14,16 +14,25 @@
     --color-primary-300: #56ccf2;
     --color-primary-100: #e6f7fe;
 
-    /* Secondary Colors */
+    /* Secondary Colors - Green variants for success/active states */
     --color-secondary-700: #1e874f;
+    --color-secondary-600: #27ae60;
     --color-secondary-500: #27ae60;
-    --color-secondary-300: #6fcf97;
+    --color-secondary-300: #52c48f;
     --color-secondary-100: #e8f8ef;
+
+    /* Success Colors (alias for secondary) */
+    --color-success-700: #1e874f;
+    --color-success-600: #27ae60;
+    --color-success-500: #27ae60;
+    --color-success-300: #52c48f;
+    --color-success-100: #e8f8ef;
 
     /* Neutral Colors */
     --color-neutral-900: #1a1a1a;
     --color-neutral-800: #2d2d2d;
     --color-neutral-700: #4f4f4f;
+    --color-neutral-600: #6b7280;
     --color-neutral-500: #828282;
     --color-neutral-300: #d1d1d1;
     --color-neutral-200: #e6e9ee;
@@ -31,14 +40,15 @@
     --color-neutral-50: #ffffff;
 
     /* Status Colors */
-    --color-status-success: #27ae60;
+    --color-status-success: #27ae60; /* Green for success/active states */
     --color-status-warning: #f2c94c;
     --color-status-error: #eb5757;
-    --color-status-info: #2d9cdb;
+    --color-status-info: #2d9cdb; /* Blue for info */
 
     /* Typography */
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI',
-      'Helvetica Neue', Arial, sans-serif;
+    --font-family:
+      'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial,
+      sans-serif;
 
     /* Spacing Scale */
     --space-1: 4px;
@@ -50,6 +60,8 @@
     --space-8: 32px;
     --space-10: 40px;
     --space-12: 48px;
+    --space-14: 56px;
+    --space-16: 64px;
 
     /* Gap Scale (for flex/grid gaps) */
     --gap-1: 4px;
@@ -61,6 +73,8 @@
     --gap-8: 32px;
     --gap-10: 40px;
     --gap-12: 48px;
+    --gap-14: 56px;
+    --gap-16: 64px;
 
     /* Component Sizes */
     --size-xs: 16px;
@@ -71,6 +85,15 @@
     --size-2xl: 48px;
     --size-3xl: 64px;
     --size-4xl: 80px;
+
+    /* Icon sizes – use for nav, cards, buttons, lists */
+    --icon-size-xs: 16px;
+    --icon-size-sm: 20px;
+    --icon-size-md: 24px;
+    --icon-size-lg: 32px;
+    --icon-size-xl: 40px;
+    --icon-size-2xl: 48px;
+    --icon-size-empty: 64px;
 
     /* Border Radius */
     --radius-sm: 4px;
@@ -86,6 +109,39 @@
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    /* Layout defaults */
+    --layout-max-width: 100%;
+    --layout-padding: clamp(16px, 2vw, 24px);
+
+    /* Doctor_Dashboard.md spec tokens */
+    --dashboard-page-padding: 24px;
+    --dashboard-card-padding: 20px;
+    --dashboard-section-margin: 32px;
+    --dashboard-element-gap: 16px;
+    --dashboard-header-height: 70px;
+    --dashboard-header-padding-x: 24px;
+    --dashboard-search-width: 400px;
+    --dashboard-sidebar-width: 280px;
+    --dashboard-sidebar-item-padding: 16px 24px;
+    --dashboard-sidebar-icon-size: 24px;
+    --dashboard-sidebar-gap: 8px;
+    --dashboard-card-radius: 12px;
+    --dashboard-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --dashboard-cards-gap: 20px;
+    /* Doctor_Dashboard.md colors (optional overrides) */
+    --dashboard-primary: #1976d2;
+    --dashboard-primary-hover: #1565c0;
+    --dashboard-primary-light: #e3f2fd;
+    --dashboard-sidebar-bg: #0a1929;
+    --dashboard-page-bg: #f8f9fa;
+    /* Doctor_Dashboard.md typography */
+    --dashboard-h1: 32px;
+    --dashboard-h2: 24px;
+    --dashboard-h3: 20px;
+    --dashboard-body: 15px;
+    --dashboard-body-sm: 13px;
+    --dashboard-caption: 12px;
 
     /* Typography Sizes with Line Heights */
     --text-body-xs: 12px;
@@ -141,7 +197,9 @@
     text-rendering: optimizeLegibility;
     background-color: var(--color-neutral-50);
     color: var(--color-neutral-900);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
   .dark body {
@@ -166,6 +224,341 @@
   }
 }
 
+/* Layout: no gap so header bar sits nearest to sidebar */
+.layout-root {
+  display: flex;
+  min-height: 100vh;
+  gap: 0;
+  background-color: var(--color-neutral-50);
+}
+
+/* Perfect sticky header – bar at top of scroll area */
+.sticky-header-bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky-header, 21);
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-neutral-200);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease;
+}
+.sticky-header-bar.header-scrolled {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.sticky-header-bar__inner {
+  width: 100%;
+  min-height: var(--dashboard-header-height, 64px);
+  padding: var(--space-3, 12px) var(--dashboard-header-padding-x, 24px);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-4, 16px);
+  box-sizing: border-box;
+}
+.sticky-header-bar__left {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+.sticky-header-bar__center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+}
+.sticky-header-bar .header-logo-link {
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+.sticky-header-bar__title {
+  font-size: var(--dashboard-h2, 24px);
+  font-weight: 700;
+  color: var(--color-neutral-900);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0;
+}
+.sticky-header-bar__meta {
+  font-size: var(--text-body-sm, 14px);
+  color: var(--color-neutral-600);
+  margin-top: 2px;
+}
+.sticky-header-bar__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2, 8px);
+  flex-shrink: 0;
+  justify-self: end;
+  min-width: 0;
+}
+.sticky-header-bar__right-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+.sticky-header-bar__pipe {
+  width: 1px;
+  height: 20px;
+  background: var(--color-neutral-300);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* Shared box for search, language, notifications – same border, radius, shadow */
+.sticky-header-bar .header-control-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg, 8px);
+  border: 1px solid var(--color-neutral-200);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+  transition: box-shadow 0.2s ease, border-color 0.15s ease;
+}
+.sticky-header-bar .header-control-box:hover {
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06));
+  border-color: var(--color-neutral-300);
+}
+
+/* Search trigger – icon-only, no border (box comes from .header-control-box) */
+.sticky-header-bar .header-search-trigger {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--color-neutral-600) !important;
+  border-radius: inherit !important;
+  transition: background 0.15s, color 0.15s !important;
+}
+.sticky-header-bar .header-search-trigger:hover {
+  background: var(--color-neutral-50) !important;
+  color: var(--color-neutral-900) !important;
+}
+.sticky-header-bar .header-control-box--icon {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+/* Notification trigger – same look as search/language (box from .header-control-box) */
+.sticky-header-bar .header-control-box .NotificationDropdown {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-button,
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-button--sm {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: inherit !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: var(--color-neutral-600) !important;
+  transition: background 0.15s, color 0.15s !important;
+}
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-button:hover,
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-button--sm:hover {
+  background: var(--color-neutral-50) !important;
+  color: var(--color-neutral-900) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-button.is-open,
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-button--sm.is-open {
+  background: var(--color-neutral-50) !important;
+  color: var(--color-neutral-900) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-icon {
+  width: 20px !important;
+  height: 20px !important;
+  color: inherit !important;
+}
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-button::before,
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-button--sm::before {
+  display: none !important;
+}
+/* Notification badge – keep visible but compact in header */
+.sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-badge {
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px;
+  top: -4px;
+  right: -4px;
+}
+
+/* Shared layout shell – header bar nearest to sidebar; page padding 24px, left 16px, max 5px above header */
+.page-shell {
+  width: 100%;
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: var(--dashboard-page-padding);
+  padding-left: 16px;
+  padding-top: 5px;
+}
+
+/* Doctor_Dashboard.md: cards - radius 12px, padding 20px, shadow */
+.dashboard-card {
+  border-radius: var(--dashboard-card-radius);
+  padding: var(--dashboard-card-padding);
+  box-shadow: var(--dashboard-card-shadow);
+}
+
+/* Icon size and color utilities – use on svg or wrapper for consistent sizing */
+.icon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  color: currentColor;
+}
+.icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  fill: none;
+}
+.icon-xs { width: var(--icon-size-xs); height: var(--icon-size-xs); }
+.icon-sm { width: var(--icon-size-sm); height: var(--icon-size-sm); }
+.icon-md { width: var(--icon-size-md); height: var(--icon-size-md); }
+.icon-lg { width: var(--icon-size-lg); height: var(--icon-size-lg); }
+.icon-xl { width: var(--icon-size-xl); height: var(--icon-size-xl); }
+.icon-2xl { width: var(--icon-size-2xl); height: var(--icon-size-2xl); }
+
+/* Sidebar nav icons – 24px, inherit link text color */
+.sidebar-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dashboard-sidebar-icon-size, 24px);
+  height: var(--dashboard-sidebar-icon-size, 24px);
+  flex-shrink: 0;
+  color: inherit;
+}
+.sidebar-nav-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  fill: none;
+}
+
+/* Sidebar profile header – solid background so it never looks transparent */
+.sidebar-profile-header {
+  background: #ffffff !important;
+}
+
+/* Sidebar collapse toggle – distinct control (not nav-style); icon-in-box, "Collapse menu" label when expanded */
+.sidebar-collapse-toggle:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+/* Profile dropdown wrapper – opens below trigger */
+.profile-menu {
+  position: relative;
+  width: 100%;
+  overflow: visible;
+  background: #ffffff !important;
+}
+.profile-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  width: 16rem;
+  max-width: calc(100vw - 24px);
+  background: #ffffff !important;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xl, 12px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  z-index: var(--z-dropdown-menu-high, 10050);
+  overflow: hidden;
+}
+.profile-dropdown__header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-neutral-200);
+  background: var(--color-neutral-50);
+  font-size: var(--text-body-xs, 12px);
+  font-weight: 600;
+  color: var(--color-neutral-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.profile-dropdown__body {
+  padding: 8px 0;
+}
+.profile-dropdown__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: var(--color-neutral-700);
+  font-size: var(--text-body-sm, 14px);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.profile-dropdown__item:hover {
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+}
+.profile-dropdown__item--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--color-status-error);
+}
+.profile-dropdown__item-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-100);
+  color: var(--color-primary-600);
+}
+.profile-dropdown__item--danger .profile-dropdown__item-icon {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-status-error);
+}
+.profile-dropdown__item-text {
+  flex: 1;
+  min-width: 0;
+}
+.profile-dropdown__item-label {
+  display: block;
+  font-weight: 600;
+}
+.profile-dropdown__item-desc {
+  display: block;
+  font-size: var(--text-body-xs, 12px);
+  color: var(--color-neutral-500);
+  margin-top: 2px;
+}
+.profile-dropdown__divider {
+  height: 1px;
+  margin: 4px 16px;
+  background: var(--color-neutral-200);
+}
+
 @layer utilities {
   /* Animation keyframes */
   @keyframes fade-in {
@@ -183,6 +576,17 @@
     from {
       opacity: 0;
       transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
     }
     to {
       opacity: 1;
@@ -475,10 +879,14 @@
   @keyframes pulse-glow {
     0%,
     100% {
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(235, 87, 87, 0.7);
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        0 0 0 0 rgba(235, 87, 87, 0.7);
     }
     50% {
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 8px rgba(235, 87, 87, 0);
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        0 0 0 8px rgba(235, 87, 87, 0);
     }
   }
 
@@ -554,7 +962,9 @@
 
   /* Hover effects */
   .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
   }
 
   .hover-lift:hover {
@@ -563,15 +973,15 @@
   }
 
   /* Prevent SVG changes in primary buttons */
-  button.bg-primary-500 [class*="svg"],
+  button.bg-primary-500 [class*='svg'],
   button.bg-primary-500 svg {
     transition: none !important;
     transform: none !important;
   }
-  
-  button.bg-primary-500:hover [class*="svg"],
+
+  button.bg-primary-500:hover [class*='svg'],
   button.bg-primary-500:hover svg,
-  button.bg-primary-500.group-hover [class*="svg"],
+  button.bg-primary-500.group-hover [class*='svg'],
   button.bg-primary-500.group-hover svg {
     transform: none !important;
     color: currentColor !important;
@@ -656,8 +1066,29 @@
   display: none;
 }
 
-/* Typography Utility Classes - Clinic Theme */
+/* Design hierarchy – use these for consistent font size & spacing
+ * Typography: text-h1 (page title) → text-h2 (section) → text-h3 (card) → text-h4 (subsection) → text-body-lg/md/sm/xs
+ * Spacing: .space-section (between sections), .space-card (card inner), .space-item (list/item gap)
+ * Buttons: Use <Button variant="primary|secondary|ghost" size="sm|md|lg" /> – avoid raw <button>
+ */
 @layer utilities {
+  /* Section / layout spacing */
+  .space-section {
+    margin-bottom: var(--space-6);
+  }
+  .space-section:last-child {
+    margin-bottom: 0;
+  }
+  .space-card {
+    padding: var(--space-4) var(--space-5);
+  }
+  .space-item {
+    gap: var(--gap-2);
+  }
+  .space-items {
+    gap: var(--gap-3);
+  }
+
   /* Headings */
   .text-h1 {
     font-size: 32px;
@@ -716,8 +1147,7 @@
     font-family: var(--font-family);
   }
 
-
-  /* Button Label */
+  /* Button Label – default for <Button> */
   .text-button {
     font-size: 16px;
     line-height: 20px;
@@ -725,9 +1155,26 @@
     font-family: var(--font-family);
   }
 
+  /* Card/section title – same weight as h4, used for list/dashboard cards */
+  .text-card-title {
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 600;
+    font-family: var(--font-family);
+  }
+  .text-caption {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    color: var(--color-neutral-500);
+    font-family: var(--font-family);
+  }
+
   /* Icon hover tint effects */
   .icon-tint-hover {
-    transition: filter 0.3s ease, transform 0.3s ease;
+    transition:
+      filter 0.3s ease,
+      transform 0.3s ease;
   }
 
   /* When parent is hovered, tint the icon */
@@ -741,7 +1188,9 @@
 
   /* Primary color tint */
   .icon-tint-primary {
-    transition: filter 0.3s ease, transform 0.3s ease;
+    transition:
+      filter 0.3s ease,
+      transform 0.3s ease;
   }
 
   .group:hover .icon-tint-primary,
@@ -754,7 +1203,9 @@
 
   /* Secondary color tint */
   .icon-tint-secondary {
-    transition: filter 0.3s ease, transform 0.3s ease;
+    transition:
+      filter 0.3s ease,
+      transform 0.3s ease;
   }
 
   .group:hover .icon-tint-secondary,
@@ -778,7 +1229,9 @@
 
   /* Generic icon hover - applies primary tint by default */
   svg {
-    transition: filter 0.3s ease, transform 0.3s ease;
+    transition:
+      filter 0.3s ease,
+      transform 0.3s ease;
   }
 
   /* Apply tint to SVG icons in hoverable containers */
@@ -789,6 +1242,13 @@
   .hover\:tint:hover svg:not(.no-tint) {
     filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(186deg)
       brightness(98%) contrast(96%);
+  }
+
+  /* Explicitly prevent filter on quick action icons - must come after generic rule */
+  .quick-action-icon svg,
+  .quick-action-btn .quick-action-icon svg,
+  .quick-action-btn:hover .quick-action-icon svg {
+    filter: none !important;
   }
 
   /* Keep original color for specific cases */

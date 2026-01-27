@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
 import { getNoteVersionHistory } from '@/services/clinical-note.service';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
 
@@ -28,24 +32,20 @@ async function getHandler(
             })
         );
     } catch (error) {
-        return NextResponse.json(
-            errorResponse('Failed to fetch version history', 'INTERNAL_ERROR'),
-            { status: 500 }
-        );
+        // Error handling is done by withErrorHandler middleware
+        throw error;
     }
 }
 
-export async function GET(
-    req,
-    context
-) {
-    const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
-    if ('error' in authResult) return authResult.error;
-
-    const params = await context.params;
-    const authenticatedReq = req;
-    authenticatedReq.user = authResult.user;
-
-    return getHandler(authenticatedReq, authResult.user, { params });
-}
+// Apply middleware stack
+export const GET = withErrorHandler(
+    apiRateLimit(
+        withAuth(
+            requirePermission(RESOURCES.CLINICAL_NOTE, ACTIONS.READ)(async (req, user, context) => {
+                const params = await context.params;
+                return getHandler(req, user, { params });
+            })
+        )
+    )
+);
 

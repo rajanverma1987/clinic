@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
+import { ChartCard } from '@/app/dashboard/components/ChartCard';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
@@ -15,12 +17,21 @@ import { useEffect, useState } from 'react';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const { currency, locale } = useSettings();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [chartData, setChartData] = useState({
+    userGrowth: [],
+    appointmentTrends: [],
+    revenueTrends: [],
+    popularSpecialties: [],
+    peakHours: [],
+    geographicDistribution: [],
+  });
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -40,11 +51,17 @@ export default function AdminDashboardPage() {
       if (response.success && response.data) {
         setStats(response.data);
       } else {
-        setError('Failed to load dashboard data');
+        setError(t('errors.failedToLoadDashboard'));
+      }
+
+      // Fetch chart data
+      const chartsResponse = await apiClient.get('/admin/analytics');
+      if (chartsResponse.success && chartsResponse.data) {
+        setChartData(chartsResponse.data);
       }
     } catch (error) {
       console.error('Failed to fetch admin stats:', error);
-      setError('Failed to load dashboard data');
+      setError(t('errors.failedToLoadDashboard'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -82,9 +99,9 @@ export default function AdminDashboardPage() {
       <Layout>
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
-            <h2 className='text-xl font-semibold text-status-error mb-2'>Error Loading Dashboard</h2>
+            <h2 className='text-xl font-semibold text-status-error mb-2'>{t('admin.errorLoadingDashboard')}</h2>
             <p className='text-neutral-500 mb-4'>{error}</p>
-            <Button onClick={handleRefresh}>Retry</Button>
+            <Button onClick={handleRefresh}>{t('admin.retry')}</Button>
           </div>
         </div>
       </Layout>
@@ -93,33 +110,124 @@ export default function AdminDashboardPage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        {/* Header */}
-        <PageHeader
-          title='Super Admin Dashboard'
-          description='Complete system overview and management'
-          actionButton={
-            <Button variant='secondary' onClick={handleRefresh} disabled={refreshing}>
-              {refreshing ? 'Refreshing...' : 'Refresh Data'}
-            </Button>
-          }
-        />
+      <PageHeader
+        title={t('admin.superAdminDashboard')}
+        subtitle={t('admin.description')}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={
+          <Button variant='secondary' onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? t('admin.refreshing') : t('admin.refreshData')}
+          </Button>
+        }
+      />
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
 
-        {/* System Overview Stats */}
+        {/* Quick Stats Cards */}
         <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-neutral-900 mb-4'>System Overview</h2>
+          <h2 className='text-xl font-semibold text-neutral-900 mb-4'>Quick Stats</h2>
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
             <Card>
               <div className='p-6'>
                 <div className='flex items-center justify-between'>
                   <div>
-                    <p className='text-sm font-medium text-neutral-600'>Total Tenants</p>
+                    <p className='text-sm font-medium text-neutral-600'>Total Doctors</p>
+                    <p className='text-3xl font-bold text-neutral-900 mt-2'>
+                      {formatNumber(stats?.doctors?.total || 0)}
+                    </p>
+                  </div>
+                  <div className='w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center'>
+                    <svg className='icon icon-md text-blue-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
+                    </svg>
+                  </div>
+                </div>
+                <p className='text-sm text-neutral-500 mt-2'>
+                  {formatNumber(stats?.doctors?.verified || 0)} verified, {formatNumber(stats?.doctors?.pending || 0)} pending
+                </p>
+              </div>
+            </Card>
+
+            <Card>
+              <div className='p-6'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='text-sm font-medium text-neutral-600'>Completed Consultations</p>
+                    <p className='text-3xl font-bold text-neutral-900 mt-2'>
+                      {formatNumber(stats?.appointments?.completed || 0)}
+                    </p>
+                  </div>
+                  <div className='w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center'>
+                    <svg className='icon icon-md text-green-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' />
+                    </svg>
+                  </div>
+                </div>
+                <p className='text-sm text-neutral-500 mt-2'>
+                  {formatNumber(stats?.appointments?.cancelled || 0)} cancelled
+                </p>
+              </div>
+            </Card>
+
+            <Card>
+              <div className='p-6'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='text-sm font-medium text-neutral-600'>Average Rating</p>
+                    <p className='text-3xl font-bold text-neutral-900 mt-2'>
+                      {(stats?.reviews?.averageRating || 0).toFixed(1)}
+                    </p>
+                  </div>
+                  <div className='w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center'>
+                    <svg className='icon icon-md text-yellow-600' fill='currentColor' viewBox='0 0 20 20'>
+                      <path d='M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z' />
+                    </svg>
+                  </div>
+                </div>
+                <p className='text-sm text-neutral-500 mt-2'>
+                  From {formatNumber(stats?.reviews?.total || 0)} reviews
+                </p>
+              </div>
+            </Card>
+
+            <Card>
+              <div className='p-6'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='text-sm font-medium text-neutral-600'>Total Revenue</p>
+                    <p className='text-3xl font-bold text-neutral-900 mt-2'>
+                      {formatCurrency(stats?.revenue?.total || 0)}
+                    </p>
+                  </div>
+                  <div className='w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center'>
+                    <svg className='icon icon-md text-green-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
+                    </svg>
+                  </div>
+                </div>
+                <p className='text-sm text-neutral-500 mt-2'>
+                  {formatCurrency(stats?.revenue?.thisMonth || 0)} this month
+                </p>
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* System Overview Stats */}
+        <div className='mb-8'>
+          <h2 className='text-xl font-semibold text-neutral-900 mb-4'>{t('admin.systemOverview')}</h2>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
+            <Card>
+              <div className='p-6'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='text-sm font-medium text-neutral-600'>{t('admin.totalTenants')}</p>
                     <p className='text-3xl font-bold text-neutral-900 mt-2'>
                       {formatNumber(stats?.tenants?.total || 0)}
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' />
                     </svg>
                   </div>
@@ -139,8 +247,8 @@ export default function AdminDashboardPage() {
                       {formatNumber(stats?.users?.total || 0)}
                     </p>
                   </div>
-                  <div className='w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <div className='w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' />
                     </svg>
                   </div>
@@ -161,7 +269,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' />
                     </svg>
                   </div>
@@ -182,7 +290,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
                     </svg>
                   </div>
@@ -209,7 +317,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
                     </svg>
                   </div>
@@ -230,7 +338,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' />
                   </svg>
                   </div>
@@ -251,7 +359,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
                     </svg>
                   </div>
@@ -272,7 +380,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' />
                     </svg>
                   </div>
@@ -299,7 +407,7 @@ export default function AdminDashboardPage() {
                   </p>
                 </div>
                 <div className='w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' />
                   </svg>
                 </div>
@@ -320,7 +428,7 @@ export default function AdminDashboardPage() {
                   </p>
                 </div>
                 <div className='w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
                     </svg>
                   </div>
@@ -341,7 +449,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
                     </svg>
                   </div>
@@ -368,7 +476,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' />
                   </svg>
                   </div>
@@ -389,7 +497,7 @@ export default function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className='w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' />
                     </svg>
                   </div>
@@ -408,7 +516,7 @@ export default function AdminDashboardPage() {
                   <p className='text-3xl font-bold text-secondary-600 mt-2'>100%</p>
                 </div>
                 <div className='w-12 h-12 bg-secondary-100 rounded-lg flex items-center justify-center'>
-                    <svg width='24px' height='24px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-md text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' />
                   </svg>
                 </div>
@@ -427,7 +535,7 @@ export default function AdminDashboardPage() {
             <div className='p-6'>
               <div className='flex items-center justify-between mb-4'>
                 <h3 className='text-lg font-semibold text-neutral-900'>Clients</h3>
-                  <svg width='32px' height='32px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-lg text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' />
                 </svg>
               </div>
@@ -444,7 +552,7 @@ export default function AdminDashboardPage() {
             <div className='p-6'>
               <div className='flex items-center justify-between mb-4'>
                 <h3 className='text-lg font-semibold text-neutral-900'>Subscription Plans</h3>
-                  <svg width='32px' height='32px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-lg text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
                 </svg>
               </div>
@@ -461,7 +569,7 @@ export default function AdminDashboardPage() {
             <div className='p-6'>
               <div className='flex items-center justify-between mb-4'>
                   <h3 className='text-lg font-semibold text-neutral-900'>All Subscriptions</h3>
-                  <svg width='32px' height='32px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-lg text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' />
                   </svg>
                 </div>
@@ -478,7 +586,7 @@ export default function AdminDashboardPage() {
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
                   <h3 className='text-lg font-semibold text-neutral-900'>All Users</h3>
-                  <svg width='32px' height='32px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-lg text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' />
                   </svg>
                 </div>
@@ -495,7 +603,7 @@ export default function AdminDashboardPage() {
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
                   <h3 className='text-lg font-semibold text-neutral-900'>Create Admin</h3>
-                  <svg width='32px' height='32px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-lg text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z' />
                 </svg>
                 </div>
@@ -518,7 +626,7 @@ export default function AdminDashboardPage() {
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
                   <h3 className='text-lg font-semibold text-neutral-900'>System Settings</h3>
-                  <svg width='32px' height='32px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-lg text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' />
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 12a3 3 0 11-6 0 3 3 0 016 0z' />
                   </svg>
@@ -536,7 +644,7 @@ export default function AdminDashboardPage() {
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
                   <h3 className='text-lg font-semibold text-neutral-900'>Reports & Analytics</h3>
-                  <svg width='32px' height='32px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-lg text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' />
                   </svg>
                 </div>
@@ -553,7 +661,7 @@ export default function AdminDashboardPage() {
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
                   <h3 className='text-lg font-semibold text-neutral-900'>Database Tools</h3>
-                  <svg width='32px' height='32px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-lg text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4' />
                   </svg>
                 </div>
@@ -570,7 +678,7 @@ export default function AdminDashboardPage() {
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
                   <h3 className='text-lg font-semibold text-neutral-900'>Audit Logs</h3>
-                  <svg width='32px' height='32px' className='text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='icon icon-lg text-neutral-900' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
                   </svg>
                 </div>
@@ -620,6 +728,100 @@ export default function AdminDashboardPage() {
             </Card>
           </div>
         </div>
+
+        {/* Charts & Analytics */}
+        <div className='mb-8'>
+          <h2 className='text-xl font-semibold text-neutral-900 mb-4'>Charts & Analytics</h2>
+          <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+            <ChartCard
+              title='User Growth (Monthly)'
+              data={chartData.userGrowth || []}
+              colorScheme='primary'
+              loading={loading}
+            />
+            <ChartCard
+              title='Appointment Trends'
+              data={chartData.appointmentTrends || []}
+              colorScheme='primary'
+              loading={loading}
+            />
+            <ChartCard
+              title='Revenue Trends'
+              data={chartData.revenueTrends || []}
+              colorScheme='primary'
+              loading={loading}
+            />
+          </div>
+        </div>
+
+        {/* Popular Specialties */}
+        {chartData.popularSpecialties && chartData.popularSpecialties.length > 0 && (
+          <div className='mb-8'>
+            <h2 className='text-xl font-semibold text-neutral-900 mb-4'>Popular Specialties</h2>
+            <Card>
+              <div className='p-6'>
+                <div className='grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4'>
+                  {chartData.popularSpecialties.slice(0, 12).map((specialty, index) => (
+                    <div key={index} className='text-center p-4 bg-neutral-50 rounded-lg'>
+                      <p className='text-sm font-medium text-neutral-600'>{specialty.name || specialty._id}</p>
+                      <p className='text-2xl font-bold text-neutral-900 mt-2'>{formatNumber(specialty.count || specialty.value || 0)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Peak Booking Hours */}
+        {chartData.peakHours && chartData.peakHours.length > 0 && (
+          <div className='mb-8'>
+            <h2 className='text-xl font-semibold text-neutral-900 mb-4'>Peak Booking Hours</h2>
+            <Card>
+              <div className='p-6'>
+                <div className='grid grid-cols-6 md:grid-cols-12 gap-2'>
+                  {Array.from({ length: 24 }, (_, hour) => {
+                    const hourData = chartData.peakHours.find((h) => h.hour === hour);
+                    const count = hourData?.count || 0;
+                    const maxCount = Math.max(...chartData.peakHours.map((h) => h.count || 0), 1);
+                    const percentage = (count / maxCount) * 100;
+                    return (
+                      <div key={hour} className='text-center'>
+                        <div className='bg-neutral-200 rounded h-32 flex items-end justify-center mb-2'>
+                          <div
+                            className='bg-primary-600 rounded-t w-full transition-all'
+                            style={{ height: `${percentage}%` }}
+                            title={`${hour}:00 - ${count} bookings`}
+                          />
+                        </div>
+                        <p className='text-xs text-neutral-600'>{hour}:00</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Geographic Distribution */}
+        {chartData.geographicDistribution && chartData.geographicDistribution.length > 0 && (
+          <div className='mb-8'>
+            <h2 className='text-xl font-semibold text-neutral-900 mb-4'>Geographic Distribution</h2>
+            <Card>
+              <div className='p-6'>
+                <div className='grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4'>
+                  {chartData.geographicDistribution.map((region, index) => (
+                    <div key={index} className='text-center p-4 bg-neutral-50 rounded-lg'>
+                      <p className='text-sm font-medium text-neutral-600'>{region.region || region._id || 'Unknown'}</p>
+                      <p className='text-2xl font-bold text-neutral-900 mt-2'>{formatNumber(region.count || region.value || 0)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Breakdown Tables */}
         {stats?.tenants?.byRegion && stats.tenants.byRegion.length > 0 && (

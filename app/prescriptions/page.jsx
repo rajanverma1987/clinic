@@ -1,7 +1,7 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -10,6 +10,7 @@ import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -34,14 +35,8 @@ export default function PrescriptionsPage() {
     try {
       const response = await apiClient.get('/prescriptions');
       if (response.success && response.data) {
-        // Handle paginated response structure
-        if (response.data.data && Array.isArray(response.data.data)) {
-          setPrescriptions(response.data.data);
-        } else if (Array.isArray(response.data)) {
-          setPrescriptions(response.data);
-        } else {
-          setPrescriptions([]);
-        }
+        const prescriptionsList = extractArrayData(response);
+        setPrescriptions(prescriptionsList);
       } else {
         setPrescriptions([]);
       }
@@ -190,21 +185,23 @@ export default function PrescriptionsPage() {
 
   return (
     <Layout>
+      <PageHeader
+        title={t('prescriptions.title')}
+        subtitle={t('prescriptions.prescriptionList')}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={
+          <Button
+            onClick={() => router.push('/prescriptions/new')}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('prescriptions.createPrescription')}
+          </Button>
+        }
+      />
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title={t('prescriptions.title')}
-          subtitle={t('prescriptions.prescriptionList')}
-          actionButton={
-            <Button
-              onClick={() => router.push('/prescriptions/new')}
-              variant='primary'
-              size='md'
-              className='whitespace-nowrap'
-            >
-              + {t('prescriptions.createPrescription')}
-            </Button>
-          }
-        />
 
         <Card>
           <Table

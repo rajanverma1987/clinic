@@ -9,6 +9,7 @@ import {
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/telemedicine/sessions/:id
@@ -31,7 +32,7 @@ async function getHandler(
 
     return NextResponse.json(successResponse(session));
   } catch (error) {
-    console.error('Error in GET /api/telemedicine/sessions/[id]:', error);
+    logger.error('Error in GET /api/telemedicine/sessions/[id]:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to fetch session',
@@ -101,7 +102,7 @@ async function putHandler(
       { status: 400 }
     );
   } catch (error) {
-    console.error('Error in PUT /api/telemedicine/sessions/[id]:', error);
+    logger.error('Error in PUT /api/telemedicine/sessions/[id]:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to update session',

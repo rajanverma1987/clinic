@@ -4,7 +4,7 @@ import { forwardRef } from 'react';
 import './Checkbox.css';
 
 export const Checkbox = forwardRef(
-  ({ id, name, checked, onChange, disabled, className = '', size = 'md', ...props }, ref) => {
+  ({ id, name, checked, onChange, disabled, className = '', size = 'sm', ...props }, ref) => {
     return (
       <label
         className={`checkbox-container size-${size} ${disabled ? 'disabled' : ''} ${className}`}
@@ -32,7 +32,7 @@ export const Checkbox = forwardRef(
         </div>
       </label>
     );
-  }
+  },
 );
 
 Checkbox.displayName = 'Checkbox';

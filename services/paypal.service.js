@@ -1,3 +1,5 @@
+import { logger } from '@/lib/utils/logger.js';
+
 /**
  * PayPal Subscription API Integration Service
  * Handles PayPal subscription plans and subscriptions
@@ -278,14 +280,14 @@ export async function retryPayPalPayment(subscriptionId, maxRetries = 3, initial
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`[PayPal] Retry attempt ${attempt}/${maxRetries} for subscription ${subscriptionId}`);
+      logger.info(`[PayPal] Retry attempt ${attempt}/${maxRetries} for subscription ${subscriptionId}`);
 
       // Get subscription details to check status
       const subscription = await getPayPalSubscription(subscriptionId);
 
       // Check if subscription is active
       if (subscription.status === 'ACTIVE') {
-        console.log(`[PayPal] Subscription ${subscriptionId} is already active`);
+        logger.info(`[PayPal] Subscription ${subscriptionId} is already active`);
         return { success: true, subscription };
       }
 
@@ -298,7 +300,7 @@ export async function retryPayPalPayment(subscriptionId, maxRetries = 3, initial
         const updatedSubscription = await getPayPalSubscription(subscriptionId);
 
         if (updatedSubscription.status === 'ACTIVE') {
-          console.log(`[PayPal] ✅ Successfully activated subscription ${subscriptionId} on attempt ${attempt}`);
+          logger.info(`[PayPal] ✅ Successfully activated subscription ${subscriptionId} on attempt ${attempt}`);
           return { success: true, subscription: updatedSubscription, attempts: attempt };
         }
       }
@@ -308,20 +310,20 @@ export async function retryPayPalPayment(subscriptionId, maxRetries = 3, initial
 
     } catch (error) {
       lastError = error;
-      console.error(`[PayPal] Retry attempt ${attempt} failed:`, error.message);
+      logger.error(`[PayPal] Retry attempt ${attempt} failed:`, error.message);
 
       // Don't retry on last attempt
       if (attempt < maxRetries) {
         // Exponential backoff: delay = initialDelay * 2^(attempt-1)
         const delay = initialDelay * Math.pow(2, attempt - 1);
-        console.log(`[PayPal] Waiting ${delay}ms before next retry...`);
+        logger.info(`[PayPal] Waiting ${delay}ms before next retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
 
   // All retries failed
-  console.error(`[PayPal] ❌ All ${maxRetries} retry attempts failed for subscription ${subscriptionId}`);
+  logger.error(`[PayPal] ❌ All ${maxRetries} retry attempts failed for subscription ${subscriptionId}`);
   throw new Error(`Failed to process PayPal payment after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
 }
 
@@ -389,16 +391,16 @@ export async function handlePayPalWebhook(payload, headers) {
     case 'PAYMENT.SALE.DENIED':
       // Payment failed - trigger retry logic
       if (resource?.billing_agreement_id) {
-        console.log('[PayPal] Payment denied, attempting retry for subscription:', resource.billing_agreement_id);
+        logger.info('[PayPal] Payment denied, attempting retry for subscription:', resource.billing_agreement_id);
         try {
           await retryPayPalPayment(resource.billing_agreement_id, 3, 2000);
         } catch (error) {
-          console.error('[PayPal] Retry failed after webhook:', error);
+          logger.error('[PayPal] Retry failed after webhook:', error);
         }
       }
       break;
     default:
-      console.log('Unhandled PayPal webhook event:', eventType);
+      logger.info('Unhandled PayPal webhook event:', eventType);
   }
 }
 

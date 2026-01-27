@@ -55,7 +55,6 @@ const DrugSchema = new Schema(
         category: {
             type: String,
             trim: true,
-            index: true,
         },
         schedule: {
             type: String,

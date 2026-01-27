@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -212,9 +211,11 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <Layout>
+    <Layout
+      title={t('subscription.title')}
+      subtitle={t('subscription.subtitle')}
+    >
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader title='Subscription' subtitle='Manage your subscription and payments' />
 
         {/* Current Subscription Section */}
         {subscription && subscription.planId && typeof subscription.planId === 'object' && (

@@ -33,10 +33,12 @@ export function StatsCard({
   if (loading) {
     return (
       <Card className='stat-card'>
-        <div className='relative z-10' style={{ padding: '24px 24px 24px 10px' }}>
-          <div className='skeleton skeleton-text w-24 mb-4' />
-          <div className='skeleton skeleton-text-lg w-32 mb-4' />
-          <div className='skeleton w-12 h-12 rounded-xl' />
+        <div className='relative z-10 p-4 h-full flex flex-col justify-between'>
+          <div className='skeleton skeleton-text w-24 mb-3' />
+          <div className='skeleton skeleton-text-lg w-32 mb-3' />
+          <div className='flex justify-end'>
+            <div className='skeleton skeleton-stat-icon' />
+          </div>
         </div>
       </Card>
     );
@@ -47,28 +49,17 @@ export function StatsCard({
       className={`stat-card stat-card-${colorScheme} dashboard-card-gradient cursor-pointer`}
       onClick={onClick}
     >
-      {/* Decorative orb */}
-      <div
-        className={`radial-orb radial-orb-${colorScheme}`}
-        style={{
-          width: '400px',
-          height: '400px',
-          top: '-120px',
-          right: '-120px',
-        }}
-      />
-
       {/* Content */}
-      <div className='relative z-10' style={{ padding: '24px 24px 24px 10px' }}>
-        {/* Accent bar */}
-        <div className={`accent-bar accent-bar-${colorScheme} mb-4`} />
-
-        {/* Label */}
-        <p className={`stat-label text-neutral-500 mb-2`}>{title}</p>
+      <div className='relative z-10 p-4 h-full flex flex-col justify-between'>
+        {/* Header with accent bar and label */}
+        <div className='flex items-center gap-2 mb-3'>
+          <div className={`accent-bar accent-bar-${colorScheme}`} />
+          <p className={`stat-label`}>{title}</p>
+        </div>
 
         {/* Value with trend */}
-        <div className='flex items-end justify-between mb-4'>
-          <div className='stat-value text-neutral-900'>{value}</div>
+        <div className='flex items-end justify-between mb-3'>
+          <div className='stat-value'>{value}</div>
           {trend && (
             <div
               className={`trend-indicator ${trend.direction === 'up' ? 'trend-up' : 'trend-down'}`}
@@ -82,7 +73,7 @@ export function StatsCard({
         {/* Icon */}
         <div className='flex justify-end'>
           <div className={`stat-icon stat-icon-${colorScheme}`}>
-            <IconComponent className='w-6 h-6' color='white' />
+            <IconComponent className='icon icon-sm' color='white' />
           </div>
         </div>
       </div>

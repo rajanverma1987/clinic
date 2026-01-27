@@ -13,10 +13,12 @@ import { SettingsTabs } from '@/components/settings/SettingsTabs';
 import { SMTPSettingsTab } from '@/components/settings/SMTPSettingsTab';
 import { TaxSettingsTab } from '@/components/settings/TaxSettingsTab';
 import { Card } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -108,6 +110,7 @@ export default function SettingsPage() {
   });
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
+  const [showHolidayAddForm, setShowHolidayAddForm] = useState(false);
 
   useEffect(() => {
     if (!authLoading && currentUser) {
@@ -136,6 +139,11 @@ export default function SettingsPage() {
       setActiveTab('profile');
     }
   }, [activeTab, currentUser]);
+
+  // Reset header-controlled form state when leaving tab
+  useEffect(() => {
+    if (activeTab !== 'holidays') setShowHolidayAddForm(false);
+  }, [activeTab]);
 
   // Handle ESC key to close new user form
   useEffect(() => {
@@ -264,7 +272,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
-      showError('Failed to load settings');
+      showError(t('errors.failedToLoadSettings'));
     } finally {
       setLoading(false);
     }
@@ -274,8 +282,7 @@ export default function SettingsPage() {
     try {
       const response = await apiClient.get('/users');
       if (response.success && response.data) {
-        // Handle wrapped response structure - data is inside response.data.data
-        const usersList = response.data.data || [];
+        const usersList = extractArrayData(response);
         setUsers(Array.isArray(usersList) ? usersList : []);
       }
     } catch (error) {
@@ -297,13 +304,13 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        showSuccess('Clinic settings saved successfully');
+        showSuccess(t('errors.clinicSettingsSaved'));
         fetchSettings();
       } else {
-        showError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || t('errors.failedToSaveSettings'));
       }
     } catch (error) {
-      showError(error.message || 'Failed to save settings');
+      showError(error.message || t('errors.failedToSaveSettings'));
     } finally {
       setSaving(false);
     }
@@ -324,13 +331,13 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        showSuccess('Compliance settings saved successfully');
+        showSuccess(t('errors.complianceSettingsSaved'));
         fetchSettings();
       } else {
-        showError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || t('errors.failedToSaveSettings'));
       }
     } catch (error) {
-      showError(error.message || 'Failed to save settings');
+      showError(error.message || t('errors.failedToSaveSettings'));
     } finally {
       setSaving(false);
     }
@@ -345,13 +352,13 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        showSuccess('Queue settings saved successfully');
+        showSuccess(t('errors.queueSettingsSaved'));
         fetchSettings();
       } else {
-        showError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || t('errors.failedToSaveSettings'));
       }
     } catch (error) {
-      showError(error.message || 'Failed to save settings');
+      showError(error.message || t('errors.failedToSaveSettings'));
     } finally {
       setSaving(false);
     }
@@ -366,13 +373,13 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        showSuccess('Tax settings saved successfully');
+        showSuccess(t('errors.taxSettingsSaved'));
         fetchSettings();
       } else {
-        showError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || t('errors.failedToSaveSettings'));
       }
     } catch (error) {
-      showError(error.message || 'Failed to save settings');
+      showError(error.message || t('errors.failedToSaveSettings'));
     } finally {
       setSaving(false);
     }
@@ -394,15 +401,15 @@ export default function SettingsPage() {
         },
       });
       if (response.success) {
-        showSuccess('SMTP settings saved successfully');
+        showSuccess(t('errors.smtpSettingsSaved'));
         // Clear password field after save
         setSmtpForm({ ...smtpForm, password: '' });
         fetchSettings();
       } else {
-        showError(response.error?.message || 'Failed to save settings');
+        showError(response.error?.message || t('errors.failedToSaveSettings'));
       }
     } catch (error) {
-      showError(error.message || 'Failed to save settings');
+      showError(error.message || t('errors.failedToSaveSettings'));
     } finally {
       setSaving(false);
     }
@@ -428,29 +435,28 @@ export default function SettingsPage() {
           },
         },
         {},
-        true
+        true,
       ); // skipRedirect = true to prevent automatic logout
 
       if (response.success) {
-        showSuccess('Clinic hours saved successfully');
+        showSuccess(t('errors.clinicHoursSaved'));
         // Don't refetch immediately to avoid race conditions
         setTimeout(() => {
           fetchSettings();
         }, 500);
       } else {
-        const errorMessage = response.error?.message || 'Failed to save settings';
+        const errorMessage = response.error?.message || t('errors.failedToSaveSettings');
         console.error('Failed to save clinic hours:', response.error);
 
-        // If it's an auth error, show a more helpful message
         if (response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN') {
-          showError('Your session may have expired. Please try refreshing the page.');
+          showError(t('errors.sessionExpired'));
         } else {
           showError(errorMessage);
         }
       }
     } catch (error) {
       console.error('Error saving clinic hours:', error);
-      showError(error.message || 'Failed to save settings. Please try again.');
+      showError(error.message || t('errors.failedToSaveSettingsRetry'));
     } finally {
       setSaving(false);
     }
@@ -507,7 +513,7 @@ export default function SettingsPage() {
       console.log('Creating user with data:', { ...newUserForm, password: '***' });
       const response = await apiClient.post('/users', newUserForm);
       if (response.success) {
-        showSuccess('User created successfully');
+        showSuccess(t('errors.userCreatedSuccess'));
         setNewUserForm({
           firstName: '',
           lastName: '',
@@ -519,7 +525,7 @@ export default function SettingsPage() {
         setShowNewUserForm(false);
         fetchUsers();
       } else {
-        const errorMessage = response.error?.message || 'Failed to create user';
+        const errorMessage = response.error?.message || t('errors.failedToCreateUser');
         const errorDetails = response.error?.details
           ? JSON.stringify(response.error.details, null, 2)
           : '';
@@ -531,7 +537,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Error creating user:', error);
-      showError(error.message || 'Failed to create user');
+      showError(error.message || t('errors.failedToCreateUser'));
     }
   };
 
@@ -540,17 +546,17 @@ export default function SettingsPage() {
       const response = await apiClient.put(`/users/${userId}`, { isActive: !isActive });
       if (response.success) {
         fetchUsers();
-        showSuccess(`User ${!isActive ? 'activated' : 'deactivated'} successfully`);
+        showSuccess(!isActive ? t('errors.userActivatedSuccess') : t('errors.userDeactivatedSuccess'));
       } else {
         const errorMessage =
           typeof response.error === 'string'
             ? response.error
-            : response.error?.message || 'Failed to update user';
+            : response.error?.message || t('errors.failedToCreateUser');
         showError(errorMessage);
       }
     } catch (error) {
       const errorMessage =
-        error?.message || (typeof error === 'string' ? error : 'Failed to update user');
+        error?.message || (typeof error === 'string' ? error : t('errors.failedToCreateUser'));
       showError(errorMessage);
     }
   };
@@ -563,7 +569,7 @@ export default function SettingsPage() {
       const newStatus = !currentUser.isActive;
       const userId = currentUser.userId || currentUser.id;
       if (!userId) {
-        showError('User ID not found. Please refresh the page.');
+        showError(t('errors.userIdNotFound'));
         setSaving(false);
         return;
       }
@@ -571,7 +577,7 @@ export default function SettingsPage() {
         isActive: newStatus,
       });
       if (response.success) {
-        showSuccess(`Status updated to ${newStatus ? 'Active' : 'Inactive'}`);
+        showSuccess(t('errors.statusUpdated', { status: t(newStatus ? 'common.active' : 'common.inactive') }));
         // Refresh user data
         setTimeout(() => {
           window.location.reload(); // Simple refresh to update user context
@@ -580,14 +586,14 @@ export default function SettingsPage() {
         const errorMessage =
           typeof response.error === 'string'
             ? response.error
-            : response.error?.message || 'Failed to update status';
+            : response.error?.message || t('errors.failedToSaveSettings');
         showError(errorMessage);
       }
     } catch (error) {
       console.error('Error updating status:', error);
       const errorMessage =
         error?.message ||
-        (typeof error === 'string' ? error : 'Failed to update status. Please try again.');
+        (typeof error === 'string' ? error : t('errors.failedToSaveSettingsRetry'));
       showError(errorMessage);
     } finally {
       setSaving(false);
@@ -613,16 +619,87 @@ export default function SettingsPage() {
   // Filter tabs based on user role
   const isClinicAdmin = currentUser?.role === 'clinic_admin';
 
+  // Per-tab action buttons for header bar (compact, always visible)
+  const tabActionButtons = (() => {
+    if (activeTab === 'general') {
+      return (
+        <Button onClick={handleSaveGeneral} isLoading={saving} disabled={saving} size='sm'>
+          {t('settings.saveChanges') || 'Save Changes'}
+        </Button>
+      );
+    }
+    if (activeTab === 'compliance') {
+      return (
+        <Button onClick={handleSaveCompliance} isLoading={saving} disabled={saving} size='sm'>
+          {t('settings.saveChanges') || 'Save Changes'}
+        </Button>
+      );
+    }
+    if (activeTab === 'doctors' && isClinicAdmin) {
+      return showNewUserForm ? (
+        <Button variant='secondary' onClick={() => setShowNewUserForm(false)} size='sm'>
+          {t('common.cancel') || 'Cancel'}
+        </Button>
+      ) : (
+        <Button onClick={() => setShowNewUserForm(true)} size='sm'>
+          + {t('settings.addUser') || 'Add User'}
+        </Button>
+      );
+    }
+    if (activeTab === 'hours') {
+      return (
+        <Button onClick={handleSaveHours} isLoading={saving} disabled={saving} size='sm'>
+          {t('settings.saveHours') || 'Save Hours'}
+        </Button>
+      );
+    }
+    if (activeTab === 'queue') {
+      return (
+        <Button onClick={handleSaveQueue} isLoading={saving} disabled={saving} size='sm'>
+          {t('settings.saveChanges') || 'Save Changes'}
+        </Button>
+      );
+    }
+    if (activeTab === 'tax') {
+      return (
+        <Button onClick={handleSaveTax} isLoading={saving} disabled={saving} size='sm'>
+          {t('settings.saveChanges') || 'Save Changes'}
+        </Button>
+      );
+    }
+    if (activeTab === 'smtp') {
+      return (
+        <Button onClick={handleSaveSmtp} isLoading={saving} disabled={saving} size='sm'>
+          {t('settings.saveChanges') || 'Save Changes'}
+        </Button>
+      );
+    }
+    if (activeTab === 'holidays') {
+      return showHolidayAddForm ? (
+        <Button variant='secondary' onClick={() => setShowHolidayAddForm(false)} size='sm'>
+          {t('common.cancel') || 'Cancel'}
+        </Button>
+      ) : (
+        <Button onClick={() => setShowHolidayAddForm(true)} size='sm'>
+          + {t('settings.addHoliday') || 'Add Holiday'}
+        </Button>
+      );
+    }
+    return null;
+  })();
+
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        {/* Header */}
-        <PageHeader
-          title={t('settings.title') || 'Settings'}
-          description={t('settings.description') || 'Manage your clinic settings and preferences'}
-        />
+      <PageHeader
+        title={t('settings.title') || 'Settings'}
+        subtitle={t('settings.description') || 'Manage your clinic settings and preferences'}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={tabActionButtons}
+      />
+      <div className='max-w-7xl w-full'>
 
-        {/* Tabs Navigation */}
+        {/* Tabs bar below header – left-aligned, left to right */}
         <SettingsTabs
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -631,7 +708,7 @@ export default function SettingsPage() {
 
         {/* Profile Settings */}
         {activeTab === 'profile' && (
-          <div>
+          <div className='max-w-5xl w-full'>
             <ProfileTab
               currentUser={currentUser}
               logout={logout}
@@ -643,27 +720,27 @@ export default function SettingsPage() {
 
             {/* Create Manager Account - Only for Doctors and Clinic Admins */}
             {(currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') && (
-              <Card className='mt-6'>
-                <div className='p-6'>
-                  <div className='flex items-center justify-between mb-4'>
+              <Card className='mt-4'>
+                <div className='p-4'>
+                  <div className='flex items-center justify-between mb-3'>
                     <div>
-                      <h3 className='text-lg font-semibold text-neutral-900'>Manager Accounts</h3>
+                      <h3 className='text-lg font-semibold text-neutral-900'>
+                        {t('settings.managerAccounts')}
+                      </h3>
                       <p className='text-sm text-neutral-600 mt-1'>
-                        Create manager accounts for external use with limited access
+                        {t('settings.managerAccountsDesc')}
                       </p>
                     </div>
                     <Button
                       variant='primary'
                       onClick={() => router.push('/settings/create-manager')}
                     >
-                      Create Manager
+                      {t('settings.createManagerButton')}
                     </Button>
                   </div>
                   <div className='p-4 bg-blue-50 border border-blue-200 rounded-lg'>
                     <p className='text-sm text-blue-800'>
-                      <strong>Manager accounts</strong> have limited access: can view appointments
-                      and queue (read-only), basic patient info (no PHI), but cannot access
-                      financial data or modify critical settings.
+                      {t('settings.managerAccountsNotice')}
                     </p>
                   </div>
                 </div>
@@ -756,7 +833,12 @@ export default function SettingsPage() {
 
         {/* Holiday Management */}
         {activeTab === 'holidays' && (
-          <HolidayManagementTab settings={settings} onUpdate={fetchSettings} />
+          <HolidayManagementTab
+            settings={settings}
+            onUpdate={fetchSettings}
+            showAddForm={showHolidayAddForm}
+            setShowAddForm={setShowHolidayAddForm}
+          />
         )}
       </div>
     </Layout>

@@ -8,6 +8,7 @@ import SubscriptionPlan, { PlanBillingCycle, PlanStatus } from '@/models/Subscri
 import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
 import SubscriptionPayment, { PaymentStatus } from '@/models/SubscriptionPayment.js';
 import Tenant from '@/models/Tenant.js';
+import { logger } from '@/lib/utils/logger.js';
 import {
   createPayPalPlan,
   createPayPalSubscription,
@@ -35,13 +36,13 @@ export async function createSubscriptionPlan(input) {
         input.currency,
         input.billingCycle
       );
-      console.log(`✅ Auto-created PayPal plan: ${paypalPlanId}`);
+      logger.info(`✅ Auto-created PayPal plan: ${paypalPlanId}`);
     } catch (error) {
-      console.error('Failed to create PayPal plan:', error);
+      logger.error('Failed to create PayPal plan:', error);
       // Continue without PayPal plan ID - admin can add it later
     }
   } else if (paypalPlanId) {
-    console.log(`✅ Using provided PayPal plan ID: ${paypalPlanId}`);
+    logger.info(`✅ Using provided PayPal plan ID: ${paypalPlanId}`);
   }
 
   const plan = await SubscriptionPlan.create({
@@ -133,7 +134,7 @@ export async function createSubscription(tenantId, planId, userId, customerEmail
 
   // If upgrading to a paid plan from any existing subscription, cancel the old one first
   if (existingSubscription && plan.price > 0) {
-    console.log(`Cancelling existing subscription ${existingSubscription._id} before creating new paid subscription`);
+    logger.info(`Cancelling existing subscription ${existingSubscription._id} before creating new paid subscription`);
     
     // Cancel the old subscription immediately (not at period end)
     existingSubscription.status = SubscriptionStatus.CANCELLED;
@@ -146,7 +147,7 @@ export async function createSubscription(tenantId, planId, userId, customerEmail
       try {
         await cancelPayPalSubscription(existingSubscription.paypalSubscriptionId, 'Upgrading to new plan');
       } catch (error) {
-        console.error('Failed to cancel PayPal subscription:', error);
+        logger.error('Failed to cancel PayPal subscription:', error);
         // Continue anyway - we'll create the new subscription
       }
     }
@@ -197,7 +198,7 @@ export async function createSubscription(tenantId, planId, userId, customerEmail
       paypalSubscriptionId = paypalResult.subscriptionId;
       approvalUrl = paypalResult.approvalUrl;
     } catch (error) {
-      console.error('Failed to create PayPal subscription:', error);
+      logger.error('Failed to create PayPal subscription:', error);
       throw new Error('Failed to create PayPal subscription');
     }
   }
@@ -249,7 +250,7 @@ export async function activateSubscription(subscriptionId, tenantId) {
     try {
       await activatePayPalSubscription(subscription.paypalSubscriptionId);
     } catch (error) {
-      console.error('Failed to activate PayPal subscription:', error);
+      logger.error('Failed to activate PayPal subscription:', error);
     }
   }
 
@@ -279,7 +280,7 @@ export async function cancelSubscription(subscriptionId, tenantId, cancelAtPerio
     try {
       await cancelPayPalSubscription(subscription.paypalSubscriptionId);
     } catch (error) {
-      console.error('Failed to cancel PayPal subscription:', error);
+      logger.error('Failed to cancel PayPal subscription:', error);
     }
     subscription.status = SubscriptionStatus.CANCELLED;
     subscription.cancelledAt = new Date();
@@ -411,7 +412,7 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
       try {
         await cancelPayPalSubscription(existingSubscription.paypalSubscriptionId, 'Admin changed subscription plan');
       } catch (error) {
-        console.error('Failed to cancel PayPal subscription:', error);
+        logger.error('Failed to cancel PayPal subscription:', error);
       }
     }
   }
@@ -458,10 +459,10 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
       paypalSubscriptionId = paypalResult.subscriptionId;
       approvalUrl = paypalResult.approvalUrl;
 
-      console.log(`✅ Created PayPal subscription for ${tenant.name}: ${paypalSubscriptionId}`);
-      console.log(`📧 Payment URL: ${approvalUrl}`);
+      logger.info(`✅ Created PayPal subscription for ${tenant.name}: ${paypalSubscriptionId}`);
+      logger.info(`📧 Payment URL: ${approvalUrl}`);
     } catch (error) {
-      console.error('Failed to create PayPal subscription:', error);
+      logger.error('Failed to create PayPal subscription:', error);
       throw new Error(`Failed to create PayPal subscription: ${error.message}`);
     }
   }

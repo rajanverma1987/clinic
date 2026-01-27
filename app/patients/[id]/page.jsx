@@ -1,6 +1,7 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -209,48 +210,46 @@ export default function PatientDetailPage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        <div className='mb-6' style={{ paddingTop: '10px' }}>
-          <Button variant='secondary' onClick={() => router.push('/patients')} className='mb-4'>
-            ← Back to Patients
-          </Button>
-          <div className='flex items-center justify-between'>
-            <div>
-              <h1 className='text-h1 text-neutral-900'>
-                {patient.firstName} {patient.lastName}
-              </h1>
-              <p className='text-body-md text-neutral-600 mt-2'>Patient ID: {patient.patientId}</p>
-            </div>
-            <div className='flex gap-2'>
-              {!isEditing ? (
-                <>
-                  <Button variant='secondary' onClick={() => setIsEditing(true)}>
-                    Edit Patient
-                  </Button>
-                  <Button onClick={() => router.push(`/appointments/new?patientId=${params.id}`)}>
-                    + New Appointment
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant='secondary'
-                    onClick={() => {
-                      setIsEditing(false);
-                      setFormData(patient || {});
-                      setError('');
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSave} isLoading={saving}>
-                    Save Changes
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+      <PageHeader
+        title={`${patient.firstName} ${patient.lastName}`}
+        subtitle={`Patient ID: ${patient.patientId}`}
+        notifications={[]}
+        unreadCount={0}
+        actionButtons={
+          <>
+            <Button variant='secondary' onClick={() => router.push('/patients')}>
+              ← Back to Patients
+            </Button>
+            {!isEditing ? (
+              <>
+                <Button variant='secondary' onClick={() => setIsEditing(true)}>
+                  Edit Patient
+                </Button>
+                <Button onClick={() => router.push(`/appointments/new?patientId=${params.id}`)}>
+                  + New Appointment
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant='secondary'
+                  onClick={() => {
+                    setIsEditing(false);
+                    setFormData(patient || {});
+                    setError('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} isLoading={saving}>
+                  Save Changes
+                </Button>
+              </>
+            )}
+          </>
+        }
+      />
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
 
         {error && (
           <div className='mb-6 p-4 bg-status-error/10 border border-status-error/30 text-status-error rounded-lg'>
@@ -424,7 +423,7 @@ export default function PatientDetailPage() {
                       {isEditing ? (
                         <div className='space-y-2'>
                           <Input
-                            placeholder='Street'
+                            placeholder={t('patients.streetPlaceholder')}
                             value={formData.address?.street || ''}
                             onChange={(e) =>
                               setFormData({
@@ -435,7 +434,7 @@ export default function PatientDetailPage() {
                           />
                           <div className='grid grid-cols-2 gap-2'>
                             <Input
-                              placeholder='City'
+                              placeholder={t('patients.cityPlaceholder')}
                               value={formData.address?.city || ''}
                               onChange={(e) =>
                                 setFormData({
@@ -445,7 +444,7 @@ export default function PatientDetailPage() {
                               }
                             />
                             <Input
-                              placeholder='State'
+                              placeholder={t('patients.statePlaceholder')}
                               value={formData.address?.state || ''}
                               onChange={(e) =>
                                 setFormData({
@@ -456,7 +455,7 @@ export default function PatientDetailPage() {
                             />
                           </div>
                           <Input
-                            placeholder='ZIP Code'
+                            placeholder={t('patients.zipPlaceholder')}
                             value={formData.address?.zipCode || ''}
                             onChange={(e) =>
                               setFormData({
@@ -567,8 +566,8 @@ export default function PatientDetailPage() {
                       </div>
                       <div className='text-sm text-neutral-600'>Total Visits</div>
                     </div>
-                    <div className='text-center p-4 bg-secondary-100 rounded-lg'>
-                      <div className='text-2xl font-bold text-secondary-600'>
+                    <div className='text-center p-4 bg-primary-100 rounded-lg'>
+                      <div className='text-2xl font-bold text-primary-700'>
                         {prescriptions.length}
                       </div>
                       <div className='text-sm text-neutral-600'>Prescriptions</div>
@@ -633,7 +632,7 @@ export default function PatientDetailPage() {
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 apt.status === 'completed'
-                                  ? 'bg-secondary-100 text-secondary-700'
+                                  ? 'bg-primary-100 text-primary-700'
                                   : apt.status === 'in_progress'
                                   ? 'bg-primary-100 text-primary-700'
                                   : apt.status === 'cancelled'
@@ -800,7 +799,7 @@ export default function PatientDetailPage() {
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 inv.status === 'paid'
-                                  ? 'bg-secondary-100 text-secondary-700'
+                                  ? 'bg-primary-100 text-primary-700'
                                   : inv.status === 'pending'
                                   ? 'bg-status-warning/10 text-status-warning'
                                   : 'bg-neutral-100 text-neutral-700'
@@ -872,7 +871,7 @@ export default function PatientDetailPage() {
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 test.status === 'completed'
-                                  ? 'bg-secondary-100 text-secondary-700'
+                                  ? 'bg-primary-100 text-primary-700'
                                   : test.status === 'pending'
                                   ? 'bg-status-warning/10 text-status-warning'
                                   : 'bg-neutral-100 text-neutral-700'

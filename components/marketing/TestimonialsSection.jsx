@@ -22,7 +22,7 @@ export function TestimonialsSection({
       name: 'Dr. Rajesh Mehta',
       role: 'Cardiologist, Global Heart Center',
       initials: 'RM',
-      bgColor: 'bg-secondary-500',
+      bgColor: 'bg-primary-500',
     },
     {
       text: t('homepage.testimonial3'),
@@ -50,7 +50,7 @@ export function TestimonialsSection({
       name: 'Dr. Michael Brown',
       role: 'Pharmacy Director, Care Pharmacy',
       initials: 'MB',
-      bgColor: 'bg-secondary-500',
+      bgColor: 'bg-primary-500',
     },
   ];
 
@@ -82,7 +82,7 @@ export function TestimonialsSection({
           width: '500px',
           height: '500px',
           background:
-            'radial-gradient(circle, rgba(39, 174, 96, 0.12) 0%, rgba(39, 174, 96, 0.04) 40%, transparent 70%)',
+            'radial-gradient(circle, rgba(45, 156, 219, 0.12) 0%, rgba(45, 156, 219, 0.04) 40%, transparent 70%)',
           filter: 'blur(80px)',
           bottom: '-150px',
           left: '-150px',

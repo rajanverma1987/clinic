@@ -29,7 +29,6 @@ const SubscriptionSchema = new Schema(
     paypalSubscriptionId: {
       type: String,
       trim: true,
-      index: true,
     },
     paypalApprovalUrl: {
       type: String,

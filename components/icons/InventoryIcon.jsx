@@ -1,4 +1,4 @@
-export function InventoryIcon({ className = 'w-5 h-5', color = 'currentColor' }) {
+export function InventoryIcon({ className = 'icon icon-sm', color = 'currentColor' }) {
   return (
     <svg
       className={className}

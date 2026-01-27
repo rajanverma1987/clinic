@@ -78,6 +78,12 @@ export function useDashboardCharts() {
     } catch (err) {
       console.error('Failed to fetch chart data:', err);
       setError(err);
+      // Ensure chartData has default values so page can render
+      setChartData({
+        revenue: [],
+        appointments: [],
+        patients: [],
+      });
     } finally {
       setLoading(false);
     }

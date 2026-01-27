@@ -8,6 +8,7 @@ import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
 import { AuditLogger } from '@/lib/audit/audit-logger.js';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * POST /api/telemedicine/sessions/[id]/chat
@@ -79,7 +80,7 @@ export async function POST(
       messageId: Date.now().toString()
     }));
   } catch (error) {
-    console.error('Error in POST /api/telemedicine/sessions/[id]/chat:', error);
+    logger.error('Error in POST /api/telemedicine/sessions/[id]/chat:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to send message',
@@ -124,7 +125,7 @@ export async function GET(
       messages: session.chatMessages || []
     }));
   } catch (error) {
-    console.error('Error in GET /api/telemedicine/sessions/[id]/chat:', error);
+    logger.error('Error in GET /api/telemedicine/sessions/[id]/chat:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to fetch messages',

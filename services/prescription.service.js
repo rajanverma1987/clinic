@@ -1,6 +1,22 @@
 /**
- * Prescription service
- * Handles all prescription-related business logic
+ * Prescription Service
+ * 
+ * Enterprise-grade service for prescription management with comprehensive
+ * business logic, drug validation, inventory integration, and compliance.
+ * 
+ * Features:
+ * - Prescription creation with drug validation
+ * - Inventory stock checking
+ * - Prescription number generation
+ * - Refill management
+ * - PHI encryption/decryption
+ * - Queue integration
+ * - Multi-tenant isolation
+ * - Audit logging
+ * - HIPAA compliance
+ * 
+ * @module services/prescription.service
+ * @since 1.0.0
  */
 
 import connectDB from '@/lib/db/connection.js';
@@ -17,6 +33,8 @@ import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
 import { decryptField } from '@/lib/encryption/phi-encryption.js';
 import { recalculatePositions } from './queue.service.js';
+import { logger } from '@/lib/utils/logger.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Generate unique prescription number for a tenant
@@ -238,10 +256,10 @@ export async function createPrescription(input, tenantId, userId) {
       });
 
       if (!queueUpdateResult) {
-        console.error(`[Prescription] Failed to update queue entry ${queueEntry._id} to completed status`);
+        logger.error(`[Prescription] Failed to update queue entry ${queueEntry._id} to completed status`);
         // Log but don't fail prescription creation
       } else {
-        console.log(`[Prescription] Successfully completed queue entry ${queueEntry._id}`);
+        logger.info(`[Prescription] Successfully completed queue entry ${queueEntry._id}`);
       }
 
       // Update appointment status if linked
@@ -258,12 +276,12 @@ export async function createPrescription(input, tenantId, userId) {
           );
 
           if (!appointmentUpdateResult) {
-            console.error(`[Prescription] Failed to update appointment ${queueEntry.appointmentId} to completed status`);
+            logger.error(`[Prescription] Failed to update appointment ${queueEntry.appointmentId} to completed status`);
           } else {
-            console.log(`[Prescription] Successfully completed appointment ${queueEntry.appointmentId}`);
+            logger.info(`[Prescription] Successfully completed appointment ${queueEntry.appointmentId}`);
           }
         } catch (appointmentError) {
-          console.error(`[Prescription] Error updating appointment ${queueEntry.appointmentId}:`, appointmentError);
+          logger.error(`[Prescription] Error updating appointment ${queueEntry.appointmentId}:`, appointmentError);
           // Log error but don't fail prescription creation
         }
       }
@@ -271,17 +289,17 @@ export async function createPrescription(input, tenantId, userId) {
       // Recalculate positions for other queue entries
       try {
         await recalculatePositions(tenantId, userId);
-        console.log(`[Prescription] Successfully recalculated queue positions for doctor ${userId}`);
+        logger.info(`[Prescription] Successfully recalculated queue positions for doctor ${userId}`);
       } catch (recalcError) {
-        console.error(`[Prescription] Failed to recalculate queue positions:`, recalcError);
+        logger.error(`[Prescription] Failed to recalculate queue positions:`, recalcError);
         // Log but don't fail - positions will be recalculated on next queue operation
       }
 
-      console.log(`[Prescription] Queue entry ${queueEntry._id} automatically marked as completed after prescription creation`);
+      logger.info(`[Prescription] Queue entry ${queueEntry._id} automatically marked as completed after prescription creation`);
     }
   } catch (error) {
     // Log queue cleanup errors but don't fail prescription creation
-    console.error('[Prescription] Queue cleanup error (non-critical):', error);
+    logger.error('[Prescription] Queue cleanup error (non-critical):', error);
     // Prescription was created successfully, queue cleanup is secondary
   }
 

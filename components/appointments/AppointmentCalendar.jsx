@@ -1,10 +1,12 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { useCallback, useEffect, useState } from 'react';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * Compact calendar component showing available appointment slots for a selected date
@@ -357,7 +359,7 @@ export default function AppointmentCalendar({
         setAvailableSlots(formattedSlots);
       }
     } catch (error) {
-      console.error('Failed to fetch availability:', error);
+      logger.error('Failed to fetch availability:', error);
       // Generate empty slots on error
       const slots = generateTimeSlots(currentDate);
 
@@ -472,13 +474,15 @@ export default function AppointmentCalendar({
         <>
           {/* Date Selector */}
           <div className='mb-4 flex items-center gap-2 flex-wrap'>
-            <button
+            <Button
+              variant='outline'
+              size='xs'
+              iconOnly
               onClick={goToPreviousDay}
-              className='px-2 py-1 text-sm border border-neutral-300 rounded hover:bg-neutral-100'
               title={t('appointments.previousDay') || 'Previous Day'}
             >
               ←
-            </button>
+            </Button>
             <input
               type='date'
               value={formatDateForApi(currentDate)}
@@ -486,20 +490,23 @@ export default function AppointmentCalendar({
               min={formatDateForApi(today)}
               className='px-3 py-1.5 text-sm border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
             />
-            <button
+            <Button
+              variant='outline'
+              size='xs'
+              iconOnly
               onClick={goToNextDay}
-              className='px-2 py-1 text-sm border border-neutral-300 rounded hover:bg-neutral-100'
               title={t('appointments.nextDay') || 'Next Day'}
             >
               →
-            </button>
+            </Button>
             {!isToday && (
-              <button
+              <Button
+                variant='outline'
+                size='xs'
                 onClick={goToToday}
-                className='px-3 py-1.5 text-sm border border-neutral-300 rounded hover:bg-neutral-100'
               >
                 {t('appointments.today') || 'Today'}
-              </button>
+              </Button>
             )}
             <div className='ml-auto text-sm text-neutral-600'>{formatDateDisplay(currentDate)}</div>
           </div>

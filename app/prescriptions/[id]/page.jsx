@@ -1,8 +1,10 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
 import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
@@ -60,7 +62,7 @@ export default function PrescriptionDetailPage() {
   const getStatusColor = (status) => {
     const colorMap = {
       draft: 'bg-status-warning/10 text-status-warning',
-      active: 'bg-secondary-100 text-secondary-700',
+      active: 'bg-primary-100 text-primary-700',
       dispensed: 'bg-primary-100 text-primary-700',
       cancelled: 'bg-status-error/10 text-status-error',
       expired: 'bg-neutral-100 text-neutral-700',
@@ -101,46 +103,67 @@ export default function PrescriptionDetailPage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        <div className='mb-6'>
-          <button
-            onClick={() => router.back()}
-            className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 mb-4'
-            style={{ marginTop: '10px' }}
-            aria-label={t('common.back')}
-          >
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M15 19l-7-7 7-7'
-              />
-            </svg>
-          </button>
-          <div className='flex items-center justify-between'>
-            <div>
-              <h1 className='text-2xl font-bold text-neutral-900'>
-                Prescription #{prescription.prescriptionNumber}
-              </h1>
-              <p className='text-neutral-600 mt-1'>
-                Created on {new Date(prescription.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-            <div className='flex gap-2'>
-              <Button
-                variant='secondary'
-                onClick={() => router.push(`/prescriptions/${prescriptionId}/edit`)}
-              >
-                Edit
-              </Button>
-              <Button variant='secondary' onClick={() => setShowPrintPreview(true)}>
-                Print
-              </Button>
-            </div>
-          </div>
-        </div>
-
+      <PageHeader
+        title={`Prescription #${prescription.prescriptionNumber}`}
+        subtitle={`Created on ${new Date(prescription.createdAt).toLocaleDateString()}`}
+        notifications={[]}
+        unreadCount={0}
+        actionButtons={
+          <>
+            <BackButton />
+            <Button variant='secondary' onClick={() => router.push(`/prescriptions/${prescriptionId}/edit`)}>
+              Edit
+            </Button>
+            <Button
+              variant='secondary'
+              onClick={async () => {
+                try {
+                  const response = await apiClient.get(`/prescriptions/${prescriptionId}/download`);
+                  if (response.success && response.data?.pdfUrl) {
+                    window.open(response.data.pdfUrl, '_blank');
+                  } else {
+                    setShowPrintPreview(true);
+                  }
+                } catch (err) {
+                  setShowPrintPreview(true);
+                }
+              }}
+            >
+              <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
+              </svg>
+              Download PDF
+            </Button>
+            <Button
+              variant='secondary'
+              onClick={async () => {
+                try {
+                  const response = await apiClient.post(`/prescriptions/${prescriptionId}/email`, {
+                    patientEmail: prescription.patientId?.email,
+                  });
+                  if (response.success) alert('Prescription sent to patient email successfully');
+                  else alert('Failed to send prescription via email');
+                } catch (err) {
+                  alert('Failed to send prescription via email');
+                }
+              }}
+              disabled={!prescription.patientId?.email}
+            >
+              <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' />
+              </svg>
+              Email
+            </Button>
+            <Button variant='secondary' onClick={() => setShowPrintPreview(true)}>
+              <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z' />
+              </svg>
+              Print
+            </Button>
+          </>
+        }
+      />
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           <div className='lg:col-span-2 space-y-6'>
             {/* Prescription Info */}

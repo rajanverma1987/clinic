@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 import { useEffect, useRef, useState } from 'react';
 
 /**
@@ -49,9 +50,15 @@ export function ChatPanel({
     >
       {/* Chat Header */}
       <div className='bg-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-700'>
-        <h3 className='text-white font-semibold'>Chat</h3>
-        <button onClick={onClose} className='text-gray-400 hover:text-white'>
-          <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+        <h3 className='text-white font-semibold'>{t('telemedicine.chat')}</h3>
+        <Button
+          variant='ghost'
+          size='xs'
+          iconOnly
+          onClick={onClose}
+          className='text-gray-400 hover:text-white'
+        >
+          <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
             <path
               strokeLinecap='round'
               strokeLinejoin='round'
@@ -59,14 +66,14 @@ export function ChatPanel({
               d='M6 18L18 6M6 6l12 12'
             />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Messages */}
       <div className='flex-1 overflow-y-auto p-4 space-y-3'>
         {messages.length === 0 ? (
           <div className='text-center text-gray-500 text-sm mt-8'>
-            No messages yet. Start the conversation!
+            {t('telemedicine.noMessagesYet')}
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -102,12 +109,12 @@ export function ChatPanel({
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder='Type a message...'
+            placeholder={t('telemedicine.typeMessage')}
             className='flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500'
             rows={2}
           />
           <Button onClick={handleSend} disabled={!message.trim()} className='px-4 py-2'>
-            Send
+            {t('telemedicine.send')}
           </Button>
         </div>
         <p className='text-xs text-gray-500 mt-2'>🔒 Messages are encrypted end-to-end</p>

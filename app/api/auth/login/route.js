@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loginSchema } from '@/lib/validations/auth';
 import { loginUser } from '@/services/auth.service';
 import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
+import { authRateLimit } from '@/middleware/rate-limit';
+import { withErrorHandler } from '@/middleware/error-handler';
 
 /**
  * POST /api/auth/login
  * Login user and return JWT tokens
  */
-export async function POST(req) {
+async function loginHandler(req) {
   try {
     const body = await req.json();
 
@@ -23,6 +25,11 @@ export async function POST(req) {
     // Login user
     const result = await loginUser(validationResult.data);
 
+    // If 2FA is required, return early without setting cookies
+    if (result.require2FA) {
+      return NextResponse.json(successResponse(result), { status: 200 });
+    }
+
     // Set refresh token as HTTP-only cookie
     const response = NextResponse.json(successResponse(result), { status: 200 });
     
@@ -36,13 +43,9 @@ export async function POST(req) {
 
     return response;
   } catch (error) {
-    return NextResponse.json(
-      errorResponse(
-        (error instanceof Error ? error.message : String(error)) || 'Login failed',
-        'LOGIN_ERROR'
-      ),
-      { status: 401 }
-    );
+    throw error;
   }
 }
+
+export const POST = withErrorHandler(authRateLimit(loginHandler));
 

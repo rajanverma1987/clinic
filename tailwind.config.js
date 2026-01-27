@@ -6,6 +6,16 @@ const config = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: {
+        DEFAULT: '16px',
+        sm: '20px',
+        lg: '24px',
+        xl: '28px',
+        '2xl': '32px',
+      },
+    },
     extend: {
       // Color System - Clinic Theme
       colors: {
@@ -17,10 +27,10 @@ const config = {
           100: '#E6F7FE',
         },
         secondary: {
-          700: '#1E874F',
-          500: '#27AE60',
-          300: '#6FCF97',
-          100: '#E8F8EF',
+          700: '#1E874F', // Green variant - darker green
+          500: '#27AE60', // Green variant - success green
+          300: '#52C48F', // Green variant - lighter green
+          100: '#E8F8EF', // Green variant - lightest green
         },
         neutral: {
           900: '#1A1A1A', // Text strong
@@ -32,10 +42,18 @@ const config = {
           50: '#FFFFFF', // Surface
         },
         status: {
-          success: '#27AE60',
+          success: '#27AE60', // Green for success/active states
           warning: '#F2C94C',
           error: '#EB5757',
-          info: '#2D9CDB',
+          info: '#2D9CDB', // Blue for info
+        },
+        success: {
+          700: '#1E874F',
+          600: '#27AE60',
+          500: '#27AE60',
+          400: '#52C48F',
+          300: '#52C48F',
+          100: '#E8F8EF',
         },
       },
       // Typography - Inter Font Family
@@ -73,6 +91,8 @@ const config = {
         32: '32px',
         40: '40px',
         48: '48px',
+        56: '56px',
+        64: '64px',
       },
       // Border Radius
       borderRadius: {

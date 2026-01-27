@@ -4,6 +4,7 @@ import '@/app/prescriptions/styles/prescription-form.css';
 import { Loader } from '@/components/ui/Loader';
 import { apiClient } from '@/lib/api/client.js';
 import { useEffect, useState } from 'react';
+import { logger } from '@/lib/utils/logger.js';
 
 export function PatientDetailsPanel({ patientId }) {
   const [patient, setPatient] = useState(null);
@@ -50,7 +51,7 @@ export function PatientDetailsPanel({ patientId }) {
         setPrescriptions(pres);
       }
     } catch (error) {
-      console.error('Failed to fetch patient data:', error);
+      logger.error('Failed to fetch patient data:', error);
     } finally {
       setLoading(false);
     }

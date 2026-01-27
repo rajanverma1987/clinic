@@ -3,15 +3,19 @@
  * Handles all reporting and analytics business logic
  */
 
-import connectDB from '@/lib/db/connection.js';
-import Invoice, { InvoiceStatus } from '@/models/Invoice.js';
-import Payment, { PaymentStatus } from '@/models/Payment.js';
-import Patient from '@/models/Patient.js';
-import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
-import InventoryItem from '@/models/InventoryItem.js';
-import StockTransaction from '@/models/StockTransaction.js';
-import { withTenant } from '@/lib/db/tenant-helper.js';
 import { AuditLogger } from '@/lib/audit/audit-logger.js';
+import connectDB from '@/lib/db/connection.js';
+import { withTenant } from '@/lib/db/tenant-helper.js';
+import { logger } from '@/lib/utils/logger.js';
+import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
+import ClinicalNote from '@/models/ClinicalNote.js';
+import Department from '@/models/Department.js';
+import Doctor from '@/models/Doctor.js';
+import InventoryItem from '@/models/InventoryItem.js';
+import Invoice, { InvoiceStatus } from '@/models/Invoice.js';
+import Patient from '@/models/Patient.js';
+import Payment, { PaymentStatus } from '@/models/Payment.js';
+import StockTransaction from '@/models/StockTransaction.js';
 
 /**
  * Build date filter for queries
@@ -31,35 +35,53 @@ function buildDateFilter(startDate, endDate) {
 function groupByTimePeriod(data, groupBy) {
   const grouped = {};
 
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return grouped;
+  }
+
   data.forEach((item) => {
-    const date = new Date(item.date);
-    let key;
+    if (!item || !item.date) return;
 
-    switch (groupBy) {
-      case 'day':
-        key = date.toISOString().split('T')[0];
-        break;
-      case 'week':
-        const weekStart = new Date(date);
-        weekStart.setDate(date.getDate() - date.getDay());
-        key = weekStart.toISOString().split('T')[0];
-        break;
-      case 'month':
-        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        break;
-      case 'year':
-        key = String(date.getFullYear());
-        break;
-      default:
-        key = date.toISOString().split('T')[0];
+    try {
+      const date = new Date(item.date);
+
+      // Validate date
+      if (isNaN(date.getTime())) {
+        logger.warn('Invalid date in groupByTimePeriod:', item.date);
+        return;
+      }
+
+      let key;
+
+      switch (groupBy) {
+        case 'day':
+          key = date.toISOString().split('T')[0];
+          break;
+        case 'week':
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          key = weekStart.toISOString().split('T')[0];
+          break;
+        case 'month':
+          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          break;
+        case 'year':
+          key = String(date.getFullYear());
+          break;
+        default:
+          key = date.toISOString().split('T')[0];
+      }
+
+      if (!grouped[key]) {
+        grouped[key] = { period: key, count: 0, total: 0 };
+      }
+
+      grouped[key].count += item.count || 1;
+      grouped[key].total += item.total || item.amount || 0;
+    } catch (err) {
+      logger.error('Error processing date in groupByTimePeriod:', err, item);
+      // Skip invalid items
     }
-
-    if (!grouped[key]) {
-      grouped[key] = { period: key, count: 0, total: 0 };
-    }
-
-    grouped[key].count += item.count || 1;
-    grouped[key].total += item.total || item.amount || 0;
   });
 
   return grouped;
@@ -90,12 +112,13 @@ export async function getRevenueReport(input, tenantId, userId) {
     filter.status = input.status;
   }
 
-  // Get invoices
+  // Get invoices - optimized with lean() and selective population
   const invoices = await Invoice.find(filter)
     .populate('patientId', 'firstName lastName')
     .populate('appointmentId', 'doctorId startTime')
+    .select('invoiceDate totalAmount balanceAmount status appointmentId patientId')
     .lean();
-  
+
   // Filter by doctor if specified (through appointments)
   let filteredInvoices = invoices;
   if (input.doctorId) {
@@ -145,12 +168,32 @@ export async function getRevenueReport(input, tenantId, userId) {
   // Time series data
   let timeSeries = [];
   if (input.groupBy) {
-    const timeData = filteredInvoices.map((inv) => ({
-      date: inv.invoiceDate,
-      amount: inv.totalAmount || 0,
-      count: 1,
-    }));
-    timeSeries = Object.values(groupByTimePeriod(timeData, input.groupBy));
+    try {
+      const timeData = filteredInvoices
+        .filter((inv) => inv.invoiceDate) // Only include invoices with valid dates
+        .map((inv) => {
+          try {
+            const date = new Date(inv.invoiceDate);
+            if (isNaN(date.getTime())) return null;
+            return {
+              date: inv.invoiceDate,
+              amount: inv.totalAmount || 0,
+              total: inv.totalAmount || 0,
+              count: 1,
+            };
+          } catch (e) {
+            return null;
+          }
+        })
+        .filter((item) => item !== null); // Remove null entries
+
+      if (timeData.length > 0) {
+        timeSeries = Object.values(groupByTimePeriod(timeData, input.groupBy));
+      }
+    } catch (err) {
+      logger.error('Error generating revenue time series:', err);
+      timeSeries = [];
+    }
   }
 
   await AuditLogger.auditRead('report', 'revenue', userId, tenantId);
@@ -181,88 +224,216 @@ export async function getRevenueReport(input, tenantId, userId) {
  * Patient Analytics Report
  */
 export async function getPatientReport(input, tenantId, userId) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  const dateFilter = buildDateFilter(input.startDate, input.endDate);
-  const filter = withTenant(tenantId, {
-    deletedAt: null,
-  });
-
-  // Get all patients
-  const allPatients = await Patient.find(filter).lean();
-
-  // Filter by date if provided (for new patients)
-  let patients = allPatients;
-  if (input.includeNewPatients && dateFilter) {
-    patients = allPatients.filter((p) => {
-      const created = new Date(p.createdAt);
-      return created >= new Date(dateFilter.$gte) && created <= new Date(dateFilter.$lte);
-    });
-  }
-
-  // Gender breakdown
-  const genderBreakdown = {};
-  patients.forEach((p) => {
-    const gender = p.gender || 'unknown';
-    genderBreakdown[gender] = (genderBreakdown[gender] || 0) + 1;
-  });
-
-  // Age group breakdown
-  const ageGroups = {
-    '0-18': 0,
-    '19-30': 0,
-    '31-50': 0,
-    '51-70': 0,
-    '71+': 0,
-  };
-
-  const now = new Date();
-  patients.forEach((p) => {
-    const dob = new Date(p.dateOfBirth);
-    const age = now.getFullYear() - dob.getFullYear();
-    if (age <= 18) ageGroups['0-18']++;
-    else if (age <= 30) ageGroups['19-30']++;
-    else if (age <= 50) ageGroups['31-50']++;
-    else if (age <= 70) ageGroups['51-70']++;
-    else ageGroups['71+']++;
-  });
-
-  // Blood group breakdown
-  const bloodGroupBreakdown = {};
-  patients.forEach((p) => {
-    if (p.bloodGroup) {
-      bloodGroupBreakdown[p.bloodGroup] = (bloodGroupBreakdown[p.bloodGroup] || 0) + 1;
+    // Validate tenantId
+    if (!tenantId) {
+      logger.warn('getPatientReport called without tenantId');
+      return {
+        summary: { totalPatients: 0 },
+        breakdown: { gender: {}, ageGroups: {}, bloodGroups: {} },
+        timeSeries: input.groupBy ? [] : undefined,
+        period: { startDate: input.startDate, endDate: input.endDate },
+      };
     }
-  });
 
-  // Monthly patient registration
-  let monthlyData = [];
-  if (input.groupByField === 'month' || input.groupBy) {
-    const monthData = patients.map((p) => ({
-      date: p.createdAt,
-      count: 1,
-    }));
-    monthlyData = Object.values(groupByTimePeriod(monthData, input.groupBy || 'month'));
+    let dateFilter;
+    try {
+      dateFilter = buildDateFilter(input.startDate, input.endDate);
+    } catch (err) {
+      logger.error('Error building date filter:', err);
+      dateFilter = null;
+    }
+
+    const filter = withTenant(tenantId, {
+      deletedAt: null,
+    });
+
+    // Get all patients - optimized with field selection
+    let allPatients = [];
+    try {
+      allPatients = await Patient.find(filter)
+        .select('gender dateOfBirth bloodGroup createdAt')
+        .lean();
+    } catch (err) {
+      logger.error('Error fetching patients:', err);
+      allPatients = [];
+    }
+
+    // Filter by date if provided (for new patients)
+    let patients = allPatients;
+    if (input.includeNewPatients && dateFilter) {
+      try {
+        const startDate = dateFilter.$gte ? new Date(dateFilter.$gte) : null;
+        const endDate = dateFilter.$lte ? new Date(dateFilter.$lte) : null;
+
+        if (startDate && endDate) {
+          patients = allPatients.filter((p) => {
+            if (!p.createdAt) return false;
+            try {
+              const created = new Date(p.createdAt);
+              if (isNaN(created.getTime())) return false;
+              return created >= startDate && created <= endDate;
+            } catch (e) {
+              return false;
+            }
+          });
+        }
+      } catch (err) {
+        logger.error('Error filtering patients by date:', err);
+        // Continue with all patients if date filtering fails
+      }
+    }
+
+    // Gender breakdown
+    const genderBreakdown = {};
+    patients.forEach((p) => {
+      const gender = p.gender || 'unknown';
+      genderBreakdown[gender] = (genderBreakdown[gender] || 0) + 1;
+    });
+
+    // Age group breakdown
+    const ageGroups = {
+      '0-18': 0,
+      '19-30': 0,
+      '31-50': 0,
+      '51-70': 0,
+      '71+': 0,
+    };
+
+    const now = new Date();
+    patients.forEach((p) => {
+      if (!p.dateOfBirth) return;
+      try {
+        const dob = new Date(p.dateOfBirth);
+        if (isNaN(dob.getTime())) return;
+        const age = now.getFullYear() - dob.getFullYear();
+        if (age <= 18) ageGroups['0-18']++;
+        else if (age <= 30) ageGroups['19-30']++;
+        else if (age <= 50) ageGroups['31-50']++;
+        else if (age <= 70) ageGroups['51-70']++;
+        else ageGroups['71+']++;
+      } catch (e) {
+        // Skip invalid dates
+      }
+    });
+
+    // Blood group breakdown
+    const bloodGroupBreakdown = {};
+    patients.forEach((p) => {
+      if (p.bloodGroup) {
+        bloodGroupBreakdown[p.bloodGroup] = (bloodGroupBreakdown[p.bloodGroup] || 0) + 1;
+      }
+    });
+
+    // Time series data for charts (used by dashboard)
+    let timeSeries = [];
+    if (input.groupBy) {
+      try {
+        const timeData = patients
+          .filter((p) => p.createdAt) // Only include patients with valid createdAt
+          .map((p) => {
+            try {
+              const date = new Date(p.createdAt);
+              if (isNaN(date.getTime())) return null;
+              return {
+                date: p.createdAt,
+                count: 1,
+              };
+            } catch (e) {
+              return null;
+            }
+          })
+          .filter((item) => item !== null); // Remove null entries
+
+        if (timeData.length > 0) {
+          const grouped = groupByTimePeriod(timeData, input.groupBy);
+          timeSeries = Object.values(grouped);
+        }
+      } catch (err) {
+        logger.error('Error generating time series:', err);
+        timeSeries = [];
+      }
+    }
+
+    // Monthly patient registration (legacy field)
+    let monthlyData = [];
+    if (input.groupByField === 'month' || (!input.groupBy && input.groupByField)) {
+      try {
+        const monthData = patients
+          .filter((p) => p.createdAt)
+          .map((p) => {
+            try {
+              const date = new Date(p.createdAt);
+              if (isNaN(date.getTime())) return null;
+              return {
+                date: p.createdAt,
+                count: 1,
+              };
+            } catch (e) {
+              return null;
+            }
+          })
+          .filter((item) => item !== null);
+
+        if (monthData.length > 0) {
+          monthlyData = Object.values(groupByTimePeriod(monthData, input.groupByField || 'month'));
+        }
+      } catch (err) {
+        logger.error('Error generating monthly data:', err);
+        monthlyData = [];
+      }
+    }
+
+    await AuditLogger.auditRead('report', 'patient', userId, tenantId);
+
+    return {
+      summary: {
+        totalPatients: allPatients.length,
+        newPatients: input.includeNewPatients && dateFilter ? patients.length : undefined,
+      },
+      breakdown: {
+        gender: genderBreakdown,
+        ageGroups,
+        bloodGroups: bloodGroupBreakdown,
+      },
+      timeSeries: input.groupBy ? timeSeries : undefined, // For dashboard charts
+      monthlyTrend: monthlyData.length > 0 ? monthlyData : undefined, // Legacy field
+      period: {
+        startDate: input.startDate,
+        endDate: input.endDate,
+      },
+    };
+  } catch (error) {
+    logger.error('Error in getPatientReport:', {
+      error: error.message,
+      stack: error.stack,
+      tenantId,
+      userId,
+      input,
+    });
+    // Return default structure on error
+    return {
+      summary: { totalPatients: 0 },
+      breakdown: {
+        gender: {},
+        ageGroups: {
+          '0-18': 0,
+          '19-30': 0,
+          '31-50': 0,
+          '51-70': 0,
+          '71+': 0,
+        },
+        bloodGroups: {},
+      },
+      timeSeries: input.groupBy ? [] : undefined,
+      period: {
+        startDate: input.startDate,
+        endDate: input.endDate,
+      },
+    };
   }
-
-  await AuditLogger.auditRead('report', 'patient', userId, tenantId);
-
-  return {
-    summary: {
-      totalPatients: allPatients.length,
-      newPatients: input.includeNewPatients && dateFilter ? patients.length : undefined,
-    },
-    breakdown: {
-      gender: genderBreakdown,
-      ageGroups,
-      bloodGroups: bloodGroupBreakdown,
-    },
-    monthlyTrend: monthlyData.length > 0 ? monthlyData : undefined,
-    period: {
-      startDate: input.startDate,
-      endDate: input.endDate,
-    },
-  };
 }
 
 /**
@@ -299,6 +470,7 @@ export async function getAppointmentReport(input, tenantId, userId) {
   const appointments = await Appointment.find(filter)
     .populate('patientId', 'firstName lastName')
     .populate('doctorId', 'firstName lastName')
+    .select('appointmentDate startTime endTime status type patientId doctorId')
     .lean();
 
   // Status breakdown
@@ -322,11 +494,33 @@ export async function getAppointmentReport(input, tenantId, userId) {
   // Time series
   let timeSeries = [];
   if (input.groupBy) {
-    const timeData = appointments.map((apt) => ({
-      date: apt.appointmentDate,
-      count: 1,
-    }));
-    timeSeries = Object.values(groupByTimePeriod(timeData, input.groupBy));
+    try {
+      const timeData = appointments
+        .filter((apt) => apt.appointmentDate) // Only include appointments with valid dates
+        .map((apt) => {
+          try {
+            // Try appointmentDate first, then startTime as fallback
+            const dateValue = apt.appointmentDate || apt.startTime || apt.schedule?.date;
+            if (!dateValue) return null;
+            const date = new Date(dateValue);
+            if (isNaN(date.getTime())) return null;
+            return {
+              date: dateValue,
+              count: 1,
+            };
+          } catch (e) {
+            return null;
+          }
+        })
+        .filter((item) => item !== null); // Remove null entries
+
+      if (timeData.length > 0) {
+        timeSeries = Object.values(groupByTimePeriod(timeData, input.groupBy));
+      }
+    } catch (err) {
+      logger.error('Error generating appointment time series:', err);
+      timeSeries = [];
+    }
   }
 
   await AuditLogger.auditRead('report', 'appointment', userId, tenantId);
@@ -366,9 +560,7 @@ export async function getInventoryReport(input, tenantId, userId) {
     filter.type = input.itemType;
   }
 
-  const items = await InventoryItem.find(filter)
-    .populate('primarySupplierId', 'name')
-    .lean();
+  const items = await InventoryItem.find(filter).populate('primarySupplierId', 'name').lean();
 
   // Low stock items
   const lowStockItems = input.includeLowStock
@@ -470,12 +662,14 @@ export async function getInventoryReport(input, tenantId, userId) {
     breakdown: {
       types: typeBreakdown,
     },
-    lowStockItems: input.includeLowStock ? lowStockItems.map((item) => ({
-      id: item._id,
-      name: item.name,
-      currentStock: item.totalQuantity,
-      threshold: item.lowStockThreshold,
-    })) : undefined,
+    lowStockItems: input.includeLowStock
+      ? lowStockItems.map((item) => ({
+          id: item._id,
+          name: item.name,
+          currentStock: item.totalQuantity,
+          threshold: item.lowStockThreshold,
+        }))
+      : undefined,
     expiredItems: input.includeExpired ? expiredItems : undefined,
     predictions: input.includePredictions ? predictions : undefined,
     period: {
@@ -489,68 +683,571 @@ export async function getInventoryReport(input, tenantId, userId) {
  * Get comprehensive dashboard statistics
  */
 export async function getDashboardStats(tenantId, userId) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const endOfToday = new Date(today);
-  endOfToday.setHours(23, 59, 59, 999);
-  const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const thisYear = new Date(today.getFullYear(), 0, 1);
+    // Validate tenantId
+    if (!tenantId) {
+      logger.warn('getDashboardStats called without tenantId');
+      // Return default values if no tenantId
+      return {
+        todayAppointments: 0,
+        todayRevenue: 0,
+        monthRevenue: 0,
+        activePatients: 0,
+        newPatientsThisMonth: 0,
+        completedToday: 0,
+        pendingInvoices: 0,
+        appointmentsTrend: 0,
+        revenueTrend: 0,
+        patientsTrend: 0,
+        newPatientsTrend: 0,
+        completionTrend: 0,
+        invoicesTrend: 0,
+      };
+    }
 
-  // Today's appointments (exclude "arrived" status - they should only appear in queue)
-  // Match the appointments page logic: filter by date and exclude "arrived" status
-  const todayAppointments = await Appointment.countDocuments(
-    withTenant(tenantId, {
-      appointmentDate: { $gte: today, $lte: endOfToday },
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(today);
+    endOfToday.setHours(23, 59, 59, 999);
+    const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    const endOfYesterday = new Date(yesterday);
+    endOfYesterday.setHours(23, 59, 59, 999);
+    // Today's appointments (exclude "arrived" status - they should only appear in queue)
+    // Use startTime as primary field (always present), with fallback to appointmentDate
+    const todayFilter = withTenant(tenantId, {
+      $or: [
+        { startTime: { $gte: today, $lte: endOfToday } },
+        { appointmentDate: { $gte: today, $lte: endOfToday } },
+        { 'schedule.date': { $gte: today, $lte: endOfToday } },
+      ],
       status: { $ne: AppointmentStatus.ARRIVED },
       deletedAt: null,
-    })
-  );
+    });
+    const todayAppointments = await Appointment.countDocuments(todayFilter).catch((err) => {
+      logger.error('Error counting today appointments:', err);
+      return 0;
+    });
 
-  // This month's revenue
-  const monthInvoices = await Invoice.find(
-    withTenant(tenantId, {
-      invoiceDate: { $gte: thisMonth },
-      status: { $ne: InvoiceStatus.CANCELLED },
+    // Yesterday's appointments for trend
+    const yesterdayFilter = withTenant(tenantId, {
+      $or: [
+        { startTime: { $gte: yesterday, $lte: endOfYesterday } },
+        { appointmentDate: { $gte: yesterday, $lte: endOfYesterday } },
+        { 'schedule.date': { $gte: yesterday, $lte: endOfYesterday } },
+      ],
+      status: { $ne: AppointmentStatus.ARRIVED },
       deletedAt: null,
-    })
-  ).lean();
+    });
+    const yesterdayAppointments = await Appointment.countDocuments(yesterdayFilter).catch((err) => {
+      logger.error('Error counting yesterday appointments:', err);
+      return 0;
+    });
 
-  const monthRevenue = monthInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+    // Today's revenue
+    let todayInvoices = [];
+    try {
+      todayInvoices = await Invoice.find(
+        withTenant(tenantId, {
+          invoiceDate: { $gte: today, $lte: endOfToday },
+          status: { $ne: InvoiceStatus.CANCELLED },
+          deletedAt: null,
+        })
+      )
+        .select('totalAmount')
+        .lean();
+    } catch (err) {
+      logger.error('Error fetching today invoices:', err);
+    }
+    const todayRevenue = todayInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
 
-  // Total patients
-  const totalPatients = await Patient.countDocuments(
-    withTenant(tenantId, {
+    // Yesterday's revenue for trend
+    let yesterdayInvoices = [];
+    try {
+      yesterdayInvoices = await Invoice.find(
+        withTenant(tenantId, {
+          invoiceDate: { $gte: yesterday, $lte: endOfYesterday },
+          status: { $ne: InvoiceStatus.CANCELLED },
+          deletedAt: null,
+        })
+      )
+        .select('totalAmount')
+        .lean();
+    } catch (err) {
+      logger.error('Error fetching yesterday invoices:', err);
+    }
+    const yesterdayRevenue = yesterdayInvoices.reduce(
+      (sum, inv) => sum + (inv.totalAmount || 0),
+      0
+    );
+
+    // This month's revenue
+    let monthInvoices = [];
+    try {
+      monthInvoices = await Invoice.find(
+        withTenant(tenantId, {
+          invoiceDate: { $gte: thisMonth },
+          status: { $ne: InvoiceStatus.CANCELLED },
+          deletedAt: null,
+        })
+      )
+        .select('totalAmount')
+        .lean();
+    } catch (err) {
+      logger.error('Error fetching month invoices:', err);
+    }
+    const monthRevenue = monthInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+
+    // Total active patients (patients with appointments or invoices)
+    const activePatients = await Patient.countDocuments(
+      withTenant(tenantId, {
+        deletedAt: null,
+      })
+    ).catch((err) => {
+      logger.error('Error counting active patients:', err);
+      return 0;
+    });
+
+    // New patients this month
+    const newPatientsThisMonth = await Patient.countDocuments(
+      withTenant(tenantId, {
+        createdAt: { $gte: thisMonth },
+        deletedAt: null,
+      })
+    ).catch((err) => {
+      logger.error('Error counting new patients this month:', err);
+      return 0;
+    });
+
+    // New patients last month for trend
+    const newPatientsLastMonth = await Patient.countDocuments(
+      withTenant(tenantId, {
+        createdAt: { $gte: lastMonth, $lte: endOfLastMonth },
+        deletedAt: null,
+      })
+    ).catch((err) => {
+      logger.error('Error counting new patients last month:', err);
+      return 0;
+    });
+
+    // Completed appointments today
+    const completedTodayFilter = withTenant(tenantId, {
+      $or: [
+        { startTime: { $gte: today, $lte: endOfToday } },
+        { appointmentDate: { $gte: today, $lte: endOfToday } },
+        { 'schedule.date': { $gte: today, $lte: endOfToday } },
+      ],
+      status: AppointmentStatus.COMPLETED,
       deletedAt: null,
-    })
-  );
+    });
+    const completedToday = await Appointment.countDocuments(completedTodayFilter).catch((err) => {
+      logger.error('Error counting completed today:', err);
+      return 0;
+    });
 
-  // Pending invoices
-  const pendingInvoices = await Invoice.countDocuments(
-    withTenant(tenantId, {
-      status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+    // Completed yesterday for trend
+    const completedYesterdayFilter = withTenant(tenantId, {
+      $or: [
+        { startTime: { $gte: yesterday, $lte: endOfYesterday } },
+        { appointmentDate: { $gte: yesterday, $lte: endOfYesterday } },
+        { 'schedule.date': { $gte: yesterday, $lte: endOfYesterday } },
+      ],
+      status: AppointmentStatus.COMPLETED,
       deletedAt: null,
-    })
-  );
+    });
+    const completedYesterday = await Appointment.countDocuments(completedYesterdayFilter).catch(
+      (err) => {
+        logger.error('Error counting completed yesterday:', err);
+        return 0;
+      }
+    );
 
-  // Low stock items
-  const lowStockItems = await InventoryItem.countDocuments(
+    // Pending invoices
+    const pendingInvoices = await Invoice.countDocuments(
+      withTenant(tenantId, {
+        status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+        deletedAt: null,
+      })
+    ).catch((err) => {
+      logger.error('Error counting pending invoices:', err);
+      return 0;
+    });
+
+    // Pending invoices yesterday for trend
+    const pendingInvoicesYesterday = await Invoice.countDocuments(
+      withTenant(tenantId, {
+        status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+        deletedAt: null,
+        invoiceDate: { $lte: endOfYesterday },
+      })
+    ).catch((err) => {
+      logger.error('Error counting pending invoices yesterday:', err);
+      return 0;
+    });
+
+    // Calculate trends
+    const appointmentsTrend =
+      yesterdayAppointments > 0
+        ? (((todayAppointments - yesterdayAppointments) / yesterdayAppointments) * 100).toFixed(1)
+        : todayAppointments > 0
+          ? '100'
+          : '0';
+
+    const revenueTrend =
+      yesterdayRevenue > 0
+        ? (((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100).toFixed(1)
+        : todayRevenue > 0
+          ? '100'
+          : '0';
+
+    const patientsTrend =
+      newPatientsLastMonth > 0
+        ? (((newPatientsThisMonth - newPatientsLastMonth) / newPatientsLastMonth) * 100).toFixed(1)
+        : newPatientsThisMonth > 0
+          ? '100'
+          : '0';
+
+    const newPatientsTrend =
+      newPatientsLastMonth > 0
+        ? (((newPatientsThisMonth - newPatientsLastMonth) / newPatientsLastMonth) * 100).toFixed(1)
+        : newPatientsThisMonth > 0
+          ? '100'
+          : '0';
+
+    const completionTrend =
+      completedYesterday > 0
+        ? (((completedToday - completedYesterday) / completedYesterday) * 100).toFixed(1)
+        : completedToday > 0
+          ? '100'
+          : '0';
+
+    const invoicesTrend =
+      pendingInvoicesYesterday > 0
+        ? (((pendingInvoices - pendingInvoicesYesterday) / pendingInvoicesYesterday) * 100).toFixed(
+            1
+          )
+        : pendingInvoices > 0
+          ? '100'
+          : '0';
+
+    await AuditLogger.auditRead('report', 'dashboard', userId, tenantId);
+
+    return {
+      todayAppointments,
+      todayRevenue,
+      monthRevenue,
+      activePatients,
+      newPatientsThisMonth,
+      completedToday,
+      pendingInvoices,
+      appointmentsTrend: parseFloat(appointmentsTrend),
+      revenueTrend: parseFloat(revenueTrend),
+      patientsTrend: parseFloat(patientsTrend),
+      newPatientsTrend: parseFloat(newPatientsTrend),
+      completionTrend: parseFloat(completionTrend),
+      invoicesTrend: parseFloat(invoicesTrend),
+    };
+  } catch (error) {
+    logger.error('Error fetching dashboard stats:', {
+      error: error.message,
+      stack: error.stack,
+      tenantId,
+      userId,
+    });
+    // Return default values on error
+    return {
+      todayAppointments: 0,
+      todayRevenue: 0,
+      monthRevenue: 0,
+      activePatients: 0,
+      newPatientsThisMonth: 0,
+      completedToday: 0,
+      pendingInvoices: 0,
+      appointmentsTrend: 0,
+      revenueTrend: 0,
+      patientsTrend: 0,
+      newPatientsTrend: 0,
+      completionTrend: 0,
+      invoicesTrend: 0,
+    };
+  }
+}
+
+/**
+ * Doctor Performance Report
+ */
+export async function getDoctorPerformanceReport(input, tenantId, userId) {
+  await connectDB();
+
+  const dateFilter = buildDateFilter(input.startDate, input.endDate);
+
+  // Get all doctors
+  const doctors = await Doctor.find(
     withTenant(tenantId, {
-      $expr: { $lte: ['$totalQuantity', '$lowStockThreshold'] },
-      deletedAt: null,
       isActive: true,
     })
-  );
+  )
+    .populate('userId', 'firstName lastName')
+    .lean();
 
-  await AuditLogger.auditRead('report', 'dashboard', userId, tenantId);
+  const doctorStats = [];
+
+  for (const doctor of doctors) {
+    // Filter appointments for this doctor
+    const appointmentFilter = withTenant(tenantId, {
+      doctorId: doctor._id,
+      deletedAt: null,
+    });
+
+    if (dateFilter) {
+      appointmentFilter.appointmentDate = dateFilter;
+    }
+
+    if (input.status) {
+      appointmentFilter.status = input.status;
+    }
+
+    const appointments = await Appointment.find(appointmentFilter)
+      .select('appointmentDate status')
+      .lean();
+
+    // Calculate statistics
+    const totalAppointments = appointments.length;
+    const completed = appointments.filter(
+      (apt) => apt.status === AppointmentStatus.COMPLETED
+    ).length;
+    const cancelled = appointments.filter(
+      (apt) => apt.status === AppointmentStatus.CANCELLED
+    ).length;
+    const noShows = appointments.filter((apt) => apt.status === AppointmentStatus.NO_SHOW).length;
+    const completionRate = totalAppointments > 0 ? (completed / totalAppointments) * 100 : 0;
+    const noShowRate = totalAppointments > 0 ? (noShows / totalAppointments) * 100 : 0;
+
+    // Revenue from appointments - only fetch if we have appointments
+    let invoices = [];
+    if (appointments.length > 0) {
+      const appointmentIds = appointments.map((apt) => apt._id);
+      invoices = await Invoice.find(
+        withTenant(tenantId, {
+          appointmentId: { $in: appointmentIds },
+          status: { $ne: InvoiceStatus.CANCELLED },
+          deletedAt: null,
+        })
+      )
+        .select('totalAmount')
+        .lean();
+    }
+
+    const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+    const averageRevenuePerAppointment = completed > 0 ? totalRevenue / completed : 0;
+
+    // Clinical notes count
+    const clinicalNotesFilter = withTenant(tenantId, {
+      doctorId: doctor._id,
+      deletedAt: null,
+    });
+
+    if (dateFilter) {
+      clinicalNotesFilter.createdAt = dateFilter;
+    }
+
+    const clinicalNotesCount = await ClinicalNote.countDocuments(clinicalNotesFilter);
+
+    // Time series data
+    let timeSeries = [];
+    if (input.groupBy) {
+      const timeData = appointments.map((apt) => ({
+        date: apt.appointmentDate,
+        count: 1,
+      }));
+      timeSeries = Object.values(groupByTimePeriod(timeData, input.groupBy));
+    }
+
+    doctorStats.push({
+      doctorId: doctor._id,
+      doctorName: doctor.userId
+        ? `${doctor.userId.firstName} ${doctor.userId.lastName}`
+        : 'Unknown',
+      departmentId: doctor.departmentId,
+      specialization: doctor.specialization,
+      totalAppointments,
+      completed,
+      cancelled,
+      noShows,
+      completionRate: Math.round(completionRate * 100) / 100,
+      noShowRate: Math.round(noShowRate * 100) / 100,
+      totalRevenue,
+      averageRevenuePerAppointment: Math.round(averageRevenuePerAppointment * 100) / 100,
+      clinicalNotesCount,
+      timeSeries: input.groupBy ? timeSeries : undefined,
+    });
+  }
+
+  // Sort by total appointments (descending)
+  doctorStats.sort((a, b) => b.totalAppointments - a.totalAppointments);
+
+  await AuditLogger.auditRead('report', 'doctor_performance', userId, tenantId);
 
   return {
-    todayAppointments,
-    monthRevenue,
-    totalPatients,
-    pendingInvoices,
-    lowStockItems,
+    summary: {
+      totalDoctors: doctorStats.length,
+      totalAppointments: doctorStats.reduce((sum, d) => sum + d.totalAppointments, 0),
+      totalRevenue: doctorStats.reduce((sum, d) => sum + d.totalRevenue, 0),
+      averageCompletionRate:
+        doctorStats.length > 0
+          ? doctorStats.reduce((sum, d) => sum + d.completionRate, 0) / doctorStats.length
+          : 0,
+    },
+    doctors: doctorStats,
+    period: {
+      startDate: input.startDate,
+      endDate: input.endDate,
+    },
   };
 }
 
+/**
+ * Department-wise Analysis Report
+ */
+export async function getDepartmentReport(input, tenantId, userId) {
+  await connectDB();
+
+  const dateFilter = buildDateFilter(input.startDate, input.endDate);
+
+  // Get all departments
+  const departments = await Department.find(
+    withTenant(tenantId, {
+      isActive: true,
+    })
+  )
+    .populate('headDoctorId', 'userId')
+    .lean();
+
+  const departmentStats = [];
+
+  for (const dept of departments) {
+    // Get doctors in this department
+    const doctors = await Doctor.find(
+      withTenant(tenantId, {
+        departmentId: dept._id,
+        isActive: true,
+      })
+    ).lean();
+
+    const doctorIds = doctors.map((d) => d._id);
+
+    // Filter appointments for this department
+    const appointmentFilter = withTenant(tenantId, {
+      doctorId: { $in: doctorIds },
+      deletedAt: null,
+    });
+
+    if (dateFilter) {
+      appointmentFilter.appointmentDate = dateFilter;
+    }
+
+    if (input.status) {
+      appointmentFilter.status = input.status;
+    }
+
+    const appointments = await Appointment.find(appointmentFilter)
+      .select('appointmentDate status')
+      .lean();
+
+    // Calculate statistics
+    const totalAppointments = appointments.length;
+    const completed = appointments.filter(
+      (apt) => apt.status === AppointmentStatus.COMPLETED
+    ).length;
+    const cancelled = appointments.filter(
+      (apt) => apt.status === AppointmentStatus.CANCELLED
+    ).length;
+    const noShows = appointments.filter((apt) => apt.status === AppointmentStatus.NO_SHOW).length;
+    const completionRate = totalAppointments > 0 ? (completed / totalAppointments) * 100 : 0;
+
+    // Revenue from appointments - only fetch if we have appointments
+    let invoices = [];
+    if (appointments.length > 0) {
+      const appointmentIds = appointments.map((apt) => apt._id);
+      invoices = await Invoice.find(
+        withTenant(tenantId, {
+          appointmentId: { $in: appointmentIds },
+          status: { $ne: InvoiceStatus.CANCELLED },
+          deletedAt: null,
+        })
+      )
+        .select('totalAmount')
+        .lean();
+    }
+
+    const totalRevenue = invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+    const averageRevenuePerAppointment = completed > 0 ? totalRevenue / completed : 0;
+
+    // Clinical notes count
+    const clinicalNotesFilter = withTenant(tenantId, {
+      doctorId: { $in: doctorIds },
+      deletedAt: null,
+    });
+
+    if (dateFilter) {
+      clinicalNotesFilter.createdAt = dateFilter;
+    }
+
+    const clinicalNotesCount = await ClinicalNote.countDocuments(clinicalNotesFilter);
+
+    // Time series data
+    let timeSeries = [];
+    if (input.groupBy) {
+      const timeData = appointments.map((apt) => ({
+        date: apt.appointmentDate,
+        count: 1,
+      }));
+      timeSeries = Object.values(groupByTimePeriod(timeData, input.groupBy));
+    }
+
+    departmentStats.push({
+      departmentId: dept._id,
+      departmentName: dept.name,
+      departmentCode: dept.code,
+      headDoctorId: dept.headDoctorId?._id,
+      totalDoctors: doctors.length,
+      totalAppointments,
+      completed,
+      cancelled,
+      noShows,
+      completionRate: Math.round(completionRate * 100) / 100,
+      totalRevenue,
+      averageRevenuePerAppointment: Math.round(averageRevenuePerAppointment * 100) / 100,
+      clinicalNotesCount,
+      timeSeries: input.groupBy ? timeSeries : undefined,
+    });
+  }
+
+  // Sort by total appointments (descending)
+  departmentStats.sort((a, b) => b.totalAppointments - a.totalAppointments);
+
+  await AuditLogger.auditRead('report', 'department', userId, tenantId);
+
+  return {
+    summary: {
+      totalDepartments: departmentStats.length,
+      totalAppointments: departmentStats.reduce((sum, d) => sum + d.totalAppointments, 0),
+      totalRevenue: departmentStats.reduce((sum, d) => sum + d.totalRevenue, 0),
+      averageCompletionRate:
+        departmentStats.length > 0
+          ? departmentStats.reduce((sum, d) => sum + d.completionRate, 0) / departmentStats.length
+          : 0,
+    },
+    departments: departmentStats,
+    period: {
+      startDate: input.startDate,
+      endDate: input.endDate,
+    },
+  };
+}

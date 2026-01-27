@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 import { useEffect, useState } from 'react';
 import { generatePrescriptionPrintHTML } from './PrescriptionPrintTemplate';
+import { logger } from '@/lib/utils/logger.js';
 
 export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
   const { user: currentUser } = useAuth();
@@ -67,7 +68,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
           clinicSettings = settingsResponse.data;
         }
       } catch (err) {
-        console.error('Failed to fetch clinic settings:', err);
+        logger.error('Failed to fetch clinic settings:', err);
       }
 
       // Fetch clinical note if appointmentId exists
@@ -85,7 +86,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
             }
           }
         } catch (err) {
-          console.error('Failed to fetch clinical note:', err);
+          logger.error('Failed to fetch clinical note:', err);
         }
       }
 
@@ -237,7 +238,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
       const html = generatePrescriptionPrintHTML(printData);
       setPrintHtml(html);
     } catch (error) {
-      console.error('Failed to load prescription data:', error);
+      logger.error('Failed to load prescription data:', error);
       setError('Failed to load prescription data');
     } finally {
       setLoading(false);

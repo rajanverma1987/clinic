@@ -12,6 +12,7 @@ import Invoice from '@/models/Invoice';
 import Payment from '@/models/Payment';
 import Prescription from '@/models/Prescription';
 import InventoryItem from '@/models/InventoryItem';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/admin/stats
@@ -254,7 +255,7 @@ async function getHandler(req, user) {
       })
     );
   } catch (error) {
-    console.error('Admin stats error:', error);
+    logger.error('Admin stats error:', error);
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to fetch admin stats',

@@ -1,178 +1,167 @@
-import { NextRequest, NextResponse } from 'next/server';
+/**
+ * Appointment Detail API Routes
+ * Based on NEW-PLANS.md requirements
+ */
+
+import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
+import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
 import { updateAppointmentSchema, changeStatusSchema } from '@/lib/validations/appointment';
 import {
   getAppointmentById,
   updateAppointment,
-  deleteAppointment,
   changeAppointmentStatus,
-  cancelAppointment,
+  deleteAppointment,
 } from '@/services/appointment.service';
-import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/api-response';
 
 /**
- * GET /api/appointments/:id
- * Get a single appointment by ID
+ * GET /api/appointments/[id]
+ * Get appointment by ID
  */
-async function getHandler(
-  req,
-  user,
-  { params }
-) {
-  try {
-    const appointment = await getAppointmentById(params.id, user.tenantId, user.userId);
+async function getHandler(req, user, { params }) {
+  const appointmentId = params.id;
 
-    if (!appointment) {
-      return NextResponse.json(
-        errorResponse('Appointment not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
-    }
+  const appointment = await getAppointmentById(
+    appointmentId,
+    user.tenantId,
+    user.userId
+  );
 
-    return NextResponse.json(successResponse(appointment));
-  } catch (error) {
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
-
+  if (!appointment) {
     return NextResponse.json(
-      errorResponse('Failed to fetch appointment', 'INTERNAL_ERROR'),
-      { status: 500 }
+      errorResponse('Appointment not found', 'NOT_FOUND'),
+      { status: 404 }
     );
   }
+
+  return NextResponse.json(successResponse(appointment));
 }
 
 /**
- * PUT /api/appointments/:id
- * Update an appointment
+ * PUT /api/appointments/[id]
+ * Update appointment
  */
-async function putHandler(
-  req,
-  user,
-  { params }
-) {
-  try {
-    const body = await req.json();
+async function putHandler(req, user, { params }) {
+  const appointmentId = params.id;
+  const body = await req.json();
 
-    const validationResult = updateAppointmentSchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        errorResponse(
-          'Validation failed',
-          'VALIDATION_ERROR',
-          validationResult.error.errors
-        ),
-        { status: 400 }
-      );
-    }
-
-    const appointment = await updateAppointment(
-      params.id,
-      validationResult.data,
-      user.tenantId,
-      user.userId
-    );
-
-    if (!appointment) {
-      return NextResponse.json(
-        errorResponse('Appointment not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
-    }
-
+  // Validate input
+  const validationResult = updateAppointmentSchema.safeParse(body);
+  if (!validationResult.success) {
     return NextResponse.json(
-      successResponse({
-        id: appointment._id.toString(),
-        startTime: appointment.startTime,
-        endTime: appointment.endTime,
-        status: appointment.status,
-        updatedAt: appointment.updatedAt,
-      })
-    );
-  } catch (error) {
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
-
-    return NextResponse.json(
-      errorResponse(
-        (error instanceof Error ? error.message : String(error)) || 'Failed to update appointment',
-        'UPDATE_ERROR'
-      ),
+      validationErrorResponse(validationResult.error.errors),
       { status: 400 }
     );
   }
+
+  const appointment = await updateAppointment(
+    appointmentId,
+    validationResult.data,
+    user.tenantId,
+    user.userId
+  );
+
+  if (!appointment) {
+    return NextResponse.json(
+      errorResponse('Appointment not found', 'NOT_FOUND'),
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json(successResponse(appointment));
 }
 
 /**
- * DELETE /api/appointments/:id
- * Soft delete an appointment
+ * PATCH /api/appointments/[id]/status
+ * Change appointment status
  */
-async function deleteHandler(
-  req,
-  user,
-  { params }
-) {
-  try {
-    const deleted = await deleteAppointment(params.id, user.tenantId, user.userId);
+async function patchStatusHandler(req, user, { params }) {
+  const appointmentId = params.id;
+  const body = await req.json();
 
-    if (!deleted) {
-      return NextResponse.json(
-        errorResponse('Appointment not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
-    }
-
+  // Validate input
+  const validationResult = changeStatusSchema.safeParse(body);
+  if (!validationResult.success) {
     return NextResponse.json(
-      successResponse({ message: 'Appointment deleted successfully' })
-    );
-  } catch (error) {
-    return NextResponse.json(
-      errorResponse('Failed to delete appointment', 'DELETE_ERROR'),
-      { status: 500 }
+      validationErrorResponse(validationResult.error.errors),
+      { status: 400 }
     );
   }
+
+  const appointment = await changeAppointmentStatus(
+    appointmentId,
+    validationResult.data,
+    user.tenantId,
+    user.userId
+  );
+
+  if (!appointment) {
+    return NextResponse.json(
+      errorResponse('Appointment not found', 'NOT_FOUND'),
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json(successResponse(appointment));
 }
 
-export async function GET(
-  req,
-  context
-) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
+/**
+ * DELETE /api/appointments/[id]
+ * Delete appointment (soft delete)
+ */
+async function deleteHandler(req, user, { params }) {
+  const appointmentId = params.id;
 
-  const params = await context.params;
-  const authenticatedReq = req;
-  authenticatedReq.user = authResult.user;
+  const deleted = await deleteAppointment(
+    appointmentId,
+    user.tenantId,
+    user.userId
+  );
 
-  return getHandler(authenticatedReq, authResult.user, { params });
+  if (!deleted) {
+    return NextResponse.json(
+      errorResponse('Appointment not found', 'NOT_FOUND'),
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json(successResponse({ message: 'Appointment deleted successfully' }));
 }
 
-export async function PUT(
-  req,
-  context
-) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
+// Apply middleware
+export const GET = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.READ)(getHandler)
+    )
+  )
+);
 
-  const params = await context.params;
-  const authenticatedReq = req;
-  authenticatedReq.user = authResult.user;
+export const PUT = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.UPDATE)(putHandler)
+    )
+  )
+);
 
-  return putHandler(authenticatedReq, authResult.user, { params });
-}
+export const DELETE = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.DELETE)(deleteHandler)
+    )
+  )
+);
 
-export async function DELETE(
-  req,
-  context
-) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
-
-  const params = await context.params;
-  const authenticatedReq = req;
-  authenticatedReq.user = authResult.user;
-
-  return deleteHandler(authenticatedReq, authResult.user, { params });
-}
-
+// PATCH for status change
+export const PATCH = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.UPDATE)(patchStatusHandler)
+    )
+  )
+);

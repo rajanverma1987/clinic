@@ -399,7 +399,7 @@ export default function RegisterPage() {
                         value={personalInfo.password}
                         onChange={(e) => setPersonalInfo({ ...personalInfo, password: e.target.value })}
                         required
-                        placeholder='••••••••'
+                        placeholder={t('auth.passwordPlaceholder')}
                         className='pr-10'
                       />
                       <button
@@ -423,7 +423,7 @@ export default function RegisterPage() {
                         value={personalInfo.confirmPassword}
                         onChange={(e) => setPersonalInfo({ ...personalInfo, confirmPassword: e.target.value })}
                         required
-                        placeholder='••••••••'
+                        placeholder={t('auth.passwordPlaceholder')}
                         className='pr-10'
                       />
                       <button

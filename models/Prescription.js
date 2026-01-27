@@ -201,6 +201,8 @@ PrescriptionSchema.index({ tenantId: 1, patientId: 1, createdAt: -1 });
 PrescriptionSchema.index({ tenantId: 1, doctorId: 1, createdAt: -1 });
 PrescriptionSchema.index({ tenantId: 1, status: 1 });
 PrescriptionSchema.index({ tenantId: 1, validUntil: 1 }); // For expired prescriptions
+PrescriptionSchema.index({ tenantId: 1, status: 1, validUntil: 1 }); // For refill reminders
+PrescriptionSchema.index({ tenantId: 1, refillsAllowed: 1, refillsUsed: 1 }); // For refill tracking
 PrescriptionSchema.index({ tenantId: 1, deletedAt: 1 });
 
 export default mongoose.models.Prescription || mongoose.model('Prescription', PrescriptionSchema);

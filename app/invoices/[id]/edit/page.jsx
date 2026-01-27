@@ -1,6 +1,7 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -265,20 +266,7 @@ export default function EditInvoicePage() {
     <Layout>
       <div style={{ padding: '0 10px' }}>
         <div className='mb-8' style={{ paddingTop: '10px' }}>
-          <button
-            onClick={() => router.back()}
-            className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 mb-4'
-            aria-label={t('common.back')}
-          >
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M19 12H5M12 19l-7-7 7-7'
-              />
-            </svg>
-          </button>
+          <BackButton className='mb-4' />
           <h1 className='text-3xl font-bold text-neutral-900'>Edit Invoice</h1>
           <p className='text-neutral-600 mt-2'>Update invoice details</p>
         </div>
@@ -414,7 +402,7 @@ export default function EditInvoicePage() {
                             required
                             value={item.description}
                             onChange={(e) => updateItem(index, 'description', e.target.value)}
-                            placeholder='Item description'
+                            placeholder={t('invoices.itemDescriptionPlaceholder')}
                             className='text-xs w-full'
                           />
                         </td>
@@ -526,7 +514,7 @@ export default function EditInvoicePage() {
                   <Input
                     value={formData.discountReason}
                     onChange={(e) => setFormData({ ...formData, discountReason: e.target.value })}
-                    placeholder='Discount reason'
+                    placeholder={t('invoices.discountReasonPlaceholder')}
                   />
                 </div>
               </div>
@@ -564,7 +552,7 @@ export default function EditInvoicePage() {
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                 rows={3}
-                placeholder='Additional notes'
+                placeholder={t('invoices.notesPlaceholder')}
               />
             </div>
 

@@ -1,6 +1,23 @@
 /**
- * Billing service
- * Handles all billing-related business logic
+ * Billing Service
+ * 
+ * Enterprise-grade service for billing, invoicing, and payment processing
+ * with tax calculation, inventory integration, and financial compliance.
+ * 
+ * Features:
+ * - Invoice generation with automatic numbering
+ * - Tax calculation (region-specific)
+ * - Payment processing and tracking
+ * - Inventory integration for itemized billing
+ * - Payment method support (cash, card, insurance)
+ * - Refund and adjustment handling
+ * - Financial reporting
+ * - Multi-tenant isolation
+ * - Audit logging
+ * - PCI compliance considerations
+ * 
+ * @module services/billing.service
+ * @since 1.0.0
  */
 
 import connectDB from '@/lib/db/connection.js';
@@ -16,6 +33,8 @@ import { calculateTax, parseAmount } from './tax-engine.service.js';
 import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
 import { createStockTransaction } from './inventory.service.js';
 import { TransactionType } from '@/models/StockTransaction.js';
+import { logger } from '@/lib/utils/logger.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Generate unique invoice number for a tenant
@@ -274,7 +293,7 @@ export async function createInvoice(input, tenantId, userId) {
         AuditAction.CREATE
       );
     } catch (auditError) {
-      console.error('[Invoice] Failed to create audit log, but invoice created:', auditError);
+      logger.error('[Invoice] Failed to create audit log, but invoice created:', auditError);
       // Don't fail invoice creation if audit log fails
     }
 
@@ -284,7 +303,7 @@ export async function createInvoice(input, tenantId, userId) {
         await reduceInventoryForInvoice(invoice, tenantId, userId);
         inventoryReduced = true;
       } catch (inventoryError) {
-        console.error('[Invoice] Failed to reduce inventory:', inventoryError);
+        logger.error('[Invoice] Failed to reduce inventory:', inventoryError);
         // Rollback: Delete invoice if inventory reduction fails
         await Invoice.findByIdAndDelete(invoice._id);
         throw new Error(`Failed to reduce inventory: ${inventoryError.message}. Invoice creation rolled back.`);
@@ -297,9 +316,9 @@ export async function createInvoice(input, tenantId, userId) {
     if (invoice && !inventoryReduced) {
       try {
         await Invoice.findByIdAndDelete(invoice._id);
-        console.log('[Invoice] Rolled back invoice creation due to error:', error.message);
+        logger.info('[Invoice] Rolled back invoice creation due to error:', error.message);
       } catch (rollbackError) {
-        console.error('[Invoice] Failed to rollback invoice deletion:', rollbackError);
+        logger.error('[Invoice] Failed to rollback invoice deletion:', rollbackError);
         // Mark invoice as failed for manual cleanup
         if (invoice) {
           await Invoice.findByIdAndUpdate(invoice._id, {
@@ -329,7 +348,7 @@ async function reduceInventoryForInvoice(invoice, tenantId, userId) {
     ).lean();
 
     if (existingTransactions.length > 0) {
-      console.log(`Inventory already reduced for invoice ${invoice.invoiceNumber}`);
+      logger.info(`Inventory already reduced for invoice ${invoice.invoiceNumber}`);
       return; // Inventory already reduced
     }
 
@@ -391,7 +410,7 @@ async function reduceInventoryForInvoice(invoice, tenantId, userId) {
       }
 
       if (!inventoryItem) {
-        console.warn(`Inventory item not found for invoice item: ${item.description}`);
+        logger.warn(`Inventory item not found for invoice item: ${item.description}`);
         continue;
       }
 
@@ -419,7 +438,7 @@ async function reduceInventoryForInvoice(invoice, tenantId, userId) {
       );
     }
   } catch (error) {
-    console.error('Error reducing inventory for invoice:', error);
+    logger.error('Error reducing inventory for invoice:', error);
     throw error;
   }
 }
@@ -455,8 +474,8 @@ export async function getInvoiceById(invoiceId, tenantId, userId) {
 
     return invoice;
   } catch (error) {
-    console.error('Error fetching invoice by ID:', error);
-    console.error('Invoice ID:', invoiceId, 'Tenant ID:', tenantId);
+    logger.error('Error fetching invoice by ID:', error);
+    logger.error('Invoice ID:', invoiceId, 'Tenant ID:', tenantId);
     throw error;
   }
 }

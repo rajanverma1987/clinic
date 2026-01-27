@@ -43,7 +43,7 @@ export function Tabs({
 
   return (
     <div className={`border-b border-neutral-200 ${className}`}>
-      <nav className="flex space-x-8 overflow-x-auto scrollbar-hide">
+      <nav className="flex space-x-6 overflow-x-auto scrollbar-hide py-2">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -51,7 +51,7 @@ export function Tabs({
               key={tab.id}
               onClick={() => onChange(tab.id)}
               className={`
-                py-4 px-1 border-b-2 font-medium text-body-sm whitespace-nowrap
+                py-2 px-1 border-b-2 font-medium text-body-sm whitespace-nowrap
                 ${isActive
                   ? 'border-primary-500 text-primary-500'
                   : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'

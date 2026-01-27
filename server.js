@@ -16,7 +16,7 @@ const port = parseInt(process.env.PORT || '5053', 10);
 const app = next({ dev, hostname });
 const handle = app.getRequestHandler();
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
   const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
@@ -37,6 +37,17 @@ app.prepare().then(() => {
     },
     transports: ['websocket', 'polling'],
   });
+
+  // Initialize real-time manager for appointments, queue, etc. (separate from telemedicine)
+  // Use dynamic import since realtime-manager.js is an ES module
+  try {
+    const { initRealtimeManager } = await import('./lib/realtime/realtime-manager.js');
+    initRealtimeManager(io);
+    console.log('[Server] Real-time manager initialized');
+  } catch (err) {
+    console.error('[Server] Failed to initialize real-time manager:', err);
+    // Continue without real-time features
+  }
 
   // Socket.IO connection handling
   io.on('connection', (socket) => {

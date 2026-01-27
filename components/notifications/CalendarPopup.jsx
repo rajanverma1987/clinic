@@ -5,11 +5,13 @@
  * Shows today's appointments in a calendar-style popup
  */
 
+import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { logger } from '@/lib/utils/logger.js';
 
 export function CalendarPopup({ isOpen, onClose, buttonRef }) {
   const { t } = useI18n();
@@ -45,7 +47,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
           setAppointments(filteredAppointments);
         }
       } catch (error) {
-        console.error('Failed to fetch today appointments:', error);
+        logger.error('Failed to fetch today appointments:', error);
         setAppointments([]);
       } finally {
         setLoading(false);
@@ -148,9 +150,9 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
     switch (status?.toLowerCase()) {
       case 'scheduled':
       case 'confirmed':
-        return 'bg-primary-100 text-primary-700 border-primary-300';
+        return 'bg-primary-100 text-primary-700 border-primary-300'; // Blue for scheduled/confirmed
       case 'completed':
-        return 'bg-secondary-100 text-secondary-700 border-secondary-300';
+        return 'bg-success-100 text-success-700 border-success-300'; // Green for completed (success)
       case 'cancelled':
         return 'bg-status-error/10 text-status-error border-status-error/30';
       default:
@@ -189,7 +191,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
         >
           <div className='flex items-center justify-between mb-2'>
             <div className='flex items-center gap-2'>
-              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
                   strokeLinecap='round'
                   strokeLinejoin='round'
@@ -199,11 +201,14 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
               </svg>
               <h3 className='font-bold text-lg'>Today&apos;s Appointments</h3>
             </div>
-            <button
+            <Button
+              variant='ghost'
+              size='xs'
+              iconOnly
               onClick={onClose}
-              className='text-white/80 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10'
+              className='text-white/80 hover:text-white hover:bg-white/10'
             >
-              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
                   strokeLinecap='round'
                   strokeLinejoin='round'
@@ -211,7 +216,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
                   d='M6 18L18 6M6 6l12 12'
                 />
               </svg>
-            </button>
+            </Button>
           </div>
           <p className='text-white/90 text-sm'>{todayFormatted}</p>
         </div>

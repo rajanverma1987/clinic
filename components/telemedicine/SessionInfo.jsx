@@ -11,7 +11,7 @@ export function SessionInfo({ sessionDuration, sessionId }) {
     <div className='flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0'>
       <div className='w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0'>
         <svg
-          className='w-4 h-4 sm:w-6 sm:h-6 text-white'
+          className='icon icon-xs sm:!w-6 sm:!h-6 text-white'
           fill='none'
           stroke='currentColor'
           viewBox='0 0 24 24'

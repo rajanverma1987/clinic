@@ -257,6 +257,29 @@ export function AuthProvider({ children }) {
         }
       } else {
         console.log('Auth check failed:', response.error);
+        
+        // Check if it's a network error or server error (not auth error)
+        const isNetworkError = response.error?.code === 'NETWORK_ERROR';
+        const isServerError = response.error?.code === 'INTERNAL_ERROR';
+        
+        // For network/server errors, keep user logged in with stored info
+        if ((isNetworkError || isServerError) && typeof window !== 'undefined') {
+          const storedUser = localStorage.getItem('userInfo');
+          const currentRefreshToken = localStorage.getItem('refreshToken');
+          if (storedUser && currentRefreshToken) {
+            try {
+              const userData = JSON.parse(storedUser);
+              setUser(userData);
+              console.log('Network/server error - keeping user logged in with stored info');
+              clearTimeout(timeoutId);
+              setLoading(false);
+              return;
+            } catch (e) {
+              console.error('Error parsing stored user:', e);
+            }
+          }
+        }
+        
         // Try one more refresh attempt before giving up
         const currentRefreshToken =
           typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
@@ -298,19 +321,34 @@ export function AuthProvider({ children }) {
             const userData = JSON.parse(storedUser);
             setUser(userData);
             console.log('Keeping user logged in with stored info');
+            clearTimeout(timeoutId);
+            setLoading(false);
+            return;
           } catch (e) {
-            setUser(null);
+            console.error('Error parsing stored user:', e);
           }
-        } else {
-          setUser(null);
         }
-        // Only clear tokens if no refresh token available
-        if (!currentRefreshToken) {
+        
+        // Only clear user if it's a real auth error (401/403) and no refresh token
+        const isAuthError = response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN';
+        if (isAuthError && !currentRefreshToken) {
+          setUser(null);
           // No refresh token available, clear everything
           if (typeof window !== 'undefined') {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('userInfo');
+          }
+        } else if (!isAuthError) {
+          // For non-auth errors, keep user if we have stored info
+          if (storedUser) {
+            try {
+              const userData = JSON.parse(storedUser);
+              setUser(userData);
+              console.log('Non-auth error - keeping user logged in with stored info');
+            } catch (e) {
+              console.error('Error parsing stored user:', e);
+            }
           }
         }
       }
@@ -352,14 +390,38 @@ export function AuthProvider({ children }) {
           console.error('Refresh token attempt failed:', refreshError);
         }
       }
-      // All attempts failed
-      setUser(null);
-      // Only clear tokens if we're sure auth is impossible
-      if (!refreshToken) {
+      // For network/connection errors, keep user logged in with stored info
+      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
+      
+      if (storedUser && refreshToken) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          console.log('Exception during auth check - keeping user logged in with stored info');
+          clearTimeout(timeoutId);
+          setLoading(false);
+          return;
+        } catch (e) {
+          console.error('Error parsing stored user:', e);
+        }
+      }
+      
+      // Only clear user if we have no stored info and no refresh token
+      if (!storedUser && !refreshToken) {
+        setUser(null);
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('userInfo');
+        }
+      } else if (storedUser) {
+        // Keep user logged in with stored info even if refresh fails
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          console.log('Keeping user logged in with stored info after exception');
+        } catch (e) {
+          console.error('Error parsing stored user:', e);
         }
       }
     } finally {
@@ -369,22 +431,45 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = false) => {
     try {
-      const response = await apiClient.post('/auth/login', { email, password });
+      const response = await apiClient.post('/auth/login', { 
+        email, 
+        password, 
+        rememberMe 
+      });
 
       if (response.success && response.data) {
-        // Store tokens immediately
-        apiClient.setToken(response.data.accessToken);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-          localStorage.setItem('accessToken', response.data.accessToken); // Ensure it's stored
-          // Store user info for persistence
-          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
-          lastActivityRef.current = Date.now(); // Initialize activity tracking
+        // Check if 2FA is required
+        if (response.data.require2FA) {
+          return { 
+            success: true, 
+            require2FA: true,
+            email: email // Return email for 2FA verification
+          };
         }
+
+        // Store tokens immediately - ensure both are stored before setting user
+        if (typeof window !== 'undefined' && response.data.accessToken) {
+          // Store tokens synchronously - localStorage.setItem is synchronous
+          localStorage.setItem('accessToken', response.data.accessToken);
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+          }
+          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
+          lastActivityRef.current = Date.now();
+        }
+        // Set token in API client after localStorage is set
+        if (response.data.accessToken) {
+          apiClient.setToken(response.data.accessToken);
+        }
+        // Set user state after tokens are stored (synchronously)
         setUser(response.data.user);
-        return { success: true };
+        return { 
+          success: true, 
+          user: response.data.user,
+          forcePasswordChange: response.data.forcePasswordChange || false
+        };
       }
 
       return {
@@ -395,6 +480,50 @@ export function AuthProvider({ children }) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Login failed',
+      };
+    }
+  };
+
+  const verify2FA = async (email, otp, rememberMe = false) => {
+    try {
+      const response = await apiClient.post('/auth/verify-2fa', { 
+        email, 
+        otp, 
+        rememberMe 
+      });
+
+      if (response.success && response.data) {
+        // Store tokens immediately - ensure both are stored before setting user
+        if (typeof window !== 'undefined' && response.data.accessToken) {
+          // Store tokens synchronously - localStorage.setItem is synchronous
+          localStorage.setItem('accessToken', response.data.accessToken);
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+          }
+          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
+          lastActivityRef.current = Date.now();
+        }
+        // Set token in API client after localStorage is set
+        if (response.data.accessToken) {
+          apiClient.setToken(response.data.accessToken);
+        }
+        // Set user state after tokens are stored (synchronously)
+        setUser(response.data.user);
+        return { 
+          success: true, 
+          user: response.data.user,
+          forcePasswordChange: response.data.forcePasswordChange || false
+        };
+      }
+
+      return {
+        success: false,
+        error: response.error?.message || '2FA verification failed',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '2FA verification failed',
       };
     }
   };
@@ -542,7 +671,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, verify2FA, logout, register, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

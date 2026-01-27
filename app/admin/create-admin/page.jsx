@@ -1,12 +1,12 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 
 export default function CreateAdminPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -115,17 +116,16 @@ export default function CreateAdminPage() {
   }
 
   return (
-    <Layout>
+    <Layout
+      title={t('admin.createAdmin')}
+      subtitle={t('admin.allUsersDescription')}
+      actionButton={
+        <Button variant='secondary' onClick={() => router.push('/admin')}>
+          {t('common.backToDashboard')}
+        </Button>
+      }
+    >
       <div style={{ padding: '0 10px' }}>
-        <PageHeader
-          title='Create Admin Account'
-          description='Create new super admin or clinic admin accounts'
-          actionButton={
-            <Button variant='secondary' onClick={() => router.push('/admin')}>
-              Back to Dashboard
-            </Button>
-          }
-        />
 
         <Card>
           <div className='p-6'>

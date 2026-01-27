@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 import { useEffect, useState } from 'react';
 import { generatePrescriptionPrintHTML } from './PrescriptionPrintTemplate';
+import { logger } from '@/lib/utils/logger.js';
 
 export function PrescriptionFormPrintPreview({
   isOpen,
@@ -84,7 +85,7 @@ export function PrescriptionFormPrintPreview({
             }
           }
         } catch (err) {
-          console.error('Failed to fetch clinical note:', err);
+          logger.error('Failed to fetch clinical note:', err);
         }
       }
 
@@ -195,7 +196,7 @@ export function PrescriptionFormPrintPreview({
       const html = generatePrescriptionPrintHTML(printData);
       setPrintHtml(html);
     } catch (error) {
-      console.error('Failed to generate print preview:', error);
+      logger.error('Failed to generate print preview:', error);
       setError('Failed to generate print preview');
     } finally {
       setLoading(false);
