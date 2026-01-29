@@ -1,15 +1,20 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useI18n } from '@/contexts/I18nContext';
+import { formatLocale } from '@/lib/i18n';
 import { useState } from 'react';
 
 export function CalendarWidget({ onDateSelect, loading = false }) {
+  const { t, locale: i18nLocale } = useI18n();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const monthName = currentDate.toLocaleDateString('en-US', { month: 'long' });
+  const localeStr = formatLocale(i18nLocale);
+  const monthName = currentDate.toLocaleDateString(localeStr, { month: 'long' });
 
   // Get first day of month and number of days
   const firstDay = new Date(year, month, 1).getDay();
@@ -42,7 +47,11 @@ export function CalendarWidget({ onDateSelect, loading = false }) {
     daysToShow.push({ day, isCurrentMonth: false, date: null });
   }
 
-  const weekDays = ['Sa', 'Su', 'Mo', 'Tu', 'We', 'Th', 'Fr'];
+  const weekDays = localeStr.startsWith('ar')
+    ? ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت']
+    : localeStr === 'es-ES'
+      ? ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const handleDateClick = (day, isCurrentMonth, date) => {
     if (isCurrentMonth && date) {
@@ -79,28 +88,34 @@ export function CalendarWidget({ onDateSelect, loading = false }) {
         {/* Compact header: title + month/year + nav in one tight row */}
         <div className='calendar-widget-header'>
           <div className='accent-bar accent-bar-primary' />
-          <h2 className='calendar-widget-title'>Calendar</h2>
+          <h2 className='calendar-widget-title'>{t('dashboard.calendar')}</h2>
           <div className='calendar-widget-month-row'>
             <span className='text-neutral-900 font-semibold text-xs sm:text-sm'>
               {monthName} {year}
             </span>
             <div className='flex items-center gap-0.5'>
-              <button
+              <Button
                 type='button'
+                variant='ghost'
+                size='xs'
+                iconOnly
                 onClick={goToPreviousMonth}
-                className='calendar-nav-btn'
-                aria-label='Previous month'
+                className='calendar-nav-btn min-w-[28px] min-h-[28px]'
+                aria-label={t('dashboard.previousMonth')}
               >
                 ‹
-              </button>
-              <button
+              </Button>
+              <Button
                 type='button'
+                variant='ghost'
+                size='xs'
+                iconOnly
                 onClick={goToNextMonth}
-                className='calendar-nav-btn'
-                aria-label='Next month'
+                className='calendar-nav-btn min-w-[28px] min-h-[28px]'
+                aria-label={t('dashboard.nextMonth')}
               >
                 ›
-              </button>
+              </Button>
             </div>
           </div>
         </div>

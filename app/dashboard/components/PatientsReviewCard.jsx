@@ -1,9 +1,10 @@
 'use client';
 
 import { Card } from '@/components/ui/Card';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function PatientsReviewCard({ reviews, loading = false }) {
-  // Default review data if not provided
+  const { t } = useI18n();
   const reviewData = reviews || {
     excellent: 85,
     great: 65,
@@ -30,27 +31,25 @@ export function PatientsReviewCard({ reviews, loading = false }) {
   }
 
   const reviewItems = [
-    { label: 'Excellent', value: reviewData.excellent || 0, color: 'bg-primary-500' },
-    { label: 'Great', value: reviewData.great || 0, color: 'bg-primary-400' },
-    { label: 'Good', value: reviewData.good || 0, color: 'bg-status-warning' },
-    { label: 'Average', value: reviewData.average || 0, color: 'bg-primary-300' },
+    { labelKey: 'dashboard.reviewExcellent', value: reviewData.excellent || 0, color: 'bg-primary-500' },
+    { labelKey: 'dashboard.reviewGreat', value: reviewData.great || 0, color: 'bg-primary-400' },
+    { labelKey: 'dashboard.reviewGood', value: reviewData.good || 0, color: 'bg-status-warning' },
+    { labelKey: 'dashboard.reviewAverage', value: reviewData.average || 0, color: 'bg-primary-300' },
   ];
 
   return (
     <Card className='dashboard-list-card dashboard-list-card-primary'>
       <div className='relative z-10 p-4 h-full flex flex-col'>
-        {/* Header */}
         <div className='section-header'>
           <div className='accent-bar accent-bar-primary' />
-          <h2 className='section-title'>Patients Review</h2>
+          <h2 className='section-title'>{t('dashboard.patientsReview')}</h2>
         </div>
 
-        {/* Review Bars */}
         <div className='space-y-3 mt-3 flex-1'>
           {reviewItems.map((item) => (
-            <div key={item.label}>
+            <div key={item.labelKey}>
               <div className='flex items-center justify-between mb-1.5'>
-                <span className='text-body-sm font-medium text-neutral-700'>{item.label}</span>
+                <span className='text-body-sm font-medium text-neutral-700'>{t(item.labelKey)}</span>
                 <span className='text-body-sm font-semibold text-neutral-900'>{item.value}%</span>
               </div>
               <div className='w-full bg-neutral-200 rounded-full h-3 overflow-hidden'>

@@ -26,7 +26,31 @@ function SubscriptionReturnContent() {
     }
     if (hasActivated.current) return;
 
+    const method = searchParams.get('method');
+    const sessionId = searchParams.get('session_id');
     const subscriptionId = searchParams.get('subscription_id');
+
+    if (method === 'stripe' && sessionId) {
+      hasActivated.current = true;
+      const completeStripe = async () => {
+        try {
+          const response = await apiClient.post('/subscriptions/stripe-complete', { sessionId });
+          if (response.success) {
+            setStatus('success');
+            setMessage(t('subscription.subscriptionActivated'));
+            setTimeout(() => router.push('/subscription'), 2000);
+          } else {
+            setStatus('error');
+            setMessage(response.error?.message || t('subscription.failedToActivateSubscription'));
+          }
+        } catch (err) {
+          setStatus('error');
+          setMessage(err.message || t('subscription.failedToActivateSubscription'));
+        }
+      };
+      completeStripe();
+      return;
+    }
 
     if (!subscriptionId) {
       setStatus('error');

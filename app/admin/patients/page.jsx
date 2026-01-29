@@ -8,22 +8,44 @@ import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
+import { useI18n } from '@/contexts/I18nContext';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
+import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function AdminPatientsPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [tenantFilter, setTenantFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [doctorFilter, setDoctorFilter] = useState('');
+  const [hasAppointments, setHasAppointments] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [doctors, setDoctors] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 1 });
   const [selectedPatients, setSelectedPatients] = useState([]);
   const [exporting, setExporting] = useState(false);
+  const [flagModal, setFlagModal] = useState({ open: false, patient: null, reason: '' });
+
+  const fetchDoctors = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/admin/doctors?limit=200&page=1');
+      if (res.success) {
+        setDoctors(extractArrayData(res) || []);
+      }
+    } catch (_) {
+      setDoctors([]);
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -31,9 +53,27 @@ export default function AdminPatientsPage() {
         router.push('/dashboard');
         return;
       }
+      fetchDoctors();
+    }
+  }, [authLoading, user, fetchDoctors]);
+
+  useEffect(() => {
+    if (!authLoading && user?.role === 'super_admin') {
       fetchPatients();
     }
-  }, [authLoading, user, pagination.page, statusFilter, tenantFilter]);
+  }, [
+    authLoading,
+    user,
+    pagination.page,
+    statusFilter,
+    tenantFilter,
+    dateFrom,
+    dateTo,
+    doctorFilter,
+    hasAppointments,
+    sortBy,
+    sortOrder,
+  ]);
 
   const fetchPatients = async (pageOverride) => {
     try {
@@ -42,10 +82,17 @@ export default function AdminPatientsPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: pagination.limit.toString(),
+        sortBy,
+        sortOrder,
       });
       if (searchTerm) params.append('search', searchTerm);
       if (statusFilter) params.append('status', statusFilter);
       if (tenantFilter) params.append('tenantId', tenantFilter);
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      if (doctorFilter) params.append('doctorId', doctorFilter);
+      if (hasAppointments === 'yes') params.append('hasAppointments', 'true');
+      if (hasAppointments === 'no') params.append('hasAppointments', 'false');
 
       const response = await apiClient.get(`/admin/patients?${params.toString()}`);
 
@@ -61,7 +108,7 @@ export default function AdminPatientsPage() {
         }));
       }
     } catch (error) {
-      console.error('Failed to fetch patients:', error);
+      logger.error('Failed to fetch patients', error);
       showError('Failed to fetch patients');
     } finally {
       setLoading(false);
@@ -71,6 +118,44 @@ export default function AdminPatientsPage() {
   const handleSearch = () => {
     setPagination((p) => ({ ...p, page: 1 }));
     fetchPatients(1);
+  };
+
+  const handleFlag = async (patientId, reason) => {
+    try {
+      const response = await apiClient.put(`/admin/patients/${patientId}`, {
+        status: undefined,
+        flagged: true,
+        flagReason: reason || 'Flagged by admin',
+      });
+      if (response.success) {
+        showSuccess(t('admin.patientsFlag') + ' applied');
+        setFlagModal({ open: false, patient: null, reason: '' });
+        fetchPatients();
+      } else {
+        showError(response.error?.message || 'Failed to flag patient');
+      }
+    } catch (err) {
+      showError('Failed to flag patient');
+    }
+  };
+
+  const handleUnflag = async (patientId) => {
+    if (!confirm(t('admin.patientsUnflagConfirm'))) return;
+    try {
+      const response = await apiClient.put(`/admin/patients/${patientId}`, {
+        status: undefined,
+        flagged: false,
+        flagReason: '',
+      });
+      if (response.success) {
+        showSuccess('Flag removed');
+        fetchPatients();
+      } else {
+        showError(response.error?.message || 'Failed to unflag');
+      }
+    } catch (err) {
+      showError('Failed to unflag patient');
+    }
   };
 
   const handleSuspend = async (patientId, suspend) => {
@@ -90,7 +175,12 @@ export default function AdminPatientsPage() {
   };
 
   const handleDelete = async (patientId) => {
-    if (!confirm('Are you sure you want to delete this patient? This action can be reversed by support.')) return;
+    if (
+      !confirm(
+        'Are you sure you want to delete this patient? This action can be reversed by support.'
+      )
+    )
+      return;
     try {
       const response = await apiClient.delete(`/admin/patients/${patientId}`);
       if (response.success) {
@@ -151,34 +241,39 @@ export default function AdminPatientsPage() {
     return null;
   }
 
-  const pages = (pagination.totalPages ?? Math.ceil((pagination.total || 0) / (pagination.limit || 50))) || 1;
+  const pages =
+    (pagination.totalPages ?? Math.ceil((pagination.total || 0) / (pagination.limit || 50))) || 1;
 
   return (
     <Layout
-      title='Patient Management'
-      subtitle='Manage all patients across the platform'
+      title={t('admin.patientsManagement')}
+      subtitle={t('admin.patientsManagementSubtitle')}
       actionButton={
         <Button variant='primary' onClick={() => router.push('/admin')}>
-          Back to Dashboard
+          {t('common.back')} to Dashboard
         </Button>
       }
     >
       <div style={{ padding: '0 10px' }}>
         <Card className='mb-6'>
           <div className='p-6'>
-            <div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-6 lg:grid-cols-8 gap-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Search</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('common.search')}
+                </label>
                 <Input
                   type='text'
-                  placeholder='Search by name, phone, email...'
+                  placeholder={t('admin.patientsSearchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Status</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.patientsStatus')}
+                </label>
                 <select
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                   value={statusFilter}
@@ -187,16 +282,113 @@ export default function AdminPatientsPage() {
                     setPagination((p) => ({ ...p, page: 1 }));
                   }}
                 >
-                  <option value=''>All</option>
-                  <option value='active'>Active</option>
-                  <option value='inactive'>Inactive</option>
+                  <option value=''>{t('common.all')}</option>
+                  <option value='active'>{t('common.active')}</option>
+                  <option value='inactive'>{t('common.inactive')}</option>
                 </select>
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Tenant ID</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.patientsDateFrom')}
+                </label>
+                <Input
+                  type='date'
+                  value={dateFrom}
+                  onChange={(e) => {
+                    setDateFrom(e.target.value);
+                    setPagination((p) => ({ ...p, page: 1 }));
+                  }}
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.patientsDateTo')}
+                </label>
+                <Input
+                  type='date'
+                  value={dateTo}
+                  onChange={(e) => {
+                    setDateTo(e.target.value);
+                    setPagination((p) => ({ ...p, page: 1 }));
+                  }}
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.patientsDoctor')}
+                </label>
+                <select
+                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  value={doctorFilter}
+                  onChange={(e) => {
+                    setDoctorFilter(e.target.value);
+                    setPagination((p) => ({ ...p, page: 1 }));
+                  }}
+                >
+                  <option value=''>{t('common.all')}</option>
+                  {doctors.map((d) => (
+                    <option key={d._id} value={d.userId?._id || d._id}>
+                      {d.userId
+                        ? `${d.userId.firstName || ''} ${d.userId.lastName || ''}`.trim() ||
+                          d.userId.email
+                        : d._id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.patientsHasAppointments')}
+                </label>
+                <select
+                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  value={hasAppointments}
+                  onChange={(e) => {
+                    setHasAppointments(e.target.value);
+                    setPagination((p) => ({ ...p, page: 1 }));
+                  }}
+                >
+                  <option value=''>{t('common.all')}</option>
+                  <option value='yes'>Yes</option>
+                  <option value='no'>No</option>
+                </select>
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.patientsSort')}
+                </label>
+                <div className='flex gap-1'>
+                  <select
+                    className='flex-1 px-2 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                    value={sortBy}
+                    onChange={(e) => {
+                      setSortBy(e.target.value);
+                      setPagination((p) => ({ ...p, page: 1 }));
+                    }}
+                  >
+                    <option value='createdAt'>{t('admin.patientsSortCreated')}</option>
+                    <option value='name'>{t('admin.patientsSortName')}</option>
+                  </select>
+                  <select
+                    className='w-24 px-2 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                    value={sortOrder}
+                    onChange={(e) => {
+                      setSortOrder(e.target.value);
+                      setPagination((p) => ({ ...p, page: 1 }));
+                    }}
+                  >
+                    <option value='desc'>Desc</option>
+                    <option value='asc'>Asc</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.patientsTenantId')}
+                </label>
                 <Input
                   type='text'
-                  placeholder='Filter by tenant ID'
+                  placeholder={t('admin.patientsTenantId')}
                   value={tenantFilter}
                   onChange={(e) => {
                     setTenantFilter(e.target.value);
@@ -204,9 +396,9 @@ export default function AdminPatientsPage() {
                   }}
                 />
               </div>
-              <div className='flex items-end gap-2 md:col-span-2'>
+              <div className='flex items-end gap-2'>
                 <Button variant='primary' onClick={handleSearch} className='flex-1'>
-                  Apply Filters
+                  {t('admin.patientsApplyFilters')}
                 </Button>
               </div>
             </div>
@@ -217,19 +409,19 @@ export default function AdminPatientsPage() {
           <Card className='mb-6 border-primary-200 bg-primary-50'>
             <div className='p-4 flex items-center justify-between'>
               <span className='text-sm font-medium text-primary-900'>
-                {selectedPatients.length} patient{selectedPatients.length !== 1 ? 's' : ''} selected
+                {t('admin.patientsSelected', { count: selectedPatients.length })}
               </span>
               <div className='flex gap-2'>
                 <Button
-                  variant='secondary'
+                  variant='primary'
                   size='sm'
                   onClick={() => handleExport()}
                   disabled={exporting}
                 >
-                  {exporting ? 'Exporting…' : 'Export selected'}
+                  {exporting ? '…' : t('admin.patientsExportSelected')}
                 </Button>
                 <Button variant='secondary' size='sm' onClick={() => setSelectedPatients([])}>
-                  Clear selection
+                  {t('admin.patientsClearSelection')}
                 </Button>
               </div>
             </div>
@@ -238,17 +430,32 @@ export default function AdminPatientsPage() {
 
         <Card>
           <div className='p-6'>
-            <div className='mb-4 flex items-center justify-between'>
-              <h2 className='text-lg font-semibold text-neutral-900'>Patients ({pagination.total})</h2>
-              <Button variant='secondary' size='sm' onClick={() => handleExport(patients.map((p) => p._id))} disabled={exporting || !patients.length}>
-                {exporting ? 'Exporting…' : 'Export all'}
-              </Button>
+            <div className='mb-4 flex items-center justify-between flex-wrap gap-2'>
+              <h2 className='text-lg font-semibold text-neutral-900'>
+                {t('admin.patients')} ({pagination.total}){' '}
+                {pagination.total !== undefined && pagination.limit !== undefined
+                  ? `– ${t('admin.patientsShowing', { n: Math.min(patients.length, pagination.limit), total: pagination.total })}`
+                  : ''}
+              </h2>
+              <div className='flex gap-2'>
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => handleExport(patients.map((p) => p._id))}
+                  disabled={exporting || !patients.length}
+                >
+                  {exporting ? '…' : t('admin.patientsExportCsv')}
+                </Button>
+                <Button variant='secondary' size='sm' onClick={() => router.push('/admin/reports')}>
+                  {t('admin.patientsGenerateReport')}
+                </Button>
+              </div>
             </div>
             {loading ? (
               <Loader size='lg' />
             ) : patients.length === 0 ? (
               <div className='text-center py-12'>
-                <p className='text-neutral-500'>No patients found</p>
+                <p className='text-neutral-500'>{t('admin.patientsNoPatients')}</p>
               </div>
             ) : (
               <div className='overflow-x-auto'>
@@ -258,18 +465,33 @@ export default function AdminPatientsPage() {
                       <th className='text-left py-3 px-4'>
                         <input
                           type='checkbox'
-                          checked={patients.length > 0 && selectedPatients.length === patients.length}
+                          checked={
+                            patients.length > 0 && selectedPatients.length === patients.length
+                          }
                           onChange={(e) => {
                             if (e.target.checked) setSelectedPatients(patients.map((p) => p._id));
                             else setSelectedPatients([]);
                           }}
                         />
                       </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Patient</th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Contact</th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Tenant</th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Status</th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Actions</th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Patient
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Contact
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Tenant
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Status
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Flag
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        {t('common.actions')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -280,8 +502,10 @@ export default function AdminPatientsPage() {
                             type='checkbox'
                             checked={selectedPatients.includes(p._id)}
                             onChange={(e) => {
-                              if (e.target.checked) setSelectedPatients([...selectedPatients, p._id]);
-                              else setSelectedPatients(selectedPatients.filter((id) => id !== p._id));
+                              if (e.target.checked)
+                                setSelectedPatients([...selectedPatients, p._id]);
+                              else
+                                setSelectedPatients(selectedPatients.filter((id) => id !== p._id));
                             }}
                           />
                         </td>
@@ -299,31 +523,75 @@ export default function AdminPatientsPage() {
                             <p>{p.phone || '—'}</p>
                           </div>
                         </td>
-                        <td className='py-3 px-4 text-sm text-neutral-700'>{p.tenantName || p.tenantId || '—'}</td>
+                        <td className='py-3 px-4 text-sm text-neutral-700'>
+                          {p.tenantName || p.tenantId || '—'}
+                        </td>
                         <td className='py-3 px-4'>
-                          <Tag className={p.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-neutral-100 text-neutral-800'}>
+                          <Tag
+                            className={
+                              p.status === 'active'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-neutral-100 text-neutral-800'
+                            }
+                          >
                             {p.status || 'active'}
                           </Tag>
                         </td>
                         <td className='py-3 px-4'>
+                          {p.flagged ? (
+                            <Tag className='bg-amber-100 text-amber-800'>Flagged</Tag>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        <td className='py-3 px-4'>
                           <div className='flex gap-2 flex-wrap'>
-                            <Button variant='secondary' size='sm' onClick={() => router.push(`/admin/patients/${p._id}`)}>
-                              View details
+                            <Button
+                              variant='secondary'
+                              size='sm'
+                              onClick={() => router.push(`/admin/patients/${p._id}`)}
+                            >
+                              {t('admin.patientsView')}
                             </Button>
+                            <Button
+                              variant='secondary'
+                              size='sm'
+                              onClick={() =>
+                                router.push(
+                                  `/admin/activity-logs?resource=patient&resourceId=${p._id}`
+                                )
+                              }
+                            >
+                              {t('admin.patientsActivityLog')}
+                            </Button>
+                            {p.flagged ? (
+                              <Button
+                                variant='secondary'
+                                size='sm'
+                                onClick={() => handleUnflag(p._id)}
+                              >
+                                {t('admin.patientsUnflag')}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant='secondary'
+                                size='sm'
+                                onClick={() => setFlagModal({ open: true, patient: p, reason: '' })}
+                              >
+                                {t('admin.patientsFlag')}
+                              </Button>
+                            )}
                             <Button
                               variant='secondary'
                               size='sm'
                               onClick={() => handleSuspend(p._id, p.status !== 'inactive')}
                             >
-                              {p.status === 'inactive' ? 'Activate' : 'Suspend'}
+                              {p.status === 'inactive'
+                                ? t('admin.patientsActivate')
+                                : t('admin.patientsDeactivate')}
                             </Button>
-                            <Button
-                              variant='outline'
-                              size='sm'
-                              onClick={() => handleDelete(p._id)}
-                              className='border-red-300 text-red-700'
-                            >
-                              Delete
+                            <Button variant='danger' size='sm' onClick={() => handleDelete(p._id)}>
+                              {t('admin.patientsDelete')}
                             </Button>
                           </div>
                         </td>
@@ -361,6 +629,44 @@ export default function AdminPatientsPage() {
             )}
           </div>
         </Card>
+
+        {flagModal.open && flagModal.patient && (
+          <div
+            className='fixed inset-0 z-50 flex items-center justify-center bg-neutral-500/30 backdrop-blur-sm'
+            role='dialog'
+            aria-modal='true'
+          >
+            <Card className='w-full max-w-md mx-4 p-6'>
+              <h3 className='text-lg font-semibold text-neutral-900 mb-4'>
+                {t('admin.patientsFlagModalTitle')}
+              </h3>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                {t('admin.patientsFlagReason')}
+              </label>
+              <textarea
+                className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 mb-4'
+                rows={3}
+                placeholder={t('admin.patientsFlagReasonPlaceholder')}
+                value={flagModal.reason}
+                onChange={(e) => setFlagModal((m) => ({ ...m, reason: e.target.value }))}
+              />
+              <div className='flex gap-2 justify-end'>
+                <Button
+                  variant='secondary'
+                  onClick={() => setFlagModal({ open: false, patient: null, reason: '' })}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  variant='primary'
+                  onClick={() => handleFlag(flagModal.patient._id, flagModal.reason)}
+                >
+                  {t('admin.patientsFlagSubmit')}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
     </Layout>
   );

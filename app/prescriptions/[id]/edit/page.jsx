@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -116,7 +117,7 @@ export default function EditPrescriptionPage() {
               // Ensure drugId is exactly matching the drug's _id (as string)
               const correctDrugId = String(drug._id).trim();
               if (item.drugId !== correctDrugId) {
-                console.log('Syncing drugId:', {
+                logger.debug('Syncing drugId:', {
                   old: item.drugId,
                   new: correctDrugId,
                   drugName: drug.name,
@@ -131,7 +132,7 @@ export default function EditPrescriptionPage() {
                 };
               }
             } else {
-              console.warn('Drug not found in list:', {
+              logger.warn('Drug not found in list:', {
                 drugId: drugIdStr,
                 availableIds: drugs.slice(0, 5).map((d) => String(d._id)),
               });
@@ -180,7 +181,7 @@ export default function EditPrescriptionPage() {
               }
             }
 
-            console.log('Prescription item drugId:', {
+            logger.debug('Prescription item drugId:', {
               original: item.drugId,
               normalized: drugIdValue,
               type: typeof item.drugId,
@@ -215,7 +216,7 @@ export default function EditPrescriptionPage() {
             };
           });
 
-          console.log('Mapped prescription items:', mappedItems);
+          logger.debug('Mapped prescription items:', mappedItems);
           setItems(mappedItems);
         } else {
           // Default item if none exist
@@ -238,7 +239,7 @@ export default function EditPrescriptionPage() {
         setError('Prescription not found');
       }
     } catch (error) {
-      console.error('Failed to fetch prescription:', error);
+      logger.error('Failed to fetch prescription:', error);
       setError('Failed to load prescription');
     }
   };
@@ -253,7 +254,7 @@ export default function EditPrescriptionPage() {
           setClinicSettings(settingsResponse.data);
         }
       } catch (err) {
-        console.error('Failed to fetch clinic settings:', err);
+        logger.error('Failed to fetch clinic settings:', err);
       }
 
       // Fetch all patients (for edit, we show all patients)
@@ -295,15 +296,15 @@ export default function EditPrescriptionPage() {
             }));
         }
 
-        console.log('Fetched drugs list:', drugsList.length, 'drugs');
-        console.log(
+        logger.debug('Fetched drugs list:', drugsList.length, 'drugs');
+        logger.debug(
           'Sample drug IDs:',
           drugsList.slice(0, 3).map((d) => ({ id: d._id, name: d.name }))
         );
         setDrugs(drugsList);
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      logger.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -455,7 +456,7 @@ export default function EditPrescriptionPage() {
         setError(response.error?.message || 'Failed to update prescription');
       }
     } catch (error) {
-      console.error('Failed to update prescription:', error);
+      logger.error('Failed to update prescription:', error);
       setError(error.message || 'Failed to update prescription');
     } finally {
       setSubmitting(false);

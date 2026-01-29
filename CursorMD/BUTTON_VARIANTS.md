@@ -1,39 +1,61 @@
-# Button Variants – One Style Per Visual
+# Button – Platform-wide design
 
-**Date:** January 2026  
-**Status:** Design-system reference
+**Date:** January 2026
+**Status:** Single source for all actions
 
-## Canonical variants
+## Component
 
-All buttons use `@/components/ui/Button`. There are **six visual styles**; other variant names are aliases and render the same.
+`components/ui/Button.jsx` – **one clean implementation**: no overlay divs, no refs, no gradient hacks. Each variant is a single set of Tailwind classes (bg, border, text, hover, active, focus).
 
-| Variant (use in code) | Visual | Use for |
-|-----------------------|--------|---------|
-| **primary** | Filled blue, white text | Main CTA (Save, Submit, Accept, Create) |
-| **success** | Same as primary | Positive actions (Accept, Confirm) – alias of primary |
-| **secondary** | Blue outline, white bg | Alternative action (Cancel, Back, View All, Decline) |
-| **outline** | Same as secondary | Alternative / outline – alias of secondary |
-| **danger** | Filled red | Destructive (Delete, Remove, Logout) |
-| **destructive** | Same as danger | Alias of danger |
-| **logout** | Same as danger | Alias of danger |
-| **ghost** | Transparent, hover bg | Low emphasis (menu items, inline actions) |
-| **tertiary** | Same as ghost | Alias of ghost |
-| **link** | Text link, underline on hover | “See All”, in-text actions |
-| **warning** | Filled amber | Risky-but-not-destructive (e.g. overwrite) |
+## Props
+
+| Prop        | Default     | Description                                                                                       |
+| ----------- | ----------- | ------------------------------------------------------------------------------------------------- |
+| `variant`   | `'primary'` | primary, success, secondary, outline, danger, destructive, logout, warning, ghost, tertiary, link |
+| `size`      | `'md'`      | xs, sm, md, lg, xl                                                                                |
+| `shape`     | `'rounded'` | rounded, pill, square                                                                             |
+| `isLoading` | `false`     | Shows CompactLoader + “Loading” label                                                             |
+| `disabled`  | `false`     | Disabled + grey styling                                                                           |
+| `iconOnly`  | `false`     | Square aspect, padding 0                                                                          |
+| `className` | `''`        | Extra classes                                                                                     |
+| `children`  | —           | Label and/or icon                                                                                 |
+| `...rest`   | —           | type, onClick, aria-\*, etc. Use `type="submit"` in forms.                                        |
+
+## Variants (visual)
+
+| Variant                                   | Default                                                 | Hover / selected               | Use                               |
+| ----------------------------------------- | ------------------------------------------------------- | ------------------------------ | --------------------------------- |
+| **primary** / **success**                 | Green #15803d, 1px white + 0.5px green ring, white text | Blue (bg + ring)               | Main CTA (Save, Submit, Create)   |
+| **secondary** / **outline**               | Blue #2d9cdb, 1px white + 0.5px blue ring, white text   | Green fill effect + green ring | Cancel, Back, alternative actions |
+| **danger** / **destructive** / **logout** | Red fill, white text                                    | Darker red                     | Delete, Remove, Logout            |
+| **warning**                               | Amber fill, white text                                  | Darker amber                   | Risky actions                     |
+| **ghost** / **tertiary**                  | Transparent, primary text                               | Light primary bg               | Low emphasis                      |
+| **link**                                  | Transparent, primary text, no border                    | Underline                      | “See all”, in-text actions        |
 
 ## Rules
 
-- **One primary, one secondary:** Prefer `variant="primary"` for the main action and `variant="secondary"` for the other. Use `success` only where it clarifies intent (e.g. Accept); it looks like primary.
-- **Outline = secondary:** `outline` and `secondary` share the same style. Use either; prefer `secondary` for consistency.
-- **Destructive:** Use `danger` (or `destructive` / `logout`) for delete, remove, sign out. All three look the same.
-- **Sizes:** `xs` (chips, dense lists), `sm` (cards, headers, tables), `md` (default), `lg` (hero, onboarding). Use `sm` in dense UIs.
+- **One primary, one secondary per context:** Primary for main action, secondary for Cancel/Back/alternative.
+- **Side-by-side buttons must never be the same variant:** When two (or more) buttons appear next to each other (e.g. in a flex row), use **primary** for the main action and **secondary** for the other(s). Never use two primary or two secondary side by side.
+- **Sizes:** `md` for page-level actions; `sm` for tables, cards, dense UIs.
+- **Icons:** Use design-system icon classes; SVGs inherit button color via `[&_svg]:text-current`.
+- **Forms:** Pass `type="submit"` for submit buttons; default is `type="button"`.
 
-## Implementation
+## Structure (internal)
 
-`components/ui/Button.jsx` defines:
+- Single `<button>` with concatenated classes: BASE + variant + size + shape + disabled.
+- Optional `as="span"` for file-input triggers: renders `<span role="button" tabIndex={0} aria-disabled={…}>` with same styles and keyboard support.
+- No nested overlay spans; no ref-based animations.
+- Loading: CompactLoader + i18n “common.loading”.
+- Aliases (e.g. success, outline, destructive) map to the same VARIANTS entry as the canonical name.
 
-- `PRIMARY_STYLE` – used for `primary` and `success`
-- `SECONDARY_STYLE` – used for `secondary` and `outline`
-- `DANGER_STYLE` – used for `danger`, `destructive`, `logout`
+## Platform fixes (Jan 2026)
 
-Hover effects and content (text/icon color) are driven by these visual groups, not by every variant name. New variant names should map to one of these styles instead of adding new visuals.
+- **Toast, Alert, Modal:** Close actions use `<Button variant="ghost" size="xs" iconOnly>` instead of raw `<button>`.
+- **Delete / Cancel / Reject:** All “red” actions use `variant="danger"`; removed ad-hoc `className='border-red-300 text-red-700'` (and similar) from:
+  - admin/content/specialties, admin/appointments, admin/patients, admin/patients/[id], admin/doctors, admin/doctors/verify
+  - app/appointments/[id] (Cancel appointment)
+  - app/patient-portal/profile (Delete account, Danger zone)
+  - app/doctors/profile (Delete clinic)
+- **RecordingConsentModal, WaitingRoom:** “Decline” / “Reject” use `variant="danger"`; “I Consent” / “Admit” use `variant="secondary"`. Raw `<button>` in WaitingRoom replaced with `Button`.
+- **Queue page:** Start Video / Start Appointment use `variant="primary"`; Mark Complete uses `variant="secondary"`. Removed custom bg/border class overrides.
+- **File-input triggers:** Buttons that wrap hidden `<input type="file">` use `as="span"` so the visible trigger is a span; `Button` supports `as="span"` with role and keyboard handling.

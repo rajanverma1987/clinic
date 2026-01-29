@@ -13,6 +13,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -41,7 +42,7 @@ export default function InvoiceDetailPage() {
         setInvoice(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch invoice:', error);
+      logger.error('Failed to fetch invoice:', error);
     } finally {
       setLoading(false);
     }

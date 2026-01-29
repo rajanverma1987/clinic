@@ -8,6 +8,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 import { showError } from '@/lib/utils/toast';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -40,7 +41,7 @@ export default function AdminAppointmentAnalyticsPage() {
         setData(response.data);
       }
     } catch (err) {
-      console.error('Failed to fetch analytics:', err);
+      logger.error('Failed to fetch analytics:', err);
       showError('Failed to fetch analytics');
     } finally {
       setLoading(false);

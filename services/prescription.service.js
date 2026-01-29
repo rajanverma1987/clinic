@@ -1,9 +1,9 @@
 /**
  * Prescription Service
- * 
+ *
  * Enterprise-grade service for prescription management with comprehensive
  * business logic, drug validation, inventory integration, and compliance.
- * 
+ *
  * Features:
  * - Prescription creation with drug validation
  * - Inventory stock checking
@@ -14,27 +14,26 @@
  * - Multi-tenant isolation
  * - Audit logging
  * - HIPAA compliance
- * 
+ *
  * @module services/prescription.service
  * @since 1.0.0
  */
 
+import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
-import Prescription, { PrescriptionStatus } from '@/models/Prescription.js';
+import { withTenant } from '@/lib/db/tenant-helper.js';
+import { decryptField } from '@/lib/encryption/phi-encryption.js';
+import { logger } from '@/lib/utils/logger.js';
+import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
+import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
 import Drug from '@/models/Drug.js';
 import InventoryItem from '@/models/InventoryItem.js';
 import Patient from '@/models/Patient.js';
-import User from '@/models/User.js';
-import Tenant from '@/models/Tenant.js';
+import Prescription, { PrescriptionStatus } from '@/models/Prescription.js';
 import Queue, { QueueStatus } from '@/models/Queue.js';
-import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
-import { withTenant } from '@/lib/db/tenant-helper.js';
-import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
-import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
-import { decryptField } from '@/lib/encryption/phi-encryption.js';
+import Tenant from '@/models/Tenant.js';
+import User from '@/models/User.js';
 import { recalculatePositions } from './queue.service.js';
-import { logger } from '@/lib/utils/logger.js';
-import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Generate unique prescription number for a tenant
@@ -42,10 +41,9 @@ import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 async function generatePrescriptionNumber(tenantId) {
   await connectDB();
 
-  const lastPrescription = await Prescription.findOne(
-    withTenant(tenantId, {}),
-    { prescriptionNumber: 1 }
-  )
+  const lastPrescription = await Prescription.findOne(withTenant(tenantId, {}), {
+    prescriptionNumber: 1,
+  })
     .sort({ prescriptionNumber: -1 })
     .lean();
 
@@ -119,7 +117,7 @@ export async function createPrescription(input, tenantId, userId) {
     if (existingPrescription) {
       throw new Error(
         `A prescription already exists for this appointment (${existingPrescription.prescriptionNumber}). ` +
-        `Please update the existing prescription instead of creating a new one.`
+          `Please update the existing prescription instead of creating a new one.`
       );
     }
   }
@@ -166,7 +164,11 @@ export async function createPrescription(input, tenantId, userId) {
         }
 
         // Check if drug is available in tenant's region
-        if (drug.region && drug.region !== tenant.region && !drug.availableInRegions?.includes(tenant.region)) {
+        if (
+          drug.region &&
+          drug.region !== tenant.region &&
+          !drug.availableInRegions?.includes(tenant.region)
+        ) {
           throw new Error(`Drug ${drug.name} is not available in region ${tenant.region}`);
         }
 
@@ -190,14 +192,25 @@ export async function createPrescription(input, tenantId, userId) {
   const prescriptionNumber = await generatePrescriptionNumber(tenantId);
 
   // Parse dates
-  const validUntil = input.validUntil instanceof Date
-    ? input.validUntil
-    : new Date(input.validUntil);
+  const validUntil =
+    input.validUntil instanceof Date ? input.validUntil : new Date(input.validUntil);
 
   // Create prescription
   // Use provided status, or default to ACTIVE (not DRAFT) for regular prescriptions
   // DRAFT should only be used when explicitly saving as draft
   const prescriptionStatus = input.status || PrescriptionStatus.ACTIVE;
+
+  const now = new Date();
+  const signPayload =
+    prescriptionStatus === PrescriptionStatus.ACTIVE &&
+    (input.doctorSignature || input.signedByTitle || input.signedByLicense)
+      ? {
+          doctorSignature: input.doctorSignature,
+          signedAt: now,
+          signedByTitle: input.signedByTitle,
+          signedByLicense: input.signedByLicense,
+        }
+      : {};
 
   const prescription = await Prescription.create({
     tenantId,
@@ -211,11 +224,16 @@ export async function createPrescription(input, tenantId, userId) {
     items: enrichedItems,
     diagnosis: input.diagnosis,
     icd10Codes: input.icd10Codes,
+    chiefComplaint: input.chiefComplaint,
+    followUpDate: input.followUpDate ? new Date(input.followUpDate) : undefined,
+    followUpType: input.followUpType,
+    followUpAutoSchedule: input.followUpAutoSchedule || false,
     additionalInstructions: input.additionalInstructions,
-    validFrom: new Date(),
+    validFrom: now,
     validUntil,
     refillsAllowed: input.refillsAllowed || 0,
     refillsUsed: 0,
+    ...signPayload,
   });
 
   // Audit log
@@ -256,7 +274,9 @@ export async function createPrescription(input, tenantId, userId) {
       });
 
       if (!queueUpdateResult) {
-        logger.error(`[Prescription] Failed to update queue entry ${queueEntry._id} to completed status`);
+        logger.error(
+          `[Prescription] Failed to update queue entry ${queueEntry._id} to completed status`
+        );
         // Log but don't fail prescription creation
       } else {
         logger.info(`[Prescription] Successfully completed queue entry ${queueEntry._id}`);
@@ -276,12 +296,19 @@ export async function createPrescription(input, tenantId, userId) {
           );
 
           if (!appointmentUpdateResult) {
-            logger.error(`[Prescription] Failed to update appointment ${queueEntry.appointmentId} to completed status`);
+            logger.error(
+              `[Prescription] Failed to update appointment ${queueEntry.appointmentId} to completed status`
+            );
           } else {
-            logger.info(`[Prescription] Successfully completed appointment ${queueEntry.appointmentId}`);
+            logger.info(
+              `[Prescription] Successfully completed appointment ${queueEntry.appointmentId}`
+            );
           }
         } catch (appointmentError) {
-          logger.error(`[Prescription] Error updating appointment ${queueEntry.appointmentId}:`, appointmentError);
+          logger.error(
+            `[Prescription] Error updating appointment ${queueEntry.appointmentId}:`,
+            appointmentError
+          );
           // Log error but don't fail prescription creation
         }
       }
@@ -289,13 +316,17 @@ export async function createPrescription(input, tenantId, userId) {
       // Recalculate positions for other queue entries
       try {
         await recalculatePositions(tenantId, userId);
-        logger.info(`[Prescription] Successfully recalculated queue positions for doctor ${userId}`);
+        logger.info(
+          `[Prescription] Successfully recalculated queue positions for doctor ${userId}`
+        );
       } catch (recalcError) {
         logger.error(`[Prescription] Failed to recalculate queue positions:`, recalcError);
         // Log but don't fail - positions will be recalculated on next queue operation
       }
 
-      logger.info(`[Prescription] Queue entry ${queueEntry._id} automatically marked as completed after prescription creation`);
+      logger.info(
+        `[Prescription] Queue entry ${queueEntry._id} automatically marked as completed after prescription creation`
+      );
     }
   } catch (error) {
     // Log queue cleanup errors but don't fail prescription creation
@@ -323,7 +354,7 @@ function decryptPrescriptionItems(prescription) {
   }
 
   const decrypted = { ...prescription };
-  decrypted.items = prescription.items.map(item => {
+  decrypted.items = prescription.items.map((item) => {
     if (item && item.instructions) {
       return {
         ...item,
@@ -418,7 +449,9 @@ export async function listPrescriptions(query, tenantId, userId) {
     .lean();
 
   // Decrypt item instructions for each prescription (needed when using .lean())
-  const decryptedPrescriptions = prescriptions.map(prescription => decryptPrescriptionItems(prescription));
+  const decryptedPrescriptions = prescriptions.map((prescription) =>
+    decryptPrescriptionItems(prescription)
+  );
 
   // Audit list access
   await AuditLogger.auditWrite(
@@ -523,9 +556,8 @@ export async function updatePrescription(prescriptionId, input, tenantId, userId
 
   // Parse validUntil if provided
   if (input.validUntil) {
-    updateData.validUntil = input.validUntil instanceof Date
-      ? input.validUntil
-      : new Date(input.validUntil);
+    updateData.validUntil =
+      input.validUntil instanceof Date ? input.validUntil : new Date(input.validUntil);
   }
 
   // Remove patientId from update
@@ -565,6 +597,59 @@ export async function activatePrescription(prescriptionId, tenantId, userId) {
     tenantId,
     userId
   );
+}
+
+/**
+ * Sign prescription (e-sign and activate). Used for draft → active with signature.
+ */
+export async function signPrescription(prescriptionId, input, tenantId, userId) {
+  await connectDB();
+
+  const prescription = await Prescription.findOne(
+    withTenant(tenantId, {
+      _id: prescriptionId,
+      deletedAt: null,
+    })
+  );
+
+  if (!prescription) {
+    return null;
+  }
+
+  if (
+    prescription.status !== PrescriptionStatus.DRAFT &&
+    prescription.status !== PrescriptionStatus.ACTIVE
+  ) {
+    throw new Error('Only draft or active prescriptions can be signed');
+  }
+
+  if (!input.doctorSignature || String(input.doctorSignature).trim() === '') {
+    throw new Error('Doctor signature is required to sign prescription');
+  }
+
+  const before = prescription.toObject();
+  const now = new Date();
+
+  prescription.doctorSignature = input.doctorSignature.trim();
+  prescription.signedAt = now;
+  prescription.signedByTitle = input.signedByTitle?.trim() || prescription.signedByTitle;
+  prescription.signedByLicense = input.signedByLicense?.trim() || prescription.signedByLicense;
+  prescription.status = PrescriptionStatus.ACTIVE;
+
+  await prescription.save();
+
+  await AuditLogger.auditWrite(
+    'prescription',
+    prescription._id.toString(),
+    userId,
+    tenantId,
+    AuditAction.UPDATE,
+    { before, after: prescription.toObject() },
+    { action: 'signed' }
+  );
+
+  const prescriptionObj = prescription.toObject();
+  return decryptPrescriptionItems(prescriptionObj);
 }
 
 /**
@@ -660,4 +745,3 @@ export async function deletePrescription(prescriptionId, tenantId, userId) {
 
   return true;
 }
-

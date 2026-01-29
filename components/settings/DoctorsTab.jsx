@@ -103,12 +103,16 @@ export function DoctorsTab({
                   required
                 >
                   <option value='doctor'>Doctor</option>
+                  <option value='clinic_admin'>Admin (full clinic access)</option>
+                  <option value='manager'>Manager (limited clinic access)</option>
                   <option value='nurse'>Nurse</option>
                   <option value='receptionist'>Receptionist</option>
                   <option value='accountant'>Accountant</option>
                   <option value='pharmacist'>Pharmacist</option>
-                  <option value='clinic_admin'>Clinic Admin</option>
                 </select>
+                <p className='text-xs text-neutral-500 mt-1'>
+                  {t('settings.adminManagerAccessByPlan')}
+                </p>
               </div>
               <div className='md:col-span-2'>
                 <div className='flex items-start gap-2'>
@@ -224,16 +228,16 @@ export function DoctorsTab({
                           {user.role === 'doctor'
                             ? 'Doctor'
                             : user.role === 'nurse'
-                            ? 'Nurse'
-                            : user.role === 'receptionist'
-                            ? 'Receptionist'
-                            : user.role === 'accountant'
-                            ? 'Accountant'
-                            : user.role === 'pharmacist'
-                            ? 'Pharmacist'
-                            : user.role === 'clinic_admin'
-                            ? 'Clinic Admin'
-                            : user.role}
+                              ? 'Nurse'
+                              : user.role === 'receptionist'
+                                ? 'Receptionist'
+                                : user.role === 'accountant'
+                                  ? 'Accountant'
+                                  : user.role === 'pharmacist'
+                                    ? 'Pharmacist'
+                                    : user.role === 'clinic_admin'
+                                      ? 'Clinic Admin'
+                                      : user.role}
                         </span>
                         <span
                           className={`px-1.5 py-0.5 text-xs rounded-full font-medium ${

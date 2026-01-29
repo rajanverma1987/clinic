@@ -1,7 +1,8 @@
 /**
  * Admin Appointments API - All appointments across platform (Super Admin only)
  * @module app/api/admin/appointments/route
- * GET /api/admin/appointments?status=&doctorId=&patientId=&tenantId=&startDate=&endDate=&search=&page=&limit=
+ * GET /api/admin/appointments?status=&type=&doctorId=&patientId=&tenantId=&startDate=&endDate=&search=&page=&limit=
+ * Returns data, pagination, and stats (total, completed, cancelled, no_show) for current filter.
  */
 
 import { NextResponse } from 'next/server';
@@ -19,6 +20,7 @@ async function getHandler(req, user) {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
+    const type = searchParams.get('type');
     const doctorId = searchParams.get('doctorId');
     const patientId = searchParams.get('patientId');
     const tenantId = searchParams.get('tenantId');
@@ -30,6 +32,7 @@ async function getHandler(req, user) {
 
     const query = { deletedAt: null };
     if (status) query.status = status;
+    if (type && type.trim()) query.type = type.trim();
     if (doctorId) query.doctorId = doctorId;
     if (patientId) query.patientId = patientId;
     if (tenantId) query.tenantId = tenantId;
@@ -40,16 +43,28 @@ async function getHandler(req, user) {
     }
     if (search && search.trim()) query.appointmentNumber = { $regex: search.trim(), $options: 'i' };
 
-    const total = await Appointment.countDocuments(query);
-    const skip = (page - 1) * limit;
-    const appointments = await Appointment.find(query)
-      .populate('patientId', 'firstName lastName phone email patientId')
-      .populate('doctorId', 'firstName lastName email')
-      .populate('tenantId', 'name slug')
-      .sort({ appointmentDate: -1, startTime: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const [total, statsResult, appointments] = await Promise.all([
+      Appointment.countDocuments(query),
+      Appointment.aggregate([
+        { $match: query },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      Appointment.find(query)
+        .populate('patientId', 'firstName lastName phone email patientId')
+        .populate('doctorId', 'firstName lastName email')
+        .populate('tenantId', 'name slug')
+        .sort({ appointmentDate: -1, startTime: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    const stats = { total, completed: 0, cancelled: 0, no_show: 0 };
+    (statsResult || []).forEach((s) => {
+      if (s._id === 'completed') stats.completed = s.count;
+      else if (s._id === 'cancelled') stats.cancelled = s.count;
+      else if (s._id === 'no_show') stats.no_show = s.count;
+    });
 
     const data = appointments.map((a) => ({
       _id: a._id.toString(),
@@ -72,6 +87,7 @@ async function getHandler(req, user) {
     return NextResponse.json(
       successResponse({
         data,
+        stats,
         pagination: { page, limit, total, pages: Math.ceil(total / limit) || 1, totalPages: Math.ceil(total / limit) || 1 },
       })
     );

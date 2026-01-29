@@ -1,3 +1,4 @@
+import { getAuditLogs } from '@/lib/audit/audit-logger';
 import connectDB from '@/lib/db/connection';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { logger } from '@/lib/utils/logger.js';
@@ -5,8 +6,42 @@ import { withAuth } from '@/middleware/auth';
 import { withErrorHandler } from '@/middleware/error-handler';
 import Appointment from '@/models/Appointment';
 import Doctor from '@/models/Doctor';
+import LabOrder from '@/models/LabOrder';
+import LabResult from '@/models/LabResult';
+import Message from '@/models/Message';
+import Prescription from '@/models/Prescription';
 import Review from '@/models/Review';
+import TelemedicineSession from '@/models/TelemedicineSession';
 import { NextResponse } from 'next/server';
+
+function formatActivityLabel(action, resource, details = {}) {
+  const a = (action || '').toLowerCase();
+  const r = (resource || '').toLowerCase();
+  const actionLabels = {
+    create: 'Created',
+    read: 'Viewed',
+    update: 'Updated',
+    delete: 'Deleted',
+    access: 'Accessed',
+    export: 'Exported',
+    login: 'Logged in',
+    logout: 'Logged out',
+  };
+  const resourceLabels = {
+    patient: 'patient',
+    appointment: 'appointment',
+    prescription: 'prescription',
+    invoice: 'invoice',
+    user: 'user',
+    clinical_note: 'clinical note',
+    lab_result: 'lab result',
+    lab_order: 'lab order',
+  };
+  const verb = actionLabels[a] || a;
+  const res = resourceLabels[r] || r;
+  if (a === 'login' || a === 'logout') return `${verb}`;
+  return `${verb} ${res}`;
+}
 
 /**
  * GET /api/doctors/dashboard
@@ -15,7 +50,8 @@ import { NextResponse } from 'next/server';
 async function getHandler(req, user) {
   await connectDB();
 
-  if (user.role !== 'doctor') {
+  const role = (user.role || '').toLowerCase();
+  if (role !== 'doctor') {
     return NextResponse.json(
       {
         success: false,
@@ -26,10 +62,34 @@ async function getHandler(req, user) {
   }
 
   try {
-    // Get doctor profile
+    // Get doctor profile; if none yet (e.g. new doctor), return empty stats so UI does not break
     const doctor = await Doctor.findOne({ userId: user._id, tenantId: user.tenantId }).lean();
     if (!doctor) {
-      return NextResponse.json(errorResponse('Doctor profile not found'), { status: 404 });
+      return NextResponse.json(
+        successResponse({
+          totalPatients: 0,
+          todayAppointments: 0,
+          thisWeekAppointments: 0,
+          thisMonthAppointments: 0,
+          pendingReviews: 0,
+          patientsWaiting: 0,
+          completedConsultations: 0,
+          revenue: 0,
+          earningsToday: 0,
+          revenueTrend: 0,
+          appointmentsTrend: 0,
+          patientsTrend: 0,
+          averageRating: 0,
+          totalReviews: 0,
+          responseRate: 0,
+          videoCallsThisMonth: 0,
+          labReportsToReview: 0,
+          newMessages: 0,
+          prescriptionsToApprove: 0,
+          recentActivity: [],
+          doctorId: null,
+        })
+      );
     }
 
     const doctorId = doctor._id;
@@ -46,6 +106,15 @@ async function getHandler(req, user) {
     yesterday.setDate(yesterday.getDate() - 1);
     const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+    // Week: Monday–Sunday
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() + mondayOffset);
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
 
     // Parallel queries for better performance
     const [
@@ -59,6 +128,12 @@ async function getHandler(req, user) {
       revenueLastMonth,
       earningsToday,
       reviewsData,
+      thisWeekAppointments,
+      thisMonthAppointments,
+      videoCallsThisMonth,
+      labReportsToReview,
+      newMessages,
+      prescriptionsToApprove,
     ] = await Promise.all([
       // Today's appointments count
       Appointment.countDocuments({
@@ -192,6 +267,53 @@ async function getHandler(req, user) {
               : 0,
         };
       }),
+
+      // This week appointments
+      Appointment.countDocuments({
+        tenantId,
+        doctorId,
+        appointmentDate: { $gte: startOfWeek, $lte: endOfWeek },
+      }),
+
+      // This month appointments
+      Appointment.countDocuments({
+        tenantId,
+        doctorId,
+        appointmentDate: { $gte: startOfMonth, $lte: endOfMonth },
+      }),
+
+      // Video calls this month (sessions where doctorId is Doctor _id or User _id)
+      TelemedicineSession.countDocuments({
+        tenantId,
+        doctorId: { $in: [doctorId, user._id] },
+        sessionType: 'VIDEO',
+        scheduledStartTime: { $gte: startOfMonth, $lte: endOfMonth },
+      }),
+
+      // Lab reports to review (draft results for orders by this doctor)
+      LabOrder.find({ tenantId, doctorId: user._id })
+        .select('_id')
+        .lean()
+        .then((orders) => orders.map((o) => o._id))
+        .then((orderIds) =>
+          orderIds.length
+            ? LabResult.countDocuments({
+                tenantId,
+                status: 'draft',
+                orderId: { $in: orderIds },
+              })
+            : 0
+        ),
+
+      // New messages (unread inbox for this user)
+      Message.getUnreadCount(user._id, tenantId, 'inbox'),
+
+      // Prescriptions to approve (draft by this doctor)
+      Prescription.countDocuments({
+        tenantId,
+        doctorId: user._id,
+        status: 'draft',
+      }),
     ]);
 
     // Calculate trends
@@ -202,10 +324,33 @@ async function getHandler(req, user) {
         ? ((todayAppointments - yesterdayAppointments) / yesterdayAppointments) * 100
         : 0;
 
+    // Recent activity (last 5 actions) – non-blocking; return [] on error
+    let recentActivity = [];
+    try {
+      const { logs } = await getAuditLogs({
+        userId: user._id,
+        tenantId,
+        limit: 5,
+        skip: 0,
+      });
+      recentActivity = (logs || []).map((l) => ({
+        _id: l._id?.toString(),
+        action: l.action,
+        resource: l.resource,
+        resourceId: l.resourceId?.toString(),
+        timestamp: l.timestamp,
+        label: formatActivityLabel(l.action, l.resource, l.details),
+      }));
+    } catch (activityErr) {
+      logger.warn('Doctor dashboard: recent activity fetch failed', activityErr);
+    }
+
     return NextResponse.json(
       successResponse({
         totalPatients,
         todayAppointments,
+        thisWeekAppointments,
+        thisMonthAppointments,
         pendingReviews,
         patientsWaiting,
         completedConsultations: completedToday,
@@ -217,6 +362,11 @@ async function getHandler(req, user) {
         averageRating: reviewsData.averageRating,
         totalReviews: reviewsData.totalReviews,
         responseRate: reviewsData.responseRate,
+        videoCallsThisMonth,
+        labReportsToReview,
+        newMessages,
+        prescriptionsToApprove,
+        recentActivity,
         doctorId: doctorId.toString(),
       })
     );

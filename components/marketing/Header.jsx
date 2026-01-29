@@ -208,34 +208,28 @@ export function Header() {
                 </Button>
               </>
             ) : (
-              // Not logged in – clinic/staff: Login, For Doctors, Get Started
+              // Not logged in – clinic-only: Login + Get Started (no separate "For Doctors" – single registration CTA)
               <>
                 <Button
                   variant='secondary'
                   size='sm'
                   onClick={() => router.push('/login')}
-                  className='whitespace-nowrap hidden sm:flex px-5 py-2.5 animate-button-pulse'
+                  className='whitespace-nowrap hidden sm:flex px-5 py-2.5'
                 >
                   {t('auth.login')}
                 </Button>
-                <Link
-                  href='/doctors/register'
-                  className='whitespace-nowrap hidden sm:inline-flex px-5 py-2.5 text-sm font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors'
-                >
-                  {t('navigation.forDoctors')}
-                </Link>
                 <Button
                   variant='primary'
                   size='sm'
                   onClick={() => router.push('/register')}
-                  className='whitespace-nowrap px-5 py-2.5 animate-button-pulse'
+                  className='whitespace-nowrap px-5 py-2.5'
                 >
                   <svg
-                    className='mr-2'
+                    className='icon icon-sm shrink-0 mr-2'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
-                    style={{ width: '16px', height: '16px' }}
+                    aria-hidden
                   >
                     <path
                       strokeLinecap='round'
@@ -429,25 +423,18 @@ export function Header() {
                         router.push('/login');
                         setMobileMenuOpen(false);
                       }}
-                      className='w-full animate-button-pulse'
+                      className='w-full'
                     >
                       {t('auth.login')}
                     </Button>
-                    <Link
-                      href='/doctors/register'
-                      onClick={() => setMobileMenuOpen(false)}
-                      className='w-full text-center px-5 py-2.5 text-sm font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors border-2 border-primary-200'
-                    >
-                      {t('navigation.forDoctors')}
-                    </Link>
                     <Button
                       variant='primary'
-                      size='sm'
+                      size='md'
                       onClick={() => {
                         router.push('/register');
                         setMobileMenuOpen(false);
                       }}
-                      className='w-full px-5 py-2.5 animate-button-pulse'
+                      className='w-full'
                     >
                       {t('navigation.getStarted')}
                     </Button>

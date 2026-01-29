@@ -603,7 +603,7 @@ export default function DoctorRegisterPage() {
                     </div>
                   ))}
                   <Button
-                    variant='outline'
+                    variant='secondary'
                     size='sm'
                     onClick={() => {
                       handleInputChange('qualifications', [
@@ -681,7 +681,7 @@ export default function DoctorRegisterPage() {
                     </div>
                   ))}
                   <Button
-                    variant='outline'
+                    variant='secondary'
                     size='sm'
                     onClick={() => {
                       handleInputChange('certifications', [
@@ -882,7 +882,7 @@ export default function DoctorRegisterPage() {
                 ))}
                 
                 <Button
-                  variant='outline'
+                  variant='secondary'
                   onClick={() => {
                     handleInputChange('clinics', [
                       ...formData.clinics,
@@ -995,7 +995,7 @@ export default function DoctorRegisterPage() {
                         ]);
                       }}
                     />
-                    <Button variant='outline' size='sm' as='span'>
+                    <Button variant='secondary' size='sm' as='span'>
                       + Add Degree Certificate
                     </Button>
                   </label>

@@ -91,12 +91,16 @@ const MessageSchema = new Schema(
 // Indexes
 MessageSchema.index({ from: 1, folder: 1, createdAt: -1 });
 MessageSchema.index({ to: 1, folder: 1, createdAt: -1 });
-MessageSchema.index({ status: 1 });
+// status: use field-level index: true only (no duplicate schema.index)
 MessageSchema.index({ deletedAt: 1 });
 MessageSchema.index({ parentMessageId: 1 });
 
 // Virtual for unread count
-MessageSchema.statics.getUnreadCount = async function (userId, tenantId, folder = MessageFolder.INBOX) {
+MessageSchema.statics.getUnreadCount = async function (
+  userId,
+  tenantId,
+  folder = MessageFolder.INBOX
+) {
   return await this.countDocuments({
     to: userId,
     tenantId,

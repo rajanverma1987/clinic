@@ -1,9 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { registerSchema } from '@/lib/validations/auth';
+import { isTestAccount } from '@/lib/constants/test-account.js';
 import connectDB from '@/lib/db/connection';
+import { canAssignAdminManager } from '@/lib/permissions/cursor-md-matrix';
+import {
+  errorResponse,
+  handleMongoError,
+  successResponse,
+  validationErrorResponse,
+} from '@/lib/utils/api-response';
+import { registerSchema } from '@/lib/validations/auth';
+import { withAuth } from '@/middleware/auth';
 import User, { UserRole } from '@/models/User';
-import { successResponse, errorResponse, handleMongoError, validationErrorResponse } from '@/lib/utils/api-response';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/users
@@ -19,17 +26,14 @@ async function getHandler(req, user) {
 
     // Build query based on user role
     let query = {};
-    
+
     if (user.role === 'super_admin') {
       // Super admin can see all users
       if (tenantId) {
         query.tenantId = tenantId;
       } else {
         // Show all users including super admins (tenantId: null)
-        query.$or = [
-          { tenantId: { $exists: true, $ne: null } },
-          { role: UserRole.SUPER_ADMIN }
-        ];
+        query.$or = [{ tenantId: { $exists: true, $ne: null } }, { role: UserRole.SUPER_ADMIN }];
       }
     } else {
       // Regular users see only their tenant's users
@@ -53,11 +57,16 @@ async function getHandler(req, user) {
           email: u.email,
           firstName: u.firstName,
           lastName: u.lastName,
+          phone: u.phone || null,
           role: u.role,
           isActive: u.isActive,
           lastLoginAt: u.lastLoginAt,
           createdAt: u.createdAt,
-          tenantId: u.tenantId ? (typeof u.tenantId === 'object' ? u.tenantId._id.toString() : u.tenantId.toString()) : null,
+          tenantId: u.tenantId
+            ? typeof u.tenantId === 'object'
+              ? u.tenantId._id.toString()
+              : u.tenantId.toString()
+            : null,
           tenantName: u.tenantId && typeof u.tenantId === 'object' ? u.tenantId.name : null,
         })),
       })
@@ -67,10 +76,9 @@ async function getHandler(req, user) {
       return NextResponse.json(handleMongoError(error), { status: 400 });
     }
 
-    return NextResponse.json(
-      errorResponse('Failed to fetch users', 'INTERNAL_ERROR'),
-      { status: 500 }
-    );
+    return NextResponse.json(errorResponse('Failed to fetch users', 'INTERNAL_ERROR'), {
+      status: 500,
+    });
   }
 }
 
@@ -87,19 +95,49 @@ async function postHandler(req, user) {
 
     // Determine target role
     const targetRole = body.role || UserRole.DOCTOR;
-    
+
+    // CursorMD/New: only Doctor and Super Admin can assign Admin or Manager roles
+    const assignAdminOrManager = [UserRole.CLINIC_ADMIN, UserRole.ADMIN, UserRole.MANAGER].includes(
+      targetRole
+    );
+    if (assignAdminOrManager && !canAssignAdminManager(user.role)) {
+      return NextResponse.json(
+        errorResponse('Only Doctor or Super Admin can assign Admin or Manager roles', 'FORBIDDEN'),
+        { status: 403 }
+      );
+    }
+
     // Role-based access control
     if (user.role !== 'super_admin') {
-      // Clinic admins can only create: doctor, manager, nurse, receptionist, accountant, pharmacist
+      // Doctor can assign admin/manager (CursorMD/New); clinic_admin (Admin) cannot
       const allowedRoles = [
         UserRole.DOCTOR,
+        UserRole.CLINIC_ADMIN,
         UserRole.MANAGER,
         UserRole.NURSE,
         UserRole.RECEPTIONIST,
         UserRole.ACCOUNTANT,
         UserRole.PHARMACIST,
       ];
-      if (!allowedRoles.includes(targetRole)) {
+      if (!canAssignAdminManager(user.role)) {
+        // Admin role: remove manager and clinic_admin from allowed
+        const allowedForAdmin = [
+          UserRole.DOCTOR,
+          UserRole.NURSE,
+          UserRole.RECEPTIONIST,
+          UserRole.ACCOUNTANT,
+          UserRole.PHARMACIST,
+        ];
+        if (!allowedForAdmin.includes(targetRole)) {
+          return NextResponse.json(
+            errorResponse(
+              `You don't have permission to create ${targetRole} accounts`,
+              'FORBIDDEN'
+            ),
+            { status: 403 }
+          );
+        }
+      } else if (!allowedRoles.includes(targetRole)) {
         return NextResponse.json(
           errorResponse(`You don't have permission to create ${targetRole} accounts`, 'FORBIDDEN'),
           { status: 403 }
@@ -113,7 +151,10 @@ async function postHandler(req, user) {
       } else if (!user.tenantId) {
         // Super admin without tenant context can't create tenant-specific roles
         return NextResponse.json(
-          errorResponse('Super admin must specify a tenant to create clinic users', 'INVALID_REQUEST'),
+          errorResponse(
+            'Super admin must specify a tenant to create clinic users',
+            'INVALID_REQUEST'
+          ),
           { status: 400 }
         );
       }
@@ -121,7 +162,7 @@ async function postHandler(req, user) {
 
     // Determine tenantId for new user
     let targetTenantId = null;
-    
+
     if (targetRole === UserRole.SUPER_ADMIN) {
       // Super admin has no tenantId
       targetTenantId = null;
@@ -133,10 +174,9 @@ async function postHandler(req, user) {
           const Tenant = (await import('@/models/Tenant.js')).default;
           const tenant = await Tenant.findById(body.tenantId);
           if (!tenant) {
-            return NextResponse.json(
-              errorResponse('Tenant not found', 'NOT_FOUND'),
-              { status: 404 }
-            );
+            return NextResponse.json(errorResponse('Tenant not found', 'NOT_FOUND'), {
+              status: 404,
+            });
           }
           targetTenantId = body.tenantId;
         } else {
@@ -167,10 +207,9 @@ async function postHandler(req, user) {
     });
 
     if (!validationResult.success) {
-      return NextResponse.json(
-        validationErrorResponse(validationResult.error.errors),
-        { status: 400 }
-      );
+      return NextResponse.json(validationErrorResponse(validationResult.error.errors), {
+        status: 400,
+      });
     }
 
     // Check if user already exists
@@ -196,8 +235,12 @@ async function postHandler(req, user) {
       );
     }
 
-    // Check subscription user limit (skip for super_admin and when creating super_admin)
-    if (user.role !== 'super_admin' && targetRole !== UserRole.SUPER_ADMIN && targetTenantId) {
+    // Check subscription user limit (skip for super_admin, test account, and when creating super_admin)
+    const skipLimitCheck =
+      user.role === 'super_admin' ||
+      (user.email && isTestAccount(user.email)) ||
+      targetRole === UserRole.SUPER_ADMIN;
+    if (!skipLimitCheck && targetTenantId) {
       const { checkUserLimit } = await import('@/services/subscription-check.service');
       const limitCheck = await checkUserLimit(targetTenantId.toString());
       if (!limitCheck.hasAccess) {

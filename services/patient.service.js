@@ -4,12 +4,14 @@
  * Based on NEW-PLANS.md requirements
  */
 
+import { logCreate, logDelete, logPHIAccess, logUpdate } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
-import Patient from '@/models/Patient.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
-import { logCreate, logUpdate, logDelete, logPHIAccess } from '@/lib/audit/audit-logger.js';
-import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
+import { notifyPatientUpdated } from '@/lib/realtime/integration-helpers.js';
 import { generatePatientId } from '@/lib/utils/number-generator.js';
+import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
+import Appointment from '@/models/Appointment.js';
+import Patient from '@/models/Patient.js';
 
 /**
  * Create a new patient
@@ -23,25 +25,32 @@ export async function createPatient(input, tenantId, userId) {
     patientId = await generatePatientId(tenantId);
   } else {
     // Check if patientId already exists for this tenant
-    const existing = await Patient.findOne(
-      withTenant(tenantId, { patientId })
-    );
+    const existing = await Patient.findOne(withTenant(tenantId, { patientId }));
     if (existing) {
       throw new Error('Patient ID already exists for this tenant');
     }
   }
 
   // Convert dateOfBirth string to Date if needed
-  const dateOfBirth = input.dateOfBirth instanceof Date 
-    ? input.dateOfBirth 
-    : new Date(input.dateOfBirth);
+  const dateOfBirth =
+    input.dateOfBirth instanceof Date ? input.dateOfBirth : new Date(input.dateOfBirth);
 
   // Convert insurance dates if provided
-  const insurance = input.insurance ? {
-    ...input.insurance,
-    validFrom: input.insurance.validFrom ? (input.insurance.validFrom instanceof Date ? input.insurance.validFrom : new Date(input.insurance.validFrom)) : undefined,
-    validUntil: input.insurance.validUntil ? (input.insurance.validUntil instanceof Date ? input.insurance.validUntil : new Date(input.insurance.validUntil)) : undefined,
-  } : undefined;
+  const insurance = input.insurance
+    ? {
+        ...input.insurance,
+        validFrom: input.insurance.validFrom
+          ? input.insurance.validFrom instanceof Date
+            ? input.insurance.validFrom
+            : new Date(input.insurance.validFrom)
+          : undefined,
+        validUntil: input.insurance.validUntil
+          ? input.insurance.validUntil instanceof Date
+            ? input.insurance.validUntil
+            : new Date(input.insurance.validUntil)
+          : undefined,
+      }
+    : undefined;
 
   // Create patient
   const patient = await Patient.create({
@@ -75,7 +84,13 @@ export async function createPatient(input, tenantId, userId) {
 /**
  * Get patient by ID
  */
-export async function getPatientById(patientId, tenantId, userId, ipAddress = 'unknown', userAgent = 'unknown') {
+export async function getPatientById(
+  patientId,
+  tenantId,
+  userId,
+  ipAddress = 'unknown',
+  userAgent = 'unknown'
+) {
   await connectDB();
 
   const patient = await Patient.findOne(
@@ -83,22 +98,16 @@ export async function getPatientById(patientId, tenantId, userId, ipAddress = 'u
       _id: patientId,
       deletedAt: null, // Exclude soft-deleted
     })
-  ).populate('createdBy', 'firstName lastName email')
-   .populate('familyMembers', 'firstName lastName patientId');
+  )
+    .populate('createdBy', 'firstName lastName email')
+    .populate('familyMembers', 'firstName lastName patientId');
 
   if (!patient) {
     throw new Error('Patient not found');
   }
 
   // Log PHI access
-  await logPHIAccess(
-    userId,
-    tenantId,
-    'patient',
-    patient._id.toString(),
-    ipAddress,
-    userAgent
-  );
+  await logPHIAccess(userId, tenantId, 'patient', patient._id.toString(), ipAddress, userAgent);
 
   return patient;
 }
@@ -106,10 +115,16 @@ export async function getPatientById(patientId, tenantId, userId, ipAddress = 'u
 /**
  * Search and filter patients
  */
-export async function searchPatients(filters, tenantId, userId, ipAddress = 'unknown', userAgent = 'unknown') {
+export async function searchPatients(
+  filters,
+  tenantId,
+  userId,
+  ipAddress = 'unknown',
+  userAgent = 'unknown'
+) {
   await connectDB();
 
-  const { page, limit, skip } = getPaginationParams(filters.page, filters.limit);
+  const { page, limit } = getPaginationParams({ page: filters.page, limit: filters.limit });
   const sortBy = filters.sortBy || 'createdAt';
   const sortOrder = filters.sortOrder === 'asc' ? 1 : -1;
 
@@ -130,9 +145,15 @@ export async function searchPatients(filters, tenantId, userId, ipAddress = 'unk
     ];
   }
 
-  // Status filter
+  // Status filter (CursorMD/New Phase 2.6: All/Active/New/Inactive)
   if (filters.status) {
-    query.status = filters.status;
+    if (filters.status === 'new') {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      query.createdAt = { $gte: thirtyDaysAgo };
+    } else {
+      query.status = filters.status;
+    }
   }
 
   // Gender filter
@@ -167,27 +188,83 @@ export async function searchPatients(filters, tenantId, userId, ipAddress = 'unk
   if (filters.dateOfBirthFrom || filters.dateOfBirthTo) {
     query.dateOfBirth = {};
     if (filters.dateOfBirthFrom) {
-      query.dateOfBirth.$gte = filters.dateOfBirthFrom instanceof Date 
-        ? filters.dateOfBirthFrom 
-        : new Date(filters.dateOfBirthFrom);
+      query.dateOfBirth.$gte =
+        filters.dateOfBirthFrom instanceof Date
+          ? filters.dateOfBirthFrom
+          : new Date(filters.dateOfBirthFrom);
     }
     if (filters.dateOfBirthTo) {
-      query.dateOfBirth.$lte = filters.dateOfBirthTo instanceof Date 
-        ? filters.dateOfBirthTo 
-        : new Date(filters.dateOfBirthTo);
+      query.dateOfBirth.$lte =
+        filters.dateOfBirthTo instanceof Date
+          ? filters.dateOfBirthTo
+          : new Date(filters.dateOfBirthTo);
     }
   }
 
-  // Execute query
-  const [patients, total] = await Promise.all([
-    Patient.find(query)
-      .select('-medicalHistory -allergies -currentMedications') // Don't return PHI in list
-      .sort({ [sortBy]: sortOrder })
-      .limit(limit)
-      .skip(skip)
-      .lean(),
-    Patient.countDocuments(query),
-  ]);
+  // Doctor scope: only patients who have at least one appointment with this doctor
+  if (filters.doctorId) {
+    const patientIds = await Appointment.distinct(
+      'patientId',
+      withTenant(tenantId, { doctorId: filters.doctorId })
+    );
+    if (!patientIds || patientIds.length === 0) {
+      return createPaginationResult([], 0, page, limit);
+    }
+    query._id = { $in: patientIds };
+  }
+
+  // Sort by last visit: use aggregation with lookup on appointments
+  const useLastVisitSort = sortBy === 'lastVisit';
+  const sortField = useLastVisitSort ? 'lastAppointmentDate' : sortBy;
+  const sortDir = sortOrder === 'asc' ? 1 : -1;
+
+  let patients;
+  let total;
+
+  if (useLastVisitSort) {
+    const skip = (page - 1) * limit;
+    const pipeline = [
+      { $match: query },
+      {
+        $lookup: {
+          from: 'appointments',
+          let: { pid: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$patientId', '$$pid'] }, tenantId: tenantId } },
+            { $sort: { appointmentDate: -1 } },
+            { $limit: 1 },
+            { $project: { appointmentDate: 1 } },
+          ],
+          as: 'lastAppt',
+        },
+      },
+      { $addFields: { lastAppointmentDate: { $arrayElemAt: ['$lastAppt.appointmentDate', 0] } } },
+      { $sort: { lastAppointmentDate: sortDir === 1 ? 1 : -1, createdAt: -1 } },
+      { $project: { lastAppt: 0 } },
+    ];
+    const [aggResult, countResult] = await Promise.all([
+      Patient.aggregate([
+        ...pipeline,
+        { $skip: skip },
+        { $limit: limit },
+        { $project: { medicalHistory: 0, allergies: 0, currentMedications: 0 } },
+      ]),
+      Patient.aggregate([...pipeline, { $count: 'total' }]),
+    ]);
+    patients = aggResult;
+    total = countResult[0]?.total ?? 0;
+  } else {
+    const paginationSkip = (page - 1) * limit;
+    [patients, total] = await Promise.all([
+      Patient.find(query)
+        .select('-medicalHistory -allergies -currentMedications')
+        .sort({ [sortField]: sortDir })
+        .limit(limit)
+        .skip(paginationSkip)
+        .lean(),
+      Patient.countDocuments(query),
+    ]);
+  }
 
   // Log search (PHI access)
   await logPHIAccess(
@@ -205,7 +282,14 @@ export async function searchPatients(filters, tenantId, userId, ipAddress = 'unk
 /**
  * Update patient
  */
-export async function updatePatient(patientId, input, tenantId, userId, ipAddress = 'unknown', userAgent = 'unknown') {
+export async function updatePatient(
+  patientId,
+  input,
+  tenantId,
+  userId,
+  ipAddress = 'unknown',
+  userAgent = 'unknown'
+) {
   await connectDB();
 
   const patient = await Patient.findOne(
@@ -222,16 +306,23 @@ export async function updatePatient(patientId, input, tenantId, userId, ipAddres
   // Convert dates if provided
   const updateData = { ...input };
   if (input.dateOfBirth) {
-    updateData.dateOfBirth = input.dateOfBirth instanceof Date 
-      ? input.dateOfBirth 
-      : new Date(input.dateOfBirth);
+    updateData.dateOfBirth =
+      input.dateOfBirth instanceof Date ? input.dateOfBirth : new Date(input.dateOfBirth);
   }
 
   if (input.insurance) {
     updateData.insurance = {
       ...input.insurance,
-      validFrom: input.insurance.validFrom ? (input.insurance.validFrom instanceof Date ? input.insurance.validFrom : new Date(input.insurance.validFrom)) : undefined,
-      validUntil: input.insurance.validUntil ? (input.insurance.validUntil instanceof Date ? input.insurance.validUntil : new Date(input.insurance.validUntil)) : undefined,
+      validFrom: input.insurance.validFrom
+        ? input.insurance.validFrom instanceof Date
+          ? input.insurance.validFrom
+          : new Date(input.insurance.validFrom)
+        : undefined,
+      validUntil: input.insurance.validUntil
+        ? input.insurance.validUntil instanceof Date
+          ? input.insurance.validUntil
+          : new Date(input.insurance.validUntil)
+        : undefined,
     };
   }
 
@@ -250,13 +341,21 @@ export async function updatePatient(patientId, input, tenantId, userId, ipAddres
     userAgent
   );
 
+  await notifyPatientUpdated(tenantId, patient._id.toString(), patient.toObject?.() ?? patient);
+
   return patient;
 }
 
 /**
  * Delete patient (soft delete)
  */
-export async function deletePatient(patientId, tenantId, userId, ipAddress = 'unknown', userAgent = 'unknown') {
+export async function deletePatient(
+  patientId,
+  tenantId,
+  userId,
+  ipAddress = 'unknown',
+  userAgent = 'unknown'
+) {
   await connectDB();
 
   const patient = await Patient.findOne(
@@ -321,11 +420,13 @@ export async function getPatientStats(tenantId, userId) {
     },
   ]);
 
-  return stats[0] || {
-    total: 0,
-    active: 0,
-    inactive: 0,
-    withInsurance: 0,
-    portalEnabled: 0,
-  };
+  return (
+    stats[0] || {
+      total: 0,
+      active: 0,
+      inactive: 0,
+      withInsurance: 0,
+      portalEnabled: 0,
+    }
+  );
 }

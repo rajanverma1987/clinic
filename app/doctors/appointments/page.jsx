@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -33,14 +34,17 @@ export default function DoctorAppointmentsPage() {
   const [viewMode, setViewMode] = useState('day'); // day, week, month
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  const userId = user?._id ?? user?.id ?? user?.userId;
+
   useEffect(() => {
     if (authLoading) return;
-    if (!user || user.role !== 'doctor') {
+    if (!user || (user.role || '').toLowerCase() !== 'doctor') {
       router.push('/dashboard');
       return;
     }
+    if (!userId || userId === 'undefined') return;
     fetchDoctorId();
-  }, [authLoading, user, router]);
+  }, [authLoading, user, userId, router]);
 
   useEffect(() => {
     if (doctorId) {
@@ -49,15 +53,22 @@ export default function DoctorAppointmentsPage() {
   }, [doctorId, viewMode, currentDate]);
 
   const fetchDoctorId = async () => {
+    if (!userId || userId === 'undefined') {
+      setLoading(false);
+      return;
+    }
     try {
-      const doctorResponse = await apiClient.get(`/doctors/user/${user._id}`);
+      const doctorResponse = await apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`);
       if (doctorResponse.success && doctorResponse.data) {
         setDoctorId(doctorResponse.data._id);
       } else {
-        throw new Error('Doctor profile not found');
+        setDoctorId(null);
       }
     } catch (err) {
-      console.error('Failed to fetch doctor profile:', err);
+      setDoctorId(null);
+      logger.warn('Doctor profile not found or not yet created');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,7 +110,7 @@ export default function DoctorAppointmentsPage() {
         setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
       }
     } catch (err) {
-      console.error('Failed to fetch appointments:', err);
+      logger.error('Failed to fetch appointments:', err);
       setAppointments([]);
     } finally {
       setLoading(false);

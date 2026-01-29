@@ -28,8 +28,8 @@ export function useFormAutoSave({
     timeoutRef.current = setTimeout(() => {
       try {
         localStorage.setItem(`form_draft_${formKey}`, JSON.stringify(formData));
-      } catch (error) {
-        console.warn('Failed to save form draft:', error);
+      } catch (_error) {
+        // Draft save failed
       }
     }, debounceMs);
 
@@ -47,8 +47,8 @@ export function useFormAutoSave({
       if (saved) {
         return JSON.parse(saved);
       }
-    } catch (error) {
-      console.warn('Failed to load form draft:', error);
+    } catch (_error) {
+      // Draft load failed
     }
     return null;
   };
@@ -57,8 +57,8 @@ export function useFormAutoSave({
   const clearDraft = () => {
     try {
       localStorage.removeItem(`form_draft_${formKey}`);
-    } catch (error) {
-      console.warn('Failed to clear form draft:', error);
+    } catch (_error) {
+      // Draft clear failed
     }
   };
 

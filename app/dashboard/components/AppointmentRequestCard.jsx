@@ -3,8 +3,10 @@
 import { CheckIcon, XIcon, ChatIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useI18n } from '@/contexts/I18nContext';
 
-export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onMessage, loading = false }) {
+export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onMessage, onSeeAll, loading = false }) {
+  const { t } = useI18n();
 
   if (loading) {
     return (
@@ -30,7 +32,7 @@ export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onM
         {/* Header */}
         <div className='section-header'>
           <div className='accent-bar accent-bar-primary' />
-          <h2 className='section-title'>Appointment Request</h2>
+          <h2 className='section-title'>{t('dashboard.appointmentRequest')}</h2>
         </div>
 
         {/* Requests List */}
@@ -71,7 +73,8 @@ export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onM
                             e.stopPropagation();
                             onAccept?.(request);
                           }}
-                          title='Accept'
+                          title={t('common.accept')}
+                          aria-label={t('common.accept')}
                         >
                           <CheckIcon className='icon icon-xs' />
                         </Button>
@@ -83,7 +86,8 @@ export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onM
                             e.stopPropagation();
                             onDecline?.(request);
                           }}
-                          title='Decline'
+                          title={t('common.decline')}
+                          aria-label={t('common.decline')}
                         >
                           <XIcon className='icon icon-xs' />
                         </Button>
@@ -95,7 +99,8 @@ export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onM
                             e.stopPropagation();
                             onMessage?.(request);
                           }}
-                          title='Message'
+                          title={t('common.message')}
+                          aria-label={t('common.message')}
                         >
                           <ChatIcon className='icon icon-xs' />
                         </Button>
@@ -107,7 +112,7 @@ export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onM
             </div>
           ) : (
             <div className='empty-state'>
-              <p className='text-neutral-500 text-body-sm'>No appointment requests</p>
+              <p className='text-neutral-500 text-body-sm'>{t('dashboard.noAppointmentRequests')}</p>
             </div>
           )}
         </div>
@@ -120,10 +125,11 @@ export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onM
               size='sm'
               className='w-full justify-center'
               onClick={() => {
-                window.location.href = '/appointments?status=pending';
+                if (onSeeAll) onSeeAll();
+                else window.location.href = '/appointments?status=pending';
               }}
             >
-              See All
+              {t('dashboard.seeAll')}
             </Button>
           </div>
         )}

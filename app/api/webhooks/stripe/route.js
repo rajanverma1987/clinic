@@ -10,6 +10,7 @@ import Stripe from 'stripe';
 import connectDB from '@/lib/db/connection.js';
 import Invoice from '@/models/Invoice.js';
 import Payment from '@/models/Payment.js';
+import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
 import { notifyPaymentReceived } from '@/lib/realtime/integration-helpers.js';
 import { logger } from '@/lib/utils/logger.js';
 
@@ -61,6 +62,13 @@ export async function POST(req) {
 
       case 'charge.dispute.created':
         await handleChargeback(event.data.object);
+        break;
+
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object);
+        break;
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object);
         break;
 
       default:
@@ -167,7 +175,7 @@ async function handleRefund(refund) {
  */
 async function handleChargeback(dispute) {
   const chargeId = dispute.charge;
-  
+
   const payment = await Payment.findOne({ transactionId: chargeId });
   if (payment) {
     payment.chargeback = true;
@@ -177,4 +185,33 @@ async function handleChargeback(dispute) {
     // Log chargeback for review
     logger.info('⚠️  Chargeback received for payment:', payment.paymentNumber);
   }
+}
+
+/**
+ * Sync our Subscription when Stripe subscription is updated (e.g. period renewal)
+ */
+async function handleSubscriptionUpdated(stripeSubscription) {
+  const sub = await Subscription.findOne({ stripeSubscriptionId: stripeSubscription.id });
+  if (!sub) return;
+  if (stripeSubscription.current_period_end) {
+    sub.currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+    sub.nextBillingDate = sub.currentPeriodEnd;
+  }
+  if (stripeSubscription.cancel_at_period_end !== undefined) {
+    sub.cancelAtPeriodEnd = stripeSubscription.cancel_at_period_end;
+  }
+  await sub.save();
+  logger.info('Stripe subscription updated:', stripeSubscription.id);
+}
+
+/**
+ * Mark our Subscription cancelled when Stripe subscription is deleted
+ */
+async function handleSubscriptionDeleted(stripeSubscription) {
+  const sub = await Subscription.findOne({ stripeSubscriptionId: stripeSubscription.id });
+  if (!sub) return;
+  sub.status = SubscriptionStatus.CANCELLED;
+  sub.cancelledAt = new Date();
+  await sub.save();
+  logger.info('Stripe subscription cancelled:', stripeSubscription.id);
 }

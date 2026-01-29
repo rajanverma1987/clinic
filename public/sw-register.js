@@ -8,13 +8,6 @@
   var isLocal = /localhost|127\.0\.0\.1/.test(window.location.hostname);
   if (isLocal) return;
   window.addEventListener('load', function () {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then(function (registration) {
-        console.log('✅ Service Worker registered:', registration.scope);
-      })
-      .catch(function (error) {
-        console.error('❌ Service Worker registration failed:', error);
-      });
+    navigator.serviceWorker.register('/sw.js').then(function () {}).catch(function () {});
   });
 })();

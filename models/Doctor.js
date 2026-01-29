@@ -27,10 +27,12 @@ const DoctorSchema = new Schema(
         trim: true,
         index: true,
       },
-      specialization: [{
-        type: String,
-        trim: true,
-      }],
+      specialization: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
       qualification: {
         type: String,
         trim: true,
@@ -39,53 +41,70 @@ const DoctorSchema = new Schema(
         type: Number,
         min: 0,
       },
-      languages: [{
-        type: String,
-        trim: true,
-      }],
-    },
-    // Schedule configuration
-    schedule: {
-      workingDays: [{
-        type: String,
-        enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-      }],
-      slots: [{
-        day: {
-          type: String,
-          enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-        },
-        startTime: String, // Format: "HH:mm"
-        endTime: String, // Format: "HH:mm"
-        slotDuration: {
-          type: Number,
-          default: 30, // minutes
-        },
-      }],
-      leaves: [{
-        from: {
-          type: Date,
-          required: true,
-        },
-        to: {
-          type: Date,
-          required: true,
-        },
-        reason: {
+      languages: [
+        {
           type: String,
           trim: true,
         },
-      }],
+      ],
+    },
+    // Schedule configuration
+    schedule: {
+      workingDays: [
+        {
+          type: String,
+          enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+        },
+      ],
+      slots: [
+        {
+          day: {
+            type: String,
+            enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+          },
+          startTime: String, // Format: "HH:mm"
+          endTime: String, // Format: "HH:mm"
+          slotDuration: {
+            type: Number,
+            default: 30, // minutes
+          },
+        },
+      ],
+      leaves: [
+        {
+          from: {
+            type: Date,
+            required: true,
+          },
+          to: {
+            type: Date,
+            required: true,
+          },
+          reason: {
+            type: String,
+            trim: true,
+          },
+        },
+      ],
+      slotDuration: { type: Number, default: 30, min: 5, max: 120 },
+      bufferTime: { type: Number, default: 0, min: 0, max: 60 },
+      breaks: { type: Schema.Types.Mixed, default: {} },
+      advanceBookingMinDays: { type: Number, default: 0, min: 0 },
+      advanceBookingMaxDays: { type: Number, default: 90, min: 0 },
+      emergencySlots: [{ date: Date, startTime: String, endTime: String }],
+      blockedSlots: [{ date: Date, startTime: String, endTime: String, reason: String }],
     },
     consultationFee: {
       type: Number,
       min: 0,
       default: 0,
     },
-    departments: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Department',
-    }],
+    departments: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Department',
+      },
+    ],
     bio: {
       type: String,
       trim: true,
@@ -97,7 +116,7 @@ const DoctorSchema = new Schema(
       type: String,
       enum: ['active', 'on_leave', 'inactive'],
       default: 'active',
-      index: true,
+      // index via compound DoctorSchema.index({ tenantId: 1, status: 1 })
     },
     // Admin verification (dp-6: Doctor Registration – Admin Verification)
     verificationStatus: {
@@ -108,12 +127,14 @@ const DoctorSchema = new Schema(
     },
     verificationComment: { type: String, trim: true },
     verificationReviewedAt: { type: Date },
-    uploadedDocuments: [{
-      name: { type: String, trim: true },
-      url: { type: String, trim: true },
-      type: { type: String, trim: true },
-      uploadedAt: { type: Date, default: Date.now },
-    }],
+    uploadedDocuments: [
+      {
+        name: { type: String, trim: true },
+        url: { type: String, trim: true },
+        type: { type: String, trim: true },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     timestamps: true,

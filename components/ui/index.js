@@ -2,7 +2,9 @@
 export { Button } from './Button.jsx';
 export { Card } from './Card.jsx';
 export { Checkbox } from './Checkbox.jsx';
+export { ConfirmationModal } from './ConfirmationModal.jsx';
 export { DatePicker } from './DatePicker.jsx';
+export { EmptyState } from './EmptyState.jsx';
 export { Input } from './Input.jsx';
 export { LanguageSwitcher } from './LanguageSwitcher.jsx';
 export { NotificationDropdown } from './NotificationDropdown.jsx';

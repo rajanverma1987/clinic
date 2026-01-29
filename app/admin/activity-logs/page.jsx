@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { showError } from '@/lib/utils/toast';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -55,7 +56,7 @@ export default function AdminActivityLogsPage() {
         }));
       }
     } catch (err) {
-      console.error('Failed to fetch activity logs:', err);
+      logger.error('Failed to fetch activity logs:', err);
       showError('Failed to fetch activity logs');
     } finally {
       setLoading(false);

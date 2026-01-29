@@ -10,6 +10,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -25,14 +26,17 @@ export default function DoctorAnalyticsPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  const userId = user?._id ?? user?.id ?? user?.userId;
+
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== 'doctor') {
       router.push('/dashboard');
       return;
     }
+    if (!userId) return;
     fetchDoctorId();
-  }, [authLoading, user, router]);
+  }, [authLoading, user, userId, router]);
 
   useEffect(() => {
     if (doctorId) {
@@ -41,13 +45,14 @@ export default function DoctorAnalyticsPage() {
   }, [doctorId, dateRange, startDate, endDate]);
 
   const fetchDoctorId = async () => {
+    if (!userId || userId === 'undefined') return;
     try {
-      const doctorResponse = await apiClient.get(`/doctors/user/${user._id}`);
+      const doctorResponse = await apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`);
       if (doctorResponse.success && doctorResponse.data) {
         setDoctorId(doctorResponse.data._id);
       }
     } catch (err) {
-      console.error('Failed to fetch doctor profile:', err);
+      logger.error('Failed to fetch doctor profile:', err);
     }
   };
 
@@ -158,7 +163,7 @@ export default function DoctorAnalyticsPage() {
         });
       }
     } catch (err) {
-      console.error('Failed to fetch analytics:', err);
+      logger.error('Failed to fetch analytics:', err);
     } finally {
       setLoading(false);
     }

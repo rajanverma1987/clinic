@@ -1,5 +1,6 @@
 'use client';
 
+import { Building2Icon, CheckIcon, RefreshCwIcon, VideoIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -11,23 +12,44 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import * as routeCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
+import { logger } from '@/lib/utils/logger';
 import { showError } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+
+const ROUTE_KEY = 'route_queue';
 
 export default function QueuePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { locale } = useSettings();
+  const userId = user?.id ?? user?.userId ?? null;
+
   const [queueEntries, setQueueEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [doctors, setDoctors] = useState([]);
+  const [selectedDoctorId, setSelectedDoctorId] = useState('');
+  const [resolvedDoctorId, setResolvedDoctorId] = useState(null); // Doctor document _id for doctor role
+
+  const isClinicAdmin = user?.role === 'clinic_admin';
+  const isDoctor = user?.role === 'doctor';
+
+  useLayoutEffect(() => {
+    if (!userId) return;
+    const cached = routeCache.getData(ROUTE_KEY, userId);
+    if (cached && cached.queueEntries != null) {
+      setQueueEntries(cached.queueEntries);
+      setLoading(false);
+    }
+  }, [userId]);
   const isInitialMountRef = useRef(true);
   const isFetchingRef = useRef(false);
   const currentDoctorIdRef = useRef('');
-  const [notifications, setNotifications] = useState(3); // Mock notification count
+  const [notifications, setNotifications] = useState(3);
 
   const formatDateDisplay = () => {
     const date = new Date();
@@ -39,49 +61,71 @@ export default function QueuePage() {
     });
   };
 
-  // Set logged-in doctor's ID automatically
+  // Resolve Doctor document _id when user is a doctor (Queue stores doctorId = Doctor._id, not User._id)
+  const userId = user?._id ?? user?.id ?? user?.userId;
   useEffect(() => {
-    if (user?.userId) {
-      currentDoctorIdRef.current = user.userId;
+    if (isDoctor && userId && userId !== 'undefined') {
+      apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`).then((res) => {
+        if (res.success && res.data?._id) {
+          setResolvedDoctorId(res.data._id);
+        }
+      });
+    } else {
+      setResolvedDoctorId(null);
     }
-  }, [user]);
+  }, [isDoctor, userId]);
+
+  useEffect(() => {
+    if (isDoctor && resolvedDoctorId) {
+      currentDoctorIdRef.current = resolvedDoctorId;
+    } else if (isClinicAdmin) {
+      currentDoctorIdRef.current = selectedDoctorId || '';
+    } else {
+      currentDoctorIdRef.current = '';
+    }
+  }, [isDoctor, isClinicAdmin, resolvedDoctorId, selectedDoctorId]);
+
+  useEffect(() => {
+    if (isClinicAdmin) {
+      apiClient.get('/doctors').then((res) => {
+        if (res.success && res.data) {
+          const list = Array.isArray(res.data) ? res.data : res.data.doctors || res.data.data || [];
+          setDoctors(list);
+        }
+      });
+    }
+  }, [isClinicAdmin]);
 
   // Create stable fetch function using useCallback
   const fetchQueue = useCallback(
     async (showLoading = false) => {
-      // Prevent concurrent fetches
       if (isFetchingRef.current) return;
 
+      const hasCache = userId && routeCache.getData(ROUTE_KEY, userId);
       isFetchingRef.current = true;
-      if (showLoading) {
+      if (showLoading && !hasCache) {
         setLoading(true);
       }
 
       try {
         const params = new URLSearchParams();
-        // Always filter by logged-in doctor's ID
         if (currentDoctorIdRef.current) {
           params.append('doctorId', currentDoctorIdRef.current);
         }
 
-        // Fetch active entries (default - excludes completed)
         const activeResponse = await apiClient.get(`/queue?${params}`);
-
         let allEntries = [];
-
         if (activeResponse.success && activeResponse.data) {
           const activeList = extractArrayData(activeResponse);
           allEntries = [...activeList];
         }
 
-        // If showing completed, also fetch completed entries
         if (showCompleted) {
           const completedParams = new URLSearchParams();
           if (currentDoctorIdRef.current) {
             completedParams.append('doctorId', currentDoctorIdRef.current);
           }
           completedParams.append('status', 'completed');
-
           const completedResponse = await apiClient.get(`/queue?${completedParams}`);
           if (completedResponse.success && completedResponse.data) {
             const completedList = extractArrayData(completedResponse);
@@ -90,8 +134,9 @@ export default function QueuePage() {
         }
 
         setQueueEntries(allEntries);
+        if (userId) routeCache.set(ROUTE_KEY, userId, { queueEntries: allEntries });
       } catch (error) {
-        console.error('Failed to fetch queue:', error);
+        logger.error('Failed to fetch queue', error);
       } finally {
         if (showLoading) {
           setLoading(false);
@@ -99,29 +144,28 @@ export default function QueuePage() {
         isFetchingRef.current = false;
       }
     },
-    [showCompleted]
-  ); // Include showCompleted in deps
+    [showCompleted, userId]
+  );
 
-  // Effect: Initial fetch and refetch on doctor change
+  // Effect: Initial fetch and refetch on doctor change. For doctors, wait until resolvedDoctorId is set.
   useEffect(() => {
     if (authLoading || !user) return;
+    if (isDoctor && !resolvedDoctorId) return; // Queue filter needs Doctor _id, not User id
 
-    // Initial fetch on mount
     if (isInitialMountRef.current) {
       fetchQueue(true);
       isInitialMountRef.current = false;
     } else {
-      // Refetch when doctor changes (silent)
       fetchQueue(false);
     }
-  }, [authLoading, user, fetchQueue]);
+  }, [authLoading, user, isDoctor, resolvedDoctorId, fetchQueue]);
 
   // Refetch when showCompleted changes
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && (!isDoctor || resolvedDoctorId)) {
       fetchQueue(false);
     }
-  }, [showCompleted, authLoading, user, fetchQueue]);
+  }, [showCompleted, authLoading, user, isDoctor, resolvedDoctorId, fetchQueue]);
 
   const handleStatusChange = async (queueId, newStatus) => {
     try {
@@ -132,7 +176,7 @@ export default function QueuePage() {
         fetchQueue(false); // Silent update after status change
       }
     } catch (error) {
-      console.error('Failed to update queue status:', error);
+      logger.error('Failed to update queue status', error);
     }
   };
 
@@ -178,7 +222,7 @@ export default function QueuePage() {
         showError('Unable to start video session');
       }
     } catch (error) {
-      console.error('Failed to start video:', error);
+      logger.error('Failed to start video', error);
       showError(error.message || 'Failed to start video session');
     }
   };
@@ -186,41 +230,42 @@ export default function QueuePage() {
   const columns = [
     { header: t('queue.queueNumber'), accessor: 'queueNumber' },
     { header: t('queue.position'), accessor: 'position' },
+    ...(isClinicAdmin
+      ? [
+          {
+            header: t('queue.doctor'),
+            accessor: (row) =>
+              row.doctorId
+                ? `${row.doctorId.firstName || ''} ${row.doctorId.lastName || ''}`.trim() || '—'
+                : '—',
+          },
+        ]
+      : []),
     {
       header: t('appointments.patient'),
       accessor: (row) => `${row.patientId?.firstName || ''} ${row.patientId?.lastName || ''}`,
     },
+    ...(!isClinicAdmin
+      ? [
+          {
+            header: t('appointments.doctor'),
+            accessor: (row) => `${row.doctorId?.firstName || ''} ${row.doctorId?.lastName || ''}`,
+          },
+        ]
+      : []),
     {
-      header: t('appointments.doctor'),
-      accessor: (row) => `${row.doctorId?.firstName || ''} ${row.doctorId?.lastName || ''}`,
-    },
-    {
-      header: 'Type',
+      header: t('queue.type'),
       accessor: (row) => (
         <div className='flex items-center gap-2'>
           {row.appointmentId?.isTelemedicine ? (
             <Tag variant='default' className='flex items-center gap-1'>
-              <svg className='w-3 h-3' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
-                />
-              </svg>
-              Video
+              <VideoIcon className='icon icon-xs' />
+              {t('queue.video')}
             </Tag>
           ) : (
             <Tag variant='success' className='flex items-center gap-1'>
-              <svg className='w-3 h-3' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
-                />
-              </svg>
-              In-Person
+              <Building2Icon className='icon icon-xs' />
+              {t('queue.inPerson')}
             </Tag>
           )}
         </div>
@@ -234,8 +279,8 @@ export default function QueuePage() {
             row.priority === 'urgent'
               ? 'bg-status-error/10 text-status-error'
               : row.priority === 'high'
-              ? 'bg-status-warning/10 text-status-warning'
-              : 'bg-neutral-100 text-neutral-700'
+                ? 'bg-status-warning/10 text-status-warning'
+                : 'bg-neutral-100 text-neutral-700'
           }`}
         >
           {row.priority}
@@ -251,37 +296,25 @@ export default function QueuePage() {
       accessor: (row) => (
         <div className='flex gap-2'>
           {row.status === 'completed' ? (
-            <span className='text-sm font-medium text-neutral-500'>Completed</span>
+            <span className='text-sm font-medium text-neutral-500'>{t('queue.completed')}</span>
           ) : row.status === 'in_progress' ? (
             <>
               {row.appointmentId?.isTelemedicine && (
                 <>
                   <Button
                     size='sm'
-                    variant='secondary'
-                    className='bg-primary-500 hover:bg-primary-700 text-white border-primary-500'
+                    variant='primary'
                     onClick={async (e) => {
                       e.stopPropagation();
                       await handleStartVideo(row.appointmentId);
                     }}
                   >
-                    <svg
-                      className='w-4 h-4 mr-1'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
-                      />
-                    </svg>
-                    Start Video
+                    <VideoIcon className='icon icon-sm' />
+                    {t('queue.startVideo')}
                   </Button>
                   <Button
                     size='sm'
+                    variant='primary'
                     onClick={async (e) => {
                       e.stopPropagation();
                       // Navigate to prescription page with patient pre-filled
@@ -299,51 +332,36 @@ export default function QueuePage() {
               )}
               <Button
                 size='sm'
-                variant='primary'
-                className='!bg-secondary-500 hover:!bg-secondary-700 text-white border-secondary-500'
+                variant='secondary'
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (confirm('Complete this appointment and remove from queue?')) {
+                  if (confirm(t('queue.confirmComplete'))) {
                     handleStatusChange(row._id, 'completed');
                   }
                 }}
               >
-                <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M5 13l4 4L19 7'
-                  />
-                </svg>
-                {t('queue.markComplete') || 'Mark Complete'}
+                <CheckIcon className='icon icon-sm' />
+                {t('queue.markComplete')}
               </Button>
             </>
           ) : row.appointmentId?.isTelemedicine ? (
             <>
               <Button
                 size='sm'
-                className='bg-primary-500 hover:bg-primary-700 text-white'
+                variant='primary'
                 onClick={async (e) => {
                   e.stopPropagation();
                   await handleStartVideo(row.appointmentId);
                 }}
               >
-                <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
-                  />
-                </svg>
-                Start Video
+                <VideoIcon className='icon icon-sm' />
+                {t('queue.startVideo')}
               </Button>
               <Button
                 size='sm'
+                variant='primary'
                 onClick={async (e) => {
                   e.stopPropagation();
-                  // Update queue status to in_progress
                   await handleStatusChange(row._id, 'in_progress');
                   // Navigate to prescription page with patient pre-filled
                   const patientId = row.patientId?._id || row.patientId;
@@ -360,6 +378,7 @@ export default function QueuePage() {
           ) : (
             <Button
               size='sm'
+              variant='primary'
               onClick={async (e) => {
                 e.stopPropagation();
                 // Update queue status to in_progress
@@ -405,38 +424,51 @@ export default function QueuePage() {
         notifications={[]}
         unreadCount={0}
         actionButtons={[
+          ...(isClinicAdmin && doctors.length > 0
+            ? [
+                <div key='doctor-filter' className='flex items-center gap-2'>
+                  <label className='text-sm text-neutral-600'>{t('queue.selectDoctor')}</label>
+                  <select
+                    value={selectedDoctorId}
+                    onChange={(e) => setSelectedDoctorId(e.target.value)}
+                    className='px-3 py-2 border border-neutral-300 rounded-lg text-sm'
+                  >
+                    <option value=''>{t('queue.allDoctors')}</option>
+                    {doctors.map((d) => (
+                      <option key={d._id} value={d._id}>
+                        {d.firstName} {d.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>,
+              ]
+            : []),
           <Button
             key='toggle-completed'
             variant='secondary'
+            size='md'
             onClick={() => setShowCompleted(!showCompleted)}
             className='flex items-center gap-2'
           >
-            {showCompleted ? 'Hide Completed' : 'Show Completed'}
+            {showCompleted ? t('queue.hideCompleted') : t('queue.showCompleted')}
           </Button>,
           <Button
             key='refresh'
-            onClick={() => fetchQueue(false)}
+            onClick={() => fetchQueue(true)}
             disabled={loading}
+            size='md'
             className='flex items-center gap-2'
           >
             {loading ? (
-              <CompactLoader size='xs' />
+              <CompactLoader size='sm' />
             ) : (
-              <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                />
-              </svg>
+              <RefreshCwIcon className='icon icon-sm shrink-0' ariaHidden />
             )}
-            {loading ? t('common.loading') : 'Refresh Queue'}
+            {loading ? t('common.loading') : t('queue.refresh')}
           </Button>,
         ]}
       />
       <div style={{ padding: '0 10px' }}>
-
         <Card>
           <Table
             data={queueEntries.sort((a, b) => a.position - b.position)}

@@ -1,0 +1,53 @@
+---
+description: CursorMD/New is the only source of truth; read its files and implement only what they define
+globs:
+alwaysApply: true
+---
+
+# CursorMD/New – Single Source of Truth
+
+**All implementation must align with and stay within the specs in `CursorMD/New`.** No features, permissions, data models, APIs, real-time behavior, or architecture may be added that are not defined in that folder.
+
+## Mandatory: Read Before Implementing
+
+Before implementing or changing any feature, permission, data model, API, real-time event, or dashboard flow:
+
+1. **Read the relevant file(s)** in `CursorMD/New` that govern that area.
+2. **Implement only what is specified** there. Do not add entities, fields, roles, events, or UI flows that are not described in CursorMD/New.
+3. **If something is unclear or missing** in CursorMD/New, do not infer from other docs (e.g. other CursorMD files or implementation plans). Treat CursorMD/New as the boundary: only what is written there is in scope.
+
+## Canonical Files in CursorMD/New
+
+| File                                      | Governs                                                                                                                                                 | Use When                                                                  |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **clinic-complete-specification.md**      | Permission matrix (Super Admin, Doctor, Admin, Manager), feature specs per role, dashboard widgets, backend folder structure, technical recommendations | Adding/changing permissions, role-based features, dashboards, new modules |
+| **clinic-dashboard-architecture.mermaid** | Roles, dashboards, core modules, real-time features, backend (API, WebSocket, Cache, DB)                                                                | Changing architecture, dashboards, modules, flows                         |
+| **database-schema.mermaid**               | Entities, relationships, field names, tenantId                                                                                                          | Models, API request/response shapes, migrations                           |
+| **realtime-caching-strategy.md**          | WebSocket events, Redis pub/sub, cache layers, TTLs, invalidation, client socket usage                                                                  | Real-time events, caching, Socket.IO, Redis, React Query cache            |
+| **CURSORMD_NEW_CHECKLIST.md**             | Point-by-point checklist of every item from the four spec files                                                                                         | Ensuring each CursorMD/New point is implemented                           |
+
+## Rules (Strict)
+
+1. **Features & permissions**
+   Implement and gate features **only** as defined in `clinic-complete-specification.md` (permission matrix and detailed feature specs). Do not add roles, modules, or permissions that are not listed there.
+
+2. **Architecture**
+   Keep dashboards, modules, and flows **only** as in `clinic-dashboard-architecture.mermaid`. Do not introduce new dashboards or core modules not shown there.
+
+3. **Data & APIs**
+   Models and API contracts must match `database-schema.mermaid` (entities, relationships, field names, tenantId). Do not add entities or top-level fields not present in that schema.
+
+4. **Real-time & cache**
+   WebSocket event names, Redis usage, cache keys, and client-side cache behavior must follow `realtime-caching-strategy.md`. Do not introduce new event names or cache patterns outside that doc.
+
+5. **Conflicts with other docs**
+   If any other document (e.g. `CLINIC_DASHBOARD_IMPLEMENTATION_PLAN.md`, other CursorMD files) conflicts with or goes beyond CursorMD/New, **CursorMD/New wins**. Ignore the conflicting part of the other doc.
+
+6. **Nothing outside CursorMD/New**
+   Do not implement features, entities, permissions, events, or UI flows that exist only in other docs. If it’s not in CursorMD/New, it is out of scope unless you first add it to the appropriate file in CursorMD/New.
+
+## Workflow
+
+- **New feature or change:** Open the relevant CursorMD/New file(s) → confirm the spec → then implement.
+- **Adding something new to the product:** First update the appropriate CursorMD/New file(s) to describe it, then implement.
+- **Bug fixes and refactors** that don’t change product behavior don’t require CursorMD/New changes but must still respect existing specs (permissions, schema, events).

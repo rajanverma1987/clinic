@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
 
+import { logger } from '@/lib/utils/logger';
 export default function LotsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -47,7 +48,7 @@ export default function LotsPage() {
         setLots(response.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch lots:', error);
+      logger.error('Failed to fetch lots:', error);
       setLots([]);
     } finally {
       setLoading(false);
@@ -186,7 +187,7 @@ export default function LotsPage() {
                       <td className='px-4 py-3'>{getStatusBadge(lot)}</td>
                       <td className='px-4 py-3'>
                         <Button
-                          variant='outline'
+                          variant='secondary'
                           size='sm'
                           onClick={() => router.push(`/inventory/items/${lot.itemId}`)}
                         >

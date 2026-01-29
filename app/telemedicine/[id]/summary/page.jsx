@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -38,7 +39,7 @@ export default function SessionSummaryPage() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch session:', error);
+      logger.error('Failed to fetch session:', error);
     } finally {
       setLoading(false);
     }
@@ -351,7 +352,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                 </svg>
                 Book Follow-up
               </Button>
-              <Button variant='outline' onClick={downloadSummary}>
+              <Button variant='primary' onClick={downloadSummary}>
                 <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path
                     strokeLinecap='round'
@@ -362,7 +363,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                 </svg>
                 Download Summary
               </Button>
-              <Button variant='outline' onClick={() => window.print()}>
+              <Button variant='secondary' onClick={() => window.print()}>
                 <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path
                     strokeLinecap='round'

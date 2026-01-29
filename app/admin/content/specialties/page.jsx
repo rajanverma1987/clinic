@@ -116,7 +116,7 @@ export default function AdminSpecialtiesPage() {
       subtitle='Add, edit, reorder and activate/deactivate specialties'
       actionButton={
         <div className='flex gap-2'>
-          <Button variant='secondary' onClick={() => router.push('/admin/content')}>Back to Content</Button>
+          <Button variant='secondary' size='md' onClick={() => router.push('/admin/content')}>Back to Content</Button>
           <Button variant='primary' onClick={openCreate}>Add Specialty</Button>
         </div>
       }
@@ -153,7 +153,7 @@ export default function AdminSpecialtiesPage() {
                         <td className='py-2 px-3'>
                           <div className='flex gap-2'>
                             <Button variant='secondary' size='sm' onClick={() => openEdit(s)}>Edit</Button>
-                            <Button variant='outline' size='sm' className='border-red-300 text-red-700' onClick={() => handleDelete(s._id)}>Delete</Button>
+                            <Button variant='danger' size='sm' onClick={() => handleDelete(s._id)}>Delete</Button>
                           </div>
                         </td>
                       </tr>
@@ -166,7 +166,7 @@ export default function AdminSpecialtiesPage() {
         </Card>
 
         {modal && (
-          <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
+          <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
             <Card className='p-6 max-w-md w-full mx-4'>
               <h3 className='text-lg font-bold text-neutral-900 mb-4'>{modal === 'create' ? 'Add Specialty' : 'Edit Specialty'}</h3>
               <form onSubmit={handleSubmit} className='space-y-4'>

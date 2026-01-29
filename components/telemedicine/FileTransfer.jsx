@@ -98,18 +98,18 @@ export function FileTransfer({
 
   return (
     <div
-      className='absolute right-0 top-0 h-full w-80 bg-gray-900 border-l border-gray-700 flex flex-col'
+      className='absolute right-0 top-0 h-full w-80 bg-neutral-100 border-l border-neutral-300 flex flex-col'
       style={{ zIndex: 'var(--z-fixed, 30)' }}
     >
       {/* File Transfer Header */}
-      <div className='bg-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-700'>
-        <h3 className='text-white font-semibold'>File Transfer</h3>
+      <div className='bg-white border-b border-neutral-300 px-4 py-3 flex items-center justify-between'>
+        <h3 className='text-neutral-900 font-semibold'>File Transfer</h3>
         <Button
           variant='ghost'
           size='xs'
           iconOnly
           onClick={onClose}
-          className='text-gray-400 hover:text-white'
+          className='text-neutral-600 hover:text-neutral-900'
         >
           <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
             <path
@@ -123,7 +123,7 @@ export function FileTransfer({
       </div>
 
       {/* Upload Section */}
-      <div className='p-4 border-b border-gray-700 bg-gray-800'>
+      <div className='p-4 border-b border-neutral-300 bg-neutral-50'>
         <input
           ref={fileInputRef}
           type='file'
@@ -134,32 +134,32 @@ export function FileTransfer({
         />
         <label
           htmlFor='file-upload'
-          className={`block w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center cursor-pointer ${
+          className={`block w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-center cursor-pointer ${
             uploading ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
           {uploading ? `Uploading... ${uploadProgress}%` : 'Upload File'}
         </label>
         {uploading && (
-          <div className='mt-2 w-full bg-gray-700 rounded-full h-2'>
-            <div className='bg-blue-600 h-2 rounded-full' style={{ width: `${uploadProgress}%` }} />
+          <div className='mt-2 w-full bg-neutral-200 rounded-full h-2'>
+            <div className='bg-primary-600 h-2 rounded-full' style={{ width: `${uploadProgress}%` }} />
           </div>
         )}
-        <p className='text-xs text-gray-500 mt-2 text-center'>Max file size: 10MB • 🔒 Encrypted</p>
+        <p className='text-xs text-neutral-600 mt-2 text-center'>Max file size: 10MB • 🔒 Encrypted</p>
       </div>
 
       {/* Files List */}
       <div className='flex-1 overflow-y-auto p-4 space-y-2'>
         {files.length === 0 ? (
-          <div className='text-center text-gray-500 text-sm mt-8'>No files shared yet</div>
+          <div className='text-center text-neutral-600 text-sm mt-8'>No files shared yet</div>
         ) : (
           files.map((file, index) => (
             <div
               key={index}
-              className='bg-gray-800 rounded-lg p-3 flex items-center justify-between hover:bg-gray-700'
+              className='bg-white border border-neutral-200 rounded-lg p-3 flex items-center justify-between hover:bg-neutral-50'
             >
               <div className='flex items-center space-x-3 flex-1 min-w-0'>
-                <div className='w-10 h-10 bg-blue-600 rounded flex items-center justify-center flex-shrink-0'>
+                <div className='w-10 h-10 bg-primary-600 rounded flex items-center justify-center flex-shrink-0'>
                   <svg
                     width='24px'
                     height='24px'
@@ -177,8 +177,8 @@ export function FileTransfer({
                   </svg>
                 </div>
                 <div className='min-w-0 flex-1'>
-                  <p className='text-white text-sm font-medium truncate'>{file.fileName}</p>
-                  <p className='text-gray-400 text-xs'>
+                  <p className='text-neutral-900 text-sm font-medium truncate'>{file.fileName}</p>
+                  <p className='text-neutral-600 text-xs'>
                     {formatFileSize(file.fileSize)} •{' '}
                     {new Date(file.uploadedAt).toLocaleDateString()}
                   </p>
@@ -186,7 +186,7 @@ export function FileTransfer({
               </div>
               <button
                 onClick={() => handleDownload(file)}
-                className='ml-2 p-2 text-blue-400 hover:text-blue-300'
+                className='ml-2 p-2 text-primary-600 hover:text-primary-700'
                 title={t('telemedicine.downloadFile')}
               >
                 <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>

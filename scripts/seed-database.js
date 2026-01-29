@@ -14,9 +14,19 @@ const Tenant = require('../models/Tenant').default || require('../models/Tenant'
 const Department = require('../models/Department').default || require('../models/Department');
 const Doctor = require('../models/Doctor').default || require('../models/Doctor');
 const LabTest = require('../models/LabTest').default || require('../models/LabTest');
-const SubscriptionPlan = require('../models/SubscriptionPlan').default || require('../models/SubscriptionPlan');
+const SubscriptionPlan =
+  require('../models/SubscriptionPlan').default || require('../models/SubscriptionPlan');
+const { getFeaturesForTier } = require('../lib/constants/plan-features.js');
 
 const MONGODB_URI = process.env.MONGODB_URI;
+
+// Plans: SOLO $49, CLINIC $149, ENTERPRISE $499. Annual 5% off on all. Price in CENTS.
+const PLAN_TIERS = [
+  { name: 'FREE', priceCents: 0, tierIndex: 0, description: 'Solo doctors testing the system or very small practice', maxUsers: 1, maxPatients: 25, maxStorageGB: 0, isHidden: true },
+  { name: 'SOLO', priceCents: 4900, tierIndex: 1, description: 'Individual doctors, solo practitioners. First 14 days free with card; then $49/mo until you cancel.', maxUsers: 3, maxPatients: 999999, maxStorageGB: 5, trialDays: 14 },
+  { name: 'CLINIC', priceCents: 14900, tierIndex: 2, description: 'Small to medium clinics with multiple doctors', maxUsers: 10, maxPatients: 999999, maxStorageGB: 50, isPopular: true },
+  { name: 'ENTERPRISE', priceCents: 49900, tierIndex: 3, description: 'Large clinics, multi-specialty centers, hospitals', maxUsers: 999, maxPatients: 999999, maxStorageGB: 9999 },
+];
 
 if (!MONGODB_URI) {
   console.error('❌ MONGODB_URI is not defined in .env.local');
@@ -24,105 +34,48 @@ if (!MONGODB_URI) {
 }
 
 /**
- * Seed subscription plans
+ * Seed subscription plans: SOLO $49, CLINIC $149, ENTERPRISE $499. Annual 5% off. Billing MONTHLY.
  */
 async function seedSubscriptionPlans() {
   console.log('📦 Seeding subscription plans...');
-  
-  const plans = [
-    {
-      name: 'Free',
-      description: 'Basic features for small clinics',
-      price: 0,
-      currency: 'USD',
-      billingCycle: 'monthly',
-      features: [
-        'Patient Management',
-        'Appointment Scheduling',
-        'Basic Reports',
-      ],
-      limits: {
-        maxDoctors: 1,
-        maxPatients: 100,
-        maxAppointments: 500,
-      },
-      isActive: true,
-    },
-    {
-      name: 'Basic',
-      description: 'Essential features for growing clinics',
-      price: 49,
-      currency: 'USD',
-      billingCycle: 'monthly',
-      features: [
-        'Patient Management',
-        'Appointment Scheduling',
-        'Prescriptions',
-        'Basic Reports',
-        'Email Notifications',
-      ],
-      limits: {
-        maxDoctors: 3,
-        maxPatients: 500,
-        maxAppointments: 2000,
-      },
-      isActive: true,
-    },
-    {
-      name: 'Professional',
-      description: 'Advanced features for established clinics',
-      price: 149,
-      currency: 'USD',
-      billingCycle: 'monthly',
-      features: [
-        'Patient Management',
-        'Appointment Scheduling',
-        'Prescriptions',
-        'Lab Orders & Results',
-        'Advanced Reports',
-        'SMS/Email Notifications',
-        'Inventory Management',
-        'Multi-Location Support',
-      ],
-      limits: {
-        maxDoctors: 10,
-        maxPatients: 2000,
-        maxAppointments: 10000,
-      },
-      isActive: true,
-    },
-    {
-      name: 'Enterprise',
-      description: 'Full-featured solution for large clinics',
-      price: 399,
-      currency: 'USD',
-      billingCycle: 'monthly',
-      features: [
-        'All Professional Features',
-        'Telemedicine',
-        'API Access',
-        'Custom Branding',
-        'Priority Support',
-        'Advanced Analytics',
-        'Audit Logs',
-        'Data Export',
-      ],
-      limits: {
-        maxDoctors: -1, // Unlimited
-        maxPatients: -1, // Unlimited
-        maxAppointments: -1, // Unlimited
-      },
-      isActive: true,
-    },
-  ];
 
-  for (const planData of plans) {
-    const existing = await SubscriptionPlan.findOne({ name: planData.name });
+  for (const tier of PLAN_TIERS) {
+    const existing = await SubscriptionPlan.findOne({ name: tier.name });
+    const features = getFeaturesForTier(tier.tierIndex);
+    const planData = {
+      name: tier.name,
+      description: tier.description,
+      price: tier.priceCents,
+      currency: 'USD',
+      billingCycle: 'MONTHLY',
+      features,
+      maxUsers: tier.maxUsers,
+      maxPatients: tier.maxPatients,
+      maxStorageGB: tier.maxStorageGB,
+      isPopular: tier.isPopular || false,
+      isHidden: tier.isHidden ?? false,
+      trialDays: tier.trialDays ?? undefined,
+    };
     if (!existing) {
       await SubscriptionPlan.create(planData);
-      console.log(`  ✅ Created plan: ${planData.name}`);
+      console.log(`  ✅ Created plan: ${tier.name} ($${(tier.priceCents / 100).toFixed(2)}/mo, ${features.length} features)`);
     } else {
-      console.log(`  ⏭️  Plan already exists: ${planData.name}`);
+      await SubscriptionPlan.updateOne(
+        { name: tier.name },
+        {
+          $set: {
+            description: tier.description,
+            features,
+            maxUsers: tier.maxUsers,
+            maxPatients: tier.maxPatients,
+            maxStorageGB: tier.maxStorageGB,
+            isPopular: tier.isPopular || false,
+            isHidden: tier.isHidden ?? false,
+            trialDays: tier.trialDays ?? undefined,
+          },
+        }
+      );
+      console.log(`  🔄 Updated plan: ${tier.name} (${features.length} features per doc)`);
     }
   }
 }
@@ -132,7 +85,7 @@ async function seedSubscriptionPlans() {
  */
 async function seedLabTests(tenantId) {
   console.log('🧪 Seeding lab tests...');
-  
+
   const labTests = [
     {
       tenantId,
@@ -213,7 +166,7 @@ async function seedLabTests(tenantId) {
  */
 async function seedDepartments(tenantId) {
   console.log('🏥 Seeding departments...');
-  
+
   const departments = [
     { name: 'General Medicine', code: 'GEN', description: 'General medical consultations' },
     { name: 'Cardiology', code: 'CARD', description: 'Heart and cardiovascular care' },
@@ -238,12 +191,14 @@ async function seedDepartments(tenantId) {
  */
 async function seedDemoData() {
   console.log('👥 Seeding demo tenant and users...');
-  
+
   // Create demo tenant
   let tenant = await Tenant.findOne({ name: 'Demo Clinic' });
   if (!tenant) {
     tenant = await Tenant.create({
       name: 'Demo Clinic',
+      slug: 'demo-clinic',
+      region: 'US',
       registrationNumber: 'DEMO-001',
       contact: {
         phone: '+1234567890',
@@ -283,7 +238,9 @@ async function seedDemoData() {
       isActive: true,
       status: 'active',
     });
-    console.log('  ✅ Created super admin (email: superadmin@clinic.com, password: SuperAdmin123!)');
+    console.log(
+      '  ✅ Created super admin (email: superadmin@clinic.com, password: SuperAdmin123!)'
+    );
   } else {
     console.log('  ⏭️  Super admin already exists');
   }
@@ -323,7 +280,7 @@ async function seedDemoData() {
       isActive: true,
       status: 'active',
     });
-    
+
     // Create doctor profile
     const genDept = await Department.findOne({ tenantId: tenant._id, code: 'GEN' });
     if (genDept) {
@@ -367,7 +324,7 @@ async function seedDemoData() {
 async function seed() {
   try {
     console.log('🌱 Starting database seed...\n');
-    
+
     // Connect to database
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB\n');

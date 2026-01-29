@@ -39,13 +39,15 @@ async function getAccessToken() {
 
 /**
  * Create PayPal subscription plan
+ * @param {number} [trialLengthDays] - Optional trial length in days (e.g. 14). First cycle is $0 trial then regular billing.
  */
 export async function createPayPalPlan(
   name,
   description,
   price, // in dollars
   currency,
-  billingCycle
+  billingCycle,
+  trialLengthDays
 ) {
   const accessToken = await getAccessToken();
 
@@ -84,27 +86,46 @@ export async function createPayPalPlan(
     }
   }
 
+  const billingCycles = [];
+  if (trialLengthDays && trialLengthDays > 0) {
+    billingCycles.push({
+      frequency: {
+        interval_unit: 'DAY',
+        interval_count: trialLengthDays,
+      },
+      tenure_type: 'TRIAL',
+      sequence: 1,
+      total_cycles: 1,
+      pricing_scheme: {
+        fixed_price: {
+          value: '0',
+          currency_code: currency,
+        },
+      },
+    });
+  }
+  billingCycles.push({
+    frequency: {
+      interval_unit: billingCycle === 'MONTHLY' ? 'MONTH' : 'YEAR',
+      interval_count: 1,
+    },
+    tenure_type: 'REGULAR',
+    sequence: billingCycles.length + 1,
+    total_cycles: 0,
+    pricing_scheme: {
+      fixed_price: {
+        value: price.toFixed(2),
+        currency_code: currency,
+      },
+    },
+  });
+
   // Create subscription plan
   const plan = {
     product_id: productId,
     name,
     description,
-    billing_cycles: [
-      {
-        frequency: {
-          interval_unit: billingCycle === 'MONTHLY' ? 'MONTH' : 'YEAR',
-          interval_count: 1,
-        },
-        tenure_type: 'REGULAR',
-        sequence: 1,
-        pricing_scheme: {
-          fixed_price: {
-            value: price.toFixed(2),
-            currency_code: currency,
-          },
-        },
-      },
-    ],
+    billing_cycles: billingCycles,
     payment_preferences: {
       auto_bill_outstanding: true,
       setup_fee_failure_action: 'CANCEL',

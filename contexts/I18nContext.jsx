@@ -2,6 +2,7 @@
 
 import { apiClient } from '@/lib/api/client.js';
 import { extractLocale, formatLocale, getTranslation, supportedLocales } from '@/lib/i18n/index.js';
+import { logger } from '@/lib/utils/logger.js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext.jsx';
 
@@ -18,21 +19,22 @@ export function I18nProvider({ children }) {
     setMounted(true);
   }, []);
 
-  // Load locale from tenant settings or localStorage
+  // Load locale: prefer localStorage (user's explicit choice), then tenant, then browser
   useEffect(() => {
     if (!mounted) return;
 
     const loadLocale = async () => {
       try {
-        // Try to get locale from localStorage first (for faster initial render)
         const storedLocale = typeof window !== 'undefined' ? localStorage.getItem('locale') : null;
 
+        // User's explicit choice in localStorage always wins
         if (storedLocale && supportedLocales.includes(storedLocale)) {
           setLocaleState(storedLocale);
           setLoading(false);
+          return;
         }
 
-        // If user is logged in, fetch tenant settings
+        // If user is logged in and no stored preference, use tenant settings
         if (user) {
           try {
             const response = await apiClient.get('/settings');
@@ -45,12 +47,12 @@ export function I18nProvider({ children }) {
                 }
               }
             }
-          } catch (error) {
-            console.error('Failed to load tenant settings:', error);
+          } catch (_error) {
+            // Tenant settings load failed; use stored locale
           }
         } else {
-          // For non-authenticated users, use browser locale
-          if (typeof window !== 'undefined' && !storedLocale) {
+          // For non-authenticated users, use browser locale when no stored preference
+          if (typeof window !== 'undefined') {
             const browserLocale = extractLocale(navigator.language);
             if (supportedLocales.includes(browserLocale)) {
               setLocaleState(browserLocale);
@@ -58,8 +60,8 @@ export function I18nProvider({ children }) {
             }
           }
         }
-      } catch (error) {
-        console.error('Error loading locale:', error);
+      } catch (_error) {
+        // Locale load failed; keep default
       } finally {
         setLoading(false);
       }
@@ -84,7 +86,7 @@ export function I18nProvider({ children }) {
           },
         })
         .catch((error) => {
-          console.error('Failed to update tenant locale:', error);
+          logger.error('Failed to update tenant locale', error);
         });
     }
   };

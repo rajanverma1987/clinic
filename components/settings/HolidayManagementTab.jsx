@@ -1,5 +1,6 @@
 'use client';
 
+import { CalendarIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -167,7 +168,7 @@ export function HolidayManagementTab({ settings, onUpdate, showAddForm: controll
               <label className='text-sm text-neutral-700'>Recurring every year</label>
             </div>
             <div className='flex gap-2 pt-2 border-t border-neutral-200'>
-              <Button type='submit' isLoading={saving} disabled={saving} className='flex-1'>
+              <Button type='submit' variant='primary' isLoading={saving} disabled={saving} className='flex-1'>
                 Add Holiday
               </Button>
               <Button
@@ -196,19 +197,7 @@ export function HolidayManagementTab({ settings, onUpdate, showAddForm: controll
         <div className='p-4'>
           <div className='flex items-center gap-2 mb-3'>
             <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-              <svg
-                className='icon icon-xs text-primary-600'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-                />
-              </svg>
+              <CalendarIcon className='icon icon-xs text-primary-600' ariaHidden />
             </div>
             <h2 className='text-lg font-bold text-neutral-900'>{t('settings.holidaysClosures')}</h2>
             <span className='text-sm text-neutral-500'>({holidays.length})</span>
@@ -216,14 +205,7 @@ export function HolidayManagementTab({ settings, onUpdate, showAddForm: controll
 
           {holidays.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-10 text-neutral-400'>
-              <svg className='w-12 h-12 mb-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-                />
-              </svg>
+              <CalendarIcon className='icon icon-xl mb-2' ariaHidden />
               <p className='text-sm'>{t('settings.noHolidaysConfigured')}</p>
               <p className='text-xs mt-1'>
                 Add holidays to block appointment scheduling on those dates
@@ -238,19 +220,7 @@ export function HolidayManagementTab({ settings, onUpdate, showAddForm: controll
                 >
                   <div className='flex items-center gap-3'>
                     <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-                      <svg
-                        className='icon icon-xs text-primary-600'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-                        />
-                      </svg>
+                      <CalendarIcon className='icon icon-xs text-primary-600' ariaHidden />
                     </div>
                     <div>
                       <p className='font-semibold text-neutral-900 text-sm'>{holiday.name}</p>

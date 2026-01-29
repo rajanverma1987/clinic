@@ -1,0 +1,33 @@
+---
+description: Do not implement anything that is not specified in CursorMD/New
+globs:
+alwaysApply: true
+---
+
+# CursorMD/New Boundary – Nothing Outside
+
+Implementation must stay **inside** what is defined in `CursorMD/New`. Nothing outside.
+
+## Out of Scope (Unless in CursorMD/New)
+
+- **New roles** not in the permission matrix or architecture (e.g. Super Admin, Doctor, Admin, Manager only).
+- **New entities or fields** not in `database-schema.mermaid`.
+- **New WebSocket events** not listed in `realtime-caching-strategy.md`.
+- **New permissions or modules** not in `clinic-complete-specification.md` or `clinic-dashboard-architecture.mermaid`.
+- **New dashboards or core modules** not in the architecture diagram.
+- **Features from other docs** (e.g. implementation plans, other CursorMD files) that are not also described in CursorMD/New.
+
+## Allowed Without CursorMD/New Change
+
+- Bug fixes that don’t change product behavior.
+- Refactors that preserve existing behavior and specs.
+- i18n, accessibility, and non-functional improvements that don’t add new features or data.
+
+## Adding New Scope
+
+To add a new feature, role, entity, event, or permission:
+
+1. **First** update the appropriate file(s) in `CursorMD/New` to describe it.
+2. **Then** implement in code.
+
+If it’s not in CursorMD/New, treat it as out of scope.

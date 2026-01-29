@@ -11,6 +11,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -41,7 +42,7 @@ export default function PrescriptionDetailPage() {
         setError('Prescription not found');
       }
     } catch (error) {
-      console.error('Failed to fetch prescription:', error);
+      logger.error('Failed to fetch prescription:', error);
       setError('Failed to load prescription');
     } finally {
       setLoading(false);
@@ -92,7 +93,7 @@ export default function PrescriptionDetailPage() {
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
             <div className='text-status-error mb-4'>{error || 'Prescription not found'}</div>
-            <Button onClick={() => router.push('/prescriptions')}>Back to Prescriptions</Button>
+            <Button variant='primary' size='md' onClick={() => router.push('/prescriptions')}>Back to Prescriptions</Button>
           </div>
         </div>
       </Layout>
@@ -111,7 +112,7 @@ export default function PrescriptionDetailPage() {
         actionButtons={
           <>
             <BackButton />
-            <Button variant='secondary' onClick={() => router.push(`/prescriptions/${prescriptionId}/edit`)}>
+            <Button variant='primary' size='md' onClick={() => router.push(`/prescriptions/${prescriptionId}/edit`)}>
               Edit
             </Button>
             <Button
@@ -154,7 +155,7 @@ export default function PrescriptionDetailPage() {
               </svg>
               Email
             </Button>
-            <Button variant='secondary' onClick={() => setShowPrintPreview(true)}>
+            <Button variant='secondary' size='md' onClick={() => setShowPrintPreview(true)}>
               <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z' />
               </svg>

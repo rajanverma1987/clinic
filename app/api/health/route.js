@@ -26,17 +26,17 @@ async function checkDatabase() {
 }
 
 /**
- * Check Redis connectivity (if configured)
+ * Check Redis connectivity (optional – reports degraded when Redis disabled/unavailable)
  */
 async function checkCache() {
   try {
-    const { getCache } = await import('@/lib/cache/redis-client.js');
+    const { checkRedisHealth } = await import('@/lib/cache/redis-client.js');
     const start = Date.now();
-    await getCache('health-check');
+    const { available } = await checkRedisHealth();
     const latency = Date.now() - start;
-    return { status: 'healthy', latency };
+    if (available) return { status: 'healthy', latency };
+    return { status: 'degraded', latency, reason: 'Redis disabled or unavailable' };
   } catch (error) {
-    // Cache is optional, so return degraded status
     return { status: 'degraded', error: error.message };
   }
 }

@@ -5,9 +5,13 @@ import { ImageTransition } from '@/components/layout/ImageTransition';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import {
+  isTestAccount,
+  setTestAccountRoleOverride,
+  TEST_ACCOUNT_ALLOWED_ROLES,
+} from '@/lib/constants/test-account';
 import { validateForm } from '@/lib/utils/form-validation';
 import { showError } from '@/lib/utils/toast';
 import Image from 'next/image';
@@ -19,7 +23,13 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reasonClinicOnly = searchParams.get('reason') === 'clinic_only';
-  const { login, verify2FA, user, loading } = useAuth();
+  const {
+    login,
+    verify2FA,
+    user,
+    loading,
+    setTestAccountRoleOverride: setTestRoleInContext,
+  } = useAuth();
   const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +40,7 @@ function LoginPageContent() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
+  const [showTestRolePicker, setShowTestRolePicker] = useState(false);
   const formRef = useRef(null);
 
   // Load remembered email on mount
@@ -43,12 +54,20 @@ function LoginPageContent() {
     }
   }, []);
 
-  // Redirect if already logged in
+  // Redirect if already logged in (skip for test account until they pick a role)
   useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
+    if (!loading && user && !showTestRolePicker) {
+      if (isTestAccount(user.email) && !sessionStorage.getItem('TEST_ACCOUNT_ROLE_OVERRIDE')) {
+        setShowTestRolePicker(true);
+        return;
+      }
+      const path =
+        isTestAccount(user.email) && typeof window !== 'undefined'
+          ? getRoleHomePage(sessionStorage.getItem('TEST_ACCOUNT_ROLE_OVERRIDE') || user.role)
+          : getRoleHomePage(user.role);
+      router.push(path);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, showTestRolePicker]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -101,17 +120,17 @@ function LoginPageContent() {
       let tokenStored = false;
       let attempts = 0;
       while (!tokenStored && attempts < 10) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        const storedToken =
+          typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
         if (storedToken) {
           tokenStored = true;
-          console.log('Token verified in localStorage before redirect');
         }
         attempts++;
       }
-      
+
       if (!tokenStored) {
-        console.error('Token not found in localStorage after login, redirecting anyway');
+        // Token not in localStorage; redirect anyway
       }
 
       // Check if password change is required
@@ -148,24 +167,25 @@ function LoginPageContent() {
       let tokenStored = false;
       let attempts = 0;
       while (!tokenStored && attempts < 10) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        const storedToken =
+          typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
         if (storedToken) {
           tokenStored = true;
-          console.log('Token verified in localStorage before redirect (2FA)');
         }
         attempts++;
       }
-      
+
       if (!tokenStored) {
-        console.error('Token not found in localStorage after 2FA verification, redirecting anyway');
+        // Token not in localStorage; redirect anyway
       }
 
       // Check if password change is required
       if (result.forcePasswordChange) {
         router.push('/change-password?firstLogin=true');
+      } else if (isTestAccount(result.user?.email)) {
+        setShowTestRolePicker(true);
       } else {
-        // Redirect based on role
         const redirectPath = getRoleHomePage(result.user?.role || '');
         router.push(redirectPath);
       }
@@ -181,22 +201,63 @@ function LoginPageContent() {
       super_admin: '/admin',
       clinic_admin: '/dashboard',
       admin: '/dashboard',
-      doctor: '/patients',
+      manager: '/dashboard',
+      doctor: '/doctors/profile',
       nurse: '/patients',
       receptionist: '/appointments',
       pharmacist: '/inventory',
       lab_tech: '/inventory',
+      patient: '/login', // Clinic-only: no patient portal; patient role sends to login
     };
     return roleRoutes[role] || '/dashboard';
   };
 
-  // Show nothing while checking auth or redirecting
-  if (loading || user) {
+  const handleTestAccountRoleChoose = (role) => {
+    setTestAccountRoleOverride(role);
+    setTestRoleInContext(role);
+    setShowTestRolePicker(false);
+    router.push(getRoleHomePage(role));
+  };
+
+  // Show nothing while checking auth or redirecting (except when test account role picker is shown)
+  if (loading || (user && !showTestRolePicker)) {
     return null;
   }
 
   return (
     <div className='h-screen flex bg-neutral-50 overflow-hidden'>
+      {/* TEMPORARY: Test account role picker – REMOVE before production */}
+      {showTestRolePicker && user && (
+        <div
+          className='fixed inset-0 z-[100] flex items-center justify-center bg-neutral-500/30 backdrop-blur-sm p-4'
+          role='dialog'
+          aria-modal='true'
+          aria-labelledby='test-role-picker-title'
+        >
+          <div className='bg-white rounded-2xl shadow-xl border border-neutral-200 max-w-md w-full p-6'>
+            <h2 id='test-role-picker-title' className='text-lg font-bold text-neutral-900 mb-1'>
+              TMP: Choose account type
+            </h2>
+            <p className='text-sm text-neutral-600 mb-4'>
+              Testing account – select which dashboard to open. Remove before production.
+            </p>
+            <div className='grid grid-cols-1 gap-2'>
+              {TEST_ACCOUNT_ALLOWED_ROLES.map((r) => (
+                <Button
+                  key={r.value}
+                  variant='secondary'
+                  size='md'
+                  className='w-full justify-center'
+                  onClick={() => handleTestAccountRoleChoose(r.value)}
+                >
+                  {r.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Left Side - Background Image Only */}
       <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 h-full'>
         {/* Background Image */}
@@ -285,157 +346,182 @@ function LoginPageContent() {
 
             {!showOtp ? (
               <form ref={formRef} onSubmit={handleSubmit} className='space-y-6' noValidate>
-              {error && (
-                <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm animate-fade-in slide-in-right'>
-                  <svg
-                    className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
-                    fill='currentColor'
-                    viewBox='0 0 20 20'
-                  >
-                    <path
-                      fillRule='evenodd'
-                      d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-                      clipRule='evenodd'
-                    />
-                  </svg>
-                  <span className='text-sm font-medium'>{error}</span>
-                </div>
-              )}
-
-              <div>
-                <label
-                  htmlFor='email'
-                  className='block text-sm font-semibold text-neutral-800 mb-2'
-                >
-                  {t('auth.email')}
-                </label>
-                <div className='relative'>
-                  <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                {error && (
+                  <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm animate-fade-in slide-in-right'>
                     <svg
-                      className='icon icon-sm text-neutral-900'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
+                      className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
+                      fill='currentColor'
+                      viewBox='0 0 20 20'
                     >
                       <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
+                        fillRule='evenodd'
+                        d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
+                        clipRule='evenodd'
                       />
                     </svg>
+                    <span className='text-sm font-medium'>{error}</span>
                   </div>
-                  <Input
-                    id='email'
-                    type='email'
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    placeholder={t('auth.emailPlaceholder')}
-                    autoComplete='email'
-                    className='pl-10'
-                  />
-                </div>
-              </div>
+                )}
 
-              <div>
-                <label
-                  htmlFor='password'
-                  className='block text-sm font-semibold text-neutral-800 mb-2'
-                >
-                  {t('auth.password')}
-                </label>
-                <div className='relative'>
-                  <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
-                    <svg
-                      className='icon icon-sm text-neutral-900'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
-                      />
-                    </svg>
-                  </div>
-                  <Input
-                    id='password'
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    placeholder={t('auth.passwordPlaceholder')}
-                    autoComplete='current-password'
-                    className='pl-10 pr-10'
-                  />
-                  <button
-                    type='button'
-                    onClick={() => setShowPassword(!showPassword)}
-                    className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
-                  >
-                    {showPassword ? (
-                      <svg
-                        className='icon icon-sm'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21'
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className='icon icon-sm'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
-                        />
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center gap-3 group'>
-                  <Checkbox
-                    id='rememberMe'
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    size='sm'
-                  />
+                <div>
                   <label
-                    htmlFor='rememberMe'
-                    className='text-sm text-neutral-700 group-hover:text-neutral-900 font-medium transition-colors cursor-pointer'
+                    htmlFor='email'
+                    className='block text-sm font-semibold text-neutral-800 mb-2'
                   >
-                    {t('auth.rememberMe')}
+                    {t('auth.email')}
                   </label>
+                  <div className='relative'>
+                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                      <svg
+                        className='icon icon-sm text-neutral-900'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
+                        />
+                      </svg>
+                    </div>
+                    <Input
+                      id='email'
+                      type='email'
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder={t('auth.emailPlaceholder')}
+                      autoComplete='email'
+                      className='pl-10'
+                    />
+                  </div>
                 </div>
-                <Link
-                  href='/forgot-password'
-                  className='text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center group transition-colors'
+
+                <div>
+                  <label
+                    htmlFor='password'
+                    className='block text-sm font-semibold text-neutral-800 mb-2'
+                  >
+                    {t('auth.password')}
+                  </label>
+                  <div className='relative'>
+                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                      <svg
+                        className='icon icon-sm text-neutral-900'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+                        />
+                      </svg>
+                    </div>
+                    <Input
+                      id='password'
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder={t('auth.passwordPlaceholder')}
+                      autoComplete='current-password'
+                      className='pl-10 pr-10'
+                    />
+                    <button
+                      type='button'
+                      onClick={() => setShowPassword(!showPassword)}
+                      className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
+                    >
+                      {showPassword ? (
+                        <svg
+                          className='icon icon-sm'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21'
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className='icon icon-sm'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
+                          />
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center gap-3 group'>
+                    <Checkbox
+                      id='rememberMe'
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      size='sm'
+                    />
+                    <label
+                      htmlFor='rememberMe'
+                      className='text-sm text-neutral-700 group-hover:text-neutral-900 font-medium transition-colors cursor-pointer'
+                    >
+                      {t('auth.rememberMe')}
+                    </label>
+                  </div>
+                  <Link
+                    href='/forgot-password'
+                    className='text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center group transition-colors'
+                  >
+                    <svg
+                      className='icon icon-xs mr-1 group-hover:translate-x-1 transition-transform'
+                      fill='none'
+                      stroke='currentColor'
+                      viewBox='0 0 24 24'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z'
+                      />
+                    </svg>
+                    {t('auth.forgotPassword')}
+                  </Link>
+                </div>
+
+                <Button
+                  type='submit'
+                  variant='primary'
+                  isLoading={isLoading}
+                  disabled={isLoading}
+                  className='w-full'
+                  size='lg'
                 >
                   <svg
-                    className='icon icon-xs mr-1 group-hover:translate-x-1 transition-transform'
+                    className='icon icon-sm mr-2'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -444,37 +530,12 @@ function LoginPageContent() {
                       strokeLinecap='round'
                       strokeLinejoin='round'
                       strokeWidth={2}
-                      d='M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z'
+                      d='M13 7l5 5m0 0l-5 5m5-5H6'
                     />
                   </svg>
-                  {t('auth.forgotPassword')}
-                </Link>
-              </div>
-
-              <Button
-                type='submit'
-                variant='primary'
-                isLoading={isLoading}
-                disabled={isLoading}
-                className='w-full'
-                size='lg'
-              >
-                <svg
-                  className='icon icon-sm mr-2'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M13 7l5 5m0 0l-5 5m5-5H6'
-                  />
-                </svg>
-                {t('auth.signIn')}
-              </Button>
-            </form>
+                  {t('auth.signIn')}
+                </Button>
+              </form>
             ) : (
               <form onSubmit={handleVerifyOtp} className='space-y-6' noValidate>
                 <div className='text-center mb-4'>
@@ -517,8 +578,7 @@ function LoginPageContent() {
                 {error && (
                   <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm'>
                     <svg
-                      className='icon icon-sm'
-                      className='text-status-error mt-0.5 flex-shrink-0'
+                      className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
                       fill='currentColor'
                       viewBox='0 0 20 20'
                     >
@@ -616,12 +676,7 @@ function LoginPageContent() {
                   </div>
 
                   <div className='mt-6 grid grid-cols-2 gap-4'>
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='sm'
-                      className='w-full'
-                    >
+                    <Button type='button' variant='secondary' size='sm' className='w-full'>
                       <svg className='icon icon-sm group-hover:scale-110' viewBox='0 0 24 24'>
                         <path
                           fill='#4285F4'
@@ -642,12 +697,7 @@ function LoginPageContent() {
                       </svg>
                       <span className='ml-2'>Google</span>
                     </Button>
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='sm'
-                      className='w-full'
-                    >
+                    <Button type='button' variant='secondary' size='sm' className='w-full'>
                       <svg
                         className='icon icon-sm group-hover:scale-110 transition-transform'
                         fill='currentColor'
@@ -670,7 +720,10 @@ function LoginPageContent() {
                       {t('auth.createAccount')}
                     </Link>
                   </p>
-                  <p className='text-neutral-500 mt-2' style={{ fontSize: '10px', lineHeight: '14px' }}>
+                  <p
+                    className='text-neutral-500 mt-2'
+                    style={{ fontSize: '10px', lineHeight: '14px' }}
+                  >
                     By signing in, you agree to our{' '}
                     <Link
                       href='/legal'
@@ -680,9 +733,6 @@ function LoginPageContent() {
                       Legal Information & Disclaimers
                     </Link>
                   </p>
-                </div>
-                <div className='mt-4 flex justify-center'>
-                  <LanguageSwitcher />
                 </div>
               </>
             )}

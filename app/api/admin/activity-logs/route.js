@@ -1,7 +1,7 @@
 /**
  * Admin Activity Logs API (Super Admin only)
  * @module app/api/admin/activity-logs/route
- * GET /api/admin/activity-logs?userId=&action=&resource=&page=&limit=
+ * GET /api/admin/activity-logs?userId=&action=&resource=&resourceId=&page=&limit=
  */
 
 import { NextResponse } from 'next/server';
@@ -21,6 +21,7 @@ async function getHandler(req, user) {
     const userId = searchParams.get('userId');
     const action = searchParams.get('action');
     const resource = searchParams.get('resource');
+    const resourceId = searchParams.get('resourceId');
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
 
@@ -28,6 +29,7 @@ async function getHandler(req, user) {
     if (userId) query.userId = userId;
     if (action) query.action = action;
     if (resource) query.resource = resource;
+    if (resourceId) query.resourceId = resourceId;
 
     const total = await AuditLog.countDocuments(query);
     const skip = (page - 1) * limit;

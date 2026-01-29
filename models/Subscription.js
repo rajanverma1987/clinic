@@ -34,6 +34,14 @@ const SubscriptionSchema = new Schema(
       type: String,
       trim: true,
     },
+    stripeSubscriptionId: {
+      type: String,
+      trim: true,
+    },
+    stripeCustomerId: {
+      type: String,
+      trim: true,
+    },
     currentPeriodStart: {
       type: Date,
       required: true,
@@ -55,6 +63,14 @@ const SubscriptionSchema = new Schema(
     nextBillingDate: {
       type: Date,
     },
+    // Add-ons for limited-plan users (e.g. extra doctor, extra SMS, storage)
+    addons: [
+      {
+        addonKey: { type: String, required: true },
+        quantity: { type: Number, default: 1 },
+        option: { type: String }, // e.g. "100 SMS" | "500 SMS" for extraSms
+      },
+    ],
   },
   {
     timestamps: true,
@@ -64,8 +80,7 @@ const SubscriptionSchema = new Schema(
 // Indexes
 SubscriptionSchema.index({ tenantId: 1 });
 SubscriptionSchema.index({ paypalSubscriptionId: 1 });
+SubscriptionSchema.index({ stripeSubscriptionId: 1 });
 SubscriptionSchema.index({ status: 1 });
 
-export default mongoose.models.Subscription ||
-  mongoose.model('Subscription', SubscriptionSchema);
-
+export default mongoose.models.Subscription || mongoose.model('Subscription', SubscriptionSchema);

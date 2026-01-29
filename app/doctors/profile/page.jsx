@@ -11,6 +11,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -65,19 +66,23 @@ export default function DoctorProfilePage() {
   const [insuranceAccepted, setInsuranceAccepted] = useState([]);
   const [newInsurance, setNewInsurance] = useState('');
 
+  const userId = user?._id ?? user?.id ?? user?.userId;
+
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== 'doctor') {
       router.push('/dashboard');
       return;
     }
+    if (!userId) return;
     fetchDoctorProfile();
-  }, [authLoading, user, router]);
+  }, [authLoading, user, userId, router]);
 
   const fetchDoctorProfile = async () => {
+    if (!userId || userId === 'undefined') return;
     try {
       setLoading(true);
-      const doctorResponse = await apiClient.get(`/doctors/user/${user._id}`);
+      const doctorResponse = await apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`);
       if (doctorResponse.success && doctorResponse.data) {
         const profile = doctorResponse.data;
         setDoctorId(profile._id);
@@ -94,26 +99,29 @@ export default function DoctorProfilePage() {
           setClinics(profile.clinics);
         } else {
           // Initialize with empty clinic if none exists
-          setClinics([{
-            name: '',
-            address: '',
-            lat: '',
-            lng: '',
-            photos: [],
-            facilities: [],
-            parkingInfo: '',
-            publicTransportAccess: '',
-          }]);
+          setClinics([
+            {
+              name: '',
+              address: '',
+              lat: '',
+              lng: '',
+              photos: [],
+              facilities: [],
+              parkingInfo: '',
+              publicTransportAccess: '',
+            },
+          ]);
         }
 
         // Set fees
         setVideoConsultationFee(profile.videoConsultationFee || 0);
         setFollowUpFee(profile.followUpFee || 0);
       } else {
-        throw new Error('Doctor profile not found');
+        setDoctorProfile(null);
       }
     } catch (err) {
-      console.error('Failed to fetch doctor profile:', err);
+      setDoctorProfile(null);
+      logger.warn('Doctor profile not found or not yet created');
     } finally {
       setLoading(false);
     }
@@ -142,20 +150,23 @@ export default function DoctorProfilePage() {
       setSaving(true);
       const formData = new FormData();
       formData.append('bio', bio);
-      formData.append('professional', JSON.stringify({
-        specialization: specializations,
-        servicesOffered: servicesOffered,
-        languages: languages,
-        conditionsTreated: conditionsTreated,
-        awards: awards,
-      }));
+      formData.append(
+        'professional',
+        JSON.stringify({
+          specialization: specializations,
+          servicesOffered: servicesOffered,
+          languages: languages,
+          conditionsTreated: conditionsTreated,
+          awards: awards,
+        })
+      );
       formData.append('consultationFee', consultationFee);
       formData.append('videoConsultationFee', videoConsultationFee);
       formData.append('followUpFee', followUpFee);
       formData.append('procedureFees', JSON.stringify(procedureFees));
       formData.append('insuranceAccepted', JSON.stringify(insuranceAccepted));
       formData.append('clinics', JSON.stringify(clinics));
-      
+
       if (profilePhoto) {
         formData.append('profilePhoto', profilePhoto);
       }
@@ -167,14 +178,14 @@ export default function DoctorProfilePage() {
       });
 
       if (response.success) {
-        alert('Profile updated successfully');
+        alert(t('doctors.profileUpdatedSuccess'));
         fetchDoctorProfile();
       } else {
-        alert('Failed to update profile');
+        alert(t('doctors.profileUpdateFailed'));
       }
     } catch (err) {
-      console.error('Failed to save profile:', err);
-      alert('Failed to update profile');
+      logger.error('Failed to save profile:', err);
+      alert(t('doctors.profileUpdateFailed'));
     } finally {
       setSaving(false);
     }
@@ -253,13 +264,14 @@ export default function DoctorProfilePage() {
     <Layout>
       <div className='max-w-7xl mx-auto space-y-6'>
         <PageHeader
-          title='Profile Management'
-          subtitle='Manage your professional profile, clinic details, and fees'
+          title={t('doctors.profileManagement')}
+          subtitle={t('doctors.profileManagementSubtitle')}
         />
 
         {/* Tabs */}
         <div className='flex gap-2 border-b border-neutral-200'>
           <button
+            type='button'
             className={`px-4 py-2 font-medium text-sm ${
               activeTab === 'profile'
                 ? 'text-primary-600 border-b-2 border-primary-600'
@@ -267,9 +279,10 @@ export default function DoctorProfilePage() {
             }`}
             onClick={() => setActiveTab('profile')}
           >
-            Profile
+            {t('doctors.tabProfile')}
           </button>
           <button
+            type='button'
             className={`px-4 py-2 font-medium text-sm ${
               activeTab === 'clinic'
                 ? 'text-primary-600 border-b-2 border-primary-600'
@@ -277,7 +290,7 @@ export default function DoctorProfilePage() {
             }`}
             onClick={() => setActiveTab('clinic')}
           >
-            Clinic Details
+            {t('doctors.tabClinicDetails')}
           </button>
           <button
             className={`px-4 py-2 font-medium text-sm ${
@@ -287,9 +300,10 @@ export default function DoctorProfilePage() {
             }`}
             onClick={() => setActiveTab('fees')}
           >
-            Fees & Insurance
+            {t('doctors.tabFeesInsurance')}
           </button>
           <button
+            type='button'
             className={`px-4 py-2 font-medium text-sm ${
               activeTab === 'availability'
                 ? 'text-primary-600 border-b-2 border-primary-600'
@@ -297,7 +311,7 @@ export default function DoctorProfilePage() {
             }`}
             onClick={() => setActiveTab('availability')}
           >
-            Availability
+            {t('doctors.tabAvailability')}
           </button>
         </div>
 
@@ -307,14 +321,30 @@ export default function DoctorProfilePage() {
             <div className='p-6 space-y-6'>
               {/* Profile Photo Upload */}
               <div>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>Profile Photo</h2>
+                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('doctors.profilePhoto')}
+                </h2>
                 <div className='flex items-center gap-6'>
                   <div className='w-32 h-32 rounded-full bg-neutral-200 flex items-center justify-center overflow-hidden border-4 border-neutral-300'>
                     {profilePhotoPreview ? (
-                      <img src={profilePhotoPreview} alt='Profile' className='w-full h-full object-cover' />
+                      <img
+                        src={profilePhotoPreview}
+                        alt='Profile'
+                        className='w-full h-full object-cover'
+                      />
                     ) : (
-                      <svg className='w-16 h-16 text-neutral-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
+                      <svg
+                        className='w-16 h-16 text-neutral-400'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+                        />
                       </svg>
                     )}
                   </div>
@@ -327,40 +357,52 @@ export default function DoctorProfilePage() {
                         className='hidden'
                       />
                       <Button variant='secondary' as='span'>
-                        <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12' />
+                        <svg
+                          className='icon icon-xs mr-2'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12'
+                          />
                         </svg>
-                        Upload Photo
+                        {t('doctors.uploadPhoto')}
                       </Button>
                     </label>
-                    <p className='text-xs text-neutral-500 mt-2'>JPG, PNG or GIF. Max size 5MB</p>
+                    <p className='text-xs text-neutral-500 mt-2'>{t('doctors.imageSizeHint')}</p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>About Me</h2>
+                <h2 className='text-lg font-bold text-neutral-900 mb-4'>{t('doctors.aboutMe')}</h2>
                 <textarea
                   className='w-full p-3 border border-neutral-300 rounded-lg'
                   rows={5}
-                  placeholder='Write about yourself, your experience, and expertise...'
+                  placeholder={t('doctors.aboutMePlaceholder')}
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                 />
               </div>
 
               <div>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>Specializations</h2>
+                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('doctors.specializations')}
+                </h2>
                 <div className='flex gap-2 mb-3'>
                   <Input
                     type='text'
-                    placeholder='Add specialization'
+                    placeholder={t('doctors.addSpecialization')}
                     value={newSpecialization}
                     onChange={(e) => setNewSpecialization(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addSpecialization()}
                   />
                   <Button variant='secondary' onClick={addSpecialization}>
-                    Add
+                    {t('doctors.add')}
                   </Button>
                 </div>
                 <div className='flex flex-wrap gap-2'>
@@ -382,27 +424,35 @@ export default function DoctorProfilePage() {
               </div>
 
               <div>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>Services Offered</h2>
+                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('doctors.servicesOffered')}
+                </h2>
                 <div className='flex gap-2 mb-3'>
                   <Input
                     type='text'
-                    placeholder='Add service (e.g., General Checkup, Vaccination, Health Screening)'
+                    placeholder={t('doctors.addServicePlaceholder')}
                     value={newService}
                     onChange={(e) => setNewService(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (() => {
+                    onKeyPress={(e) =>
+                      e.key === 'Enter' &&
+                      (() => {
+                        if (newService.trim() && !servicesOffered.includes(newService.trim())) {
+                          setServicesOffered([...servicesOffered, newService.trim()]);
+                          setNewService('');
+                        }
+                      })()
+                    }
+                  />
+                  <Button
+                    variant='secondary'
+                    onClick={() => {
                       if (newService.trim() && !servicesOffered.includes(newService.trim())) {
                         setServicesOffered([...servicesOffered, newService.trim()]);
                         setNewService('');
                       }
-                    })()}
-                  />
-                  <Button variant='secondary' onClick={() => {
-                    if (newService.trim() && !servicesOffered.includes(newService.trim())) {
-                      setServicesOffered([...servicesOffered, newService.trim()]);
-                      setNewService('');
-                    }
-                  }}>
-                    Add
+                    }}
+                  >
+                    {t('doctors.add')}
                   </Button>
                 </div>
                 <div className='flex flex-wrap gap-2'>
@@ -413,7 +463,9 @@ export default function DoctorProfilePage() {
                     >
                       {service}
                       <button
-                        onClick={() => setServicesOffered(servicesOffered.filter((_, i) => i !== index))}
+                        onClick={() =>
+                          setServicesOffered(servicesOffered.filter((_, i) => i !== index))
+                        }
                         className='text-blue-600 hover:text-blue-800'
                       >
                         ×
@@ -424,17 +476,19 @@ export default function DoctorProfilePage() {
               </div>
 
               <div>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>Languages Spoken</h2>
+                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('doctors.languagesSpoken')}
+                </h2>
                 <div className='flex gap-2 mb-3'>
                   <Input
                     type='text'
-                    placeholder='Add language'
+                    placeholder={t('doctors.addLanguage')}
                     value={newLanguage}
                     onChange={(e) => setNewLanguage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addLanguage()}
                   />
                   <Button variant='secondary' onClick={addLanguage}>
-                    Add
+                    {t('doctors.add')}
                   </Button>
                 </div>
                 <div className='flex flex-wrap gap-2'>
@@ -488,17 +542,19 @@ export default function DoctorProfilePage() {
               </div>
 
               <div>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>Awards & Recognitions</h2>
+                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('doctors.awardsRecognitions')}
+                </h2>
                 <div className='flex gap-2 mb-3'>
                   <Input
                     type='text'
-                    placeholder='Add award or recognition'
+                    placeholder={t('doctors.addAwardPlaceholder')}
                     value={newAward}
                     onChange={(e) => setNewAward(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addAward()}
                   />
                   <Button variant='secondary' onClick={addAward}>
-                    Add
+                    {t('doctors.add')}
                   </Button>
                 </div>
                 <div className='space-y-2'>
@@ -512,7 +568,7 @@ export default function DoctorProfilePage() {
                         onClick={() => removeAward(index)}
                         className='text-red-600 hover:text-red-800'
                       >
-                        Remove
+                        {t('doctors.remove')}
                       </button>
                     </div>
                   ))}
@@ -521,7 +577,7 @@ export default function DoctorProfilePage() {
 
               <div className='flex justify-end'>
                 <Button variant='primary' onClick={handleSaveProfile} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Profile'}
+                  {saving ? t('doctors.saving') : t('doctors.saveProfile')}
                 </Button>
               </div>
             </div>
@@ -533,7 +589,9 @@ export default function DoctorProfilePage() {
           <Card>
             <div className='p-6 space-y-6'>
               <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-lg font-bold text-neutral-900'>Clinic Locations</h2>
+                <h2 className='text-lg font-bold text-neutral-900'>
+                  {t('doctors.clinicLocations')}
+                </h2>
                 <Button
                   variant='primary'
                   size='sm'
@@ -551,7 +609,7 @@ export default function DoctorProfilePage() {
                     });
                   }}
                 >
-                  + Add Clinic Location
+                  {t('doctors.addClinicLocation')}
                 </Button>
               </div>
 
@@ -562,9 +620,11 @@ export default function DoctorProfilePage() {
                     <div className='flex items-start justify-between mb-4'>
                       <div className='flex-1'>
                         <h3 className='font-semibold text-neutral-900 mb-2'>
-                          {clinic.name || `Clinic Location ${index + 1}`}
+                          {clinic.name || t('doctors.clinicLocationN', { n: index + 1 })}
                         </h3>
-                        <p className='text-sm text-neutral-600'>{clinic.address || 'No address'}</p>
+                        <p className='text-sm text-neutral-600'>
+                          {clinic.address || t('doctors.noAddress')}
+                        </p>
                         {clinic.lat && clinic.lng && (
                           <div className='mt-2'>
                             <iframe
@@ -583,7 +643,10 @@ export default function DoctorProfilePage() {
                             <p className='text-xs text-neutral-500 mb-1'>Facilities:</p>
                             <div className='flex flex-wrap gap-1'>
                               {clinic.facilities.map((facility, fIndex) => (
-                                <span key={fIndex} className='px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded'>
+                                <span
+                                  key={fIndex}
+                                  className='px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded'
+                                >
                                   {facility}
                                 </span>
                               ))}
@@ -592,12 +655,13 @@ export default function DoctorProfilePage() {
                         )}
                         {clinic.parkingInfo && (
                           <p className='text-xs text-neutral-600 mt-1'>
-                            <strong>Parking:</strong> {clinic.parkingInfo}
+                            <strong>{t('doctors.parking')}</strong> {clinic.parkingInfo}
                           </p>
                         )}
                         {clinic.publicTransportAccess && (
                           <p className='text-xs text-neutral-600 mt-1'>
-                            <strong>Public Transport:</strong> {clinic.publicTransportAccess}
+                            <strong>{t('doctors.publicTransport')}</strong>{' '}
+                            {clinic.publicTransportAccess}
                           </p>
                         )}
                       </div>
@@ -613,14 +677,13 @@ export default function DoctorProfilePage() {
                           Edit
                         </Button>
                         <Button
-                          variant='outline'
+                          variant='danger'
                           size='sm'
                           onClick={() => {
                             if (confirm('Are you sure you want to delete this clinic location?')) {
                               setClinics(clinics.filter((_, i) => i !== index));
                             }
                           }}
-                          className='text-red-600 border-red-300'
                         >
                           Delete
                         </Button>
@@ -634,39 +697,41 @@ export default function DoctorProfilePage() {
               {(editingClinicIndex !== null || (editingClinicIndex === null && newClinic.name)) && (
                 <Card className='p-6 border-2 border-primary-200 bg-primary-50'>
                   <h3 className='text-lg font-bold text-neutral-900 mb-4'>
-                    {editingClinicIndex !== null ? 'Edit Clinic Location' : 'Add New Clinic Location'}
+                    {editingClinicIndex !== null
+                      ? t('doctors.editClinicLocation')
+                      : t('doctors.addNewClinicLocation')}
                   </h3>
                   <div className='space-y-4'>
                     <div>
                       <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                        Clinic Name *
+                        {t('doctors.clinicNameRequired')}
                       </label>
                       <Input
                         type='text'
                         value={newClinic.name}
                         onChange={(e) => setNewClinic({ ...newClinic, name: e.target.value })}
-                        placeholder='Enter clinic name'
+                        placeholder={t('doctors.enterClinicName')}
                       />
                     </div>
                     <div>
                       <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                        Address *
+                        {t('doctors.addressRequired')}
                       </label>
                       <textarea
                         className='w-full p-3 border border-neutral-300 rounded-lg'
                         rows={3}
                         value={newClinic.address}
                         onChange={(e) => setNewClinic({ ...newClinic, address: e.target.value })}
-                        placeholder='Enter full address'
+                        placeholder={t('doctors.enterFullAddress')}
                       />
                       <p className='text-xs text-neutral-500 mt-1'>
-                        Enter address and we'll automatically get coordinates
+                        {t('doctors.addressCoordsHint')}
                       </p>
                     </div>
                     {newClinic.address && (
                       <div>
                         <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                          Map Preview
+                          {t('doctors.mapPreview')}
                         </label>
                         <div className='h-48 border border-neutral-300 rounded-lg overflow-hidden'>
                           <iframe
@@ -683,12 +748,12 @@ export default function DoctorProfilePage() {
                     )}
                     <div>
                       <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                        Facilities Available
+                        {t('doctors.facilitiesAvailable')}
                       </label>
                       <div className='flex gap-2 mb-2'>
                         <Input
                           type='text'
-                          placeholder='e.g., Parking, Wheelchair Access, Pharmacy'
+                          placeholder={t('doctors.facilitiesPlaceholder')}
                           value={newFacility}
                           onChange={(e) => setNewFacility(e.target.value)}
                           onKeyPress={(e) => {
@@ -713,7 +778,7 @@ export default function DoctorProfilePage() {
                             }
                           }}
                         >
-                          Add
+                          {t('doctors.add')}
                         </Button>
                       </div>
                       <div className='flex flex-wrap gap-2'>
@@ -740,29 +805,33 @@ export default function DoctorProfilePage() {
                     </div>
                     <div>
                       <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                        Parking Information
+                        {t('doctors.parkingInfo')}
                       </label>
                       <Input
                         type='text'
                         value={newClinic.parkingInfo}
-                        onChange={(e) => setNewClinic({ ...newClinic, parkingInfo: e.target.value })}
-                        placeholder='e.g., Free parking available, Paid parking nearby'
+                        onChange={(e) =>
+                          setNewClinic({ ...newClinic, parkingInfo: e.target.value })
+                        }
+                        placeholder={t('doctors.parkingPlaceholder')}
                       />
                     </div>
                     <div>
                       <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                        Public Transport Access
+                        {t('doctors.publicTransportAccess')}
                       </label>
                       <Input
                         type='text'
                         value={newClinic.publicTransportAccess}
-                        onChange={(e) => setNewClinic({ ...newClinic, publicTransportAccess: e.target.value })}
-                        placeholder='e.g., Bus stop 100m, Metro station 500m'
+                        onChange={(e) =>
+                          setNewClinic({ ...newClinic, publicTransportAccess: e.target.value })
+                        }
+                        placeholder={t('doctors.publicTransportPlaceholder')}
                       />
                     </div>
                     <div>
                       <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                        Clinic Photos
+                        {t('doctors.clinicPhotos')}
                       </label>
                       <input
                         type='file'
@@ -780,11 +849,22 @@ export default function DoctorProfilePage() {
                       {newClinic.photos && newClinic.photos.length > 0 && (
                         <div className='flex flex-wrap gap-2 mt-2'>
                           {newClinic.photos.map((photo, pIndex) => (
-                            <div key={pIndex} className='relative w-20 h-20 rounded-lg overflow-hidden border border-neutral-300'>
+                            <div
+                              key={pIndex}
+                              className='relative w-20 h-20 rounded-lg overflow-hidden border border-neutral-300'
+                            >
                               {photo instanceof File ? (
-                                <img src={URL.createObjectURL(photo)} alt={`Photo ${pIndex + 1}`} className='w-full h-full object-cover' />
+                                <img
+                                  src={URL.createObjectURL(photo)}
+                                  alt={`Photo ${pIndex + 1}`}
+                                  className='w-full h-full object-cover'
+                                />
                               ) : (
-                                <img src={photo} alt={`Photo ${pIndex + 1}`} className='w-full h-full object-cover' />
+                                <img
+                                  src={photo}
+                                  alt={`Photo ${pIndex + 1}`}
+                                  className='w-full h-full object-cover'
+                                />
                               )}
                               <button
                                 onClick={() => {
@@ -848,7 +928,9 @@ export default function DoctorProfilePage() {
                           });
                         }}
                       >
-                        {editingClinicIndex !== null ? 'Update Clinic' : 'Add Clinic'}
+                        {editingClinicIndex !== null
+                          ? t('doctors.updateClinic')
+                          : t('doctors.addClinic')}
                       </Button>
                     </div>
                   </div>
@@ -857,7 +939,7 @@ export default function DoctorProfilePage() {
 
               <div className='flex justify-end'>
                 <Button variant='primary' onClick={handleSaveProfile} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Clinic Details'}
+                  {saving ? t('doctors.saving') : t('doctors.saveClinicDetails')}
                 </Button>
               </div>
             </div>
@@ -869,11 +951,13 @@ export default function DoctorProfilePage() {
           <Card>
             <div className='p-6 space-y-6'>
               <div>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>Consultation Fees</h2>
+                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('doctors.consultationFees')}
+                </h2>
                 <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                      In-Clinic Consultation
+                      {t('doctors.inClinicConsultation')}
                     </label>
                     <Input
                       type='number'
@@ -883,12 +967,12 @@ export default function DoctorProfilePage() {
                       onChange={(e) => setConsultationFee(parseFloat(e.target.value) || 0)}
                     />
                     <p className='text-xs text-neutral-500 mt-1'>
-                      Current: {formatCurrency(consultationFee)}
+                      {t('doctors.current')} {formatCurrency(consultationFee)}
                     </p>
                   </div>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                      Video Consultation
+                      {t('doctors.videoConsultation')}
                     </label>
                     <Input
                       type='number'
@@ -898,12 +982,12 @@ export default function DoctorProfilePage() {
                       onChange={(e) => setVideoConsultationFee(parseFloat(e.target.value) || 0)}
                     />
                     <p className='text-xs text-neutral-500 mt-1'>
-                      Current: {formatCurrency(videoConsultationFee)}
+                      {t('doctors.current')} {formatCurrency(videoConsultationFee)}
                     </p>
                   </div>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                      Follow-up Consultation
+                      {t('doctors.followUpConsultation')}
                     </label>
                     <Input
                       type='number'
@@ -913,19 +997,21 @@ export default function DoctorProfilePage() {
                       onChange={(e) => setFollowUpFee(parseFloat(e.target.value) || 0)}
                     />
                     <p className='text-xs text-neutral-500 mt-1'>
-                      Current: {formatCurrency(followUpFee)}
+                      {t('doctors.current')} {formatCurrency(followUpFee)}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>Procedure Fees</h2>
+                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('doctors.procedureFees')}
+                </h2>
                 <div className='space-y-3 mb-4'>
                   <div className='grid grid-cols-2 gap-3'>
                     <Input
                       type='text'
-                      placeholder='Procedure name (e.g., ECG, X-Ray)'
+                      placeholder={t('doctors.procedureNamePlaceholder')}
                       value={newProcedureName}
                       onChange={(e) => setNewProcedureName(e.target.value)}
                     />
@@ -942,7 +1028,10 @@ export default function DoctorProfilePage() {
                         variant='secondary'
                         onClick={() => {
                           if (newProcedureName.trim() && newProcedureFee > 0) {
-                            setProcedureFees([...procedureFees, { name: newProcedureName.trim(), fee: newProcedureFee }]);
+                            setProcedureFees([
+                              ...procedureFees,
+                              { name: newProcedureName.trim(), fee: newProcedureFee },
+                            ]);
                             setNewProcedureName('');
                             setNewProcedureFee(0);
                           }
@@ -962,36 +1051,42 @@ export default function DoctorProfilePage() {
                       >
                         <div>
                           <p className='font-medium text-neutral-900'>{procedure.name}</p>
-                          <p className='text-sm text-neutral-600'>{formatCurrency(procedure.fee)}</p>
+                          <p className='text-sm text-neutral-600'>
+                            {formatCurrency(procedure.fee)}
+                          </p>
                         </div>
                         <Button
                           variant='ghost'
                           size='sm'
-                          onClick={() => setProcedureFees(procedureFees.filter((_, i) => i !== index))}
+                          onClick={() =>
+                            setProcedureFees(procedureFees.filter((_, i) => i !== index))
+                          }
                           className='text-red-600'
                         >
-                          Remove
+                          {t('doctors.remove')}
                         </Button>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className='text-sm text-neutral-500'>No procedure fees added</p>
+                  <p className='text-sm text-neutral-500'>{t('doctors.noProcedureFees')}</p>
                 )}
               </div>
 
               <div>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>Insurance Accepted</h2>
+                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('doctors.insuranceAccepted')}
+                </h2>
                 <div className='flex gap-2 mb-3'>
                   <Input
                     type='text'
-                    placeholder='Add insurance provider'
+                    placeholder={t('doctors.addInsuranceProvider')}
                     value={newInsurance}
                     onChange={(e) => setNewInsurance(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && addInsurance()}
                   />
                   <Button variant='secondary' onClick={addInsurance}>
-                    Add
+                    {t('doctors.add')}
                   </Button>
                 </div>
                 <div className='flex flex-wrap gap-2'>
@@ -1014,7 +1109,7 @@ export default function DoctorProfilePage() {
 
               <div className='flex justify-end'>
                 <Button variant='primary' onClick={handleSaveProfile} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Fees'}
+                  {saving ? t('doctors.saving') : t('doctors.saveFees')}
                 </Button>
               </div>
             </div>
@@ -1026,17 +1121,14 @@ export default function DoctorProfilePage() {
           <Card>
             <div className='p-6'>
               <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-lg font-bold text-neutral-900'>Schedule Management</h2>
-                <Button
-                  variant='secondary'
-                  onClick={() => router.push('/doctors/schedule')}
-                >
-                  Manage Schedule
+                <h2 className='text-lg font-bold text-neutral-900'>
+                  {t('doctors.scheduleManagement')}
+                </h2>
+                <Button variant='secondary' onClick={() => router.push('/doctors/schedule')}>
+                  {t('doctors.manageSchedule')}
                 </Button>
               </div>
-              <p className='text-neutral-600'>
-                Manage your working hours, breaks, holidays, and availability settings.
-              </p>
+              <p className='text-neutral-600'>{t('doctors.manageScheduleDesc')}</p>
             </div>
           </Card>
         )}

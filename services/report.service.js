@@ -719,8 +719,7 @@ export async function getDashboardStats(tenantId, userId) {
     yesterday.setHours(0, 0, 0, 0);
     const endOfYesterday = new Date(yesterday);
     endOfYesterday.setHours(23, 59, 59, 999);
-    // Today's appointments (exclude "arrived" status - they should only appear in queue)
-    // Use startTime as primary field (always present), with fallback to appointmentDate
+    // Build filters once; run all independent queries in parallel (single round-trip)
     const todayFilter = withTenant(tenantId, {
       $or: [
         { startTime: { $gte: today, $lte: endOfToday } },
@@ -730,12 +729,6 @@ export async function getDashboardStats(tenantId, userId) {
       status: { $ne: AppointmentStatus.ARRIVED },
       deletedAt: null,
     });
-    const todayAppointments = await Appointment.countDocuments(todayFilter).catch((err) => {
-      logger.error('Error counting today appointments:', err);
-      return 0;
-    });
-
-    // Yesterday's appointments for trend
     const yesterdayFilter = withTenant(tenantId, {
       $or: [
         { startTime: { $gte: yesterday, $lte: endOfYesterday } },
@@ -745,98 +738,6 @@ export async function getDashboardStats(tenantId, userId) {
       status: { $ne: AppointmentStatus.ARRIVED },
       deletedAt: null,
     });
-    const yesterdayAppointments = await Appointment.countDocuments(yesterdayFilter).catch((err) => {
-      logger.error('Error counting yesterday appointments:', err);
-      return 0;
-    });
-
-    // Today's revenue
-    let todayInvoices = [];
-    try {
-      todayInvoices = await Invoice.find(
-        withTenant(tenantId, {
-          invoiceDate: { $gte: today, $lte: endOfToday },
-          status: { $ne: InvoiceStatus.CANCELLED },
-          deletedAt: null,
-        })
-      )
-        .select('totalAmount')
-        .lean();
-    } catch (err) {
-      logger.error('Error fetching today invoices:', err);
-    }
-    const todayRevenue = todayInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-
-    // Yesterday's revenue for trend
-    let yesterdayInvoices = [];
-    try {
-      yesterdayInvoices = await Invoice.find(
-        withTenant(tenantId, {
-          invoiceDate: { $gte: yesterday, $lte: endOfYesterday },
-          status: { $ne: InvoiceStatus.CANCELLED },
-          deletedAt: null,
-        })
-      )
-        .select('totalAmount')
-        .lean();
-    } catch (err) {
-      logger.error('Error fetching yesterday invoices:', err);
-    }
-    const yesterdayRevenue = yesterdayInvoices.reduce(
-      (sum, inv) => sum + (inv.totalAmount || 0),
-      0
-    );
-
-    // This month's revenue
-    let monthInvoices = [];
-    try {
-      monthInvoices = await Invoice.find(
-        withTenant(tenantId, {
-          invoiceDate: { $gte: thisMonth },
-          status: { $ne: InvoiceStatus.CANCELLED },
-          deletedAt: null,
-        })
-      )
-        .select('totalAmount')
-        .lean();
-    } catch (err) {
-      logger.error('Error fetching month invoices:', err);
-    }
-    const monthRevenue = monthInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-
-    // Total active patients (patients with appointments or invoices)
-    const activePatients = await Patient.countDocuments(
-      withTenant(tenantId, {
-        deletedAt: null,
-      })
-    ).catch((err) => {
-      logger.error('Error counting active patients:', err);
-      return 0;
-    });
-
-    // New patients this month
-    const newPatientsThisMonth = await Patient.countDocuments(
-      withTenant(tenantId, {
-        createdAt: { $gte: thisMonth },
-        deletedAt: null,
-      })
-    ).catch((err) => {
-      logger.error('Error counting new patients this month:', err);
-      return 0;
-    });
-
-    // New patients last month for trend
-    const newPatientsLastMonth = await Patient.countDocuments(
-      withTenant(tenantId, {
-        createdAt: { $gte: lastMonth, $lte: endOfLastMonth },
-        deletedAt: null,
-      })
-    ).catch((err) => {
-      logger.error('Error counting new patients last month:', err);
-      return 0;
-    });
-
-    // Completed appointments today
     const completedTodayFilter = withTenant(tenantId, {
       $or: [
         { startTime: { $gte: today, $lte: endOfToday } },
@@ -846,12 +747,6 @@ export async function getDashboardStats(tenantId, userId) {
       status: AppointmentStatus.COMPLETED,
       deletedAt: null,
     });
-    const completedToday = await Appointment.countDocuments(completedTodayFilter).catch((err) => {
-      logger.error('Error counting completed today:', err);
-      return 0;
-    });
-
-    // Completed yesterday for trend
     const completedYesterdayFilter = withTenant(tenantId, {
       $or: [
         { startTime: { $gte: yesterday, $lte: endOfYesterday } },
@@ -861,35 +756,130 @@ export async function getDashboardStats(tenantId, userId) {
       status: AppointmentStatus.COMPLETED,
       deletedAt: null,
     });
-    const completedYesterday = await Appointment.countDocuments(completedYesterdayFilter).catch(
-      (err) => {
+
+    const [
+      todayAppointments,
+      yesterdayAppointments,
+      todayInvoicesRaw,
+      yesterdayInvoicesRaw,
+      monthInvoicesRaw,
+      activePatients,
+      newPatientsThisMonth,
+      newPatientsLastMonth,
+      completedToday,
+      completedYesterday,
+      pendingInvoices,
+      pendingInvoicesYesterday,
+    ] = await Promise.all([
+      Appointment.countDocuments(todayFilter).catch((err) => {
+        logger.error('Error counting today appointments:', err);
+        return 0;
+      }),
+      Appointment.countDocuments(yesterdayFilter).catch((err) => {
+        logger.error('Error counting yesterday appointments:', err);
+        return 0;
+      }),
+      Invoice.find(
+        withTenant(tenantId, {
+          invoiceDate: { $gte: today, $lte: endOfToday },
+          status: { $ne: InvoiceStatus.CANCELLED },
+          deletedAt: null,
+        })
+      )
+        .select('totalAmount')
+        .lean()
+        .catch((err) => {
+          logger.error('Error fetching today invoices:', err);
+          return [];
+        }),
+      Invoice.find(
+        withTenant(tenantId, {
+          invoiceDate: { $gte: yesterday, $lte: endOfYesterday },
+          status: { $ne: InvoiceStatus.CANCELLED },
+          deletedAt: null,
+        })
+      )
+        .select('totalAmount')
+        .lean()
+        .catch((err) => {
+          logger.error('Error fetching yesterday invoices:', err);
+          return [];
+        }),
+      Invoice.find(
+        withTenant(tenantId, {
+          invoiceDate: { $gte: thisMonth },
+          status: { $ne: InvoiceStatus.CANCELLED },
+          deletedAt: null,
+        })
+      )
+        .select('totalAmount')
+        .lean()
+        .catch((err) => {
+          logger.error('Error fetching month invoices:', err);
+          return [];
+        }),
+      Patient.countDocuments(withTenant(tenantId, { deletedAt: null })).catch((err) => {
+        logger.error('Error counting active patients:', err);
+        return 0;
+      }),
+      Patient.countDocuments(
+        withTenant(tenantId, {
+          createdAt: { $gte: thisMonth },
+          deletedAt: null,
+        })
+      ).catch((err) => {
+        logger.error('Error counting new patients this month:', err);
+        return 0;
+      }),
+      Patient.countDocuments(
+        withTenant(tenantId, {
+          createdAt: { $gte: lastMonth, $lte: endOfLastMonth },
+          deletedAt: null,
+        })
+      ).catch((err) => {
+        logger.error('Error counting new patients last month:', err);
+        return 0;
+      }),
+      Appointment.countDocuments(completedTodayFilter).catch((err) => {
+        logger.error('Error counting completed today:', err);
+        return 0;
+      }),
+      Appointment.countDocuments(completedYesterdayFilter).catch((err) => {
         logger.error('Error counting completed yesterday:', err);
         return 0;
-      }
+      }),
+      Invoice.countDocuments(
+        withTenant(tenantId, {
+          status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+          deletedAt: null,
+        })
+      ).catch((err) => {
+        logger.error('Error counting pending invoices:', err);
+        return 0;
+      }),
+      Invoice.countDocuments(
+        withTenant(tenantId, {
+          status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+          deletedAt: null,
+          invoiceDate: { $lte: endOfYesterday },
+        })
+      ).catch((err) => {
+        logger.error('Error counting pending invoices yesterday:', err);
+        return 0;
+      }),
+    ]);
+
+    const todayRevenue = (Array.isArray(todayInvoicesRaw) ? todayInvoicesRaw : []).reduce(
+      (sum, inv) => sum + (inv.totalAmount || 0),
+      0
     );
-
-    // Pending invoices
-    const pendingInvoices = await Invoice.countDocuments(
-      withTenant(tenantId, {
-        status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
-        deletedAt: null,
-      })
-    ).catch((err) => {
-      logger.error('Error counting pending invoices:', err);
-      return 0;
-    });
-
-    // Pending invoices yesterday for trend
-    const pendingInvoicesYesterday = await Invoice.countDocuments(
-      withTenant(tenantId, {
-        status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
-        deletedAt: null,
-        invoiceDate: { $lte: endOfYesterday },
-      })
-    ).catch((err) => {
-      logger.error('Error counting pending invoices yesterday:', err);
-      return 0;
-    });
+    const yesterdayRevenue = (
+      Array.isArray(yesterdayInvoicesRaw) ? yesterdayInvoicesRaw : []
+    ).reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+    const monthRevenue = (Array.isArray(monthInvoicesRaw) ? monthInvoicesRaw : []).reduce(
+      (sum, inv) => sum + (inv.totalAmount || 0),
+      0
+    );
 
     // Calculate trends
     const appointmentsTrend =

@@ -12,22 +12,39 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import * as routeCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
+import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+
+const ROUTE_KEY = 'route_appointments';
 
 export default function AppointmentsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { locale } = useSettings();
+  const tenantId = user?.tenantId ?? null;
+
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [todayCount, setTodayCount] = useState(0);
   const [tomorrowCount, setTomorrowCount] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!tenantId) return;
+    const cached = routeCache.getData(ROUTE_KEY, tenantId);
+    if (cached && cached.appointments != null) {
+      setAppointments(cached.appointments);
+      setCurrentPage(cached.currentPage ?? 1);
+      setTotalPages(cached.totalPages ?? 1);
+      setLoading(false);
+    }
+  }, [tenantId]);
   const [statsLoading, setStatsLoading] = useState(true);
   const [settings, setSettings] = useState(null);
   const [doctors, setDoctors] = useState([]);
@@ -46,7 +63,7 @@ export default function AppointmentsPage() {
           setSettings(response.data);
         }
       } catch (error) {
-        console.error('Failed to fetch settings:', error);
+        logger.error('Failed to fetch settings', error);
       }
     };
     if (!authLoading && user) {
@@ -65,10 +82,6 @@ export default function AppointmentsPage() {
             apiClient.get('/users?role=clinic_admin'),
           ]);
 
-          console.log('=== Doctors API Debug ===');
-          console.log('Doctors response:', doctorsResponse);
-          console.log('Clinic Admins response:', clinicAdminsResponse);
-
           let allDoctors = [];
 
           // Extract doctors from first response
@@ -83,21 +96,15 @@ export default function AppointmentsPage() {
             allDoctors = [...allDoctors, ...clinicAdminsList];
           }
 
-          console.log('Combined doctors list:', allDoctors);
-          console.log('Total count:', allDoctors.length);
-
           if (Array.isArray(allDoctors) && allDoctors.length > 0) {
             // Filter only active doctors (isActive !== false means include undefined/null/true)
             const activeDoctors = allDoctors.filter((d) => d && d.isActive !== false);
-            console.log('Active doctors after filter:', activeDoctors);
-            console.log('Setting doctors state with:', activeDoctors);
             setDoctors(activeDoctors);
           } else {
-            console.warn('No doctors found. Total count:', allDoctors.length);
-            setDoctors([]); // Set empty array to show "No doctors available"
+            setDoctors([]);
           }
         } catch (error) {
-          console.error('Failed to fetch doctors - exception:', error);
+          logger.error('Failed to fetch doctors', error);
           setDoctors([]);
         }
       } else {
@@ -126,7 +133,7 @@ export default function AppointmentsPage() {
           ...options,
         }).format(date);
       } catch (error) {
-        console.error('Failed to format date:', error);
+        logger.error('Failed to format date', error);
         return date.toLocaleDateString();
       }
     },
@@ -176,8 +183,6 @@ export default function AppointmentsPage() {
         day: '2-digit',
       }).format(tomorrowDate);
 
-      console.log('Fetching stats:', { todayStr, tomorrowStr, timezone, now: now.toISOString() });
-
       // Fetch counts using the appointments API with date filter
       // Exclude video consultations from stats (they go to queue)
       const [todayResponse, tomorrowResponse] = await Promise.all([
@@ -196,58 +201,49 @@ export default function AppointmentsPage() {
         (apt) => !apt.isTelemedicine && apt.status !== 'arrived'
       ).length;
 
-      console.log('Stats results:', {
-        todayTotal,
-        tomorrowTotal,
-        todayStr,
-        tomorrowStr,
-        todayResponseData: todayResponse.data,
-        tomorrowResponseData: tomorrowResponse.data,
-      });
-
       setTodayCount(todayTotal);
       setTomorrowCount(tomorrowTotal);
     } catch (error) {
-      console.error('Failed to fetch stats:', error);
+      logger.error('Failed to fetch stats', error);
     } finally {
       setStatsLoading(false);
     }
   }, [settings]);
 
   const fetchAppointments = useCallback(async () => {
-    setLoading(true);
+    const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
+    if (!hasCache) setLoading(true);
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
       });
-
-      // Add filters
-      if (selectedDoctorId) {
-        params.append('doctorId', selectedDoctorId);
-      }
-      if (selectedStatus) {
-        params.append('status', selectedStatus);
-      }
+      if (selectedDoctorId) params.append('doctorId', selectedDoctorId);
+      if (selectedStatus) params.append('status', selectedStatus);
 
       const response = await apiClient.get(`/appointments?${params}`);
       if (response.success && response.data) {
         const appointmentsList = extractArrayData(response);
-        // Filter out:
-        // 1. Video consultations (isTelemedicine: true) - they go directly to queue
-        // 2. Appointments with "arrived" status - they should only appear in queue
         const filteredAppointments = appointmentsList.filter(
           (apt) => !apt.isTelemedicine && apt.status !== 'arrived'
         );
-        setAppointments(Array.isArray(filteredAppointments) ? filteredAppointments : []);
-        setTotalPages(response.data.pagination?.totalPages || 1);
+        const list = Array.isArray(filteredAppointments) ? filteredAppointments : [];
+        const pages = response.data.pagination?.totalPages || 1;
+        setAppointments(list);
+        setTotalPages(pages);
+        if (tenantId)
+          routeCache.set(ROUTE_KEY, tenantId, {
+            appointments: list,
+            currentPage,
+            totalPages: pages,
+          });
       }
     } catch (error) {
-      console.error('Failed to fetch appointments:', error);
+      logger.error('Failed to fetch appointments', error);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, selectedDoctorId, selectedStatus]);
+  }, [currentPage, selectedDoctorId, selectedStatus, tenantId]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -321,7 +317,7 @@ export default function AppointmentsPage() {
         }
       }
     } catch (error) {
-      console.error('Failed to update appointment status:', error);
+      logger.error('Failed to update appointment status', error);
       const errorMessage =
         error?.response?.data?.error?.message ||
         error?.message ||
@@ -418,10 +414,10 @@ export default function AppointmentsPage() {
           row.status === 'completed'
             ? 'success'
             : row.status === 'cancelled'
-            ? 'danger'
-            : row.status === 'in_progress' || row.status === 'arrived'
-            ? 'primary'
-            : 'default';
+              ? 'danger'
+              : row.status === 'in_progress' || row.status === 'arrived'
+                ? 'primary'
+                : 'default';
         return (
           <Tag variant={statusVariant} size='sm'>
             {getStatusLabel(row.status)}
@@ -514,7 +510,6 @@ export default function AppointmentsPage() {
         }
       />
       <div style={{ padding: '0 10px' }}>
-
         {/* Filters Section */}
         <Card className='mb-6 p-4'>
           <div className='flex flex-wrap items-end gap-4'>
@@ -601,7 +596,9 @@ export default function AppointmentsPage() {
 
         <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
           <Card className='bg-primary-100 border border-primary-300'>
-            <p className='text-body-sm font-medium text-primary-700 mb-2'>Today&apos;s Appointments</p>
+            <p className='text-body-sm font-medium text-primary-700 mb-2'>
+              Today&apos;s Appointments
+            </p>
             <div className='flex items-baseline gap-3'>
               <p className='text-h1 font-bold text-primary-900'>
                 {statsLoading ? '—' : todayCount}

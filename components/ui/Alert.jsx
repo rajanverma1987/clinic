@@ -1,7 +1,9 @@
 'use client';
 
-import { Button } from './Button';
+import { CheckIcon, HelpCircleIcon, InfoIcon, WarningIcon, XIcon } from '@/components/icons';
+import { useI18n } from '@/contexts/I18nContext.jsx';
 import './Alert.css';
+import { Button } from './Button';
 
 /**
  * Unified Alert/Popup Component
@@ -19,42 +21,23 @@ export function Alert({
   showCloseButton = true,
   size = 'md', // 'sm' | 'md' | 'lg'
 }) {
+  const { t } = useI18n();
   if (!isOpen) return null;
 
   const getDefaultIcon = () => {
     if (icon) return icon;
-    
+
     switch (type) {
       case 'success':
-        return (
-          <svg width='24px' height='24px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
-          </svg>
-        );
+        return <CheckIcon className='icon icon-md' />;
       case 'error':
-        return (
-          <svg width='24px' height='24px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
-          </svg>
-        );
+        return <XIcon className='icon icon-md' />;
       case 'warning':
-        return (
-          <svg width='24px' height='24px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
-          </svg>
-        );
+        return <WarningIcon className='icon icon-md' />;
       case 'confirm':
-        return (
-          <svg width='24px' height='24px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
-          </svg>
-        );
+        return <HelpCircleIcon className='icon icon-md' />;
       default: // info
-        return (
-          <svg width='24px' height='24px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
-          </svg>
-        );
+        return <InfoIcon className='icon icon-md' />;
     }
   };
 
@@ -64,15 +47,15 @@ export function Alert({
     switch (type) {
       case 'confirm':
         return [
-          { label: 'Cancel', onClick: onClose, variant: 'outline' },
-          { label: 'Confirm', onClick: onClose, variant: 'primary' },
+          { label: t('common.cancel'), onClick: onClose, variant: 'outline' },
+          { label: t('common.confirm'), onClick: onClose, variant: 'primary' },
         ];
       case 'error':
       case 'warning':
       case 'info':
       case 'success':
       default:
-        return [{ label: 'Ok', onClick: onClose, variant: 'primary' }];
+        return [{ label: t('common.ok'), onClick: onClose, variant: 'primary' }];
     }
   };
 
@@ -84,11 +67,16 @@ export function Alert({
       >
         {/* Close button */}
         {showCloseButton && (
-          <button className='Alert-close' onClick={onClose} aria-label='Close'>
-            <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
-            </svg>
-          </button>
+          <Button
+            variant='ghost'
+            size='xs'
+            iconOnly
+            className='Alert-close'
+            onClick={onClose}
+            aria-label={t('common.close')}
+          >
+            <XIcon className='icon icon-sm' />
+          </Button>
         )}
 
         {/* Icon */}
@@ -119,4 +107,3 @@ export function Alert({
     </div>
   );
 }
-

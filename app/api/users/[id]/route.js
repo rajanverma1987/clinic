@@ -1,4 +1,5 @@
 import connectDB from '@/lib/db/connection';
+import { canAssignAdminManager } from '@/lib/permissions/cursor-md-matrix';
 import { errorResponse, handleMongoError, successResponse } from '@/lib/utils/api-response';
 import { withAuth } from '@/middleware/auth';
 import User from '@/models/User';
@@ -28,6 +29,19 @@ async function putHandler(req, user, id) {
 
     if (!targetUser) {
       return NextResponse.json(errorResponse('User not found', 'NOT_FOUND'), { status: 404 });
+    }
+
+    // CursorMD/New: only Doctor and Super Admin can assign Admin or Manager roles
+    if (body.role !== undefined && ['admin', 'clinic_admin', 'manager'].includes(body.role)) {
+      if (!canAssignAdminManager(user.role)) {
+        return NextResponse.json(
+          errorResponse(
+            'Only Doctor or Super Admin can assign Admin or Manager roles',
+            'FORBIDDEN'
+          ),
+          { status: 403 }
+        );
+      }
     }
 
     // Update fields

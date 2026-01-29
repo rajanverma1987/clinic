@@ -4,10 +4,10 @@
  * Based on NEW-PLANS.md RBAC requirements
  */
 
-import { NextResponse } from 'next/server';
-import { hasPermission, RESOURCES, ACTIONS } from '@/lib/permissions/constants';
 import { AuthorizationError, PHIAccessError } from '@/lib/errors/custom-errors';
+import { hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import { errorResponse } from '@/lib/utils/api-response';
+import { NextResponse } from 'next/server';
 
 /**
  * Check if user has permission for a resource and action
@@ -27,10 +27,9 @@ export function requirePermission(resource, action) {
   return (handler) => {
     return async (req, user, ...args) => {
       if (!user) {
-        return NextResponse.json(
-          errorResponse('Authentication required', 'AUTHENTICATION_ERROR'),
-          { status: 401 }
-        );
+        return NextResponse.json(errorResponse('Authentication required', 'AUTHENTICATION_ERROR'), {
+          status: 401,
+        });
       }
 
       if (!checkPermission(user, resource, action)) {
@@ -50,9 +49,7 @@ export function requirePermission(resource, action) {
           throw new PHIAccessError();
         }
 
-        throw new AuthorizationError(
-          `You don't have permission to ${action} ${resource}`
-        );
+        throw new AuthorizationError(`You don't have permission to ${action} ${resource}`);
       }
 
       return handler(req, user, ...args);
@@ -67,10 +64,9 @@ export function requireAnyPermission(permissions) {
   return (handler) => {
     return async (req, user, ...args) => {
       if (!user) {
-        return NextResponse.json(
-          errorResponse('Authentication required', 'AUTHENTICATION_ERROR'),
-          { status: 401 }
-        );
+        return NextResponse.json(errorResponse('Authentication required', 'AUTHENTICATION_ERROR'), {
+          status: 401,
+        });
       }
 
       const hasAny = permissions.some(({ resource, action }) =>
@@ -93,10 +89,9 @@ export function requireAllPermissions(permissions) {
   return (handler) => {
     return async (req, user, ...args) => {
       if (!user) {
-        return NextResponse.json(
-          errorResponse('Authentication required', 'AUTHENTICATION_ERROR'),
-          { status: 401 }
-        );
+        return NextResponse.json(errorResponse('Authentication required', 'AUTHENTICATION_ERROR'), {
+          status: 401,
+        });
       }
 
       const hasAll = permissions.every(({ resource, action }) =>
@@ -120,9 +115,10 @@ export function canAccessPHI(user) {
     return false;
   }
 
-  // Roles that can access PHI
+  // Roles that can access PHI (CursorMD/New: Manager cannot access sensitive data)
   const phiAccessRoles = [
     'super_admin',
+    'admin',
     'clinic_admin',
     'doctor',
     'nurse',
@@ -139,10 +135,9 @@ export function canAccessPHI(user) {
 export function requirePHIAccess(handler) {
   return async (req, user, ...args) => {
     if (!user) {
-      return NextResponse.json(
-        errorResponse('Authentication required', 'AUTHENTICATION_ERROR'),
-        { status: 401 }
-      );
+      return NextResponse.json(errorResponse('Authentication required', 'AUTHENTICATION_ERROR'), {
+        status: 401,
+      });
     }
 
     if (!canAccessPHI(user)) {

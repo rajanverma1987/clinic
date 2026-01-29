@@ -17,6 +17,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useFeatures } from '@/hooks/useFeatures.js';
 import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess, showWarning } from '@/lib/utils/toast';
+import { logger } from '@/lib/utils/logger';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
@@ -167,14 +168,14 @@ function NewAppointmentPageContent() {
       if (doctorsResponse.success && doctorsResponse.data) {
         const allUsers = doctorsResponse.data.data || [];
 
-        console.log('Fetched users:', allUsers); // Debug log
+        logger.debug('Fetched users:', allUsers); // Debug log
 
         // Filter to only show active doctors and clinic admins
         const doctorsList = allUsers.filter(
           (u) => (u.role === 'doctor' || u.role === 'clinic_admin') && u.isActive
         );
 
-        console.log('Filtered doctors:', doctorsList); // Debug log
+        logger.debug('Filtered doctors:', doctorsList); // Debug log
 
         setDoctors(doctorsList);
 
@@ -197,7 +198,7 @@ function NewAppointmentPageContent() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      logger.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -303,7 +304,7 @@ function NewAppointmentPageContent() {
         }
       }
     } catch (error) {
-      console.error('Appointment creation error:', error);
+      logger.error('Appointment creation error:', error);
 
       let errorMsg = t('errors.failedToCreateAppointmentRetry');
 

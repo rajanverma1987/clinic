@@ -9,14 +9,31 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
   return `${hour}:00`;
 });
+
+function getWeekDates(fromDate) {
+  const d = new Date(fromDate);
+  const day = d.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + mondayOffset);
+  d.setHours(0, 0, 0, 0);
+  const week = [];
+  for (let i = 0; i < 7; i++) {
+    const x = new Date(d);
+    x.setDate(d.getDate() + i);
+    week.push(x);
+  }
+  return week;
+}
 
 export default function DoctorSchedulePage() {
   const router = useRouter();
@@ -30,15 +47,65 @@ export default function DoctorSchedulePage() {
   const [holidays, setHolidays] = useState([]);
   const [slotDuration, setSlotDuration] = useState(30); // minutes
   const [bufferTime, setBufferTime] = useState(0); // minutes
+  const [advanceBookingMinDays, setAdvanceBookingMinDays] = useState(0);
+  const [advanceBookingMaxDays, setAdvanceBookingMaxDays] = useState(90);
   const [emergencySlots, setEmergencySlots] = useState([]); // Array of {date, startTime, endTime}
   const [blockedSlots, setBlockedSlots] = useState([]); // Array of {date, startTime, endTime, reason}
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
-  const [newEmergencySlot, setNewEmergencySlot] = useState({ date: '', startTime: '', endTime: '' });
-  const [newBlockedSlot, setNewBlockedSlot] = useState({ date: '', startTime: '', endTime: '', reason: '' });
+  const [newEmergencySlot, setNewEmergencySlot] = useState({
+    date: '',
+    startTime: '',
+    endTime: '',
+  });
+  const [newBlockedSlot, setNewBlockedSlot] = useState({
+    date: '',
+    startTime: '',
+    endTime: '',
+    reason: '',
+  });
   const [clinics, setClinics] = useState([]);
   const [selectedClinic, setSelectedClinic] = useState(null); // For per-location schedule
   const [isOnline, setIsOnline] = useState(true); // Online/Offline availability
+  const [weekStart, setWeekStart] = useState(() => {
+    const d = new Date();
+    const day = d.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + mondayOffset);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [weekAppointments, setWeekAppointments] = useState([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+
+  const fetchWeekAppointments = useCallback(async () => {
+    const uid = user?._id ?? user?.userId;
+    if (!uid) return;
+    try {
+      setLoadingAppointments(true);
+      const start = new Date(weekStart);
+      const end = new Date(weekStart);
+      end.setDate(end.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      const res = await apiClient.get(
+        `/appointments?doctorId=${uid}&startDate=${start.toISOString()}&endDate=${end.toISOString()}&limit=100`
+      );
+      const list = extractArrayData(res);
+      setWeekAppointments(Array.isArray(list) ? list : []);
+    } catch (err) {
+      logger.warn('Failed to fetch week appointments', { error: err?.message });
+      setWeekAppointments([]);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  }, [user?._id, user?.userId, weekStart]);
+
+  useEffect(() => {
+    if (user?._id && weekStart) fetchWeekAppointments();
+  }, [user?._id, weekStart, fetchWeekAppointments]);
+
+  const userId = user?._id ?? user?.id ?? user?.userId;
 
   useEffect(() => {
     if (authLoading) return;
@@ -46,14 +113,16 @@ export default function DoctorSchedulePage() {
       router.push('/dashboard');
       return;
     }
+    if (!userId) return;
     fetchDoctorSchedule();
-  }, [authLoading, user, router]);
+  }, [authLoading, user, userId, router]);
 
   const fetchDoctorSchedule = async () => {
+    if (!userId || userId === 'undefined') return;
     try {
       setLoading(true);
       // Get doctor profile
-      const doctorResponse = await apiClient.get(`/doctors/user/${user._id}`);
+      const doctorResponse = await apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`);
       if (!doctorResponse.success || !doctorResponse.data) {
         throw new Error('Doctor profile not found');
       }
@@ -61,14 +130,20 @@ export default function DoctorSchedulePage() {
       const currentDoctorId = doctorResponse.data._id;
       setDoctorId(currentDoctorId);
 
-      // Fetch schedule
+      // Fetch schedule (includes leaves, emergencySlots, blockedSlots)
       const scheduleResponse = await apiClient.get(`/doctors/${currentDoctorId}/schedule`);
       if (scheduleResponse.success && scheduleResponse.data) {
-        setSchedule(scheduleResponse.data.schedule || {});
-        setBreaks(scheduleResponse.data.breaks || {});
-        setSlotDuration(scheduleResponse.data.slotDuration || 30);
-        setBufferTime(scheduleResponse.data.bufferTime || 0);
-        setIsOnline(scheduleResponse.data.isOnline !== false);
+        const d = scheduleResponse.data;
+        setSchedule(d.schedule || {});
+        setBreaks(d.breaks || {});
+        setSlotDuration(d.slotDuration ?? 30);
+        setBufferTime(d.bufferTime ?? 0);
+        setAdvanceBookingMinDays(d.advanceBookingMinDays ?? 0);
+        setAdvanceBookingMaxDays(d.advanceBookingMaxDays ?? 90);
+        setIsOnline(d.isOnline !== false);
+        if (Array.isArray(d.leaves)) setHolidays(d.leaves);
+        if (Array.isArray(d.emergencySlots)) setEmergencySlots(d.emergencySlots);
+        if (Array.isArray(d.blockedSlots)) setBlockedSlots(d.blockedSlots);
       }
 
       // Fetch clinics for per-location schedule
@@ -77,69 +152,27 @@ export default function DoctorSchedulePage() {
         if (clinicsResponse.success && clinicsResponse.data?.clinics) {
           setClinics(clinicsResponse.data.clinics || []);
           if (clinicsResponse.data.clinics.length > 0) {
-            setSelectedClinic(clinicsResponse.data.clinics[0]._id || clinicsResponse.data.clinics[0].id);
+            setSelectedClinic(
+              clinicsResponse.data.clinics[0]._id || clinicsResponse.data.clinics[0].id
+            );
           }
         }
       } catch (err) {
-        console.warn('Failed to fetch clinics:', err);
+        logger.warn('Failed to fetch clinics', { error: err?.message });
       }
 
-      // Fetch holidays/leaves
-      const leavesResponse = await apiClient.get(`/doctors/${currentDoctorId}/leaves`);
-      if (leavesResponse.success && leavesResponse.data) {
-        setHolidays(leavesResponse.data || []);
-      }
-
-      // Fetch emergency slots
-      try {
-        const emergencyResponse = await apiClient.get(`/doctors/${currentDoctorId}/emergency-slots`);
-        if (emergencyResponse.success && emergencyResponse.data) {
-          setEmergencySlots(emergencyResponse.data || []);
-        }
-      } catch (err) {
-        console.warn('Emergency slots endpoint not available:', err);
-      }
-
-      // Fetch blocked slots
-      try {
-        const blockedResponse = await apiClient.get(`/doctors/${currentDoctorId}/blocked-slots`);
-        if (blockedResponse.success && blockedResponse.data) {
-          setBlockedSlots(blockedResponse.data || []);
-        }
-      } catch (err) {
-        console.warn('Blocked slots endpoint not available:', err);
-      }
-
-      // Fetch emergency slots
-      try {
-        const emergencyResponse = await apiClient.get(`/doctors/${currentDoctorId}/emergency-slots`);
-        if (emergencyResponse.success) {
-          setEmergencySlots(emergencyResponse.data || []);
-        }
-      } catch (err) {
-        console.warn('Emergency slots endpoint not available:', err);
-      }
-
-      // Fetch blocked slots
-      try {
-        const blockedResponse = await apiClient.get(`/doctors/${currentDoctorId}/blocked-slots`);
-        if (blockedResponse.success) {
-          setBlockedSlots(blockedResponse.data || []);
-        }
-      } catch (err) {
-        console.warn('Blocked slots endpoint not available:', err);
-      }
+      // Leaves, emergencySlots, blockedSlots are included in schedule response above
     } catch (err) {
-      console.error('Failed to fetch doctor schedule:', err);
+      logger.error('Failed to fetch doctor schedule', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDayToggle = (day) => {
+  const handleDayToggle = (dayKey) => {
     setSchedule((prev) => ({
       ...prev,
-      [day]: prev[day]
+      [dayKey]: prev[dayKey]
         ? null
         : {
             startTime: '09:00',
@@ -148,20 +181,20 @@ export default function DoctorSchedulePage() {
     }));
   };
 
-  const handleTimeChange = (day, field, value) => {
+  const handleTimeChange = (dayKey, field, value) => {
     setSchedule((prev) => ({
       ...prev,
-      [day]: {
-        ...prev[day],
+      [dayKey]: {
+        ...prev[dayKey],
         [field]: value,
       },
     }));
   };
 
-  const handleBreakToggle = (day) => {
+  const handleBreakToggle = (dayKey) => {
     setBreaks((prev) => ({
       ...prev,
-      [day]: prev[day]
+      [dayKey]: prev[dayKey]
         ? null
         : {
             startTime: '12:00',
@@ -170,11 +203,11 @@ export default function DoctorSchedulePage() {
     }));
   };
 
-  const handleBreakTimeChange = (day, field, value) => {
+  const handleBreakTimeChange = (dayKey, field, value) => {
     setBreaks((prev) => ({
       ...prev,
-      [day]: {
-        ...prev[day],
+      [dayKey]: {
+        ...prev[dayKey],
         [field]: value,
       },
     }));
@@ -190,20 +223,22 @@ export default function DoctorSchedulePage() {
         breaks,
         slotDuration,
         bufferTime,
+        advanceBookingMinDays,
+        advanceBookingMaxDays,
         emergencySlots,
         blockedSlots,
         isOnline,
-        clinicId: selectedClinic, // For per-location schedule
+        clinicId: selectedClinic,
       });
 
       if (response.success) {
-        alert('Schedule saved successfully');
+        alert(t('doctors.scheduleSavedSuccess'));
       } else {
-        alert('Failed to save schedule');
+        alert(t('doctors.scheduleSaveFailed'));
       }
     } catch (err) {
-      console.error('Failed to save schedule:', err);
-      alert('Failed to save schedule');
+      logger.error('Failed to save schedule', err);
+      alert(t('doctors.scheduleSaveFailed'));
     } finally {
       setSaving(false);
     }
@@ -225,17 +260,19 @@ export default function DoctorSchedulePage() {
     <Layout>
       <div className='max-w-6xl mx-auto space-y-6'>
         <PageHeader
-          title='Schedule Management'
-          subtitle='Manage your working hours, breaks, and availability'
+          title={t('doctors.scheduleManagement')}
+          subtitle={t('doctors.scheduleManagementSubtitle')}
         />
 
         {/* Online/Offline Toggle */}
         <Card>
           <div className='p-4 flex items-center justify-between'>
             <div>
-              <h3 className='text-lg font-bold text-neutral-900 mb-1'>Availability Status</h3>
+              <h3 className='text-lg font-bold text-neutral-900 mb-1'>
+                {t('doctors.availabilityStatus')}
+              </h3>
               <p className='text-sm text-neutral-600'>
-                {isOnline ? 'You are currently online and accepting appointments' : 'You are currently offline'}
+                {isOnline ? t('doctors.onlineMessage') : t('doctors.offlineMessage')}
               </p>
             </div>
             <label className='relative inline-flex items-center cursor-pointer'>
@@ -247,9 +284,182 @@ export default function DoctorSchedulePage() {
               />
               <div className="w-11 h-6 bg-neutral-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
               <span className='ml-3 text-sm font-medium text-neutral-700'>
-                {isOnline ? 'Online' : 'Offline'}
+                {isOnline ? t('doctors.online') : t('doctors.offline')}
               </span>
             </label>
+          </div>
+        </Card>
+
+        {/* Week view + Daily detail */}
+        <Card>
+          <div className='p-6'>
+            <div className='flex items-center justify-between mb-4 flex-wrap gap-2'>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('doctors.weekView')}</h2>
+              <div className='flex flex-wrap items-center gap-4'>
+                <span className='text-xs font-medium text-neutral-500 uppercase'>
+                  {t('doctors.calendarLegend')}:
+                </span>
+                <span className='inline-flex items-center gap-1.5'>
+                  <span className='w-3 h-3 rounded-full bg-primary-500' aria-hidden />
+                  <span className='text-sm text-neutral-700'>{t('doctors.legendBooked')}</span>
+                </span>
+                <span className='inline-flex items-center gap-1.5'>
+                  <span
+                    className='w-3 h-3 rounded-full bg-green-400 border border-green-600'
+                    aria-hidden
+                  />
+                  <span className='text-sm text-neutral-700'>{t('doctors.legendAvailable')}</span>
+                </span>
+                <span className='inline-flex items-center gap-1.5'>
+                  <span
+                    className='w-3 h-3 rounded-full bg-red-300 border border-red-500'
+                    aria-hidden
+                  />
+                  <span className='text-sm text-neutral-700'>{t('doctors.legendBlocked')}</span>
+                </span>
+              </div>
+              <div className='flex gap-2'>
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => {
+                    const prev = new Date(weekStart);
+                    prev.setDate(prev.getDate() - 7);
+                    setWeekStart(prev);
+                  }}
+                >
+                  {t('doctors.previousWeek')}
+                </Button>
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => {
+                    const next = new Date(weekStart);
+                    next.setDate(next.getDate() + 7);
+                    setWeekStart(next);
+                  }}
+                >
+                  {t('doctors.nextWeek')}
+                </Button>
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => {
+                    const d = new Date();
+                    const day = d.getDay();
+                    const mondayOffset = day === 0 ? -6 : 1 - day;
+                    d.setDate(d.getDate() + mondayOffset);
+                    d.setHours(0, 0, 0, 0);
+                    setWeekStart(d);
+                    setSelectedDate(new Date());
+                  }}
+                >
+                  {t('doctors.today')}
+                </Button>
+              </div>
+            </div>
+            <div className='grid grid-cols-7 gap-2 mb-4'>
+              {getWeekDates(weekStart).map((date) => {
+                const dateStr = date.toISOString().split('T')[0];
+                const isSelected =
+                  selectedDate && selectedDate.toISOString().split('T')[0] === dateStr;
+                const dayAppointments = weekAppointments.filter((apt) => {
+                  const aptDate = apt.appointmentDate || apt.schedule?.date || apt.startTime;
+                  if (!aptDate) return false;
+                  const d = new Date(aptDate);
+                  return d.toISOString().split('T')[0] === dateStr;
+                });
+                return (
+                  <button
+                    type='button'
+                    key={dateStr}
+                    onClick={() => setSelectedDate(date)}
+                    className={`p-3 rounded-lg border text-center transition-colors ${
+                      isSelected
+                        ? 'border-primary-600 bg-primary-50 text-primary-900'
+                        : 'border-neutral-200 hover:bg-neutral-50 text-neutral-800'
+                    }`}
+                  >
+                    <div className='text-xs font-medium text-neutral-500 uppercase'>
+                      {date.toLocaleDateString(undefined, { weekday: 'short' })}
+                    </div>
+                    <div className='text-lg font-bold'>{date.getDate()}</div>
+                    <div className='text-xs text-neutral-600'>
+                      {date.toLocaleDateString(undefined, { month: 'short' })}
+                    </div>
+                    {dayAppointments.length > 0 && (
+                      <div className='text-xs mt-1 font-medium text-primary-600'>
+                        {dayAppointments.length} {t('doctors.appointments')}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <div>
+              <h3 className='text-sm font-bold text-neutral-900 mb-3'>
+                {t('doctors.dailyDetail')} –{' '}
+                {selectedDate
+                  ? selectedDate.toLocaleDateString(undefined, {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })
+                  : ''}
+              </h3>
+              {loadingAppointments ? (
+                <p className='text-sm text-neutral-500'>{t('common.loading')}</p>
+              ) : selectedDate ? (
+                (() => {
+                  const dateStr = selectedDate.toISOString().split('T')[0];
+                  const dayList = weekAppointments
+                    .filter((apt) => {
+                      const aptDate = apt.appointmentDate || apt.schedule?.date || apt.startTime;
+                      if (!aptDate) return false;
+                      return new Date(aptDate).toISOString().split('T')[0] === dateStr;
+                    })
+                    .sort(
+                      (a, b) =>
+                        new Date(a.startTime || a.appointmentDate) -
+                        new Date(b.startTime || b.appointmentDate)
+                    );
+                  return dayList.length > 0 ? (
+                    <ul className='space-y-2'>
+                      {dayList.map((apt) => {
+                        const patientName = apt.patientId
+                          ? `${apt.patientId.firstName || ''} ${apt.patientId.lastName || ''}`.trim() ||
+                            '—'
+                          : '—';
+                        const timeStr = apt.startTime
+                          ? new Date(apt.startTime).toLocaleTimeString(undefined, {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : '—';
+                        return (
+                          <li
+                            key={apt._id}
+                            className='flex items-center justify-between p-3 border border-neutral-200 rounded-lg hover:bg-neutral-50 cursor-pointer'
+                            onClick={() => router.push(`/appointments/${apt._id}`)}
+                          >
+                            <span className='font-medium text-neutral-900'>{timeStr}</span>
+                            <span className='text-neutral-700'>{patientName}</span>
+                            <span className='text-sm text-neutral-600 capitalize'>
+                              {apt.type || apt.status || '—'}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className='text-sm text-neutral-500 py-4'>
+                      {t('doctors.noAppointmentsThisDay')}
+                    </p>
+                  );
+                })()
+              ) : null}
+            </div>
           </div>
         </Card>
 
@@ -258,22 +468,24 @@ export default function DoctorSchedulePage() {
           <Card>
             <div className='p-4'>
               <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Select Clinic Location
+                {t('doctors.selectClinicLocation')}
               </label>
               <select
                 className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                 value={selectedClinic || ''}
                 onChange={(e) => setSelectedClinic(e.target.value)}
               >
-                <option value=''>All Locations (Default Schedule)</option>
+                <option value=''>{t('doctors.allLocationsDefault')}</option>
                 {clinics.map((clinic) => (
                   <option key={clinic._id || clinic.id} value={clinic._id || clinic.id}>
-                    {clinic.name || 'Clinic Location'}
+                    {clinic.name || t('doctors.clinicLocation')}
                   </option>
                 ))}
               </select>
               <p className='text-xs text-neutral-500 mt-1'>
-                {selectedClinic ? 'Managing schedule for selected location' : 'Managing default schedule for all locations'}
+                {selectedClinic
+                  ? t('doctors.managingScheduleFor')
+                  : t('doctors.managingScheduleDefault')}
               </p>
             </div>
           </Card>
@@ -283,20 +495,20 @@ export default function DoctorSchedulePage() {
         <Card>
           <div className='p-6'>
             <div className='flex items-center justify-between mb-6'>
-              <h2 className='text-lg font-bold text-neutral-900'>Weekly Schedule</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('doctors.weeklySchedule')}</h2>
               <Button onClick={handleSaveSchedule} disabled={saving} variant='primary'>
-                {saving ? 'Saving...' : 'Save Schedule'}
+                {saving ? t('doctors.saving') : t('doctors.saveSchedule')}
               </Button>
             </div>
 
             <div className='space-y-4'>
-              {DAYS_OF_WEEK.map((day) => {
-                const daySchedule = schedule[day.toLowerCase()];
-                const dayBreak = breaks[day.toLowerCase()];
+              {DAY_KEYS.map((dayKey) => {
+                const daySchedule = schedule[dayKey];
+                const dayBreak = breaks[dayKey];
 
                 return (
                   <div
-                    key={day}
+                    key={dayKey}
                     className='flex items-center gap-4 p-4 border border-neutral-200 rounded-lg'
                   >
                     <div className='w-32'>
@@ -304,34 +516,32 @@ export default function DoctorSchedulePage() {
                         <input
                           type='checkbox'
                           checked={!!daySchedule}
-                          onChange={() => handleDayToggle(day.toLowerCase())}
+                          onChange={() => handleDayToggle(dayKey)}
                           className='icon icon-xs text-primary-600 rounded'
                         />
-                        <span className='font-medium text-neutral-900'>{day}</span>
+                        <span className='font-medium text-neutral-900'>
+                          {t(`settings.${dayKey}`)}
+                        </span>
                       </label>
                     </div>
 
                     {daySchedule && (
                       <>
                         <div className='flex items-center gap-2'>
-                          <label className='text-sm text-neutral-600'>From</label>
+                          <label className='text-sm text-neutral-600'>{t('doctors.from')}</label>
                           <Input
                             type='time'
                             value={daySchedule.startTime}
-                            onChange={(e) =>
-                              handleTimeChange(day.toLowerCase(), 'startTime', e.target.value)
-                            }
+                            onChange={(e) => handleTimeChange(dayKey, 'startTime', e.target.value)}
                             className='w-32'
                           />
                         </div>
                         <div className='flex items-center gap-2'>
-                          <label className='text-sm text-neutral-600'>To</label>
+                          <label className='text-sm text-neutral-600'>{t('doctors.to')}</label>
                           <Input
                             type='time'
                             value={daySchedule.endTime}
-                            onChange={(e) =>
-                              handleTimeChange(day.toLowerCase(), 'endTime', e.target.value)
-                            }
+                            onChange={(e) => handleTimeChange(dayKey, 'endTime', e.target.value)}
                             className='w-32'
                           />
                         </div>
@@ -341,10 +551,10 @@ export default function DoctorSchedulePage() {
                             <input
                               type='checkbox'
                               checked={!!dayBreak}
-                              onChange={() => handleBreakToggle(day.toLowerCase())}
+                              onChange={() => handleBreakToggle(dayKey)}
                               className='icon icon-xs text-primary-600 rounded'
                             />
-                            <span className='text-sm text-neutral-600'>Break</span>
+                            <span className='text-sm text-neutral-600'>{t('doctors.break')}</span>
                           </label>
                           {dayBreak && (
                             <>
@@ -352,16 +562,16 @@ export default function DoctorSchedulePage() {
                                 type='time'
                                 value={dayBreak.startTime}
                                 onChange={(e) =>
-                                  handleBreakTimeChange(day.toLowerCase(), 'startTime', e.target.value)
+                                  handleBreakTimeChange(dayKey, 'startTime', e.target.value)
                                 }
                                 className='w-32'
                               />
-                              <span className='text-sm text-neutral-600'>to</span>
+                              <span className='text-sm text-neutral-600'>{t('doctors.to')}</span>
                               <Input
                                 type='time'
                                 value={dayBreak.endTime}
                                 onChange={(e) =>
-                                  handleBreakTimeChange(day.toLowerCase(), 'endTime', e.target.value)
+                                  handleBreakTimeChange(dayKey, 'endTime', e.target.value)
                                 }
                                 className='w-32'
                               />
@@ -381,11 +591,13 @@ export default function DoctorSchedulePage() {
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
           <Card>
             <div className='p-6'>
-              <h2 className='text-lg font-bold text-neutral-900 mb-4'>Time Slot Settings</h2>
+              <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                {t('doctors.timeSlotSettings')}
+              </h2>
               <div className='space-y-4'>
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Appointment Duration (minutes)
+                    {t('doctors.appointmentDurationMinutes')}
                   </label>
                   <Input
                     type='number'
@@ -398,7 +610,7 @@ export default function DoctorSchedulePage() {
                 </div>
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Buffer Time Between Appointments (minutes)
+                    {t('doctors.bufferTimeMinutes')}
                   </label>
                   <Input
                     type='number'
@@ -409,6 +621,30 @@ export default function DoctorSchedulePage() {
                     onChange={(e) => setBufferTime(parseInt(e.target.value) || 0)}
                   />
                 </div>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    {t('doctors.advanceBookingMinDays')}
+                  </label>
+                  <Input
+                    type='number'
+                    min='0'
+                    max='365'
+                    value={advanceBookingMinDays}
+                    onChange={(e) => setAdvanceBookingMinDays(parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    {t('doctors.advanceBookingMaxDays')}
+                  </label>
+                  <Input
+                    type='number'
+                    min='0'
+                    max='365'
+                    value={advanceBookingMaxDays}
+                    onChange={(e) => setAdvanceBookingMaxDays(parseInt(e.target.value) || 90)}
+                  />
+                </div>
               </div>
             </div>
           </Card>
@@ -416,13 +652,15 @@ export default function DoctorSchedulePage() {
           <Card>
             <div className='p-6'>
               <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-lg font-bold text-neutral-900'>Holidays & Leaves</h2>
+                <h2 className='text-lg font-bold text-neutral-900'>
+                  {t('doctors.holidaysLeaves')}
+                </h2>
                 <Button
                   variant='secondary'
                   size='sm'
                   onClick={() => router.push(`/doctors/${doctorId}/leaves`)}
                 >
-                  Manage Leaves
+                  {t('doctors.manageLeaves')}
                 </Button>
               </div>
               {holidays.length > 0 ? (
@@ -434,8 +672,7 @@ export default function DoctorSchedulePage() {
                     >
                       <p className='font-medium text-neutral-900'>
                         {new Date(holiday.startDate).toLocaleDateString()}
-                        {holiday.endDate &&
-                          ` - ${new Date(holiday.endDate).toLocaleDateString()}`}
+                        {holiday.endDate && ` - ${new Date(holiday.endDate).toLocaleDateString()}`}
                       </p>
                       {holiday.reason && (
                         <p className='text-sm text-neutral-600 mt-1'>{holiday.reason}</p>
@@ -444,7 +681,7 @@ export default function DoctorSchedulePage() {
                   ))}
                 </div>
               ) : (
-                <p className='text-sm text-neutral-500'>No holidays or leaves scheduled</p>
+                <p className='text-sm text-neutral-500'>{t('doctors.noHolidaysLeaves')}</p>
               )}
             </div>
           </Card>
@@ -454,7 +691,7 @@ export default function DoctorSchedulePage() {
         <Card>
           <div className='p-6'>
             <div className='flex items-center justify-between mb-4'>
-              <h2 className='text-lg font-bold text-neutral-900'>Emergency Slots</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('doctors.emergencySlots')}</h2>
               <Button
                 variant='primary'
                 size='sm'
@@ -463,12 +700,10 @@ export default function DoctorSchedulePage() {
                   setShowEmergencyModal(true);
                 }}
               >
-                + Add Emergency Slot
+                {t('doctors.addEmergencySlot')}
               </Button>
             </div>
-            <p className='text-sm text-neutral-600 mb-4'>
-              Emergency slots are available for urgent appointments outside regular hours
-            </p>
+            <p className='text-sm text-neutral-600 mb-4'>{t('doctors.emergencySlotsDesc')}</p>
             {emergencySlots.length > 0 ? (
               <div className='space-y-2'>
                 {emergencySlots.map((slot, index) => (
@@ -478,7 +713,8 @@ export default function DoctorSchedulePage() {
                   >
                     <div>
                       <p className='font-medium text-neutral-900'>
-                        {new Date(slot.date).toLocaleDateString()} • {slot.startTime} - {slot.endTime}
+                        {new Date(slot.date).toLocaleDateString()} • {slot.startTime} -{' '}
+                        {slot.endTime}
                       </p>
                     </div>
                     <Button
@@ -490,13 +726,13 @@ export default function DoctorSchedulePage() {
                       }}
                       className='text-red-600'
                     >
-                      Remove
+                      {t('doctors.remove')}
                     </Button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className='text-sm text-neutral-500'>No emergency slots configured</p>
+              <p className='text-sm text-neutral-500'>{t('doctors.noEmergencySlots')}</p>
             )}
           </div>
         </Card>
@@ -505,7 +741,9 @@ export default function DoctorSchedulePage() {
         <Card>
           <div className='p-6'>
             <div className='flex items-center justify-between mb-4'>
-              <h2 className='text-lg font-bold text-neutral-900'>Blocked Time Slots</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>
+                {t('doctors.blockedTimeSlots')}
+              </h2>
               <Button
                 variant='secondary'
                 size='sm'
@@ -514,12 +752,10 @@ export default function DoctorSchedulePage() {
                   setShowBlockModal(true);
                 }}
               >
-                + Block Time Slot
+                {t('doctors.blockTimeSlot')}
               </Button>
             </div>
-            <p className='text-sm text-neutral-600 mb-4'>
-              Block specific time slots to prevent appointments from being booked
-            </p>
+            <p className='text-sm text-neutral-600 mb-4'>{t('doctors.blockedSlotsDesc')}</p>
             {blockedSlots.length > 0 ? (
               <div className='space-y-2'>
                 {blockedSlots.map((slot, index) => (
@@ -529,10 +765,13 @@ export default function DoctorSchedulePage() {
                   >
                     <div>
                       <p className='font-medium text-neutral-900'>
-                        {new Date(slot.date).toLocaleDateString()} • {slot.startTime} - {slot.endTime}
+                        {new Date(slot.date).toLocaleDateString()} • {slot.startTime} -{' '}
+                        {slot.endTime}
                       </p>
                       {slot.reason && (
-                        <p className='text-sm text-neutral-600 mt-1'>Reason: {slot.reason}</p>
+                        <p className='text-sm text-neutral-600 mt-1'>
+                          {t('doctors.reason')} {slot.reason}
+                        </p>
                       )}
                     </div>
                     <Button
@@ -544,67 +783,85 @@ export default function DoctorSchedulePage() {
                       }}
                       className='text-red-600'
                     >
-                      Remove
+                      {t('doctors.remove')}
                     </Button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className='text-sm text-neutral-500'>No blocked time slots</p>
+              <p className='text-sm text-neutral-500'>{t('doctors.noBlockedSlots')}</p>
             )}
           </div>
         </Card>
 
         {/* Emergency Slot Modal */}
         {showEmergencyModal && (
-          <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
+          <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
             <Card className='p-6 max-w-md w-full mx-4'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Add Emergency Slot</h3>
+              <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                {t('doctors.addEmergencySlotModal')}
+              </h3>
               <div className='space-y-4'>
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>Date *</label>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    {t('doctors.dateRequired')}
+                  </label>
                   <Input
                     type='date'
                     value={newEmergencySlot.date}
-                    onChange={(e) => setNewEmergencySlot({ ...newEmergencySlot, date: e.target.value })}
+                    onChange={(e) =>
+                      setNewEmergencySlot({ ...newEmergencySlot, date: e.target.value })
+                    }
                     min={new Date().toISOString().split('T')[0]}
                     required
                   />
                 </div>
                 <div className='grid grid-cols-2 gap-4'>
                   <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-2'>Start Time *</label>
+                    <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                      {t('doctors.startTimeRequired')}
+                    </label>
                     <Input
                       type='time'
                       value={newEmergencySlot.startTime}
-                      onChange={(e) => setNewEmergencySlot({ ...newEmergencySlot, startTime: e.target.value })}
+                      onChange={(e) =>
+                        setNewEmergencySlot({ ...newEmergencySlot, startTime: e.target.value })
+                      }
                       required
                     />
                   </div>
                   <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-2'>End Time *</label>
+                    <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                      {t('doctors.endTimeRequired')}
+                    </label>
                     <Input
                       type='time'
                       value={newEmergencySlot.endTime}
-                      onChange={(e) => setNewEmergencySlot({ ...newEmergencySlot, endTime: e.target.value })}
+                      onChange={(e) =>
+                        setNewEmergencySlot({ ...newEmergencySlot, endTime: e.target.value })
+                      }
                       required
                     />
                   </div>
                 </div>
                 <div className='flex justify-end gap-3'>
                   <Button variant='secondary' onClick={() => setShowEmergencyModal(false)}>
-                    Cancel
+                    {t('doctors.cancel')}
                   </Button>
                   <Button
                     variant='primary'
                     onClick={() => {
-                      if (newEmergencySlot.date && newEmergencySlot.startTime && newEmergencySlot.endTime) {
+                      if (
+                        newEmergencySlot.date &&
+                        newEmergencySlot.startTime &&
+                        newEmergencySlot.endTime
+                      ) {
                         setEmergencySlots([...emergencySlots, newEmergencySlot]);
                         setShowEmergencyModal(false);
                       }
                     }}
                   >
-                    Add Slot
+                    {t('doctors.addSlot')}
                   </Button>
                 </div>
               </div>
@@ -614,12 +871,16 @@ export default function DoctorSchedulePage() {
 
         {/* Block Slot Modal */}
         {showBlockModal && (
-          <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
+          <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
             <Card className='p-6 max-w-md w-full mx-4'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Block Time Slot</h3>
+              <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                {t('doctors.blockTimeSlotModal')}
+              </h3>
               <div className='space-y-4'>
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>Date *</label>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    {t('doctors.dateRequired')}
+                  </label>
                   <Input
                     type='date'
                     value={newBlockedSlot.date}
@@ -630,47 +891,63 @@ export default function DoctorSchedulePage() {
                 </div>
                 <div className='grid grid-cols-2 gap-4'>
                   <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-2'>Start Time *</label>
+                    <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                      {t('doctors.startTimeRequired')}
+                    </label>
                     <Input
                       type='time'
                       value={newBlockedSlot.startTime}
-                      onChange={(e) => setNewBlockedSlot({ ...newBlockedSlot, startTime: e.target.value })}
+                      onChange={(e) =>
+                        setNewBlockedSlot({ ...newBlockedSlot, startTime: e.target.value })
+                      }
                       required
                     />
                   </div>
                   <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-2'>End Time *</label>
+                    <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                      {t('doctors.endTimeRequired')}
+                    </label>
                     <Input
                       type='time'
                       value={newBlockedSlot.endTime}
-                      onChange={(e) => setNewBlockedSlot({ ...newBlockedSlot, endTime: e.target.value })}
+                      onChange={(e) =>
+                        setNewBlockedSlot({ ...newBlockedSlot, endTime: e.target.value })
+                      }
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>Reason (Optional)</label>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    {t('doctors.reasonOptional')}
+                  </label>
                   <Input
                     type='text'
                     value={newBlockedSlot.reason}
-                    onChange={(e) => setNewBlockedSlot({ ...newBlockedSlot, reason: e.target.value })}
-                    placeholder='e.g., Personal appointment, Training...'
+                    onChange={(e) =>
+                      setNewBlockedSlot({ ...newBlockedSlot, reason: e.target.value })
+                    }
+                    placeholder={t('doctors.blockSlotPlaceholder')}
                   />
                 </div>
                 <div className='flex justify-end gap-3'>
                   <Button variant='secondary' onClick={() => setShowBlockModal(false)}>
-                    Cancel
+                    {t('doctors.cancel')}
                   </Button>
                   <Button
                     variant='primary'
                     onClick={() => {
-                      if (newBlockedSlot.date && newBlockedSlot.startTime && newBlockedSlot.endTime) {
+                      if (
+                        newBlockedSlot.date &&
+                        newBlockedSlot.startTime &&
+                        newBlockedSlot.endTime
+                      ) {
                         setBlockedSlots([...blockedSlots, newBlockedSlot]);
                         setShowBlockModal(false);
                       }
                     }}
                   >
-                    Block Slot
+                    {t('doctors.blockSlot')}
                   </Button>
                 </div>
               </div>

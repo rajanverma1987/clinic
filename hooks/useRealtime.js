@@ -26,7 +26,6 @@ export function useRealtime(options = {}) {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('[Realtime] Connected');
       setIsConnected(true);
 
       // Join tenant room
@@ -36,7 +35,6 @@ export function useRealtime(options = {}) {
     });
 
     socket.on('disconnect', () => {
-      console.log('[Realtime] Disconnected');
       setIsConnected(false);
     });
 

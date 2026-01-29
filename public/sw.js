@@ -91,16 +91,67 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Background sync for offline actions
+// Background sync for offline actions (Level 3: Service Worker for background sync)
+const DB_NAME = 'clinic_dashboard_db';
+const DB_VERSION = 3;
+const OFFLINE_QUEUE_STORE = 'offline_mutations';
+
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-api-requests') {
     event.waitUntil(syncOfflineRequests());
   }
 });
 
-// Sync offline API requests when back online
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result);
+  });
+}
+
+async function getOfflineMutations(db) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OFFLINE_QUEUE_STORE, 'readonly');
+    const store = tx.objectStore(OFFLINE_QUEUE_STORE);
+    const idx = store.index('createdAt');
+    const req = idx.getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function removeOfflineMutation(db, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OFFLINE_QUEUE_STORE, 'readwrite');
+    const store = tx.objectStore(OFFLINE_QUEUE_STORE);
+    const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
 async function syncOfflineRequests() {
-  // This would sync queued API requests
-  // Implementation depends on your offline queue strategy
-  console.log('Syncing offline requests...');
+  let db;
+  try {
+    db = await openDB();
+  } catch (e) {
+    return;
+  }
+  const list = await getOfflineMutations(db);
+  for (const item of list) {
+    try {
+      const res = await fetch(item.url, {
+        method: item.method || 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(item.token ? { Authorization: 'Bearer ' + item.token } : {}),
+        },
+        body: item.body ? JSON.stringify(item.body) : undefined,
+      });
+      if (res.ok) {
+        await removeOfflineMutation(db, item.id);
+      }
+    } catch (_) {}
+  }
 }

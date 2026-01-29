@@ -11,12 +11,13 @@ import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
 import Patient from '@/models/Patient';
 import { logger } from '@/lib/utils/logger.js';
+import { canExportData } from '@/lib/permissions/cursor-md-matrix';
 
 async function postHandler(req, user) {
   try {
-    if (user.role !== 'super_admin') {
+    if (!canExportData(user.role)) {
       return NextResponse.json(
-        errorResponse('Unauthorized', 'UNAUTHORIZED'),
+        errorResponse('You do not have permission to export patient data', 'FORBIDDEN'),
         { status: 403 }
       );
     }
@@ -32,10 +33,12 @@ async function postHandler(req, user) {
 
     await connectDB();
 
-    const patients = await Patient.find({
-      _id: { $in: patientIds },
-      deletedAt: null,
-    })
+    const query = { _id: { $in: patientIds }, deletedAt: null };
+    if (user.role !== 'super_admin' && user.tenantId) {
+      query.tenantId = user.tenantId;
+    }
+
+    const patients = await Patient.find(query)
       .select('firstName lastName email phone dateOfBirth gender status patientId createdAt')
       .populate('tenantId', 'name slug')
       .sort({ createdAt: -1 })

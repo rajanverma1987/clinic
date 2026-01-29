@@ -1,5 +1,7 @@
 /**
  * Doctor Schedule API Routes
+ * GET: return schedule in frontend format (day-keyed, breaks, slotDuration, advanceBooking, etc.)
+ * PUT: update schedule from frontend payload
  */
 
 import { NextResponse } from 'next/server';
@@ -10,17 +12,28 @@ import { apiRateLimit } from '@/middleware/rate-limit';
 import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
 import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
 import { updateScheduleSchema } from '@/lib/validations/doctor';
-import { updateDoctorSchedule } from '@/services/doctor.service';
+import { getDoctorSchedule, updateDoctorSchedule } from '@/services/doctor.service';
+
+/**
+ * GET /api/doctors/[id]/schedule
+ * Get doctor schedule (frontend format)
+ */
+async function getHandler(req, user, { params }) {
+  const resolved = await params;
+  const doctorId = resolved.id;
+  const data = await getDoctorSchedule(doctorId, user.tenantId);
+  return NextResponse.json(successResponse(data));
+}
 
 /**
  * PUT /api/doctors/[id]/schedule
  * Update doctor schedule
  */
 async function putHandler(req, user, { params }) {
-  const doctorId = params.id;
+  const resolved = await params;
+  const doctorId = resolved.id;
   const body = await req.json();
 
-  // Validate input
   const validationResult = updateScheduleSchema.safeParse(body);
   if (!validationResult.success) {
     return NextResponse.json(
@@ -46,7 +59,17 @@ async function putHandler(req, user, { params }) {
   return NextResponse.json(successResponse(doctor));
 }
 
-// Apply middleware stack
+export const GET = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.DOCTOR, ACTIONS.READ)(async (req, user, context) => {
+        const params = await context.params;
+        return getHandler(req, user, { params });
+      })
+    )
+  )
+);
+
 export const PUT = withErrorHandler(
   apiRateLimit(
     withAuth(

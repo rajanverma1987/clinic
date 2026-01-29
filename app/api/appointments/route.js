@@ -1,41 +1,41 @@
 /**
  * Appointment API Routes
- * 
+ *
  * Enterprise-grade API endpoints for appointment management with comprehensive
  * validation, telemedicine integration, and notification handling.
- * 
+ *
  * @module app/api/appointments/route
  * @since 1.0.0
  */
 
 import { sendVideoConsultationEmail } from '@/lib/email/email-service';
-import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import {
   errorResponse,
   handleMongoError,
   successResponse,
   validationErrorResponse,
 } from '@/lib/utils/api-response';
+import { logger } from '@/lib/utils/logger.js';
 import { appointmentQuerySchema, createAppointmentSchema } from '@/lib/validations/appointment';
 import { withAuth } from '@/middleware/auth';
 import { withErrorHandler } from '@/middleware/error-handler';
-import { withRequestLogger } from '@/middleware/request-logger';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import Patient from '@/models/Patient';
 import { SessionType } from '@/models/TelemedicineSession';
 import User from '@/models/User';
 import { createAppointment, listAppointments } from '@/services/appointment.service';
 import { createTelemedicineSession } from '@/services/telemedicine.service';
 import { NextResponse } from 'next/server';
-import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/appointments
- * 
+ *
  * List appointments with pagination, filtering, and sorting.
  * Supports filtering by patient, doctor, status, type, and date range.
- * 
+ *
  * Query Parameters:
  * - page: Page number (default: 1)
  * - limit: Items per page (default: 10, max: 100)
@@ -47,21 +47,21 @@ import { logger } from '@/lib/utils/logger.js';
  * - endDate: Filter appointments until this date (ISO format)
  * - date: Filter by specific date (ISO format)
  * - isActive: Filter by active status (true/false)
- * 
+ *
  * @async
  * @function getHandler
  * @param {Request} req - HTTP request object
  * @param {Object} user - Authenticated user object with tenantId and userId
  * @returns {Promise<NextResponse>} Paginated list of appointments
- * 
+ *
  * @example
  * GET /api/appointments?status=scheduled&doctorId=123&page=1&limit=20
- * 
+ *
  * @security
  * - Requires APPOINTMENT:READ permission
  * - Results filtered by tenantId (multi-tenant isolation)
  * - Feature access check for Appointment Scheduling
- * 
+ *
  * @performance
  * - Uses optimized queries with .lean()
  * - Supports pagination to prevent large result sets
@@ -100,7 +100,12 @@ async function getHandler(req, user) {
       });
     }
 
-    const result = await listAppointments(validationResult.data, user.tenantId, user.userId);
+    const queryData = { ...validationResult.data };
+    if (queryData.status === 'pending') {
+      queryData.status = 'scheduled';
+    }
+
+    const result = await listAppointments(queryData, user.tenantId, user.userId);
 
     return NextResponse.json(successResponse(result));
   } catch (error) {
@@ -116,10 +121,10 @@ async function getHandler(req, user) {
 
 /**
  * POST /api/appointments
- * 
+ *
  * Create a new appointment with comprehensive validation, conflict detection,
  * telemedicine session creation, and notification sending.
- * 
+ *
  * Request Body:
  * - patientId: Patient ID (required)
  * - doctorId: Doctor ID (required)
@@ -134,13 +139,13 @@ async function getHandler(req, user) {
  * - recurringOccurrences: Number of recurring occurrences (if recurring)
  * - telemedicineConsent: Patient consent for recording (if telemedicine)
  * - patientEmail: Patient email for notifications (optional)
- * 
+ *
  * @async
  * @function postHandler
  * @param {Request} req - HTTP request object with JSON body
  * @param {Object} user - Authenticated user object with tenantId and userId
  * @returns {Promise<NextResponse>} Created appointment object with 201 status
- * 
+ *
  * @example
  * POST /api/appointments
  * {
@@ -153,27 +158,27 @@ async function getHandler(req, user) {
  *   "isTelemedicine": true,
  *   "patientEmail": "patient@example.com"
  * }
- * 
+ *
  * @security
  * - Requires APPOINTMENT:CREATE permission
  * - Feature access check for Appointment Scheduling
  * - Conflict detection prevents double-booking
  * - Holiday and schedule validation
- * 
+ *
  * @validation
  * - Input validated against createAppointmentSchema
  * - Date/time validation
  * - Conflict detection with existing appointments
  * - Holiday checking
  * - Doctor schedule validation
- * 
+ *
  * @features
  * - Automatic telemedicine session creation
  * - Email notifications for telemedicine appointments
  * - Recurring appointment support
  * - Queue integration
  * - Reminder scheduling
- * 
+ *
  * @audit
  * - Appointment creation logged
  * - PHI access logged for compliance
@@ -281,7 +286,8 @@ async function postHandler(req, user) {
     } else {
       // Send appointment confirmation notifications (email, SMS, in-app)
       try {
-        const { sendAppointmentConfirmation } = await import('@/services/appointment-notification.service.js');
+        const { sendAppointmentConfirmation } =
+          await import('@/services/appointment-notification.service.js');
         await sendAppointmentConfirmation(appointment._id.toString(), user.tenantId);
         logger.info('Appointment confirmation notifications sent', {
           appointmentId: appointment._id.toString(),
@@ -330,7 +336,7 @@ async function postHandler(req, user) {
 
 /**
  * Apply enterprise middleware stack to GET endpoint.
- * 
+ *
  * Middleware order (bottom to top):
  * 1. Error handler - Catches and formats all errors
  * 2. Request logger - Logs request/response with correlation ID
@@ -341,17 +347,13 @@ async function postHandler(req, user) {
  */
 export const GET = withErrorHandler(
   withRequestLogger(
-    apiRateLimit(
-      withAuth(
-        requirePermission(RESOURCES.APPOINTMENT, ACTIONS.READ)(getHandler)
-      )
-    )
+    apiRateLimit(withAuth(requirePermission(RESOURCES.APPOINTMENT, ACTIONS.READ)(getHandler)))
   )
 );
 
 /**
  * Apply enterprise middleware stack to POST endpoint.
- * 
+ *
  * Middleware order (bottom to top):
  * 1. Error handler - Catches and formats all errors
  * 2. Request logger - Logs request/response with correlation ID
@@ -362,10 +364,6 @@ export const GET = withErrorHandler(
  */
 export const POST = withErrorHandler(
   withRequestLogger(
-    apiRateLimit(
-      withAuth(
-        requirePermission(RESOURCES.APPOINTMENT, ACTIONS.CREATE)(postHandler)
-      )
-    )
+    apiRateLimit(withAuth(requirePermission(RESOURCES.APPOINTMENT, ACTIONS.CREATE)(postHandler)))
   )
 );

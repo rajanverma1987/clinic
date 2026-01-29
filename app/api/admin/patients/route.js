@@ -15,7 +15,7 @@ import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/admin/patients
- * Query: search, tenantId, status, page, limit
+ * Query: search, tenantId, status, dateFrom, dateTo, doctorId, hasAppointments, sortBy, sortOrder, page, limit
  */
 async function getHandler(req, user) {
   try {
@@ -31,6 +31,12 @@ async function getHandler(req, user) {
     const search = searchParams.get('search') || '';
     const tenantId = searchParams.get('tenantId') || '';
     const status = searchParams.get('status') || '';
+    const dateFrom = searchParams.get('dateFrom') || '';
+    const dateTo = searchParams.get('dateTo') || '';
+    const doctorId = searchParams.get('doctorId') || '';
+    const hasAppointments = searchParams.get('hasAppointments');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
 
@@ -44,6 +50,28 @@ async function getHandler(req, user) {
       query.status = status;
     }
 
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) query.createdAt.$lte = new Date(dateTo + 'T23:59:59.999Z');
+    }
+
+    if (doctorId || hasAppointments === 'true' || hasAppointments === true) {
+      const Appointment = (await import('@/models/Appointment')).default;
+      const apptQuery = { deletedAt: null };
+      if (doctorId) apptQuery.doctorId = doctorId;
+      const patientIds = await Appointment.distinct('patientId', apptQuery);
+      if (patientIds && patientIds.length) {
+        query._id = { $in: patientIds };
+      } else {
+        query._id = { $in: [] };
+      }
+    } else if (hasAppointments === 'false' || hasAppointments === false) {
+      const Appointment = (await import('@/models/Appointment')).default;
+      const withAppts = await Appointment.distinct('patientId', { deletedAt: null });
+      query._id = withAppts.length ? { $nin: withAppts } : {};
+    }
+
     if (search && search.trim()) {
       const trim = search.trim();
       query.$or = [
@@ -55,12 +83,15 @@ async function getHandler(req, user) {
       ];
     }
 
+    const order = sortOrder === 'asc' ? 1 : -1;
+    const sortField = sortBy === 'name' ? { lastName: order, firstName: order } : { [sortBy]: order };
+
     const total = await Patient.countDocuments(query);
     const skip = (page - 1) * limit;
     const patients = await Patient.find(query)
-      .select('firstName lastName email phone dateOfBirth gender status patientId tenantId createdAt')
+      .select('firstName lastName email phone dateOfBirth gender status patientId tenantId createdAt flagged flaggedAt flagReason')
       .populate('tenantId', 'name slug')
-      .sort({ createdAt: -1 })
+      .sort(sortField)
       .skip(skip)
       .limit(limit)
       .lean();
@@ -78,6 +109,9 @@ async function getHandler(req, user) {
       tenantId: p.tenantId?._id?.toString() || p.tenantId?.toString(),
       tenantName: p.tenantId?.name,
       createdAt: p.createdAt,
+      flagged: !!p.flagged,
+      flaggedAt: p.flaggedAt,
+      flagReason: p.flagReason,
     }));
 
     return NextResponse.json(

@@ -16,6 +16,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -50,7 +51,7 @@ export default function InventoryItemDetailPage() {
         setError(response.error?.message || 'Failed to load inventory item');
       }
     } catch (error) {
-      console.error('Failed to fetch inventory item:', error);
+      logger.error('Failed to fetch inventory item:', error);
       setError(error.message || 'Failed to load inventory item');
     } finally {
       setLoading(false);
@@ -104,7 +105,7 @@ export default function InventoryItemDetailPage() {
         setError(response.error?.message || 'Failed to update inventory item');
       }
     } catch (error) {
-      console.error('Failed to update inventory item:', error);
+      logger.error('Failed to update inventory item:', error);
       setError(error.message || 'Failed to update inventory item');
     } finally {
       setSaving(false);
@@ -149,7 +150,7 @@ export default function InventoryItemDetailPage() {
           <Card>
             <div className='text-center py-8'>
               <p className='text-status-error mb-4'>{error}</p>
-              <Button onClick={() => router.push('/inventory')}>Back to Inventory</Button>
+              <Button variant='primary' size='md' onClick={() => router.push('/inventory')}>Back to Inventory</Button>
             </div>
           </Card>
         </div>

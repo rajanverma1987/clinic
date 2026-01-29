@@ -9,6 +9,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -48,14 +49,17 @@ export default function DoctorReviewsPage() {
   const [respondingTo, setRespondingTo] = useState(null);
   const [responseText, setResponseText] = useState('');
 
+  const userId = user?._id ?? user?.id ?? user?.userId;
+
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== 'doctor') {
       router.push('/dashboard');
       return;
     }
+    if (!userId) return;
     fetchDoctorId();
-  }, [authLoading, user, router]);
+  }, [authLoading, user, userId, router]);
 
   useEffect(() => {
     if (doctorId) {
@@ -68,15 +72,16 @@ export default function DoctorReviewsPage() {
   }, [reviews, filterRating, searchQuery]);
 
   const fetchDoctorId = async () => {
+    if (!userId || userId === 'undefined') return;
     try {
-      const doctorResponse = await apiClient.get(`/doctors/user/${user._id}`);
+      const doctorResponse = await apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`);
       if (doctorResponse.success && doctorResponse.data) {
         setDoctorId(doctorResponse.data._id);
       } else {
         throw new Error('Doctor profile not found');
       }
     } catch (err) {
-      console.error('Failed to fetch doctor profile:', err);
+      logger.error('Failed to fetch doctor profile:', err);
     }
   };
 
@@ -91,10 +96,10 @@ export default function DoctorReviewsPage() {
       if (reviewsResponse.success && reviewsResponse.data) {
         const reviewsData = reviewsResponse.data.reviews || [];
         setReviews(reviewsData);
-        
+
         // Set stats from API response
         setAverageRating(reviewsResponse.data.averageRating || 0);
-        
+
         // Calculate distribution
         const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
         reviewsData.forEach((review) => {
@@ -106,13 +111,12 @@ export default function DoctorReviewsPage() {
         setRatingDistribution(distribution);
       }
     } catch (err) {
-      console.error('Failed to fetch reviews:', err);
+      logger.error('Failed to fetch reviews:', err);
       setReviews([]);
     } finally {
       setLoading(false);
     }
   };
-
 
   const filterReviews = () => {
     let filtered = [...reviews];
@@ -138,13 +142,11 @@ export default function DoctorReviewsPage() {
 
   const handleRespondToReview = async (reviewId) => {
     if (!responseText.trim()) {
-      alert('Please enter a response');
+      alert(t('doctors.pleaseEnterResponse'));
       return;
     }
 
     try {
-      // In a real system, you'd have an API endpoint to add doctor response
-      // For now, we'll update locally
       const response = await apiClient.put(`/appointments/${reviewId}/review-response`, {
         doctorResponse: responseText,
       });
@@ -155,27 +157,26 @@ export default function DoctorReviewsPage() {
         );
         setRespondingTo(null);
         setResponseText('');
-        alert('Response saved successfully');
+        alert(t('doctors.responseSavedSuccess'));
       } else {
-        alert('Failed to save response');
+        alert(t('doctors.responseSaveFailed'));
       }
     } catch (err) {
-      console.error('Failed to respond to review:', err);
-      alert('Failed to save response');
+      logger.error('Failed to respond to review:', err);
+      alert(t('doctors.responseSaveFailed'));
     }
   };
 
   const handleFlagReview = async (reviewId) => {
-    if (!confirm('Are you sure you want to flag this review as inappropriate?')) {
+    if (!confirm(t('doctors.confirmFlagReview'))) {
       return;
     }
 
     try {
-      // In a real system, you'd have an API endpoint to flag reviews
-      alert('Review flagged. It will be reviewed by administrators.');
+      alert(t('doctors.reviewFlagged'));
     } catch (err) {
-      console.error('Failed to flag review:', err);
-      alert('Failed to flag review');
+      logger.error('Failed to flag review:', err);
+      alert(t('doctors.flagReviewFailed'));
     }
   };
 
@@ -197,8 +198,8 @@ export default function DoctorReviewsPage() {
     <Layout>
       <div className='max-w-7xl mx-auto space-y-6'>
         <PageHeader
-          title='Reviews & Ratings'
-          subtitle='View and respond to patient reviews'
+          title={t('doctors.reviewsRatings')}
+          subtitle={t('doctors.reviewsRatingsSubtitle')}
         />
 
         {/* Summary Cards */}
@@ -206,7 +207,9 @@ export default function DoctorReviewsPage() {
           <Card>
             <div className='p-6'>
               <div className='flex items-center justify-between mb-2'>
-                <h3 className='text-sm font-medium text-neutral-600'>Average Rating</h3>
+                <h3 className='text-sm font-medium text-neutral-600'>
+                  {t('doctors.averageRating')}
+                </h3>
               </div>
               <div className='flex items-center gap-3'>
                 <StarRating rating={averageRating} />
@@ -214,13 +217,17 @@ export default function DoctorReviewsPage() {
                   {averageRating.toFixed(1)}
                 </span>
               </div>
-              <p className='text-sm text-neutral-500 mt-2'>{totalReviews} total reviews</p>
+              <p className='text-sm text-neutral-500 mt-2'>
+                {totalReviews} {t('doctors.totalReviews')}
+              </p>
             </div>
           </Card>
 
           <Card>
             <div className='p-6'>
-              <h3 className='text-sm font-medium text-neutral-600 mb-4'>Rating Distribution</h3>
+              <h3 className='text-sm font-medium text-neutral-600 mb-4'>
+                {t('doctors.ratingDistribution')}
+              </h3>
               <div className='space-y-2'>
                 {[5, 4, 3, 2, 1].map((rating) => {
                   const count = ratingDistribution[rating] || 0;
@@ -328,7 +335,9 @@ export default function DoctorReviewsPage() {
                         <div>
                           <h4 className='font-semibold text-neutral-900'>{review.patientName}</h4>
                           <p className='text-sm text-neutral-500'>
-                            {new Date(review.appointmentDate || review.createdAt).toLocaleDateString()}
+                            {new Date(
+                              review.appointmentDate || review.createdAt
+                            ).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -341,7 +350,7 @@ export default function DoctorReviewsPage() {
                           size='sm'
                           onClick={() => setRespondingTo(review._id)}
                         >
-                          Respond
+                          {t('doctors.respond')}
                         </Button>
                       )}
                       <Button
@@ -349,7 +358,7 @@ export default function DoctorReviewsPage() {
                         size='sm'
                         onClick={() => handleFlagReview(review._id)}
                       >
-                        Flag
+                        {t('doctors.flag')}
                       </Button>
                     </div>
                   </div>
@@ -359,7 +368,9 @@ export default function DoctorReviewsPage() {
                   {review.doctorResponse && (
                     <div className='mt-4 p-4 bg-primary-50 rounded-lg border border-primary-200'>
                       <div className='flex items-center gap-2 mb-2'>
-                        <span className='font-semibold text-primary-900'>Your Response:</span>
+                        <span className='font-semibold text-primary-900'>
+                          {t('doctors.yourResponse')}
+                        </span>
                         <span className='text-sm text-primary-600'>
                           {new Date(review.updatedAt || review.createdAt).toLocaleDateString()}
                         </span>
@@ -373,7 +384,7 @@ export default function DoctorReviewsPage() {
                       <textarea
                         className='w-full p-3 border border-neutral-300 rounded-lg mb-3'
                         rows={3}
-                        placeholder='Write your response...'
+                        placeholder={t('doctors.writeResponsePlaceholder')}
                         value={responseText}
                         onChange={(e) => setResponseText(e.target.value)}
                       />
@@ -383,7 +394,7 @@ export default function DoctorReviewsPage() {
                           size='sm'
                           onClick={() => handleRespondToReview(review._id)}
                         >
-                          Submit Response
+                          {t('doctors.submitResponse')}
                         </Button>
                         <Button
                           variant='secondary'
@@ -393,7 +404,7 @@ export default function DoctorReviewsPage() {
                             setResponseText('');
                           }}
                         >
-                          Cancel
+                          {t('doctors.cancel')}
                         </Button>
                       </div>
                     </div>
@@ -404,7 +415,7 @@ export default function DoctorReviewsPage() {
           ) : (
             <Card>
               <div className='p-12 text-center'>
-                <p className='text-neutral-500'>No reviews found</p>
+                <p className='text-neutral-500'>{t('doctors.noReviewsFound')}</p>
               </div>
             </Card>
           )}

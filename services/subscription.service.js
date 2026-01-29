@@ -3,19 +3,21 @@
  */
 
 import connectDB from '@/lib/db/connection.js';
-import { withTenant } from '@/lib/db/tenant-helper.js';
-import SubscriptionPlan, { PlanBillingCycle, PlanStatus } from '@/models/SubscriptionPlan.js';
+import { logger } from '@/lib/utils/logger.js';
 import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
 import SubscriptionPayment, { PaymentStatus } from '@/models/SubscriptionPayment.js';
+import SubscriptionPlan, { PlanBillingCycle, PlanStatus } from '@/models/SubscriptionPlan.js';
 import Tenant from '@/models/Tenant.js';
-import { logger } from '@/lib/utils/logger.js';
 import {
+  activatePayPalSubscription,
+  cancelPayPalSubscription,
   createPayPalPlan,
   createPayPalSubscription,
-  getPayPalSubscription,
-  cancelPayPalSubscription,
-  activatePayPalSubscription,
 } from './paypal.service.js';
+import {
+  cancelStripeSubscription,
+  createStripeCheckoutSession,
+} from './stripe-subscription.service.js';
 
 /**
  * Create subscription plan (Admin only)
@@ -25,18 +27,22 @@ export async function createSubscriptionPlan(input) {
 
   // Only create PayPal plan if not provided and plan is paid
   let paypalPlanId = input.paypalPlanId;
-  
+
   if (!paypalPlanId && input.price > 0) {
     // No PayPal Plan ID provided and it's a paid plan - try to create one
+    const trialDays = input.trialDays ?? 14;
     try {
       paypalPlanId = await createPayPalPlan(
         input.name,
         input.description || '',
         input.price / 100, // Convert from cents to dollars
         input.currency,
-        input.billingCycle
+        input.billingCycle,
+        trialDays
       );
-      logger.info(`✅ Auto-created PayPal plan: ${paypalPlanId}`);
+      logger.info(
+        `✅ Auto-created PayPal plan: ${paypalPlanId}${trialDays ? ` (${trialDays}-day trial)` : ''}`
+      );
     } catch (error) {
       logger.error('Failed to create PayPal plan:', error);
       // Continue without PayPal plan ID - admin can add it later
@@ -80,6 +86,7 @@ export async function updateSubscriptionPlan(planId, input) {
   if (input.isPopular !== undefined) plan.isPopular = input.isPopular;
   if (input.isHidden !== undefined) plan.isHidden = input.isHidden;
   if (input.status !== undefined) plan.status = input.status;
+  if (input.trialDays !== undefined) plan.trialDays = input.trialDays;
 
   await plan.save();
   return plan;
@@ -112,8 +119,16 @@ export async function getSubscriptionPlanById(planId) {
 
 /**
  * Create subscription for tenant
+ * @param {string} [paymentMethod] - 'paypal' | 'card'. If 'card', returns { checkoutUrl } and no subscription record until Stripe checkout completes.
  */
-export async function createSubscription(tenantId, planId, userId, customerEmail, customerName) {
+export async function createSubscription(
+  tenantId,
+  planId,
+  userId,
+  customerEmail,
+  customerName,
+  paymentMethod = 'paypal'
+) {
   await connectDB();
 
   // Get plan
@@ -134,33 +149,47 @@ export async function createSubscription(tenantId, planId, userId, customerEmail
 
   // If upgrading to a paid plan from any existing subscription, cancel the old one first
   if (existingSubscription && plan.price > 0) {
-    logger.info(`Cancelling existing subscription ${existingSubscription._id} before creating new paid subscription`);
-    
-    // Cancel the old subscription immediately (not at period end)
+    logger.info(
+      `Cancelling existing subscription ${existingSubscription._id} before creating new paid subscription`
+    );
     existingSubscription.status = SubscriptionStatus.CANCELLED;
     existingSubscription.cancelledAt = new Date();
     existingSubscription.cancelAtPeriodEnd = false;
     await existingSubscription.save();
-
-    // If old subscription had PayPal subscription, cancel it
     if (existingSubscription.paypalSubscriptionId) {
       try {
-        await cancelPayPalSubscription(existingSubscription.paypalSubscriptionId, 'Upgrading to new plan');
+        await cancelPayPalSubscription(
+          existingSubscription.paypalSubscriptionId,
+          'Upgrading to new plan'
+        );
       } catch (error) {
         logger.error('Failed to cancel PayPal subscription:', error);
-        // Continue anyway - we'll create the new subscription
       }
     }
   } else if (existingSubscription && plan.price === 0) {
-    // If trying to create a free subscription while having an active one, throw error
     throw new Error('Tenant already has an active subscription. Use update endpoint instead.');
   }
 
-  // SECURITY: Paid plans MUST have PayPal integration
-  if (plan.price > 0 && !plan.paypalPlanId) {
+  // Card payment: Stripe Checkout – return checkout URL; subscription created on completion
+  if (paymentMethod === 'card' && plan.price > 0) {
+    try {
+      const { checkoutUrl } = await createStripeCheckoutSession(
+        tenantId,
+        planId,
+        customerEmail,
+        customerName
+      );
+      return { checkoutUrl };
+    } catch (error) {
+      logger.error('Failed to create Stripe checkout:', error);
+      throw new Error(error.message || 'Failed to create card payment session');
+    }
+  }
+
+  // PayPal: paid plans require PayPal plan ID when user chose PayPal
+  if (paymentMethod === 'paypal' && plan.price > 0 && !plan.paypalPlanId) {
     throw new Error(
-      'This plan requires payment but PayPal integration is not configured. ' +
-      'Please contact support or choose a free plan.'
+      'PayPal is not available for this plan. Please use Pay with card to continue.'
     );
   }
 
@@ -168,10 +197,11 @@ export async function createSubscription(tenantId, planId, userId, customerEmail
   const now = new Date();
   const periodStart = now;
   let periodEnd = new Date(now);
-  
-  // Free Trial gets 15 days, others follow billing cycle
-  if (plan.name === 'Free Trial') {
-    periodEnd.setDate(periodEnd.getDate() + 15);
+  const trialDays = plan.trialDays ?? 14;
+
+  if (trialDays > 0) {
+    // All plans: 14 days free, then billing starts
+    periodEnd.setDate(periodEnd.getDate() + trialDays);
   } else if (plan.billingCycle === PlanBillingCycle.MONTHLY) {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
   } else {
@@ -186,7 +216,7 @@ export async function createSubscription(tenantId, planId, userId, customerEmail
     try {
       const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/subscription/return`;
       const cancelUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/subscription/cancel`;
-      
+
       const paypalResult = await createPayPalSubscription(
         plan.paypalPlanId,
         returnUrl,
@@ -203,6 +233,9 @@ export async function createSubscription(tenantId, planId, userId, customerEmail
     }
   }
 
+  // Trial end date: 14 days free for all plans, then billing starts
+  const trialEnd = trialDays > 0 ? new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000) : null;
+
   // Create subscription
   const subscription = await Subscription.create({
     tenantId,
@@ -214,6 +247,7 @@ export async function createSubscription(tenantId, planId, userId, customerEmail
     currentPeriodEnd: periodEnd,
     cancelAtPeriodEnd: false,
     nextBillingDate: periodEnd,
+    trialEnd: trialEnd || undefined,
   });
 
   return { subscription, approvalUrl };
@@ -224,10 +258,7 @@ export async function createSubscription(tenantId, planId, userId, customerEmail
  */
 export async function getTenantSubscription(tenantId) {
   await connectDB();
-  return await Subscription.findOne({ tenantId })
-    .populate('planId')
-    .sort({ createdAt: -1 })
-    .lean();
+  return await Subscription.findOne({ tenantId }).populate('planId').sort({ createdAt: -1 }).lean();
 }
 
 /**
@@ -275,8 +306,11 @@ export async function cancelSubscription(subscriptionId, tenantId, cancelAtPerio
     throw new Error('Subscription not found');
   }
 
+  if (subscription.stripeSubscriptionId) {
+    return cancelStripeSubscription(subscriptionId, tenantId, cancelAtPeriodEnd);
+  }
+
   if (!cancelAtPeriodEnd && subscription.paypalSubscriptionId) {
-    // Cancel immediately in PayPal
     try {
       await cancelPayPalSubscription(subscription.paypalSubscriptionId);
     } catch (error) {
@@ -285,7 +319,6 @@ export async function cancelSubscription(subscriptionId, tenantId, cancelAtPerio
     subscription.status = SubscriptionStatus.CANCELLED;
     subscription.cancelledAt = new Date();
   } else {
-    // Cancel at end of period
     subscription.cancelAtPeriodEnd = true;
   }
 
@@ -374,8 +407,7 @@ export async function getSubscriptionPayments(subscriptionId, tenantId) {
 
 /**
  * Update tenant subscription (Admin only)
- * Creates PayPal subscription for paid plans and returns approval URL for client to pay
- * Free plans are activated immediately without payment
+ * All plans have 14-day free trial; paid plans require payment after trial.
  */
 export async function updateTenantSubscription(tenantId, newPlanId, customerEmail, customerName) {
   await connectDB();
@@ -398,8 +430,7 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
   }
 
   // Get existing subscription
-  const existingSubscription = await Subscription.findOne({ tenantId })
-    .sort({ createdAt: -1 });
+  const existingSubscription = await Subscription.findOne({ tenantId }).sort({ createdAt: -1 });
 
   // Cancel existing subscription if switching plans
   if (existingSubscription) {
@@ -410,7 +441,10 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
     // Cancel PayPal subscription if exists
     if (existingSubscription.paypalSubscriptionId) {
       try {
-        await cancelPayPalSubscription(existingSubscription.paypalSubscriptionId, 'Admin changed subscription plan');
+        await cancelPayPalSubscription(
+          existingSubscription.paypalSubscriptionId,
+          'Admin changed subscription plan'
+        );
       } catch (error) {
         logger.error('Failed to cancel PayPal subscription:', error);
       }
@@ -420,7 +454,7 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
   // Calculate period dates based on new plan
   const periodStart = new Date();
   const periodEnd = new Date(periodStart);
-  
+
   // Free Trial gets 15 days, others follow billing cycle
   if (newPlan.name === 'Free Trial') {
     periodEnd.setDate(periodEnd.getDate() + 15); // 15 days for free trial
@@ -440,14 +474,14 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
     if (!newPlan.paypalPlanId) {
       throw new Error(
         'This plan requires payment but PayPal integration is not configured. ' +
-        'Please run: npm run setup:paypal-plans to configure PayPal billing plans.'
+          'Please run: npm run setup:paypal-plans to configure PayPal billing plans.'
       );
     }
 
     try {
       const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5053'}/subscription/return`;
       const cancelUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5053'}/subscription/cancel`;
-      
+
       const paypalResult = await createPayPalSubscription(
         newPlan.paypalPlanId,
         returnUrl,
@@ -487,3 +521,84 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
   };
 }
 
+/** Valid add-on keys (must match lib/constants/subscription-spec.js ADDONS) */
+const ADDON_KEYS = [
+  'extraDoctor',
+  'extraStaff',
+  'extraSms',
+  'additionalStorage',
+  'whatsApp',
+  'advancedReports',
+];
+
+/**
+ * Add an add-on to a subscription (for limited-plan users).
+ * @param {string} subscriptionId - Subscription _id
+ * @param {string} tenantId - Tenant id (for auth)
+ * @param {{ addonKey: string, quantity?: number, option?: string }} input
+ */
+export async function addAddon(subscriptionId, tenantId, input) {
+  await connectDB();
+
+  const subscription = await Subscription.findOne({
+    _id: subscriptionId,
+    tenantId,
+  });
+  if (!subscription) {
+    throw new Error('Subscription not found');
+  }
+  if (
+    subscription.status !== SubscriptionStatus.ACTIVE &&
+    subscription.status !== SubscriptionStatus.PENDING
+  ) {
+    throw new Error('Add-ons can only be added to an active or pending subscription');
+  }
+
+  const addonKey = (input.addonKey || '').trim();
+  if (!ADDON_KEYS.includes(addonKey)) {
+    throw new Error(`Invalid add-on: ${addonKey}`);
+  }
+
+  const existing = (subscription.addons || []).find((a) => a.addonKey === addonKey);
+  if (existing) {
+    throw new Error('This add-on is already on your subscription');
+  }
+
+  subscription.addons = subscription.addons || [];
+  subscription.addons.push({
+    addonKey,
+    quantity: typeof input.quantity === 'number' && input.quantity >= 1 ? input.quantity : 1,
+    option: typeof input.option === 'string' ? input.option.trim() : undefined,
+  });
+  await subscription.save();
+
+  return subscription;
+}
+
+/**
+ * Remove an add-on from a subscription.
+ * @param {string} subscriptionId - Subscription _id
+ * @param {string} tenantId - Tenant id (for auth)
+ * @param {string} addonKey - Add-on key to remove
+ */
+export async function removeAddon(subscriptionId, tenantId, addonKey) {
+  await connectDB();
+
+  const subscription = await Subscription.findOne({
+    _id: subscriptionId,
+    tenantId,
+  });
+  if (!subscription) {
+    throw new Error('Subscription not found');
+  }
+
+  const key = (addonKey || '').trim();
+  if (!key) {
+    throw new Error('Add-on key is required');
+  }
+
+  subscription.addons = (subscription.addons || []).filter((a) => a.addonKey !== key);
+  await subscription.save();
+
+  return subscription;
+}

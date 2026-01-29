@@ -132,13 +132,24 @@ async function putHandler(req, user, id) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const status = body.status === 'inactive' ? 'inactive' : 'active';
+    const update = { updatedAt: new Date() };
+    if (body.status !== undefined) {
+      update.status = body.status === 'inactive' ? 'inactive' : 'active';
+    }
+    if (body.flagged !== undefined) {
+      const flagged = body.flagged === true || body.flagged === 'true';
+      const flagReason = typeof body.flagReason === 'string' ? body.flagReason.trim() : '';
+      update.flagged = !!flagged;
+      update.flaggedAt = flagged ? new Date() : null;
+      update.flaggedBy = flagged ? (user._id || user.id) : null;
+      update.flagReason = flagged ? (flagReason || 'Flagged by admin') : '';
+    }
 
     await connectDB();
 
     const patient = await Patient.findOneAndUpdate(
       { _id: id, deletedAt: null },
-      { $set: { status, updatedAt: new Date() } },
+      { $set: update },
       { new: true }
     ).lean();
 

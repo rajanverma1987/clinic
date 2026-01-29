@@ -1,9 +1,11 @@
 'use client';
 
+import { SearchIcon } from '@/components/icons';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Fragment, useEffect, useState } from 'react';
@@ -72,13 +74,19 @@ export function PageHeader({
       <div className='sticky-header-bar__inner'>
         <div className='sticky-header-bar__left'>
           {icon && (
-            <div className='text-primary-600 flex items-center justify-center shrink-0' style={{ width: 24, height: 24 }}>
+            <div
+              className='text-primary-600 flex items-center justify-center shrink-0'
+              style={{ width: 24, height: 24 }}
+            >
               {icon}
             </div>
           )}
           <div className='min-w-0'>
             {breadcrumbs && breadcrumbs.length > 0 && (
-              <nav className='text-body-xs text-neutral-500 flex items-center gap-1.5 mb-0.5' aria-label='Breadcrumb'>
+              <nav
+                className='text-body-xs text-neutral-500 flex items-center gap-1.5 mb-0.5'
+                aria-label='Breadcrumb'
+              >
                 {breadcrumbs.map((crumb, index) => (
                   <span key={index} className='flex items-center gap-1.5'>
                     {index > 0 && <span className='text-neutral-300'>/</span>}
@@ -96,7 +104,13 @@ export function PageHeader({
                         {crumb.label}
                       </a>
                     ) : (
-                      <span className={index === breadcrumbs.length - 1 ? 'text-neutral-900 font-medium' : ''}>
+                      <span
+                        className={
+                          index === breadcrumbs.length - 1
+                            ? 'text-neutral-900 dark:text-neutral-100 font-medium'
+                            : ''
+                        }
+                      >
                         {crumb.label}
                       </span>
                     )}
@@ -140,9 +154,7 @@ export function PageHeader({
                   className='header-search-trigger'
                   aria-label='Search'
                 >
-                  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24' aria-hidden>
-                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' />
-                  </svg>
+                  <SearchIcon className='icon icon-sm' ariaHidden />
                 </Button>
               </div>
             )}
@@ -155,9 +167,14 @@ export function PageHeader({
               </div>
             )}
           </div>
-          {hasQuickActions && showLanguageSwitcher ? (
+          {hasQuickActions || showLanguageSwitcher ? (
             <span className='sticky-header-bar__pipe' aria-hidden />
           ) : null}
+          <div className='sticky-header-bar__right-group'>
+            <div className='header-control-box header-control-box--icon'>
+              <ThemeToggle size='sm' />
+            </div>
+          </div>
           {showLanguageSwitcher && (
             <div className='sticky-header-bar__right-group'>
               <div className='header-control-box'>

@@ -22,6 +22,7 @@ import {
   encryptFile,
   encryptMessage,
 } from '@/lib/encryption/e2ee';
+import { logger } from '@/lib/utils/logger';
 import { getUserFriendlyMessage } from '@/lib/utils/user-messages';
 import { VideoCallManager } from '@/lib/webrtc/video-call-manager';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -83,10 +84,18 @@ function VideoConsultationRoomContent() {
   useEffect(() => {
     if (!isConnecting && !isConnected) return;
     const attach = () => {
-      if (localStreamRef.current && localVideoRef.current && localVideoRef.current.srcObject !== localStreamRef.current) {
+      if (
+        localStreamRef.current &&
+        localVideoRef.current &&
+        localVideoRef.current.srcObject !== localStreamRef.current
+      ) {
         localVideoRef.current.srcObject = localStreamRef.current;
       }
-      if (remoteStreamRef.current && remoteVideoRef.current && remoteVideoRef.current.srcObject !== remoteStreamRef.current) {
+      if (
+        remoteStreamRef.current &&
+        remoteVideoRef.current &&
+        remoteVideoRef.current.srcObject !== remoteStreamRef.current
+      ) {
         remoteVideoRef.current.srcObject = remoteStreamRef.current;
       }
     };
@@ -122,7 +131,7 @@ function VideoConsultationRoomContent() {
 
       try {
         // Request camera and microphone permissions explicitly
-        console.log('[VideoCall] Requesting media permissions on page load...');
+        logger.debug('[VideoCall] Requesting media permissions on page load...');
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
@@ -131,12 +140,12 @@ function VideoConsultationRoomContent() {
         // Permissions granted
         setHasCameraPermission(true);
         setHasMicrophonePermission(true);
-        console.log('[VideoCall] ✅ Media permissions granted');
+        logger.debug('[VideoCall] ✅ Media permissions granted');
 
         // Stop the stream immediately (we just needed to trigger the permission prompt)
         stream.getTracks().forEach((track) => track.stop());
       } catch (error) {
-        console.error('[VideoCall] Media permission request failed:', error);
+        logger.error('[VideoCall] Media permission request failed:', error);
 
         // Check which permission was denied
         if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
@@ -153,7 +162,7 @@ function VideoConsultationRoomContent() {
           );
         } else {
           // Other error
-          console.warn('[VideoCall] Permission request error (will retry on connect):', error);
+          logger.warn('[VideoCall] Permission request error (will retry on connect):', error);
           // Don't set error state here, let it be requested again on connect
         }
       }
@@ -241,7 +250,7 @@ function VideoConsultationRoomContent() {
           }
         }
       } catch (error) {
-        console.error('Failed to load session:', error);
+        logger.error('Failed to load session:', error);
       }
     };
     if (sessionId) {
@@ -276,7 +285,7 @@ function VideoConsultationRoomContent() {
             }
           }
         } catch (error) {
-          console.error('Failed to check waiting room status:', error);
+          logger.error('Failed to check waiting room status:', error);
         }
       }, 2000); // Poll every 2 seconds
     }
@@ -299,7 +308,7 @@ function VideoConsultationRoomContent() {
                 const decrypted = await decryptMessage(msg.message, encryptionKey);
                 return { ...msg, message: decrypted, decrypted: true };
               } catch (error) {
-                console.error('[E2EE] Failed to decrypt message:', error);
+                logger.error('[E2EE] Failed to decrypt message:', error);
                 return { ...msg, message: '[Encrypted - Decryption failed]', decrypted: false };
               }
             }
@@ -326,7 +335,7 @@ function VideoConsultationRoomContent() {
       typeof window !== 'undefined'
         ? process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
         : 'http://localhost:5053';
-    console.log('[Chat] Connecting to Socket.IO server:', socketUrl);
+    logger.debug('[Chat] Connecting to Socket.IO server:', socketUrl);
 
     const socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
@@ -340,24 +349,24 @@ function VideoConsultationRoomContent() {
 
     // Connection events
     socket.on('connect', () => {
-      console.log('[Chat] ✅ Socket.IO connected:', socket.id);
+      logger.debug('[Chat] ✅ Socket.IO connected:', socket.id);
 
       // Join session room
       socket.emit('join-session', sessionId);
     });
 
     socket.on('disconnect', () => {
-      console.log('[Chat] ❌ Socket.IO disconnected');
+      logger.debug('[Chat] ❌ Socket.IO disconnected');
     });
 
     socket.on('connect_error', (error) => {
-      console.error('[Chat] Socket.IO connection error:', error);
+      logger.error('[Chat] Socket.IO connection error:', error);
       // Fallback to polling if Socket.IO fails
     });
 
     // Receive chat messages via Socket.IO
     socket.on('chat-message', async (data) => {
-      console.log('[Chat] 📨 Received message via Socket.IO:', data);
+      logger.debug('[Chat] 📨 Received message via Socket.IO:', data);
 
       // Check if message is from current user (avoid duplicates from Socket.IO)
       // Note: We already added it to local state when sending, so skip Socket.IO echo
@@ -367,7 +376,7 @@ function VideoConsultationRoomContent() {
         data.senderId?.toString() === currentUserId?.toString()
       ) {
         // This is our own message - already in state from handleSendChatMessage
-        console.log('[Chat] Ignoring own message from Socket.IO:', data.senderId);
+        logger.debug('[Chat] Ignoring own message from Socket.IO:', data.senderId);
         return;
       }
 
@@ -377,7 +386,7 @@ function VideoConsultationRoomContent() {
         try {
           decryptedMessage = await decryptMessage(data.message, encryptionKey);
         } catch (error) {
-          console.error('[E2EE] Failed to decrypt Socket.IO message:', error);
+          logger.error('[E2EE] Failed to decrypt Socket.IO message:', error);
           decryptedMessage = '[Unable to read this message]';
         }
       }
@@ -419,11 +428,11 @@ function VideoConsultationRoomContent() {
 
     // User joined/left events
     socket.on('user-joined', (data) => {
-      console.log('[Chat] User joined session:', data);
+      logger.debug('[Chat] User joined session:', data);
     });
 
     socket.on('user-left', (data) => {
-      console.log('[Chat] User left session:', data);
+      logger.debug('[Chat] User left session:', data);
     });
 
     // Cleanup on unmount
@@ -441,7 +450,7 @@ function VideoConsultationRoomContent() {
     return () => {
       // Cleanup call manager
       if (callManagerRef.current) {
-        callManagerRef.current.endCall().catch(console.error);
+        callManagerRef.current.endCall().catch((err) => logger.error('Error', err));
       }
     };
   }, []);
@@ -472,7 +481,7 @@ function VideoConsultationRoomContent() {
   };
 
   const handleConnect = async () => {
-    console.log('[VideoCall] Starting connection...');
+    logger.debug('[VideoCall] Starting connection...');
 
     // Check if session is expired
     if (sessionExpired) {
@@ -492,7 +501,7 @@ function VideoConsultationRoomContent() {
       try {
         await callManagerRef.current.endCall();
       } catch (error) {
-        console.warn('[VideoCall] Error cleaning up previous call:', error);
+        logger.warn('[VideoCall] Error cleaning up previous call:', error);
       }
       callManagerRef.current = null;
     }
@@ -526,7 +535,7 @@ function VideoConsultationRoomContent() {
       );
 
       // Log for debugging
-      console.log('[VideoCall] WebRTC support check:', {
+      logger.debug('[VideoCall] WebRTC support check:', {
         hasGetUserMedia,
         hasRTCPeerConnection,
         isMobile,
@@ -543,14 +552,14 @@ function VideoConsultationRoomContent() {
       // getUserMedia will be checked when we actually try to use it
       if (!hasRTCPeerConnection) {
         const errorMsg = `Your browser does not support video calls. Please use Chrome, Firefox, or Safari.`;
-        console.error('[VideoCall] WebRTC not supported:', errorMsg);
+        logger.error('[VideoCall] WebRTC not supported:', errorMsg);
         throw new Error(errorMsg);
       }
 
       // Only check getUserMedia on desktop (mobile might need permissions first)
       if (!isMobile && !hasGetUserMedia) {
         const errorMsg = `Your browser does not support video calls. Please use Chrome, Firefox, or Safari.`;
-        console.error('[VideoCall] getUserMedia not supported:', errorMsg);
+        logger.error('[VideoCall] getUserMedia not supported:', errorMsg);
         throw new Error(errorMsg);
       }
 
@@ -563,7 +572,7 @@ function VideoConsultationRoomContent() {
             navigator.permissions.query({ name: 'microphone' }).catch(() => ({ state: 'prompt' })),
           ]);
 
-          console.log('[VideoCall] Current permissions:', {
+          logger.debug('[VideoCall] Current permissions:', {
             camera: cameraPermission.state,
             microphone: microphonePermission.state,
           });
@@ -589,7 +598,7 @@ function VideoConsultationRoomContent() {
           }
         } catch (permError) {
           // Permission API might not be fully supported or query failed, continue anyway
-          console.warn(
+          logger.warn(
             '[VideoCall] Permission check failed, will request on getUserMedia:',
             permError
           );
@@ -599,7 +608,7 @@ function VideoConsultationRoomContent() {
       // Load session data if not already loaded
       let session = sessionData;
       if (!session) {
-        console.log('[VideoCall] Loading session data...');
+        logger.debug('[VideoCall] Loading session data...');
         let sessionResponse = await apiClient.get(
           `/telemedicine/sessions/${sessionId}/public`,
           undefined,
@@ -614,12 +623,12 @@ function VideoConsultationRoomContent() {
         if (!sessionResponse.success || !sessionResponse.data) {
           setIsConnecting(false);
           setConnectionError('Unable to load session details. Please refresh the page.');
-          console.error('[VideoCall] Failed to load session:', sessionResponse);
+          logger.error('[VideoCall] Failed to load session:', sessionResponse);
           return;
         }
         session = sessionResponse.data;
         setSessionData(session);
-        console.log('[VideoCall] Session loaded:', session);
+        logger.debug('[VideoCall] Session loaded:', session);
       }
 
       // Determine user IDs
@@ -639,7 +648,7 @@ function VideoConsultationRoomContent() {
 
           // Verify this ID matches either doctor or patient in session
           if (currentUserId !== sessionDoctorIdStr && currentUserId !== sessionPatientIdStr) {
-            console.warn(
+            logger.warn(
               '[VideoCall] User ID does not match session doctorId or patientId. Using session doctorId as fallback.'
             );
             // If authenticated user, assume they're the doctor
@@ -655,17 +664,17 @@ function VideoConsultationRoomContent() {
         // If the page is accessed by doctor (authenticated route), they should have user object
         // If no user object, assume patient (public route)
         currentUserId = sessionPatientIdStr || `patient-${sessionId}`;
-        console.log('[VideoCall] No user object - assuming PATIENT, using patientId from session');
+        logger.debug('[VideoCall] No user object - assuming PATIENT, using patientId from session');
       }
 
       // Ensure currentUserId is never undefined
       if (!currentUserId) {
         // Last resort fallback
         currentUserId = user ? `doctor-${sessionId}` : `patient-${sessionId}`;
-        console.warn('[VideoCall] currentUserId was undefined, using fallback:', currentUserId);
+        logger.warn('[VideoCall] currentUserId was undefined, using fallback:', currentUserId);
       }
 
-      console.log('[VideoCall] User ID determination:', {
+      logger.debug('[VideoCall] User ID determination:', {
         hasUser: !!user,
         currentUserId,
         sessionDoctorId: sessionDoctorIdStr,
@@ -687,7 +696,7 @@ function VideoConsultationRoomContent() {
       // Ensure remoteUserId is never undefined and convert to string
       if (!remoteUserId) {
         remoteUserId = user ? `patient-${sessionId}` : `doctor-${sessionId}`;
-        console.warn('[VideoCall] remoteUserId was undefined, using fallback:', remoteUserId);
+        logger.warn('[VideoCall] remoteUserId was undefined, using fallback:', remoteUserId);
       } else {
         remoteUserId = remoteUserId.toString();
       }
@@ -697,9 +706,9 @@ function VideoConsultationRoomContent() {
         try {
           const key = await deriveSharedKey(sessionId, currentUserId, remoteUserId);
           setEncryptionKey(key);
-          console.log('[E2EE] ✅ Encryption key derived successfully for session:', sessionId);
+          logger.debug('[E2EE] ✅ Encryption key derived successfully for session:', sessionId);
         } catch (error) {
-          console.error('[E2EE] ❌ Failed to derive encryption key:', error);
+          logger.error('[E2EE] ❌ Failed to derive encryption key:', error);
           // Continue without encryption (graceful degradation)
         }
       }
@@ -717,27 +726,27 @@ function VideoConsultationRoomContent() {
         // Current user matches doctor ID from session
         isInitiator = true;
         detectedRole = 'doctor';
-        console.log('[VideoCall] ✅ User is DOCTOR (initiator) - matched session.doctorId');
+        logger.debug('[VideoCall] ✅ User is DOCTOR (initiator) - matched session.doctorId');
       } else if (sessionPatientIdStr && currentUserId === sessionPatientIdStr) {
         // Current user matches patient ID from session
         isInitiator = false;
         detectedRole = 'patient';
-        console.log('[VideoCall] ✅ User is PATIENT (receiver) - matched session.patientId');
+        logger.debug('[VideoCall] ✅ User is PATIENT (receiver) - matched session.patientId');
       } else if (user) {
         // Authenticated user but IDs don't match - assume doctor (authenticated users are usually doctors)
         isInitiator = true;
         detectedRole = 'doctor';
-        console.log(
+        logger.debug(
           "[VideoCall] ⚠️ User is authenticated but IDs don't match session - assuming DOCTOR (initiator)"
         );
       } else {
         // Not authenticated and IDs don't match - assume patient (anonymous users are usually patients)
         isInitiator = false;
         detectedRole = 'patient';
-        console.warn(
+        logger.warn(
           '[VideoCall] ⚠️ Could not determine role from session data - defaulting to PATIENT (receiver)'
         );
-        console.warn('[VideoCall] Session IDs:', {
+        logger.warn('[VideoCall] Session IDs:', {
           doctorId: sessionDoctorIdStr,
           patientId: sessionPatientIdStr,
           currentUserId: currentUserId,
@@ -764,11 +773,11 @@ function VideoConsultationRoomContent() {
             true
           );
         } catch (error) {
-          console.warn('Failed to add to waiting room:', error);
+          logger.warn('Failed to add to waiting room:', error);
         }
       }
 
-      console.log('[VideoCall] User info:', {
+      logger.debug('[VideoCall] User info:', {
         currentUserId,
         remoteUserId,
         isInitiator,
@@ -786,14 +795,14 @@ function VideoConsultationRoomContent() {
 
       // Validate user IDs before proceeding
       if (!currentUserId || currentUserId === 'undefined') {
-        console.error('[VideoCall] ❌ currentUserId is invalid:', currentUserId);
+        logger.error('[VideoCall] ❌ currentUserId is invalid:', currentUserId);
         setIsConnecting(false);
         setConnectionError('Unable to identify you. Please refresh the page and try again.');
         return;
       }
 
       if (!remoteUserId || remoteUserId === 'undefined') {
-        console.error('[VideoCall] ❌ remoteUserId is invalid:', remoteUserId);
+        logger.error('[VideoCall] ❌ remoteUserId is invalid:', remoteUserId);
         setIsConnecting(false);
         setConnectionError(
           'Unable to identify the other person. Please refresh the page and try again.'
@@ -802,7 +811,7 @@ function VideoConsultationRoomContent() {
       }
 
       // Create video call manager
-      console.log('[VideoCall] Creating VideoCallManager...');
+      logger.debug('[VideoCall] Creating VideoCallManager...');
       const callManager = new VideoCallManager({
         sessionId,
         userId: currentUserId,
@@ -822,7 +831,7 @@ function VideoConsultationRoomContent() {
           }
         },
         onConnectionChange: (state) => {
-          console.log('[VideoCall] Connection state changed:', state);
+          logger.debug('[VideoCall] Connection state changed:', state);
 
           // Handle reconnection attempts
           if (state.isReconnecting) {
@@ -904,7 +913,7 @@ function VideoConsultationRoomContent() {
           }
         },
         onError: (error) => {
-          console.error('Call manager error:', error);
+          logger.error('Call manager error:', error);
           setIsConnecting(false);
           const technicalMsg =
             error?.message || (typeof error === 'string' ? error : 'Failed to start video call');
@@ -916,9 +925,9 @@ function VideoConsultationRoomContent() {
       callManagerRef.current = callManager;
 
       // Start the call
-      console.log('[VideoCall] Starting call...');
+      logger.debug('[VideoCall] Starting call...');
       await callManager.startCall();
-      console.log('[VideoCall] Call started successfully');
+      logger.debug('[VideoCall] Call started successfully');
 
       // Monitor connection quality and status
       const qualityInterval = setInterval(() => {
@@ -947,7 +956,7 @@ function VideoConsultationRoomContent() {
               }
             }
           } catch (error) {
-            console.error('[VideoCall] Error getting connection status:', error);
+            logger.error('[VideoCall] Error getting connection status:', error);
           }
         }
       }, 2000);
@@ -968,7 +977,7 @@ function VideoConsultationRoomContent() {
             { timestamp: new Date().toISOString() }
           );
         } catch (error) {
-          console.warn('Failed to log audit:', error);
+          logger.warn('Failed to log audit:', error);
         }
       }
 
@@ -976,9 +985,9 @@ function VideoConsultationRoomContent() {
       if (user) {
         try {
           await apiClient.put(`/telemedicine/sessions/${sessionId}?action=start`, {});
-          console.log('[VideoCall] Session marked as started');
+          logger.debug('[VideoCall] Session marked as started');
         } catch (error) {
-          console.warn('[VideoCall] Failed to mark session as started:', error);
+          logger.warn('[VideoCall] Failed to mark session as started:', error);
         }
       }
 
@@ -987,8 +996,8 @@ function VideoConsultationRoomContent() {
         setShowRecordingConsent(true);
       }
     } catch (error) {
-      console.error('[VideoCall] Failed to start call:', error);
-      console.error('[VideoCall] Error details:', {
+      logger.error('[VideoCall] Failed to start call:', error);
+      logger.error('[VideoCall] Error details:', {
         message: error?.message,
         stack: error?.stack,
         name: error?.name,
@@ -1005,7 +1014,7 @@ function VideoConsultationRoomContent() {
         try {
           await callManagerRef.current.endCall();
         } catch (cleanupError) {
-          console.error('[VideoCall] Error during cleanup:', cleanupError);
+          logger.error('[VideoCall] Error during cleanup:', cleanupError);
         }
         callManagerRef.current = null;
       }
@@ -1027,7 +1036,7 @@ function VideoConsultationRoomContent() {
             { timestamp: new Date().toISOString() }
           );
         } catch (error) {
-          console.warn('Failed to log audit:', error);
+          logger.warn('Failed to log audit:', error);
         }
       }
 
@@ -1066,7 +1075,7 @@ function VideoConsultationRoomContent() {
         try {
           await apiClient.put(`/telemedicine/sessions/${sessionId}?action=end`, {});
         } catch (error) {
-          console.warn('Failed to mark session as ended:', error);
+          logger.warn('Failed to mark session as ended:', error);
         }
         router.push(`/telemedicine/${sessionId}/summary`);
       } else {
@@ -1095,7 +1104,7 @@ function VideoConsultationRoomContent() {
           'UPDATE',
           { muted: newMutedState },
           { action: 'toggle_mute' }
-        ).catch(console.error);
+        ).catch((err) => logger.error('Error', err));
       }
     }
   };
@@ -1116,7 +1125,7 @@ function VideoConsultationRoomContent() {
           'UPDATE',
           { videoEnabled: newVideoState },
           { action: 'toggle_video' }
-        ).catch(console.error);
+        ).catch((err) => logger.error('Error', err));
       }
     }
   };
@@ -1140,7 +1149,7 @@ function VideoConsultationRoomContent() {
             'UPDATE',
             { screenShare: false },
             { action: 'stop_screen_share' }
-          ).catch(console.error);
+          ).catch((err) => logger.error('Error', err));
         }
       } else {
         const stream = await callManagerRef.current.startScreenShare();
@@ -1162,7 +1171,7 @@ function VideoConsultationRoomContent() {
           // Create watermark overlay
           const watermark = document.createElement('div');
           watermark.className =
-            'screen-share-watermark absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1 rounded text-xs font-mono z-10';
+            'screen-share-watermark absolute bottom-4 left-4 bg-neutral-600/90 text-white px-3 py-1 rounded text-xs font-mono z-10';
           watermark.textContent = `${
             user?.userId || user?._id || 'User'
           } | ${new Date().toLocaleString()}`;
@@ -1195,11 +1204,11 @@ function VideoConsultationRoomContent() {
             'UPDATE',
             { screenShare: true },
             { action: 'start_screen_share' }
-          ).catch(console.error);
+          ).catch((err) => logger.error('Error', err));
         }
       }
     } catch (error) {
-      console.error('Screen share error:', error);
+      logger.error('Screen share error:', error);
       const errorMsg = error.message || 'Failed to share screen';
       alert(getUserFriendlyMessage(errorMsg));
     }
@@ -1216,14 +1225,14 @@ function VideoConsultationRoomContent() {
       if (encryptionKey) {
         try {
           encryptedMessage = await encryptMessage(message, encryptionKey);
-          console.log('[E2EE] ✅ Message encrypted successfully');
+          logger.debug('[E2EE] ✅ Message encrypted successfully');
         } catch (error) {
-          console.error('[E2EE] ❌ Failed to encrypt message:', error);
+          logger.error('[E2EE] ❌ Failed to encrypt message:', error);
           encryptionError = error;
           // Continue with plain text if encryption fails (graceful degradation)
         }
       } else {
-        console.warn('[E2EE] ⚠️ No encryption key available, sending plain text');
+        logger.warn('[E2EE] ⚠️ No encryption key available, sending plain text');
       }
 
       const chatMessage = {
@@ -1274,7 +1283,7 @@ function VideoConsultationRoomContent() {
           timestamp: chatMessage.timestamp,
           encrypted: chatMessage.encrypted,
         });
-        console.log('[Chat] ✅ Message sent via Socket.IO');
+        logger.debug('[Chat] ✅ Message sent via Socket.IO');
       }
 
       // Also save to backend for persistence
@@ -1291,9 +1300,9 @@ function VideoConsultationRoomContent() {
           {},
           true
         );
-        console.log('[Chat] ✅ Message saved to backend');
+        logger.debug('[Chat] ✅ Message saved to backend');
       } catch (error) {
-        console.error('[Chat] Failed to save message to backend:', error);
+        logger.error('[Chat] Failed to save message to backend:', error);
         // Don't fail if backend save fails - Socket.IO already delivered it
       }
 
@@ -1307,10 +1316,10 @@ function VideoConsultationRoomContent() {
           'CREATE',
           { messageSent: true, encrypted: chatMessage.encrypted },
           { action: 'send_chat_message' }
-        ).catch(console.error);
+        ).catch((err) => logger.error('Error', err));
       }
     } catch (error) {
-      console.error('Error sending chat message:', error);
+      logger.error('Error sending chat message:', error);
     }
   };
 
@@ -1329,7 +1338,7 @@ function VideoConsultationRoomContent() {
         );
       }
     } catch (error) {
-      console.error('Failed to admit participant:', error);
+      logger.error('Failed to admit participant:', error);
     }
 
     // Audit log
@@ -1342,7 +1351,7 @@ function VideoConsultationRoomContent() {
         'UPDATE',
         { participantAdmitted: participantId },
         { action: 'admit_participant' }
-      ).catch(console.error);
+      ).catch((err) => logger.error('Error', err));
     }
   };
 
@@ -1359,7 +1368,7 @@ function VideoConsultationRoomContent() {
         setWaitingRoomParticipants((prev) => prev.filter((p) => p.userId !== participantId));
       }
     } catch (error) {
-      console.error('Failed to reject participant:', error);
+      logger.error('Failed to reject participant:', error);
     }
 
     // Audit log
@@ -1372,7 +1381,7 @@ function VideoConsultationRoomContent() {
         'UPDATE',
         { participantRejected: participantId },
         { action: 'reject_participant' }
-      ).catch(console.error);
+      ).catch((err) => logger.error('Error', err));
     }
   };
 
@@ -1386,7 +1395,7 @@ function VideoConsultationRoomContent() {
         recordingConsent: consented,
       });
     } catch (error) {
-      console.error('Failed to save recording consent:', error);
+      logger.error('Failed to save recording consent:', error);
     }
 
     // Audit log
@@ -1399,7 +1408,7 @@ function VideoConsultationRoomContent() {
         'UPDATE',
         { recordingConsent: consented },
         { action: 'recording_consent' }
-      ).catch(console.error);
+      ).catch((err) => logger.error('Error', err));
     }
   };
 
@@ -1415,13 +1424,13 @@ function VideoConsultationRoomContent() {
           const encrypted = await encryptFile(fileData.fileData, encryptionKey);
           encryptedFileData = encrypted.encrypted;
           iv = encrypted.iv;
-          console.log('[E2EE] ✅ File encrypted successfully');
+          logger.debug('[E2EE] ✅ File encrypted successfully');
         } catch (error) {
-          console.error('[E2EE] ❌ Failed to encrypt file:', error);
+          logger.error('[E2EE] ❌ Failed to encrypt file:', error);
           throw new Error('Failed to encrypt file');
         }
       } else if (!encryptionKey) {
-        console.warn('[E2EE] ⚠️ No encryption key available, file will be stored unencrypted');
+        logger.warn('[E2EE] ⚠️ No encryption key available, file will be stored unencrypted');
       }
 
       // Upload encrypted file
@@ -1458,11 +1467,11 @@ function VideoConsultationRoomContent() {
               encrypted: !!encryptionKey,
             },
             { action: 'upload_file' }
-          ).catch(console.error);
+          ).catch((err) => logger.error('Error', err));
         }
       }
     } catch (error) {
-      console.error('File upload error:', error);
+      logger.error('File upload error:', error);
       throw error;
     }
   };
@@ -1487,9 +1496,9 @@ function VideoConsultationRoomContent() {
               response.data.iv,
               encryptionKey
             );
-            console.log('[E2EE] ✅ File decrypted successfully');
+            logger.debug('[E2EE] ✅ File decrypted successfully');
           } catch (error) {
-            console.error('[E2EE] ❌ Failed to decrypt file:', error);
+            logger.error('[E2EE] ❌ Failed to decrypt file:', error);
             throw new Error('Failed to decrypt file');
           }
         } else if (file.encrypted && !encryptionKey) {
@@ -1527,11 +1536,11 @@ function VideoConsultationRoomContent() {
             'ACCESS',
             { fileName: file.fileName, encrypted: file.encrypted },
             { action: 'download_file' }
-          ).catch(console.error);
+          ).catch((err) => logger.error('Error', err));
         }
       }
     } catch (error) {
-      console.error('File download error:', error);
+      logger.error('File download error:', error);
       throw error;
     }
   };
@@ -1574,15 +1583,15 @@ function VideoConsultationRoomContent() {
         alert(getUserFriendlyMessage(errorMsg));
       }
     } catch (error) {
-      console.error('Failed to send email:', error);
+      logger.error('Failed to send email:', error);
       alert('Unable to send email. Please copy the link and share it manually.');
     }
   };
 
   return (
-    <div className='h-screen bg-gray-900 flex flex-col'>
+    <div className='h-screen bg-neutral-100 flex flex-col'>
       {/* Header */}
-      <div className='bg-gray-800 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between'>
+      <div className='bg-white border-b border-neutral-300 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between'>
         <SessionInfo sessionDuration={isConnected ? sessionDuration : 0} sessionId={sessionId} />
 
         <div className='flex items-center space-x-2 sm:space-x-4 flex-shrink-0'>
@@ -1623,7 +1632,7 @@ function VideoConsultationRoomContent() {
       {/* Main Content */}
       <div className='flex-1 flex overflow-hidden relative'>
         {/* Video Area */}
-        <div className='flex-1 relative bg-black flex items-center justify-center min-h-0'>
+        <div className='flex-1 relative bg-neutral-300 flex items-center justify-center min-h-0'>
           {/* Video Container - WebRTC Video Streams */}
           {isConnecting || isConnected ? (
             <div ref={videoContainerRef} className='w-full h-full relative overflow-hidden'>
@@ -1663,11 +1672,13 @@ function VideoConsultationRoomContent() {
 
               {/* Connecting Indicator */}
               {isConnecting && !isConnected && (
-                <div className='absolute inset-0 bg-black/50 flex items-center justify-center z-20'>
-                  <div className='text-center bg-gray-900/90 rounded-lg p-6 max-w-md mx-4'>
+                <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm flex items-center justify-center z-20'>
+                  <div className='text-center bg-white border border-neutral-300 rounded-lg p-6 max-w-md mx-4 shadow-xl'>
                     <Loader size='xl' variant='primary' inline />
-                    <p className='text-white text-lg font-semibold mb-2 mt-4'>Connecting...</p>
-                    <p className='text-neutral-400 text-sm'>Establishing peer-to-peer connection</p>
+                    <p className='text-neutral-900 text-lg font-semibold mb-2 mt-4'>
+                      Connecting...
+                    </p>
+                    <p className='text-neutral-600 text-sm'>Establishing peer-to-peer connection</p>
                     <p className='text-neutral-500 text-xs mt-2'>This may take a few seconds</p>
                     {connectionError && (
                       <div className='mt-4 p-3 bg-status-error/20 border border-status-error/50 rounded text-status-error/80 text-xs'>
@@ -1680,15 +1691,15 @@ function VideoConsultationRoomContent() {
 
               {/* Waiting for Remote User Message */}
               {(isConnected && !remoteUserConnected) || waitingForRemoteUser ? (
-                <div className='absolute inset-0 bg-black/50 flex items-center justify-center z-20'>
-                  <div className='text-center bg-gray-900/90 rounded-lg p-6 max-w-md mx-4'>
+                <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm flex items-center justify-center z-20'>
+                  <div className='text-center bg-white border border-neutral-300 rounded-lg p-6 max-w-md mx-4 shadow-xl'>
                     <Loader size='xl' variant='primary' inline />
-                    <p className='text-white text-lg font-semibold mb-2'>
+                    <p className='text-neutral-900 text-lg font-semibold mb-2'>
                       {waitingForRemoteUser
                         ? `Waiting for ${userRole === 'doctor' ? 'patient' : 'doctor'} to rejoin...`
                         : `Waiting for ${userRole === 'doctor' ? 'patient' : 'doctor'} to join...`}
                     </p>
-                    <p className='text-neutral-400 text-sm'>
+                    <p className='text-neutral-600 text-sm'>
                       {waitingForRemoteUser
                         ? 'The other person disconnected. Waiting for them to reconnect...'
                         : "You're connected. Waiting for the other participant to join the call."}
@@ -1770,8 +1781,10 @@ function VideoConsultationRoomContent() {
                   />
                 </svg>
               </div>
-              <h3 className='text-white text-lg sm:text-xl font-semibold mb-2'>Ready to Join</h3>
-              <p className='text-neutral-400 text-sm sm:text-base mb-4 sm:mb-6 px-2'>
+              <h3 className='text-neutral-900 text-lg sm:text-xl font-semibold mb-2'>
+                Ready to Join
+              </h3>
+              <p className='text-neutral-600 text-sm sm:text-base mb-4 sm:mb-6 px-2'>
                 {isPatientLink
                   ? 'Click below to start the video consultation. You will be asked to allow camera and microphone access.'
                   : 'Click the button below to start the video consultation. You will be asked to allow camera and microphone access.'}
@@ -1788,10 +1801,10 @@ function VideoConsultationRoomContent() {
                 {sessionExpired
                   ? 'Session Expired'
                   : isConnecting
-                  ? 'Requesting Permissions...'
-                  : !hasCameraPermission || !hasMicrophonePermission
-                  ? 'Permissions Required'
-                  : 'Join Video Call'}
+                    ? 'Requesting Permissions...'
+                    : !hasCameraPermission || !hasMicrophonePermission
+                      ? 'Permissions Required'
+                      : 'Join Video Call'}
               </Button>
               {(() => {
                 const mediaSupport = checkMediaSupport();
@@ -1816,8 +1829,8 @@ function VideoConsultationRoomContent() {
                 return (
                   <div className='text-neutral-500 text-xs mt-3 px-2 max-w-md space-y-1'>
                     <p>
-                      💡 <strong>On Mobile:</strong> A permission popup will appear. Tap &quot;Allow&quot; for
-                      both camera and microphone.
+                      💡 <strong>On Mobile:</strong> A permission popup will appear. Tap
+                      &quot;Allow&quot; for both camera and microphone.
                     </p>
                     <p>
                       💡 <strong>If denied:</strong> Look for the camera/microphone icon in your
@@ -1857,11 +1870,11 @@ function VideoConsultationRoomContent() {
 
           {/* Waiting Room UI for Patients */}
           {isInWaitingRoom && !isConnected && (
-            <div className='absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center'>
-              <div className='bg-gray-900 rounded-lg p-8 max-w-md w-full mx-4 border border-gray-700 text-center'>
+            <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm z-50 flex items-center justify-center'>
+              <div className='bg-white border border-neutral-300 rounded-lg p-8 max-w-md w-full mx-4 shadow-xl text-center'>
                 <Loader size='xl' variant='primary' inline />
-                <h3 className='text-white text-xl font-semibold mb-2'>Waiting Room</h3>
-                <p className='text-neutral-400 mb-4'>
+                <h3 className='text-neutral-900 text-xl font-semibold mb-2'>Waiting Room</h3>
+                <p className='text-neutral-600 mb-4'>
                   You are in the waiting room. The doctor will admit you to the consultation
                   shortly.
                 </p>
@@ -1883,7 +1896,7 @@ function VideoConsultationRoomContent() {
 
       {/* Payment Collection Modal (Doctor Only) */}
       {showPaymentModal && userRole === 'doctor' && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
+        <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
           <Card className='p-6 max-w-md w-full mx-4'>
             <h3 className='text-lg font-bold text-neutral-900 mb-4'>Collect Payment</h3>
             <div className='space-y-4'>
@@ -1938,7 +1951,7 @@ function VideoConsultationRoomContent() {
 function VideoConsultationRoomFallback() {
   const { t } = useI18n();
   return (
-    <div className='h-screen bg-gray-900 flex items-center justify-center'>
+    <div className='h-screen bg-neutral-100 flex items-center justify-center'>
       <Loader size='lg' variant='primary' text={t('telemedicine.loading')} />
     </div>
   );

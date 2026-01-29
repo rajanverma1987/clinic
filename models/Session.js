@@ -39,8 +39,7 @@ const SessionSchema = new Schema(
     expiresAt: {
       type: Date,
       required: true,
-      index: true,
-      expires: 0, // TTL index - auto-delete expired sessions
+      expires: 0, // TTL index - auto-delete expired sessions (do not add index: true; expires creates the index)
     },
     isActive: {
       type: Boolean,
@@ -59,8 +58,5 @@ const SessionSchema = new Schema(
 // Compound index for user + active sessions
 SessionSchema.index({ userId: 1, isActive: 1 });
 SessionSchema.index({ tenantId: 1, userId: 1 });
-
-// TTL index for auto-cleanup of expired sessions
-SessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.models.Session || mongoose.model('Session', SessionSchema);

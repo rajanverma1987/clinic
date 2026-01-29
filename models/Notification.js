@@ -91,7 +91,10 @@ const NotificationSchema = new Schema(
       default: 'medium',
       index: true,
     },
-    expiresAt: Date,
+    expiresAt: {
+      type: Date,
+      expires: 0, // TTL index - auto-delete expired (single definition; no schema.index duplicate)
+    },
   },
   {
     timestamps: true,
@@ -101,6 +104,5 @@ const NotificationSchema = new Schema(
 // Compound indexes
 NotificationSchema.index({ tenantId: 1, userId: 1, createdAt: -1 });
 NotificationSchema.index({ userId: 1, 'channels.inApp.read': 1, createdAt: -1 });
-NotificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
 export default mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);

@@ -10,6 +10,7 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -34,7 +35,7 @@ export default function TelemedicinePage() {
         setSessions(Array.isArray(response.data) ? response.data : []);
       }
     } catch (error) {
-      console.error('Failed to fetch sessions:', error);
+      logger.error('Failed to fetch sessions:', error);
       setSessions([]);
     } finally {
       setLoading(false);

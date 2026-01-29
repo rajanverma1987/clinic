@@ -9,6 +9,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -48,7 +49,7 @@ export default function DoctorMessagesPage() {
         setMessages(response.data || []);
       }
     } catch (err) {
-      console.error('Failed to fetch messages:', err);
+      logger.error('Failed to fetch messages', err);
       setMessages([]);
     } finally {
       setLoading(false);
@@ -62,7 +63,7 @@ export default function DoctorMessagesPage() {
         setPatients(response.data || []);
       }
     } catch (err) {
-      console.error('Failed to fetch patients:', err);
+      logger.error('Failed to fetch patients', err);
     }
   };
 
@@ -88,7 +89,7 @@ export default function DoctorMessagesPage() {
         alert('Failed to send message');
       }
     } catch (err) {
-      console.error('Failed to send message:', err);
+      logger.error('Failed to send message', err);
       alert('Failed to send message');
     }
   };
@@ -118,10 +119,7 @@ export default function DoctorMessagesPage() {
   return (
     <Layout>
       <div className='max-w-7xl mx-auto space-y-6'>
-        <PageHeader
-          title='Messages'
-          subtitle='Communicate with patients and staff'
-        />
+        <PageHeader title='Messages' subtitle='Communicate with patients and staff' />
 
         <div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
           {/* Sidebar */}
@@ -232,7 +230,7 @@ export default function DoctorMessagesPage() {
 
         {/* Compose Modal */}
         {composeOpen && (
-          <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
             <Card className='w-full max-w-2xl m-4'>
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
@@ -301,7 +299,7 @@ export default function DoctorMessagesPage() {
 
         {/* Message Detail Modal */}
         {selectedMessage && (
-          <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
             <Card className='w-full max-w-2xl m-4'>
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>

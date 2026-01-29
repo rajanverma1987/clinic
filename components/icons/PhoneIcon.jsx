@@ -1,18 +1,21 @@
-export function PhoneIcon({ className = 'icon icon-sm', color = 'currentColor' }) {
+/**
+ * Phone icon – Lucide React. Use for phone, call, contact.
+ */
+import { Phone } from 'lucide-react';
+
+export function PhoneIcon({
+  className = 'icon icon-sm',
+  color = 'currentColor',
+  ariaHidden = true,
+  ...props
+}) {
   return (
-    <svg
+    <Phone
       className={className}
-      fill='none'
-      stroke={color}
-      viewBox='0 0 24 24'
-      xmlns='http://www.w3.org/2000/svg'
-    >
-      <path
-        strokeLinecap='round'
-        strokeLinejoin='round'
-        strokeWidth={2}
-        d='M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z'
-      />
-    </svg>
+      color={color}
+      strokeWidth={2}
+      aria-hidden={ariaHidden}
+      {...props}
+    />
   );
 }

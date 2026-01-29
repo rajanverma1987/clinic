@@ -4,10 +4,10 @@
 .Alert-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: var(--z-modal, 10000);
+  z-index: var(--z-modal, 50);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -124,12 +124,12 @@
 }
 
 .Alert-icon--warning {
-  background: rgba(245, 158, 11, 0.1);
+  background: color-mix(in srgb, var(--color-status-warning) 10%, transparent);
   color: var(--color-status-warning);
 }
 
 .Alert-icon--error {
-  background: rgba(239, 68, 68, 0.1);
+  background: color-mix(in srgb, var(--color-status-error) 10%, transparent);
   color: var(--color-status-error);
 }
 

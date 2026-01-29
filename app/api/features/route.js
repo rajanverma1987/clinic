@@ -1,8 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { isTestAccount } from '@/lib/constants/test-account.js';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import { getTenantFeatures, getTenantLimits } from '@/services/feature-access.service';
 import { getTenantSubscription } from '@/services/subscription.service';
+import { NextResponse } from 'next/server';
+
+/** TEMPORARY: Premium subscription payload for test account. REMOVE before production. */
+function getTestAccountPremiumPayload() {
+  const farFuture = new Date();
+  farFuture.setFullYear(farFuture.getFullYear() + 1);
+  return {
+    features: ['*'],
+    limits: { maxUsers: 500, maxPatients: 500000, maxStorageGB: 5000 },
+    subscription: {
+      status: 'ACTIVE',
+      currentPeriodEnd: farFuture.toISOString(),
+      trialDaysRemaining: null,
+      paypalApprovalUrl: null,
+    },
+  };
+}
 
 /**
  * GET /api/features
@@ -19,6 +36,17 @@ async function getHandler(req, user) {
           subscription: null,
         })
       );
+    }
+
+    // TEMPORARY: Test account gets premium access. REMOVE before production.
+    if (user.email && isTestAccount(user.email)) {
+      return NextResponse.json(successResponse(getTestAccountPremiumPayload()));
+    }
+
+    if (!user.tenantId) {
+      return NextResponse.json(errorResponse('Tenant context required', 'MISSING_TENANT'), {
+        status: 400,
+      });
     }
 
     const features = await getTenantFeatures(user.tenantId);
@@ -42,21 +70,27 @@ async function getHandler(req, user) {
       successResponse({
         features,
         limits,
-        subscription: sub ? {
-          status: sub.status,
-          currentPeriodEnd: sub.currentPeriodEnd,
-          trialDaysRemaining,
-          paypalApprovalUrl: sub.paypalApprovalUrl,
-        } : null,
+        subscription: sub
+          ? {
+              status: sub.status,
+              currentPeriodEnd: sub.currentPeriodEnd,
+              trialDaysRemaining,
+              paypalApprovalUrl: sub.paypalApprovalUrl,
+            }
+          : null,
       })
     );
   } catch (error) {
-    return NextResponse.json(
-      errorResponse((error instanceof Error ? error.message : String(error)) || 'Failed to fetch features', 'FETCH_ERROR'),
-      { status: 400 }
-    );
+    const message = error instanceof Error ? error.message : String(error);
+    const isServerError =
+      message.includes('MONGODB') ||
+      message.includes('connection') ||
+      message.includes('tenantId') ||
+      message.length > 100;
+    return NextResponse.json(errorResponse(message || 'Failed to fetch features', 'FETCH_ERROR'), {
+      status: isServerError ? 500 : 400,
+    });
   }
 }
 
 export const GET = withAuth(getHandler);
-

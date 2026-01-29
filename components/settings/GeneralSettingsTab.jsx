@@ -161,11 +161,8 @@ export function GeneralSettingsTab({ isClinicAdmin, clinicForm, setClinicForm, s
                 required
               >
                 <option value='en-US'>English (US)</option>
-                <option value='en-GB'>English (UK)</option>
-                <option value='en-CA'>English (Canada)</option>
-                <option value='en-AU'>English (Australia)</option>
-                <option value='fr-CA'>French (Canada)</option>
-                <option value='es-ES'>Spanish (Spain)</option>
+                <option value='es-ES'>Español</option>
+                <option value='ar-SA'>العربية</option>
               </select>
               <p className='text-xs text-neutral-500 mt-1'>Language and date format</p>
             </div>

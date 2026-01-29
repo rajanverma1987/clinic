@@ -1,9 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Button } from './Button.jsx';
+import { InfoIcon } from '@/components/icons';
+import { useI18n } from '@/contexts/I18nContext';
 import { logger } from '@/lib/utils/logger.js';
+import { Button } from './Button.jsx';
 
+/**
+ * Professional subscription status banner: neutral bar, left accent, primary CTA.
+ * Used in Layout for non–super-admin users. All copy is i18n.
+ */
 export function SubscriptionExpiredBanner({
   subscriptionStatus,
   expiryDate,
@@ -11,155 +17,113 @@ export function SubscriptionExpiredBanner({
   paypalApprovalUrl,
 }) {
   const router = useRouter();
+  const { t } = useI18n();
 
   const handleCompletePayment = () => {
     logger.info('Complete Payment clicked');
-    logger.info('PayPal Approval URL:', paypalApprovalUrl);
-    
     if (paypalApprovalUrl) {
-      logger.info('Redirecting to PayPal:', paypalApprovalUrl);
-      // Redirect to PayPal approval page
       window.location.href = paypalApprovalUrl;
     } else {
-      logger.info('No approval URL, redirecting to subscription page');
-      // Fallback to subscription page
       router.push('/subscription');
     }
   };
 
-  // Don't show banner if subscription is active
+  const goToSubscription = () => router.push('/subscription');
+
+  // Don't show banner if subscription is active and trial is fine
   if (subscriptionStatus === 'ACTIVE' && (!trialDaysRemaining || trialDaysRemaining > 3)) {
     return null;
   }
 
-  // Trial expiring soon warning (3 days or less)
-  if (subscriptionStatus === 'ACTIVE' && trialDaysRemaining && trialDaysRemaining <= 3) {
+  // Trial expiring soon
+  if (subscriptionStatus === 'ACTIVE' && trialDaysRemaining != null && trialDaysRemaining <= 3) {
+    const days = trialDaysRemaining === 1 ? t('common.day') || 'day' : t('common.days') || 'days';
+    const message = t('subscription.bannerTrialExpiring')
+      .replace('{{count}}', String(trialDaysRemaining))
+      .replace('{{days}}', days);
     return (
-      <div className="bg-status-warning/10 border-l-4 border-status-warning p-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-status-warning" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-status-warning">
-                <strong>Your free trial expires in {trialDaysRemaining} {trialDaysRemaining === 1 ? 'day' : 'days'}!</strong>
-                {' '}Upgrade now to continue using all features without interruption.
-              </p>
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            <Button
-              size="sm"
-              onClick={() => router.push('/subscription')}
-              className="bg-status-warning hover:bg-status-warning/90 text-white"
-            >
-              Upgrade Now
-            </Button>
-          </div>
+      <div
+        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-amber-50 border-l-4 border-amber-500 text-neutral-800"
+        role="alert"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center" aria-hidden>
+            <InfoIcon className="icon icon-sm text-amber-600" ariaHidden />
+          </span>
+          <p className="text-body-sm font-medium">{message}</p>
         </div>
+        <Button variant="warning" size="sm" onClick={goToSubscription}>
+          {t('subscription.upgradeNow')}
+        </Button>
       </div>
     );
   }
 
-  // Subscription expired, suspended, or cancelled
+  // Expired, suspended, or cancelled
   if (subscriptionStatus === 'EXPIRED' || subscriptionStatus === 'SUSPENDED' || subscriptionStatus === 'CANCELLED') {
+    const status = subscriptionStatus.toLowerCase();
+    const message = t('subscription.bannerExpired').replace('{{status}}', status);
+    const dateStr = expiryDate ? t('subscription.bannerExpiredOn').replace('{{date}}', new Date(expiryDate).toLocaleDateString()) : '';
     return (
-      <div className="bg-status-error/10 border-l-4 border-status-error p-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-status-error" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-status-error">
-                <strong>Your subscription is {subscriptionStatus.toLowerCase()}!</strong>
-                {' '}Please renew your subscription to continue using the system.
-                {expiryDate && ` Your subscription expired on ${new Date(expiryDate).toLocaleDateString()}.`}
-              </p>
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            <Button
-              size="sm"
-              onClick={() => router.push('/subscription')}
-              className="bg-status-error hover:bg-status-error/90 text-white"
-            >
-              Renew Now
-            </Button>
-          </div>
+      <div
+        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-red-50 border-l-4 border-red-500 text-neutral-800"
+        role="alert"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center" aria-hidden>
+            <InfoIcon className="icon icon-sm text-red-600" ariaHidden />
+          </span>
+          <p className="text-body-sm font-medium">
+            {message}
+            {dateStr && ` ${dateStr}`}
+          </p>
         </div>
+        <Button variant="danger" size="sm" onClick={goToSubscription}>
+          {t('subscription.renewNow')}
+        </Button>
       </div>
     );
   }
 
-  // Pending subscription (awaiting payment)
+  // Pending
   if (subscriptionStatus === 'PENDING') {
     return (
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-blue-700">
-                <strong>Your subscription is pending.</strong>
-                {' '}Please complete your payment to activate all features.
-              </p>
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            <Button
-              size="sm"
-              onClick={handleCompletePayment}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Complete Payment
-            </Button>
-          </div>
+      <div
+        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-primary-50 border-l-4 border-primary-500 text-neutral-800"
+        role="alert"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center" aria-hidden>
+            <InfoIcon className="icon icon-sm text-primary-600" ariaHidden />
+          </span>
+          <p className="text-body-sm font-medium">{t('subscription.bannerPending')}</p>
         </div>
+        <Button variant="primary" size="sm" onClick={handleCompletePayment}>
+          {t('subscription.completePayment')}
+        </Button>
       </div>
     );
   }
 
-  // No subscription at all
+  // No subscription
   if (!subscriptionStatus) {
     return (
-      <div className="bg-gray-50 border-l-4 border-gray-400 p-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-gray-700">
-                <strong>No active subscription found.</strong>
-                {' '}Subscribe to a plan to access all features.
-              </p>
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            <Button
-              size="sm"
-              onClick={() => router.push('/subscription')}
-            >
-              View Plans
-            </Button>
-          </div>
+      <div
+        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-neutral-50 border-l-4 border-primary-500 text-neutral-700"
+        role="alert"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-neutral-200 flex items-center justify-center" aria-hidden>
+            <InfoIcon className="icon icon-sm text-neutral-600" ariaHidden />
+          </span>
+          <p className="text-body-sm font-medium">{t('subscription.bannerNoSubscription')}</p>
         </div>
+        <Button variant="primary" size="sm" onClick={goToSubscription}>
+          {t('subscription.viewPlans')}
+        </Button>
       </div>
     );
   }
 
   return null;
 }
-

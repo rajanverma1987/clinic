@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
+import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -61,7 +62,7 @@ export default function AdminDoctorsPage() {
         setPagination(extractPaginationData(response));
       }
     } catch (error) {
-      console.error('Failed to fetch doctors:', error);
+      logger.error('Failed to fetch doctors', error);
       showError('Failed to fetch doctors');
     } finally {
       setLoading(false);
@@ -187,7 +188,9 @@ export default function AdminDoctorsPage() {
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Verification Status</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  Verification Status
+                </label>
                 <select
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                   value={verificationFilter}
@@ -244,32 +247,16 @@ export default function AdminDoctorsPage() {
                 {selectedDoctors.length} doctor{selectedDoctors.length > 1 ? 's' : ''} selected
               </span>
               <div className='flex gap-2'>
-                <Button
-                  variant='secondary'
-                  size='sm'
-                  onClick={() => handleBulkAction('export')}
-                >
+                <Button variant='secondary' size='sm' onClick={() => handleBulkAction('export')}>
                   Export
                 </Button>
-                <Button
-                  variant='secondary'
-                  size='sm'
-                  onClick={() => handleBulkAction('notify')}
-                >
+                <Button variant='secondary' size='sm' onClick={() => handleBulkAction('notify')}>
                   Send Notification
                 </Button>
-                <Button
-                  variant='secondary'
-                  size='sm'
-                  onClick={() => handleBulkAction('suspend')}
-                >
+                <Button variant='secondary' size='sm' onClick={() => handleBulkAction('suspend')}>
                   Suspend
                 </Button>
-                <Button
-                  variant='secondary'
-                  size='sm'
-                  onClick={() => setSelectedDoctors([])}
-                >
+                <Button variant='secondary' size='sm' onClick={() => setSelectedDoctors([])}>
                   Clear Selection
                 </Button>
               </div>
@@ -309,17 +296,32 @@ export default function AdminDoctorsPage() {
                           }}
                         />
                       </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Doctor</th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Specialty</th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Location</th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Status</th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Rating</th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>Actions</th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Doctor
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Specialty
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Location
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Status
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Rating
+                      </th>
+                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {doctors.map((doctor) => (
-                      <tr key={doctor._id} className='border-b border-neutral-100 hover:bg-neutral-50'>
+                      <tr
+                        key={doctor._id}
+                        className='border-b border-neutral-100 hover:bg-neutral-50'
+                      >
                         <td className='py-3 px-4'>
                           <input
                             type='checkbox'
@@ -328,7 +330,9 @@ export default function AdminDoctorsPage() {
                               if (e.target.checked) {
                                 setSelectedDoctors([...selectedDoctors, doctor._id]);
                               } else {
-                                setSelectedDoctors(selectedDoctors.filter((id) => id !== doctor._id));
+                                setSelectedDoctors(
+                                  selectedDoctors.filter((id) => id !== doctor._id)
+                                );
                               }
                             }}
                           />
@@ -336,9 +340,12 @@ export default function AdminDoctorsPage() {
                         <td className='py-3 px-4'>
                           <div>
                             <p className='font-medium text-neutral-900'>
-                              {doctor.userId?.firstName || doctor.firstName} {doctor.userId?.lastName || doctor.lastName}
+                              {doctor.userId?.firstName || doctor.firstName}{' '}
+                              {doctor.userId?.lastName || doctor.lastName}
                             </p>
-                            <p className='text-sm text-neutral-500'>{doctor.userId?.email || doctor.email}</p>
+                            <p className='text-sm text-neutral-500'>
+                              {doctor.userId?.email || doctor.email}
+                            </p>
                           </div>
                         </td>
                         <td className='py-3 px-4'>
@@ -352,7 +359,11 @@ export default function AdminDoctorsPage() {
                           </span>
                         </td>
                         <td className='py-3 px-4'>
-                          <Tag className={getVerificationStatusColor(doctor.verificationStatus || 'pending')}>
+                          <Tag
+                            className={getVerificationStatusColor(
+                              doctor.verificationStatus || 'pending'
+                            )}
+                          >
                             {doctor.verificationStatus || 'pending'}
                           </Tag>
                         </td>
@@ -362,7 +373,11 @@ export default function AdminDoctorsPage() {
                               {doctor.averageRating ? doctor.averageRating.toFixed(1) : 'N/A'}
                             </span>
                             {doctor.averageRating && (
-                              <svg className='icon icon-xs text-yellow-400' fill='currentColor' viewBox='0 0 20 20'>
+                              <svg
+                                className='icon icon-xs text-yellow-400'
+                                fill='currentColor'
+                                viewBox='0 0 20 20'
+                              >
                                 <path d='M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z' />
                               </svg>
                             )}
@@ -391,14 +406,13 @@ export default function AdminDoctorsPage() {
                                   Verify
                                 </Button>
                                 <Button
-                                  variant='outline'
+                                  variant='danger'
                                   size='sm'
                                   onClick={() => {
                                     setSelectedDoctor(doctor);
                                     setVerificationAction('reject');
                                     setShowVerifyModal(true);
                                   }}
-                                  className='border-red-300 text-red-700'
                                 >
                                   Reject
                                 </Button>
@@ -407,15 +421,16 @@ export default function AdminDoctorsPage() {
                             <Button
                               variant='secondary'
                               size='sm'
-                              onClick={() => handleSuspend(doctor._id, doctor.verificationStatus !== 'suspended')}
+                              onClick={() =>
+                                handleSuspend(doctor._id, doctor.verificationStatus !== 'suspended')
+                              }
                             >
                               {doctor.verificationStatus === 'suspended' ? 'Activate' : 'Suspend'}
                             </Button>
                             <Button
-                              variant='outline'
+                              variant='danger'
                               size='sm'
                               onClick={() => handleDelete(doctor._id)}
-                              className='border-red-300 text-red-700'
                             >
                               Delete
                             </Button>
@@ -459,7 +474,7 @@ export default function AdminDoctorsPage() {
 
         {/* Verification Modal */}
         {showVerifyModal && selectedDoctor && (
-          <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
+          <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
             <Card className='p-6 max-w-md w-full mx-4'>
               <h3 className='text-lg font-bold text-neutral-900 mb-4'>
                 {verificationAction === 'approve' ? 'Approve Doctor' : 'Reject Doctor'}
@@ -482,22 +497,30 @@ export default function AdminDoctorsPage() {
                     rows={4}
                     value={verificationComment}
                     onChange={(e) => setVerificationComment(e.target.value)}
-                    placeholder={verificationAction === 'approve' ? 'Optional approval note...' : 'Reason for rejection...'}
+                    placeholder={
+                      verificationAction === 'approve'
+                        ? 'Optional approval note...'
+                        : 'Reason for rejection...'
+                    }
                   />
                 </div>
                 {verificationAction === 'reject' && (
                   <div className='p-3 bg-yellow-50 border border-yellow-200 rounded-lg'>
                     <p className='text-sm text-yellow-800'>
-                      Rejected doctors will be notified via email and can reapply with additional documents.
+                      Rejected doctors will be notified via email and can reapply with additional
+                      documents.
                     </p>
                   </div>
                 )}
                 <div className='flex justify-end gap-3'>
-                  <Button variant='secondary' onClick={() => {
-                    setShowVerifyModal(false);
-                    setSelectedDoctor(null);
-                    setVerificationComment('');
-                  }}>
+                  <Button
+                    variant='secondary'
+                    onClick={() => {
+                      setShowVerifyModal(false);
+                      setSelectedDoctor(null);
+                      setVerificationComment('');
+                    }}
+                  >
                     Cancel
                   </Button>
                   <Button

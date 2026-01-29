@@ -148,7 +148,7 @@ export default function APIDocsPage() {
       {/* Quick Start */}
       <Card className='mb-8'>
         <h2 className='text-xl font-semibold mb-4'>Quick Start</h2>
-        <div className='bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto'>
+        <div className='bg-neutral-100 text-neutral-900 border border-neutral-300 p-4 rounded-lg overflow-x-auto'>
           <pre className='text-sm'>
             {`// JavaScript/Node.js Example
 const response = await fetch('https://yourapp.com/api/patients', {
@@ -160,7 +160,7 @@ const response = await fetch('https://yourapp.com/api/patients', {
 });
 
 const data = await response.json();
-console.log(data);`}
+// data contains the API response`}
           </pre>
         </div>
       </Card>
@@ -202,7 +202,7 @@ console.log(data);`}
 
         <div className='mt-8 pt-6 border-t'>
           <h3 className='text-lg font-semibold mb-4'>Response Format</h3>
-          <div className='bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto'>
+          <div className='bg-neutral-100 text-neutral-900 border border-neutral-300 p-4 rounded-lg overflow-x-auto'>
             <pre className='text-sm'>
               {`// Success Response
 {

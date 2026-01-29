@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from './Button.jsx';
 import { Input } from './Input.jsx';
@@ -9,10 +10,13 @@ export function PatientSelector({
   selectedPatientId,
   onSelect,
   onAddNew,
-  label = 'Select Patient',
+  label,
   required = false,
-  placeholder = 'Search by name, ID, or phone...',
+  placeholder,
 }) {
+  const { t } = useI18n();
+  const labelText = label ?? t('patientSelector.selectPatient');
+  const placeholderText = placeholder ?? t('patientSelector.searchPlaceholder');
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [filteredPatients, setFilteredPatients] = useState(patients);
@@ -64,7 +68,7 @@ export function PatientSelector({
   return (
     <div ref={containerRef} className='relative'>
       <label className='block text-sm font-medium text-neutral-700 mb-2'>
-        {label} {required && <span className='text-status-error'>*</span>}
+        {labelText} {required && <span className='text-status-error'>*</span>}
       </label>
 
       {/* Selected Patient Display */}
@@ -99,7 +103,7 @@ export function PatientSelector({
                   onClick={() => setIsOpen(true)}
                   className='text-primary-600 hover:text-primary-700 text-sm font-medium'
                 >
-                  Change
+                  {t('patientSelector.change')}
                 </button>
                 <Button
                   variant='ghost'
@@ -109,7 +113,12 @@ export function PatientSelector({
                   onClick={handleClear}
                   className='text-neutral-400 hover:text-neutral-600'
                 >
-                  <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg
+                    className='icon icon-sm'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
                     <path
                       strokeLinecap='round'
                       strokeLinejoin='round'
@@ -134,7 +143,7 @@ export function PatientSelector({
                 setIsOpen(true);
               }}
               onFocus={() => setIsOpen(true)}
-              placeholder={placeholder}
+              placeholder={placeholderText}
               className='pr-10'
             />
             <div className='absolute right-3 top-1/2 -translate-y-1/2'>
@@ -186,8 +195,12 @@ export function PatientSelector({
                     </svg>
                   </div>
                   <div>
-                    <div className='font-medium text-primary-600'>Add New Patient</div>
-                    <div className='text-sm text-neutral-500'>Create a new patient record</div>
+                    <div className='font-medium text-primary-600'>
+                      {t('patientSelector.addNewPatient')}
+                    </div>
+                    <div className='text-sm text-neutral-500'>
+                      {t('patientSelector.addNewPatientDesc')}
+                    </div>
                   </div>
                 </button>
               )}
@@ -264,8 +277,8 @@ export function PatientSelector({
                       d='M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
                     />
                   </svg>
-                  <p className='font-medium'>No patients found</p>
-                  <p className='text-sm mt-1'>Try a different search term</p>
+                  <p className='font-medium'>{t('patientSelector.noPatientsFound')}</p>
+                  <p className='text-sm mt-1'>{t('patientSelector.tryDifferentSearch')}</p>
                   {onAddNew && (
                     <Button
                       type='button'
@@ -276,7 +289,7 @@ export function PatientSelector({
                       className='mt-4'
                       size='sm'
                     >
-                      Add New Patient
+                      {t('patientSelector.addNewPatient')}
                     </Button>
                   )}
                 </div>

@@ -1,16 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
+import { useEffect, useState } from 'react';
+
+const DEFAULT_SETTINGS = {
+  settings: {
+    currency: 'USD',
+    locale: 'en-US',
+    timezone: 'UTC',
+  },
+};
 
 /**
- * Hook to fetch and access tenant settings
+ * Hook to fetch and access tenant settings.
+ * Waits for auth to settle before fetching so no request is sent without a token.
  * @returns {object} { settings, loading, error, currency, locale, timezone }
  */
 export function useSettings() {
+  const { user, loading: authLoading } = useAuth();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setSettings(DEFAULT_SETTINGS);
+      setLoading(false);
+      return;
+    }
+    const token = apiClient.getToken();
+    if (!token) {
+      setSettings(DEFAULT_SETTINGS);
+      setLoading(false);
+      return;
+    }
+
     const fetchSettings = async () => {
       try {
         setLoading(true);
@@ -20,33 +44,18 @@ export function useSettings() {
           setError(null);
         } else {
           setError(response.error?.message || 'Failed to fetch settings');
-          // Set defaults if fetch fails
-          setSettings({
-            settings: {
-              currency: 'USD',
-              locale: 'en-US',
-              timezone: 'UTC',
-            }
-          });
+          setSettings(DEFAULT_SETTINGS);
         }
       } catch (err) {
-        console.error('Failed to fetch settings:', err);
         setError(err.message || 'Failed to fetch settings');
-        // Set defaults on error
-        setSettings({
-          settings: {
-            currency: 'USD',
-            locale: 'en-US',
-            timezone: 'UTC',
-          }
-        });
+        setSettings(DEFAULT_SETTINGS);
       } finally {
         setLoading(false);
       }
     };
 
     fetchSettings();
-  }, []);
+  }, [authLoading, user]);
 
   return {
     settings,
@@ -57,4 +66,3 @@ export function useSettings() {
     timezone: settings?.settings?.timezone || 'UTC',
   };
 }
-

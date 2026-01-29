@@ -1,34 +1,52 @@
-import { useState, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
+import * as dashboardCache from '@/lib/cache/dashboard-cache';
+import { useCallback, useLayoutEffect, useState } from 'react';
 
+/**
+ * Clinic dashboard stats. Cache-first: hydrate from localStorage in useLayoutEffect
+ * (no hydration mismatch, no flash), then revalidate in background.
+ */
 export function useDashboardStats() {
+  const { user } = useAuth();
+  const tenantId = user?.tenantId ?? null;
+
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  useLayoutEffect(() => {
+    if (!tenantId) return;
+    const cached = dashboardCache.getData('stats', tenantId);
+    if (cached) {
+      setStats(cached);
+      setLoading(false);
+    }
+  }, [tenantId]);
+
   const fetchStats = useCallback(async () => {
+    const cacheKey = tenantId ?? 'clinic';
+    const cached = dashboardCache.getData('stats', cacheKey);
+    const isBackgroundRevalidate = !!cached;
+
     try {
-      setLoading(true);
+      if (!isBackgroundRevalidate) setLoading(true);
       setError(null);
       const response = await apiClient.get('/reports/dashboard');
       if (response.success && response.data) {
-        setStats(response.data);
-        // Calculate patients summary if not provided
-        if (!response.data.patientsSummary) {
-          const newPatients = response.data.newPatientsThisMonth || 0;
-          const totalPatients = response.data.activePatients || 0;
+        let next = response.data;
+        if (!next.patientsSummary) {
+          const newPatients = next.newPatientsThisMonth || 0;
+          const totalPatients = next.activePatients || 0;
           const oldPatients = Math.max(0, totalPatients - newPatients);
-          setStats((prev) => ({
-            ...prev,
-            patientsSummary: {
-              newPatients,
-              oldPatients,
-              totalPatients,
-            },
-          }));
+          next = {
+            ...next,
+            patientsSummary: { newPatients, oldPatients, totalPatients },
+          };
         }
+        setStats(next);
+        dashboardCache.set('stats', cacheKey, next);
       } else {
-        // If response is not successful, set default stats
         setStats({
           todayAppointments: 0,
           todayRevenue: 0,
@@ -40,9 +58,8 @@ export function useDashboardStats() {
         setError(response.error || new Error('Failed to fetch stats'));
       }
     } catch (err) {
-      console.error('Failed to fetch dashboard stats:', err);
+      // Fetch failed
       setError(err);
-      // Set default stats on error so page can still render
       setStats({
         todayAppointments: 0,
         todayRevenue: 0,
@@ -54,7 +71,7 @@ export function useDashboardStats() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenantId]);
 
   return { stats, loading, error, fetchStats };
 }

@@ -250,6 +250,81 @@ export async function updateDoctor(doctorId, input, tenantId, userId) {
   return doctor;
 }
 
+const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+/**
+ * Get doctor schedule in frontend-friendly format (day-keyed schedule, breaks, slotDuration, etc.)
+ */
+export async function getDoctorSchedule(doctorId, tenantId) {
+  await connectDB();
+
+  const doctor = await Doctor.findOne(
+    withTenant(tenantId, {
+      _id: doctorId,
+    })
+  )
+    .select('schedule')
+    .lean();
+
+  if (!doctor || !doctor.schedule) {
+    return {
+      schedule: {},
+      breaks: {},
+      slotDuration: 30,
+      bufferTime: 0,
+      advanceBookingMinDays: 0,
+      advanceBookingMaxDays: 90,
+      isOnline: true,
+      leaves: [],
+      emergencySlots: [],
+      blockedSlots: [],
+    };
+  }
+
+  const s = doctor.schedule;
+  const schedule = {};
+  const breaks = s.breaks && typeof s.breaks === 'object' ? { ...s.breaks } : {};
+  if (s.slots && Array.isArray(s.slots)) {
+    for (const slot of s.slots) {
+      if (slot.day) {
+        schedule[slot.day] = {
+          startTime: slot.startTime || '09:00',
+          endTime: slot.endTime || '17:00',
+        };
+      }
+    }
+  }
+  const leaves = (s.leaves || []).map((l) => ({
+    startDate: l.from,
+    endDate: l.to,
+    reason: l.reason,
+  }));
+  const emergencySlots = (s.emergencySlots || []).map((e) => ({
+    date: e.date,
+    startTime: e.startTime,
+    endTime: e.endTime,
+  }));
+  const blockedSlots = (s.blockedSlots || []).map((b) => ({
+    date: b.date,
+    startTime: b.startTime,
+    endTime: b.endTime,
+    reason: b.reason,
+  }));
+
+  return {
+    schedule,
+    breaks,
+    slotDuration: s.slotDuration ?? 30,
+    bufferTime: s.bufferTime ?? 0,
+    advanceBookingMinDays: s.advanceBookingMinDays ?? 0,
+    advanceBookingMaxDays: s.advanceBookingMaxDays ?? 90,
+    isOnline: true,
+    leaves,
+    emergencySlots,
+    blockedSlots,
+  };
+}
+
 /**
  * Add leave to doctor schedule
  */
@@ -341,7 +416,7 @@ export async function removeDoctorLeave(doctorId, leaveIndex, tenantId, userId) 
 }
 
 /**
- * Update doctor schedule
+ * Update doctor schedule (accepts frontend payload: day-keyed schedule, breaks, slotDuration, etc.)
  */
 export async function updateDoctorSchedule(doctorId, scheduleData, tenantId, userId) {
   await connectDB();
@@ -358,16 +433,46 @@ export async function updateDoctorSchedule(doctorId, scheduleData, tenantId, use
 
   const before = doctor.schedule ? doctor.schedule.toObject() : null;
 
-  // Update schedule
+  let workingDays = doctor.schedule?.workingDays || [];
+  let slots = doctor.schedule?.slots || [];
+  const leaves = doctor.schedule?.leaves || [];
+
+  if (scheduleData.schedule && typeof scheduleData.schedule === 'object') {
+    workingDays = [];
+    slots = [];
+    for (const day of DAY_KEYS) {
+      const daySlot = scheduleData.schedule[day];
+      if (daySlot && daySlot.startTime && daySlot.endTime) {
+        workingDays.push(day);
+        slots.push({
+          day,
+          startTime: daySlot.startTime,
+          endTime: daySlot.endTime,
+          slotDuration: scheduleData.slotDuration ?? doctor.schedule?.slotDuration ?? 30,
+        });
+      }
+    }
+  }
+
+  const breaks = scheduleData.breaks && typeof scheduleData.breaks === 'object' ? scheduleData.breaks : doctor.schedule?.breaks || {};
+  const emergencySlots = Array.isArray(scheduleData.emergencySlots) ? scheduleData.emergencySlots : doctor.schedule?.emergencySlots || [];
+  const blockedSlots = Array.isArray(scheduleData.blockedSlots) ? scheduleData.blockedSlots : doctor.schedule?.blockedSlots || [];
+
   doctor.schedule = {
-    workingDays: scheduleData.workingDays || doctor.schedule?.workingDays || [],
-    slots: scheduleData.slots || doctor.schedule?.slots || [],
-    leaves: scheduleData.leaves || doctor.schedule?.leaves || [],
+    workingDays,
+    slots,
+    leaves,
+    slotDuration: scheduleData.slotDuration ?? doctor.schedule?.slotDuration ?? 30,
+    bufferTime: scheduleData.bufferTime ?? doctor.schedule?.bufferTime ?? 0,
+    breaks,
+    advanceBookingMinDays: scheduleData.advanceBookingMinDays ?? doctor.schedule?.advanceBookingMinDays ?? 0,
+    advanceBookingMaxDays: scheduleData.advanceBookingMaxDays ?? doctor.schedule?.advanceBookingMaxDays ?? 90,
+    emergencySlots,
+    blockedSlots,
   };
 
   await doctor.save();
 
-  // Audit log
   await AuditLogger.auditWrite(
     'doctor',
     doctor._id.toString(),

@@ -25,14 +25,14 @@ export function SessionInfo({ sessionDuration, sessionId }) {
         </svg>
       </div>
       <div className='min-w-0 flex-1'>
-        <h2 className='text-white font-semibold text-sm sm:text-base truncate'>
+        <h2 className='text-neutral-900 font-semibold text-sm sm:text-base truncate'>
           Telemedicine Consultation
         </h2>
-        <p className='text-gray-400 text-xs sm:text-sm truncate'>Session: {sessionId}</p>
+        <p className='text-neutral-600 text-xs sm:text-sm truncate'>Session: {sessionId}</p>
       </div>
       {sessionDuration > 0 && (
-        <div className='text-white text-xs sm:text-sm'>
-          <span className='text-gray-400 hidden sm:inline'>Duration: </span>
+        <div className='text-neutral-800 text-xs sm:text-sm'>
+          <span className='text-neutral-600 hidden sm:inline'>Duration: </span>
           <span className='font-mono'>{formatDuration(sessionDuration)}</span>
         </div>
       )}

@@ -11,6 +11,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -51,7 +52,7 @@ export default function AdminUsersPage() {
         setTenants(extractArrayData(response));
       }
     } catch (error) {
-      console.error('Failed to fetch tenants:', error);
+      logger.error('Failed to fetch tenants:', error);
     }
   };
 
@@ -74,7 +75,7 @@ export default function AdminUsersPage() {
         setPagination(extractPaginationData(response));
       }
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      logger.error('Failed to fetch users:', error);
     } finally {
       setLoading(false);
     }
@@ -90,7 +91,7 @@ export default function AdminUsersPage() {
         showError(response?.error?.message || 'Failed to update user status');
       }
     } catch (error) {
-      console.error('Failed to toggle user status:', error);
+      logger.error('Failed to toggle user status:', error);
       showError('Failed to update user status');
     }
   };

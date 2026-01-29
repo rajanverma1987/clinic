@@ -1,14 +1,19 @@
-import { apiClient } from '@/lib/api/client';
-import { useCallback, useState } from 'react';
-import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@/lib/api/client';
+import * as dashboardCache from '@/lib/cache/dashboard-cache';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
+import { useCallback, useLayoutEffect, useState } from 'react';
 
 /**
- * Hook for fetching doctor-specific dashboard lists
- * Filters all data by doctor's doctorId
+ * Doctor dashboard lists – parallel fetch, cache-first when returning to Dashboard.
  */
 export function useDoctorDashboardLists() {
   const { user } = useAuth();
+  const userId =
+    user?.role === 'doctor'
+      ? (user?._id ?? user?.id ?? user?.userId ?? null)
+      : null;
+
   const [doctorId, setDoctorId] = useState(null);
   const [todayAppointments, setTodayAppointments] = useState([]);
   const [recentPatients, setRecentPatients] = useState([]);
@@ -18,84 +23,117 @@ export function useDoctorDashboardLists() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Cache-first: show last data immediately when returning to dashboard (no loading flash)
+  useLayoutEffect(() => {
+    if (!userId || userId === 'undefined') {
+      setLoading(false);
+      return;
+    }
+    const cached = dashboardCache.getData('doctorLists', userId);
+    if (cached && typeof cached === 'object') {
+      setTodayAppointments(cached.todayAppointments ?? []);
+      setRecentPatients(cached.recentPatients ?? []);
+      setUpcomingAppointments(cached.upcomingAppointments ?? []);
+      setPendingReviews(cached.pendingReviews ?? []);
+      setNewPatientRequests(cached.newPatientRequests ?? []);
+      setLoading(false);
+    }
+  }, [userId]);
+
   const fetchDashboardLists = useCallback(async () => {
-    if (!user || user.role !== 'doctor') {
+    const role = (user?.role || '').toLowerCase();
+    if (!user || role !== 'doctor') {
+      setLoading(false);
+      return;
+    }
+    if (!userId || userId === 'undefined') {
       setLoading(false);
       return;
     }
 
+    const cached = dashboardCache.getData('doctorLists', userId);
+    const isBackgroundRevalidate = !!cached;
+
     try {
-      setLoading(true);
+      if (!isBackgroundRevalidate) setLoading(true);
       setError(null);
 
-      // Get doctor profile to get doctorId
-      if (!doctorId) {
-        const doctorResponse = await apiClient.get(`/doctors/user/${user._id}`);
+      // Resolve doctorId (single call, required for all list URLs)
+      let currentDoctorId = doctorId;
+      if (!currentDoctorId && userId) {
+        const doctorResponse = await apiClient.get(
+          `/doctors/user/${encodeURIComponent(userId)}`
+        );
         if (doctorResponse.success && doctorResponse.data) {
-          setDoctorId(doctorResponse.data._id);
+          currentDoctorId = doctorResponse.data._id;
+          setDoctorId(currentDoctorId);
         } else {
-          throw new Error('Doctor profile not found');
+          setLoading(false);
+          return;
         }
       }
 
-      const currentDoctorId = doctorId || (await apiClient.get(`/doctors/user/${user._id}`)).data._id;
-
-      // Fetch today's appointments for this doctor
-      const today = new Date().toISOString().split('T')[0];
-      const appointmentsResponse = await apiClient.get(
-        `/appointments?doctorId=${currentDoctorId}&date=${today}&limit=10&sortBy=startTime&sortOrder=asc`
-      );
-      const fetchedAppointments = extractArrayData(appointmentsResponse);
-      setTodayAppointments(Array.isArray(fetchedAppointments) ? fetchedAppointments.slice(0, 10) : []);
-
-      // Fetch upcoming appointments (next 7 days)
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const nextWeek = new Date();
       nextWeek.setDate(nextWeek.getDate() + 7);
-      const upcomingResponse = await apiClient.get(
-        `/appointments?doctorId=${currentDoctorId}&startDate=${today}&endDate=${nextWeek.toISOString().split('T')[0]}&limit=10&sortBy=startTime&sortOrder=asc`
-      );
-      const upcomingData = extractArrayData(upcomingResponse);
-      setUpcomingAppointments(Array.isArray(upcomingData) ? upcomingData.slice(0, 10) : []);
+      const endDate = nextWeek.toISOString().split('T')[0];
 
-      // Fetch recent patients (patients seen by this doctor)
-      try {
-        const patientsResponse = await apiClient.get(
-          `/patients?doctorId=${currentDoctorId}&limit=10&sortBy=createdAt&sortOrder=desc`
-        );
-        const patientsData = extractArrayData(patientsResponse, 'patients');
-        setRecentPatients(Array.isArray(patientsData) ? patientsData.slice(0, 10) : []);
-      } catch (err) {
-        console.error('Failed to fetch recent patients:', err);
-        setRecentPatients([]);
-      }
+      // Fire all list requests in parallel (one round-trip after doctorId)
+      const [todayRes, upcomingRes, patientsRes, reviewsRes, requestsRes] =
+        await Promise.allSettled([
+          apiClient.get(
+            `/appointments?doctorId=${currentDoctorId}&date=${today}&limit=10&sortBy=startTime&sortOrder=asc`
+          ),
+          apiClient.get(
+            `/appointments?doctorId=${currentDoctorId}&startDate=${today}&endDate=${endDate}&limit=10&sortBy=startTime&sortOrder=asc`
+          ),
+          apiClient.get(
+            `/patients?doctorId=${currentDoctorId}&limit=10&sortBy=createdAt&sortOrder=desc`
+          ),
+          apiClient.get(
+            `/appointments?doctorId=${currentDoctorId}&status=completed&hasClinicalNote=false&limit=10&sortBy=appointmentDate&sortOrder=desc`
+          ),
+          apiClient.get(
+            `/appointments?doctorId=${currentDoctorId}&status=pending&limit=10&sortBy=createdAt&sortOrder=desc`
+          ),
+        ]);
 
-      // Fetch pending reviews (completed appointments without clinical notes)
-      try {
-        const reviewsResponse = await apiClient.get(
-          `/appointments?doctorId=${currentDoctorId}&status=completed&hasClinicalNote=false&limit=10&sortBy=appointmentDate&sortOrder=desc`
-        );
-        const reviewsData = extractArrayData(reviewsResponse);
-        setPendingReviews(Array.isArray(reviewsData) ? reviewsData.slice(0, 10) : []);
-      } catch (err) {
-        console.error('Failed to fetch pending reviews:', err);
-        setPendingReviews([]);
-      }
+      const todayData = todayRes.status === 'fulfilled' ? extractArrayData(todayRes.value) : [];
+      const todayList = Array.isArray(todayData) ? todayData.slice(0, 10) : [];
+      setTodayAppointments(todayList);
 
-      // Fetch new patient requests (pending appointments)
-      try {
-        const requestsResponse = await apiClient.get(
-          `/appointments?doctorId=${currentDoctorId}&status=pending&limit=10&sortBy=createdAt&sortOrder=desc`
-        );
-        const requestsData = extractArrayData(requestsResponse);
-        setNewPatientRequests(Array.isArray(requestsData) ? requestsData.slice(0, 10) : []);
-      } catch (err) {
-        console.error('Failed to fetch new patient requests:', err);
-        setNewPatientRequests([]);
-      }
+      const upcomingData =
+        upcomingRes.status === 'fulfilled' ? extractArrayData(upcomingRes.value) : [];
+      const upcomingList = Array.isArray(upcomingData) ? upcomingData.slice(0, 10) : [];
+      setUpcomingAppointments(upcomingList);
+
+      const patientsData =
+        patientsRes.status === 'fulfilled' ? extractArrayData(patientsRes.value, 'patients') : [];
+      const patientsList = Array.isArray(patientsData) ? patientsData.slice(0, 10) : [];
+      setRecentPatients(patientsList);
+
+      const reviewsData =
+        reviewsRes.status === 'fulfilled' ? extractArrayData(reviewsRes.value) : [];
+      const reviewsList = Array.isArray(reviewsData) ? reviewsData.slice(0, 10) : [];
+      setPendingReviews(reviewsList);
+
+      const requestsData =
+        requestsRes.status === 'fulfilled' ? extractArrayData(requestsRes.value) : [];
+      const requestsList = Array.isArray(requestsData) ? requestsData.slice(0, 10) : [];
+      setNewPatientRequests(requestsList);
+
+      const payload = {
+        todayAppointments: todayList,
+        recentPatients: patientsList,
+        upcomingAppointments: upcomingList,
+        pendingReviews: reviewsList,
+        newPatientRequests: requestsList,
+      };
+      dashboardCache.set('doctorLists', userId, payload);
     } catch (err) {
-      console.error('Failed to fetch doctor dashboard lists:', err);
+      // Fetch failed
       setError(err);
-      // Set default values
       setTodayAppointments([]);
       setRecentPatients([]);
       setUpcomingAppointments([]);
@@ -104,7 +142,7 @@ export function useDoctorDashboardLists() {
     } finally {
       setLoading(false);
     }
-  }, [user, doctorId]);
+  }, [user, userId, doctorId]);
 
   return {
     todayAppointments,

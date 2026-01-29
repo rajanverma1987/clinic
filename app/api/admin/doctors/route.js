@@ -34,6 +34,8 @@ async function getHandler(req, user) {
     const search = (searchParams.get('search') || '').trim();
     const specialty = searchParams.get('specialty') || '';
     const location = searchParams.get('location') || '';
+    const sortBy = searchParams.get('sortBy') || 'updatedAt';
+    const sortOrder = (searchParams.get('sortOrder') || 'desc').toLowerCase() === 'asc' ? 1 : -1;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
 
@@ -68,10 +70,13 @@ async function getHandler(req, user) {
 
     const total = await Doctor.countDocuments(query);
     const skip = (page - 1) * limit;
+    const sortField = ['createdAt', 'updatedAt', 'verificationStatus', 'professional.licenseNumber'].includes(sortBy)
+      ? sortBy
+      : 'updatedAt';
     const doctors = await Doctor.find(query)
       .populate('userId', 'firstName lastName email phone')
       .populate('tenantId', 'name slug region')
-      .sort({ updatedAt: -1 })
+      .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit)
       .lean();

@@ -475,7 +475,7 @@ export default function AppointmentCalendar({
           {/* Date Selector */}
           <div className='mb-4 flex items-center gap-2 flex-wrap'>
             <Button
-              variant='outline'
+              variant='secondary'
               size='xs'
               iconOnly
               onClick={goToPreviousDay}
@@ -491,7 +491,7 @@ export default function AppointmentCalendar({
               className='px-3 py-1.5 text-sm border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
             />
             <Button
-              variant='outline'
+              variant='primary'
               size='xs'
               iconOnly
               onClick={goToNextDay}
@@ -501,7 +501,7 @@ export default function AppointmentCalendar({
             </Button>
             {!isToday && (
               <Button
-                variant='outline'
+                variant='secondary'
                 size='xs'
                 onClick={goToToday}
               >

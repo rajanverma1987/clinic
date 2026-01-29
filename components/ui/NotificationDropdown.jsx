@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './NotificationDropdown.css';
@@ -18,6 +19,7 @@ export function NotificationDropdown({
   onMarkAllAsRead,
   size = 'md',
 }) {
+  const { t } = useI18n();
   // Ensure notifications is always an array
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const [isOpen, setIsOpen] = useState(false);
@@ -144,7 +146,7 @@ export function NotificationDropdown({
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
+    if (diffMins < 1) return t('notifications.justNow');
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -231,11 +233,7 @@ export function NotificationDropdown({
           <div className='NotificationDropdown-header'>
             <h3 className='NotificationDropdown-title'>Notifications</h3>
             {unreadCount > 0 && (
-              <Button
-                variant='link'
-                size='xs'
-                onClick={handleMarkAllAsRead}
-              >
+              <Button variant='link' size='xs' onClick={handleMarkAllAsRead}>
                 Mark all as read
               </Button>
             )}
@@ -258,8 +256,8 @@ export function NotificationDropdown({
                     d='M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'
                   />
                 </svg>
-                <p className='NotificationDropdown-empty-text'>No notifications</p>
-                <p className='NotificationDropdown-empty-subtext'>You&apos;re all caught up!</p>
+                <p className='NotificationDropdown-empty-text'>{t('notifications.empty')}</p>
+                <p className='NotificationDropdown-empty-subtext'>{t('notifications.caughtUp')}</p>
               </div>
             ) : (
               safeNotifications.map((notification) => {
@@ -304,7 +302,7 @@ export function NotificationDropdown({
                 onClick={() => setIsOpen(false)}
                 className='NotificationDropdown-view-all'
               >
-                View all notifications
+                {t('notifications.viewAllNotifications')}
               </button>
             </div>
           )}
@@ -323,7 +321,7 @@ export function NotificationDropdown({
             setIsOpen(!isOpen);
           }}
           className={buttonClasses}
-          aria-label='Notifications'
+          aria-label={t('notifications.title')}
           aria-expanded={isOpen}
         >
           <svg

@@ -22,14 +22,14 @@ export function VideoControls({
   const { t } = useI18n();
   return (
     <div
-      className='absolute bottom-2 sm:bottom-4 left-1/2 flex items-center gap-2 sm:gap-3 md:gap-4 bg-gray-900/80 backdrop-blur-sm px-2 sm:px-4 py-2 sm:py-3 rounded-full flex-wrap justify-center max-w-[95vw]'
+      className='absolute bottom-2 sm:bottom-4 left-1/2 flex items-center gap-2 sm:gap-3 md:gap-4 bg-neutral-200/95 backdrop-blur-sm border border-neutral-300 px-2 sm:px-4 py-2 sm:py-3 rounded-full flex-wrap justify-center max-w-[95vw] shadow-lg'
       style={{ marginLeft: '-50%' }}
     >
       {/* Mute/Unmute Button */}
       <button
         onClick={onToggleMute}
         className={`p-2 sm:p-3 rounded-full ${
-          isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'
+          isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-neutral-600 hover:bg-neutral-700'
         }`}
         title={isMuted ? t('telemedicine.unmute') : t('telemedicine.mute')}
       >
@@ -74,7 +74,7 @@ export function VideoControls({
       <button
         onClick={onToggleVideo}
         className={`p-2 sm:p-3 rounded-full ${
-          isVideoEnabled ? 'bg-gray-700 hover:bg-gray-600' : 'bg-red-600 hover:bg-red-700'
+          isVideoEnabled ? 'bg-neutral-600 hover:bg-neutral-700' : 'bg-red-600 hover:bg-red-700'
         }`}
         title={isVideoEnabled ? t('telemedicine.turnOffVideo') : t('telemedicine.turnOnVideo')}
       >
@@ -113,7 +113,7 @@ export function VideoControls({
       <button
         onClick={onScreenShare}
         className={`p-2 sm:p-3 rounded-full ${
-          isScreenSharing ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'
+          isScreenSharing ? 'bg-primary-600 hover:bg-primary-700' : 'bg-neutral-600 hover:bg-neutral-700'
         }`}
         title={isScreenSharing ? t('telemedicine.stopSharing') : t('telemedicine.shareScreen')}
       >
@@ -139,7 +139,7 @@ export function VideoControls({
           if (!showChat) onToggleFileTransfer(false);
         }}
         className={`p-2 sm:p-3 rounded-full ${
-          showChat ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'
+          showChat ? 'bg-primary-600 hover:bg-primary-700' : 'bg-neutral-600 hover:bg-neutral-700'
         }`}
         title={showChat ? t('telemedicine.closeChat') : t('telemedicine.openChat')}
       >
@@ -165,7 +165,7 @@ export function VideoControls({
           if (!showFileTransfer) onToggleChat(false);
         }}
         className={`p-2 sm:p-3 rounded-full ${
-          showFileTransfer ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-700 hover:bg-gray-600'
+          showFileTransfer ? 'bg-primary-600 hover:bg-primary-700' : 'bg-neutral-600 hover:bg-neutral-700'
         }`}
         title={showFileTransfer ? t('telemedicine.closeFiles') : t('telemedicine.openFiles')}
       >

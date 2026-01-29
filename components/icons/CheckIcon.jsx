@@ -1,14 +1,21 @@
-export function CheckIcon({ className = 'icon icon-sm', color = 'currentColor' }) {
+/**
+ * Check icon – Lucide React. Use for success, confirm, done.
+ */
+import { Check } from 'lucide-react';
+
+export function CheckIcon({
+  className = 'icon icon-sm',
+  color = 'currentColor',
+  ariaHidden = true,
+  ...props
+}) {
   return (
-    <svg
+    <Check
       className={className}
-      fill='none'
-      stroke={color}
-      strokeWidth='2'
-      viewBox='0 0 24 24'
-      xmlns='http://www.w3.org/2000/svg'
-    >
-      <path strokeLinecap='round' strokeLinejoin='round' d='M5 13l4 4L19 7' />
-    </svg>
+      color={color}
+      strokeWidth={2}
+      aria-hidden={ariaHidden}
+      {...props}
+    />
   );
 }

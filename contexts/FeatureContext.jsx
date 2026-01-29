@@ -1,10 +1,27 @@
 'use client';
 
+import { apiClient } from '@/lib/api/client.js';
+import { isTestAccount } from '@/lib/constants/test-account.js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext.jsx';
-import { apiClient } from '@/lib/api/client.js';
 
 const FeatureContext = createContext(undefined);
+
+/** TEMPORARY: Premium subscription for test account UI. REMOVE before production. */
+function getTestAccountPremiumState() {
+  const farFuture = new Date();
+  farFuture.setFullYear(farFuture.getFullYear() + 1);
+  return {
+    features: ['*'],
+    limits: { maxUsers: 500, maxPatients: 500000, maxStorageGB: 5000 },
+    subscription: {
+      status: 'ACTIVE',
+      currentPeriodEnd: farFuture.toISOString(),
+      trialDaysRemaining: null,
+      paypalApprovalUrl: null,
+    },
+  };
+}
 
 export function FeatureProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
@@ -15,7 +32,7 @@ export function FeatureProvider({ children }) {
 
   const fetchFeatures = async () => {
     if (!user || user.role === 'super_admin') {
-      // Super admin has all features
+      // Super Admin: full access (no subscription)
       setFeatures(['*']);
       setLimits({});
       setSubscription(null);
@@ -23,8 +40,19 @@ export function FeatureProvider({ children }) {
       return;
     }
 
+    // TEMPORARY: Test account gets premium access (client-side fallback). REMOVE before production.
+    if (isTestAccount(user.email)) {
+      const premium = getTestAccountPremiumState();
+      setFeatures(premium.features);
+      setLimits(premium.limits);
+      setSubscription(premium.subscription);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      // Doctor and clinic users: access as per subscription (tenant plan features)
       const response = await apiClient.get('/features');
 
       if (response.success && response.data) {
@@ -32,8 +60,7 @@ export function FeatureProvider({ children }) {
         setLimits(response.data.limits || {});
         setSubscription(response.data.subscription || null);
       }
-    } catch (error) {
-      console.error('Failed to fetch features:', error);
+    } catch (_error) {
       setFeatures([]);
       setLimits({});
       setSubscription(null);
@@ -60,12 +87,12 @@ export function FeatureProvider({ children }) {
 
   const hasAnyFeature = (featureNames) => {
     if (features.includes('*')) return true; // Super admin
-    return featureNames.some(feature => features.includes(feature));
+    return featureNames.some((feature) => features.includes(feature));
   };
 
   const hasAllFeatures = (featureNames) => {
     if (features.includes('*')) return true; // Super admin
-    return featureNames.every(feature => features.includes(feature));
+    return featureNames.every((feature) => features.includes(feature));
   };
 
   const checkLimit = (limitType, currentCount) => {
@@ -120,4 +147,3 @@ export function useFeatures() {
   }
   return context;
 }
-

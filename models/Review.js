@@ -74,7 +74,7 @@ const ReviewSchema = new Schema(
 // Indexes
 ReviewSchema.index({ doctorId: 1, createdAt: -1 });
 ReviewSchema.index({ patientId: 1, createdAt: -1 });
-ReviewSchema.index({ rating: 1 });
+// rating: indexed via field-level index: true only
 ReviewSchema.index({ isVerified: 1 });
 ReviewSchema.index({ deletedAt: 1 });
 

@@ -2,6 +2,7 @@
 
 import {
   CalendarIcon,
+  ChevronDownIcon,
   DocumentIcon,
   PrescriptionIcon,
   QueueIcon,
@@ -53,7 +54,7 @@ export function QuickActions({ onNavigate, loading = false }) {
     <div className='relative inline-block' ref={menuRef}>
       <Button
         type='button'
-        variant='outline'
+        variant='secondary'
         size='sm'
         onClick={() => setOpen((v) => !v)}
         className='min-h-[36px] gap-2'
@@ -62,20 +63,10 @@ export function QuickActions({ onNavigate, loading = false }) {
         aria-label={t('dashboard.quickActions')}
       >
         <span>{t('dashboard.quickActions')}</span>
-        <svg
-          className={`icon icon-xs shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-          fill='none'
-          stroke='currentColor'
-          viewBox='0 0 24 24'
-          aria-hidden
-        >
-          <path
-            strokeLinecap='round'
-            strokeLinejoin='round'
-            strokeWidth={2}
-            d='M19 9l-7 7-7-7'
-          />
-        </svg>
+        <ChevronDownIcon
+          className={`icon icon-sm shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+          ariaHidden
+        />
       </Button>
 
       {open && (
@@ -86,7 +77,7 @@ export function QuickActions({ onNavigate, loading = false }) {
             onClick={() => setOpen(false)}
           />
           <div
-            className='absolute right-0 top-full z-[10050] mt-1.5 min-w-[200px] rounded-lg border border-neutral-200 bg-white py-1 shadow-lg'
+            className='quick-actions-dropdown absolute right-0 top-full z-[10050] mt-1.5'
             role='menu'
           >
             {ACTIONS.map(({ path, labelKey, Icon }) => (
@@ -96,13 +87,13 @@ export function QuickActions({ onNavigate, loading = false }) {
                 variant='ghost'
                 size='sm'
                 role='menuitem'
-                className='w-full justify-start gap-3 rounded-lg py-2.5 font-medium text-neutral-800 hover:bg-primary-50 hover:text-primary-700'
+                className='!min-h-0'
                 onClick={() => {
                   onNavigate(path);
                   setOpen(false);
                 }}
               >
-                <Icon className='icon icon-sm shrink-0 text-primary-600' aria-hidden />
+                <Icon className='icon icon-sm shrink-0' aria-hidden />
                 <span>{t(labelKey)}</span>
               </Button>
             ))}

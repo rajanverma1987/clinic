@@ -3,11 +3,14 @@
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Button } from '@/components/ui/Button';
-import { SubscriptionCard } from '@/components/ui/SubscriptionCard';
 import { Loader } from '@/components/ui/Loader';
+import { SubscriptionCard } from '@/components/ui/SubscriptionCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { CARD_FEATURES_BY_PLAN } from '@/lib/constants/plan-features';
+import { YEARLY_SAVE } from '@/lib/constants/subscription-spec';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -20,6 +23,7 @@ export default function PricingPage() {
   const [error, setError] = useState(null);
   const [billingCycle, setBillingCycle] = useState('MONTHLY');
   const [selectingPlanId, setSelectingPlanId] = useState(null);
+  const [selectingMethod, setSelectingMethod] = useState(null);
   const [currentUserPlan, setCurrentUserPlan] = useState(null);
 
   useEffect(() => {
@@ -36,7 +40,7 @@ export default function PricingPage() {
         setCurrentUserPlan(response.data.planId);
       }
     } catch (error) {
-      console.error('Failed to fetch current subscription:', error);
+      logger.error('Failed to fetch current subscription', error);
     }
   };
 
@@ -50,7 +54,7 @@ export default function PricingPage() {
         setError('Failed to load subscription plans. Please try again later.');
       }
     } catch (error) {
-      console.error('Failed to fetch plans:', error);
+      logger.error('Failed to fetch plans', error);
       setError('Unable to connect to the server. Please check your internet connection.');
     } finally {
       setLoading(false);
@@ -64,52 +68,70 @@ export default function PricingPage() {
     }).format(price / 100);
   };
 
-  const handleSelectPlan = async (planId, planName) => {
-    // Set loading state for this specific plan
+  const handleSelectPlan = async (planId, planName, paymentMethod = 'paypal') => {
     setSelectingPlanId(planId);
+    setSelectingMethod(typeof paymentMethod === 'string' ? paymentMethod : null);
 
     if (!user) {
-      // Redirect to register with plan ID
       router.push(`/register?planId=${planId}`);
       return;
     }
 
-    // User is logged in, create subscription
     try {
       const response = await apiClient.post('/subscriptions', {
         planId,
         customerEmail: user.email,
-        customerName: `${user.firstName} ${user.lastName}`,
+        customerName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+        paymentMethod: paymentMethod === 'card' ? 'card' : 'paypal',
       });
 
       if (response.success && response.data) {
-        if (response.data.approvalUrl) {
-          // Redirect to PayPal approval
+        if (response.data.checkoutUrl) {
+          window.location.href = response.data.checkoutUrl;
+        } else if (response.data.approvalUrl) {
           window.location.href = response.data.approvalUrl;
         } else {
-          // Subscription created successfully
-          alert(`Successfully subscribed to ${planName}!`);
+          alert(t('subscription.subscriptionUpdated'));
+          setSelectingPlanId(null);
+          setSelectingMethod(null);
           router.push('/subscription');
         }
       } else {
-        throw new Error(response.error?.message || 'Failed to create subscription');
+        throw new Error(response.error?.message || t('subscription.updateFailed'));
       }
     } catch (error) {
-      console.error('Failed to create subscription:', error);
-      alert(error.message || 'Failed to create subscription. Please try again.');
+      logger.error('Failed to create subscription', error);
+      alert(error.message || t('subscription.updateFailed'));
       setSelectingPlanId(null);
+      setSelectingMethod(null);
     }
   };
 
-  const filteredPlans = plans.filter((plan) => plan.billingCycle === billingCycle);
+  // Show SOLO, CLINIC, ENTERPRISE only (no free plan; all plans have 14-day free trial)
+  const DISPLAY_PLAN_SLUGS = ['SOLO', 'CLINIC', 'ENTERPRISE'];
+  const allowedPlans = plans.filter(
+    (plan) => plan && plan.name && DISPLAY_PLAN_SLUGS.includes(plan.name)
+  );
+  const monthlyPlans = allowedPlans.filter((p) => p.billingCycle === 'MONTHLY');
+  const yearlyPlans = allowedPlans.filter((p) => p.billingCycle === 'YEARLY');
+  const basePlans =
+    billingCycle === 'YEARLY' && monthlyPlans.length > 0 && yearlyPlans.length === 0
+      ? monthlyPlans
+      : allowedPlans.filter((p) => p.billingCycle === billingCycle);
+  const filteredPlans = basePlans.sort(
+    (a, b) => DISPLAY_PLAN_SLUGS.indexOf(a.name) - DISPLAY_PLAN_SLUGS.indexOf(b.name)
+  );
 
-  // Apply 20% discount to yearly plans
+  // Annual 5% off: when showing yearly, use monthly price * 12 * 0.95 (or existing yearly price)
   const plansWithDiscount = filteredPlans.map((plan) => {
-    if (plan.billingCycle === 'YEARLY') {
+    if (billingCycle === 'YEARLY') {
+      const monthlyCents =
+        plan.billingCycle === 'MONTHLY' ? plan.price : Math.round(plan.price / 12);
       return {
         ...plan,
-        originalPrice: plan.price,
-        price: Math.round(plan.price * 0.8), // 20% off
+        billingCycle: 'YEARLY',
+        originalPrice: monthlyCents * 12,
+        price: Math.round(monthlyCents * 12 * 0.95),
       };
     }
     return plan;
@@ -137,13 +159,29 @@ export default function PricingPage() {
           <div className='text-center max-w-md'>
             <div className='bg-red-50 border-2 border-red-200 rounded-xl p-8 mb-4'>
               <div className='w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-                <svg className='w-8 h-8 text-red-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
+                <svg
+                  className='w-8 h-8 text-red-600'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                  />
                 </svg>
               </div>
               <h2 className='text-2xl font-bold text-red-900 mb-2'>Unable to Load Pricing</h2>
               <p className='text-red-700 mb-6'>{error}</p>
-              <Button variant='primary' onClick={() => { setLoading(true); fetchPlans(); }}>
+              <Button
+                variant='primary'
+                onClick={() => {
+                  setLoading(true);
+                  fetchPlans();
+                }}
+              >
                 Try Again
               </Button>
             </div>
@@ -290,31 +328,43 @@ export default function PricingPage() {
           <div className='max-w-7xl mx-auto'>
             {filteredPlans.length > 0 ? (
               <>
-                <div
-                  className='grid grid-cols-4'
-                  style={{ gap: '24px' }}
-                >
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
                   {displayedPlans.map((plan) => (
-                  <SubscriptionCard
-                    key={plan._id}
-                    name={plan.name}
-                    description={plan.description}
-                    price={plan.price}
-                    originalPrice={plan.originalPrice}
-                    currency={plan.currency}
-                    billingCycle={plan.billingCycle}
-                    features={plan.features}
-                    maxUsers={plan.maxUsers}
-                    maxPatients={plan.maxPatients}
-                    maxStorageGB={plan.maxStorageGB}
-                    isPopular={plan.isPopular}
-                    onSelect={() => handleSelectPlan(plan._id)}
-                    ctaText={user ? t('pricing.subscribeNow') : t('pricing.getStarted')}
-                  />
-                ))}
-              </div>
-
-            </>
+                    <SubscriptionCard
+                      key={plan._id}
+                      name={plan.name}
+                      description={plan.description}
+                      price={plan.price}
+                      originalPrice={plan.originalPrice}
+                      currency={plan.currency}
+                      billingCycle={plan.billingCycle}
+                      features={CARD_FEATURES_BY_PLAN[plan.name] || plan.features}
+                      maxUsers={plan.maxUsers}
+                      maxPatients={plan.maxPatients}
+                      maxStorageGB={plan.maxStorageGB}
+                      isPopular={plan.isPopular}
+                      yearlySaveAmount={YEARLY_SAVE[plan.name]}
+                      trialDays={plan.trialDays ?? 14}
+                      showPaymentMethods={user && (Number(plan.price) || 0) > 0}
+                      onPayWithCard={
+                        user && (Number(plan.price) || 0) > 0
+                          ? () => handleSelectPlan(plan._id, plan.name, 'card')
+                          : undefined
+                      }
+                      onPayWithPayPal={
+                        user && (Number(plan.price) || 0) > 0
+                          ? () => handleSelectPlan(plan._id, plan.name, 'paypal')
+                          : undefined
+                      }
+                      onSelect={!user ? () => handleSelectPlan(plan._id, plan.name) : undefined}
+                      ctaText={user ? t('pricing.subscribeNow') : t('pricing.getStarted')}
+                      ctaDisabled={!!selectingPlanId}
+                      loadingCard={selectingMethod === 'card'}
+                      loadingPayPal={selectingMethod === 'paypal'}
+                    />
+                  ))}
+                </div>
+              </>
             ) : (
               <div className='text-center' style={{ paddingTop: '48px', paddingBottom: '48px' }}>
                 <div

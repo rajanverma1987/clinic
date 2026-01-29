@@ -1,15 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import {
+  errorResponse,
+  handleMongoError,
+  successResponse,
+  validationErrorResponse,
+} from '@/lib/utils/api-response';
+import { createInvoiceSchema, invoiceQuerySchema } from '@/lib/validations/billing';
 import { withAuth } from '@/middleware/auth';
 import { withErrorHandler } from '@/middleware/error-handler';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
-import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
-import { createInvoiceSchema, invoiceQuerySchema } from '@/lib/validations/billing';
-import {
-  createInvoice,
-  listInvoices,
-} from '@/services/billing.service';
-import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
+import { createInvoice, listInvoices } from '@/services/billing.service';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/invoices
@@ -58,10 +60,9 @@ async function getHandler(req, user) {
       return NextResponse.json(handleMongoError(error), { status: 400 });
     }
 
-    return NextResponse.json(
-      errorResponse('Failed to fetch invoices', 'INTERNAL_ERROR'),
-      { status: 500 }
-    );
+    return NextResponse.json(errorResponse('Failed to fetch invoices', 'INTERNAL_ERROR'), {
+      status: 500,
+    });
   }
 }
 
@@ -75,10 +76,9 @@ async function postHandler(req, user) {
 
     const validationResult = createInvoiceSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        validationErrorResponse(validationResult.error.errors),
-        { status: 400 }
-      );
+      return NextResponse.json(validationErrorResponse(validationResult.error.errors), {
+        status: 400,
+      });
     }
 
     const invoice = await createInvoice(validationResult.data, user.tenantId, user.userId);
@@ -104,18 +104,9 @@ async function postHandler(req, user) {
 
 // Apply middleware stack
 export const GET = withErrorHandler(
-  apiRateLimit(
-    withAuth(
-      requirePermission(RESOURCES.INVOICE, ACTIONS.READ)(getHandler)
-    )
-  )
+  apiRateLimit(withAuth(requirePermission(RESOURCES.INVOICE, ACTIONS.READ)(getHandler)))
 );
 
 export const POST = withErrorHandler(
-  apiRateLimit(
-    withAuth(
-      requirePermission(RESOURCES.INVOICE, ACTIONS.CREATE)(postHandler)
-    )
-  )
+  apiRateLimit(withAuth(requirePermission(RESOURCES.INVOICE, ACTIONS.CREATE)(postHandler)))
 );
-

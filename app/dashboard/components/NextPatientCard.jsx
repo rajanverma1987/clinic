@@ -1,10 +1,21 @@
 'use client';
 
-import { PhoneIcon, DocumentIcon, ChatIcon } from '@/components/icons';
+import { ChatIcon, DocumentIcon, PhoneIcon, VideoIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useI18n } from '@/contexts/I18nContext';
 
-export function NextPatientCard({ patient, appointment, onCall, onViewDetails, onChat }) {
+export function NextPatientCard({
+  patient,
+  appointment,
+  onCall,
+  onViewDetails,
+  onChat,
+  onStartVideo,
+}) {
+  const { t } = useI18n();
+  const isVideoAppointment = appointment?.isTelemedicine;
+  const showStartVideo = isVideoAppointment && onStartVideo;
   if (!patient && !appointment) {
     return null;
   }
@@ -42,7 +53,9 @@ export function NextPatientCard({ patient, appointment, onCall, onViewDetails, o
         {/* Header */}
         <div className='flex items-center gap-3 mb-4 pb-3 border-b border-neutral-200'>
           <div className='w-3 h-3 bg-primary-500 rounded-full'></div>
-          <h2 className='text-h4 font-semibold text-neutral-900'>Next Patient Details</h2>
+          <h2 className='text-h4 font-semibold text-neutral-900'>
+            {t('dashboard.nextPatientDetails')}
+          </h2>
         </div>
 
         {/* Patient Info */}
@@ -59,7 +72,9 @@ export function NextPatientCard({ patient, appointment, onCall, onViewDetails, o
             </div>
             {/* Patient ID - Right aligned */}
             <div className='text-right flex-shrink-0'>
-              <span className='text-body-xs text-neutral-500 block'>Patient ID</span>
+              <span className='text-body-xs text-neutral-500 block'>
+                {t('dashboard.patientIdLabel')}
+              </span>
               <p className='text-body-xs font-semibold text-neutral-900 mt-0.5'>{patientId}</p>
             </div>
           </div>
@@ -96,7 +111,9 @@ export function NextPatientCard({ patient, appointment, onCall, onViewDetails, o
         {/* Patient History */}
         {medicalHistory && medicalHistory.length > 0 && (
           <div className='mb-4'>
-            <p className='text-body-sm font-semibold text-neutral-900 mb-2'>Patient History</p>
+            <p className='text-body-sm font-semibold text-neutral-900 mb-2'>
+              {t('dashboard.patientHistory')}
+            </p>
             <div className='flex flex-wrap gap-2'>
               {medicalHistory.map((condition, index) => {
                 const isActive = index === 1;
@@ -127,7 +144,7 @@ export function NextPatientCard({ patient, appointment, onCall, onViewDetails, o
               e.stopPropagation();
               onCall?.();
             }}
-            title={`Call ${phone}`}
+            title={t('dashboard.call')}
             className='flex-1'
           >
             <PhoneIcon className='icon icon-sm' />
@@ -140,11 +157,11 @@ export function NextPatientCard({ patient, appointment, onCall, onViewDetails, o
               e.stopPropagation();
               onViewDetails?.();
             }}
-            title='View Documents'
+            title={t('dashboard.viewDetails')}
             className='flex-1 hidden sm:inline-flex'
           >
             <DocumentIcon className='icon icon-sm' />
-            <span className='text-body-sm font-semibold'>Document</span>
+            <span className='text-body-sm font-semibold'>{t('dashboard.document')}</span>
           </Button>
           <Button
             variant='secondary'
@@ -154,43 +171,81 @@ export function NextPatientCard({ patient, appointment, onCall, onViewDetails, o
               e.stopPropagation();
               onViewDetails?.();
             }}
-            title='View Documents'
+            title={t('dashboard.viewDetails')}
+            aria-label={t('dashboard.viewDetails')}
             className='sm:hidden flex-shrink-0'
           >
             <DocumentIcon className='icon icon-sm' />
           </Button>
-          <Button
-            variant='secondary'
-            size='sm'
-            onClick={(e) => {
-              e.stopPropagation();
-              onChat?.();
-            }}
-            title='Start Chat'
-            className='flex-1 hidden sm:inline-flex'
-          >
-            <ChatIcon className='icon icon-sm' />
-            <span className='text-body-sm font-semibold'>Chat</span>
-          </Button>
-          <Button
-            variant='secondary'
-            size='sm'
-            iconOnly
-            onClick={(e) => {
-              e.stopPropagation();
-              onChat?.();
-            }}
-            title='Start Chat'
-            className='sm:hidden flex-shrink-0'
-          >
-            <ChatIcon className='icon icon-sm' />
-          </Button>
+          {showStartVideo ? (
+            <>
+              <Button
+                variant='primary'
+                size='sm'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStartVideo(appointment);
+                }}
+                title={t('queue.startVideo')}
+                className='flex-1 hidden sm:inline-flex'
+              >
+                <VideoIcon className='icon icon-sm' />
+                <span className='text-body-sm font-semibold'>{t('queue.startVideo')}</span>
+              </Button>
+              <Button
+                variant='primary'
+                size='sm'
+                iconOnly
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStartVideo(appointment);
+                }}
+                title={t('queue.startVideo')}
+                aria-label={t('queue.startVideo')}
+                className='sm:hidden flex-shrink-0'
+              >
+                <VideoIcon className='icon icon-sm' />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant='secondary'
+                size='sm'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChat?.();
+                }}
+                title={t('dashboard.chat')}
+                className='flex-1 hidden sm:inline-flex'
+              >
+                <ChatIcon className='icon icon-sm' />
+                <span className='text-body-sm font-semibold'>{t('dashboard.chat')}</span>
+              </Button>
+              <Button
+                variant='secondary'
+                size='sm'
+                iconOnly
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChat?.();
+                }}
+                title={t('dashboard.chat')}
+                aria-label={t('dashboard.chat')}
+                className='sm:hidden flex-shrink-0'
+              >
+                <ChatIcon className='icon icon-sm' />
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Last Prescriptions Section */}
         <div className='mt-4 pt-3 border-t border-neutral-200'>
-          <p className='text-body-sm font-semibold text-neutral-900 mb-2'>Last Prescriptions</p>
-          <p className='text-body-xs text-neutral-500'>No prescriptions available</p>
+          <p className='text-body-sm font-semibold text-neutral-900 mb-2'>
+            {t('dashboard.lastPrescriptions')}
+          </p>
+          <p className='text-body-xs text-neutral-500'>{t('dashboard.noPrescriptionsAvailable')}</p>
         </div>
       </div>
     </Card>

@@ -24,7 +24,7 @@ export function VideoDisplay({ localVideoRef, remoteVideoRef, isVideoEnabled, is
       />
 
       {/* Local Video (Self) - Picture in Picture */}
-      <div className='absolute bottom-16 sm:bottom-20 right-2 sm:right-4 w-28 h-20 sm:w-48 sm:h-36 md:w-64 md:h-48 bg-gray-900 rounded-lg overflow-hidden shadow-2xl border-2 border-blue-500 z-10'>
+      <div className='absolute bottom-16 sm:bottom-20 right-2 sm:right-4 w-28 h-20 sm:w-48 sm:h-36 md:w-64 md:h-48 bg-neutral-200 rounded-lg overflow-hidden shadow-2xl border-2 border-primary-500 z-10'>
         <video
           ref={localVideoRef}
           autoPlay
@@ -34,9 +34,9 @@ export function VideoDisplay({ localVideoRef, remoteVideoRef, isVideoEnabled, is
           style={{ transform: 'scaleX(-1)' }}
         />
         {!isVideoEnabled && (
-          <div className='absolute inset-0 bg-gray-800 flex items-center justify-center'>
+          <div className='absolute inset-0 bg-neutral-300 flex items-center justify-center'>
             <svg
-              className='w-12 h-12 text-gray-400'
+              className='w-12 h-12 text-neutral-600'
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'

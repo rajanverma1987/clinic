@@ -2,7 +2,7 @@
 
 /**
  * Global Search Component (Ctrl+K)
- * 
+ *
  * Universal search across all entities:
  * - Patients
  * - Appointments
@@ -10,7 +10,7 @@
  * - Invoices
  * - Doctors
  * - Medicines
- * 
+ *
  * @module components/search/GlobalSearch
  * @since 1.0.0
  */
@@ -20,8 +20,8 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger.js';
-import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const MIN_SEARCH_LENGTH = 2;
@@ -103,7 +103,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
     try {
       setLoading(true);
       const response = await apiClient.get(`/search?q=${encodeURIComponent(searchQuery)}`);
-      
+
       if (response.success) {
         setResults(response.data?.results || []);
         setSelectedIndex(0);
@@ -142,7 +142,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
   // Handle result click
   const handleResultClick = (result) => {
     let path = '';
-    
+
     switch (result.type) {
       case RESULT_TYPES.PATIENT:
         path = `/patients/${result.id}`;
@@ -178,9 +178,9 @@ export default function GlobalSearch({ isOpen, onClose }) {
     <div className='fixed inset-0 z-50 flex items-start justify-center pt-20 px-4'>
       {/* Backdrop */}
       <div
-        className='fixed inset-0 bg-black bg-opacity-50'
+        className='fixed inset-0 bg-neutral-600/25 dark:bg-black/40'
         onClick={onClose}
-      ></div>
+      />
 
       {/* Search Modal */}
       <Card className='relative z-10 w-full max-w-2xl shadow-2xl'>
@@ -195,11 +195,11 @@ export default function GlobalSearch({ isOpen, onClose }) {
               onChange={(e) => setQuery(e.target.value)}
               className='pr-20'
             />
-            <div className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500'>
+            <div className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500 dark:text-neutral-400'>
               {loading ? (
                 <Loader size='sm' inline />
               ) : (
-                <kbd className='px-2 py-1 bg-neutral-100 rounded border border-neutral-300'>
+                <kbd className='px-2 py-1 bg-neutral-100 dark:bg-neutral-700 rounded border border-neutral-300 dark:border-neutral-600'>
                   ⌘K
                 </kbd>
               )}
@@ -220,27 +220,27 @@ export default function GlobalSearch({ isOpen, onClose }) {
                       key={`${result.type}-${result.id}`}
                       className={`p-3 rounded-lg cursor-pointer transition-colors ${
                         index === selectedIndex
-                          ? 'bg-primary-50 border-2 border-primary-300'
-                          : 'hover:bg-neutral-50 border-2 border-transparent'
+                          ? 'bg-primary-50 dark:bg-primary-900/40 border-2 border-primary-300 dark:border-primary-500'
+                          : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/50 border-2 border-transparent'
                       }`}
                       onClick={() => handleResultClick(result)}
                     >
                       <div className='flex items-center gap-3'>
                         <div className='text-2xl'>{RESULT_ICONS[result.type] || '📄'}</div>
                         <div className='flex-1 min-w-0'>
-                          <div className='font-semibold text-neutral-900 truncate'>
+                          <div className='font-semibold text-neutral-900 dark:text-neutral-100 truncate'>
                             {result.title}
                           </div>
-                          <div className='text-sm text-neutral-600 truncate'>
+                          <div className='text-sm text-neutral-600 dark:text-neutral-400 truncate'>
                             {result.subtitle}
                           </div>
                           {result.meta && (
-                            <div className='text-xs text-neutral-500 mt-1'>
+                            <div className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                               {result.meta}
                             </div>
                           )}
                         </div>
-                        <div className='text-xs text-neutral-500 capitalize'>
+                        <div className='text-xs text-neutral-500 dark:text-neutral-400 capitalize'>
                           {result.type}
                         </div>
                       </div>
@@ -248,7 +248,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
                   ))}
                 </div>
               ) : (
-                <div className='text-center py-8 text-neutral-500'>
+                <div className='text-center py-8 text-neutral-500 dark:text-neutral-400'>
                   <p>No results found for &quot;{query}&quot;</p>
                   <p className='text-xs mt-2'>Try different keywords</p>
                 </div>
@@ -258,7 +258,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
 
           {/* Quick Tips */}
           {query.length < MIN_SEARCH_LENGTH && (
-            <div className='mt-4 text-sm text-neutral-500'>
+            <div className='mt-4 text-sm text-neutral-500 dark:text-neutral-400'>
               <p className='mb-2'>Quick tips:</p>
               <ul className='list-disc list-inside space-y-1 text-xs'>
                 <li>Search by patient name, phone, or ID</li>

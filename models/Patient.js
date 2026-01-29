@@ -191,6 +191,15 @@ const PatientSchema = new Schema(
       type: Date,
       default: null,
     },
+    // Admin flag (Super Admin)
+    flagged: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    flaggedAt: { type: Date },
+    flaggedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    flagReason: { type: String, trim: true },
   },
   {
     timestamps: true,

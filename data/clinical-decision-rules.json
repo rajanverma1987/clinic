@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ace-k",
+    "severity": "warning",
+    "messageKey": "prescriptions.cdsAcePotassium",
+    "triggerKeywords": ["ace", "lisinopril", "enalapril", "ramipril", "captopril", "potassium", "k+", "k-cl", "kcl"],
+    "suggestTest": "Serum potassium",
+    "suggestReferral": false
+  },
+  {
+    "id": "nsaid-renal",
+    "severity": "info",
+    "messageKey": "prescriptions.cdsNsaidRenal",
+    "triggerKeywords": ["ibuprofen", "naproxen", "diclofenac", "nsaid", "renal", "kidney"],
+    "suggestTest": "Renal function (RFT)",
+    "suggestReferral": false
+  },
+  {
+    "id": "dmard-monitor",
+    "severity": "info",
+    "messageKey": "prescriptions.cdsPreventiveCare",
+    "triggerKeywords": ["metformin", "statin", "aspirin"],
+    "suggestTest": null,
+    "suggestReferral": false
+  }
+]

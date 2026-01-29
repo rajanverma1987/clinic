@@ -11,6 +11,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -59,7 +60,7 @@ export default function EditInvoicePage() {
 
       setPatients(allPatients);
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      logger.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -110,7 +111,7 @@ export default function EditInvoicePage() {
         setError('Invoice not found');
       }
     } catch (error) {
-      console.error('Failed to fetch invoice:', error);
+      logger.error('Failed to fetch invoice:', error);
       setError('Failed to load invoice');
     }
   };
@@ -237,7 +238,7 @@ export default function EditInvoicePage() {
         setError(response.error?.message || 'Failed to update invoice');
       }
     } catch (error) {
-      console.error('Failed to update invoice:', error);
+      logger.error('Failed to update invoice:', error);
       setError(error.message || 'Failed to update invoice');
     } finally {
       setSubmitting(false);

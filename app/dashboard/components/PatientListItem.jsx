@@ -1,8 +1,9 @@
 'use client';
 
 import { ChevronRightIcon } from '@/components/icons';
+import React from 'react';
 
-export function PatientListItem({ patient, onClick }) {
+function PatientListItemInner({ patient, onClick }) {
   const patientName =
     patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown';
 
@@ -59,3 +60,5 @@ function calculateAge(dateOfBirth) {
   }
   return age;
 }
+
+export const PatientListItem = React.memo(PatientListItemInner);

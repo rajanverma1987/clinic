@@ -10,12 +10,17 @@ import { Tabs } from '@/components/ui/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { useParams, useRouter } from 'next/navigation';
+import { logger } from '@/lib/utils/logger';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+const PATIENT_TAB_IDS = ['overview', 'visits', 'prescriptions', 'invoices', 'lab-tests'];
 
 export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const [patient, setPatient] = useState(null);
@@ -24,7 +29,10 @@ export default function PatientDetailPage() {
   const [invoices, setInvoices] = useState([]);
   const [labTests, setLabTests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    tabFromUrl && PATIENT_TAB_IDS.includes(tabFromUrl) ? tabFromUrl : 'overview'
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
@@ -35,6 +43,17 @@ export default function PatientDetailPage() {
       fetchAllData();
     }
   }, [authLoading, user, params.id]);
+
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t && PATIENT_TAB_IDS.includes(t)) setActiveTab(t);
+  }, [searchParams]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    const base = pathname || `/patients/${params.id}`;
+    router.replace(base + '?tab=' + encodeURIComponent(tabId));
+  };
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -56,7 +75,7 @@ export default function PatientDetailPage() {
           setAppointments(aptData);
         }
       } catch (err) {
-        console.error('Failed to fetch appointments:', err);
+        logger.error('Failed to fetch appointments:', err);
       }
 
       // Fetch prescriptions
@@ -69,7 +88,7 @@ export default function PatientDetailPage() {
           setPrescriptions(presData);
         }
       } catch (err) {
-        console.error('Failed to fetch prescriptions:', err);
+        logger.error('Failed to fetch prescriptions:', err);
       }
 
       // Fetch invoices
@@ -82,7 +101,7 @@ export default function PatientDetailPage() {
           setInvoices(invData);
         }
       } catch (err) {
-        console.error('Failed to fetch invoices:', err);
+        logger.error('Failed to fetch invoices:', err);
       }
 
       // Fetch lab tests (from prescriptions with lab items)
@@ -97,7 +116,7 @@ export default function PatientDetailPage() {
         }));
       setLabTests(labItems);
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      logger.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -164,7 +183,7 @@ export default function PatientDetailPage() {
         setError(response.error?.message || 'Failed to update patient');
       }
     } catch (error) {
-      console.error('Failed to update patient:', error);
+      logger.error('Failed to update patient:', error);
       setError(error.message || 'Failed to update patient');
     } finally {
       setSaving(false);
@@ -193,7 +212,9 @@ export default function PatientDetailPage() {
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
             <p className='text-status-error mb-4'>Patient not found</p>
-            <Button onClick={() => router.push('/patients')}>Back to Patients</Button>
+            <Button variant='primary' size='md' onClick={() => router.push('/patients')}>
+              Back to Patients
+            </Button>
           </div>
         </div>
       </Layout>
@@ -217,15 +238,19 @@ export default function PatientDetailPage() {
         unreadCount={0}
         actionButtons={
           <>
-            <Button variant='secondary' onClick={() => router.push('/patients')}>
+            <Button variant='secondary' size='md' onClick={() => router.push('/patients')}>
               ← Back to Patients
             </Button>
             {!isEditing ? (
               <>
-                <Button variant='secondary' onClick={() => setIsEditing(true)}>
+                <Button variant='primary' size='md' onClick={() => setIsEditing(true)}>
                   Edit Patient
                 </Button>
-                <Button onClick={() => router.push(`/appointments/new?patientId=${params.id}`)}>
+                <Button
+                  variant='secondary'
+                  size='md'
+                  onClick={() => router.push(`/appointments/new?patientId=${params.id}`)}
+                >
                   + New Appointment
                 </Button>
               </>
@@ -241,7 +266,7 @@ export default function PatientDetailPage() {
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleSave} isLoading={saving}>
+                <Button variant='primary' onClick={handleSave} isLoading={saving}>
                   Save Changes
                 </Button>
               </>
@@ -250,7 +275,6 @@ export default function PatientDetailPage() {
         }
       />
       <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
-
         {error && (
           <div className='mb-6 p-4 bg-status-error/10 border border-status-error/30 text-status-error rounded-lg'>
             {error}
@@ -258,7 +282,7 @@ export default function PatientDetailPage() {
         )}
 
         <div>
-          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
 
           <div className='mt-6'>
             {activeTab === 'overview' && (
@@ -634,10 +658,10 @@ export default function PatientDetailPage() {
                                 apt.status === 'completed'
                                   ? 'bg-primary-100 text-primary-700'
                                   : apt.status === 'in_progress'
-                                  ? 'bg-primary-100 text-primary-700'
-                                  : apt.status === 'cancelled'
-                                  ? 'bg-status-error/10 text-status-error'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                    ? 'bg-primary-100 text-primary-700'
+                                    : apt.status === 'cancelled'
+                                      ? 'bg-status-error/10 text-status-error'
+                                      : 'bg-neutral-100 text-neutral-700'
                               }`}
                             >
                               {apt.status}
@@ -712,8 +736,8 @@ export default function PatientDetailPage() {
                                 pres.status === 'active'
                                   ? 'bg-secondary-100 text-secondary-700'
                                   : pres.status === 'dispensed'
-                                  ? 'bg-primary-100 text-primary-700'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                    ? 'bg-primary-100 text-primary-700'
+                                    : 'bg-neutral-100 text-neutral-700'
                               }`}
                             >
                               {pres.status}
@@ -801,8 +825,8 @@ export default function PatientDetailPage() {
                                 inv.status === 'paid'
                                   ? 'bg-primary-100 text-primary-700'
                                   : inv.status === 'pending'
-                                  ? 'bg-status-warning/10 text-status-warning'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                    ? 'bg-status-warning/10 text-status-warning'
+                                    : 'bg-neutral-100 text-neutral-700'
                               }`}
                             >
                               {inv.status}
@@ -873,8 +897,8 @@ export default function PatientDetailPage() {
                                 test.status === 'completed'
                                   ? 'bg-primary-100 text-primary-700'
                                   : test.status === 'pending'
-                                  ? 'bg-status-warning/10 text-status-warning'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                    ? 'bg-status-warning/10 text-status-warning'
+                                    : 'bg-neutral-100 text-neutral-700'
                               }`}
                             >
                               {test.status}

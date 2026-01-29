@@ -2,29 +2,29 @@
 
 /**
  * Real-time Notification Center Component
- * 
+ *
  * Displays notifications with real-time updates via Socket.IO
- * 
+ *
  * Features:
  * - Real-time notification delivery
  * - Mark as read/unread
  * - Filter by type
  * - Click to navigate to related entity
  * - Unread count badge
- * 
+ *
  * @module components/notifications/NotificationCenter
  * @since 1.0.0
  */
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Tag } from '@/components/ui/Tag';
 import { Loader } from '@/components/ui/Loader';
+import { Tag } from '@/components/ui/Tag';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
-import { useEffect, useState, useRef } from 'react';
 import { logger } from '@/lib/utils/logger.js';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
 const NOTIFICATION_TYPES = {
@@ -121,8 +121,8 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
     try {
       await apiClient.put(`/notifications/${notificationId}/read`);
       setNotifications((prev) =>
-        prev.map((n) => 
-          n._id === notificationId 
+        prev.map((n) =>
+          n._id === notificationId
             ? { ...n, channels: { ...n.channels, inApp: { ...n.channels?.inApp, read: true } } }
             : n
         )
@@ -138,10 +138,10 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
   const handleMarkAllAsRead = async () => {
     try {
       await apiClient.post('/notifications/read-all');
-      setNotifications((prev) => 
-        prev.map((n) => ({ 
-          ...n, 
-          channels: { ...n.channels, inApp: { ...n.channels?.inApp, read: true } } 
+      setNotifications((prev) =>
+        prev.map((n) => ({
+          ...n,
+          channels: { ...n.channels, inApp: { ...n.channels?.inApp, read: true } }
         }))
       );
       if (onUnreadCountChange) {
@@ -182,10 +182,10 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
   if (!isOpen) return null;
 
   return (
-    <div className='fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-end pt-16 pr-4'>
+    <div className='fixed inset-0 bg-neutral-600/25 dark:bg-black/40 z-50 flex items-start justify-end pt-16 pr-4'>
       <Card className='w-full max-w-md shadow-2xl'>
-        <div className='p-4 border-b border-neutral-200 flex items-center justify-between'>
-          <h2 className='text-lg font-bold text-neutral-900'>
+        <div className='p-4 border-b border-neutral-200 dark:border-neutral-600 flex items-center justify-between'>
+          <h2 className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
             Notifications {unreadCount > 0 && (
               <span className='ml-2 px-2 py-1 bg-primary-600 text-white text-xs rounded-full'>
                 {unreadCount}
@@ -203,7 +203,7 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
               size='xs'
               iconOnly
               onClick={onClose}
-              className='text-neutral-500 hover:text-neutral-900 text-xl'
+              className='text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 text-xl'
             >
               ✕
             </Button>
@@ -211,12 +211,12 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
         </div>
 
         {/* Filters */}
-        <div className='p-3 border-b border-neutral-200 flex gap-2 overflow-x-auto'>
+        <div className='p-3 border-b border-neutral-200 dark:border-neutral-600 flex gap-2 overflow-x-auto'>
           <button
             className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
               filter === 'all'
                 ? 'bg-primary-600 text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
             }`}
             onClick={() => setFilter('all')}
           >
@@ -226,7 +226,7 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
             className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
               filter === 'unread'
                 ? 'bg-primary-600 text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
             }`}
             onClick={() => setFilter('unread')}
           >
@@ -241,7 +241,7 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
                 className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
                   filter === type
                     ? 'bg-primary-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
                 }`}
                 onClick={() => setFilter(type)}
               >
@@ -257,12 +257,12 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
               <Loader size='sm' inline />
             </div>
           ) : filteredNotifications.length > 0 ? (
-            <div className='divide-y divide-neutral-200'>
+            <div className='divide-y divide-neutral-200 dark:divide-neutral-600'>
               {filteredNotifications.map((notification) => (
                 <div
                   key={notification._id}
-                  className={`p-4 cursor-pointer hover:bg-neutral-50 transition-colors ${
-                    !notification.channels?.inApp?.read ? 'bg-primary-50' : ''
+                  className={`p-4 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors ${
+                    !notification.channels?.inApp?.read ? 'bg-primary-50 dark:bg-primary-900/30' : ''
                   }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
@@ -270,24 +270,24 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
                     <div className='text-2xl'>{TYPE_ICONS[notification.type] || '🔔'}</div>
                     <div className='flex-1 min-w-0'>
                       <div className='flex items-start justify-between gap-2'>
-                        <p className='font-medium text-neutral-900'>{notification.title}</p>
+                        <p className='font-medium text-neutral-900 dark:text-neutral-100'>{notification.title}</p>
                         {!notification.channels?.inApp?.read && (
                           <div className='w-2 h-2 rounded-full bg-primary-600 flex-shrink-0 mt-1'></div>
                         )}
                       </div>
-                      <p className='text-sm text-neutral-600 mt-1'>{notification.message}</p>
+                      <p className='text-sm text-neutral-600 dark:text-neutral-400 mt-1'>{notification.message}</p>
                       <div className='flex items-center gap-2 mt-2'>
-                        <p className='text-xs text-neutral-500'>
+                        <p className='text-xs text-neutral-500 dark:text-neutral-400'>
                           {new Date(notification.createdAt).toLocaleString()}
                         </p>
                         {notification.priority && (
                           <Tag
                             className={
                               notification.priority === 'urgent'
-                                ? 'bg-red-100 text-red-800'
+                                ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200'
                                 : notification.priority === 'high'
-                                ? 'bg-orange-100 text-orange-800'
-                                : 'bg-neutral-100 text-neutral-800'
+                                ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200'
+                                : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200'
                             }
                           >
                             {notification.priority}
@@ -300,7 +300,7 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
               ))}
             </div>
           ) : (
-            <div className='p-8 text-center text-neutral-500'>
+            <div className='p-8 text-center text-neutral-500 dark:text-neutral-400'>
               <p>No notifications</p>
               {filter !== 'all' && (
                 <p className='text-xs mt-2'>Try changing the filter</p>

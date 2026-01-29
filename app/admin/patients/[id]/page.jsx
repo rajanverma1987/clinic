@@ -8,6 +8,7 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess } from '@/lib/utils/toast';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -51,7 +52,7 @@ export default function AdminPatientDetailPage() {
         router.push('/admin/patients');
       }
     } catch (err) {
-      console.error('Failed to fetch patient:', err);
+      logger.error('Failed to fetch patient:', err);
       showError('Failed to load patient');
       router.push('/admin/patients');
     } finally {
@@ -134,7 +135,7 @@ export default function AdminPatientDetailPage() {
           <Button variant='secondary' onClick={() => router.push('/admin/patients')}>
             Back to list
           </Button>
-          <Button variant='secondary' onClick={handleExport} disabled={exporting}>
+          <Button variant='primary' onClick={handleExport} disabled={exporting}>
             {exporting ? 'Exporting…' : 'Export'}
           </Button>
           <Button
@@ -144,12 +145,7 @@ export default function AdminPatientDetailPage() {
           >
             {patient.status === 'inactive' ? 'Activate' : 'Suspend'}
           </Button>
-          <Button
-            variant='outline'
-            onClick={handleDelete}
-            disabled={saving}
-            className='border-red-300 text-red-700'
-          >
+          <Button variant='danger' onClick={handleDelete} disabled={saving}>
             Delete
           </Button>
         </div>
@@ -159,6 +155,7 @@ export default function AdminPatientDetailPage() {
         <div className='flex gap-4 overflow-x-auto mb-6'>
           {tabKeys.map((tab) => (
             <button
+              type="button"
               key={tab}
               className={`px-4 py-2 font-medium text-sm capitalize whitespace-nowrap ${
                 activeTab === tab

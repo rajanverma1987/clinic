@@ -18,20 +18,43 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 
-export default function SettingsPage() {
+const SETTINGS_TAB_IDS = [
+  'profile',
+  'general',
+  'compliance',
+  'doctors',
+  'hours',
+  'queue',
+  'tax',
+  'smtp',
+  'holidays',
+];
+const ADMIN_ONLY_TABS = ['general', 'compliance', 'doctors', 'smtp'];
+
+function SettingsPageFallback() {
+  return (
+    <Layout>
+      <PageHeader title='Settings' />
+      <div className='flex justify-center p-8'>
+        <Loader />
+      </div>
+    </Layout>
+  );
+}
+
+function SettingsPageContent() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user: currentUser, loading: authLoading, logout } = useAuth();
   const { t } = useI18n();
-  // Set initial tab based on role - profile for non-admins, general for admins
-  const [activeTab, setActiveTab] = useState(() => {
-    // This will be set properly after user loads
-    return 'profile';
-  });
+  const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(null);
@@ -112,33 +135,52 @@ export default function SettingsPage() {
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showHolidayAddForm, setShowHolidayAddForm] = useState(false);
 
+  // Sync tab from URL on load (and when user is available)
+  useEffect(() => {
+    if (authLoading || !currentUser) return;
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && SETTINGS_TAB_IDS.includes(tabFromUrl)) {
+      const isAdmin = currentUser.role === 'clinic_admin';
+      if (isAdmin || !ADMIN_ONLY_TABS.includes(tabFromUrl)) {
+        setActiveTab(tabFromUrl);
+        return;
+      }
+      // Non-admin with admin-only tab in URL: switch to profile and fix URL
+      router.replace((pathname || '/settings') + '?tab=profile');
+    }
+    setActiveTab('profile');
+  }, [authLoading, currentUser, searchParams, pathname, router]);
+
   useEffect(() => {
     if (!authLoading && currentUser) {
       fetchSettings();
-      // Only fetch users if user is clinic_admin
       if (currentUser.role === 'clinic_admin') {
         fetchUsers();
-      }
-      // Redirect to profile if non-admin tries to access restricted tabs
-      if (
-        currentUser.role !== 'clinic_admin' &&
-        ['general', 'compliance', 'doctors'].includes(activeTab)
-      ) {
-        setActiveTab('profile');
       }
     }
   }, [authLoading, currentUser]);
 
-  // Separate effect to handle tab changes and access control
+  // Manager has no Settings access (per permission matrix) – redirect to dashboard
+  const canAccessSettings = hasPermission(currentUser?.role, RESOURCES.SETTINGS, ACTIONS.READ);
   useEffect(() => {
-    if (
-      currentUser &&
-      currentUser.role !== 'clinic_admin' &&
-      ['general', 'compliance', 'doctors'].includes(activeTab)
-    ) {
-      setActiveTab('profile');
+    if (!authLoading && currentUser && !canAccessSettings) {
+      router.replace('/dashboard');
     }
-  }, [activeTab, currentUser]);
+  }, [authLoading, currentUser, canAccessSettings, router]);
+
+  // Enforce: users without admin tabs must not stay on admin-only tabs (e.g. URL bookmark)
+  const canAccessAdminTabs = canAccessSettings;
+  useEffect(() => {
+    if (currentUser && !canAccessAdminTabs && ADMIN_ONLY_TABS.includes(activeTab)) {
+      setActiveTab('profile');
+      router.replace((pathname || '/settings') + '?tab=profile');
+    }
+  }, [activeTab, currentUser, canAccessAdminTabs, pathname, router]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    router.replace((pathname || '/settings') + '?tab=' + encodeURIComponent(tabId));
+  };
 
   // Reset header-controlled form state when leaving tab
   useEffect(() => {
@@ -165,7 +207,6 @@ export default function SettingsPage() {
       const response = await apiClient.get('/settings');
       if (response.success && response.data) {
         const data = response.data;
-        console.log('Fetched settings data:', JSON.stringify(data, null, 2));
         setSettings(data);
         setClinicForm({
           name: data.name,
@@ -267,11 +308,9 @@ export default function SettingsPage() {
           setClinicHours(completeHours);
         } else {
           // If no clinic hours saved, keep the default state (already set in useState)
-          console.log('No clinic hours found in settings, using defaults');
         }
       }
     } catch (error) {
-      console.error('Failed to fetch settings:', error);
       showError(t('errors.failedToLoadSettings'));
     } finally {
       setLoading(false);
@@ -285,8 +324,8 @@ export default function SettingsPage() {
         const usersList = extractArrayData(response);
         setUsers(Array.isArray(usersList) ? usersList : []);
       }
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
+    } catch (_error) {
+      // Fetch users failed
     }
   };
 
@@ -425,8 +464,6 @@ export default function SettingsPage() {
         timeSlots: hour.timeSlots.filter((slot) => slot.startTime && slot.endTime),
       }));
 
-      console.log('Saving clinic hours:', JSON.stringify(validHours, null, 2));
-
       const response = await apiClient.put(
         '/settings',
         {
@@ -435,7 +472,7 @@ export default function SettingsPage() {
           },
         },
         {},
-        true,
+        true
       ); // skipRedirect = true to prevent automatic logout
 
       if (response.success) {
@@ -446,7 +483,6 @@ export default function SettingsPage() {
         }, 500);
       } else {
         const errorMessage = response.error?.message || t('errors.failedToSaveSettings');
-        console.error('Failed to save clinic hours:', response.error);
 
         if (response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN') {
           showError(t('errors.sessionExpired'));
@@ -455,7 +491,6 @@ export default function SettingsPage() {
         }
       }
     } catch (error) {
-      console.error('Error saving clinic hours:', error);
       showError(error.message || t('errors.failedToSaveSettingsRetry'));
     } finally {
       setSaving(false);
@@ -510,7 +545,6 @@ export default function SettingsPage() {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     try {
-      console.log('Creating user with data:', { ...newUserForm, password: '***' });
       const response = await apiClient.post('/users', newUserForm);
       if (response.success) {
         showSuccess(t('errors.userCreatedSuccess'));
@@ -533,10 +567,8 @@ export default function SettingsPage() {
           ? `${errorMessage}\n\nDetails:\n${errorDetails}`
           : errorMessage;
         showError(fullMessage);
-        console.error('Failed to create user:', response.error);
       }
     } catch (error) {
-      console.error('Error creating user:', error);
       showError(error.message || t('errors.failedToCreateUser'));
     }
   };
@@ -546,7 +578,9 @@ export default function SettingsPage() {
       const response = await apiClient.put(`/users/${userId}`, { isActive: !isActive });
       if (response.success) {
         fetchUsers();
-        showSuccess(!isActive ? t('errors.userActivatedSuccess') : t('errors.userDeactivatedSuccess'));
+        showSuccess(
+          !isActive ? t('errors.userActivatedSuccess') : t('errors.userDeactivatedSuccess')
+        );
       } else {
         const errorMessage =
           typeof response.error === 'string'
@@ -577,7 +611,9 @@ export default function SettingsPage() {
         isActive: newStatus,
       });
       if (response.success) {
-        showSuccess(t('errors.statusUpdated', { status: t(newStatus ? 'common.active' : 'common.inactive') }));
+        showSuccess(
+          t('errors.statusUpdated', { status: t(newStatus ? 'common.active' : 'common.inactive') })
+        );
         // Refresh user data
         setTimeout(() => {
           window.location.reload(); // Simple refresh to update user context
@@ -590,7 +626,6 @@ export default function SettingsPage() {
         showError(errorMessage);
       }
     } catch (error) {
-      console.error('Error updating status:', error);
       const errorMessage =
         error?.message ||
         (typeof error === 'string' ? error : t('errors.failedToSaveSettingsRetry'));
@@ -616,8 +651,17 @@ export default function SettingsPage() {
     return <Loader fullScreen size='lg' />;
   }
 
-  // Filter tabs based on user role
-  const isClinicAdmin = currentUser?.role === 'clinic_admin';
+  // Manager has no Settings access – show loader while redirect runs (redirect in useEffect above)
+  if (!authLoading && currentUser && !canAccessSettings) {
+    return (
+      <Layout>
+        <Loader fullScreen size='lg' text={t('auth.redirectingToLogin') || 'Redirecting...'} />
+      </Layout>
+    );
+  }
+
+  // Doctor and Clinic Admin can access all settings tabs and add staff
+  const isClinicAdmin = currentUser?.role === 'clinic_admin' || currentUser?.role === 'doctor';
 
   // Per-tab action buttons for header bar (compact, always visible)
   const tabActionButtons = (() => {
@@ -698,12 +742,11 @@ export default function SettingsPage() {
         actionButton={tabActionButtons}
       />
       <div className='max-w-7xl w-full'>
-
         {/* Tabs bar below header – left-aligned, left to right */}
         <SettingsTabs
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isClinicAdmin={isClinicAdmin}
+          setActiveTab={handleTabChange}
+          canAccessAdminTabs={canAccessAdminTabs}
         />
 
         {/* Profile Settings */}
@@ -739,9 +782,7 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                   <div className='p-4 bg-blue-50 border border-blue-200 rounded-lg'>
-                    <p className='text-sm text-blue-800'>
-                      {t('settings.managerAccountsNotice')}
-                    </p>
+                    <p className='text-sm text-blue-800'>{t('settings.managerAccountsNotice')}</p>
                   </div>
                 </div>
               </Card>
@@ -842,5 +883,13 @@ export default function SettingsPage() {
         )}
       </div>
     </Layout>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<SettingsPageFallback />}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }

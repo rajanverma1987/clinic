@@ -11,6 +11,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -86,7 +87,7 @@ export default function NewInvoicePage() {
 
       setPatients(allPatients);
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      logger.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -188,7 +189,7 @@ export default function NewInvoicePage() {
                     }
                   }
                 } catch (err) {
-                  console.warn(`Failed to fetch inventory item ${item.drugId}:`, err);
+                  logger.warn(`Failed to fetch inventory item ${item.drugId}:`, err);
                   // Continue with other items
                 }
               }
@@ -211,7 +212,7 @@ export default function NewInvoicePage() {
 
       setItems(invoiceItems);
     } catch (error) {
-      console.error('Failed to auto-populate invoice items:', error);
+      logger.error('Failed to auto-populate invoice items:', error);
       // On error, show default consultation item
       setItems([
         {
@@ -352,7 +353,7 @@ export default function NewInvoicePage() {
         setError(response.error?.message || 'Failed to create invoice');
       }
     } catch (error) {
-      console.error('Failed to create invoice:', error);
+      logger.error('Failed to create invoice:', error);
       setError(error.message || 'Failed to create invoice');
     } finally {
       setSubmitting(false);

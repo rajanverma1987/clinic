@@ -10,8 +10,11 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+const REPORTS_AUTO_REFRESH_MS = 2 * 60 * 1000; // 2 minutes – silent refresh for current tab
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -28,6 +31,7 @@ export default function ReportsPage() {
   const [appointmentReport, setAppointmentReport] = useState(null);
   const [inventoryReport, setInventoryReport] = useState(null);
   const [loading, setLoading] = useState(false);
+  const reportsRefreshIntervalRef = useRef(null);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -43,8 +47,41 @@ export default function ReportsPage() {
     }
   }, [authLoading, user, startDate, endDate, activeTab]);
 
-  const fetchRevenueReport = async () => {
-    setLoading(true);
+  // Silent auto-refresh for current report tab (no loading flicker, no page reload)
+  useEffect(() => {
+    if (authLoading || !user) return;
+
+    const runSilentRefresh = () => {
+      if (document.hidden) return;
+      if (activeTab === 'revenue') fetchRevenueReport(true);
+      else if (activeTab === 'patients') fetchPatientReport(true);
+      else if (activeTab === 'appointments') fetchAppointmentReport(true);
+      else if (activeTab === 'inventory') fetchInventoryReport(true);
+    };
+
+    reportsRefreshIntervalRef.current = setInterval(runSilentRefresh, REPORTS_AUTO_REFRESH_MS);
+
+    const handleVisibility = () => {
+      if (document.hidden && reportsRefreshIntervalRef.current) {
+        clearInterval(reportsRefreshIntervalRef.current);
+        reportsRefreshIntervalRef.current = null;
+      } else if (!document.hidden && !reportsRefreshIntervalRef.current) {
+        runSilentRefresh();
+        reportsRefreshIntervalRef.current = setInterval(runSilentRefresh, REPORTS_AUTO_REFRESH_MS);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (reportsRefreshIntervalRef.current) {
+        clearInterval(reportsRefreshIntervalRef.current);
+      }
+    };
+  }, [authLoading, user, activeTab]);
+
+  const fetchRevenueReport = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const params = new URLSearchParams({
         startDate: new Date(startDate).toISOString(),
@@ -58,14 +95,14 @@ export default function ReportsPage() {
         setRevenueReport(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch revenue report:', error);
+      logger.error('Failed to fetch revenue report', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  const fetchPatientReport = async () => {
-    setLoading(true);
+  const fetchPatientReport = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const params = new URLSearchParams({
         startDate: new Date(startDate).toISOString(),
@@ -79,14 +116,14 @@ export default function ReportsPage() {
         setPatientReport(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch patient report:', error);
+      logger.error('Failed to fetch patient report', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  const fetchAppointmentReport = async () => {
-    setLoading(true);
+  const fetchAppointmentReport = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const params = new URLSearchParams({
         startDate: new Date(startDate).toISOString(),
@@ -100,14 +137,14 @@ export default function ReportsPage() {
         setAppointmentReport(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch appointment report:', error);
+      logger.error('Failed to fetch appointment report', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  const fetchInventoryReport = async () => {
-    setLoading(true);
+  const fetchInventoryReport = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const params = new URLSearchParams({
         startDate: new Date(startDate).toISOString(),
@@ -121,9 +158,9 @@ export default function ReportsPage() {
         setInventoryReport(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch inventory report:', error);
+      logger.error('Failed to fetch inventory report', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -158,7 +195,7 @@ export default function ReportsPage() {
         document.body.removeChild(a);
       }
     } catch (error) {
-      console.error('Failed to export CSV:', error);
+      logger.error('Failed to export CSV', error);
     }
   };
 
@@ -204,7 +241,7 @@ export default function ReportsPage() {
 
                   {/* Value label on hover */}
                   <div
-                    className='absolute -top-8 left-1/2 opacity-0 group-hover:opacity-100 bg-neutral-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10'
+                    className='absolute -top-8 left-1/2 opacity-0 group-hover:opacity-100 bg-neutral-200 text-neutral-900 border border-neutral-300 text-xs px-2 py-1 rounded whitespace-nowrap z-10'
                     style={{ marginLeft: '-50%' }}
                   >
                     {value}
@@ -372,6 +409,7 @@ export default function ReportsPage() {
 
         <div className='mb-6 flex gap-2 border-b border-neutral-200'>
           <button
+            type='button'
             onClick={() => setActiveTab('revenue')}
             className={`px-4 py-2 font-medium ${
               activeTab === 'revenue'
@@ -382,6 +420,7 @@ export default function ReportsPage() {
             {t('reports.revenue')}
           </button>
           <button
+            type='button'
             onClick={() => setActiveTab('patients')}
             className={`px-4 py-2 font-medium ${
               activeTab === 'patients'
@@ -392,6 +431,7 @@ export default function ReportsPage() {
             {t('reports.patients')}
           </button>
           <button
+            type='button'
             onClick={() => setActiveTab('appointments')}
             className={`px-4 py-2 font-medium ${
               activeTab === 'appointments'
@@ -402,6 +442,7 @@ export default function ReportsPage() {
             {t('reports.appointments')}
           </button>
           <button
+            type='button'
             onClick={() => setActiveTab('inventory')}
             className={`px-4 py-2 font-medium ${
               activeTab === 'inventory'

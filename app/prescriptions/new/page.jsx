@@ -3,9 +3,12 @@
 import '@/app/prescriptions/styles/prescription-form.css';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ClinicalDecisionSupport } from '@/components/prescriptions/ClinicalDecisionSupport';
+import { ICD10SearchInput } from '@/components/prescriptions/ICD10SearchInput';
 import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
 import { PrescriptionFormPrintPreview } from '@/components/prescriptions/PrescriptionFormPrintPreview';
 import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
+import { PrescriptionPatientHeader } from '@/components/prescriptions/PrescriptionPatientHeader';
 import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,10 +16,12 @@ import { Loader } from '@/components/ui/Loader';
 import { SimpleTextEditor } from '@/components/ui/SimpleTextEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import icd10Common from '@/data/icd10-common.json';
 import { useFormAutoSave } from '@/hooks/useFormAutoSave.js';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
+import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
@@ -48,6 +53,8 @@ function NewPrescriptionPageContent() {
       instructions: '',
       takeWithFood: false,
       allowSubstitution: true,
+      route: 'oral',
+      refills: 0,
     },
   ]);
   const [labTests] = useState([
@@ -68,19 +75,25 @@ function NewPrescriptionPageContent() {
     { code: 'B12', name: 'Vitamin B12' },
   ]);
   const [formData, setFormData] = useState({
-    patientId: patientIdFromUrl, // Pre-fill from URL if provided
+    patientId: patientIdFromUrl,
     appointmentId: '',
     clinicalNoteId: '',
     symptoms: '',
     diagnosis: '',
+    icd10Codes: [],
     additionalInstructions: '',
-    validUntil: '', // Will be auto-calculated from prescription date + validity days
+    validUntil: '',
     refillsAllowed: 0,
     followUpDate: '',
+    followUpType: 'in-person',
+    followUpAutoSchedule: false,
     digitalSignature: '',
+    signedByTitle: '',
+    signedByLicense: '',
   });
   const [currentAppointment, setCurrentAppointment] = useState(null);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
 
   // Auto-save form drafts
   const {
@@ -209,7 +222,7 @@ function NewPrescriptionPageContent() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch current appointment:', error);
+      logger.error('Failed to fetch current appointment:', error);
       setCurrentAppointment(null);
     }
   };
@@ -242,6 +255,27 @@ function NewPrescriptionPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.patientId]);
 
+  // Fetch full patient for allergy conflict check
+  useEffect(() => {
+    if (!formData.patientId) {
+      setSelectedPatient(null);
+      return;
+    }
+    let cancelled = false;
+    apiClient
+      .get(`/patients/${formData.patientId}`)
+      .then((res) => {
+        if (!cancelled && res?.success && res?.data) setSelectedPatient(res.data);
+        else if (!cancelled) setSelectedPatient(null);
+      })
+      .catch(() => {
+        if (!cancelled) setSelectedPatient(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.patientId]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -267,7 +301,7 @@ function NewPrescriptionPageContent() {
           }));
         }
       } catch (err) {
-        console.error('Failed to fetch clinic settings:', err);
+        logger.error('Failed to fetch clinic settings:', err);
       }
 
       // Fetch appointments with in_progress status to get patients
@@ -326,7 +360,7 @@ function NewPrescriptionPageContent() {
 
       // Fetch drugs from inventory (medications) - use type=medicine (not medication)
       const drugsResponse = await apiClient.get('/inventory/items?type=medicine&limit=1000');
-      console.log('Drugs API Response:', drugsResponse);
+      logger.debug('Drugs API Response:', drugsResponse);
       if (drugsResponse.success && drugsResponse.data) {
         // Handle pagination structure - API returns { success: true, data: { data: [...], pagination: {...} } }
         let drugsList = [];
@@ -343,13 +377,13 @@ function NewPrescriptionPageContent() {
             strength: item.strength,
           }));
 
-        console.log('Extracted drugs list:', drugsList.length, 'drugs found');
+        logger.debug('Extracted drugs list:', drugsList.length, 'drugs found');
         setDrugs(drugsList);
       } else {
-        console.error('Failed to fetch drugs:', drugsResponse.error || 'Unknown error');
+        logger.error('Failed to fetch drugs:', drugsResponse.error || 'Unknown error');
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      logger.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -369,6 +403,8 @@ function NewPrescriptionPageContent() {
         instructions: '',
         takeWithFood: false,
         allowSubstitution: true,
+        route: 'oral',
+        refills: 0,
       },
     ]);
   };
@@ -474,101 +510,99 @@ function NewPrescriptionPageContent() {
     return Object.keys(errors).length === 0;
   };
 
+  const buildPrescriptionPayload = (status) => {
+    const validUntil = formData.validUntil
+      ? new Date(formData.validUntil).toISOString()
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const base = {
+      patientId: formData.patientId,
+      appointmentId: formData.appointmentId || currentAppointment?._id || undefined,
+      clinicalNoteId: formData.clinicalNoteId || currentAppointment?.clinicalNoteId || undefined,
+      status,
+      items: items.map((item) => {
+        const baseItem = {
+          itemType: item.itemType || 'drug',
+          instructions: item.instructions || undefined,
+        };
+        if (item.itemType === 'drug') {
+          baseItem.drugId = item.drugId;
+          baseItem.drugName = item.drugName || undefined;
+          baseItem.genericName = item.genericName || undefined;
+          baseItem.form = item.form || undefined;
+          baseItem.strength = item.strength || undefined;
+          baseItem.frequency = item.frequency || undefined;
+          baseItem.duration = item.duration || undefined;
+          baseItem.quantity = item.quantity || undefined;
+          baseItem.unit = item.unit || undefined;
+          baseItem.takeWithFood = item.takeWithFood || false;
+          baseItem.takeBeforeMeal = item.takeBeforeMeal || false;
+          baseItem.takeAfterMeal = item.takeAfterMeal || false;
+          baseItem.allowSubstitution = item.allowSubstitution !== false;
+          baseItem.route = item.route || undefined;
+          baseItem.refills = item.refills != null ? item.refills : undefined;
+        } else if (item.itemType === 'lab') {
+          baseItem.labTestName = item.labTestName || undefined;
+          baseItem.labTestCode = item.labTestCode || undefined;
+          baseItem.labInstructions = item.labInstructions || undefined;
+          baseItem.fastingRequired = item.fastingRequired || false;
+          baseItem.priority = item.priority || undefined;
+        } else if (item.itemType === 'procedure') {
+          baseItem.procedureName = item.procedureName || undefined;
+          baseItem.procedureCode = item.procedureCode || undefined;
+          baseItem.procedureInstructions = item.procedureInstructions || undefined;
+        } else if (item.itemType === 'other') {
+          baseItem.itemName = item.itemName || undefined;
+          baseItem.itemDescription = item.itemDescription || undefined;
+        }
+        return baseItem;
+      }),
+      diagnosis: formData.diagnosis || undefined,
+      icd10Codes: formData.icd10Codes?.length ? formData.icd10Codes : undefined,
+      chiefComplaint: formData.symptoms || undefined,
+      followUpDate: formData.followUpDate || undefined,
+      followUpType: formData.followUpType || undefined,
+      followUpAutoSchedule: formData.followUpAutoSchedule || false,
+      additionalInstructions: formData.additionalInstructions || undefined,
+      validUntil,
+      refillsAllowed: formData.refillsAllowed || 0,
+    };
+    if (
+      status === 'active' &&
+      (formData.digitalSignature || formData.signedByTitle || formData.signedByLicense)
+    ) {
+      base.doctorSignature = formData.digitalSignature?.trim();
+      base.signedByTitle = formData.signedByTitle?.trim();
+      base.signedByLicense = formData.signedByLicense?.trim();
+    }
+    return base;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setFieldErrors({});
     setSubmitting(true);
-    setAutoSaveSubmitting(true); // Disable auto-save during submission
+    setAutoSaveSubmitting(true);
 
-    // Validate form
     if (!validateForm()) {
       setError('Please fix the errors in the form before submitting');
       setSubmitting(false);
       setAutoSaveSubmitting(false);
       return;
     }
+    if (!formData.digitalSignature?.trim()) {
+      setError('Digital signature is required for Sign & Send to Patient');
+      setSubmitting(false);
+      setAutoSaveSubmitting(false);
+      return;
+    }
 
     try {
-      // Calculate validUntil if not provided (default to 30 days from now)
-      const validUntil = formData.validUntil
-        ? new Date(formData.validUntil).toISOString()
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      // Build prescription data with all required fields
-      const prescriptionData = {
-        patientId: formData.patientId,
-        // Link to appointment if available
-        appointmentId: formData.appointmentId || currentAppointment?._id || undefined,
-        clinicalNoteId: formData.clinicalNoteId || currentAppointment?.clinicalNoteId || undefined,
-        status: 'active', // Set to active when creating prescription (not draft)
-        items: items.map((item) => {
-          const baseItem = {
-            itemType: item.itemType || 'drug',
-            instructions: item.instructions || undefined,
-          };
-
-          // Add type-specific fields based on item type
-          if (item.itemType === 'drug') {
-            baseItem.drugId = item.drugId;
-            baseItem.drugName = item.drugName || undefined;
-            baseItem.genericName = item.genericName || undefined;
-            baseItem.form = item.form || undefined;
-            baseItem.strength = item.strength || undefined;
-            baseItem.frequency = item.frequency || undefined;
-            baseItem.duration = item.duration || undefined;
-            baseItem.quantity = item.quantity || undefined;
-            baseItem.unit = item.unit || undefined;
-            baseItem.takeWithFood = item.takeWithFood || false;
-            baseItem.takeBeforeMeal = item.takeBeforeMeal || false;
-            baseItem.takeAfterMeal = item.takeAfterMeal || false;
-            baseItem.allowSubstitution = item.allowSubstitution !== false;
-          } else if (item.itemType === 'lab') {
-            baseItem.labTestName = item.labTestName || undefined;
-            baseItem.labTestCode = item.labTestCode || undefined;
-            baseItem.labInstructions = item.labInstructions || undefined;
-            baseItem.fastingRequired = item.fastingRequired || false;
-          } else if (item.itemType === 'procedure') {
-            baseItem.procedureName = item.procedureName || undefined;
-            baseItem.procedureCode = item.procedureCode || undefined;
-            baseItem.procedureInstructions = item.procedureInstructions || undefined;
-          } else if (item.itemType === 'other') {
-            baseItem.itemName = item.itemName || undefined;
-            baseItem.itemDescription = item.itemDescription || undefined;
-          }
-
-          return baseItem;
-        }),
-        diagnosis: formData.diagnosis || undefined,
-        additionalInstructions: formData.additionalInstructions || undefined,
-        validUntil,
-        refillsAllowed: formData.refillsAllowed || 0,
-      };
-
-      // Log prescription data for debugging
-      console.log('[Prescription] Submitting prescription data:', {
-        patientId: prescriptionData.patientId,
-        appointmentId: prescriptionData.appointmentId,
-        clinicalNoteId: prescriptionData.clinicalNoteId,
-        status: prescriptionData.status,
-        itemsCount: prescriptionData.items.length,
-        items: prescriptionData.items.map((item) => ({
-          itemType: item.itemType,
-          drugId: item.drugId,
-          drugName: item.drugName,
-          frequency: item.frequency,
-          duration: item.duration,
-          quantity: item.quantity,
-        })),
-        hasDiagnosis: !!prescriptionData.diagnosis,
-        validUntil: prescriptionData.validUntil,
-        refillsAllowed: prescriptionData.refillsAllowed,
-      });
-
+      const prescriptionData = buildPrescriptionPayload('active');
       const response = await apiClient.post('/prescriptions', prescriptionData);
       if (response.success) {
-        clearDraft(); // Clear saved draft on successful submission
-        showSuccess('Prescription created successfully');
+        clearDraft();
+        showSuccess('Prescription signed and sent successfully');
         router.push('/prescriptions');
       } else {
         const errorMessage = response.error?.message || 'Failed to create prescription';
@@ -576,7 +610,7 @@ function NewPrescriptionPageContent() {
         showError(errorMessage);
       }
     } catch (error) {
-      console.error('Failed to create prescription:', error);
+      logger.error('Failed to create prescription:', error);
       const errorMessage = error.message || 'Failed to create prescription';
       setError(errorMessage);
       showError(errorMessage);
@@ -588,72 +622,16 @@ function NewPrescriptionPageContent() {
 
   const handleSaveDraft = async () => {
     setError('');
+    setFieldErrors({});
+    if (!formData.patientId?.trim()) {
+      setError('Please select a patient to save draft');
+      return;
+    }
     setSubmitting(true);
     setAutoSaveSubmitting(true);
 
     try {
-      const validUntil = formData.validUntil
-        ? new Date(formData.validUntil).toISOString()
-        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      // Build prescription data for draft with all required fields
-      const prescriptionData = {
-        patientId: formData.patientId,
-        // Link to appointment if available
-        appointmentId: formData.appointmentId || currentAppointment?._id || undefined,
-        clinicalNoteId: formData.clinicalNoteId || currentAppointment?.clinicalNoteId || undefined,
-        status: 'draft',
-        items: items.map((item) => {
-          const baseItem = {
-            itemType: item.itemType || 'drug',
-            instructions: item.instructions || undefined,
-          };
-
-          // Add type-specific fields based on item type
-          if (item.itemType === 'drug') {
-            baseItem.drugId = item.drugId;
-            baseItem.drugName = item.drugName || undefined;
-            baseItem.genericName = item.genericName || undefined;
-            baseItem.form = item.form || undefined;
-            baseItem.strength = item.strength || undefined;
-            baseItem.frequency = item.frequency || undefined;
-            baseItem.duration = item.duration || undefined;
-            baseItem.quantity = item.quantity || undefined;
-            baseItem.unit = item.unit || undefined;
-            baseItem.takeWithFood = item.takeWithFood || false;
-            baseItem.takeBeforeMeal = item.takeBeforeMeal || false;
-            baseItem.takeAfterMeal = item.takeAfterMeal || false;
-            baseItem.allowSubstitution = item.allowSubstitution !== false;
-          } else if (item.itemType === 'lab') {
-            baseItem.labTestName = item.labTestName || undefined;
-            baseItem.labTestCode = item.labTestCode || undefined;
-            baseItem.labInstructions = item.labInstructions || undefined;
-            baseItem.fastingRequired = item.fastingRequired || false;
-          } else if (item.itemType === 'procedure') {
-            baseItem.procedureName = item.procedureName || undefined;
-            baseItem.procedureCode = item.procedureCode || undefined;
-            baseItem.procedureInstructions = item.procedureInstructions || undefined;
-          } else if (item.itemType === 'other') {
-            baseItem.itemName = item.itemName || undefined;
-            baseItem.itemDescription = item.itemDescription || undefined;
-          }
-
-          return baseItem;
-        }),
-        diagnosis: formData.diagnosis || undefined,
-        additionalInstructions: formData.additionalInstructions || undefined,
-        validUntil,
-        refillsAllowed: formData.refillsAllowed || 0,
-      };
-
-      // Log prescription draft data for debugging
-      console.log('[Prescription] Saving draft:', {
-        patientId: prescriptionData.patientId,
-        appointmentId: prescriptionData.appointmentId,
-        clinicalNoteId: prescriptionData.clinicalNoteId,
-        status: prescriptionData.status,
-        itemsCount: prescriptionData.items.length,
-      });
+      const prescriptionData = buildPrescriptionPayload('draft');
 
       const response = await apiClient.post('/prescriptions', prescriptionData);
       if (response.success) {
@@ -665,7 +643,7 @@ function NewPrescriptionPageContent() {
         showError(errorMessage);
       }
     } catch (error) {
-      console.error('Failed to save prescription draft:', error);
+      logger.error('Failed to save prescription draft:', error);
       const errorMessage = error.message || 'Failed to save prescription as draft';
       setError(errorMessage);
       showError(errorMessage);
@@ -735,6 +713,7 @@ function NewPrescriptionPageContent() {
             {/* Left column: Main form */}
             <div className='lg:col-span-2'>
               <div className='prescription-form-card'>
+                <PrescriptionPatientHeader patientId={formData.patientId} />
                 <form onSubmit={handleSubmit} noValidate>
                   {error && (
                     <div
@@ -748,6 +727,46 @@ function NewPrescriptionPageContent() {
                     </div>
                   )}
 
+                  {selectedPatient?.allergies &&
+                    items.some(
+                      (it) =>
+                        it.itemType === 'drug' &&
+                        (it.drugName || it.genericName) &&
+                        String(selectedPatient.allergies || '')
+                          .toLowerCase()
+                          .split(/\s*[,;]\s*|\s+/)
+                          .some(
+                            (a) =>
+                              (it.drugName || '').toLowerCase().includes(a) ||
+                              (it.genericName || '').toLowerCase().includes(a)
+                          )
+                    ) && (
+                      <div
+                        className='prescription-form-section'
+                        style={{ paddingBottom: 'var(--space-4)' }}
+                      >
+                        <div className='bg-status-warning/10 border-l-4 border-status-warning text-status-warning px-4 py-3 rounded-lg flex items-center gap-2'>
+                          <span>⚠</span>
+                          <span>{t('prescriptions.allergyWarning')}</span>
+                        </div>
+                      </div>
+                    )}
+
+                  <ClinicalDecisionSupport
+                    items={items}
+                    onOrderTest={(testName) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        advice: (prev.advice || '') + ` [Order: ${testName}]`,
+                      }));
+                    }}
+                    onReferral={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        advice: (prev.advice || '') + ' [Referral suggested]',
+                      }));
+                    }}
+                  />
 
                   <div className='prescription-form-section'>
                     <h2 className='prescription-form-section-title'>Prescription Details</h2>
@@ -844,7 +863,7 @@ function NewPrescriptionPageContent() {
 
                       <div className='prescription-form-field'>
                         <label htmlFor='symptoms' className='prescription-form-label'>
-                          Symptoms
+                          {t('prescriptions.chiefComplaint')}
                         </label>
                         <Input
                           id='symptoms'
@@ -859,16 +878,31 @@ function NewPrescriptionPageContent() {
 
                       <div className='prescription-form-field'>
                         <label htmlFor='diagnosis' className='prescription-form-label'>
-                          Diagnosis
+                          {t('prescriptions.primaryDiagnosis')}
                         </label>
-                        <Input
-                          id='diagnosis'
-                          value={formData.diagnosis}
-                          onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-                          placeholder={t('prescriptions.diagnosisPlaceholder')}
+                        <ICD10SearchInput
+                          codes={icd10Common}
+                          value={formData.icd10Codes?.[0] || ''}
+                          displayValue={formData.diagnosis}
+                          onChange={(code) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              icd10Codes: code ? [code] : [],
+                            }))
+                          }
+                          onSelect={(item) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              diagnosis: item
+                                ? `${item.code || ''} - ${item.title || ''}`.trim()
+                                : prev.diagnosis,
+                              icd10Codes: item?.code ? [item.code] : [],
+                            }))
+                          }
+                          className={fieldErrors.diagnosis ? 'border-status-error' : ''}
                         />
                         <p className='prescription-form-help-text'>
-                          Primary diagnosis or condition being treated
+                          Search by ICD-10 code or description
                         </p>
                       </div>
 
@@ -880,12 +914,50 @@ function NewPrescriptionPageContent() {
                           id='followUpDate'
                           type='date'
                           value={formData.followUpDate}
-                          onChange={(e) => setFormData({ ...formData, followUpDate: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, followUpDate: e.target.value })
+                          }
                           min={new Date().toISOString().split('T')[0]}
                         />
                         <p className='prescription-form-help-text'>
                           Recommended date for patient follow-up
                         </p>
+                      </div>
+
+                      <div className='prescription-form-field'>
+                        <label htmlFor='followUpType' className='prescription-form-label'>
+                          {t('prescriptions.followUpType')}
+                        </label>
+                        <select
+                          id='followUpType'
+                          value={formData.followUpType}
+                          onChange={(e) =>
+                            setFormData({ ...formData, followUpType: e.target.value })
+                          }
+                          className='prescription-form-input'
+                        >
+                          <option value='in-person'>{t('prescriptions.followUpInPerson')}</option>
+                          <option value='video'>{t('prescriptions.followUpVideo')}</option>
+                          <option value='phone'>{t('prescriptions.followUpPhone')}</option>
+                        </select>
+                      </div>
+
+                      <div className='prescription-form-field flex items-center gap-2'>
+                        <input
+                          type='checkbox'
+                          id='followUpAutoSchedule'
+                          checked={formData.followUpAutoSchedule}
+                          onChange={(e) =>
+                            setFormData({ ...formData, followUpAutoSchedule: e.target.checked })
+                          }
+                        />
+                        <label
+                          htmlFor='followUpAutoSchedule'
+                          className='prescription-form-label'
+                          style={{ marginBottom: 0 }}
+                        >
+                          {t('prescriptions.followUpAutoSchedule')}
+                        </label>
                       </div>
 
                       <div className='prescription-form-field'>
@@ -911,19 +983,49 @@ function NewPrescriptionPageContent() {
                       </div>
                     </div>
 
-                    <div className='prescription-form-field' style={{ marginTop: 'var(--space-5)' }}>
-                      <label htmlFor='digitalSignature' className='prescription-form-label'>
-                        Digital Signature
+                    <div
+                      className='prescription-form-field'
+                      style={{ marginTop: 'var(--space-5)' }}
+                    >
+                      <label className='prescription-form-label'>
+                        {t('prescriptions.digitalSignature')}
                       </label>
-                      <Input
-                        id='digitalSignature'
-                        type='text'
-                        value={formData.digitalSignature}
-                        onChange={(e) => setFormData({ ...formData, digitalSignature: e.target.value })}
-                        placeholder='Dr. Your Name (Type to sign)'
-                      />
+                      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                        <Input
+                          id='digitalSignature'
+                          type='text'
+                          value={formData.digitalSignature}
+                          onChange={(e) =>
+                            setFormData({ ...formData, digitalSignature: e.target.value })
+                          }
+                          placeholder={
+                            currentUser
+                              ? `Dr. ${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() ||
+                                'Dr. Name'
+                              : 'Dr. Name'
+                          }
+                        />
+                        <Input
+                          id='signedByTitle'
+                          type='text'
+                          value={formData.signedByTitle}
+                          onChange={(e) =>
+                            setFormData({ ...formData, signedByTitle: e.target.value })
+                          }
+                          placeholder={t('prescriptions.doctorTitle')}
+                        />
+                        <Input
+                          id='signedByLicense'
+                          type='text'
+                          value={formData.signedByLicense}
+                          onChange={(e) =>
+                            setFormData({ ...formData, signedByLicense: e.target.value })
+                          }
+                          placeholder={t('prescriptions.licenseNumber')}
+                        />
+                      </div>
                       <p className='prescription-form-help-text'>
-                        Your name as it should appear on the prescription
+                        Name, title, and license # for e-signature. Required for Sign &amp; Send.
                       </p>
                     </div>
 
@@ -932,7 +1034,7 @@ function NewPrescriptionPageContent() {
                       style={{ marginTop: 'var(--space-5)' }}
                     >
                       <label htmlFor='additionalInstructions' className='prescription-form-label'>
-                        Additional Instructions
+                        {t('prescriptions.advicePrecautions')}
                       </label>
                       <SimpleTextEditor
                         value={formData.additionalInstructions}
@@ -991,7 +1093,7 @@ function NewPrescriptionPageContent() {
                       isLoading={submitting}
                       disabled={submitting}
                     >
-                      Save as Draft
+                      {t('prescriptions.saveAsDraft')}
                     </Button>
                     <Button
                       type='button'
@@ -999,8 +1101,18 @@ function NewPrescriptionPageContent() {
                       onClick={handlePrintPreview}
                       disabled={submitting || !formData.patientId}
                     >
-                      <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z' />
+                      <svg
+                        className='icon icon-xs mr-2'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z'
+                        />
                       </svg>
                       Print
                     </Button>
@@ -1033,13 +1145,23 @@ function NewPrescriptionPageContent() {
                       }}
                       disabled={submitting || !formData.patientId}
                     >
-                      <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
+                      <svg
+                        className='icon icon-xs mr-2'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                        />
                       </svg>
                       Download PDF
                     </Button>
                     <Button type='submit' isLoading={submitting} disabled={submitting}>
-                      Create Prescription
+                      {t('prescriptions.signAndSend')}
                     </Button>
                   </div>
                 </form>

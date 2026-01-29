@@ -27,8 +27,8 @@ export function useFeatures() {
         setFeatures(response.data.features || []);
         setLimits(response.data.limits || {});
       }
-    } catch (error) {
-      console.error('Failed to fetch features:', error);
+    } catch (_error) {
+      // Features fetch failed
     } finally {
       setLoading(false);
     }

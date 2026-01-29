@@ -1,7 +1,9 @@
 'use client';
 
+import { CalendarIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { PatientCard } from '@/components/patients/PatientCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -14,23 +16,50 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import * as routeCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
+import { logger } from '@/lib/utils/logger';
+import { addRecentSearch, getRecentSearches } from '@/lib/utils/recent-search-cache';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+
+const ROUTE_KEY = 'route_patients';
 
 export default function PatientsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { locale } = useSettings();
+  const tenantId = user?.tenantId ?? null;
+
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [viewMode, setViewMode] = useState('table');
+
+  // Hydrate from localStorage before paint (no flash, no hydration mismatch)
+  useLayoutEffect(() => {
+    if (!tenantId) return;
+    const cached = routeCache.getData(ROUTE_KEY, tenantId);
+    if (cached && cached.patients != null) {
+      setPatients(cached.patients ?? []);
+      setCurrentPage(cached.currentPage ?? 1);
+      setTotalPages(cached.totalPages ?? 1);
+      setTotalCount(cached.total ?? 0);
+      setLoading(false);
+    }
+  }, [tenantId]);
   const [showModal, setShowModal] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [showRecentDropdown, setShowRecentDropdown] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -54,26 +83,21 @@ export default function PatientsPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      // Fetch settings to get default country code
       fetchSettings();
-
-      // Initial load - use normal loading
-      if (!searchTerm && currentPage === 1) {
+      const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
+      if (hasCache && !searchTerm && statusFilter === 'all' && sortBy === 'createdAt') {
+        fetchPatients(false);
+        return;
+      }
+      if (!searchTerm && currentPage === 1 && statusFilter === 'all' && sortBy === 'createdAt') {
         fetchPatients(false);
       } else {
-        // Search or pagination - use search loading to avoid unmounting SearchBar
-        const timeoutId = setTimeout(
-          () => {
-            fetchPatients(true);
-          },
-          searchTerm ? 300 : 0
-        );
-
+        const timeoutId = setTimeout(() => fetchPatients(true), searchTerm ? 300 : 0);
         return () => clearTimeout(timeoutId);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user, currentPage, searchTerm]);
+  }, [authLoading, user, currentPage, searchTerm, statusFilter, sortBy, sortOrder]);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -99,54 +123,77 @@ export default function PatientsPage() {
         setCountryCode(defaultCode);
       }
     } catch (error) {
-      console.error('Failed to fetch settings:', error);
+      logger.error('Failed to fetch settings', error);
       // Keep default +1 if fetch fails
     }
   };
 
-  const fetchPatients = async (isSearch = false) => {
-    if (isSearch) {
-      setSearchLoading(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '10',
-      });
-      if (searchTerm) {
-        params.append('search', searchTerm);
-      }
-
-      const response = await apiClient.get(`/patients?${params}`);
-
-      console.log('Patients API Response:', response);
-      console.log('Response data:', response.data);
-      console.log('Response data.data:', response.data?.data);
-
-      if (response.success && response.data) {
-        const patientsList = extractArrayData(response);
-        const pagination = extractPaginationData(response);
-        console.log('Patients list:', patientsList);
-        setPatients(patientsList);
-        setTotalPages(pagination.totalPages);
-      }
-    } catch (error) {
-      console.error('Failed to fetch patients:', error);
-    } finally {
+  const fetchPatients = useCallback(
+    async (isSearch = false) => {
+      const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
       if (isSearch) {
-        setSearchLoading(false);
-      } else {
-        setLoading(false);
+        setSearchLoading(true);
+      } else if (!hasCache) {
+        setLoading(true);
       }
-    }
-  };
+      try {
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: '10',
+          sortBy: sortBy || 'createdAt',
+          sortOrder: sortOrder || 'desc',
+        });
+        if (searchTerm) {
+          params.append('search', searchTerm);
+        }
+        if (statusFilter && statusFilter !== 'all') {
+          params.append('status', statusFilter);
+        }
+
+        const response = await apiClient.get(`/patients?${params}`);
+
+        if (response.success && response.data) {
+          const patientsList = extractArrayData(response);
+          const pagination = extractPaginationData(response);
+          setPatients(patientsList);
+          setTotalPages(pagination.totalPages);
+          setTotalCount(pagination.total ?? 0);
+          if (searchTerm) addRecentSearch('patients', searchTerm);
+          if (tenantId)
+            routeCache.set(ROUTE_KEY, tenantId, {
+              patients: patientsList,
+              totalPages: pagination.totalPages,
+              currentPage,
+              total: pagination.total,
+            });
+        }
+      } catch (error) {
+        logger.error('Failed to fetch patients', error);
+      } finally {
+        if (isSearch) {
+          setSearchLoading(false);
+        } else {
+          setLoading(false);
+        }
+      }
+    },
+    [tenantId, currentPage, searchTerm, statusFilter, sortBy, sortOrder]
+  );
 
   // Memoize search handler to prevent SearchBar from re-rendering unnecessarily
   const handleSearchChange = useCallback((e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
+  }, []);
+
+  useEffect(() => {
+    setRecentSearches(getRecentSearches('patients'));
+  }, [searchTerm]);
+
+  const handleRecentSearchClick = useCallback((term) => {
+    setSearchTerm(term);
+    setCurrentPage(1);
+    setShowRecentDropdown(false);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -174,7 +221,7 @@ export default function PatientsPage() {
         fetchPatients();
       }
     } catch (error) {
-      console.error('Failed to create patient:', error);
+      logger.error('Failed to create patient', error);
     } finally {
       setSubmitting(false);
     }
@@ -208,14 +255,7 @@ export default function PatientsPage() {
           title={t('patients.addAppointmentTooltip')}
           className='whitespace-nowrap'
         >
-          <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-            />
-          </svg>
+          <CalendarIcon className='icon icon-sm' ariaHidden />
           {t('appointments.bookAppointment') || 'Add Appointment'}
         </Button>
       ),
@@ -248,7 +288,7 @@ export default function PatientsPage() {
         actionButton={
           <Button
             onClick={() => setShowModal(true)}
-            variant='primary'
+            variant='secondary'
             size='md'
             className='whitespace-nowrap'
           >
@@ -257,14 +297,81 @@ export default function PatientsPage() {
         }
       />
       <div style={{ padding: '0 10px' }}>
-
         <Card className='mb-6'>
-          <SearchBar
-            placeholder={t('patients.searchPlaceholder')}
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className='w-full'
-          />
+          <div className='flex flex-col sm:flex-row gap-3 flex-wrap'>
+            <div className='flex-1 min-w-[200px] relative'>
+              <SearchBar
+                placeholder={t('patients.searchPlaceholder')}
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onFocus={() => {
+                  const recent = getRecentSearches('patients');
+                  setRecentSearches(recent);
+                  setShowRecentDropdown(recent.length > 0);
+                }}
+                onBlur={() => setTimeout(() => setShowRecentDropdown(false), 150)}
+                className='w-full'
+              />
+              {showRecentDropdown && recentSearches.length > 0 && (
+                <div
+                  className='absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-10 py-1 max-h-48 overflow-auto'
+                  role='listbox'
+                >
+                  <div className='px-3 py-1.5 text-xs text-neutral-500 border-b border-neutral-100'>
+                    {t('common.recentSearches') || 'Recent searches'}
+                  </div>
+                  {recentSearches.map((term) => (
+                    <button
+                      key={term}
+                      type='button'
+                      className='w-full text-left px-3 py-2 text-sm hover:bg-neutral-50'
+                      onClick={() => handleRecentSearchClick(term)}
+                      role='option'
+                    >
+                      {term}
+                    </button>
+                  ))}
+                  <button
+                    type='button'
+                    className='w-full text-left px-3 py-2 text-sm text-neutral-500 hover:bg-neutral-50 border-t border-neutral-100'
+                    onClick={() => setShowRecentDropdown(false)}
+                  >
+                    {t('common.close') || 'Close'}
+                  </button>
+                </div>
+              )}
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className='px-3 py-2 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-900 text-body-sm focus:outline-none focus:border-primary-500'
+              aria-label={t('common.filter')}
+            >
+              <option value='all'>{t('patients.filterAll')}</option>
+              <option value='active'>{t('patients.filterActive')}</option>
+              <option value='new'>{t('patients.filterNew')}</option>
+              <option value='inactive'>{t('patients.filterInactive')}</option>
+            </select>
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const v = e.target.value;
+                const [s, o] = v.split('-');
+                setSortBy(s);
+                setSortOrder(o || 'desc');
+                setCurrentPage(1);
+              }}
+              className='px-3 py-2 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-900 text-body-sm focus:outline-none focus:border-primary-500'
+              aria-label={t('patients.sortBy')}
+            >
+              <option value='createdAt-desc'>{t('patients.sortDateAdded')}</option>
+              <option value='lastName-asc'>{t('patients.sortName')}</option>
+              <option value='lastVisit-desc'>{t('patients.sortLastVisit')}</option>
+            </select>
+          </div>
           {searchLoading && (
             <div className='mt-2 text-body-sm text-neutral-500 flex items-center'>
               <CompactLoader size='xs' />
@@ -282,12 +389,60 @@ export default function PatientsPage() {
         </Card>
 
         <Card>
-          <Table
-            data={patients}
-            columns={columns}
-            onRowClick={(row) => router.push(`/patients/${row._id}`)}
-            emptyMessage={t('patients.noPatientsFound')}
-          />
+          <div className='flex items-center justify-between gap-2 mb-3 text-body-sm text-neutral-600 flex-wrap'>
+            <span>
+              {totalCount} {t('patients.totalCount')},{' '}
+              {t('patients.showingCount').replace('{{n}}', String(patients.length))}
+            </span>
+            <div className='flex gap-2'>
+              <button
+                type='button'
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1.5 rounded text-sm font-medium ${
+                  viewMode === 'table'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                }`}
+              >
+                {t('patients.viewTable')}
+              </button>
+              <button
+                type='button'
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-1.5 rounded text-sm font-medium ${
+                  viewMode === 'cards'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                }`}
+              >
+                {t('patients.viewCards')}
+              </button>
+            </div>
+          </div>
+          {viewMode === 'table' ? (
+            <Table
+              data={patients}
+              columns={columns}
+              onRowClick={(row) =>
+                router.push(
+                  user?.role === 'doctor' ? `/doctors/patients/${row._id}` : `/patients/${row._id}`
+                )
+              }
+              emptyMessage={t('patients.noPatientsFound')}
+            />
+          ) : (
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+              {patients.length === 0 ? (
+                <p className='col-span-full text-center text-neutral-500 py-8'>
+                  {t('patients.noPatientsFound')}
+                </p>
+              ) : (
+                patients.map((row) => (
+                  <PatientCard key={row._id} patient={row} isDoctor={user?.role === 'doctor'} />
+                ))
+              )}
+            </div>
+          )}
 
           {totalPages > 1 && (
             <div className='mt-4 flex items-center justify-between'>
@@ -318,7 +473,7 @@ export default function PatientsPage() {
 
         {showModal && (
           <div
-            className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
+            className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'
             onClick={(e) => {
               // Close modal if clicking on the backdrop
               if (e.target === e.currentTarget) {

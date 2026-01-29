@@ -4,16 +4,15 @@
  * Based on NEW-PLANS.md requirements
  */
 
-import connectDB from '@/lib/db/connection.js';
-import Patient from '@/models/Patient.js';
-import User from '@/models/User.js';
-import { UserRole } from '@/models/User.js';
-import { withTenant } from '@/lib/db/tenant-helper.js';
-import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
+import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth/jwt.js';
+import connectDB from '@/lib/db/connection.js';
+import { withTenant } from '@/lib/db/tenant-helper.js';
+import { sendEmail } from '@/lib/email/email-service.js';
+import Patient from '@/models/Patient.js';
+import User, { UserRole } from '@/models/User.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { sendEmail } from '@/lib/email/email-service.js';
 
 /**
  * Register patient for portal access
@@ -24,10 +23,7 @@ export async function registerPatient(input, tenantId) {
   // Find patient by email or phone (don't use lean() - we need to save)
   const patient = await Patient.findOne(
     withTenant(tenantId, {
-      $or: [
-        { email: input.email?.toLowerCase().trim() },
-        { phone: input.phone?.trim() },
-      ],
+      $or: [{ email: input.email?.toLowerCase().trim() }, { phone: input.phone?.trim() }],
       deletedAt: null,
     })
   );
@@ -94,9 +90,9 @@ export async function registerPatient(input, tenantId) {
   };
   await patient.save();
 
-  // Send verification email
+  // Send verification email (clinic-only: no patient portal; link points to login)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
-  const verificationUrl = `${appUrl}/patient-portal/verify-email/${verificationToken}`;
+  const verificationUrl = `${appUrl}/login?reason=clinic_only`;
 
   const emailHtml = `
     <!DOCTYPE html>
@@ -120,7 +116,7 @@ export async function registerPatient(input, tenantId) {
         <div class="content">
           <p>Dear ${patient.firstName} ${patient.lastName},</p>
           <p>Thank you for registering for the Patient Portal. Please verify your email address to complete your registration.</p>
-          
+
           <p>
             <a href="${verificationUrl}" class="button">Verify Email Address</a>
           </p>

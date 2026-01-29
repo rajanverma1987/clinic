@@ -29,15 +29,23 @@ async function postHandler(req, user, id) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const documentType = typeof body.documentType === 'string' ? body.documentType.trim() : '';
-    const comment = typeof body.comment === 'string' ? body.comment.trim() : '';
+    let documentType = typeof body.documentType === 'string' ? body.documentType.trim() : '';
+    let comment = typeof body.comment === 'string' ? body.comment.trim() : '';
+    if (Array.isArray(body.items) && body.items.length > 0) {
+      documentType = body.items.join(', ');
+    }
+    if (body.deadline) {
+      const deadlineStr = typeof body.deadline === 'string' ? body.deadline : new Date(body.deadline).toISOString().slice(0, 10);
+      comment = comment ? `${comment}\n\nDeadline: ${deadlineStr}` : `Deadline: ${deadlineStr}`;
+    }
 
-    if (!documentType) {
+    if (!documentType && (!Array.isArray(body.items) || body.items.length === 0)) {
       return NextResponse.json(
-        errorResponse('documentType is required', 'VALIDATION_ERROR'),
+        errorResponse('documentType or items array is required', 'VALIDATION_ERROR'),
         { status: 400 }
       );
     }
+    if (!documentType && Array.isArray(body.items)) documentType = 'Requested items';
 
     await connectDB();
     const doctor = await Doctor.findById(id).populate('userId', 'firstName lastName email').lean();
