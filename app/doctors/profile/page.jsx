@@ -66,7 +66,7 @@ export default function DoctorProfilePage() {
   const [insuranceAccepted, setInsuranceAccepted] = useState([]);
   const [newInsurance, setNewInsurance] = useState('');
 
-  const userId = user?._id ?? user?.id ?? user?.userId;
+  const userId = user?._id ?? user?.id ?? user?.userId ?? null;
 
   useEffect(() => {
     if (authLoading) return;
@@ -262,14 +262,14 @@ export default function DoctorProfilePage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }} className='space-y-6'>
+      <div className='data-tabs-container w-full space-y-0'>
         <PageHeader
           title={t('doctors.profileManagement')}
           subtitle={t('doctors.profileManagementSubtitle')}
         />
 
-        {/* Tabs */}
-        <div className='flex gap-2 border-b border-neutral-200'>
+        {/* Tabs – full width, same container as other tabbed pages */}
+        <div className='flex gap-2 border-b border-neutral-200 w-full mt-4'>
           <button
             type='button'
             className={`px-4 py-2 font-medium text-sm ${

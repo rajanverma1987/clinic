@@ -2,13 +2,12 @@
 
 import { RefreshCwIcon, SearchIcon } from '@/components/icons';
 import { useI18n } from '@/contexts/I18nContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import Image from 'next/image';
-import Link from 'next/link';
 import { Fragment, useEffect, useState } from 'react';
 
 /** Normalize actionButtons to an array so we always render the same way (array or single node). */
@@ -42,6 +41,7 @@ export function PageHeader({
   className = '',
 }) {
   const { t } = useI18n();
+  const { isDark } = useTheme();
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -93,7 +93,7 @@ export function PageHeader({
               >
                 {breadcrumbs.map((crumb, index) => (
                   <span key={index} className='flex items-center gap-1.5'>
-                    {index > 0 && <span className='text-neutral-300'>/</span>}
+                    {index > 0 && <span className='text-neutral-300 dark:text-neutral-500'>/</span>}
                     {crumb.href ? (
                       <a
                         href={crumb.href}
@@ -129,22 +129,6 @@ export function PageHeader({
           </div>
         </div>
 
-        <div className='sticky-header-bar__center'>
-          <Link href='/dashboard' className='header-logo-link' aria-label='Home'>
-            <Image
-              src='/images/logoclinic.png'
-              alt='Clinic Logo'
-              width={120}
-              height={40}
-              className='object-contain'
-              priority
-              quality={90}
-              sizes='120px'
-              style={{ height: '40px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }}
-            />
-          </Link>
-        </div>
-
         <div className='sticky-header-bar__right'>
           {/* Quick Action: search + page actions */}
           <div className='sticky-header-bar__right-group'>
@@ -175,13 +159,20 @@ export function PageHeader({
                 </Button>
               </div>
             )}
-            {actionButton && <div className='flex items-center'>{actionButton}</div>}
-            {actionsList.length > 0 && (
-              <div className='flex items-center gap-2'>
-                {actionsList.map((btn, i) => (
-                  <Fragment key={i}>{btn}</Fragment>
-                ))}
-              </div>
+            {(actionButton || actionsList.length > 0) && (
+              <>
+                <span className='sticky-header-bar__pipe' aria-hidden />
+                {actionButton && (
+                  <div className='flex items-center gap-3 min-w-0'>{actionButton}</div>
+                )}
+                {actionsList.length > 0 && (
+                  <div className='flex items-center gap-2'>
+                    {actionsList.map((btn, i) => (
+                      <Fragment key={i}>{btn}</Fragment>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
           {hasQuickActions || showLanguageSwitcher ? (
@@ -195,7 +186,7 @@ export function PageHeader({
           {showLanguageSwitcher && (
             <div className='sticky-header-bar__right-group'>
               <div className='header-control-box'>
-                <LanguageSwitcher variant='light' size='sm' />
+                <LanguageSwitcher variant={isDark ? 'dark' : 'light'} size='sm' />
               </div>
             </div>
           )}

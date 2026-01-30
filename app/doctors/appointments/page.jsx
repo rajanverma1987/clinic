@@ -34,7 +34,7 @@ export default function DoctorAppointmentsPage() {
   const [viewMode, setViewMode] = useState('day'); // day, week, month
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const userId = user?._id ?? user?.id ?? user?.userId;
+  const userId = user?._id ?? user?.id ?? user?.userId ?? null;
 
   useEffect(() => {
     if (authLoading) return;

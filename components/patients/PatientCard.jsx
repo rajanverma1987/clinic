@@ -112,7 +112,7 @@ export function PatientCard({ patient, isDoctor }) {
             onClick={() => router.push(`/appointments/new?patientId=${patient._id}`)}
             className='whitespace-nowrap'
           >
-            <CalendarIcon className='icon icon-xs' ariaHidden />
+            <CalendarIcon className='icon icon-sm shrink-0' ariaHidden />
             {t('appointments.bookAppointment')}
           </Button>
           {isDoctor && (

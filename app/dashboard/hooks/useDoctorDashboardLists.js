@@ -60,7 +60,8 @@ export function useDoctorDashboardLists() {
 
       // Resolve doctorId (single call, required for all list URLs)
       let currentDoctorId = doctorId;
-      if (!currentDoctorId && userId) {
+      const validUserId = userId && userId !== 'undefined' && String(userId).trim() !== '';
+      if (!currentDoctorId && validUserId) {
         const doctorResponse = await apiClient.get(
           `/doctors/user/${encodeURIComponent(userId)}`
         );

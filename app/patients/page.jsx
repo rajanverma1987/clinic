@@ -255,7 +255,7 @@ export default function PatientsPage() {
           title={t('patients.addAppointmentTooltip')}
           className='whitespace-nowrap'
         >
-          <CalendarIcon className='icon icon-sm' ariaHidden />
+          <CalendarIcon className='icon icon-sm shrink-0' ariaHidden />
           {t('appointments.bookAppointment') || 'Add Appointment'}
         </Button>
       ),

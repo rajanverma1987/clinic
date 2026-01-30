@@ -8,6 +8,9 @@
 import { apiClient } from '@/lib/api/client.js';
 import { setCurrentTenantId } from '@/lib/cache/current-tenant.js';
 import * as dashboardCache from '@/lib/cache/dashboard-cache.js';
+import { clearIndexedDBCache, clearOfflineMutations } from '@/lib/cache/indexed-db-cache.js';
+import { clearAllCache } from '@/lib/utils/api-cache.js';
+import { disconnectRealtimeClient } from '@/lib/realtime/realtime-client.js';
 import {
   clearTestAccountRoleOverride,
   getTestAccountRoleOverride,
@@ -82,6 +85,10 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('refreshToken');
             lastActivityRef.current = 0;
             dashboardCache.clear();
+            clearAllCache();
+            disconnectRealtimeClient();
+            clearIndexedDBCache().catch(() => {});
+            clearOfflineMutations().catch(() => {});
           }
           setUser(null);
           setCurrentTenantId(null);
@@ -589,6 +596,10 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('refreshToken');
         lastActivityRef.current = 0;
         dashboardCache.clear();
+        clearAllCache();
+        disconnectRealtimeClient();
+        clearIndexedDBCache().catch(() => {});
+        clearOfflineMutations().catch(() => {});
       }
       setUser(null);
       setCurrentTenantId(null);

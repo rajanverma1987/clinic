@@ -18,7 +18,12 @@ import { getDoctorByUserId } from '@/services/doctor.service';
 async function getHandler(req, user, { params }) {
   const userId = params.userId;
 
-  if (!userId || userId === 'undefined' || (typeof userId === 'string' && userId.trim() === '')) {
+  const invalid =
+    userId == null ||
+    userId === 'undefined' ||
+    userId === 'null' ||
+    (typeof userId === 'string' && userId.trim() === '');
+  if (invalid) {
     return NextResponse.json(
       errorResponse('Invalid or missing user ID', 'BAD_REQUEST'),
       { status: 400 }

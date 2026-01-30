@@ -898,6 +898,9 @@
   align-items: center;
   justify-content: center;
 }
+.dark .empty-state-icon {
+  color: var(--color-text-secondary);
+}
 .empty-state-icon svg,
 .empty-state-icon .icon {
   width: 100%;
@@ -909,6 +912,9 @@
   font-size: 14px;
   line-height: 20px;
 }
+.dark .empty-state p {
+  color: var(--color-text-secondary);
+}
 
 /* Appointment List Item - Professional Clinic Design */
 .dashboard-appointment-item {
@@ -919,6 +925,10 @@
   margin-bottom: 8px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+}
+.dark .dashboard-appointment-item {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
 }
 
 .dashboard-appointment-item:hover {

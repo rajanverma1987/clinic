@@ -26,7 +26,7 @@ export default function DoctorAnalyticsPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  const userId = user?._id ?? user?.id ?? user?.userId;
+  const userId = user?._id ?? user?.id ?? user?.userId ?? null;
 
   useEffect(() => {
     if (authLoading) return;

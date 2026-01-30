@@ -49,7 +49,7 @@ export default function DoctorReviewsPage() {
   const [respondingTo, setRespondingTo] = useState(null);
   const [responseText, setResponseText] = useState('');
 
-  const userId = user?._id ?? user?.id ?? user?.userId;
+  const userId = user?._id ?? user?.id ?? user?.userId ?? null;
 
   useEffect(() => {
     if (authLoading) return;

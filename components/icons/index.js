@@ -47,3 +47,5 @@ export { LanguagesIcon } from './LanguagesIcon';
 export { SmartphoneIcon } from './SmartphoneIcon';
 export { HomeIcon } from './HomeIcon';
 export { ZapIcon } from './ZapIcon';
+export { PrinterIcon } from './PrinterIcon';
+export { FileDownIcon } from './FileDownIcon';

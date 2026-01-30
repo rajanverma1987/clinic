@@ -63,7 +63,8 @@ export default function QueuePage() {
 
   // Resolve Doctor document _id when user is a doctor (Queue stores doctorId = Doctor._id, not User._id)
   useEffect(() => {
-    if (isDoctor && userId && userId !== 'undefined') {
+    const validUserId = userId && userId !== 'undefined' && String(userId).trim() !== '';
+    if (isDoctor && validUserId) {
       apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`).then((res) => {
         if (res.success && res.data?._id) {
           setResolvedDoctorId(res.data._id);

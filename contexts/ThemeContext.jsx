@@ -2,6 +2,7 @@
 
 /**
  * Theme Context – light/dark dashboard theme with localStorage persistence.
+ * Respects system preference (prefers-color-scheme) when no stored choice.
  * Toggles class "dark" on document.documentElement for Tailwind dark: variants.
  */
 
@@ -16,6 +17,8 @@ function readStoredTheme() {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === 'dark' || stored === 'light') return stored;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
   } catch (_) {}
   return 'light';
 }
@@ -40,6 +43,18 @@ export function ThemeProvider({ children }) {
     setThemeState(stored);
     applyTheme(stored);
     setMounted(true);
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      try {
+        if (localStorage.getItem(THEME_STORAGE_KEY) != null) return;
+        const next = media.matches ? 'dark' : 'light';
+        setThemeState(next);
+        applyTheme(next);
+      } catch (_) {}
+    };
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
   }, []);
 
   const setTheme = useCallback((next) => {

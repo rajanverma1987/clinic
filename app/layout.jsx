@@ -21,9 +21,14 @@ export default function RootLayout({ children }) {
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var k='clinic-dashboard-theme';var t=typeof localStorage!=='undefined'?localStorage.getItem(k):null;var dark=(t==='dark')||(t!=='light'&&typeof matchMedia!=='undefined'&&matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(dark){r.classList.add('dark');r.style.colorScheme='dark';}else{r.classList.remove('dark');r.style.colorScheme='light';}})();`,
+          }}
+        />
         <script src='/sw-register.js' async />
       </head>
-      <body className='antialiased min-h-screen bg-neutral-50' suppressHydrationWarning>
+      <body className='antialiased min-h-screen' suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

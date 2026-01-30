@@ -43,12 +43,12 @@ export function SubscriptionExpiredBanner({
       .replace('{{days}}', days);
     return (
       <div
-        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-amber-50 border-l-4 border-amber-500 text-neutral-800"
+        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-500 dark:border-amber-600 text-neutral-800 dark:text-amber-100"
         role="alert"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center" aria-hidden>
-            <InfoIcon className="icon icon-sm text-amber-600" ariaHidden />
+          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center" aria-hidden>
+            <InfoIcon className="icon icon-sm text-amber-600 dark:text-amber-400" ariaHidden />
           </span>
           <p className="text-body-sm font-medium">{message}</p>
         </div>
@@ -66,12 +66,12 @@ export function SubscriptionExpiredBanner({
     const dateStr = expiryDate ? t('subscription.bannerExpiredOn').replace('{{date}}', new Date(expiryDate).toLocaleDateString()) : '';
     return (
       <div
-        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-red-50 border-l-4 border-red-500 text-neutral-800"
+        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 dark:border-red-600 text-neutral-800 dark:text-red-100"
         role="alert"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center" aria-hidden>
-            <InfoIcon className="icon icon-sm text-red-600" ariaHidden />
+          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 dark:bg-red-800/50 flex items-center justify-center" aria-hidden>
+            <InfoIcon className="icon icon-sm text-red-600 dark:text-red-400" ariaHidden />
           </span>
           <p className="text-body-sm font-medium">
             {message}
@@ -89,12 +89,12 @@ export function SubscriptionExpiredBanner({
   if (subscriptionStatus === 'PENDING') {
     return (
       <div
-        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-primary-50 border-l-4 border-primary-500 text-neutral-800"
+        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-primary-50 dark:bg-primary-900/30 border-l-4 border-primary-500 dark:border-primary-400 text-neutral-800 dark:text-primary-100"
         role="alert"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center" aria-hidden>
-            <InfoIcon className="icon icon-sm text-primary-600" ariaHidden />
+          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-800/50 flex items-center justify-center" aria-hidden>
+            <InfoIcon className="icon icon-sm text-primary-600 dark:text-primary-400" ariaHidden />
           </span>
           <p className="text-body-sm font-medium">{t('subscription.bannerPending')}</p>
         </div>
@@ -109,12 +109,12 @@ export function SubscriptionExpiredBanner({
   if (!subscriptionStatus) {
     return (
       <div
-        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-neutral-50 border-l-4 border-primary-500 text-neutral-700"
+        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-neutral-50 dark:bg-neutral-800/80 border-l-4 border-primary-500 dark:border-primary-400 text-neutral-700 dark:text-neutral-200"
         role="alert"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-neutral-200 flex items-center justify-center" aria-hidden>
-            <InfoIcon className="icon icon-sm text-neutral-600" ariaHidden />
+          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-neutral-200 dark:bg-neutral-600 flex items-center justify-center" aria-hidden>
+            <InfoIcon className="icon icon-sm text-neutral-600 dark:text-neutral-300" ariaHidden />
           </span>
           <p className="text-body-sm font-medium">{t('subscription.bannerNoSubscription')}</p>
         </div>

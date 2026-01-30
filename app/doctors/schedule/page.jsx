@@ -105,7 +105,7 @@ export default function DoctorSchedulePage() {
     if (user?._id && weekStart) fetchWeekAppointments();
   }, [user?._id, weekStart, fetchWeekAppointments]);
 
-  const userId = user?._id ?? user?.id ?? user?.userId;
+  const userId = user?._id ?? user?.id ?? user?.userId ?? null;
 
   useEffect(() => {
     if (authLoading) return;

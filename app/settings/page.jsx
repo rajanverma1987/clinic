@@ -742,7 +742,7 @@ function SettingsPageContent() {
         unreadCount={0}
         actionButton={tabActionButtons}
       />
-      <div className='data-tabs-container w-full' style={{ padding: '0 10px' }}>
+      <div className='data-tabs-container w-full'>
         {/* Tabs bar below header – full width */}
         <SettingsTabs
           activeTab={activeTab}

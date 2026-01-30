@@ -27,7 +27,7 @@ export default function DoctorEarningsPage() {
   const [pendingSettlements, setPendingSettlements] = useState([]);
   const [taxReports, setTaxReports] = useState(null);
 
-  const userId = user?._id ?? user?.id ?? user?.userId;
+  const userId = user?._id ?? user?.id ?? user?.userId ?? null;
 
   useEffect(() => {
     if (authLoading) return;
