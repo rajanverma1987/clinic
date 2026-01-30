@@ -277,7 +277,7 @@ export default function SubscriptionPage() {
   };
 
   if (!user) return null;
-  if (loading) return <Loader fullScreen size='lg' />;
+  if (loading) return <Loader type='page' text={t('common.loading')} />;
 
   // No plans at all: show empty state with i18n
   if (uniquePlans.length === 0) {

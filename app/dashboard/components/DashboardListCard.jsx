@@ -31,8 +31,8 @@ function DashboardListCardInner({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <div className='flex items-center gap-2 mb-4'>
-            <div className='skeleton w-1 h-4 rounded-full shrink-0' />
+          <div className='section-header'>
+            <div className='skeleton w-1 h-4 rounded-full shrink-0' style={{ width: '3px', height: '16px' }} />
             <div className='skeleton skeleton-text w-40' />
           </div>
           <div className='space-y-2 flex-1 min-h-0'>
@@ -70,10 +70,10 @@ function DashboardListCardInner({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.25 }}
         >
-        {/* Header */}
-        <div className='section-header' style={{ alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <div className={`accent-bar accent-bar-${colorScheme}`} style={{ flexShrink: 0, height: '20px', width: '4px' }} />
-          <h2 className='section-title' style={{ margin: 0, fontSize: '16px', fontWeight: '600', lineHeight: '20px' }}>{title}</h2>
+        {/* Header – alignment from dashboard.css .section-header */}
+        <div className='section-header'>
+          <div className={`accent-bar accent-bar-${colorScheme}`} />
+          <h2 className='section-title'>{title}</h2>
         </div>
 
         {/* List – layout animation for reordering (Framer Motion) */}

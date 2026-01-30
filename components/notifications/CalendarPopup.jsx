@@ -6,6 +6,7 @@
  */
 
 import { Button } from '@/components/ui/Button';
+import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
@@ -225,7 +226,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
         <div className='flex-1 overflow-y-auto' style={{ maxHeight: '400px' }}>
           {loading ? (
             <div className='flex items-center justify-center py-12'>
-              <div className='text-neutral-400'>Loading appointments...</div>
+              <Loader type='inline' text={t('appointments.loadingAppointments')} />
             </div>
           ) : appointments.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-12 px-4'>

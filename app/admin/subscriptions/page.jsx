@@ -303,7 +303,7 @@ export default function AdminSubscriptionsPage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   // Show error message if not logged in or not super admin

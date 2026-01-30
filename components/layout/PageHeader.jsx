@@ -1,6 +1,7 @@
 'use client';
 
-import { SearchIcon } from '@/components/icons';
+import { RefreshCwIcon, SearchIcon } from '@/components/icons';
+import { useI18n } from '@/contexts/I18nContext';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
@@ -34,16 +35,19 @@ export function PageHeader({
   onNotificationClick,
   onMarkAsRead,
   onMarkAllAsRead,
+  onRefresh,
   showNotifications = true,
   showLanguageSwitcher = true,
   showSearch = true,
   className = '',
 }) {
+  const { t } = useI18n();
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   const actionsList = toActionsList(actionButtons);
-  const hasQuickActions = showSearch || actionButton || actionsList.length > 0;
+  const hasQuickActions =
+    showSearch || actionButton || actionsList.length > 0 || typeof onRefresh === 'function';
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -155,6 +159,19 @@ export function PageHeader({
                   aria-label='Search'
                 >
                   <SearchIcon className='icon icon-sm' ariaHidden />
+                </Button>
+              </div>
+            )}
+            {typeof onRefresh === 'function' && (
+              <div className='header-control-box header-control-box--icon'>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={onRefresh}
+                  title={t('common.refresh')}
+                  aria-label={t('common.refresh')}
+                >
+                  <RefreshCwIcon className='icon icon-sm' ariaHidden />
                 </Button>
               </div>
             )}

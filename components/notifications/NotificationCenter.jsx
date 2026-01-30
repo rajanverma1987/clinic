@@ -254,7 +254,7 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
         <div className='max-h-96 overflow-y-auto'>
           {loading ? (
             <div className='p-8 text-center'>
-              <Loader size='sm' inline />
+              <Loader type='inline' text={t('common.loading')} />
             </div>
           ) : filteredNotifications.length > 0 ? (
             <div className='divide-y divide-neutral-200 dark:divide-neutral-600'>

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "git": "git add . && git commit -m 'update' && git push",
-    "dev": "node server.js",
+    "dev": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON server.js",
     "dev:next": "next dev -p 5053",
     "build": "node -r ./lib/run-self-polyfill.cjs ./node_modules/next/dist/bin/next build",
     "start": "cross-env NODE_ENV=production node server.js",

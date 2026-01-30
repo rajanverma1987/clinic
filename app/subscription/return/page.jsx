@@ -89,7 +89,7 @@ function SubscriptionReturnContent() {
       <Card className='max-w-md w-full text-center'>
         {status === 'loading' && (
           <div className='py-12'>
-            <Loader size='lg' text={t('subscription.activatingSubscription')} />
+            <Loader type='page' text={t('subscription.activatingSubscription')} />
           </div>
         )}
 
@@ -151,7 +151,7 @@ export default function SubscriptionReturnPage() {
           <div className='flex items-center justify-center min-h-[60vh]'>
             <Card className='max-w-md w-full text-center'>
               <div className='py-12'>
-                <Loader size='lg' />
+                <Loader type='page' text={t('common.loading')} />
               </div>
             </Card>
           </div>

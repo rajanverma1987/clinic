@@ -26,13 +26,17 @@ export function withRequestLogger(handler) {
       return { userId: u.userId, tenantId: u.tenantId, role: u.role };
     };
 
-    logger.info('API Request', {
-      method,
-      url,
-      correlationId,
-      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
-      userAgent: req.headers.get('user-agent')?.substring(0, 100),
-    });
+    // In development skip per-request INFO to keep terminal readable; use LOG_LEVEL=DEBUG to enable
+    const isDev = process.env.NODE_ENV !== 'production';
+    if (!isDev || process.env.LOG_LEVEL === 'DEBUG') {
+      logger.info('API Request', {
+        method,
+        url,
+        correlationId,
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+        userAgent: req.headers.get('user-agent')?.substring(0, 100),
+      });
+    }
 
     try {
       const result = await handler(req, ...args);

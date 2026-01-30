@@ -104,7 +104,7 @@ export default function AdminFinancialDisputesPage() {
     }
   };
 
-  if (authLoading || (loading && !disputes.length)) return <Loader fullScreen size='lg' />;
+  if (authLoading || (loading && !disputes.length)) return <Loader type='page' text={t('common.loading')} />;
   if (user?.role !== 'super_admin') return null;
 
   const pages = pagination.totalPages || 1;
@@ -147,7 +147,7 @@ export default function AdminFinancialDisputesPage() {
         </div>
 
         {loading ? (
-          <Loader size='lg' />
+          <Loader type='section' text={t('common.loading')} />
         ) : disputes.length === 0 ? (
           <Card className='p-12 text-center'>
             <p className='text-neutral-500'>No disputes found</p>

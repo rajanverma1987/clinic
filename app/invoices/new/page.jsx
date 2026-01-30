@@ -375,44 +375,44 @@ export default function NewInvoicePage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
+  const labelClass =
+    'block text-sm font-medium text-neutral-700 mb-1 leading-tight min-h-[1.25rem]';
   return (
     <Layout>
       <div style={{ padding: '0 10px' }}>
-        <div className='mb-8' style={{ paddingTop: '10px' }}>
-          <BackButton className='mb-4 ml-2.5' />
-          <h1 className='text-3xl font-bold text-neutral-900'>{t('invoices.createInvoice')}</h1>
-          <p className='text-neutral-600 mt-2'>{t('invoices.invoiceList')}</p>
+        <div className='mb-4 pt-2'>
+          <BackButton className='mb-2' />
+          <h1 className='text-2xl font-bold text-neutral-900'>{t('invoices.createInvoice')}</h1>
+          <p className='text-neutral-600 mt-1 text-sm'>{t('invoices.invoiceList')}</p>
         </div>
 
-        <Card>
+        <Card className='p-4'>
           <form onSubmit={handleSubmit} className='space-y-3' noValidate>
             {error && (
-              <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded'>
+              <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-3 py-2 rounded text-sm'>
                 {error}
               </div>
             )}
 
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            {/* Invoice details: 3-column grid, equal-height controls */}
+            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end'>
               <div>
-                <label
-                  htmlFor='patientId'
-                  className='block text-sm font-medium text-neutral-700 mb-1'
-                >
-                  Patient *
+                <label htmlFor='patientId' className={labelClass}>
+                  {t('appointments.patient')} *
                 </label>
                 <select
                   id='patientId'
                   required
                   value={formData.patientId}
                   onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  className='form-control-height w-full px-3 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                   disabled={patients.length === 0}
                 >
                   <option value=''>
-                    {patients.length === 0 ? 'No patients available' : 'Select a patient'}
+                    {patients.length === 0 ? t('patients.noPatientsFound') : t('patientSelector.selectPatient')}
                   </option>
                   {patients.map((patient) => (
                     <option key={patient._id} value={patient._id}>
@@ -421,13 +421,9 @@ export default function NewInvoicePage() {
                   ))}
                 </select>
               </div>
-
               <div>
-                <label
-                  htmlFor='invoiceDate'
-                  className='block text-sm font-medium text-neutral-700 mb-1'
-                >
-                  Invoice Date *
+                <label htmlFor='invoiceDate' className={labelClass}>
+                  {t('invoices.invoiceDate')} *
                 </label>
                 <Input
                   id='invoiceDate'
@@ -435,94 +431,106 @@ export default function NewInvoicePage() {
                   required
                   value={formData.invoiceDate}
                   onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
+                  className='text-sm'
                 />
               </div>
-
               <div>
-                <label
-                  htmlFor='dueDate'
-                  className='block text-sm font-medium text-neutral-700 mb-1'
-                >
-                  Due Date
+                <label htmlFor='dueDate' className={labelClass}>
+                  {t('invoices.dueDate')}
                 </label>
                 <Input
                   id='dueDate'
                   type='date'
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  className='text-sm'
                 />
               </div>
             </div>
 
-            <div className='border-t pt-4'>
-              <div className='flex items-center justify-between mb-3'>
-                <h2 className='text-xl font-semibold'>Invoice Items</h2>
-                <Button type='button' variant='secondary' onClick={addItem}>
-                  + Add Item
+            {/* Invoice items: equal-height inputs in table */}
+            <div className='border-t border-neutral-200 pt-3'>
+              <div className='flex items-center justify-between mb-2'>
+                <h2 className='text-base font-semibold text-neutral-900'>
+                  {t('invoices.invoiceItems')}
+                </h2>
+                <Button type='button' variant='secondary' size='sm' onClick={addItem}>
+                  + {t('invoices.addItem')}
                 </Button>
               </div>
 
-              <div className='overflow-x-auto'>
-                <table className='min-w-full divide-y divide-neutral-200 border border-neutral-200 rounded-lg'>
+              <div className='overflow-x-auto -mx-1'>
+                <table className='w-full table-fixed divide-y divide-neutral-200 border border-neutral-200 rounded-lg text-sm'>
+                  <colgroup>
+                    <col style={{ width: '2rem' }} />
+                    <col style={{ width: '7rem' }} />
+                    <col style={{ minWidth: '8rem' }} />
+                    <col style={{ width: '4.5rem' }} />
+                    <col style={{ width: '5.5rem' }} />
+                    <col style={{ width: '4.5rem' }} />
+                    <col style={{ width: '4.5rem' }} />
+                    <col style={{ width: '5.5rem' }} />
+                    <col style={{ width: '5rem' }} />
+                  </colgroup>
                   <thead className='bg-neutral-100'>
                     <tr>
-                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
+                      <th className='px-2 py-1.5 text-left text-xs font-medium text-neutral-500 uppercase'>
                         #
                       </th>
-                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Type
+                      <th className='px-2 py-1.5 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        {t('invoices.type')}
                       </th>
-                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Description
+                      <th className='px-2 py-1.5 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        {t('invoices.description')}
                       </th>
-                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Quantity
+                      <th className='px-2 py-1.5 text-center text-xs font-medium text-neutral-500 uppercase w-[4.5rem]'>
+                        {t('invoices.quantity')}
                       </th>
-                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Unit Price
+                      <th className='px-2 py-1.5 text-center text-xs font-medium text-neutral-500 uppercase w-[5.5rem]'>
+                        {t('invoices.unitPrice')}
                       </th>
-                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Discount (%)
+                      <th className='px-2 py-1.5 text-center text-xs font-medium text-neutral-500 uppercase w-[4.5rem]'>
+                        {t('invoices.discount')}
                       </th>
-                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Tax Rate (%)
+                      <th className='px-2 py-1.5 text-center text-xs font-medium text-neutral-500 uppercase w-[4.5rem]'>
+                        {t('invoices.taxRate')}
                       </th>
-                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Total
+                      <th className='px-2 py-1.5 text-right text-xs font-medium text-neutral-500 uppercase w-[5.5rem]'>
+                        {t('invoices.total')}
                       </th>
-                      <th className='px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Actions
+                      <th className='px-2 py-1.5 text-left text-xs font-medium text-neutral-500 uppercase'>
+                        {t('common.actions')}
                       </th>
                     </tr>
                   </thead>
-                  <tbody className='bg-white divide-y divide-gray-200'>
+                  <tbody className='bg-white divide-y divide-neutral-200'>
                     {items.map((item, index) => (
-                      <tr key={index} className='hover:bg-neutral-100'>
-                        <td className='px-4 py-2 text-sm text-neutral-900'>{index + 1}</td>
-                        <td className='px-4 py-2 text-sm'>
+                      <tr key={index} className='hover:bg-neutral-50'>
+                        <td className='px-2 py-1.5 text-neutral-900 align-middle'>{index + 1}</td>
+                        <td className='px-2 py-1.5 align-middle'>
                           <select
                             required
                             value={item.type}
                             onChange={(e) => updateItem(index, 'type', e.target.value)}
-                            className='w-full px-2 py-1 text-xs border border-neutral-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500'
+                            className='form-control-height input-compact w-full min-w-0 text-xs border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500'
                           >
-                            <option value='consultation'>Consultation</option>
-                            <option value='procedure'>Procedure</option>
-                            <option value='medication'>Medication</option>
-                            <option value='lab_test'>Lab Test</option>
-                            <option value='other'>Other</option>
+                            <option value='consultation'>{t('invoices.typeConsultation')}</option>
+                            <option value='procedure'>{t('invoices.typeProcedure')}</option>
+                            <option value='medication'>{t('invoices.typeMedication')}</option>
+                            <option value='lab_test'>{t('invoices.typeLabTest')}</option>
+                            <option value='other'>{t('invoices.typeOther')}</option>
                           </select>
                         </td>
-                        <td className='px-4 py-2 text-sm'>
+                        <td className='px-2 py-1.5 align-middle min-w-0'>
                           <Input
                             required
                             value={item.description}
                             onChange={(e) => updateItem(index, 'description', e.target.value)}
                             placeholder={t('invoices.itemDescriptionPlaceholder')}
-                            className='text-xs w-full'
+                            className='input-compact text-xs w-full min-w-0'
                           />
                         </td>
-                        <td className='px-4 py-2 text-sm'>
+                        <td className='px-2 py-1.5 align-middle text-center'>
                           <Input
                             type='number'
                             min='1'
@@ -531,10 +539,10 @@ export default function NewInvoicePage() {
                             onChange={(e) =>
                               updateItem(index, 'quantity', parseInt(e.target.value) || 1)
                             }
-                            className='text-xs w-20'
+                            className='input-compact text-xs w-full min-w-0 text-center'
                           />
                         </td>
-                        <td className='px-4 py-2 text-sm'>
+                        <td className='px-2 py-1.5 align-middle text-center'>
                           <Input
                             type='number'
                             min='0'
@@ -544,10 +552,10 @@ export default function NewInvoicePage() {
                             onChange={(e) =>
                               updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)
                             }
-                            className='text-xs w-24'
+                            className='input-compact text-xs w-full min-w-0 text-center'
                           />
                         </td>
-                        <td className='px-4 py-2 text-sm'>
+                        <td className='px-2 py-1.5 align-middle text-center'>
                           <Input
                             type='number'
                             min='0'
@@ -556,10 +564,10 @@ export default function NewInvoicePage() {
                             onChange={(e) =>
                               updateItem(index, 'discount', parseFloat(e.target.value) || 0)
                             }
-                            className='text-xs w-20'
+                            className='input-compact text-xs w-full min-w-0 text-center'
                           />
                         </td>
-                        <td className='px-4 py-2 text-sm'>
+                        <td className='px-2 py-1.5 align-middle text-center'>
                           <Input
                             type='number'
                             min='0'
@@ -568,22 +576,22 @@ export default function NewInvoicePage() {
                             onChange={(e) =>
                               updateItem(index, 'taxRate', parseFloat(e.target.value) || 0)
                             }
-                            className='text-xs w-20'
+                            className='input-compact text-xs w-full min-w-0 text-center'
                           />
                         </td>
-                        <td className='px-4 py-2 text-sm font-medium text-neutral-900'>
+                        <td className='px-2 py-1.5 text-neutral-900 font-medium align-middle whitespace-nowrap text-right'>
                           {formatCurrencyUtil(calculateItemTotal(item).total, currency, locale)}
                         </td>
-                        <td className='px-4 py-2 text-sm'>
+                        <td className='px-2 py-1.5 align-middle'>
                           {items.length > 1 && (
                             <Button
                               type='button'
                               variant='secondary'
                               size='sm'
                               onClick={() => removeItem(index)}
-                              className='text-status-error hover:text-status-error/80 text-xs'
+                              className='text-status-error hover:text-status-error/80 text-xs py-1'
                             >
-                              Remove
+                              {t('common.remove')}
                             </Button>
                           )}
                         </td>
@@ -594,26 +602,27 @@ export default function NewInvoicePage() {
               </div>
             </div>
 
-            <div className='border-t pt-6'>
-              <h2 className='text-xl font-semibold mb-4'>Invoice Discount</h2>
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+            <div className='border-t border-neutral-200 pt-3'>
+              <h2 className='text-base font-semibold text-neutral-900 mb-2'>
+                {t('invoices.invoiceDiscount')}
+              </h2>
+              <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 items-end'>
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Discount Type
+                  <label className={labelClass}>
+                    {t('invoices.discountType')}
                   </label>
                   <select
                     value={formData.discountType}
                     onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
-                    className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                    className='form-control-height w-full px-3 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                   >
-                    <option value='percentage'>Percentage</option>
-                    <option value='fixed'>Fixed Amount</option>
+                    <option value='percentage'>{t('invoices.percentage')}</option>
+                    <option value='fixed'>{t('invoices.fixedAmount')}</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Discount Value
+                  <label className={labelClass}>
+                    {t('invoices.discountValue')}
                   </label>
                   <Input
                     type='number'
@@ -622,67 +631,74 @@ export default function NewInvoicePage() {
                     onChange={(e) =>
                       setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })
                     }
+                    className='text-sm'
                   />
                 </div>
-
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>Reason</label>
+                  <label className={labelClass}>
+                    {t('invoices.reason')}
+                  </label>
                   <Input
                     value={formData.discountReason}
                     onChange={(e) => setFormData({ ...formData, discountReason: e.target.value })}
                     placeholder={t('invoices.discountReasonPlaceholder')}
+                    className='text-sm'
                   />
                 </div>
               </div>
             </div>
 
-            <div className='border-t pt-6'>
-              <h2 className='text-xl font-semibold mb-4'>Summary</h2>
-              <div className='bg-neutral-100 p-4 rounded-lg space-y-2'>
-                <div className='flex justify-between'>
-                  <span>Subtotal:</span>
+            <div className='border-t border-neutral-200 pt-3'>
+              <h2 className='text-base font-semibold text-neutral-900 mb-2'>
+                {t('invoices.summary')}
+              </h2>
+              <div className='flex justify-end'>
+                <div className='bg-neutral-100 p-3 rounded-lg space-y-1.5 max-w-xs w-full sm:w-auto min-w-[12rem]'>
+                <div className='flex justify-between text-sm'>
+                  <span className='text-neutral-600'>{t('invoices.subtotal')}</span>
                   <span>{formatCurrencyUtil(totals.subtotal, currency, locale)}</span>
                 </div>
-                <div className='flex justify-between'>
-                  <span>Discount:</span>
+                <div className='flex justify-between text-sm'>
+                  <span className='text-neutral-600'>{t('invoices.discount')}</span>
                   <span>-{formatCurrencyUtil(totals.invoiceDiscount, currency, locale)}</span>
                 </div>
-                <div className='flex justify-between'>
-                  <span>Tax:</span>
+                <div className='flex justify-between text-sm'>
+                  <span className='text-neutral-600'>{t('invoices.tax')}</span>
                   <span>{formatCurrencyUtil(totals.totalTax, currency, locale)}</span>
                 </div>
-                <div className='flex justify-between text-lg font-bold border-t pt-2'>
-                  <span>Total:</span>
+                <div className='flex justify-between font-semibold border-t border-neutral-200 pt-2 mt-2'>
+                  <span>{t('invoices.total')}</span>
                   <span>{formatCurrencyUtil(totals.finalTotal, currency, locale)}</span>
+                </div>
                 </div>
               </div>
             </div>
 
             <div>
-              <label htmlFor='notes' className='block text-sm font-medium text-neutral-700 mb-2'>
-                Notes
+              <label htmlFor='notes' className={labelClass}>
+                {t('invoices.notes')}
               </label>
               <textarea
                 id='notes'
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
-                rows={3}
+                className='w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[var(--input-height)] resize-y'
+                rows={2}
                 placeholder={t('invoices.notesPlaceholder')}
               />
             </div>
 
-            <div className='flex justify-end gap-4 pt-6 border-t'>
+            <div className='flex justify-end gap-3 pt-3 border-t border-neutral-200'>
               <Button
                 type='button'
                 variant='secondary'
                 onClick={() => router.back()}
                 disabled={submitting}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type='submit' isLoading={submitting} disabled={submitting}>
-                Create Invoice
+                {t('invoices.createInvoice')}
               </Button>
             </div>
           </form>

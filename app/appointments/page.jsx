@@ -483,7 +483,7 @@ export default function AppointmentsPage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   return (
@@ -545,7 +545,7 @@ export default function AppointmentsPage() {
                   ) : (
                     <option value='' disabled>
                       {doctors === null || doctors === undefined
-                        ? t('appointments.loadingDoctors') || 'Loading doctors...'
+                        ? t('appointments.loadingDoctors')
                         : t('appointments.noDoctorsAvailable') || 'No doctors available'}
                     </option>
                   )}

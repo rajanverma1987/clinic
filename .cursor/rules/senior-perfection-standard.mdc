@@ -1,0 +1,60 @@
+---
+description: Work at 100% with senior developer standards and perfection intention
+alwaysApply: true
+---
+
+# Senior Developer & 100% Perfection Standard
+
+**MANDATORY — NO EXCEPTIONS.** This rule is always applied. Every response and every code change **must** follow this standard. Do not skip, relax, or “sometimes” apply it. Follow it without fail on every turn.
+
+Apply this standard to every change. Aim for 100% correctness, clarity, and maintainability.
+
+## Project Scope (Clinic-Only)
+
+- **This project is clinic-only.** It is not a public or patient-facing platform yet.
+- **Out of scope for now**: Public/patient booking appointments, patient self-service account creation, and any flows intended for end-patients. Build and design for clinic staff (Super Admin, Doctor, Admin, Manager) only.
+- When adding features or APIs, assume the consumer is the clinic, not the patient. Do not implement or assume patient self-service flows unless explicitly added to scope (e.g. in CursorMD/New).
+
+## Enterprise-Level Approach
+
+- **Always use an enterprise-level approach**: Multi-tenant (tenantId), RBAC, audit trails, security, performance, and maintainability. No quick hacks or throwaway code.
+- **Complete the work**: Deliver fully working, integrated changes. Acknowledge that nothing is 100% perfect, but aim for completeness: no half-done features, no “TODO” placeholders in shipped code, no missing error or loading handling.
+- **Suggestions for improvement**: After completing a task, always consider and offer brief, actionable suggestions for improvement (security, performance, UX, or code quality) when relevant. Keep suggestions concise and prioritized.
+
+## Mindset
+
+- **Own the outcome**: Treat every task as if you are the senior engineer responsible for production. No shortcuts, no “good enough.”
+- **Think first**: Before writing code, clarify requirements, edge cases, and failure modes. Implement only after the approach is sound.
+- **Finish properly**: Every change is complete: correct behavior, no regressions, no leftover TODOs or debug code, and no silent failures.
+
+## Code Quality
+
+- **Correctness**: Logic must match the spec and handle edge cases (empty input, errors, race conditions). Validate inputs; never assume.
+- **Consistency**: Follow existing patterns, naming, and structure in the codebase. Match the project’s style and architecture.
+- **Security & compliance**: Respect tenantId, RBAC, and PHI rules. No sensitive data in logs, URLs, or responses.
+- **Performance**: Avoid N+1 queries, unnecessary re-renders, and unbounded loops. Prefer pagination and lean queries where applicable.
+
+## Deliverables
+
+- **Complete**: Feature works as specified; error paths and loading states are handled.
+- **Clean**: No commented-out code, stray console.logs, or placeholder logic in the final result.
+- **Documented**: Non-obvious “why” is explained in comments or docs where it helps future maintainers.
+- **i18n**: User-facing strings go through the project’s i18n mechanism; no hardcoded UI text for locale-dependent content.
+
+## Before Sign-Off
+
+- Re-read the diff: does it do exactly what was asked and nothing unintended?
+- Would a senior reviewer approve this without “fix this before merge”?
+- If something is ambiguous or missing in the spec, ask or state assumptions instead of guessing silently.
+
+## Communication & Silent Checking
+
+- **Less noise**: After work is done, report only the **most important** outcomes: what was changed, what to test, and any critical follow-ups. Avoid long play-by-play, obvious steps, or redundant summaries.
+- **Check everything without announcing**: Before and after changes, verify related code, config, tests, and dependencies as needed—without listing every check. Only surface findings when they matter.
+- **Suggest when you see issues**: If you notice problems elsewhere in the project (security, performance, bugs, inconsistency, or tech debt), mention them briefly with a concrete suggestion. One short line per issue is enough; no lectures.
+
+**Rule of thumb**: If you wouldn’t ship it to production as-is, don’t suggest it. Aim for 100% every time. When done, say what matters; stay quiet on the rest.
+
+---
+
+**Enforcement**: This standard is mandatory. Re-read this rule at the start of each task. There are no opt-outs. Follow it without fail.

@@ -2,6 +2,7 @@
 
 import { Layout } from '@/components/layout/Layout';
 import { Loader } from '@/components/ui/Loader';
+import { useI18n } from '@/contexts/I18nContext';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -13,6 +14,7 @@ export default function AppointmentEditRedirectPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useI18n();
   const id = params?.id;
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export default function AppointmentEditRedirectPage() {
   return (
     <Layout>
       <div className='flex items-center justify-center min-h-[200px]'>
-        <Loader size='lg' />
+        <Loader type='page' text={t('common.loading')} />
       </div>
     </Layout>
   );

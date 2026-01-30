@@ -38,11 +38,12 @@ const SETTINGS_TAB_IDS = [
 const ADMIN_ONLY_TABS = ['general', 'compliance', 'doctors', 'smtp'];
 
 function SettingsPageFallback() {
+  const { t } = useI18n();
   return (
     <Layout>
       <PageHeader title='Settings' />
       <div className='flex justify-center p-8'>
-        <Loader />
+        <Loader type='page' text={t('common.loading')} />
       </div>
     </Layout>
   );
@@ -648,14 +649,14 @@ function SettingsPageContent() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   // Manager has no Settings access – show loader while redirect runs (redirect in useEffect above)
   if (!authLoading && currentUser && !canAccessSettings) {
     return (
       <Layout>
-        <Loader fullScreen size='lg' text={t('auth.redirectingToLogin') || 'Redirecting...'} />
+        <Loader type='page' text={t('auth.redirectingToLogin')} />
       </Layout>
     );
   }
@@ -741,8 +742,8 @@ function SettingsPageContent() {
         unreadCount={0}
         actionButton={tabActionButtons}
       />
-      <div className='max-w-7xl w-full'>
-        {/* Tabs bar below header – left-aligned, left to right */}
+      <div className='data-tabs-container w-full' style={{ padding: '0 10px' }}>
+        {/* Tabs bar below header – full width */}
         <SettingsTabs
           activeTab={activeTab}
           setActiveTab={handleTabChange}
@@ -751,7 +752,7 @@ function SettingsPageContent() {
 
         {/* Profile Settings */}
         {activeTab === 'profile' && (
-          <div className='max-w-5xl w-full'>
+          <div className='w-full'>
             <ProfileTab
               currentUser={currentUser}
               logout={logout}

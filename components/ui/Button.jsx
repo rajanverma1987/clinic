@@ -45,17 +45,18 @@ const VARIANTS = {
   link: 'bg-transparent text-primary-500 border-0 shadow-none hover:text-primary-700 hover:underline focus:ring-primary-500 underline-offset-2',
 };
 
+/** Inline padding: generous horizontal + vertical (same as Quick Actions standard) for all sizes. */
 const SIZES = {
-  xs: 'px-3 py-1.5 text-body-xs min-h-[32px]',
-  sm: 'px-4 py-2.5 text-body-sm min-h-[38px]',
-  md: 'px-5 py-3 text-button min-h-[44px]',
-  lg: 'px-6 py-3.5 text-body-md min-h-[52px]',
+  xs: 'px-4 py-2 text-body-xs min-h-[32px]',
+  sm: 'px-5 py-3 text-body-sm min-h-[40px]',
+  md: 'px-6 py-3.5 text-button min-h-[44px]',
+  lg: 'px-7 py-4 text-body-md min-h-[52px]',
   xl: 'px-8 py-4 text-body-lg min-h-[60px]',
 };
 
 const ICON_ONLY_SIZES = {
   xs: 'w-8 h-8 p-0 min-h-[32px]',
-  sm: 'w-10 h-10 p-0 min-h-[38px]',
+  sm: 'w-10 h-10 p-0 min-h-[40px]',
   md: 'w-12 h-12 p-0 min-h-[44px]',
   lg: 'w-14 h-14 p-0 min-h-[52px]',
   xl: 'w-16 h-16 p-0 min-h-[60px]',
@@ -97,15 +98,16 @@ export function Button({
     iconOnlyPill ? 'aspect-square' : ''
   } ${isDisabled ? DISABLED : ''} ${className}`.trim();
   const content = isLoading ? (
-    <>
+    <span className='inline-flex items-center justify-center gap-2'>
       <CompactLoader
         size='sm'
         variant={
           variant === 'link' || variant === 'ghost' || variant === 'tertiary' ? 'primary' : 'white'
         }
+        aria-label={t('common.loading')}
       />
       <span>{t('common.loading')}</span>
-    </>
+    </span>
   ) : (
     children
   );

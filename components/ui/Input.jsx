@@ -27,9 +27,8 @@ export function Input({ label, error, helperText, className = '', disabled, requ
     }
   }, [required, props.type, props.name, props.id, label]);
 
-  // Base classes with theme specifications
-  // Default: bg-white, border: neutral-300, radius: 8px, padding: 12px
-  const baseClasses = `w-full px-4 py-3.5 text-body-md border rounded-[10px]`;
+  // Base classes with theme specs; height matches select/date/time via --input-height
+  const baseClasses = `w-full form-control-height px-4 py-0 text-body-md border rounded-[10px]`;
 
   // States following clinic theme
   // Default: bg-white, border: neutral-300, text: neutral-900, placeholder: neutral-500

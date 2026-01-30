@@ -247,7 +247,7 @@ export default function DoctorSchedulePage() {
   if (authLoading || loading) {
     return (
       <Layout>
-        <Loader fullScreen size='lg' />
+        <Loader type='page' text={t('common.loading')} />
       </Layout>
     );
   }
@@ -258,7 +258,7 @@ export default function DoctorSchedulePage() {
 
   return (
     <Layout>
-      <div className='max-w-6xl mx-auto space-y-6'>
+      <div style={{ padding: '0 10px' }} className='space-y-6'>
         <PageHeader
           title={t('doctors.scheduleManagement')}
           subtitle={t('doctors.scheduleManagementSubtitle')}
@@ -409,7 +409,7 @@ export default function DoctorSchedulePage() {
                   : ''}
               </h3>
               {loadingAppointments ? (
-                <p className='text-sm text-neutral-500'>{t('common.loading')}</p>
+                <Loader type='inline' text={t('common.loading')} />
               ) : selectedDate ? (
                 (() => {
                   const dateStr = selectedDate.toISOString().split('T')[0];

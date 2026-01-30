@@ -227,7 +227,7 @@ export default function StaffPage() {
   if (authLoading) {
     return (
       <Layout>
-        <Loader fullScreen size='lg' />
+        <Loader type='page' text={t('common.loading')} />
       </Layout>
     );
   }
@@ -320,8 +320,7 @@ export default function StaffPage() {
 
   return (
     <Layout>
-      <div className='max-w-6xl mx-auto space-y-6'>
-        <PageHeader
+      <PageHeader
           title={t('staff.title')}
           subtitle={t('staff.subtitle')}
           action={
@@ -330,7 +329,7 @@ export default function StaffPage() {
             </Button>
           }
         />
-
+      <div style={{ padding: '0 10px' }} className='space-y-6'>
         <Card>
           <div className='p-4 flex flex-wrap gap-4'>
             <div className='flex-1 min-w-[200px]'>

@@ -676,7 +676,7 @@ function NewPrescriptionPageContent() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   return (
@@ -707,11 +707,11 @@ function NewPrescriptionPageContent() {
           unreadCount={0}
           actionButton={<BackButton />}
         />
-        <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
-          {/* Two-column layout: Form on left, Patient details on right */}
-          <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+        <div style={{ padding: '0 10px' }}>
+          {/* Two-column layout: Form on left (wider), Patient details on right */}
+          <div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
             {/* Left column: Main form */}
-            <div className='lg:col-span-2'>
+            <div className='lg:col-span-3'>
               <div className='prescription-form-card'>
                 <PrescriptionPatientHeader patientId={formData.patientId} />
                 <form onSubmit={handleSubmit} noValidate>
@@ -1160,7 +1160,12 @@ function NewPrescriptionPageContent() {
                       </svg>
                       Download PDF
                     </Button>
-                    <Button type='submit' isLoading={submitting} disabled={submitting}>
+                    <Button
+                      type='submit'
+                      variant='primary'
+                      isLoading={submitting}
+                      disabled={submitting}
+                    >
                       {t('prescriptions.signAndSend')}
                     </Button>
                   </div>
@@ -1169,7 +1174,7 @@ function NewPrescriptionPageContent() {
             </div>
 
             {/* Right column: Patient Details Panel */}
-            <div className='lg:col-span-1'>
+            <div className='lg:col-span-1 min-w-0'>
               <div className='sticky top-4'>
                 <PatientDetailsPanel patientId={formData.patientId} />
               </div>
@@ -1191,8 +1196,9 @@ function NewPrescriptionPageContent() {
 }
 
 export default function NewPrescriptionPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<Loader fullScreen size='lg' />}>
+    <Suspense fallback={<Loader type='page' text={t('common.loading')} />}>
       <NewPrescriptionPageContent />
     </Suspense>
   );

@@ -22,11 +22,11 @@ export function RequireAuth({ children }) {
   }, [loading, user, router]);
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (!user) {
-    return <Loader fullScreen size='lg' text={t('auth.redirectingToLogin')} />;
+    return <Loader type='page' text={t('auth.redirectingToLogin')} />;
   }
 
   return <>{children}</>;

@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 import * as dashboardCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
 /**
  * Doctor dashboard lists – parallel fetch, cache-first when returning to Dashboard.
@@ -143,6 +143,14 @@ export function useDoctorDashboardLists() {
       setLoading(false);
     }
   }, [user, userId, doctorId]);
+
+  // Trigger initial fetch when no cache (otherwise loading stays true forever)
+  useEffect(() => {
+    if (!userId || userId === 'undefined' || (user?.role || '').toLowerCase() !== 'doctor') return;
+    const cached = dashboardCache.getData('doctorLists', userId);
+    if (cached && typeof cached === 'object') return; // Cache already restored by useLayoutEffect
+    fetchDashboardLists();
+  }, [userId, user?.role, fetchDashboardLists]);
 
   return {
     todayAppointments,

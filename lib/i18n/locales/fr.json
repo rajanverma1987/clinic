@@ -154,6 +154,9 @@
   "common": {
     "appName": "Doctor's Clinic",
     "loading": "Chargement...",
+    "loadingDetails": "Chargement des détails...",
+    "searching": "Recherche...",
+    "creating": "Création...",
     "error": "Erreur",
     "success": "Succès",
     "save": "Enregistrer",
@@ -220,7 +223,9 @@
     "selectLanguage": "Select language",
     "closeModal": "Close modal",
     "areYouSure": "Êtes-vous sûr ?",
-    "confirmationDescription": "Cette action ne peut pas être annulée."
+    "confirmationDescription": "Cette action ne peut pas être annulée.",
+    "updatesAvailable": "Mises à jour disponibles",
+    "refresh": "Actualiser"
   },
   "sidebar": {
     "subscriptionType": "Plan"
@@ -314,6 +319,7 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
+    "loading": "Chargement du tableau de bord...",
     "overview": "Dashboard Overview",
     "welcomeBackDoctor": "Bienvenue, Dr. {{name}}",
     "welcome": "Bienvenue",
@@ -574,7 +580,10 @@
     "alreadyInQueue": "{{name}} is already in queue.",
     "recurringScheduled": "{{count}} recurring appointment(s) scheduled successfully!",
     "videoScheduled": "Video consultation scheduled! Email sent to patient.",
-    "scheduledSuccess": "Appointment scheduled successfully!"
+    "scheduledSuccess": "Appointment scheduled successfully!",
+    "loadingSlots": "Chargement des créneaux...",
+    "loadingAppointments": "Chargement des rendez-vous...",
+    "loadingDoctors": "Chargement des médecins..."
   },
   "invoices": {
     "title": "Factures",
@@ -1514,7 +1523,17 @@
     "closeChat": "Close chat",
     "openChat": "Open chat",
     "closeFiles": "Close files",
-    "openFiles": "Open files"
+    "openFiles": "Open files",
+    "connecting": "Connexion...",
+    "establishingConnection": "Établissement de la connexion pair à pair",
+    "mayTakeFewSeconds": "Cela peut prendre quelques secondes",
+    "waitingForDoctorToJoin": "En attente du médecin...",
+    "waitingForPatientToJoin": "En attente du patient...",
+    "waitingForDoctorToRejoin": "En attente du retour du médecin...",
+    "waitingForPatientToRejoin": "En attente du retour du patient...",
+    "waitingRoom": "Salle d'attente",
+    "waitingRoomDescription": "Vous êtes en salle d'attente. Le médecin vous admettra en consultation sous peu.",
+    "pleaseWait": "Veuillez patienter..."
   },
   "errors": {
     "generic": "An unexpected error occurred",

@@ -48,7 +48,7 @@ export default function AdminAppointmentAnalyticsPage() {
     }
   };
 
-  if (authLoading || loading) return <Loader fullScreen size='lg' />;
+  if (authLoading || loading) return <Loader type='page' text={t('common.loading')} />;
   if (user?.role !== 'super_admin') return null;
 
   return (

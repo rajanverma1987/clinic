@@ -339,7 +339,7 @@ function NewAppointmentPageContent() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   return (
@@ -351,7 +351,7 @@ function NewAppointmentPageContent() {
         unreadCount={0}
         actionButton={<BackButton />}
       />
-      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
+      <div style={{ padding: '0 10px' }}>
         <Card>
           <form onSubmit={handleSubmit} className='space-y-6' noValidate>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
@@ -878,7 +878,7 @@ function NewAppointmentPageContent() {
 
 export default function NewAppointmentPage() {
   return (
-    <Suspense fallback={<Loader fullScreen size='lg' />}>
+    <Suspense fallback={<Loader type='page' text={t('common.loading')} />}>
       <NewAppointmentPageContent />
     </Suspense>
   );

@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { isTestAccount } from '@/lib/constants/test-account.js';
 import { hasFeatureAccess } from '@/services/feature-access.service.js';
 import { errorResponse } from '@/lib/utils/api-response.js';
 
@@ -13,6 +14,11 @@ import { errorResponse } from '@/lib/utils/api-response.js';
 export async function requireFeature(req, user, featureName) {
   // Super admin has access to all features
   if (user.role === 'super_admin') {
+    return { allowed: true };
+  }
+
+  // Testing account: allow all features (same as auth.service bypass; remove with test-account)
+  if (user.email && isTestAccount(user.email)) {
     return { allowed: true };
   }
 
@@ -41,6 +47,11 @@ export async function requireFeature(req, user, featureName) {
 export async function requireAnyFeature(req, user, featureNames) {
   // Super admin has access to all features
   if (user.role === 'super_admin') {
+    return { allowed: true };
+  }
+
+  // Testing account: allow all features
+  if (user.email && isTestAccount(user.email)) {
     return { allowed: true };
   }
 

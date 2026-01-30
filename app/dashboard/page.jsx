@@ -70,6 +70,11 @@ export default function DashboardPage() {
 
   // Defer charts so stats + lists load first (faster first paint); must be declared before useDashboardChartsSWR
   const [chartsEnabled, setChartsEnabled] = useState(false);
+  // Avoid hydration mismatch: server and client must render same shell (no <a> in main until mounted)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleStartVideo = useCallback(async (appointment) => {
     if (!appointment?._id) return;
@@ -127,6 +132,33 @@ export default function DashboardPage() {
     clinicListsSWR.fetchDashboardLists
   );
   const [isPending, startTransition] = useTransition();
+  // Non-blocking navigation so clicks stay responsive
+  const navigate = useCallback(
+    (path) => startTransition(() => router.push(path)),
+    [router]
+  );
+
+  const handleManualRefresh = useCallback(() => {
+    startTransition(() => {
+      if (isDoctor) {
+        doctorStats.fetchStats();
+        doctorLists.fetchDashboardLists();
+      } else {
+        clinicStatsSWR.fetchStats();
+        clinicListsSWR.fetchDashboardLists();
+        if (chartsEnabled) clinicChartsSWR.fetchChartData();
+      }
+    });
+  }, [
+    isDoctor,
+    startTransition,
+    doctorStats,
+    doctorLists,
+    clinicStatsSWR,
+    clinicListsSWR,
+    clinicChartsSWR,
+    chartsEnabled,
+  ]);
 
   // Use doctor-specific lists if doctor, otherwise general lists
   const todayAppointments = isDoctor
@@ -218,12 +250,12 @@ export default function DashboardPage() {
     if (authLoading) return;
 
     if (!user) {
-      const timer = setTimeout(() => router.push('/login'), 100);
+      const timer = setTimeout(() => navigate('/login'), 100);
       return () => clearTimeout(timer);
     }
 
     if (user.role === 'super_admin') {
-      router.push('/admin');
+      navigate('/admin');
       return;
     }
 
@@ -246,10 +278,18 @@ export default function DashboardPage() {
   };
 
   // Loading states - these can be early returns AFTER all hooks
+  // Server and client must match: render same shell until mounted to avoid hydration (e.g. <a> in <div> mismatch)
+  if (!mounted) {
+    return (
+      <Layout>
+        <Loader type='page' text={t('dashboard.loading')} />
+      </Layout>
+    );
+  }
   if (authLoading) {
     return (
       <Layout>
-        <Loader fullScreen size='lg' />
+        <Loader type='page' text={t('common.loading')} />
       </Layout>
     );
   }
@@ -258,13 +298,23 @@ export default function DashboardPage() {
     return (
       <Layout>
         <div className='flex items-center justify-center min-h-screen'>
-          <Loader size='lg' text={t('auth.redirectingToLogin')} />
+          <Loader type='page' text={t('auth.redirectingToLogin')} />
         </div>
       </Layout>
     );
   }
 
-  // Render dashboard shell immediately; sections show their own skeletons until data arrives (lightning-fast first paint)
+  // On first open: show loader or message until dashboard data (stats + lists) has loaded
+  const initialDashboardLoading = statsLoading || listsLoading;
+  if (initialDashboardLoading) {
+    return (
+      <Layout>
+        <Loader type='page' text={t('dashboard.loading')} />
+      </Layout>
+    );
+  }
+
+  // Render dashboard once initial data is ready; sections may still show skeletons for deferred data (e.g. charts)
   // Prepare notifications for PageHeader
   const notifications = criticalAlerts.map((alert, index) => ({
     id: `alert-${index}`,
@@ -276,15 +326,14 @@ export default function DashboardPage() {
   }));
 
   const handleNotificationClick = (notification) => {
-    // Handle notification click - navigate based on type
     if (notification.type === 'appointment') {
-      router.push('/appointments');
+      navigate('/appointments');
     } else if (notification.type === 'invoice') {
-      router.push('/invoices');
+      navigate('/invoices');
     } else if (notification.type === 'inventory') {
-      router.push('/inventory');
+      navigate('/inventory');
     } else if (notification.type === 'lot') {
-      router.push('/inventory/lots');
+      navigate('/inventory/lots');
     }
   };
 
@@ -305,12 +354,6 @@ export default function DashboardPage() {
         {showStaleBanner && (
           <StaleDataBanner visible onRetry={() => clinicListsSWR.fetchDashboardLists()} />
         )}
-        {!isDoctor && (
-          <UpdatesAvailableBanner
-            visible={updatesAvailable}
-            onRefresh={() => startTransition(applyUpdates)}
-          />
-        )}
         <div className='dashboard-container'>
           {/* Page Header – doctor: welcome banner; clinic: overview */}
           <PageHeader
@@ -325,12 +368,24 @@ export default function DashboardPage() {
             onNotificationClick={handleNotificationClick}
             onMarkAsRead={handleMarkAsRead}
             onMarkAllAsRead={handleMarkAllAsRead}
-            actionButton={<QuickActions onNavigate={(path) => router.push(path)} loading={false} />}
+            onRefresh={handleManualRefresh}
+            actionButton={
+              <div className='flex items-center gap-3 shrink-0'>
+                {!isDoctor && (
+                  <UpdatesAvailableBanner
+                    visible={updatesAvailable}
+                    onRefresh={() => startTransition(applyUpdates)}
+                    compact
+                  />
+                )}
+                <QuickActions onNavigate={navigate} loading={false} />
+              </div>
+            }
           />
 
           {/* Critical Alerts / Pending Tasks (Quick Actions moved to header bar) */}
           <div className='dashboard-section'>
-            <div className='grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3'>
+            <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid'>
               {/* Critical Alerts - Only for non-doctors */}
               {!isDoctor && criticalAlerts && criticalAlerts.length > 0 && (
                 <div className='lg:col-span-2'>
@@ -339,9 +394,9 @@ export default function DashboardPage() {
                       <CriticalAlerts
                         alerts={criticalAlerts}
                         onViewAll={(alert) => {
-                          if (alert?.type === 'inventory') router.push('/inventory');
-                          else if (alert?.type === 'appointments') router.push('/appointments');
-                          else router.push('/reports');
+                          if (alert?.type === 'inventory') navigate('/inventory');
+                          else if (alert?.type === 'appointments') navigate('/appointments');
+                          else navigate('/reports');
                         }}
                       />
                     </Suspense>
@@ -361,7 +416,7 @@ export default function DashboardPage() {
                       </div>
                       <button
                         type='button'
-                        onClick={() => router.push('/doctors/reviews')}
+                        onClick={() => navigate('/doctors/reviews')}
                         className='text-sm font-medium text-primary-600 hover:text-primary-700'
                       >
                         {t('dashboard.seeAll')}
@@ -371,7 +426,7 @@ export default function DashboardPage() {
                       {stats?.pendingReviews > 0 && (
                         <div
                           className='p-3 bg-warning-50 border border-warning-200 rounded-lg cursor-pointer hover:bg-warning-100 transition-colors'
-                          onClick={() => router.push('/doctors/reviews')}
+                          onClick={() => navigate('/doctors/reviews')}
                         >
                           <div className='flex items-center justify-between'>
                             <span className='text-sm font-medium text-warning-900'>
@@ -384,7 +439,7 @@ export default function DashboardPage() {
                       {stats?.patientsWaiting > 0 && (
                         <div
                           className='p-3 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors'
-                          onClick={() => router.push('/appointments?status=in_queue,arrived')}
+                          onClick={() => navigate('/appointments?status=in_queue,arrived')}
                         >
                           <div className='flex items-center justify-between'>
                             <span className='text-sm font-medium text-primary-900'>
@@ -397,7 +452,7 @@ export default function DashboardPage() {
                       {(stats?.labReportsToReview ?? 0) > 0 && (
                         <div
                           className='p-3 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors'
-                          onClick={() => router.push('/reports')}
+                          onClick={() => navigate('/reports')}
                         >
                           <div className='flex items-center justify-between'>
                             <span className='text-sm font-medium text-primary-900'>
@@ -410,7 +465,7 @@ export default function DashboardPage() {
                       {(stats?.newMessages ?? 0) > 0 && (
                         <div
                           className='p-3 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors'
-                          onClick={() => router.push('/doctors/messages')}
+                          onClick={() => navigate('/doctors/messages')}
                         >
                           <div className='flex items-center justify-between'>
                             <span className='text-sm font-medium text-primary-900'>
@@ -423,7 +478,7 @@ export default function DashboardPage() {
                       {(stats?.prescriptionsToApprove ?? 0) > 0 && (
                         <div
                           className='p-3 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors'
-                          onClick={() => router.push('/prescriptions?status=draft')}
+                          onClick={() => navigate('/prescriptions?status=draft')}
                         >
                           <div className='flex items-center justify-between'>
                             <span className='text-sm font-medium text-primary-900'>
@@ -452,7 +507,7 @@ export default function DashboardPage() {
           {/* Key Statistics Cards - Doctor: 8 KPIs; General: 4 */}
           <div className='dashboard-section'>
             <div
-              className={`grid grid-cols-1 sm:grid-cols-2 ${isDoctor ? 'lg:grid-cols-4 xl:grid-cols-8' : 'lg:grid-cols-4'} gap-3`}
+              className={`grid grid-cols-1 sm:grid-cols-2 dashboard-grid ${isDoctor ? 'lg:grid-cols-4 xl:grid-cols-8' : 'lg:grid-cols-4'}`}
             >
               {isDoctor ? (
                 <>
@@ -462,7 +517,7 @@ export default function DashboardPage() {
                     trend={stats?.appointmentsTrend}
                     icon='calendar'
                     colorScheme='primary'
-                    onClick={() => router.push('/appointments')}
+                    onClick={() => navigate('/appointments')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -471,7 +526,7 @@ export default function DashboardPage() {
                     trend={null}
                     icon='calendar'
                     colorScheme='primary'
-                    onClick={() => router.push('/appointments')}
+                    onClick={() => navigate('/appointments')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -480,7 +535,7 @@ export default function DashboardPage() {
                     trend={null}
                     icon='calendar'
                     colorScheme='primary'
-                    onClick={() => router.push('/appointments')}
+                    onClick={() => navigate('/appointments')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -489,7 +544,7 @@ export default function DashboardPage() {
                     trend={stats?.patientsTrend}
                     icon='patients'
                     colorScheme='primary'
-                    onClick={() => router.push('/patients')}
+                    onClick={() => navigate('/patients')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -498,7 +553,7 @@ export default function DashboardPage() {
                     trend={null}
                     icon='queue'
                     colorScheme='warning'
-                    onClick={() => router.push('/appointments?status=in_queue,arrived')}
+                    onClick={() => navigate('/appointments?status=in_queue,arrived')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -507,7 +562,7 @@ export default function DashboardPage() {
                     trend={stats?.revenueTrend}
                     icon='currency-dollar'
                     colorScheme='primary'
-                    onClick={() => router.push('/doctors/earnings')}
+                    onClick={() => navigate('/doctors/earnings')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -516,7 +571,7 @@ export default function DashboardPage() {
                     trend={null}
                     icon='video'
                     colorScheme='primary'
-                    onClick={() => router.push('/telemedicine')}
+                    onClick={() => navigate('/telemedicine')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -527,7 +582,7 @@ export default function DashboardPage() {
                     trend={null}
                     icon='star'
                     colorScheme='success'
-                    onClick={() => router.push('/doctors/reviews')}
+                    onClick={() => navigate('/doctors/reviews')}
                     loading={statsLoading}
                   />
                 </>
@@ -539,7 +594,8 @@ export default function DashboardPage() {
                     trend={stats?.patientsTrend}
                     icon='patients'
                     colorScheme='primary'
-                    onClick={() => router.push('/patients')}
+                    layout='default'
+                    onClick={() => navigate('/patients')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -548,7 +604,8 @@ export default function DashboardPage() {
                     trend={stats?.appointmentsTrend}
                     icon='calendar'
                     colorScheme='primary'
-                    onClick={() => router.push('/appointments')}
+                    layout='compact'
+                    onClick={() => navigate('/appointments')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -557,7 +614,8 @@ export default function DashboardPage() {
                     trend={stats?.revenueTrend}
                     icon='currency-dollar'
                     colorScheme='success'
-                    onClick={() => router.push('/invoices')}
+                    layout='stacked'
+                    onClick={() => navigate('/invoices')}
                     loading={statsLoading}
                   />
                   <StatsCard
@@ -566,7 +624,8 @@ export default function DashboardPage() {
                     trend={stats?.invoicesTrend}
                     icon='document-text'
                     colorScheme='warning'
-                    onClick={() => router.push('/invoices?status=pending')}
+                    layout='minimal'
+                    onClick={() => navigate('/invoices?status=pending')}
                     loading={statsLoading}
                   />
                 </>
@@ -577,7 +636,7 @@ export default function DashboardPage() {
           {/* Main Content – Today's Appointments & Appointment Request side by side, then 3-col grid */}
           {!isDoctor && (
             <div className='dashboard-section'>
-              <div className='grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch'>
+              <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch'>
                 <div className='dashboard-card-cell'>
                   <DashboardListCard
                     title={t('dashboard.todayAppointments')}
@@ -586,13 +645,13 @@ export default function DashboardPage() {
                     colorScheme='primary'
                     emptyMessage={t('dashboard.emptyToday')}
                     showSeeAll={true}
-                    onSeeAll={() => router.push('/appointments')}
+                    onSeeAll={() => navigate('/appointments')}
                     renderItem={(appointment) => (
                       <AppointmentListItem
                         key={appointment._id || appointment.id}
                         appointment={appointment}
                         onClick={() =>
-                          router.push(`/appointments/${appointment._id || appointment.id}`)
+                          navigate(`/appointments/${appointment._id || appointment.id}`)
                         }
                       />
                     )}
@@ -603,21 +662,21 @@ export default function DashboardPage() {
                     requests={appointmentRequests}
                     loading={listsLoading}
                     onAccept={(request) => {
-                      router.push(
+                      navigate(
                         `/appointments/${request._id || request.id}/edit?status=confirmed`
                       );
                     }}
                     onDecline={(request) => {
-                      router.push(
+                      navigate(
                         `/appointments/${request._id || request.id}/edit?status=cancelled`
                       );
                     }}
                     onMessage={(request) => {
                       if (request._id) {
-                        router.push(`/telemedicine/${request._id}`);
+                        navigate(`/telemedicine/${request._id}`);
                       }
                     }}
-                    onSeeAll={() => router.push('/appointments?status=pending')}
+                    onSeeAll={() => navigate('/appointments?status=pending')}
                   />
                 </div>
               </div>
@@ -626,7 +685,7 @@ export default function DashboardPage() {
 
           {/* Main Content – 3 cards per row: Summary, Next Patient, Patients Review, Calendar */}
           <div className='dashboard-section'>
-            <div className='grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch'>
+            <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
               {!isDoctor && (
                 <>
                   <div className='dashboard-card-cell'>
@@ -655,12 +714,12 @@ export default function DashboardPage() {
                         }}
                         onViewDetails={() => {
                           if (todayAppointments[0]?.patientId?._id) {
-                            router.push(`/patients/${todayAppointments[0].patientId._id}`);
+                            navigate(`/patients/${todayAppointments[0].patientId._id}`);
                           }
                         }}
                         onChat={() => {
                           if (todayAppointments[0]?._id) {
-                            router.push(`/telemedicine/${todayAppointments[0]._id}`);
+                            navigate(`/telemedicine/${todayAppointments[0]._id}`);
                           }
                         }}
                         onStartVideo={handleStartVideo}
@@ -678,7 +737,7 @@ export default function DashboardPage() {
                         <CalendarWidget
                           loading={listsLoading}
                           onDateSelect={(date) => {
-                            router.push(`/appointments?date=${date.toISOString().split('T')[0]}`);
+                            navigate(`/appointments?date=${date.toISOString().split('T')[0]}`);
                           }}
                         />
                       </Suspense>
@@ -698,7 +757,7 @@ export default function DashboardPage() {
                       colorScheme='primary'
                       emptyMessage={t('dashboard.emptyToday')}
                       showSeeAll={true}
-                      onSeeAll={() => router.push('/appointments')}
+                      onSeeAll={() => navigate('/appointments')}
                       renderItem={(appointment) => {
                         const start = new Date(
                           appointment.schedule?.startTime ||
@@ -721,21 +780,21 @@ export default function DashboardPage() {
                             appointment={appointment}
                             isCurrent={isCurrentSlot}
                             onClick={() =>
-                              router.push(`/appointments/${appointment._id || appointment.id}`)
+                              navigate(`/appointments/${appointment._id || appointment.id}`)
                             }
                             onViewHistory={
                               patientId
-                                ? () => router.push(`/doctors/patients/${patientId}`)
+                                ? () => navigate(`/doctors/patients/${patientId}`)
                                 : undefined
                             }
                             onStart={handleStartVideo}
                             onReschedule={() =>
-                              router.push(
+                              navigate(
                                 `/appointments/${appointment._id || appointment.id}?reschedule=1`
                               )
                             }
                             onCancel={() =>
-                              router.push(
+                              navigate(
                                 `/appointments/${appointment._id || appointment.id}?cancel=1`
                               )
                             }
@@ -755,12 +814,12 @@ export default function DashboardPage() {
                         }}
                         onViewDetails={() => {
                           if (todayAppointments[0]?.patientId?._id) {
-                            router.push(`/patients/${todayAppointments[0].patientId._id}`);
+                            navigate(`/patients/${todayAppointments[0].patientId._id}`);
                           }
                         }}
                         onChat={() => {
                           if (todayAppointments[0]?._id) {
-                            router.push(`/telemedicine/${todayAppointments[0]._id}`);
+                            navigate(`/telemedicine/${todayAppointments[0]._id}`);
                           }
                         }}
                         onStartVideo={handleStartVideo}
@@ -861,13 +920,13 @@ export default function DashboardPage() {
                         colorScheme='primary'
                         emptyMessage={t('doctors.noUpcomingAppointments')}
                         showSeeAll={true}
-                        onSeeAll={() => router.push('/appointments')}
+                        onSeeAll={() => navigate('/appointments')}
                         renderItem={(appointment) => (
                           <AppointmentListItem
                             key={appointment._id || appointment.id}
                             appointment={appointment}
                             onClick={() =>
-                              router.push(`/appointments/${appointment._id || appointment.id}`)
+                              navigate(`/appointments/${appointment._id || appointment.id}`)
                             }
                           />
                         )}
@@ -885,14 +944,14 @@ export default function DashboardPage() {
                         emptyMessage={t('doctors.noPendingReviews')}
                         showSeeAll={true}
                         onSeeAll={() =>
-                          router.push('/appointments?status=completed&hasClinicalNote=false')
+                          navigate('/appointments?status=completed&hasClinicalNote=false')
                         }
                         renderItem={(appointment) => (
                           <AppointmentListItem
                             key={appointment._id || appointment.id}
                             appointment={appointment}
                             onClick={() =>
-                              router.push(`/appointments/${appointment._id || appointment.id}`)
+                              navigate(`/appointments/${appointment._id || appointment.id}`)
                             }
                           />
                         )}
@@ -909,13 +968,13 @@ export default function DashboardPage() {
                         colorScheme='primary'
                         emptyMessage={t('doctors.noNewPatientRequests')}
                         showSeeAll={true}
-                        onSeeAll={() => router.push('/appointments?status=pending')}
+                        onSeeAll={() => navigate('/appointments?status=pending')}
                         renderItem={(request) => (
                           <div
                             key={request._id || request.id}
                             className='p-3 border-b border-neutral-100 dark:border-neutral-700 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 cursor-pointer transition-colors'
                             onClick={() =>
-                              router.push(`/appointments/${request._id || request.id}`)
+                              navigate(`/appointments/${request._id || request.id}`)
                             }
                           >
                             <div className='flex items-center justify-between'>
@@ -943,7 +1002,7 @@ export default function DashboardPage() {
                                   size='sm'
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    router.push(
+                                    navigate(
                                       `/appointments/${request._id || request.id}/edit?status=confirmed`
                                     );
                                   }}
@@ -955,7 +1014,7 @@ export default function DashboardPage() {
                                   size='sm'
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    router.push(
+                                    navigate(
                                       `/appointments/${request._id || request.id}/edit?status=cancelled`
                                     );
                                   }}
@@ -978,20 +1037,20 @@ export default function DashboardPage() {
                         loading={listsLoading}
                         onAccept={(request) => {
                           // Handle accept appointment
-                          router.push(
+                          navigate(
                             `/appointments/${request._id || request.id}/edit?status=confirmed`
                           );
                         }}
                         onDecline={(request) => {
                           // Handle decline appointment
-                          router.push(
+                          navigate(
                             `/appointments/${request._id || request.id}/edit?status=cancelled`
                           );
                         }}
                         onMessage={(request) => {
                           // Handle message
                           if (request._id) {
-                            router.push(`/telemedicine/${request._id}`);
+                            navigate(`/telemedicine/${request._id}`);
                           }
                         }}
                       />
@@ -1007,12 +1066,12 @@ export default function DashboardPage() {
                         colorScheme='primary'
                         emptyMessage={t('dashboard.emptyRecent')}
                         showSeeAll={true}
-                        onSeeAll={() => router.push('/patients')}
+                        onSeeAll={() => navigate('/patients')}
                         renderItem={(patient) => (
                           <PatientListItem
                             key={patient._id || patient.id}
                             patient={patient}
-                            onClick={() => router.push(`/patients/${patient._id || patient.id}`)}
+                            onClick={() => navigate(`/patients/${patient._id || patient.id}`)}
                           />
                         )}
                       />
@@ -1027,7 +1086,7 @@ export default function DashboardPage() {
                         <CalendarWidget
                           loading={listsLoading}
                           onDateSelect={(date) => {
-                            router.push(`/appointments?date=${date.toISOString().split('T')[0]}`);
+                            navigate(`/appointments?date=${date.toISOString().split('T')[0]}`);
                           }}
                         />
                       </Suspense>
@@ -1044,7 +1103,7 @@ export default function DashboardPage() {
                           <Button
                             variant='secondary'
                             size='sm'
-                            onClick={() => router.push('/doctors/reviews')}
+                            onClick={() => navigate('/doctors/reviews')}
                           >
                             {t('common.viewAll')}
                           </Button>
@@ -1109,14 +1168,14 @@ export default function DashboardPage() {
               <ErrorBoundary>
                 <Suspense
                   fallback={
-                    <div className='grid grid-cols-1 lg:grid-cols-3 gap-3'>
+                    <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid'>
                       <div className='skeleton skeleton-chart h-64' />
                       <div className='skeleton skeleton-chart h-64' />
                       <div className='skeleton skeleton-chart h-64' />
                     </div>
                   }
                 >
-                  <div className='grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch'>
+                  <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
                     <ChartCard
                       title={t('dashboard.revenueTrend14')}
                       data={chartData.revenue}
@@ -1144,7 +1203,7 @@ export default function DashboardPage() {
           {/* Critical Lists - 2 columns - Only for non-doctors */}
           {!isDoctor && (
             <div className='dashboard-section'>
-              <div className='grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch'>
+              <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch'>
                 {/* Overdue Invoices */}
                 <DashboardListCard
                   title={t('dashboard.overdueInvoices')}
@@ -1156,7 +1215,7 @@ export default function DashboardPage() {
                     <InvoiceListItem
                       key={invoice._id || invoice.id}
                       invoice={invoice}
-                      onClick={() => router.push(`/invoices/${invoice._id || invoice.id}`)}
+                      onClick={() => navigate(`/invoices/${invoice._id || invoice.id}`)}
                       formatCurrency={formatCurrency}
                     />
                   )}
@@ -1173,7 +1232,7 @@ export default function DashboardPage() {
                     <InventoryListItem
                       key={item._id || item.id}
                       item={item}
-                      onClick={() => router.push(`/inventory/items/${item._id || item.id}`)}
+                      onClick={() => navigate(`/inventory/items/${item._id || item.id}`)}
                     />
                   )}
                 />

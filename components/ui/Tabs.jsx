@@ -3,7 +3,7 @@
 export function Tabs({ tabs, activeTab, onChange, className = '', variant = 'default' }) {
   if (variant === 'pills') {
     return (
-      <div className={`flex gap-2 overflow-x-auto scrollbar-hide ${className}`}>
+      <div className={`w-full flex gap-2 overflow-x-auto scrollbar-hide ${className}`}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -38,8 +38,8 @@ export function Tabs({ tabs, activeTab, onChange, className = '', variant = 'def
   }
 
   return (
-    <div className={`border-b border-neutral-200 dark:border-neutral-600 ${className}`}>
-      <nav className='flex space-x-6 overflow-x-auto scrollbar-hide py-2'>
+    <div className={`w-full border-b border-neutral-200 dark:border-neutral-600 ${className}`}>
+      <nav className='w-full flex flex-wrap items-center gap-x-6 gap-y-1 overflow-x-auto scrollbar-hide py-2'>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (

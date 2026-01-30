@@ -145,7 +145,7 @@ export default function AdminDoctorsPage() {
   };
 
   if (authLoading || loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (user?.role !== 'super_admin') {
@@ -273,7 +273,7 @@ export default function AdminDoctorsPage() {
               </h2>
             </div>
             {loading ? (
-              <Loader size='lg' />
+              <Loader type='section' text={t('common.loading')} />
             ) : doctors.length === 0 ? (
               <div className='text-center py-12'>
                 <p className='text-neutral-500'>No doctors found</p>

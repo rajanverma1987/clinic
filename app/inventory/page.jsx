@@ -42,13 +42,11 @@ export default function InventoryPage() {
     if (!hasCache) setLoading(true);
     try {
       const params = new URLSearchParams();
+      if (showLowStock) params.set('lowStock', 'true');
       const response = await apiClient.get(`/inventory/items?${params}`);
       if (response.success && response.data) {
-        const fullList = extractArrayData(response);
-        if (tenantId) routeCache.set(ROUTE_KEY, tenantId, { items: fullList });
-        const itemsList = showLowStock
-          ? fullList.filter((item) => item.totalQuantity <= item.lowStockThreshold)
-          : fullList;
+        const itemsList = extractArrayData(response);
+        if (!showLowStock && tenantId) routeCache.set(ROUTE_KEY, tenantId, { items: itemsList });
         setItems(itemsList);
       }
     } catch (error) {
@@ -78,17 +76,18 @@ export default function InventoryPage() {
     { header: t('inventory.category'), accessor: 'type' },
     {
       header: t('inventory.currentStock'),
-      accessor: (row) => (
-        <span
-          className={
-            row.totalQuantity <= row.lowStockThreshold
-              ? 'text-status-error font-medium'
-              : 'text-neutral-900'
-          }
-        >
-          {row.totalQuantity} / {row.availableQuantity} available
-        </span>
-      ),
+      accessor: (row) => {
+        const available = row.availableQuantity ?? 0;
+        const threshold = row.lowStockThreshold ?? 0;
+        const isLow = available <= threshold;
+        return (
+          <span
+            className={isLow ? 'text-status-error font-medium' : 'text-neutral-900'}
+          >
+            {row.totalQuantity} / {row.availableQuantity} available
+          </span>
+        );
+      },
     },
     {
       header: t('inventory.costPrice'),
@@ -113,7 +112,7 @@ export default function InventoryPage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   return (

@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
 import * as dashboardCache from '@/lib/cache/dashboard-cache';
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
 /**
  * Doctor dashboard stats. Cache-first: when returning to Dashboard, show last data (no loading).
@@ -80,6 +80,14 @@ export function useDoctorDashboardStats() {
       setLoading(false);
     }
   }, [user, userId]);
+
+  // Trigger initial fetch when no cache (otherwise loading stays true forever)
+  useEffect(() => {
+    if (!userId || userId === 'undefined' || (user?.role || '').toLowerCase() !== 'doctor') return;
+    const cached = dashboardCache.getData('doctorStats', userId);
+    if (cached) return; // Cache already restored by useLayoutEffect; optional background revalidate via refresh interval
+    fetchStats();
+  }, [userId, user?.role, fetchStats]);
 
   return { stats, loading, error, fetchStats };
 }

@@ -44,15 +44,18 @@ export function withErrorHandler(handler) {
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
-      // Enterprise error logging with sanitization
-      logger.error('Request Error', error, {
-        url: req.url,
-        method: req.method,
-        correlationId,
-        duration,
-        headers: sanitizeForLogging(Object.fromEntries(req.headers.entries())),
-      });
+      // In development log a short one-liner; no headers/cookies in terminal
+      const isDev = process.env.NODE_ENV === 'development';
+      const meta = isDev
+        ? { url: req.url, method: req.method, message: error.message, duration }
+        : {
+            url: req.url,
+            method: req.method,
+            correlationId,
+            duration,
+            headers: sanitizeForLogging(Object.fromEntries(req.headers.entries()), ['cookie', 'authorization', 'token', 'secret', 'key', 'password']),
+          };
+      logger.error('Request Error', error, meta);
 
       // Handle custom application errors
       if (error instanceof CustomErrors.AppError) {

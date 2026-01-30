@@ -4,9 +4,12 @@ import { InventoryIcon, ChevronRightIcon, WarningIcon } from '@/components/icons
 
 export function InventoryListItem({ item, onClick }) {
   const itemName = item.name || item.itemName || 'Unknown Item';
-  const currentStock = item.currentStock || item.stock || 0;
-  const minStock = item.minStock || item.minimumStock || 0;
   const unit = item.unit || 'units';
+  // Prefer API shape: availableQuantity / lowStockThreshold; fallback for report shape
+  const currentStock =
+    item.availableQuantity ?? item.currentStock ?? item.stock ?? 0;
+  const minStock =
+    item.lowStockThreshold ?? item.minStock ?? item.minimumStock ?? 0;
 
   const isCritical = currentStock === 0;
   const isLow = currentStock > 0 && currentStock <= minStock;

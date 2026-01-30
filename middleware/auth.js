@@ -4,7 +4,7 @@
  */
 
 import { verifyAccessToken } from '@/lib/auth/jwt.js';
-import { TEST_ACCOUNT_ALLOWED_ROLES, TEST_ACCOUNT_EMAIL } from '@/lib/constants/test-account.js';
+import { TEST_ACCOUNT_ALLOWED_ROLES, TEST_ACCOUNT_EMAIL, TEST_ACCOUNT_ENABLED } from '@/lib/constants/test-account.js';
 import { NextResponse } from 'next/server';
 
 /**
@@ -31,17 +31,13 @@ export async function authenticate(request) {
 
   try {
     const user = verifyAccessToken(token);
-    // TEMPORARY: Test account – allow role override via header. REMOVE before production.
-    const testRoleHeader = request.headers.get('x-test-account-role');
-    if (
-      user &&
-      user.email &&
-      user.email.toLowerCase() === TEST_ACCOUNT_EMAIL.toLowerCase() &&
-      testRoleHeader
-    ) {
-      const allowed = TEST_ACCOUNT_ALLOWED_ROLES.map((r) => r.value);
-      if (allowed.includes(testRoleHeader)) {
-        user.role = testRoleHeader;
+    if (TEST_ACCOUNT_ENABLED && user?.email && user.email.toLowerCase() === TEST_ACCOUNT_EMAIL) {
+      const testRoleHeader = request.headers.get('x-test-account-role');
+      if (testRoleHeader) {
+        const allowed = TEST_ACCOUNT_ALLOWED_ROLES.map((r) => r.value);
+        if (allowed.includes(testRoleHeader)) {
+          user.role = testRoleHeader;
+        }
       }
     }
     return { user };
@@ -62,10 +58,11 @@ export async function authenticate(request) {
 }
 
 /**
- * Middleware wrapper for API routes
+ * Middleware wrapper for API routes.
+ * Forwards (req, ...args) so dynamic route context (e.g. params) reaches the handler.
  */
 export function withAuth(handler) {
-  return async (req) => {
+  return async (req, ...args) => {
     const authResult = await authenticate(req);
 
     if ('error' in authResult) {
@@ -75,6 +72,6 @@ export function withAuth(handler) {
     const authenticatedReq = req;
     authenticatedReq.user = authResult.user;
 
-    return handler(authenticatedReq, authResult.user);
+    return handler(authenticatedReq, authResult.user, ...args);
   };
 }

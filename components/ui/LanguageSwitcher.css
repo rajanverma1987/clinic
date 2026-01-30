@@ -2,8 +2,10 @@
 
 .LanguageSwitcher {
   position: relative;
+  z-index: 1;
   display: inline-block;
   overflow: visible;
+  pointer-events: auto;
 }
 
 /* Backdrop overlay */
@@ -13,7 +15,7 @@
   background: color-mix(in srgb, var(--color-neutral-900) 5%, transparent);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
-  z-index: var(--z-dropdown-backdrop-high, 10051);
+  z-index: 10051;
   animation: fadeIn 0.2s ease-out;
   cursor: pointer;
 }
@@ -30,6 +32,7 @@
 /* Premium Button Styles */
 .LanguageSwitcher-button {
   position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -42,10 +45,11 @@
   border: none;
   cursor: pointer;
   font-family: var(--font-family);
-  overflow: hidden;
-  min-width: 100px;
+  overflow: visible;
+  min-width: auto;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
 }
 
 .LanguageSwitcher-button:active,
@@ -105,18 +109,9 @@
     inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
 }
 
+/* Button shows flag + chevron only (no code text) for space */
 .LanguageSwitcher-button--light .LanguageSwitcher-code {
-  display: block;
-  font-weight: 700;
-  font-size: var(--text-body-sm);
-  letter-spacing: 0.5px;
-  color: var(--color-neutral-800);
-  transition: color 0.3s ease;
-  white-space: nowrap;
-}
-
-.LanguageSwitcher-button--light:hover .LanguageSwitcher-code {
-  color: var(--color-primary-700);
+  display: none;
 }
 
 /* Dark variant - Light theme: contrast style (no dark UI) */
@@ -163,33 +158,19 @@
 }
 
 .LanguageSwitcher-button--dark .LanguageSwitcher-code {
-  display: block;
-  font-weight: 700;
-  font-size: var(--text-body-sm);
-  letter-spacing: 0.5px;
-  color: var(--color-neutral-800);
-  transition: color 0.3s ease;
-  white-space: nowrap;
+  display: none;
 }
 
-.LanguageSwitcher-button--dark:hover .LanguageSwitcher-code {
-  color: var(--color-primary-700);
-}
-
-/* Size variants */
+/* Size variants – flag + chevron only */
 .LanguageSwitcher-button--sm {
-  padding: var(--space-2) var(--space-3);
-  min-width: 80px;
-  gap: var(--gap-2);
-}
-
-.LanguageSwitcher-button--sm .LanguageSwitcher-code {
-  font-size: var(--text-body-xs);
+  padding: var(--space-2) var(--space-2);
+  min-width: auto;
+  gap: var(--gap-1);
 }
 
 .LanguageSwitcher-button--md {
-  padding: var(--space-2) var(--space-4);
-  min-width: 100px;
+  padding: var(--space-2) var(--space-3);
+  min-width: auto;
   gap: var(--gap-2);
 }
 

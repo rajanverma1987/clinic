@@ -260,7 +260,7 @@ export default function EditInvoicePage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   return (

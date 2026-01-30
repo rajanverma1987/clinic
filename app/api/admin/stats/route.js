@@ -143,7 +143,7 @@ async function getHandler(req, user) {
     const lowStockItems = await InventoryItem.countDocuments({
       deletedAt: null,
       isActive: true,
-      $expr: { $lte: ['$totalQuantity', '$lowStockThreshold'] },
+      $expr: { $lte: ['$availableQuantity', '$lowStockThreshold'] },
     });
 
     // Get subscription revenue (MRR - Monthly Recurring Revenue)

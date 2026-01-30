@@ -227,9 +227,9 @@ export async function listInventoryItems(query, tenantId, userId) {
     filter.isActive = query.isActive;
   }
 
-  // Low stock filter
+  // Low stock: available (usable) quantity at or below threshold
   if (query.lowStock) {
-    filter.availableQuantity = { $lte: '$lowStockThreshold' };
+    filter.$expr = { $lte: ['$availableQuantity', '$lowStockThreshold'] };
   }
 
   // Expired batches filter (items with expired batches)

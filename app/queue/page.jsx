@@ -26,7 +26,7 @@ export default function QueuePage() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { locale } = useSettings();
-  const userId = user?.id ?? user?.userId ?? null;
+  const userId = user?._id ?? user?.id ?? user?.userId ?? null;
 
   const [queueEntries, setQueueEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,6 @@ export default function QueuePage() {
   };
 
   // Resolve Doctor document _id when user is a doctor (Queue stores doctorId = Doctor._id, not User._id)
-  const userId = user?._id ?? user?.id ?? user?.userId;
   useEffect(() => {
     if (isDoctor && userId && userId !== 'undefined') {
       apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`).then((res) => {
@@ -413,7 +412,7 @@ export default function QueuePage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   return (
@@ -460,7 +459,7 @@ export default function QueuePage() {
             className='flex items-center gap-2'
           >
             {loading ? (
-              <CompactLoader size='sm' />
+              <CompactLoader size='sm' aria-label={t('common.loading')} />
             ) : (
               <RefreshCwIcon className='icon icon-sm shrink-0' ariaHidden />
             )}

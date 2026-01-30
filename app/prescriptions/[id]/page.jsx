@@ -84,7 +84,7 @@ export default function PrescriptionDetailPage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (error || !prescription) {
@@ -164,7 +164,7 @@ export default function PrescriptionDetailPage() {
           </>
         }
       />
-      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
+      <div style={{ padding: '0 10px' }}>
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           <div className='lg:col-span-2 space-y-6'>
             {/* Prescription Info */}

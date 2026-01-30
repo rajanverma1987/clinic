@@ -1674,12 +1674,12 @@ function VideoConsultationRoomContent() {
               {isConnecting && !isConnected && (
                 <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm flex items-center justify-center z-20'>
                   <div className='text-center bg-white border border-neutral-300 rounded-lg p-6 max-w-md mx-4 shadow-xl'>
-                    <Loader size='xl' variant='primary' inline />
+                    <Loader type='section' variant='primary' text={t('telemedicine.connecting')} />
                     <p className='text-neutral-900 text-lg font-semibold mb-2 mt-4'>
-                      Connecting...
+                      {t('telemedicine.connecting')}
                     </p>
-                    <p className='text-neutral-600 text-sm'>Establishing peer-to-peer connection</p>
-                    <p className='text-neutral-500 text-xs mt-2'>This may take a few seconds</p>
+                    <p className='text-neutral-600 text-sm'>{t('telemedicine.establishingConnection')}</p>
+                    <p className='text-neutral-500 text-xs mt-2'>{t('telemedicine.mayTakeFewSeconds')}</p>
                     {connectionError && (
                       <div className='mt-4 p-3 bg-status-error/20 border border-status-error/50 rounded text-status-error/80 text-xs'>
                         {connectionError}
@@ -1693,11 +1693,27 @@ function VideoConsultationRoomContent() {
               {(isConnected && !remoteUserConnected) || waitingForRemoteUser ? (
                 <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm flex items-center justify-center z-20'>
                   <div className='text-center bg-white border border-neutral-300 rounded-lg p-6 max-w-md mx-4 shadow-xl'>
-                    <Loader size='xl' variant='primary' inline />
+                    <Loader
+                      type='section'
+                      variant='primary'
+                      text={
+                        waitingForRemoteUser
+                          ? userRole === 'doctor'
+                            ? t('telemedicine.waitingForPatientToRejoin')
+                            : t('telemedicine.waitingForDoctorToRejoin')
+                          : userRole === 'doctor'
+                            ? t('telemedicine.waitingForPatientToJoin')
+                            : t('telemedicine.waitingForDoctorToJoin')
+                      }
+                    />
                     <p className='text-neutral-900 text-lg font-semibold mb-2'>
                       {waitingForRemoteUser
-                        ? `Waiting for ${userRole === 'doctor' ? 'patient' : 'doctor'} to rejoin...`
-                        : `Waiting for ${userRole === 'doctor' ? 'patient' : 'doctor'} to join...`}
+                        ? userRole === 'doctor'
+                          ? t('telemedicine.waitingForPatientToRejoin')
+                          : t('telemedicine.waitingForDoctorToRejoin')
+                        : userRole === 'doctor'
+                          ? t('telemedicine.waitingForPatientToJoin')
+                          : t('telemedicine.waitingForDoctorToJoin')}
                     </p>
                     <p className='text-neutral-600 text-sm'>
                       {waitingForRemoteUser
@@ -1872,13 +1888,12 @@ function VideoConsultationRoomContent() {
           {isInWaitingRoom && !isConnected && (
             <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm z-50 flex items-center justify-center'>
               <div className='bg-white border border-neutral-300 rounded-lg p-8 max-w-md w-full mx-4 shadow-xl text-center'>
-                <Loader size='xl' variant='primary' inline />
-                <h3 className='text-neutral-900 text-xl font-semibold mb-2'>Waiting Room</h3>
+                <Loader type='section' variant='primary' text={t('telemedicine.pleaseWait')} />
+                <h3 className='text-neutral-900 text-xl font-semibold mb-2'>{t('telemedicine.waitingRoom')}</h3>
                 <p className='text-neutral-600 mb-4'>
-                  You are in the waiting room. The doctor will admit you to the consultation
-                  shortly.
+                  {t('telemedicine.waitingRoomDescription')}
                 </p>
-                <p className='text-neutral-500 text-sm'>Please wait...</p>
+                <p className='text-neutral-500 text-sm'>{t('telemedicine.pleaseWait')}</p>
               </div>
             </div>
           )}
@@ -1952,7 +1967,7 @@ function VideoConsultationRoomFallback() {
   const { t } = useI18n();
   return (
     <div className='h-screen bg-neutral-100 flex items-center justify-center'>
-      <Loader size='lg' variant='primary' text={t('telemedicine.loading')} />
+      <Loader type='page' variant='primary' text={t('telemedicine.loading')} />
     </div>
   );
 }

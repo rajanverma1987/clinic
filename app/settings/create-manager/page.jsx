@@ -107,7 +107,7 @@ export default function CreateManagerPage() {
   };
 
   if (authLoading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (user?.role !== 'doctor' && user?.role !== 'clinic_admin') {
@@ -222,7 +222,7 @@ export default function CreateManagerPage() {
 
               <div className='flex gap-4'>
                 <Button type='submit' variant='primary' disabled={isLoading}>
-                  {isLoading ? 'Creating...' : 'Create Manager Account'}
+                  {isLoading ? t('common.creating') : 'Create Manager Account'}
                 </Button>
                 <Button type='button' variant='secondary' onClick={() => router.push('/settings')}>
                   Cancel

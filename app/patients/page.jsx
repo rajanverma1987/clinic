@@ -275,7 +275,7 @@ export default function PatientsPage() {
   }
 
   if (loading && !searchTerm) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   return (
@@ -373,8 +373,8 @@ export default function PatientsPage() {
             </select>
           </div>
           {searchLoading && (
-            <div className='mt-2 text-body-sm text-neutral-500 flex items-center'>
-              <CompactLoader size='xs' />
+            <div className='mt-2 text-body-sm text-neutral-500 flex items-center gap-2' role='status' aria-label={t('common.searching')}>
+              <CompactLoader size='xs' aria-label={t('common.searching')} />
               <span
                 className='text-body-sm text-neutral-500'
                 style={{
@@ -382,7 +382,7 @@ export default function PatientsPage() {
                   lineHeight: 'var(--text-body-sm-line-height)',
                 }}
               >
-                Searching...
+                {t('common.searching')}
               </span>
             </div>
           )}

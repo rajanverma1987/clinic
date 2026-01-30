@@ -234,7 +234,7 @@ export default function AdminPatientsPage() {
   };
 
   if (authLoading || loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (user?.role !== 'super_admin') {
@@ -452,7 +452,7 @@ export default function AdminPatientsPage() {
               </div>
             </div>
             {loading ? (
-              <Loader size='lg' />
+              <Loader type='section' text={t('common.loading')} />
             ) : patients.length === 0 ? (
               <div className='text-center py-12'>
                 <p className='text-neutral-500'>{t('admin.patientsNoPatients')}</p>

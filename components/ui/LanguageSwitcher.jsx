@@ -69,7 +69,7 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
 
       setDropdownStyle({
         position: 'fixed',
-        zIndex: 10050,
+        zIndex: 10052,
         left: `${leftPosition}px`,
         right: 'auto',
         ...(alignBottom
@@ -236,7 +236,6 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
                 {currentLocale.flag}
               </span>
             </div>
-            <span className='LanguageSwitcher-code'>{currentLocale.code}</span>
             <div className='LanguageSwitcher-icon-wrapper'>
               <svg
                 className={`LanguageSwitcher-icon ${isOpen ? 'is-open' : ''}`}

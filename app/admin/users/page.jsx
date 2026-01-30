@@ -108,7 +108,7 @@ export default function AdminUsersPage() {
   });
 
   if (authLoading || loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (user?.role !== 'super_admin') {

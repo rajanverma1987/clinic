@@ -60,55 +60,69 @@ export function PrescriptionPatientHeader({ patientId }) {
       className='prescription-patient-header'
       style={{
         display: 'flex',
-        flexWrap: 'wrap',
-        gap: 'var(--space-4)',
-        alignItems: 'center',
-        padding: 'var(--space-3) var(--space-4)',
+        flexDirection: 'column',
+        gap: 'var(--space-3)',
+        padding: 'var(--space-4)',
         background: 'var(--color-neutral-50)',
         border: '1px solid var(--color-neutral-200)',
         borderRadius: 'var(--radius-md)',
         marginBottom: 'var(--space-4)',
       }}
     >
-      <span style={{ fontWeight: 600, color: 'var(--color-neutral-900)' }}>
-        {name}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 'var(--space-2)',
+        }}
+      >
+        <span style={{ fontWeight: 600, color: 'var(--color-neutral-900)', fontSize: 'var(--text-body-md)' }}>
+          {name}
+        </span>
         {age != null && (
           <span
             style={{
               fontWeight: 400,
               color: 'var(--color-neutral-600)',
-              marginLeft: 'var(--space-2)',
+              fontSize: 'var(--text-body-sm)',
             }}
           >
             · {t('prescriptions.patientAge', { age })}
           </span>
         )}
-      </span>
-      {allergies && (
-        <span
+      </div>
+      {(allergies || currentMeds) && (
+        <div
           style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 'var(--space-4)',
             fontSize: 'var(--text-body-sm)',
-            color: 'var(--color-status-error)',
-            fontWeight: 500,
+            lineHeight: 1.5,
           }}
         >
-          {t('prescriptions.allergies')}:{' '}
-          {typeof allergies === 'string'
-            ? allergies
-            : Array.isArray(allergies)
-              ? allergies.join(', ')
-              : '—'}
-        </span>
-      )}
-      {currentMeds && (
-        <span style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-neutral-700)' }}>
-          {t('prescriptions.currentMeds')}:{' '}
-          {typeof currentMeds === 'string'
-            ? currentMeds
-            : Array.isArray(currentMeds)
-              ? currentMeds.join(', ')
-              : '—'}
-        </span>
+          {allergies && (
+            <span style={{ color: 'var(--color-status-error)', fontWeight: 500 }}>
+              {t('prescriptions.allergies')}:{' '}
+              {typeof allergies === 'string'
+                ? allergies
+                : Array.isArray(allergies)
+                  ? allergies.join(', ')
+                  : '—'}
+            </span>
+          )}
+          {currentMeds && (
+            <span style={{ color: 'var(--color-neutral-700)' }}>
+              {t('prescriptions.currentMeds')}:{' '}
+              {typeof currentMeds === 'string'
+                ? currentMeds
+                : Array.isArray(currentMeds)
+                  ? currentMeds.join(', ')
+                  : '—'}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

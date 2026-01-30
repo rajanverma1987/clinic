@@ -119,7 +119,7 @@ export default function AdminPatientDetailPage() {
   const formatCurrency = (n) => (n != null ? new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(n) : '—');
 
   if (authLoading || loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (user?.role !== 'super_admin' || !patient) {

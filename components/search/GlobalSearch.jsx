@@ -197,7 +197,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
             />
             <div className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500 dark:text-neutral-400'>
               {loading ? (
-                <Loader size='sm' inline />
+                <Loader type='inline' text={t('common.loading')} />
               ) : (
                 <kbd className='px-2 py-1 bg-neutral-100 dark:bg-neutral-700 rounded border border-neutral-300 dark:border-neutral-600'>
                   ⌘K
@@ -211,7 +211,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
             <div className='mt-4 max-h-96 overflow-y-auto'>
               {loading ? (
                 <div className='flex items-center justify-center py-8'>
-                  <Loader size='sm' />
+                  <Loader type='inline' text={t('common.loading')} />
                 </div>
               ) : results.length > 0 ? (
                 <div className='space-y-1'>

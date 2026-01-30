@@ -40,6 +40,7 @@ import { logger } from '@/lib/utils/logger.js';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { SidebarTooltip } from '@/components/ui/SidebarTooltip';
 import { ProfileMenu } from './ProfileMenu.jsx';
 
 export function Sidebar({ isMobileOpen = false, onMobileClose }) {
@@ -54,6 +55,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   // Will be updated after mount from localStorage
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [tooltip, setTooltip] = useState({ anchor: null, label: '' });
   const isCollapsedRef = useRef(false);
 
   // Mark component as mounted and sync with localStorage
@@ -346,18 +348,18 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         />
       )}
       <div
-        className={`text-neutral-900 dark:text-neutral-100 flex flex-col sticky top-0 border-r border-neutral-200 dark:border-neutral-700 relative overflow-visible bg-gradient-to-br from-white via-neutral-50 to-primary-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[1001] max-md:transition-transform max-md:duration-300 max-md:ease-out ${isMobileOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
+        className={`text-neutral-900 dark:text-neutral-100 flex flex-col sticky top-0 border-r border-neutral-200 dark:border-neutral-700 relative ${isCollapsed ? 'overflow-visible' : 'overflow-hidden'} bg-gradient-to-br from-white via-neutral-50 to-primary-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[1001] max-md:transition-transform max-md:duration-300 max-md:ease-out ${isMobileOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
         data-collapsed={isCollapsed}
         style={{
-          width: isCollapsed ? '3.5rem' : 'var(--dashboard-sidebar-width, 280px)',
-          minWidth: isCollapsed ? '3.5rem' : 'var(--dashboard-sidebar-width, 280px)',
-          maxWidth: isCollapsed ? '3.5rem' : 'var(--dashboard-sidebar-width, 280px)',
+          width: isCollapsed ? '5rem' : 'var(--dashboard-sidebar-width, 280px)',
+          minWidth: isCollapsed ? '5rem' : 'var(--dashboard-sidebar-width, 280px)',
+          maxWidth: isCollapsed ? '5rem' : 'var(--dashboard-sidebar-width, 280px)',
           height: '100vh',
+          minHeight: 0,
           flexShrink: 0,
           flexGrow: 0,
           transition:
             'width 0.5s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.5s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-          overflow: 'visible',
           zIndex: 'var(--z-sidebar, 1000)',
           willChange: 'width, min-width, max-width',
           transform: 'translateZ(0)',
@@ -390,7 +392,34 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             </button>
           </div>
         )}
-        {/* Header Section - Profile at top */}
+        {/* Logo – top of sidebar, links to dashboard (always visible in app shell) */}
+        <div
+          className='sidebar-logo flex-shrink-0 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-center bg-white dark:bg-neutral-800'
+          style={{
+            padding: isCollapsed ? 'var(--space-3) var(--space-2)' : 'var(--space-4) var(--space-4) var(--space-3)',
+            transition: 'padding 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
+          <Link
+            href='/dashboard'
+            onClick={handleLinkClick}
+            prefetch={true}
+            className='flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-lg'
+            aria-label={t('dashboard.title')}
+          >
+            <img
+              src='/images/logoclinic.png'
+              alt='Clinic Logo'
+              className='object-contain'
+              style={{
+                height: isCollapsed ? 32 : 40,
+                width: isCollapsed ? 32 : 'auto',
+                maxWidth: isCollapsed ? 32 : 140,
+              }}
+            />
+          </Link>
+        </div>
+        {/* Profile Section – below logo */}
         <div
           className='sidebar-profile-header border-b border-neutral-200 dark:border-neutral-700 flex-shrink-0 relative z-10 bg-white dark:bg-neutral-800'
           style={{
@@ -401,16 +430,15 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
           <ProfileMenu isCollapsed={isCollapsed} />
         </div>
 
-        {/* Navigation Section - Scrollable */}
+        {/* Navigation Section – sticky sidebar: this area scrolls when menu items overflow (scrollbar hidden) */}
         <nav
-          className='flex-1 overflow-y-auto overflow-x-hidden relative z-10'
+          className='flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative z-10 scrollbar-hide'
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: 'var(--dashboard-sidebar-gap, 8px)',
-            padding: 'var(--space-4) var(--space-6)',
-            minHeight: 0,
-            flexShrink: 1,
+            padding: isCollapsed ? 'var(--space-3)' : 'var(--space-4) var(--space-6)',
+            paddingBottom: isCollapsed ? 'var(--space-3)' : 'var(--space-4)',
           }}
         >
           {user?.role === 'super_admin' ? (
@@ -427,14 +455,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin'
                 onClick={handleLinkClick}
                 prefetch={false}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.dashboard') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-2' : 'px-6'
-                } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
+                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                } min-h-[44px] text-body-sm font-medium ${
                   pathname === '/admin'
                     ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
                 }`}
-                title={isCollapsed ? t('admin.dashboard') : ''}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.dashboard') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -451,14 +482,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/clients'
                 onClick={handleLinkClick}
                 prefetch={false}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.clients') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-2' : 'px-6'
-                } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
+                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                } min-h-[44px] text-body-sm font-medium ${
                   pathname === '/admin/clients'
                     ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
                 }`}
-                title={isCollapsed ? t('admin.clients') : ''}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.clients') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -475,14 +509,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/subscriptions'
                 onClick={handleLinkClick}
                 prefetch={false}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.subscriptions') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-2' : 'px-6'
-                } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
+                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                } min-h-[44px] text-body-sm font-medium ${
                   pathname === '/admin/subscriptions'
                     ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
                 }`}
-                title={isCollapsed ? t('admin.subscriptions') : ''}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.subscriptions') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -499,14 +536,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/users'
                 onClick={handleLinkClick}
                 prefetch={false}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.allUsers') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-2' : 'px-6'
-                } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
+                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                } min-h-[44px] text-body-sm font-medium ${
                   pathname === '/admin/users'
                     ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
                 }`}
-                title={isCollapsed ? t('admin.allUsers') : ''}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.allUsers') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -523,14 +563,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/patients'
                 onClick={handleLinkClick}
                 prefetch={false}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.patients') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-2' : 'px-6'
-                } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
+                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                } min-h-[44px] text-body-sm font-medium ${
                   pathname === '/admin/patients' || pathname?.startsWith('/admin/patients/')
                     ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
                 }`}
-                title={isCollapsed ? t('admin.patients') : ''}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.patients') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -547,14 +590,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/appointments'
                 onClick={handleLinkClick}
                 prefetch={false}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.appointments') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-2' : 'px-6'
-                } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
+                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                } min-h-[44px] text-body-sm font-medium ${
                   pathname === '/admin/appointments'
                     ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
                 }`}
-                title={isCollapsed ? t('admin.appointments') : ''}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.appointments') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -571,14 +617,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/doctors'
                 onClick={handleLinkClick}
                 prefetch={false}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.doctors') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-2' : 'px-6'
-                } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
+                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                } min-h-[44px] text-body-sm font-medium ${
                   pathname === '/admin/doctors' || pathname?.startsWith('/admin/doctors/')
                     ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
                 }`}
-                title={isCollapsed ? t('admin.doctors') : ''}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.doctors') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -595,14 +644,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/create-admin'
                 onClick={handleLinkClick}
                 prefetch={false}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.createAdmin') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-2' : 'px-6'
-                } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
+                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                } min-h-[44px] text-body-sm font-medium ${
                   pathname === '/admin/create-admin'
                     ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                     : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
                 }`}
-                title={isCollapsed ? t('admin.createAdmin') : ''}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.createAdmin') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -619,8 +671,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/content'
                 onClick={handleLinkClick}
                 prefetch={false}
-                className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-6'} min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${pathname?.startsWith('/admin/content') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
-                title={isCollapsed ? t('admin.content') : ''}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.content') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/content') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.content') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -637,8 +692,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/financial'
                 onClick={handleLinkClick}
                 prefetch={false}
-                className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-6'} min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${pathname?.startsWith('/admin/financial') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
-                title={isCollapsed ? t('admin.financial') : ''}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.financial') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/financial') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.financial') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -655,8 +713,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/reports'
                 onClick={handleLinkClick}
                 prefetch={false}
-                className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-6'} min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${pathname?.startsWith('/admin/reports') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
-                title={isCollapsed ? t('admin.reports') : ''}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.reports') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/reports') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.reports') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -673,8 +734,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/analytics'
                 onClick={handleLinkClick}
                 prefetch={false}
-                className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-6'} min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${pathname?.startsWith('/admin/analytics') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
-                title={isCollapsed ? t('admin.analytics') || 'Analytics' : ''}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.analytics') || 'Analytics' })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/analytics') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? (t('admin.analytics') || 'Analytics') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -691,8 +755,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/activity-logs'
                 onClick={handleLinkClick}
                 prefetch={false}
-                className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-6'} min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${pathname?.startsWith('/admin/activity-logs') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
-                title={isCollapsed ? t('admin.activityLogs') : ''}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.activityLogs') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/activity-logs') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.activityLogs') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -709,8 +776,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/settings'
                 onClick={handleLinkClick}
                 prefetch={false}
-                className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-6'} min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${pathname?.startsWith('/admin/settings') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
-                title={isCollapsed ? t('admin.settings') : ''}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.settings') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/settings') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.settings') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -727,8 +797,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/reviews'
                 onClick={handleLinkClick}
                 prefetch={false}
-                className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-6'} min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${pathname?.startsWith('/admin/reviews') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
-                title={isCollapsed ? t('admin.reviews') : ''}
+                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.reviews') })}
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/reviews') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.reviews') : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -758,17 +831,22 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onMouseEnter={prefetchOnHover(item.href)}
+                    onMouseEnter={(e) => {
+                      prefetchOnHover(item.href)();
+                      if (isCollapsed) setTooltip({ anchor: e.currentTarget, label: displayLabel });
+                    }}
+                    onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                     onClick={handleLinkClick}
-                    prefetch={false}
+                    prefetch={true}
                     className={`flex items-center ${
-                      isCollapsed ? 'justify-center px-2' : 'px-6'
-                    } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
+                      isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                    } min-h-[44px] text-body-sm font-medium ${
                       isActive
                         ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                         : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
                     }`}
-                    title={isCollapsed ? displayLabel : ''}
+                    title={isCollapsed ? undefined : ''}
+                    aria-label={isCollapsed ? displayLabel : undefined}
                   >
                     <span className={`${isCollapsed ? '' : 'mr-3'}`}>
                       {item.icon && <item.icon />}
@@ -781,72 +859,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                   </Link>
                 );
               })}
-
-              {/* Subscription Section – only when role can access subscription */}
-              {hasPermission(user?.role, RESOURCES.SUBSCRIPTION, ACTIONS.READ) && (
-                <>
-                  {!isCollapsed && (
-                    <div className='pt-4 mt-2 border-t border-neutral-200 dark:border-neutral-700'>
-                      <p className='text-body-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3 px-3 uppercase tracking-wider'>
-                        Subscription
-                      </p>
-                    </div>
-                  )}
-                  <Link
-                    href='/subscription'
-                    onClick={handleLinkClick}
-                    prefetch={false}
-                    className={`flex items-center ${
-                      isCollapsed ? 'justify-center px-2' : 'px-6'
-                    } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
-                      pathname === '/subscription' || pathname?.startsWith('/subscription/')
-                        ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
-                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
-                    }`}
-                    title={isCollapsed ? t('subscription.title') : ''}
-                  >
-                    <span
-                      className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
-                    >
-                      <IconSubscription />
-                    </span>
-                    <span
-                      className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
-                    >
-                      {t('subscription.title')}
-                    </span>
-                  </Link>
-                </>
-              )}
-              <Link
-                href='/payment-history'
-                onClick={handleLinkClick}
-                prefetch={false}
-                className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-2' : 'px-6'
-                } min-h-[44px] py-4 rounded-lg text-body-sm font-medium ${
-                  pathname === '/payment-history'
-                    ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
-                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
-                }`}
-                title={isCollapsed ? t('subscription.paymentHistory') : ''}
-              >
-                <span
-                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
-                >
-                  <IconPaymentHistory />
-                </span>
-                <span
-                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
-                >
-                  {t('subscription.paymentHistory')}
-                </span>
-              </Link>
             </>
           )}
         </nav>
 
-        {/* Footer Section – Collapse toggle (distinct control, not nav-style) */}
+        {/* Footer Section – Subscription + Payment History + Collapse toggle (fixed at bottom) */}
         <div
           className='sidebar-collapse-footer border-t border-neutral-200 dark:border-neutral-700 flex-shrink-0 relative z-10'
           style={{
@@ -857,9 +874,78 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             background: 'transparent',
           }}
         >
+          {/* Subscription + Payment History – same block as Collapse (only for non–super_admin with permission) */}
+          {user?.role !== 'super_admin' &&
+            hasPermission(user?.role, RESOURCES.SUBSCRIPTION, ACTIONS.READ) && (
+              <div className='sidebar-subscription-section flex flex-col gap-0'>
+                {!isCollapsed && (
+                  <div className='pt-2'>
+                    <p className='text-body-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 px-3 uppercase tracking-wider'>
+                      Subscription
+                    </p>
+                  </div>
+                )}
+                <Link
+                  href='/subscription'
+                  onClick={handleLinkClick}
+                  prefetch={false}
+                  onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('subscription.title') })}
+                  onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                  className={`flex items-center ${
+                    isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                  } min-h-[44px] text-body-sm font-medium ${
+                    pathname === '/subscription' || pathname?.startsWith('/subscription/')
+                      ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
+                      : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
+                  }`}
+                  title={isCollapsed ? undefined : ''}
+                  aria-label={isCollapsed ? t('subscription.title') : undefined}
+                >
+                  <span
+                    className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
+                  >
+                    <IconSubscription />
+                  </span>
+                  <span
+                    className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+                  >
+                    {t('subscription.title')}
+                  </span>
+                </Link>
+                <Link
+                  href='/payment-history'
+                  onClick={handleLinkClick}
+                  prefetch={false}
+                  onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('subscription.paymentHistory') })}
+                  onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                  className={`flex items-center ${
+                    isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                  } min-h-[44px] text-body-sm font-medium ${
+                    pathname === '/payment-history'
+                      ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
+                      : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
+                  }`}
+                  title={isCollapsed ? undefined : ''}
+                  aria-label={isCollapsed ? t('subscription.paymentHistory') : undefined}
+                >
+                  <span
+                    className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
+                  >
+                    <IconPaymentHistory />
+                  </span>
+                  <span
+                    className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+                  >
+                    {t('subscription.paymentHistory')}
+                  </span>
+                </Link>
+              </div>
+            )}
           <button
             type='button'
             onClick={handleToggle}
+            onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('common.expandSidebar') })}
+            onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
             className={`sidebar-collapse-toggle group w-full flex items-center transition-all duration-300 ease-out ${
               isCollapsed
                 ? 'justify-center px-0 py-2.5 rounded-full'
@@ -885,6 +971,14 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             </span>
           </button>
         </div>
+
+        {mounted && isCollapsed && (
+          <SidebarTooltip
+            anchor={tooltip.anchor}
+            label={tooltip.label}
+            visible={!!tooltip.label}
+          />
+        )}
       </div>
     </>
   );

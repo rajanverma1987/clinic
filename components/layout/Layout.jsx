@@ -6,6 +6,7 @@ import GlobalSearch from '@/components/search/GlobalSearch';
 import { Loader } from '@/components/ui/Loader';
 import { SubscriptionExpiredBanner } from '@/components/ui/SubscriptionExpiredBanner.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useFeatures } from '@/contexts/FeatureContext.jsx';
 import {
   getTestAccountRoleOverride,
@@ -32,6 +33,7 @@ const ROLE_HOME = {
  */
 export function Layout({ children, title, subtitle, actionButton, actionButtons }) {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading, setTestAccountRoleOverride } = useAuth();
   const { subscription } = useFeatures();
   const [showSubscriptionBanner, setShowSubscriptionBanner] = useState(false);
@@ -113,11 +115,11 @@ export function Layout({ children, title, subtitle, actionButton, actionButtons 
           className='fixed inset-0 flex items-center justify-center bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm'
           style={{ zIndex: 'var(--z-loader, 10070)' }}
         >
-          <Loader size='lg' />
+          <Loader type='page' text={t('common.loading')} />
         </div>
       )}
       <Sidebar isMobileOpen={sidebarMobileOpen} onMobileClose={() => setSidebarMobileOpen(false)} />
-      <main className='flex-1 flex flex-col min-w-0'>
+      <main className='flex-1 flex flex-col min-w-0' style={{ position: 'relative', zIndex: 0 }}>
         {showSubscriptionBanner && subscription && (
           <div
             className={`transition-all duration-500 ${

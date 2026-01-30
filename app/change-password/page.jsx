@@ -5,12 +5,18 @@ import { ImageTransition } from '@/components/layout/ImageTransition';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
+
+function PageLoaderFallback() {
+  const { t } = useI18n();
+  return <Loader type='page' text={t('common.loading')} />;
+}
 
 function ChangePasswordContent() {
   const router = useRouter();
@@ -537,7 +543,7 @@ function ChangePasswordContent() {
 
 export default function ChangePasswordPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<PageLoaderFallback />}>
       <ChangePasswordContent />
     </Suspense>
   );

@@ -119,8 +119,10 @@ export default function InventoryItemDetailPage() {
 
   const getStockStatus = () => {
     if (!item) return 'default';
-    if (item.totalQuantity <= item.lowStockThreshold) return 'danger';
-    if (item.totalQuantity <= item.lowStockThreshold * 1.5) return 'warning';
+    const available = item.availableQuantity ?? 0;
+    const threshold = item.lowStockThreshold ?? 0;
+    if (available <= threshold) return 'danger';
+    if (available <= threshold * 1.5) return 'warning';
     return 'success';
   };
 
@@ -137,7 +139,7 @@ export default function InventoryItemDetailPage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (error && !item) {
@@ -170,7 +172,7 @@ export default function InventoryItemDetailPage() {
           <>
             {item.code && <span className='mr-4'>Code: {item.code}</span>}
             <Tag variant={getStockStatus()} size='sm' className='ml-2'>
-              {item.totalQuantity <= item.lowStockThreshold ? 'Low Stock' : 'In Stock'}
+              {(item.availableQuantity ?? 0) <= (item.lowStockThreshold ?? 0) ? 'Low Stock' : 'In Stock'}
             </Tag>
           </>
         }
@@ -185,7 +187,7 @@ export default function InventoryItemDetailPage() {
           </>
         }
       />
-      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
+      <div style={{ padding: '0 10px' }}>
       {error && (
         <Card className='mb-6'>
           <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3'>

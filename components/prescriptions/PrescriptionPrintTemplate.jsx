@@ -30,13 +30,13 @@ export function generatePrescriptionPrintHTML(data) {
       size: A4;
       margin: 0.5in;
     }
-    
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
       font-family: 'Arial', sans-serif;
       font-size: 11pt;
@@ -44,173 +44,210 @@ export function generatePrescriptionPrintHTML(data) {
       color: #000;
       background: #fff;
     }
-    
+
     .prescription-container {
       max-width: 100%;
       margin: 0 auto;
-      padding: 10px;
+      padding: 16px;
     }
-    
+
     /* Header Section */
     .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
       border-bottom: 2px solid #000;
     }
-    
+
     .doctor-info {
       flex: 1;
       font-size: 10pt;
+      line-height: 1.5;
     }
-    
+
     .doctor-info .doctor-name {
       font-weight: bold;
       font-size: 11pt;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
-    
+
+    .doctor-info > div:not(.doctor-name) {
+      margin-bottom: 2px;
+    }
+
     .clinic-logo {
       flex: 1;
       text-align: center;
       font-weight: bold;
       font-size: 12pt;
     }
-    
+
     .clinic-info {
       flex: 1;
       text-align: right;
       font-size: 9pt;
+      line-height: 1.5;
     }
-    
+
     .clinic-info .clinic-name {
       font-weight: bold;
       font-size: 10pt;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
-    
+
+    .clinic-info > div:not(.clinic-name) {
+      margin-bottom: 2px;
+    }
+
     /* Patient Section */
     .patient-section {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 15px;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
       font-size: 10pt;
+      line-height: 1.5;
     }
-    
+
     .patient-left {
       flex: 1;
+      min-width: 0;
     }
-    
+
     .patient-right {
-      flex: 1;
+      flex: 0 0 auto;
       text-align: right;
     }
-    
+
     .patient-id {
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
     }
-    
+
     .patient-details {
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
-    
+
     .patient-vitals {
-      margin-top: 5px;
+      margin-top: 8px;
     }
-    
+
+    .patient-left > div:not(.patient-id):not(.patient-details):not(.patient-vitals) {
+      margin-top: 4px;
+    }
+
     /* Clinical Section */
     .section-divider {
       border-top: 1px solid #000;
-      margin: 10px 0;
+      margin: 16px 0;
     }
-    
+
     .clinical-section {
       display: flex;
-      gap: 20px;
-      margin-bottom: 10px;
+      gap: 24px;
+      margin-bottom: 16px;
     }
-    
+
     .clinical-left, .clinical-right {
       flex: 1;
+      min-width: 0;
     }
-    
+
     .section-title {
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
       font-size: 10pt;
     }
-    
+
     .section-content {
       font-size: 9pt;
-      margin-left: 10px;
+      margin-left: 0;
+      padding-left: 0;
+      line-height: 1.45;
     }
-    
+
     .section-content ul {
       list-style: none;
       padding-left: 0;
+      margin: 0 0 0 12px;
     }
-    
+
     .section-content li {
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
-    
+
     .section-content li:before {
-      content: "* ";
-      margin-right: 5px;
+      content: "• ";
+      margin-right: 6px;
     }
-    
+
     /* Prescription Table */
     .prescription-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 15px 0;
+      margin: 20px 0;
       font-size: 9pt;
     }
-    
+
     .prescription-table th {
       background-color: #f0f0f0;
       border: 1px solid #000;
-      padding: 6px;
+      padding: 8px 12px;
       text-align: left;
       font-weight: bold;
     }
-    
+
     .prescription-table td {
       border: 1px solid #000;
-      padding: 6px;
+      padding: 8px 12px;
+      vertical-align: top;
     }
-    
+
     .prescription-table tr:nth-child(even) {
       background-color: #f9f9f9;
     }
-    
+
     /* Footer */
     .footer {
-      margin-top: 20px;
-      padding-top: 10px;
+      margin-top: 24px;
+      padding-top: 16px;
       border-top: 2px solid #000;
     }
-    
+
     .footer-section {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
-    
+
     .signature-section {
       text-align: right;
-      margin-top: 30px;
+      margin-top: 32px;
     }
-    
+
     .signature-line {
       border-top: 1px solid #000;
       display: inline-block;
-      padding-top: 5px;
+      padding-top: 8px;
       min-width: 200px;
       text-align: center;
+      font-size: 10pt;
     }
-    
+
+    .signature-line > div:first-child {
+      margin-bottom: 4px;
+    }
+
+    /* Block sections (notes, diagnosis, etc.) */
+    .block-section {
+      margin-bottom: 16px;
+    }
+
+    .block-section .section-title {
+      margin-bottom: 6px;
+    }
+
     /* Watermark (optional) */
     .watermark {
       position: absolute;
@@ -224,13 +261,13 @@ export function generatePrescriptionPrintHTML(data) {
       z-index: -1;
       pointer-events: none;
     }
-    
+
     @media print {
       body {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
-      
+
       .no-print {
         display: none !important;
       }
@@ -240,7 +277,7 @@ export function generatePrescriptionPrintHTML(data) {
 <body>
   <div class="prescription-container">
     ${data.clinicName ? `<div class="watermark">${data.clinicName}</div>` : ''}
-    
+
     <!-- Header -->
     <div class="header">
       <div class="doctor-info">
@@ -259,7 +296,7 @@ export function generatePrescriptionPrintHTML(data) {
         ${data.clinicTiming ? `<div>Timing: ${data.clinicTiming}</div>` : ''}
       </div>
     </div>
-    
+
     <!-- Patient Section -->
     <div class="patient-section">
       <div class="patient-left">
@@ -290,10 +327,12 @@ export function generatePrescriptionPrintHTML(data) {
         ${
           data.knownHistory && data.knownHistory.length > 0
             ? `
-          <div style="margin-top: 5px;">
-            <div style="font-weight: bold;">Known History Of</div>
-            <ul style="list-style: none; padding-left: 0; margin-top: 3px;">
-              ${data.knownHistory.map((h) => `<li>* ${h}</li>`).join('')}
+          <div style="margin-top: 8px;">
+            <div class="section-title" style="margin-bottom: 4px;">Known History Of</div>
+            <ul style="list-style: none; padding-left: 12px; margin: 0;">
+              ${data.knownHistory
+                .map((h) => `<li style="margin-bottom: 4px;">• ${h}</li>`)
+                .join('')}
             </ul>
           </div>
         `
@@ -306,9 +345,9 @@ export function generatePrescriptionPrintHTML(data) {
   }</div>
       </div>
     </div>
-    
+
     <div class="section-divider"></div>
-    
+
     <!-- Clinical Section -->
     ${
       (data.chiefComplaints && data.chiefComplaints.length > 0) ||
@@ -347,23 +386,23 @@ export function generatePrescriptionPrintHTML(data) {
     `
         : ''
     }
-    
+
     ${
       data.notes
         ? `
       <div class="section-divider"></div>
-      <div style="margin-bottom: 10px;">
+      <div class="block-section">
         <div class="section-title">Notes:</div>
         <div class="section-content">${data.notes}</div>
       </div>
     `
         : ''
     }
-    
+
     ${
       data.diagnosis && data.diagnosis.length > 0
         ? `
-      <div style="margin-bottom: 10px;">
+      <div class="block-section">
         <div class="section-title">Diagnosis:</div>
         <div class="section-content">
           <ul>
@@ -374,11 +413,11 @@ export function generatePrescriptionPrintHTML(data) {
     `
         : ''
     }
-    
+
     ${
       data.procedures && data.procedures.length > 0
         ? `
-      <div style="margin-bottom: 10px;">
+      <div class="block-section">
         <div class="section-title">Procedures conducted</div>
         <div class="section-content">
           <ul>
@@ -389,12 +428,12 @@ export function generatePrescriptionPrintHTML(data) {
     `
         : ''
     }
-    
+
     <!-- Prescription Table - Only show drugs -->
     ${
       data.items && data.items.filter((item) => item.itemType === 'drug').length > 0
         ? `
-      <div style="margin: 15px 0;">
+      <div class="block-section" style="margin-top: 20px;">
         <div class="section-title" style="margin-bottom: 8px;">R</div>
         <table class="prescription-table">
           <thead>
@@ -447,11 +486,11 @@ export function generatePrescriptionPrintHTML(data) {
     `
         : ''
     }
-    
+
     ${
       data.investigations && data.investigations.length > 0
         ? `
-      <div style="margin-bottom: 10px;">
+      <div class="block-section">
         <div class="section-title">Investigations:</div>
         <div class="section-content">
           <ul>
@@ -462,47 +501,45 @@ export function generatePrescriptionPrintHTML(data) {
     `
         : ''
     }
-    
+
     ${
       data.advice && data.advice.length > 0
         ? `
-      <div style="margin-bottom: 10px;">
+      <div class="block-section">
         <div class="section-title">Advice Given:</div>
         <div class="section-content">
           ${
             data.advice.length === 1 && data.advice[0].includes('<')
-              ? // If single item contains HTML, render it directly
-                data.advice[0]
-              : // Otherwise render as list
-                `<ul>${data.advice.map((a) => `<li>${a}</li>`).join('')}</ul>`
+              ? data.advice[0]
+              : `<ul>${data.advice.map((a) => `<li>${a}</li>`).join('')}</ul>`
           }
         </div>
       </div>
     `
         : ''
     }
-    
+
     ${
       data.followUp
         ? `
-      <div style="margin-bottom: 10px;">
+      <div class="block-section">
         <div class="section-title">Follow Up: ${data.followUp}</div>
       </div>
     `
         : ''
     }
-    
+
     ${
       data.additionalInstructions
         ? `
-      <div style="margin-bottom: 10px;">
+      <div class="block-section">
         <div class="section-title">Additional Instructions:</div>
         <div class="section-content">${data.additionalInstructions}</div>
       </div>
     `
         : ''
     }
-    
+
     <!-- Footer -->
     <div class="footer">
       <div class="signature-section">

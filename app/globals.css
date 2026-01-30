@@ -4,6 +4,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Equal height for form controls – use class .form-control-height on input/select/date/time.
+   Inside padding uses tokens so text sits consistently; small padding-block improves vertical alignment. */
+@layer components {
+  .form-control-height,
+  input.form-control-height,
+  select.form-control-height {
+    --form-control-padding-inline: var(--space-4, 16px);
+    --form-control-padding-block: 2px;
+    min-height: var(--input-height) !important;
+    height: var(--input-height) !important;
+    padding-top: var(--form-control-padding-block) !important;
+    padding-bottom: var(--form-control-padding-block) !important;
+    padding-left: var(--form-control-padding-inline) !important;
+    padding-right: var(--form-control-padding-inline) !important;
+    box-sizing: border-box !important;
+    line-height: calc(var(--input-height) - 2px - 2 * var(--form-control-padding-block)) !important;
+  }
+  /* Compact form controls (e.g. invoice items table): smaller height and inside padding so content fits narrow columns */
+  .input-compact.form-control-height,
+  input.input-compact.form-control-height,
+  select.input-compact.form-control-height {
+    --form-control-padding-inline: var(--space-2, 8px);
+    --form-control-padding-block: 2px;
+    min-height: var(--input-height-compact, 1.75rem) !important;
+    height: var(--input-height-compact, 1.75rem) !important;
+    padding-top: var(--form-control-padding-block) !important;
+    padding-bottom: var(--form-control-padding-block) !important;
+    padding-left: var(--form-control-padding-inline) !important;
+    padding-right: var(--form-control-padding-inline) !important;
+    line-height: calc(var(--input-height-compact, 1.75rem) - 2px - 2 * var(--form-control-padding-block)) !important;
+  }
+  textarea.form-control-height {
+    height: auto !important;
+    min-height: var(--input-height) !important;
+    line-height: 1.5;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+}
+
 /* Design Tokens - CSS Custom Properties */
 @layer base {
   html {
@@ -106,6 +146,10 @@
     --icon-size-xl: 40px;
     --icon-size-2xl: 48px;
     --icon-size-empty: 64px;
+
+    /* Form control height – same for input, select, date, time */
+    --input-height: 2.5rem;
+    --input-height-compact: 1.75rem;
 
     /* Border Radius */
     --radius-sm: 4px;
@@ -357,7 +401,7 @@
 .sticky-header-bar {
   position: sticky;
   top: 0;
-  z-index: var(--z-sticky-header, 21);
+  z-index: var(--z-sticky-header, 100);
   background: var(--color-neutral-50);
   border-bottom: 1px solid var(--color-neutral-200);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent);
@@ -435,11 +479,16 @@
   flex-shrink: 0;
   justify-self: end;
   min-width: 0;
+  position: relative;
+  z-index: 2;
 }
 .sticky-header-bar__right-group {
   display: flex;
   align-items: center;
   gap: var(--space-2, 8px);
+  position: relative;
+  z-index: 1;
+  overflow: visible;
 }
 .sticky-header-bar__pipe {
   width: 1px;
@@ -558,14 +607,13 @@
   right: -4px;
 }
 
-/* Shared layout shell – header bar nearest to sidebar; page padding 24px, left 16px, max 5px above header */
+/* Shared layout shell – full width, consistent padding for dashboard and data pages */
 .page-shell {
   width: 100%;
   max-width: var(--layout-max-width);
   margin: 0 auto;
-  padding: var(--dashboard-page-padding);
-  padding-left: 16px;
-  padding-top: 5px;
+  padding: var(--space-4) var(--dashboard-page-padding);
+  box-sizing: border-box;
 }
 .dark .page-shell {
   color: var(--color-text-primary);
@@ -583,14 +631,41 @@
 
 /* Shared page content wrapper (dashboard, subscription, etc.) */
 .dashboard-container {
+  width: 100%;
   max-width: 100%;
   padding: 0;
+  box-sizing: border-box;
 }
 .dashboard-section {
+  width: 100%;
   margin-bottom: var(--space-6);
+  box-sizing: border-box;
 }
 .dashboard-section:last-child {
   margin-bottom: 0;
+}
+
+/* Full-width tab data pages: tabs + content use full width with consistent spacing */
+.data-tabs-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  box-sizing: border-box;
+}
+.data-tabs-content {
+  width: 100%;
+  margin-top: var(--space-4);
+  box-sizing: border-box;
+}
+
+/* Standard: when tab content is loading, show inline loader in content area (not full-screen) */
+.tab-content-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: var(--space-8);
+  width: 100%;
 }
 
 /* Doctor_Dashboard.md: cards - radius 12px, padding 20px, shadow */
@@ -665,6 +740,21 @@
 .sidebar-collapse-toggle:focus-visible {
   outline: 2px solid var(--color-primary-500);
   outline-offset: 2px;
+}
+
+/* Collapsed sidebar: tooltip is rendered via portal (SidebarTooltip.jsx), no CSS ::after */
+.dark .sidebar-tooltip-portal {
+  background: var(--color-neutral-700) !important;
+  color: var(--color-neutral-100) !important;
+}
+
+/* Collapsed sidebar nav: inline padding and rounded active left border */
+[data-collapsed='true'] nav a.rounded-xl {
+  border-top-left-radius: 0.75rem;
+  border-bottom-left-radius: 0.75rem;
+}
+[data-collapsed='true'] nav a.rounded-xl[class*='border-primary-500'] {
+  border-left-width: 3px;
 }
 
 /* Profile dropdown wrapper – opens below trigger */

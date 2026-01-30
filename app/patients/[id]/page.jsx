@@ -203,7 +203,7 @@ export default function PatientDetailPage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (!patient) {
@@ -274,17 +274,16 @@ export default function PatientDetailPage() {
           </>
         }
       />
-      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
+      <div className='data-tabs-container w-full'>
         {error && (
           <div className='mb-6 p-4 bg-status-error/10 border border-status-error/30 text-status-error rounded-lg'>
             {error}
           </div>
         )}
 
-        <div>
-          <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
+        <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
 
-          <div className='mt-6'>
+        <div className='data-tabs-content'>
             {activeTab === 'overview' && (
               <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                 <Card>

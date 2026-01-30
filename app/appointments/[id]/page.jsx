@@ -183,7 +183,7 @@ export default function AppointmentDetailsPage({ params }) {
   };
 
   if (loading) {
-    return <Loader fullScreen size='lg' text={t('auth.loadingAppointmentDetails')} />;
+    return <Loader type='page' text={t('auth.loadingAppointmentDetails')} />;
   }
 
   if (error || !appointment) {
@@ -247,7 +247,7 @@ export default function AppointmentDetailsPage({ params }) {
           </>
         }
       />
-      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
+      <div style={{ padding: '0 10px' }}>
         {/* Quick Actions for Doctors */}
         {isDoctor && (
           <Card className='mb-6 p-4'>

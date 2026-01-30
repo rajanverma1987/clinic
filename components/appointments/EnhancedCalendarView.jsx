@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger.js';
 import { useState, useEffect, useCallback } from 'react';
@@ -49,6 +50,7 @@ export default function EnhancedCalendarView({
   selectedDepartmentId,
   viewMode: initialViewMode = VIEW_MODES.WEEK,
 }) {
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState(initialViewMode);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [draggedAppointment, setDraggedAppointment] = useState(null);
@@ -458,7 +460,7 @@ export default function EnhancedCalendarView({
       {/* Calendar Content */}
       {loading ? (
         <div className='flex items-center justify-center py-12'>
-          <Loader size='lg' />
+          <Loader type='section' text={t('common.loading')} />
         </div>
       ) : (
         <div className='overflow-auto'>

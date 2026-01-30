@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
   }
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (user?.role !== 'super_admin') {
@@ -123,7 +123,7 @@ export default function AdminDashboardPage() {
           </Button>
         }
       />
-      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
+      <div style={{ padding: '0 10px' }}>
         {/* Phase 5.1: 8 Platform KPI Cards */}
         <div className='mb-8'>
           <h2 className='text-xl font-semibold text-neutral-900 mb-4'>{t('admin.platformKPIs')}</h2>

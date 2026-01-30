@@ -95,7 +95,7 @@ export default function NewInventoryItemPage() {
         unreadCount={0}
         actionButton={<BackButton />}
       />
-      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
+      <div style={{ padding: '0 10px' }}>
         <Card>
           <form onSubmit={handleSubmit} className='space-y-6' noValidate>
             {error && (

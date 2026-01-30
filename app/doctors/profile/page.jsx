@@ -249,7 +249,7 @@ export default function DoctorProfilePage() {
   if (authLoading || loading) {
     return (
       <Layout>
-        <Loader fullScreen size='lg' />
+        <Loader type='page' text={t('common.loading')} />
       </Layout>
     );
   }
@@ -262,7 +262,7 @@ export default function DoctorProfilePage() {
 
   return (
     <Layout>
-      <div className='max-w-7xl mx-auto space-y-6'>
+      <div style={{ padding: '0 10px' }} className='space-y-6'>
         <PageHeader
           title={t('doctors.profileManagement')}
           subtitle={t('doctors.profileManagementSubtitle')}

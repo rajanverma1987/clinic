@@ -562,9 +562,9 @@ export async function getInventoryReport(input, tenantId, userId) {
 
   const items = await InventoryItem.find(filter).populate('primarySupplierId', 'name').lean();
 
-  // Low stock items
+  // Low stock items (available quantity at or below threshold)
   const lowStockItems = input.includeLowStock
-    ? items.filter((item) => item.totalQuantity <= item.lowStockThreshold)
+    ? items.filter((item) => (item.availableQuantity ?? 0) <= (item.lowStockThreshold ?? 0))
     : [];
 
   // Expired items
@@ -666,7 +666,7 @@ export async function getInventoryReport(input, tenantId, userId) {
       ? lowStockItems.map((item) => ({
           id: item._id,
           name: item.name,
-          currentStock: item.totalQuantity,
+          currentStock: item.availableQuantity ?? item.totalQuantity,
           threshold: item.lowStockThreshold,
         }))
       : undefined,

@@ -154,6 +154,9 @@
   "common": {
     "appName": "عيادة الطبيب",
     "loading": "جاري التحميل...",
+    "loadingDetails": "جاري تحميل التفاصيل...",
+    "searching": "جاري البحث...",
+    "creating": "جاري الإنشاء...",
     "error": "خطأ",
     "success": "نجاح",
     "save": "حفظ",
@@ -220,7 +223,9 @@
     "selectLanguage": "اختيار اللغة",
     "closeModal": "إغلاق النافذة",
     "areYouSure": "هل أنت متأكد؟",
-    "confirmationDescription": "لا يمكن التراجع عن هذا الإجراء."
+    "confirmationDescription": "لا يمكن التراجع عن هذا الإجراء.",
+    "updatesAvailable": "تحديثات متاحة",
+    "refresh": "تحديث"
   },
   "sidebar": {
     "subscriptionType": "الخطة"
@@ -314,6 +319,7 @@
   },
   "dashboard": {
     "title": "لوحة التحكم",
+    "loading": "جاري تحميل لوحة التحكم...",
     "overview": "نظرة عامة على لوحة التحكم",
     "welcomeBackDoctor": "مرحباً بعودتك، د. {{name}}",
     "welcome": "مرحباً",
@@ -574,7 +580,10 @@
     "alreadyInQueue": "{{name}} is already in queue.",
     "recurringScheduled": "{{count}} recurring appointment(s) scheduled successfully!",
     "videoScheduled": "Video consultation scheduled! Email sent to patient.",
-    "scheduledSuccess": "Appointment scheduled successfully!"
+    "scheduledSuccess": "Appointment scheduled successfully!",
+    "loadingSlots": "جاري تحميل المواعيد...",
+    "loadingAppointments": "جاري تحميل المواعيد...",
+    "loadingDoctors": "جاري تحميل الأطباء..."
   },
   "invoices": {
     "title": "Invoices",
@@ -1516,7 +1525,17 @@
     "closeChat": "Close chat",
     "openChat": "Open chat",
     "closeFiles": "Close files",
-    "openFiles": "Open files"
+    "openFiles": "Open files",
+    "connecting": "جاري الاتصال...",
+    "establishingConnection": "جاري إنشاء الاتصال المباشر",
+    "mayTakeFewSeconds": "قد يستغرق ذلك بضع ثوانٍ",
+    "waitingForDoctorToJoin": "في انتظار انضمام الطبيب...",
+    "waitingForPatientToJoin": "في انتظار انضمام المريض...",
+    "waitingForDoctorToRejoin": "في انتظار عودة الطبيب...",
+    "waitingForPatientToRejoin": "في انتظار عودة المريض...",
+    "waitingRoom": "غرفة الانتظار",
+    "waitingRoomDescription": "أنت في غرفة الانتظار. سيقوم الطبيب بقبولك في الاستشارة قريباً.",
+    "pleaseWait": "يرجى الانتظار..."
   },
   "errors": {
     "generic": "An unexpected error occurred",

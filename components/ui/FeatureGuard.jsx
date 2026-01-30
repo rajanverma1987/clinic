@@ -1,12 +1,14 @@
 'use client';
 
 import { useFeatures } from '@/contexts/FeatureContext.jsx';
+import { useI18n } from '@/contexts/I18nContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader } from './Loader';
 
 export function FeatureGuard({ feature, children, fallback, redirectTo }) {
   const { hasFeature, loading } = useFeatures();
+  const { t } = useI18n();
   const router = useRouter();
 
   useEffect(() => {
@@ -16,7 +18,7 @@ export function FeatureGuard({ feature, children, fallback, redirectTo }) {
   }, [hasFeature, feature, loading, redirectTo, router]);
 
   if (loading) {
-    return <Loader size='md' className='h-64' />;
+    return <Loader type='section' className='h-64' text={t('common.loading')} />;
   }
 
   if (!hasFeature(feature)) {

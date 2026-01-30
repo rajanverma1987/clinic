@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { useCallback, useEffect, useState } from 'react';
@@ -476,10 +475,11 @@ export default function AppointmentCalendar({
           <div className='mb-4 flex items-center gap-2 flex-wrap'>
             <Button
               variant='secondary'
-              size='xs'
+              size='sm'
               iconOnly
               onClick={goToPreviousDay}
               title={t('appointments.previousDay') || 'Previous Day'}
+              className='!min-w-[44px] !w-11 !h-11'
             >
               ←
             </Button>
@@ -492,10 +492,11 @@ export default function AppointmentCalendar({
             />
             <Button
               variant='primary'
-              size='xs'
+              size='sm'
               iconOnly
               onClick={goToNextDay}
               title={t('appointments.nextDay') || 'Next Day'}
+              className='!min-w-[44px] !w-11 !h-11'
             >
               →
             </Button>
@@ -512,8 +513,17 @@ export default function AppointmentCalendar({
           </div>
 
           {loading ? (
-            <div className='text-center py-8'>
-              <Loader size='sm' inline />
+            <div
+              className='grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-96 overflow-hidden'
+              aria-busy='true'
+              aria-label={t('appointments.loadingSlots')}
+            >
+              {Array.from({ length: 24 }, (_, i) => (
+                <div
+                  key={i}
+                  className='h-10 rounded-lg skeleton animate-pulse bg-neutral-200 dark:bg-neutral-700'
+                />
+              ))}
             </div>
           ) : (
             <>

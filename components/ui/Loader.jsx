@@ -1,17 +1,53 @@
 'use client';
 
+import { LOADER_PRESETS } from '@/lib/constants/loader-usage';
+
 /**
  * Global Loader Component – uses clinic logo (/images/logoclinic.png)
- * Use this loader across the entire platform - no custom loaders allowed
+ * Use this loader across the entire platform - no custom loaders allowed.
+ *
+ * Enterprise types (use type prop for consistent UX):
+ * - page: full-screen, initial route / auth (message below logo)
+ * - section: inline in tab content or data block (message below logo)
+ * - inline: small block in card/widget (optional message)
+ * - button: use CompactLoader inside buttons
+ *
+ * @param {string} [type] - 'page' | 'section' | 'inline' | 'button' – applies preset (fullScreen, inline, size)
+ * @param {string} [text] - Message below logo (recommended for page/section). Used for aria-label when present.
  */
 export function Loader({
+  type,
   size = 'md',
-  text, // Deprecated: kept for backward compatibility, not rendered
+  text,
   fullScreen = false,
   className = '',
   variant = 'primary',
   inline = false,
+  'aria-label': ariaLabel,
 }) {
+  const preset = type && LOADER_PRESETS[type] && !LOADER_PRESETS[type].useSkeleton
+    ? LOADER_PRESETS[type]
+    : null;
+  const effectiveFullScreen = preset ? preset.fullScreen : fullScreen;
+  const effectiveInline = preset ? preset.inline : inline;
+  const effectiveSize = preset ? preset.size : size;
+  if (preset?.useCompact) {
+    return (
+      <CompactLoader
+        size={effectiveSize}
+        className={className}
+        variant={variant}
+        aria-label={ariaLabel}
+      />
+    );
+  }
+  const message = text ?? null;
+  const a11yProps = {
+    role: 'status',
+    'aria-busy': true,
+    'aria-live': 'polite',
+    'aria-label': ariaLabel ?? message ?? undefined,
+  };
   const sizeClasses = {
     xs: {
       spinner: 28,
@@ -58,7 +94,7 @@ export function Loader({
     },
   };
 
-  const currentSize = sizeClasses[size] || sizeClasses.md;
+  const currentSize = sizeClasses[effectiveSize] || sizeClasses.md;
   const colors = variantColors[variant] || variantColors.primary;
 
   const spinner = (
@@ -68,6 +104,7 @@ export function Loader({
         width: currentSize.pulse,
         height: currentSize.pulse,
       }}
+      aria-hidden='true'
     >
       {/* Pulsing background for medical feel */}
       <div
@@ -130,11 +167,50 @@ export function Loader({
     </div>
   );
 
-  if (inline) {
-    return spinner;
+  if (effectiveInline) {
+    const wrapperProps = {
+      ...a11yProps,
+      className: `flex flex-col items-center gap-6 ${className}`,
+    };
+    return message ? (
+      <div {...wrapperProps}>
+        {spinner}
+        <span className='text-body-sm font-medium tracking-wide text-neutral-700 whitespace-nowrap'>
+          {message}
+        </span>
+      </div>
+    ) : (
+      <div className={className} {...a11yProps}>
+        {spinner}
+      </div>
+    );
   }
 
-  if (fullScreen) {
+  const content = message ? (
+    <div
+      className='flex flex-col items-center'
+      style={{
+        gap: effectiveFullScreen ? '2.5rem' : '1.5rem',
+      }}
+    >
+      {spinner}
+      <span
+        className='loader-message-text font-medium tracking-wide text-neutral-700 text-center max-w-xs'
+        style={{
+          fontSize: effectiveFullScreen ? '1rem' : 'var(--text-body-sm, 14px)',
+          lineHeight: effectiveFullScreen ? '1.5rem' : 'var(--text-body-sm-line-height, 20px)',
+          letterSpacing: '0.025em',
+          marginTop: effectiveFullScreen ? '0.5rem' : undefined,
+        }}
+      >
+        {message}
+      </span>
+    </div>
+  ) : (
+    spinner
+  );
+
+  if (effectiveFullScreen) {
     return (
       <div
         className={`fixed inset-0 flex items-center justify-center ${className}`}
@@ -144,8 +220,12 @@ export function Loader({
             'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.98) 100%)',
           backdropFilter: 'blur(12px)',
         }}
+        role='status'
+        aria-busy='true'
+        aria-live='polite'
+        aria-label={ariaLabel ?? message ?? undefined}
       >
-        {spinner}
+        {content}
 
         <style jsx>{`
           @keyframes medical-spin {
@@ -190,6 +270,20 @@ export function Loader({
               opacity: 1;
             }
           }
+
+          .loader-message-text {
+            animation: loader-message-pulse 1.8s ease-in-out infinite;
+          }
+
+          @keyframes loader-message-pulse {
+            0%,
+            100% {
+              opacity: 0.85;
+            }
+            50% {
+              opacity: 1;
+            }
+          }
         `}</style>
       </div>
     );
@@ -198,8 +292,9 @@ export function Loader({
   return (
     <div
       className={`flex items-center justify-center ${className}`}
+      {...a11yProps}
     >
-      {spinner}
+      {content}
 
       <style jsx>{`
         @keyframes medical-spin {
@@ -244,6 +339,20 @@ export function Loader({
             opacity: 1;
           }
         }
+
+        .loader-message-text {
+          animation: loader-message-pulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes loader-message-pulse {
+          0%,
+          100% {
+            opacity: 0.85;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
       `}</style>
     </div>
   );
@@ -252,8 +361,14 @@ export function Loader({
 /**
  * Compact inline loader for buttons and small spaces
  * Use this for inline loading states (buttons, small components)
+ * @param {string} [ariaLabel] - Accessible label (e.g. t('common.loading')). Default "Loading".
  */
-export function CompactLoader({ size = 'sm', className = '', variant = 'primary' }) {
+export function CompactLoader({
+  size = 'sm',
+  className = '',
+  variant = 'primary',
+  'aria-label': ariaLabel = 'Loading',
+}) {
   const sizeMap = {
     xs: '16px',
     sm: '20px',
@@ -277,9 +392,13 @@ export function CompactLoader({ size = 'sm', className = '', variant = 'primary'
         width: sizeMap[size] || sizeMap.sm,
         height: sizeMap[size] || sizeMap.sm,
       }}
+      role='status'
+      aria-label={ariaLabel}
+      aria-busy='true'
     >
       <div
         className='rounded-full'
+        aria-hidden='true'
         style={{
           width: '100%',
           height: '100%',

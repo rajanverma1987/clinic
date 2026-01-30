@@ -1,14 +1,16 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
-import { useEffect, useState } from 'react';
-import { apiClient } from '@/lib/api/client';
 import { Modal } from '@/components/ui/Modal';
 import { Loader } from '@/components/ui/Loader';
+import { useI18n } from '@/contexts/I18nContext';
+import { apiClient } from '@/lib/api/client';
 import { generateInvoicePrintHTML } from './InvoicePrintTemplate';
 import { logger } from '@/lib/utils/logger.js';
+import { useEffect, useState } from 'react';
 
 export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
+  const { t } = useI18n();
   const [invoiceData, setInvoiceData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -104,7 +106,7 @@ export function InvoicePrintPreview({ invoiceId, isOpen, onClose }) {
       <div className="p-4">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader size='md' text='Loading invoice...' inline />
+            <Loader type='section' text={t('invoices.loadingInvoice')} />
           </div>
         ) : invoiceData ? (
           <>

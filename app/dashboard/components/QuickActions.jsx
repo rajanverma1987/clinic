@@ -57,7 +57,7 @@ export function QuickActions({ onNavigate, loading = false }) {
         variant='secondary'
         size='sm'
         onClick={() => setOpen((v) => !v)}
-        className='min-h-[36px] gap-2'
+        className='gap-2'
         aria-expanded={open}
         aria-haspopup='true'
         aria-label={t('dashboard.quickActions')}

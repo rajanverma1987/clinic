@@ -144,7 +144,7 @@ export default function PricingPage() {
       <div className='min-h-screen flex flex-col bg-white'>
         <Header />
         <main className='flex-1 flex items-center justify-center py-32'>
-          <Loader size='lg' text={t('pricing.loadingPricingPlans') || 'Loading pricing plans...'} />
+          <Loader type='page' text={t('pricing.loadingPricingPlans')} />
         </main>
         <Footer />
       </div>

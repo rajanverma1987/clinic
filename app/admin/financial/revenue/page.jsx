@@ -54,7 +54,7 @@ export default function AdminFinancialRevenuePage() {
 
   const formatCurrency = (amount) => formatCurrencyUtil(amount ?? 0, currency, locale);
 
-  if (authLoading || (loading && !data)) return <Loader fullScreen size='lg' />;
+  if (authLoading || (loading && !data)) return <Loader type='page' text={t('common.loading')} />;
   if (user?.role !== 'super_admin') return null;
 
   const overview = data?.overview ?? {};

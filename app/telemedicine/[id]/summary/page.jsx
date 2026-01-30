@@ -98,7 +98,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
   };
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (!session) {

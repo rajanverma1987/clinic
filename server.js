@@ -5,6 +5,10 @@
  */
 
 const path = require('path');
+// Suppress dotenv startup tips in terminal (dev)
+if (process.env.NODE_ENV !== 'production') {
+  process.env.DOTENV_CONFIG_QUIET = '1';
+}
 require('dotenv').config({ path: path.resolve(process.cwd(), '.env') });
 require('dotenv').config({ path: path.resolve(process.cwd(), '.env.local') });
 

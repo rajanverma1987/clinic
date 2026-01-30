@@ -1,6 +1,7 @@
 // UI Components Export
 export { Button } from './Button.jsx';
 export { Card } from './Card.jsx';
+export { CompactLoader, Loader } from './Loader.jsx';
 export { Checkbox } from './Checkbox.jsx';
 export { ConfirmationModal } from './ConfirmationModal.jsx';
 export { DatePicker } from './DatePicker.jsx';

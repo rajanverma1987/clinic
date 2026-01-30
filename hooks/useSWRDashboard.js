@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 
 const CRITICAL_POLL_MS = 30000;
+const FETCH_TIMEOUT_MS = 15000; // Prevent infinite skeleton if an API hangs
 
 function useTabVisible() {
   // Same initial value on server and client to avoid hydration mismatch (document is undefined on server)
@@ -35,20 +36,27 @@ function useTabVisible() {
 async function fetchStatsWithIndexedDB(tenantId) {
   const scope = 'stats';
   const id = tenantId || getCurrentTenantId();
-  try {
+  const doFetch = async () => {
     const res = await apiClient.get('/reports/dashboard');
     const data = res.success ? res.data : null;
     if (data && id) setIndexedDBCache(scope, id, data).catch(() => {});
     recordCacheMiss();
     return data;
-  } catch (e) {
-    const cached = id ? await getIndexedDBCache(scope, id) : null;
-    if (cached?.data) {
-      recordCacheHit();
-      return cached.data;
-    }
-    throw e;
-  }
+  };
+  const timeoutFallback = () =>
+    id ? getIndexedDBCache(scope, id).then((c) => c?.data ?? null) : Promise.resolve(null);
+  const withTimeout = Promise.race([
+    doFetch().catch(async (e) => {
+      const cached = await timeoutFallback();
+      if (cached) {
+        recordCacheHit();
+        return cached;
+      }
+      throw e;
+    }),
+    new Promise((resolve) => setTimeout(() => timeoutFallback().then(resolve), FETCH_TIMEOUT_MS)),
+  ]);
+  return withTimeout;
 }
 
 function useDashboardStatsSWR(tenantId) {
@@ -74,22 +82,41 @@ function useDashboardStatsSWR(tenantId) {
   };
 }
 
+const EMPTY_LISTS_PAYLOAD = {
+  todayAppointments: [],
+  recentPatients: [],
+  overdueInvoices: [],
+  lowStockList: [],
+  prescriptionRefills: [],
+  queueStatus: { active: 0, waiting: 0, inProgress: 0 },
+  criticalAlerts: [],
+  expiringLots: [],
+  appointmentRequests: [],
+};
+
 async function fetchListsWithIndexedDB(tenantId, fetchLists) {
   const scope = 'lists';
   const id = tenantId || getCurrentTenantId();
-  try {
+  const timeoutFallback = () =>
+    id ? getIndexedDBCache(scope, id).then((c) => c?.data ?? EMPTY_LISTS_PAYLOAD) : Promise.resolve(EMPTY_LISTS_PAYLOAD);
+  const doFetch = async () => {
     const data = await fetchLists();
     if (data && id) setIndexedDBCache(scope, id, data).catch(() => {});
     recordCacheMiss();
     return data;
-  } catch (e) {
-    const cached = id ? await getIndexedDBCache(scope, id) : null;
-    if (cached?.data) {
-      recordCacheHit();
-      return cached.data;
-    }
-    throw e;
-  }
+  };
+  const withTimeout = Promise.race([
+    doFetch().catch(async (e) => {
+      const cached = await timeoutFallback();
+      if (cached && cached !== EMPTY_LISTS_PAYLOAD) {
+        recordCacheHit();
+        return cached;
+      }
+      throw e;
+    }),
+    new Promise((resolve) => setTimeout(() => timeoutFallback().then(resolve), FETCH_TIMEOUT_MS)),
+  ]);
+  return withTimeout;
 }
 
 function useDashboardListsSWR(tenantId) {
@@ -236,19 +263,27 @@ function useDashboardListsSWR(tenantId) {
 async function fetchChartsWithIndexedDB(tenantId, fetchCharts) {
   const scope = 'charts';
   const id = tenantId || getCurrentTenantId();
-  try {
+  const emptyCharts = { revenue: [], appointments: [], patients: [] };
+  const timeoutFallback = () =>
+    id ? getIndexedDBCache(scope, id).then((c) => c?.data ?? emptyCharts) : Promise.resolve(emptyCharts);
+  const doFetch = async () => {
     const data = await fetchCharts();
     if (data && id) setIndexedDBCache(scope, id, data).catch(() => {});
     recordCacheMiss();
     return data;
-  } catch (e) {
-    const cached = id ? await getIndexedDBCache(scope, id) : null;
-    if (cached?.data) {
-      recordCacheHit();
-      return cached.data;
-    }
-    throw e;
-  }
+  };
+  const withTimeout = Promise.race([
+    doFetch().catch(async (e) => {
+      const cached = await timeoutFallback();
+      if (cached && cached !== emptyCharts) {
+        recordCacheHit();
+        return cached;
+      }
+      throw e;
+    }),
+    new Promise((resolve) => setTimeout(() => timeoutFallback().then(resolve), FETCH_TIMEOUT_MS)),
+  ]);
+  return withTimeout;
 }
 
 function useDashboardChartsSWR(tenantId, options = {}) {

@@ -132,11 +132,14 @@ async function deleteHandler(req, user, { params }) {
   return NextResponse.json(successResponse({ message: 'Appointment deleted successfully' }));
 }
 
-// Apply middleware
+// Apply middleware – pass route context (params) through to handlers
 export const GET = withErrorHandler(
   apiRateLimit(
     withAuth(
-      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.READ)(getHandler)
+      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.READ)(async (req, user, context) => {
+        const params = context?.params ? await Promise.resolve(context.params) : {};
+        return getHandler(req, user, { params });
+      })
     )
   )
 );
@@ -144,7 +147,10 @@ export const GET = withErrorHandler(
 export const PUT = withErrorHandler(
   apiRateLimit(
     withAuth(
-      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.UPDATE)(putHandler)
+      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.UPDATE)(async (req, user, context) => {
+        const params = context?.params ? await Promise.resolve(context.params) : {};
+        return putHandler(req, user, { params });
+      })
     )
   )
 );
@@ -152,7 +158,10 @@ export const PUT = withErrorHandler(
 export const DELETE = withErrorHandler(
   apiRateLimit(
     withAuth(
-      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.DELETE)(deleteHandler)
+      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.DELETE)(async (req, user, context) => {
+        const params = context?.params ? await Promise.resolve(context.params) : {};
+        return deleteHandler(req, user, { params });
+      })
     )
   )
 );
@@ -161,7 +170,10 @@ export const DELETE = withErrorHandler(
 export const PATCH = withErrorHandler(
   apiRateLimit(
     withAuth(
-      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.UPDATE)(patchStatusHandler)
+      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.UPDATE)(async (req, user, context) => {
+        const params = context?.params ? await Promise.resolve(context.params) : {};
+        return patchStatusHandler(req, user, { params });
+      })
     )
   )
 );

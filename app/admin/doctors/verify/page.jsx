@@ -253,7 +253,7 @@ function AdminDoctorVerificationContent() {
   };
 
   if (authLoading || loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   if (user?.role !== 'super_admin') {
@@ -724,7 +724,7 @@ function AdminDoctorVerificationContent() {
 
 export default function AdminDoctorVerificationPage() {
   return (
-    <Suspense fallback={<Loader fullScreen size='lg' />}>
+    <Suspense fallback={<Loader type='page' text={t('common.loading')} />}>
       <AdminDoctorVerificationContent />
     </Suspense>
   );

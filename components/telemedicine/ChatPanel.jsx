@@ -112,7 +112,7 @@ export function ChatPanel({
             className='flex-1 bg-white border border-neutral-300 text-neutral-900 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500'
             rows={2}
           />
-          <Button onClick={handleSend} disabled={!message.trim()} className='px-4 py-2'>
+          <Button onClick={handleSend} disabled={!message.trim()} size='sm'>
             {t('telemedicine.send')}
           </Button>
         </div>

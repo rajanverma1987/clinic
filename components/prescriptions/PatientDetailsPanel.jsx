@@ -2,11 +2,13 @@
 
 import '@/app/prescriptions/styles/prescription-form.css';
 import { Loader } from '@/components/ui/Loader';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client.js';
 import { useEffect, useState } from 'react';
 import { logger } from '@/lib/utils/logger.js';
 
 export function PatientDetailsPanel({ patientId }) {
+  const { t } = useI18n();
   const [patient, setPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
@@ -79,7 +81,7 @@ export function PatientDetailsPanel({ patientId }) {
           className='patient-details-content'
           style={{ textAlign: 'center', padding: 'var(--space-8)' }}
         >
-          <Loader size='sm' text='Loading patient details...' />
+          <Loader type='inline' text={t('prescriptions.loadingPatientDetails')} />
         </div>
       </div>
     );

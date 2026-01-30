@@ -4,6 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -369,8 +370,9 @@ export default function ReportsPage() {
         notifications={[]}
         unreadCount={0}
       />
-      <div style={{ padding: '0 10px' }}>
-        <div className='mb-4 flex gap-2 items-end'>
+      <div className='data-tabs-container w-full'>
+        <div className='data-tabs-content'>
+        <div className='mb-4 flex flex-wrap gap-3 items-end w-full'>
           <div className='flex-1'>
             <label className='block text-xs font-medium text-neutral-700 mb-1'>
               {t('reports.startDate')}
@@ -407,7 +409,7 @@ export default function ReportsPage() {
           </Button>
         </div>
 
-        <div className='mb-6 flex gap-2 border-b border-neutral-200'>
+        <div className='mb-6 w-full flex flex-wrap gap-x-4 gap-y-1 border-b border-neutral-200 dark:border-neutral-600 pb-2'>
           <button
             type='button'
             onClick={() => setActiveTab('revenue')}
@@ -862,8 +864,8 @@ export default function ReportsPage() {
         )}
 
         {loading && (
-          <div className='flex items-center justify-center py-12'>
-            <div className='text-neutral-500'>{t('reports.loadingReportData')}</div>
+          <div className='tab-content-loading' aria-busy='true' aria-label={t('reports.loadingReportData')}>
+            <Loader type='section' text={t('reports.loadingReportData')} />
           </div>
         )}
 
@@ -890,6 +892,7 @@ export default function ReportsPage() {
             <p className='text-neutral-600 text-center py-8'>{t('reports.noInventoryData')}</p>
           </Card>
         )}
+        </div>
       </div>
     </Layout>
   );

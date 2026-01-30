@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import Link from 'next/link';
 import { useState } from 'react';
 
 export function ProductGallerySection() {
@@ -319,12 +320,27 @@ export function ProductGallerySection() {
                 </div>
 
                 <div className='mt-8 pt-6 border-t border-neutral-200'>
-                  <Button
-                    variant='primary'
-                    size='lg'
+                  <Link
+                    href={
+                      features[activeTab].title === 'Dashboard'
+                        ? '/dashboard'
+                        : features[activeTab].title === 'Calendar'
+                          ? '/appointments'
+                          : features[activeTab].title === 'Patients'
+                            ? '/patients'
+                            : features[activeTab].title === 'Billing'
+                              ? '/invoices'
+                              : features[activeTab].title === 'Reports'
+                                ? '/reports'
+                                : features[activeTab].title === 'Prescriptions'
+                                  ? '/prescriptions'
+                                  : '/register'
+                    }
                   >
-                    Explore {features[activeTab].title}
-                  </Button>
+                    <Button variant='primary' size='lg'>
+                      Explore {features[activeTab].title}
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

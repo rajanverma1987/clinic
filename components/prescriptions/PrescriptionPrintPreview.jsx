@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { useEffect, useState } from 'react';
 import { generatePrescriptionPrintHTML } from './PrescriptionPrintTemplate';
@@ -11,6 +12,7 @@ import { logger } from '@/lib/utils/logger.js';
 
 export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
   const { user: currentUser } = useAuth();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [printHtml, setPrintHtml] = useState('');
@@ -276,7 +278,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
       <div className='space-y-4'>
         {loading && (
           <div className='flex items-center justify-center py-8'>
-            <Loader size='md' inline />
+            <Loader type='section' text={t('common.loading')} />
           </div>
         )}
 

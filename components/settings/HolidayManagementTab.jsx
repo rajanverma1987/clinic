@@ -107,7 +107,7 @@ export function HolidayManagementTab({ settings, onUpdate, showAddForm: controll
   if (loading) {
     return (
       <div className='flex items-center justify-center h-64'>
-        <Loader size='md' inline />
+        <Loader type='section' text={t('common.loading')} />
       </div>
     );
   }

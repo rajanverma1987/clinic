@@ -26,16 +26,16 @@ export function PrescriptionItemsTable({
       <table className='prescription-items-table'>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Type</th>
-            <th>Item *</th>
-            <th>Frequency</th>
-            <th>Duration</th>
-            <th>Qty</th>
-            <th>{t('prescriptions.route')}</th>
-            <th>{t('prescriptions.refills')}</th>
-            <th>Instructions</th>
-            <th>Actions</th>
+            <th className='prescription-items-col-index'>#</th>
+            <th className='prescription-items-col-type'>Type</th>
+            <th className='prescription-items-col-item'>Item *</th>
+            <th className='prescription-items-col-frequency'>Frequency</th>
+            <th className='prescription-items-col-duration'>Duration</th>
+            <th className='prescription-items-col-qty'>Qty</th>
+            <th className='prescription-items-col-route'>{t('prescriptions.route')}</th>
+            <th className='prescription-items-col-refills'>{t('prescriptions.refills')}</th>
+            <th className='prescription-items-col-instructions'>Instructions</th>
+            <th className='prescription-items-col-actions'>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -47,8 +47,8 @@ export function PrescriptionItemsTable({
 
             return (
               <tr key={index}>
-                <td style={{ fontWeight: 600, color: 'var(--color-neutral-700)' }}>{index + 1}</td>
-                <td>
+                <td className='prescription-items-col-index' style={{ fontWeight: 600, color: 'var(--color-neutral-700)' }}>{index + 1}</td>
+                <td className='prescription-items-col-type'>
                   <select
                     value={item.itemType || 'drug'}
                     onChange={(e) => {
@@ -106,7 +106,7 @@ export function PrescriptionItemsTable({
                     }}
                     className='prescription-form-input'
                     style={{
-                      fontSize: 'var(--text-body-xs)',
+                      fontSize: 'var(--text-body-sm)',
                       padding: 'var(--space-2) var(--space-3)',
                     }}
                   >
@@ -116,7 +116,7 @@ export function PrescriptionItemsTable({
                     <option value='other'>Other</option>
                   </select>
                 </td>
-                <td>
+                <td className='prescription-items-col-item'>
                   <div>
                     {item.itemType === 'drug' && (
                       <MedicineSearchInput
@@ -233,7 +233,7 @@ export function PrescriptionItemsTable({
                     )}
                   </div>
                 </td>
-                <td>
+                <td className='prescription-items-col-frequency'>
                   {item.itemType === 'drug' ? (
                     <div>
                       <select
@@ -245,7 +245,7 @@ export function PrescriptionItemsTable({
                           frequencyError ? 'border-status-error' : ''
                         }`}
                         style={{
-                          fontSize: 'var(--text-body-xs)',
+                          fontSize: 'var(--text-body-sm)',
                           padding: 'var(--space-2) var(--space-3)',
                         }}
                         required
@@ -266,10 +266,10 @@ export function PrescriptionItemsTable({
                       )}
                     </div>
                   ) : (
-                    <span style={{ color: 'var(--color-neutral-400)' }}>-</span>
+                    <span className='prescription-items-na' aria-hidden>—</span>
                   )}
                 </td>
-                <td>
+                <td className='prescription-items-col-duration'>
                   {item.itemType === 'drug' ? (
                     <div>
                       <Input
@@ -285,16 +285,16 @@ export function PrescriptionItemsTable({
                           className='prescription-form-error'
                           style={{ marginTop: 'var(--space-1)', fontSize: '10px' }}
                         >
-                          {durationError}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <span style={{ color: 'var(--color-neutral-400)' }}>-</span>
-                  )}
-                </td>
-                <td>
-                  {item.itemType === 'drug' ? (
+                        {durationError}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span className='prescription-items-na' aria-hidden>—</span>
+                )}
+              </td>
+              <td className='prescription-items-col-qty'>
+                {item.itemType === 'drug' ? (
                     <div>
                       <Input
                         type='number'
@@ -309,26 +309,26 @@ export function PrescriptionItemsTable({
                           className='prescription-form-error'
                           style={{ marginTop: 'var(--space-1)', fontSize: '10px' }}
                         >
-                          {quantityError}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <span style={{ color: 'var(--color-neutral-400)' }}>-</span>
-                  )}
-                </td>
-                <td>
-                  {item.itemType === 'drug' ? (
+                        {quantityError}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span className='prescription-items-na' aria-hidden>—</span>
+                )}
+              </td>
+              <td className='prescription-items-col-route'>
+                {item.itemType === 'drug' ? (
                     <select
                       value={item.route || 'oral'}
                       onChange={(e) => onUpdate(index, 'route', e.target.value)}
-                      className='prescription-form-input'
-                      style={{
-                        fontSize: 'var(--text-body-xs)',
-                        padding: 'var(--space-2) var(--space-3)',
-                      }}
-                    >
-                      <option value='oral'>{t('prescriptions.routeOral')}</option>
+                        className='prescription-form-input'
+                        style={{
+                          fontSize: 'var(--text-body-sm)',
+                          padding: 'var(--space-2) var(--space-3)',
+                        }}
+                      >
+                        <option value='oral'>{t('prescriptions.routeOral')}</option>
                       <option value='topical'>{t('prescriptions.routeTopical')}</option>
                       <option value='IV'>{t('prescriptions.routeIV')}</option>
                       <option value='IM'>{t('prescriptions.routeIM')}</option>
@@ -341,7 +341,7 @@ export function PrescriptionItemsTable({
                       onChange={(e) => onUpdate(index, 'priority', e.target.value)}
                       className='prescription-form-input'
                       style={{
-                        fontSize: 'var(--text-body-xs)',
+                        fontSize: 'var(--text-body-sm)',
                         padding: 'var(--space-2) var(--space-3)',
                       }}
                     >
@@ -350,10 +350,10 @@ export function PrescriptionItemsTable({
                       <option value='stat'>{t('prescriptions.priorityStat')}</option>
                     </select>
                   ) : (
-                    <span style={{ color: 'var(--color-neutral-400)' }}>-</span>
+                    <span className='prescription-items-na' aria-hidden>—</span>
                   )}
                 </td>
-                <td>
+                <td className='prescription-items-col-refills'>
                   {item.itemType === 'drug' ? (
                     <Input
                       type='number'
@@ -362,32 +362,26 @@ export function PrescriptionItemsTable({
                       onChange={(e) =>
                         onUpdate(index, 'refills', parseInt(e.target.value, 10) || 0)
                       }
-                      className='text-xs w-16'
+                      className='prescription-form-input text-xs'
                     />
                   ) : (
-                    <span style={{ color: 'var(--color-neutral-400)' }}>-</span>
+                    <span className='prescription-items-na' aria-hidden>—</span>
                   )}
                 </td>
-                <td>
+                <td className='prescription-items-col-instructions'>
                   <Input
                     value={item.instructions || ''}
                     onChange={(e) => onUpdate(index, 'instructions', e.target.value)}
                     placeholder='Instructions'
-                    className='text-xs'
-                    style={{ minWidth: '120px' }}
+                    className='prescription-form-input text-body-sm'
                   />
                 </td>
-                <td>
+                <td className='prescription-items-col-actions'>
                   <Button
                     type='button'
-                    variant='secondary'
+                    variant='danger'
                     size='sm'
                     onClick={() => onRemove(index)}
-                    style={{
-                      color: 'var(--color-status-error)',
-                      fontSize: 'var(--text-body-xs)',
-                      padding: 'var(--space-1) var(--space-2)',
-                    }}
                   >
                     Remove
                   </Button>
@@ -399,11 +393,13 @@ export function PrescriptionItemsTable({
       </table>
       {items.length === 0 && (
         <div
+          className='prescription-items-empty'
           style={{
-            padding: 'var(--space-8)',
+            padding: 'var(--space-8) var(--space-6)',
             textAlign: 'center',
             color: 'var(--color-neutral-500)',
             fontSize: 'var(--text-body-sm)',
+            lineHeight: 1.5,
           }}
         >
           No items added. Click &quot;Add Item&quot; to add prescription items.

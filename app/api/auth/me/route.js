@@ -1,4 +1,5 @@
 import connectDB from '@/lib/db/connection';
+import { isTestAccount } from '@/lib/constants/test-account.js';
 import { errorResponse, handleMongoError, successResponse } from '@/lib/utils/api-response';
 import { logger } from '@/lib/utils/logger.js';
 import { withAuth } from '@/middleware/auth';
@@ -42,14 +43,11 @@ async function handler(req, user) {
       // Continue without populated tenant - it's not critical
     }
 
-    // Verify tenant access - allow if user has no tenantId or if tenantIds match
-    // Use the tenantId we extracted before populating
+    // Verify tenant access - allow if user has no tenantId or if tenantIds match (skip for test account)
     const dbTenantId = userTenantId;
     const tokenTenantId = user.tenantId || '';
 
-    // Only check if both tenantIds exist and they don't match
-    // Allow access if either is empty (no tenant restriction)
-    if (dbTenantId && tokenTenantId && dbTenantId !== tokenTenantId) {
+    if (!(user.email && isTestAccount(user.email)) && dbTenantId && tokenTenantId && dbTenantId !== tokenTenantId) {
       logger.error('Tenant mismatch:', {
         dbTenantId,
         tokenTenantId,

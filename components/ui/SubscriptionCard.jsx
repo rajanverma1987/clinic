@@ -221,7 +221,7 @@ export function SubscriptionCard({
             onClick={onSelect}
             disabled={ctaDisabled}
           >
-            {ctaLabel}
+            {ctaText}
           </Button>
         ) : null}
       </div>

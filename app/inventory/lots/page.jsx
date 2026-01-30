@@ -86,10 +86,10 @@ export default function LotsPage() {
     );
   };
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <Layout>
-        <Loader fullScreen size='lg' />
+        <Loader type='page' text={t('common.loading')} />
       </Layout>
     );
   }
@@ -110,9 +110,9 @@ export default function LotsPage() {
         notifications={[]}
         unreadCount={0}
       />
-      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
-        {/* Sub-tabs: underline style, not buttons */}
-        <div className='mb-6' style={{ marginTop: 'var(--space-6)' }}>
+      <div className='data-tabs-container w-full'>
+        {/* Sub-tabs: full width */}
+        <div className='data-tabs-content mb-6'>
           <Tabs
             tabs={[
               { id: 'all', label: 'All Lots', count: lots.length },
@@ -124,8 +124,12 @@ export default function LotsPage() {
           />
         </div>
 
-        {/* Lots Table */}
-        {lots.length === 0 ? (
+        {/* Tab content: standard inline loader when loading (filter/tab change) */}
+        {loading ? (
+          <div className='tab-content-loading' aria-busy='true' aria-label={t('common.loading')}>
+            <Loader type='section' text={t('common.loading')} />
+          </div>
+        ) : lots.length === 0 ? (
           <div className='bg-white rounded-lg border border-neutral-200 p-8 text-center'>
             <p className='text-neutral-600'>No lots found</p>
           </div>

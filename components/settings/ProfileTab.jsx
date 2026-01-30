@@ -138,9 +138,13 @@ export function ProfileTab({
 
             {/* Action Buttons */}
             <div className='flex flex-col sm:flex-row gap-3 w-full lg:w-auto'>
-              <Button variant='secondary' size='md' className='flex-1 lg:flex-none'>
-                {t('settings.editProfile')}
-              </Button>
+              <Link
+                href={currentUser?.role === 'doctor' ? '/doctors/profile' : '/change-password'}
+              >
+                <Button variant='secondary' size='md' className='flex-1 lg:flex-none'>
+                  {t('settings.editProfile')}
+                </Button>
+              </Link>
               <Button variant='danger' size='md' className='flex-1 lg:flex-none' onClick={logout}>
                 {t('auth.logout')}
               </Button>

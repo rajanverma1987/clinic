@@ -105,7 +105,7 @@ export default function TelemedicinePage() {
   ];
 
   if (loading) {
-    return <Loader fullScreen size='lg' />;
+    return <Loader type='page' text={t('common.loading')} />;
   }
 
   return (

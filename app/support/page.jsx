@@ -342,8 +342,8 @@ export default function SupportPage() {
                 </div>
               </Link>
 
-              <a
-                href='#'
+              <Link
+                href='/api-docs'
                 className='group relative bg-white border-2 border-neutral-200 rounded-2xl hover:border-primary-300 hover:shadow-xl overflow-hidden'
                 style={{ padding: '32px' }}
               >
@@ -399,7 +399,7 @@ export default function SupportPage() {
                     </svg>
                   </div>
                 </div>
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -606,18 +606,21 @@ export default function SupportPage() {
                 letterSpacing: '-0.02em',
                 fontWeight: '700',
                 marginBottom: '16px',
+                color: '#ffffff',
+                textShadow: '0 1px 2px rgba(0,0,0,0.2)',
               }}
             >
               Still Need Help?
             </h2>
             <p
-              className='text-primary-100 max-w-2xl mx-auto'
+              className='max-w-2xl mx-auto'
               style={{
                 fontSize: '18px',
                 lineHeight: '28px',
                 letterSpacing: '-0.01em',
                 fontWeight: '400',
                 marginBottom: '32px',
+                color: 'rgba(255,255,255,0.95)',
               }}
             >
               Our support team is here to help you get the most out of Doctor&apos;s Clinic

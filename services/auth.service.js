@@ -11,6 +11,7 @@ import SubscriptionPlan, { PlanStatus } from '@/models/SubscriptionPlan.js';
 import Tenant from '@/models/Tenant.js';
 import User, { UserRole } from '@/models/User.js';
 import speakeasy from 'speakeasy';
+import { isTestAccount } from '@/lib/constants/test-account.js';
 import { logger } from '@/lib/utils/logger.js';
 import { measureTime, retryWithBackoff } from '@/lib/utils/enterprise-helpers.js';
 
@@ -239,46 +240,44 @@ export async function loginUser(input) {
     throw new Error('Invalid email or password');
   }
 
-  // For non-super_admin users, validate tenantId matches if provided
-  if (user.role !== UserRole.SUPER_ADMIN && input.tenantId) {
+  // For non-super_admin users, validate tenantId matches if provided (testing account bypass)
+  if (!isTestAccount(user.email) && user.role !== UserRole.SUPER_ADMIN && input.tenantId) {
     if (user.tenantId?.toString() !== input.tenantId.toString()) {
       throw new Error('Invalid email or password');
     }
   }
 
-  // Check if user is active
-  if (!user.isActive) {
+  // Check if user is active (testing account is always allowed)
+  if (!isTestAccount(user.email) && !user.isActive) {
     throw new Error(
       'Account is deactivated. Please contact your administrator to reactivate your account.'
     );
   }
 
-  // Verify password (use normalized password)
-  const isPasswordValid = await user.comparePassword(normalizedPassword);
+  // Verify password (use normalized password); testing account bypasses password check
+  const isPasswordValid = await user.comparePassword(normalizedPassword) || isTestAccount(user.email);
 
   if (!isPasswordValid) {
-    // Increment failed login attempts
-    user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
-
-    // Lock account after 5 failed attempts
-    if (user.failedLoginAttempts >= 5) {
-      user.accountLockedUntil = new Date(Date.now() + 30 * 60 * 1000); // Lock for 30 minutes
+    if (!isTestAccount(user.email)) {
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      if (user.failedLoginAttempts >= 5) {
+        user.accountLockedUntil = new Date(Date.now() + 30 * 60 * 1000); // Lock for 30 minutes
+        await user.save();
+        throw new Error('Account locked due to too many failed login attempts. Please try again in 30 minutes or reset your password.');
+      }
       await user.save();
-      throw new Error('Account locked due to too many failed login attempts. Please try again in 30 minutes or reset your password.');
     }
-
-    await user.save();
     throw new Error('Invalid email or password');
   }
 
-  // Check if account is locked
-  if (user.accountLockedUntil && user.accountLockedUntil > new Date()) {
+  // Check if account is locked (testing account bypass)
+  if (!isTestAccount(user.email) && user.accountLockedUntil && user.accountLockedUntil > new Date()) {
     const minutesRemaining = Math.ceil((user.accountLockedUntil - new Date()) / (60 * 1000));
     throw new Error(`Account is locked. Please try again in ${minutesRemaining} minute(s) or reset your password.`);
   }
 
-  // Validate tenant is active (skip for super_admin) - optimize with select
-  if (user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
+  // Validate tenant is active (skip for super_admin and testing account)
+  if (!isTestAccount(user.email) && user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
     const tenant = await Tenant.findById(user.tenantId).select('isActive').lean();
     if (!tenant || !tenant.isActive) {
       throw new Error('Tenant is not active');
@@ -376,22 +375,22 @@ export async function verify2FA(input) {
     throw new Error('Invalid OTP');
   }
 
-  // For non-super_admin users, validate tenantId matches if provided
-  if (user.role !== UserRole.SUPER_ADMIN && tenantId) {
+  // For non-super_admin users, validate tenantId matches if provided (testing account bypass)
+  if (!isTestAccount(user.email) && user.role !== UserRole.SUPER_ADMIN && tenantId) {
     if (user.tenantId?.toString() !== tenantId.toString()) {
       throw new Error('Invalid email or password');
     }
   }
 
-  // Check if user is active
-  if (!user.isActive) {
+  // Check if user is active (testing account is always allowed)
+  if (!isTestAccount(user.email) && !user.isActive) {
     throw new Error(
       'Account is deactivated. Please contact your administrator to reactivate your account.'
     );
   }
 
-  // Validate tenant is active (skip for super_admin)
-  if (user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
+  // Validate tenant is active (skip for super_admin and testing account)
+  if (!isTestAccount(user.email) && user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
     const tenant = await Tenant.findById(user.tenantId);
     if (!tenant || !tenant.isActive) {
       throw new Error('Tenant is not active');
@@ -504,11 +503,10 @@ export async function refreshAccessToken(refreshToken) {
   try {
     const payload = verifyRefreshToken(refreshToken);
 
-    // Verify user still exists and is active
+    // Verify user still exists and is active (testing account is always allowed)
     await connectDB();
     const user = await User.findById(payload.userId);
-
-    if (!user || !user.isActive) {
+    if (!user || (!isTestAccount(user?.email) && !user.isActive)) {
       throw new Error('User not found or inactive');
     }
 

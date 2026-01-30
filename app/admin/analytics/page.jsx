@@ -81,7 +81,7 @@ export default function AdminAnalyticsPage() {
     showSuccess('Schedule report email – coming soon');
   };
 
-  if (authLoading || (loading && !data)) return <Loader fullScreen size='lg' />;
+  if (authLoading || (loading && !data)) return <Loader type='page' text={t('common.loading')} />;
   if (user?.role !== 'super_admin') return null;
 
   const stats = data?.appointmentStats ?? {};

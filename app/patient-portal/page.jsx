@@ -594,7 +594,7 @@ export default function PatientPortalHomePage() {
           </h2>
           {loadingDoctors ? (
             <div className='flex justify-center py-12'>
-              <Loader size='lg' />
+              <Loader type='section' text={t('common.loading')} />
             </div>
           ) : featuredDoctors.length > 0 ? (
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -691,7 +691,7 @@ export default function PatientPortalHomePage() {
           </h2>
           {loadingTestimonials ? (
             <div className='flex justify-center py-12'>
-              <Loader size='lg' />
+              <Loader type='section' text={t('common.loading')} />
             </div>
           ) : testimonials.length > 0 ? (
             <div className='relative'>
