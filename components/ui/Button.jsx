@@ -86,15 +86,16 @@ export function Button({
   const isDisabled = disabled || isLoading;
   const variantStyle = VARIANTS[variant] ?? VARIANTS.primary;
   const sizeStyle = iconOnly
-    ? (ICON_ONLY_SIZES[size] ?? ICON_ONLY_SIZES.md)
-    : (SIZES[size] ?? SIZES.md);
+    ? ICON_ONLY_SIZES[size] ?? ICON_ONLY_SIZES.md
+    : SIZES[size] ?? SIZES.md;
   const shapeStyle =
-    iconOnly && shape === 'rounded' ? SHAPES.rounded : (SHAPES[shape] ?? SHAPES.rounded);
+    iconOnly && shape === 'rounded' ? SHAPES.rounded : SHAPES[shape] ?? SHAPES.rounded;
   const pillShape = iconOnly && shape === 'pill' ? SHAPES.pill : shapeStyle;
   const isSecondaryStyle = variant === 'secondary' || variant === 'outline';
   const iconOnlyPill = iconOnly && shape === 'pill';
-  const classNames =
-    `${BASE} ${variantStyle} ${sizeStyle} ${pillShape} ${iconOnlyPill ? 'aspect-square' : ''} ${isDisabled ? DISABLED : ''} ${className}`.trim();
+  const classNames = `${BASE} ${variantStyle} ${sizeStyle} ${pillShape} ${
+    iconOnlyPill ? 'aspect-square' : ''
+  } ${isDisabled ? DISABLED : ''} ${className}`.trim();
   const content = isLoading ? (
     <>
       <CompactLoader
@@ -118,7 +119,7 @@ export function Button({
 
   const contentSpanClass =
     (isSecondaryStyle ? 'relative z-10 ' : '') +
-    'inline-flex items-center justify-center gap-[var(--icon-text-gap)] shrink-0';
+    'inline-flex items-center justify-center gap-[var(--icon-text-gap)]';
 
   if (as === 'span') {
     const { type, ...spanRest } = rest;
