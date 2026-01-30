@@ -1,11 +1,22 @@
 /** @type {import('tailwindcss').Config} */
 const config = {
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: {
+        DEFAULT: '16px',
+        sm: '20px',
+        lg: '24px',
+        xl: '28px',
+        '2xl': '32px',
+      },
+    },
     extend: {
       // Color System - Clinic Theme
       colors: {
@@ -17,10 +28,10 @@ const config = {
           100: '#E6F7FE',
         },
         secondary: {
-          700: '#1E874F',
-          500: '#27AE60',
-          300: '#6FCF97',
-          100: '#E8F8EF',
+          700: '#1E874F', // Green variant - darker green
+          500: '#27AE60', // Green variant - success green
+          300: '#52C48F', // Green variant - lighter green
+          100: '#E8F8EF', // Green variant - lightest green
         },
         neutral: {
           900: '#1A1A1A', // Text strong
@@ -32,10 +43,18 @@ const config = {
           50: '#FFFFFF', // Surface
         },
         status: {
-          success: '#27AE60',
+          success: '#27AE60', // Green for success/active states
           warning: '#F2C94C',
           error: '#EB5757',
-          info: '#2D9CDB',
+          info: '#2D9CDB', // Blue for info
+        },
+        success: {
+          700: '#1E874F',
+          600: '#27AE60',
+          500: '#27AE60',
+          400: '#52C48F',
+          300: '#52C48F',
+          100: '#E8F8EF',
         },
       },
       // Typography - Inter Font Family
@@ -51,37 +70,41 @@ const config = {
           'sans-serif',
         ],
       },
-      // Typography Sizes (reduced by 10%)
+      // Typography Sizes
       fontSize: {
-        h1: ['29px', { lineHeight: '36px', fontWeight: '700' }],
-        h2: ['22px', { lineHeight: '29px', fontWeight: '600' }],
-        h3: ['18px', { lineHeight: '25px', fontWeight: '600' }],
-        h4: ['16px', { lineHeight: '22px', fontWeight: '600' }],
-        'body-lg': ['16px', { lineHeight: '25px', fontWeight: '400' }],
-        'body-md': ['14px', { lineHeight: '22px', fontWeight: '400' }],
-        'body-sm': ['13px', { lineHeight: '18px', fontWeight: '400' }],
-        'body-xs': ['11px', { lineHeight: '14px', fontWeight: '400' }],
-        button: ['14px', { lineHeight: '18px', fontWeight: '600' }],
+        h1: ['32px', { lineHeight: '40px', fontWeight: '700' }],
+        h2: ['24px', { lineHeight: '32px', fontWeight: '600' }],
+        h3: ['20px', { lineHeight: '28px', fontWeight: '600' }],
+        h4: ['18px', { lineHeight: '24px', fontWeight: '600' }],
+        'body-lg': ['18px', { lineHeight: '28px', fontWeight: '400' }],
+        'body-md': ['16px', { lineHeight: '24px', fontWeight: '400' }],
+        'body-sm': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+        'body-xs': ['12px', { lineHeight: '16px', fontWeight: '400' }],
+        button: ['16px', { lineHeight: '20px', fontWeight: '600' }],
       },
-      // Spacing Scale (reduced by 10%)
+      // Spacing Scale
       spacing: {
-        4: '3.6px',
-        8: '7.2px',
-        12: '10.8px',
-        16: '14.4px',
-        24: '21.6px',
-        32: '28.8px',
-        40: '36px',
-        48: '43.2px',
+        4: '4px',
+        8: '8px',
+        12: '12px',
+        16: '16px',
+        24: '24px',
+        32: '32px',
+        40: '40px',
+        48: '48px',
+        56: '56px',
+        64: '64px',
+        // Standard gap between icon and text (single source: --icon-text-gap in globals.css)
+        'icon-text': 'var(--icon-text-gap)',
       },
-      // Border Radius (reduced by 10%)
+      // Border Radius
       borderRadius: {
-        DEFAULT: '7.2px',
-        button: '7.2px',
-        card: '9px',
-        input: '7.2px',
-        lg: '9px',
-        xl: '10.8px',
+        DEFAULT: '8px',
+        button: '8px',
+        card: '10px',
+        input: '8px',
+        lg: '10px',
+        xl: '12px',
       },
       // Custom Shadows - Clinic Theme
       boxShadow: {

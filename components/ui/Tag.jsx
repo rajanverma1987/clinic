@@ -11,11 +11,11 @@ export function Tag({
 }) {
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-full';
   
-  // Variants using theme colors
+  // Variants using theme colors - Primary: Blue, Secondary: White, Success: Green
   const variants = {
     default: 'bg-neutral-100 text-neutral-700',
-    primary: 'bg-primary-100 text-primary-700',
-    success: 'bg-secondary-100 text-secondary-700',
+    primary: 'bg-primary-100 text-primary-700', // Blue for primary actions
+    success: 'bg-success-100 text-success-700', // Green for success/active states
     warning: 'bg-yellow-100 text-yellow-700', // Keep yellow for warning (not in theme but standard)
     danger: 'bg-red-100 text-status-error', // Use status-error for danger
   };

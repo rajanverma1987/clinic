@@ -2,33 +2,21 @@
 
 import { useI18n } from '@/contexts/I18nContext.jsx';
 import { supportedLocales } from '@/lib/i18n/index.js';
+
+// Language names shown in switcher use localeData below; for aria use common.selectLanguage
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './LanguageSwitcher.css';
 
-// Map locales to flag emojis and display names - Global language support
+// Platform languages: English, Spanish, Arabic – flag, name, code
 const localeData = {
   en: { flag: '🇺🇸', name: 'English', code: 'EN' },
   es: { flag: '🇪🇸', name: 'Español', code: 'ES' },
-  fr: { flag: '🇫🇷', name: 'Français', code: 'FR' },
-  hi: { flag: '🇮🇳', name: 'हिन्दी', code: 'HI' },
   ar: { flag: '🇸🇦', name: 'العربية', code: 'AR' },
-  zh: { flag: '🇨🇳', name: '中文', code: 'ZH' },
-  de: { flag: '🇩🇪', name: 'Deutsch', code: 'DE' },
-  pt: { flag: '🇵🇹', name: 'Português', code: 'PT' },
-  ja: { flag: '🇯🇵', name: '日本語', code: 'JA' },
-  ru: { flag: '🇷🇺', name: 'Русский', code: 'RU' },
-  it: { flag: '🇮🇹', name: 'Italiano', code: 'IT' },
-  nl: { flag: '🇳🇱', name: 'Nederlands', code: 'NL' },
-  ko: { flag: '🇰🇷', name: '한국어', code: 'KO' },
-  tr: { flag: '🇹🇷', name: 'Türkçe', code: 'TR' },
-  pl: { flag: '🇵🇱', name: 'Polski', code: 'PL' },
-  th: { flag: '🇹🇭', name: 'ไทย', code: 'TH' },
-  vi: { flag: '🇻🇳', name: 'Tiếng Việt', code: 'VI' },
 };
 
 export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
-  const { locale, setLocale } = useI18n();
+  const { locale, setLocale, t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState({});
   const [mounted, setMounted] = useState(false);
@@ -235,7 +223,7 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
             setIsOpen(!isOpen);
           }}
           className={buttonClasses}
-          aria-label='Select language'
+          aria-label={t('common.selectLanguage')}
           aria-expanded={isOpen}
         >
           <div className='LanguageSwitcher-button-content'>

@@ -5,6 +5,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -78,7 +79,7 @@ export default function PrescriptionPrintPage() {
           clinicSettings = settingsResponse.data;
         }
       } catch (err) {
-        console.error('Failed to fetch clinic settings:', err);
+        logger.error('Failed to fetch clinic settings:', err);
       }
 
       // Fetch clinical note if appointmentId exists
@@ -96,7 +97,7 @@ export default function PrescriptionPrintPage() {
             }
           }
         } catch (err) {
-          console.error('Failed to fetch clinical note:', err);
+          logger.error('Failed to fetch clinical note:', err);
         }
       }
 
@@ -244,7 +245,7 @@ export default function PrescriptionPrintPage() {
       const html = generatePrescriptionPrintHTML(printData);
       setPrintHtml(html);
     } catch (error) {
-      console.error('Failed to load prescription data:', error);
+      logger.error('Failed to load prescription data:', error);
       setError('Failed to load prescription data');
     } finally {
       setLoading(false);

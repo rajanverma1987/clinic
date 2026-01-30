@@ -1,35 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { authenticate } from '@/middleware/auth';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
+import { successResponse } from '@/lib/utils/api-response';
 import { getDashboardStats } from '@/services/report.service';
-import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/api-response';
+import CacheManager from '@/lib/cache/cache-manager.js';
+
+/** Server-side cache TTL for dashboard stats (seconds). Redis optional; fails gracefully. */
+const DASHBOARD_CACHE_TTL = 120;
 
 /**
  * GET /api/reports/dashboard
- * Get dashboard statistics
+ * Dashboard statistics. Cached per tenant (Redis if available); cache miss fetches from DB.
  */
 async function getHandler(req, user) {
-  try {
-    const stats = await getDashboardStats(user.tenantId, user.userId);
-    return NextResponse.json(successResponse(stats));
-  } catch (error) {
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
+  const tenantId = user.tenantId?.toString?.() || user.tenantId;
 
-    return NextResponse.json(
-      errorResponse('Failed to fetch dashboard stats', 'INTERNAL_ERROR'),
-      { status: 500 }
-    );
+  const cached = await CacheManager.get('reports', 'dashboard', tenantId);
+  if (cached) {
+    return NextResponse.json(successResponse(cached));
   }
+
+  const stats = await getDashboardStats(user.tenantId, user.userId);
+  await CacheManager.set('reports', stats, DASHBOARD_CACHE_TTL, 'dashboard', tenantId);
+  return NextResponse.json(successResponse(stats));
 }
 
-export async function GET(req) {
-  const authResult = await authenticate(req);
-  if ('error' in authResult) return authResult.error;
-
-  const authenticatedReq = req;
-  authenticatedReq.user = authResult.user;
-
-  return getHandler(authenticatedReq, authResult.user);
-}
+// Apply middleware stack
+export const GET = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.REPORT, ACTIONS.READ)(getHandler)
+    )
+  )
+);
 

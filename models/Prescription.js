@@ -1,5 +1,5 @@
-import mongoose, { Schema } from 'mongoose';
 import { phiEncryptionPlugin } from '@/lib/encryption/phi-encryption.js';
+import mongoose, { Schema } from 'mongoose';
 
 export const PrescriptionStatus = {
   DRAFT: 'draft',
@@ -45,7 +45,7 @@ const PrescriptionSchema = new Schema(
       required: true,
       index: true,
     },
-    
+
     // Prescription Details
     prescriptionNumber: {
       type: String,
@@ -58,14 +58,14 @@ const PrescriptionSchema = new Schema(
       enum: Object.values(PrescriptionStatus),
       required: true,
       default: PrescriptionStatus.DRAFT,
-      index: true,
+      // index via compound PrescriptionSchema.index({ tenantId: 1, status: 1 })
     },
     region: {
       type: String,
       required: true,
       enum: ['US', 'EU', 'APAC', 'IN', 'ME', 'CA', 'AU'],
     },
-    
+
     // Items - Flexible structure to support drugs, labs, procedures, and other items
     items: [
       {
@@ -88,11 +88,14 @@ const PrescriptionSchema = new Schema(
         takeBeforeMeal: Boolean,
         takeAfterMeal: Boolean,
         allowSubstitution: Boolean,
+        route: String, // oral, topical, IV, IM, sublingual, inhalation
+        refills: Number, // refills per line item
         // Lab-specific fields
         labTestName: String,
         labTestCode: String,
         labInstructions: String,
         fastingRequired: Boolean,
+        priority: { type: String, enum: ['routine', 'urgent', 'stat'] },
         // Procedure-specific fields
         procedureName: String,
         procedureCode: String,
@@ -103,20 +106,30 @@ const PrescriptionSchema = new Schema(
         instructions: String, // Will be encrypted
       },
     ],
-    
+
     // Diagnosis
     diagnosis: {
       type: String,
       // Will be encrypted
     },
     icd10Codes: [String],
-    
+    chiefComplaint: {
+      type: String,
+      // Will be encrypted if contains PHI
+    },
+    // Follow-up (Phase 3)
+    followUpDate: Date,
+    followUpType: {
+      type: String,
+      enum: ['in-person', 'video', 'phone'],
+    },
+    followUpAutoSchedule: { type: Boolean, default: false },
     // Instructions
     additionalInstructions: {
       type: String,
       // Will be encrypted if contains PHI
     },
-    
+
     // Validity
     validFrom: {
       type: Date,
@@ -135,7 +148,7 @@ const PrescriptionSchema = new Schema(
       type: Number,
       default: 0,
     },
-    
+
     // Dispensing
     dispensedAt: Date,
     dispensedBy: {
@@ -143,12 +156,14 @@ const PrescriptionSchema = new Schema(
       ref: 'User',
     },
     pharmacyNotes: String,
-    
+
     // E-signature
     doctorSignature: String,
     signedAt: Date,
     signatureHash: String,
-    
+    signedByTitle: String,
+    signedByLicense: String,
+
     // Metadata
     isActive: {
       type: Boolean,
@@ -165,10 +180,7 @@ const PrescriptionSchema = new Schema(
 );
 
 // Apply PHI encryption
-phiEncryptionPlugin(PrescriptionSchema, [
-  'diagnosis',
-  'additionalInstructions',
-]);
+phiEncryptionPlugin(PrescriptionSchema, ['diagnosis', 'chiefComplaint', 'additionalInstructions']);
 
 // Encrypt item instructions
 PrescriptionSchema.pre('save', function (next) {
@@ -201,7 +213,8 @@ PrescriptionSchema.index({ tenantId: 1, patientId: 1, createdAt: -1 });
 PrescriptionSchema.index({ tenantId: 1, doctorId: 1, createdAt: -1 });
 PrescriptionSchema.index({ tenantId: 1, status: 1 });
 PrescriptionSchema.index({ tenantId: 1, validUntil: 1 }); // For expired prescriptions
+PrescriptionSchema.index({ tenantId: 1, status: 1, validUntil: 1 }); // For refill reminders
+PrescriptionSchema.index({ tenantId: 1, refillsAllowed: 1, refillsUsed: 1 }); // For refill tracking
 PrescriptionSchema.index({ tenantId: 1, deletedAt: 1 });
 
 export default mongoose.models.Prescription || mongoose.model('Prescription', PrescriptionSchema);
-

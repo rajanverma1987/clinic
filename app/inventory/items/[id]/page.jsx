@@ -2,6 +2,7 @@
 
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -15,10 +16,9 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
-import { showSuccess, showError as showErrorToast } from '@/lib/utils/toast';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaChevronLeft } from 'react-icons/fa';
 
 export default function InventoryItemDetailPage() {
   const router = useRouter();
@@ -51,7 +51,7 @@ export default function InventoryItemDetailPage() {
         setError(response.error?.message || 'Failed to load inventory item');
       }
     } catch (error) {
-      console.error('Failed to fetch inventory item:', error);
+      logger.error('Failed to fetch inventory item:', error);
       setError(error.message || 'Failed to load inventory item');
     } finally {
       setLoading(false);
@@ -100,18 +100,13 @@ export default function InventoryItemDetailPage() {
       if (response.success) {
         setIsEditing(false);
         setError('');
-        showSuccess('Inventory item updated successfully');
-        await fetchItem();
+        fetchItem();
       } else {
-        const errorMsg = response.error?.message || 'Failed to update inventory item';
-        setError(errorMsg);
-        showErrorToast(errorMsg);
+        setError(response.error?.message || 'Failed to update inventory item');
       }
     } catch (error) {
-      console.error('Failed to update inventory item:', error);
-      const errorMsg = error.message || 'Failed to update inventory item';
-      setError(errorMsg);
-      showErrorToast(errorMsg);
+      logger.error('Failed to update inventory item:', error);
+      setError(error.message || 'Failed to update inventory item');
     } finally {
       setSaving(false);
     }
@@ -150,19 +145,12 @@ export default function InventoryItemDetailPage() {
       <Layout>
         <div style={{ padding: '0 10px' }}>
           <div className='mb-8' style={{ paddingTop: '10px' }}>
-            <button
-              onClick={() => router.back()}
-              className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
-              style={{ marginLeft: '10px' }}
-              aria-label={t('common.back')}
-            >
-              <FaChevronLeft width='20px' height='20px' />
-            </button>
+            <BackButton className='ml-2.5' />
           </div>
           <Card>
             <div className='text-center py-8'>
               <p className='text-status-error mb-4'>{error}</p>
-              <Button onClick={() => router.push('/inventory')}>Back to Inventory</Button>
+              <Button variant='primary' size='md' onClick={() => router.push('/inventory')}>Back to Inventory</Button>
             </div>
           </Card>
         </div>
@@ -176,16 +164,6 @@ export default function InventoryItemDetailPage() {
 
   return (
     <Layout>
-      <div className='mb-8' style={{ paddingTop: '10px' }}>
-        <button
-          onClick={() => router.back()}
-          className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
-          aria-label={t('common.back')}
-        >
-          <FaChevronLeft className='w-5 h-5' />
-        </button>
-      </div>
-
       <PageHeader
         title={item.name}
         subtitle={
@@ -196,13 +174,18 @@ export default function InventoryItemDetailPage() {
             </Tag>
           </>
         }
-        actionButton={
-          !isEditing && (
-            <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>
-          )
+        notifications={[]}
+        unreadCount={0}
+        actionButtons={
+          <>
+            <BackButton />
+            {!isEditing && (
+              <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>
+            )}
+          </>
         }
       />
-
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
       {error && (
         <Card className='mb-6'>
           <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3'>
@@ -412,6 +395,7 @@ export default function InventoryItemDetailPage() {
           )}
         </form>
       </Card>
+      </div>
     </Layout>
   );
 }

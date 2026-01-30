@@ -11,7 +11,7 @@ export function SessionInfo({ sessionDuration, sessionId }) {
     <div className='flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0'>
       <div className='w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0'>
         <svg
-          className='w-4 h-4 sm:w-6 sm:h-6 text-white'
+          className='icon icon-xs sm:!w-6 sm:!h-6 text-white'
           fill='none'
           stroke='currentColor'
           viewBox='0 0 24 24'
@@ -25,14 +25,14 @@ export function SessionInfo({ sessionDuration, sessionId }) {
         </svg>
       </div>
       <div className='min-w-0 flex-1'>
-        <h2 className='text-white font-semibold text-sm sm:text-base truncate'>
+        <h2 className='text-neutral-900 font-semibold text-sm sm:text-base truncate'>
           Telemedicine Consultation
         </h2>
-        <p className='text-gray-400 text-xs sm:text-sm truncate'>Session: {sessionId}</p>
+        <p className='text-neutral-600 text-xs sm:text-sm truncate'>Session: {sessionId}</p>
       </div>
       {sessionDuration > 0 && (
-        <div className='text-white text-xs sm:text-sm'>
-          <span className='text-gray-400 hidden sm:inline'>Duration: </span>
+        <div className='text-neutral-800 text-xs sm:text-sm'>
+          <span className='text-neutral-600 hidden sm:inline'>Duration: </span>
           <span className='font-mono'>{formatDuration(sessionDuration)}</span>
         </div>
       )}

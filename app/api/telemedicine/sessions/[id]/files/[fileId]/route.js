@@ -8,6 +8,7 @@ import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
 import { AuditLogger } from '@/lib/audit/audit-logger.js';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/telemedicine/sessions/[id]/files/[fileId]
@@ -65,7 +66,7 @@ export async function GET(
       uploadedAt: file.uploadedAt
     }));
   } catch (error) {
-    console.error('Error in GET /api/telemedicine/sessions/[id]/files/[fileId]:', error);
+    logger.error('Error in GET /api/telemedicine/sessions/[id]/files/[fileId]:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to download file',

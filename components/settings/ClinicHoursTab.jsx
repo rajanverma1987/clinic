@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
+import { useI18n } from '@/contexts/I18nContext';
+import { SettingsTabHeader } from './SettingsTabHeader';
 
 export function ClinicHoursTab({
   clinicHours,
@@ -14,6 +16,7 @@ export function ClinicHoursTab({
   saving,
   onSave,
 }) {
+  const { t } = useI18n();
   const getDayIcon = (day) => {
     const icons = {
       Monday: '📅',
@@ -28,15 +31,17 @@ export function ClinicHoursTab({
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave();
-      }}
-      className='space-y-4'
-    >
+    <div className='space-y-3 text-left'>
+      <SettingsTabHeader title={t('settings.clinicHours')} />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave();
+        }}
+        className='space-y-3'
+      >
       <Card>
-        <div className='p-5'>
+        <div className='p-4'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
             {clinicHours.map((hour, dayIndex) => (
               <div
@@ -48,7 +53,7 @@ export function ClinicHoursTab({
                 }`}
               >
                 {/* Day Header */}
-                <div className='flex items-center justify-between mb-3 pb-2 border-b border-neutral-100'>
+                <div className='flex items-center justify-between mb-2 pb-2 border-b border-neutral-100'>
                   <div className='flex items-center gap-2'>
                     <span className='text-xl'>{getDayIcon(hour.day)}</span>
                     <span
@@ -207,13 +212,7 @@ export function ClinicHoursTab({
           </div>
         </div>
       </Card>
-
-      {/* Action Buttons */}
-      <div className='flex justify-end gap-3 pt-2'>
-        <Button type='submit' isLoading={saving} disabled={saving}>
-          Save Hours
-        </Button>
-      </div>
     </form>
+    </div>
   );
 }

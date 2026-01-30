@@ -1,6 +1,22 @@
 /**
- * Queue service
- * Handles all queue-related business logic
+ * Queue Service
+ * 
+ * Enterprise-grade service for patient queue management with priority handling,
+ * position tracking, and real-time updates.
+ * 
+ * Features:
+ * - Queue entry creation and management
+ * - Priority-based queue ordering
+ * - Position calculation and recalculation
+ * - Status management (waiting, in_progress, completed, cancelled)
+ * - Doctor-specific queues
+ * - Appointment integration
+ * - Real-time queue updates via Socket.IO
+ * - Multi-tenant isolation
+ * - Audit logging
+ * 
+ * @module services/queue.service
+ * @since 1.0.0
  */
 
 import connectDB from '@/lib/db/connection.js';
@@ -11,6 +27,8 @@ import User from '@/models/User.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
+import { logger } from '@/lib/utils/logger.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Generate next queue number for tenant

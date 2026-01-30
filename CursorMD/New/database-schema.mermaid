@@ -1,0 +1,267 @@
+erDiagram
+    USERS ||--o{ CLINICS : "owns/manages"
+    USERS ||--o{ AUDIT_LOGS : "generates"
+    USERS {
+        uuid id PK
+        string email UK
+        string password
+        enum role "superadmin|doctor|admin|manager"
+        uuid clinic_id FK
+        boolean is_active
+        timestamp last_login
+        json settings
+        timestamp created_at
+    }
+
+    CLINICS ||--o{ PATIENTS : "has"
+    CLINICS ||--o{ APPOINTMENTS : "schedules"
+    CLINICS ||--o{ STAFF : "employs"
+    CLINICS ||--o{ INVENTORY : "manages"
+    CLINICS ||--o{ SUBSCRIPTIONS : "subscribes"
+    CLINICS {
+        uuid id PK
+        uuid owner_id FK
+        string name
+        string address
+        string phone
+        string email
+        json operating_hours
+        json services
+        boolean is_active
+        timestamp created_at
+    }
+
+    PATIENTS ||--o{ APPOINTMENTS : "books"
+    PATIENTS ||--o{ MEDICAL_RECORDS : "has"
+    PATIENTS ||--o{ INVOICES : "receives"
+    PATIENTS {
+        uuid id PK
+        uuid clinic_id FK
+        string patient_id UK
+        string name
+        string phone
+        string email
+        date dob
+        enum gender
+        string address
+        json emergency_contact
+        json insurance_details
+        json allergies
+        json medical_history
+        timestamp created_at
+    }
+
+    APPOINTMENTS ||--o{ MEDICAL_RECORDS : "generates"
+    APPOINTMENTS ||--o{ INVOICES : "billing"
+    APPOINTMENTS {
+        uuid id PK
+        uuid clinic_id FK
+        uuid patient_id FK
+        uuid doctor_id FK
+        datetime appointment_time
+        integer duration_minutes
+        enum status "scheduled|confirmed|checked-in|completed|cancelled|no-show"
+        string reason
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MEDICAL_RECORDS ||--o{ PRESCRIPTIONS : "includes"
+    MEDICAL_RECORDS ||--o{ LAB_REPORTS : "includes"
+    MEDICAL_RECORDS {
+        uuid id PK
+        uuid clinic_id FK
+        uuid patient_id FK
+        uuid appointment_id FK
+        uuid doctor_id FK
+        text diagnosis
+        text symptoms
+        text examination_notes
+        json vital_signs
+        text treatment_plan
+        timestamp created_at
+    }
+
+    PRESCRIPTIONS ||--o{ PRESCRIPTION_ITEMS : "contains"
+    PRESCRIPTIONS {
+        uuid id PK
+        uuid medical_record_id FK
+        uuid patient_id FK
+        uuid doctor_id FK
+        date prescribed_date
+        text notes
+        boolean is_digital_signature
+        timestamp created_at
+    }
+
+    PRESCRIPTION_ITEMS }o--|| MEDICINES : "references"
+    PRESCRIPTION_ITEMS {
+        uuid id PK
+        uuid prescription_id FK
+        uuid medicine_id FK
+        string medicine_name
+        string dosage
+        string frequency
+        integer duration_days
+        text instructions
+    }
+
+    INVOICES ||--o{ PAYMENTS : "receives"
+    INVOICES ||--o{ INVOICE_ITEMS : "contains"
+    INVOICES {
+        uuid id PK
+        uuid clinic_id FK
+        uuid patient_id FK
+        uuid appointment_id FK
+        string invoice_number UK
+        decimal total_amount
+        decimal discount
+        decimal tax
+        decimal final_amount
+        enum status "pending|partial|paid|cancelled"
+        date due_date
+        timestamp created_at
+    }
+
+    INVOICE_ITEMS {
+        uuid id PK
+        uuid invoice_id FK
+        string item_name
+        string description
+        integer quantity
+        decimal unit_price
+        decimal total
+    }
+
+    PAYMENTS {
+        uuid id PK
+        uuid invoice_id FK
+        uuid clinic_id FK
+        string payment_id UK
+        decimal amount
+        enum method "cash|card|upi|insurance"
+        string transaction_id
+        enum status "pending|completed|failed|refunded"
+        json metadata
+        timestamp paid_at
+        timestamp created_at
+    }
+
+    INVENTORY ||--o{ MEDICINES : "includes"
+    INVENTORY ||--o{ STOCK_MOVEMENTS : "tracks"
+    INVENTORY {
+        uuid id PK
+        uuid clinic_id FK
+        enum category "medicine|equipment|consumable"
+        timestamp created_at
+    }
+
+    MEDICINES ||--o{ STOCK_MOVEMENTS : "has"
+    MEDICINES {
+        uuid id PK
+        uuid clinic_id FK
+        string name
+        string generic_name
+        string manufacturer
+        string batch_number
+        date expiry_date
+        integer stock_quantity
+        integer reorder_level
+        decimal purchase_price
+        decimal selling_price
+        string storage_conditions
+        timestamp created_at
+    }
+
+    STOCK_MOVEMENTS {
+        uuid id PK
+        uuid medicine_id FK
+        enum type "in|out|adjustment|expired"
+        integer quantity
+        string reason
+        uuid created_by FK
+        timestamp created_at
+    }
+
+    STAFF ||--o{ SCHEDULES : "has"
+    STAFF {
+        uuid id PK
+        uuid clinic_id FK
+        uuid user_id FK
+        string name
+        enum role "doctor|nurse|receptionist|other"
+        string specialization
+        string qualification
+        string phone
+        string email
+        json working_hours
+        boolean is_active
+        timestamp created_at
+    }
+
+    SCHEDULES {
+        uuid id PK
+        uuid staff_id FK
+        date schedule_date
+        time start_time
+        time end_time
+        boolean is_available
+        text notes
+    }
+
+    NOTIFICATIONS {
+        uuid id PK
+        uuid user_id FK
+        uuid clinic_id FK
+        string title
+        text message
+        enum type "appointment|payment|stock|system"
+        enum channel "in-app|sms|email|push"
+        boolean is_read
+        json metadata
+        timestamp created_at
+    }
+
+    LAB_REPORTS {
+        uuid id PK
+        uuid medical_record_id FK
+        uuid patient_id FK
+        string test_name
+        json test_results
+        string file_url
+        date report_date
+        timestamp uploaded_at
+    }
+
+    AUDIT_LOGS {
+        uuid id PK
+        uuid user_id FK
+        uuid clinic_id FK
+        string action
+        string entity_type
+        uuid entity_id
+        json old_value
+        json new_value
+        string ip_address
+        timestamp created_at
+    }
+
+    SUBSCRIPTIONS {
+        uuid id PK
+        uuid clinic_id FK
+        enum plan "basic|pro|enterprise"
+        date start_date
+        date end_date
+        enum status "active|expired|cancelled"
+        decimal amount
+        json features
+        timestamp created_at
+    }
+
+    PERMISSIONS {
+        uuid id PK
+        enum role
+        string module
+        json permissions
+    }

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { CheckIcon, ZapIcon, UserIcon, PlayIcon, CalendarIcon, XIcon } from '@/components/icons';
 
 export function HeroSection({ onContactClick }) {
   const { t } = useI18n();
@@ -74,18 +75,7 @@ export function HeroSection({ onContactClick }) {
                 backdropFilter: 'blur(8px)',
               }}
             >
-              <svg
-                style={{ width: '18px', height: '18px' }}
-                className='text-primary-500'
-                fill='currentColor'
-                viewBox='0 0 20 20'
-              >
-                <path
-                  fillRule='evenodd'
-                  d='M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
-                  clipRule='evenodd'
-                />
-              </svg>
+              <CheckIcon className='text-primary-500' style={{ width: 18, height: 18 }} />
               <span>{t('homepage.hipaaGdprCompliant')}</span>
             </div>
 
@@ -146,7 +136,7 @@ export function HeroSection({ onContactClick }) {
 
             {/* CTA Buttons */}
             <div
-              className='flex flex-col sm:flex-row justify-center lg:justify-start items-center'
+              className='flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start items-center'
               style={{ gap: '20px', marginBottom: '64px' }}
             >
               <Button
@@ -158,21 +148,17 @@ export function HeroSection({ onContactClick }) {
                   boxShadow: '0 8px 24px -6px rgba(45, 156, 219, 0.4)',
                 }}
               >
-                <svg
-                  className='mr-2'
-                  style={{ width: '18px', height: '18px' }}
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M13 10V3L4 14h7v7l9-11h-7z'
-                  />
-                </svg>
+                <ZapIcon className='mr-2' style={{ width: 18, height: 18 }} />
                 {t('homepage.startFreeTrial')}
+              </Button>
+              <Button
+                variant='secondary'
+                size='md'
+                className='w-full sm:w-auto whitespace-nowrap animate-button-pulse'
+                onClick={() => router.push('/doctors/register')}
+              >
+                <UserIcon className='mr-2' style={{ width: 18, height: 18 }} />
+                {t('homepage.forDoctors')}
               </Button>
               <Button
                 variant='secondary'
@@ -180,26 +166,7 @@ export function HeroSection({ onContactClick }) {
                 className='w-full sm:w-auto whitespace-nowrap animate-button-pulse'
                 onClick={onContactClick}
               >
-                <svg
-                  className='mr-2'
-                  style={{ width: '18px', height: '18px' }}
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z'
-                  />
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-                  />
-                </svg>
+                <PlayIcon className='mr-2' style={{ width: 18, height: 18 }} />
                 {t('homepage.scheduleDemo')}
               </Button>
             </div>
@@ -217,18 +184,7 @@ export function HeroSection({ onContactClick }) {
                   fontWeight: '500',
                 }}
               >
-                <svg
-                  style={{ width: '18px', height: '18px', marginRight: '8px' }}
-                  className='text-secondary-500'
-                  fill='currentColor'
-                  viewBox='0 0 20 20'
-                >
-                  <path
-                    fillRule='evenodd'
-                    d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
-                    clipRule='evenodd'
-                  />
-                </svg>
+                <CheckIcon style={{ width: 18, height: 18, marginRight: '8px' }} className='text-secondary-500' />
                 <span>{t('homepage.noCreditCardRequired')}</span>
               </div>
               <div
@@ -239,18 +195,7 @@ export function HeroSection({ onContactClick }) {
                   fontWeight: '500',
                 }}
               >
-                <svg
-                  style={{ width: '18px', height: '18px', marginRight: '8px' }}
-                  className='text-primary-500'
-                  fill='currentColor'
-                  viewBox='0 0 20 20'
-                >
-                  <path
-                    fillRule='evenodd'
-                    d='M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z'
-                    clipRule='evenodd'
-                  />
-                </svg>
+                <CalendarIcon style={{ width: 18, height: 18, marginRight: '8px' }} className='text-primary-500' />
                 <span>{t('homepage.freeTrial')}</span>
               </div>
               <div
@@ -261,18 +206,7 @@ export function HeroSection({ onContactClick }) {
                   fontWeight: '500',
                 }}
               >
-                <svg
-                  style={{ width: '18px', height: '18px', marginRight: '8px' }}
-                  className='text-neutral-500'
-                  fill='currentColor'
-                  viewBox='0 0 20 20'
-                >
-                  <path
-                    fillRule='evenodd'
-                    d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
-                    clipRule='evenodd'
-                  />
-                </svg>
+                <XIcon style={{ width: 18, height: 18, marginRight: '8px' }} className='text-neutral-500' />
                 <span>{t('homepage.cancelAnytime')}</span>
               </div>
             </div>

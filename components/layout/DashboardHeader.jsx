@@ -1,10 +1,12 @@
 'use client';
 
+import { CalendarIcon } from '@/components/icons';
 import { CalendarPopup } from '@/components/notifications/CalendarPopup';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
+import { logger } from '@/lib/utils/logger.js';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 export function DashboardHeader({
   title,
@@ -21,18 +23,8 @@ export function DashboardHeader({
   const router = useRouter();
   const { t } = useI18n();
   const { settings } = useSettings();
-  const [showRightSection, setShowRightSection] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarButtonRef = useRef(null);
-
-  // Show right section after mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowRightSection(true);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const formatDateDisplay = useCallback(
     (date, options) => {
@@ -42,7 +34,7 @@ export function DashboardHeader({
           ...options,
         }).format(date || new Date());
       } catch (error) {
-        console.error('Date formatting error:', error);
+        logger.error('Date formatting error:', error);
         return new Date(date || new Date()).toLocaleDateString('en-US', options);
       }
     },
@@ -51,12 +43,10 @@ export function DashboardHeader({
 
   return (
     <div
-      className='bg-white rounded-[10px] border-2 border-neutral-100 relative shadow-lg'
+      className='bg-white dark:bg-neutral-800 rounded-[10px] border-2 border-neutral-100 dark:border-neutral-600 relative shadow-lg'
       style={{
         overflow: 'visible',
         padding: '12px 12px 12px 10px',
-        background:
-          'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.98) 100%)',
         zIndex: 'var(--z-sticky-header, 21)',
         position: 'sticky',
         top: 0,
@@ -96,7 +86,7 @@ export function DashboardHeader({
               }}
             ></div>
             <h1
-              className='text-neutral-900'
+              className='text-neutral-900 dark:text-neutral-100'
               style={{
                 fontSize: '32px',
                 lineHeight: '40px',
@@ -113,45 +103,23 @@ export function DashboardHeader({
                 <button
                   ref={calendarButtonRef}
                   onClick={() => setShowCalendar(!showCalendar)}
-                  className='flex items-center gap-2 text-neutral-600 hover:text-primary-600 transition-colors cursor-pointer group'
+                  className='flex items-center gap-2 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer group'
                   style={{
                     fontSize: 'var(--text-body-md)',
                     lineHeight: 'var(--text-body-md-line-height)',
                     fontWeight: '500',
                   }}
-                  title='View today appointments'
+                  title={t('dashboard.viewTodayAppointments')}
                 >
-                  <svg
-                    width='20px'
-                    height='20px'
-                    className='text-primary-500 group-hover:text-primary-600 transition-colors'
-                    fill='none'
-                    stroke='currentColor'
-                    viewBox='0 0 24 24'
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-                    />
-                  </svg>
+                  <CalendarIcon className='icon icon-sm text-primary-500 group-hover:text-primary-600 transition-colors' />
                   {subtitle || formatDateDisplay(new Date(), dateOptions)}
                 </button>
               </div>
             ))}
         </div>
 
-        {/* Right Section - Action Buttons */}
-        <div
-          className={`flex items-center transition-all duration-500 ${
-            showRightSection ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
-          }`}
-          style={{ gap: 'var(--gap-3)' }}
-        >
-          {/* Action Button */}
-          {actionButton}
-        </div>
+        {/* Right Section - Action Button */}
+        {actionButton && <div className='flex items-center'>{actionButton}</div>}
       </div>
 
       {/* Calendar Popup */}

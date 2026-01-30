@@ -1,6 +1,9 @@
 'use client';
 
+import { CheckIcon, InfoIcon, WarningIcon, XIcon } from '@/components/icons';
+import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useEffect, useState } from 'react';
+import { Button } from './Button';
 import './Toast.css';
 
 /**
@@ -9,6 +12,7 @@ import './Toast.css';
  * Uses theme colors and tokens
  */
 export function Toast({ message, type = 'info', duration = 5000, onClose, timestamp }) {
+  const { t } = useI18n();
   const [isVisible, setIsVisible] = useState(true);
 
   const handleClose = () => {
@@ -30,29 +34,13 @@ export function Toast({ message, type = 'info', duration = 5000, onClose, timest
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return (
-          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2.5} d='M5 13l4 4L19 7' />
-          </svg>
-        );
+        return <CheckIcon className='icon icon-sm' />;
       case 'error':
-        return (
-          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2.5} d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
-          </svg>
-        );
+        return <XIcon className='icon icon-sm' />;
       case 'warning':
-        return (
-          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2.5} d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' />
-          </svg>
-        );
+        return <WarningIcon className='icon icon-sm' />;
       default: // info
-        return (
-          <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2.5} d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
-          </svg>
-        );
+        return <InfoIcon className='icon icon-sm' />;
     }
   };
 
@@ -75,12 +63,16 @@ export function Toast({ message, type = 'info', duration = 5000, onClose, timest
         <div className='Toast-message'>{message}</div>
         {timestamp && <div className='Toast-timestamp'>{formatTime(timestamp)}</div>}
       </div>
-      <button className='Toast-close' onClick={handleClose} aria-label='Close notification'>
-        <svg width='16px' height='16px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
-        </svg>
-      </button>
+      <Button
+        variant='ghost'
+        size='xs'
+        iconOnly
+        className='Toast-close'
+        onClick={handleClose}
+        aria-label={t('common.closeNotification')}
+      >
+        <XIcon className='icon icon-xs' />
+      </Button>
     </div>
   );
 }
-

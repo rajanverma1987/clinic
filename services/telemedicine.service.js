@@ -1,6 +1,33 @@
 /**
  * Telemedicine Service
- * Handles video consultations, and session management
+ * 
+ * Enterprise-grade service for telemedicine session management with WebRTC
+ * integration, session tracking, and HIPAA-compliant video consultations.
+ * 
+ * Features:
+ * - Telemedicine session creation and management
+ * - Session status tracking (scheduled, active, completed, cancelled)
+ * - Waiting room management
+ * - Chat integration
+ * - File transfer support
+ * - Recording consent management
+ * - Session link generation
+ * - Multi-tenant isolation
+ * - Audit logging
+ * - HIPAA compliance
+ * 
+ * @module services/telemedicine.service
+ * @since 1.0.0
+ * 
+ * @security
+ * - End-to-end encryption for video calls
+ * - Secure session link generation
+ * - Access control for session participants
+ * 
+ * @compliance
+ * - HIPAA: All session access logged
+ * - Recording requires explicit consent
+ * - PHI protection in session data
  */
 
 import connectDB from '@/lib/db/connection.js';
@@ -9,6 +36,8 @@ import Patient from '@/models/Patient.js';
 import User from '@/models/User.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
+import { logger } from '@/lib/utils/logger.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Generate unique session ID

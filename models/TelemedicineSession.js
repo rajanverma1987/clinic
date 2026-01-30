@@ -61,7 +61,7 @@ const TelemedicineSessionSchema = new Schema(
       enum: Object.values(SessionStatus),
       default: SessionStatus.SCHEDULED,
       required: true,
-      index: true,
+      // index via compound TelemedicineSessionSchema.index({ tenantId: 1, status: 1 })
     },
 
     scheduledStartTime: {
@@ -198,5 +198,5 @@ TelemedicineSessionSchema.index({ tenantId: 1, doctorId: 1 });
 TelemedicineSessionSchema.index({ tenantId: 1, status: 1 });
 TelemedicineSessionSchema.index({ tenantId: 1, scheduledStartTime: 1 });
 
-export default mongoose.models.TelemedicineSession || mongoose.model('TelemedicineSession', TelemedicineSessionSchema);
-
+export default mongoose.models.TelemedicineSession ||
+  mongoose.model('TelemedicineSession', TelemedicineSessionSchema);

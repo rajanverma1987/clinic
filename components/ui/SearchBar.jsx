@@ -1,5 +1,6 @@
 'use client';
 
+import { SearchIcon } from '@/components/icons';
 import React, { useCallback, useRef, useEffect, memo } from 'react';
 
 function SearchBarComponent({
@@ -8,6 +9,8 @@ function SearchBarComponent({
   variant = 'default',
   className = '',
   onChange,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
   ...props
 }) {
   const inputRef = useRef(null);
@@ -72,12 +75,14 @@ function SearchBarComponent({
 
   const handleFocus = useCallback(() => {
     wasFocusedRef.current = true;
-  }, []);
+    onFocusProp?.();
+  }, [onFocusProp]);
 
   const handleBlur = useCallback(() => {
     wasFocusedRef.current = false;
     selectionRef.current = null;
-  }, []);
+    onBlurProp?.();
+  }, [onBlurProp]);
 
   // Base styles using theme colors
   const baseStyles = variant === 'minimal' 
@@ -87,19 +92,7 @@ function SearchBarComponent({
   return (
     <div className={`relative flex items-center ${variant === 'default' ? 'w-full' : ''}`}>
       {showIcon && (
-        <svg
-          className="absolute left-3 w-5 h-5 text-neutral-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
+        <SearchIcon className="absolute left-3 icon icon-sm text-neutral-500" ariaHidden />
       )}
       <input
         ref={inputRef}

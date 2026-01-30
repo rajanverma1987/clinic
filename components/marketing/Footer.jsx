@@ -28,7 +28,7 @@ function FooterComponent() {
           }}
         ></div>
         <div
-          className='absolute bottom-0 left-0 bg-secondary-100/30 rounded-full mix-blend-multiply filter opacity-40'
+          className='absolute bottom-0 left-0 bg-primary-100/30 rounded-full mix-blend-multiply filter opacity-40'
           style={{
             width: '400px',
             height: '400px',
@@ -115,7 +115,7 @@ function FooterComponent() {
                   }}
                 >
                   {[
-                    { href: '/legal', label: t('footer.legalInfo') || 'Legal & Disclaimers' },
+                    { href: '/legal', label: t('footer.legalInfo') },
                     { href: '/privacy', label: t('footer.privacyPolicy') || 'Privacy Policy' },
                     { href: '/terms', label: t('footer.termsOfService') || 'Terms of Service' },
                     { href: '/support/contact', label: t('footer.contactUs') || 'Contact Us' },
@@ -182,7 +182,7 @@ function FooterComponent() {
                       className='object-contain'
                       quality={90}
                       sizes='160px'
-                      style={{ width: '100%', height: '100%' }}
+                      style={{ width: '100%', height: 'auto', maxHeight: '45px' }}
                       priority
                     />
                   </div>

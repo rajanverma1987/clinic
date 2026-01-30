@@ -44,14 +44,20 @@ export function ChatPanel({
 
   return (
     <div
-      className='absolute right-0 top-0 h-full w-80 bg-gray-900 border-l border-gray-700 flex flex-col'
+      className='absolute right-0 top-0 h-full w-80 bg-neutral-100 border-l border-neutral-300 flex flex-col'
       style={{ zIndex: 'var(--z-fixed, 30)' }}
     >
       {/* Chat Header */}
-      <div className='bg-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-700'>
-        <h3 className='text-white font-semibold'>Chat</h3>
-        <button onClick={onClose} className='text-gray-400 hover:text-white'>
-          <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+      <div className='bg-white px-4 py-3 flex items-center justify-between border-b border-neutral-300'>
+        <h3 className='text-neutral-900 font-semibold'>{t('telemedicine.chat')}</h3>
+        <Button
+          variant='ghost'
+          size='xs'
+          iconOnly
+          onClick={onClose}
+          className='text-neutral-600 hover:text-neutral-900'
+        >
+          <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
             <path
               strokeLinecap='round'
               strokeLinejoin='round'
@@ -59,14 +65,14 @@ export function ChatPanel({
               d='M6 18L18 6M6 6l12 12'
             />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Messages */}
       <div className='flex-1 overflow-y-auto p-4 space-y-3'>
         {messages.length === 0 ? (
           <div className='text-center text-gray-500 text-sm mt-8'>
-            No messages yet. Start the conversation!
+            {t('telemedicine.noMessagesYet')}
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -75,7 +81,7 @@ export function ChatPanel({
               <div key={index} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
                 <div
                   className={`max-w-[75%] rounded-lg px-3 py-2 ${
-                    isOwn ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'
+                    isOwn ? 'bg-primary-500 text-white' : 'bg-neutral-200 text-neutral-900'
                   }`}
                 >
                   {!isOwn && (
@@ -96,18 +102,18 @@ export function ChatPanel({
       </div>
 
       {/* Message Input */}
-      <div className='border-t border-gray-700 p-4 bg-gray-800'>
+      <div className='border-t border-neutral-300 p-4 bg-neutral-50'>
         <div className='flex space-x-2'>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder='Type a message...'
-            className='flex-1 bg-gray-700 text-white rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500'
+            placeholder={t('telemedicine.typeMessage')}
+            className='flex-1 bg-white border border-neutral-300 text-neutral-900 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500'
             rows={2}
           />
           <Button onClick={handleSend} disabled={!message.trim()} className='px-4 py-2'>
-            Send
+            {t('telemedicine.send')}
           </Button>
         </div>
         <p className='text-xs text-gray-500 mt-2'>🔒 Messages are encrypted end-to-end</p>

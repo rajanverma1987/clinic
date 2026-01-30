@@ -1,12 +1,29 @@
 /**
- * Appointment service
- * Handles all appointment-related business logic
+ * Appointment Service
+ * 
+ * Enterprise-grade service for appointment management with comprehensive
+ * business logic, validation, and multi-tenant support.
+ * 
+ * Features:
+ * - Appointment creation with conflict detection
+ * - Holiday and schedule validation
+ * - Queue integration
+ * - Reminder scheduling
+ * - Status management
+ * - Multi-tenant isolation
+ * - Audit logging
+ * - Performance optimization
+ * 
+ * @module services/appointment.service
+ * @since 1.0.0
  */
 
 import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
+import { logger } from '@/lib/utils/logger.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
 import Patient from '@/models/Patient.js';
 import Queue, { QueuePriority, QueueStatus, QueueType } from '@/models/Queue.js';
@@ -52,7 +69,7 @@ async function isHoliday(tenantId, date) {
       return false;
     });
   } catch (error) {
-    console.error('Error checking holidays:', error);
+    logger.error('Error checking holidays:', error);
     return false; // Don't block appointments if holiday check fails
   }
 }
@@ -93,10 +110,37 @@ async function isTimeSlotAvailable(tenantId, doctorId, startTime, endTime, exclu
 }
 
 /**
+ * Generate appointment number
+ */
+async function generateAppointmentNumber(tenantId) {
+  const { generateAppointmentNumber: generateId } = await import('@/lib/utils/number-generator.js');
+  return generateId(tenantId);
+}
+
+/**
  * Create a new appointment
  */
 export async function createAppointment(input, tenantId, userId) {
   await connectDB();
+
+  // Generate appointment number if not provided
+  let appointmentNumber = input.appointmentNumber;
+  if (!appointmentNumber) {
+    appointmentNumber = await generateAppointmentNumber(tenantId);
+  }
+
+  // Build schedule object from input
+  const schedule = input.schedule || {
+    date: input.appointmentDate || input.date || new Date(),
+    startTime: input.startTime || input.schedule?.startTime || new Date(),
+    endTime: input.endTime || input.schedule?.endTime || new Date(),
+    duration: input.duration || input.schedule?.duration || 30,
+  };
+
+  // Ensure schedule.date is set
+  if (!schedule.date) {
+    schedule.date = schedule.startTime || new Date();
+  }
 
   // Validate patient exists and belongs to tenant
   const patient = await Patient.findOne(
@@ -220,22 +264,41 @@ export async function createAppointment(input, tenantId, userId) {
       );
 
       if (isAvailable) {
-        const appointment = await Appointment.create({
-          tenantId,
-          patientId: input.patientId,
-          doctorId: input.doctorId,
-          appointmentDate: new Date(currentDate),
+        // Generate appointment number for each recurring appointment
+        const appointmentNumber = await generateAppointmentNumber(tenantId);
+        
+        // Build schedule object
+        const schedule = {
+          date: new Date(currentDate),
           startTime: new Date(currentStartTime),
           endTime: new Date(currentEndTime),
           duration,
+        };
+        
+        const appointment = await Appointment.create({
+          tenantId,
+          appointmentNumber,
+          schedule,
+          // Legacy fields for backward compatibility
+          appointmentDate: schedule.date,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          duration,
+          patientId: input.patientId,
+          doctorId: input.doctorId,
+          departmentId: input.departmentId,
           type: input.type || 'consultation',
           status: initialStatus,
+          bookingSource: input.bookingSource || 'walk_in',
+          chiefComplaint: input.chiefComplaint || input.reason,
           reason: input.reason,
           notes: input.notes,
           reminderScheduledAt: new Date(currentStartTime.getTime() - 24 * 60 * 60 * 1000),
           reminderSent: false,
+          remindersSent: [],
           isTelemedicine: input.isTelemedicine || false,
           telemedicineConsent: input.telemedicineConsent || false,
+          createdBy: userId,
         });
         appointments.push(appointment);
         count++;
@@ -261,6 +324,13 @@ export async function createAppointment(input, tenantId, userId) {
       }
     }
 
+    // Check if any appointments were created
+    if (appointments.length === 0) {
+      throw new Error(
+        'No appointments could be created. All time slots may be unavailable or fall on holidays.'
+      );
+    }
+
     // Return the first appointment (for compatibility)
     const appointment = appointments[0];
 
@@ -274,22 +344,41 @@ export async function createAppointment(input, tenantId, userId) {
   }
 
   // Create single appointment (non-recurring)
+  // Ensure appointment number is set (already set above if not provided)
+  if (!appointmentNumber) {
+    appointmentNumber = await generateAppointmentNumber(tenantId);
+  }
+  
+  // Build schedule object with parsed dates
+  schedule.date = appointmentDate;
+  schedule.startTime = startTime;
+  schedule.endTime = endTime;
+  schedule.duration = duration;
+  
   const appointment = await Appointment.create({
     tenantId,
+    appointmentNumber,
+    schedule,
+    // Legacy fields for backward compatibility
+    appointmentDate: schedule.date,
+    startTime: schedule.startTime,
+    endTime: schedule.endTime,
+    duration: schedule.duration,
     patientId: input.patientId,
     doctorId: input.doctorId,
-    appointmentDate,
-    startTime,
-    endTime,
-    duration,
+    departmentId: input.departmentId,
     type: input.type || 'consultation',
     status: initialStatus,
+    bookingSource: input.bookingSource || 'walk_in',
+    chiefComplaint: input.chiefComplaint || input.reason,
     reason: input.reason,
     notes: input.notes,
     reminderScheduledAt,
     reminderSent: false,
+    remindersSent: [],
     isTelemedicine: input.isTelemedicine || false,
     telemedicineConsent: input.telemedicineConsent || false,
+    createdBy: userId,
   });
 
   // For video consultations, automatically create queue entry
@@ -307,7 +396,7 @@ export async function createAppointment(input, tenantId, userId) {
         tenantId,
         userId
       );
-      console.log(`✅ Queue entry created for video consultation appointment ${appointment._id}`);
+      logger.info(`✅ Queue entry created for video consultation appointment ${appointment._id}`);
 
       // Create telemedicine session and send email to patient
       try {
@@ -395,15 +484,15 @@ export async function createAppointment(input, tenantId, userId) {
               Please ensure you have a stable internet connection and allow camera/microphone access when prompted.
             `,
           });
-          console.log(`✅ Email sent to patient ${patient.email} with video link`);
+          logger.info(`✅ Email sent to patient ${patient.email} with video link`);
         }
       } catch (telemedicineError) {
         // Log error but don't fail appointment creation
-        console.error('Failed to create telemedicine session or send email:', telemedicineError);
+        logger.error('Failed to create telemedicine session or send email:', telemedicineError);
       }
     } catch (queueError) {
       // Log error but don't fail appointment creation
-      console.error('Failed to create queue entry for video consultation:', queueError);
+      logger.error('Failed to create queue entry for video consultation:', queueError);
       // If it's a duplicate error, that's okay - queue entry already exists
       if (!queueError.message?.includes('duplicate') && !queueError.message?.includes('E11000')) {
         // For non-duplicate errors, we might want to handle differently
@@ -495,7 +584,7 @@ export async function listAppointments(query, tenantId, userId) {
       { appointmentDate: { $gte: startOfDay, $lte: endOfDay } },
       { startTime: { $gte: startOfDay, $lte: endOfDay } },
     ];
-    console.log('Date filter (single date):', {
+    logger.info('Date filter (single date):', {
       date: query.date,
       startOfDay: startOfDay.toISOString(),
       endOfDay: endOfDay.toISOString(),
@@ -506,7 +595,7 @@ export async function listAppointments(query, tenantId, userId) {
     const startDate = query.startDate ? new Date(query.startDate) : null;
     const endDate = query.endDate ? new Date(query.endDate) : null;
 
-    console.log('Date filter (range):', {
+    logger.info('Date filter (range):', {
       startDate: query.startDate,
       endDate: query.endDate,
       startDateParsed: startDate?.toISOString(),
@@ -533,11 +622,11 @@ export async function listAppointments(query, tenantId, userId) {
 
     if (orConditions.length > 0) {
       filter.$or = orConditions;
-      console.log('Date filter $or conditions:', JSON.stringify(orConditions, null, 2));
+      logger.info('Date filter $or conditions:', JSON.stringify(orConditions, null, 2));
     }
   }
 
-  console.log('Final filter for appointments:', JSON.stringify(filter, null, 2));
+  logger.info('Final filter for appointments:', JSON.stringify(filter, null, 2));
 
   // Get total count
   const total = await Appointment.countDocuments(filter);
@@ -594,27 +683,49 @@ export async function updateAppointment(appointmentId, input, tenantId, userId) 
   const updateData = { ...input };
 
   // Parse dates if provided
+  let appointmentDate = existing.appointmentDate;
+  let startTime = existing.startTime;
+  let endTime = existing.endTime;
+  let duration = existing.duration;
+
   if (input.appointmentDate) {
-    updateData.appointmentDate =
+    appointmentDate =
       input.appointmentDate instanceof Date
         ? input.appointmentDate
         : new Date(input.appointmentDate);
+    updateData.appointmentDate = appointmentDate;
   }
 
   if (input.startTime) {
-    updateData.startTime =
-      input.startTime instanceof Date ? input.startTime : new Date(input.startTime);
+    startTime = input.startTime instanceof Date ? input.startTime : new Date(input.startTime);
+    updateData.startTime = startTime;
 
     // Recalculate end time if duration exists
-    if (existing.duration) {
-      updateData.endTime = new Date(updateData.startTime.getTime() + existing.duration * 60000);
+    if (input.duration) {
+      duration = input.duration;
+      updateData.duration = duration;
     }
+    endTime = new Date(startTime.getTime() + duration * 60000);
+    updateData.endTime = endTime;
+  } else if (input.duration) {
+    duration = input.duration;
+    updateData.duration = duration;
+    endTime = new Date(startTime.getTime() + duration * 60000);
+    updateData.endTime = endTime;
+  }
+
+  // Update schedule object to sync with legacy fields
+  if (input.appointmentDate || input.startTime || input.duration) {
+    updateData.schedule = {
+      date: appointmentDate,
+      startTime: startTime,
+      endTime: endTime,
+      duration: duration,
+    };
   }
 
   // Validate time slot if time changed
   if (input.startTime || input.appointmentDate) {
-    const startTime = updateData.startTime || existing.startTime;
-    const endTime = updateData.endTime || existing.endTime;
     const isAvailable = await isTimeSlotAvailable(
       tenantId,
       existing.doctorId.toString(),
@@ -680,7 +791,7 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
 
       // Automatically create queue entry when patient arrives
       try {
-        console.log(
+        logger.info(
           `[Queue Creation] Starting queue creation for appointment ${appointmentId}, tenantId: ${tenantId}`
         );
 
@@ -693,7 +804,7 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
         );
 
         if (existingQueueEntry) {
-          console.log(
+          logger.info(
             `ℹ️ Queue entry already exists for appointment ${appointmentId}: ${existingQueueEntry.queueNumber} (status: ${existingQueueEntry.status})`
           );
           // If status is not active, reactivate it
@@ -707,10 +818,10 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
                 joinedAt: now,
               },
             });
-            console.log(`✅ Reactivated queue entry for appointment ${appointmentId}`);
+            logger.info(`✅ Reactivated queue entry for appointment ${appointmentId}`);
           }
         } else {
-          console.log(`[Queue Creation] No existing queue entry found, creating new one...`);
+          logger.info(`[Queue Creation] No existing queue entry found, creating new one...`);
 
           // Use the proper queue service function to handle queue number generation safely
           const { createQueueEntry } = await import('@/services/queue.service.js');
@@ -727,14 +838,14 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
               tenantId,
               userId
             );
-            console.log(`✅ Queue entry created successfully for appointment ${appointmentId}`);
+            logger.info(`✅ Queue entry created successfully for appointment ${appointmentId}`);
           } catch (queueError) {
             if (
               queueError.message?.includes('duplicate') ||
               queueError.message?.includes('E11000') ||
               queueError.message?.includes('already in queue')
             ) {
-              console.log(`⚠️ Queue creation conflict detected, checking if queue entry exists...`);
+              logger.info(`⚠️ Queue creation conflict detected, checking if queue entry exists...`);
 
               await new Promise((resolve) => setTimeout(resolve, 200));
 
@@ -746,22 +857,22 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
               );
 
               if (checkAgain) {
-                console.log(
+                logger.info(
                   `✅ Queue entry exists for appointment ${appointmentId}: ${checkAgain.queueNumber}`
                 );
               } else {
-                console.error('❌ Queue entry does not exist after conflict error');
-                console.error(
+                logger.error('❌ Queue entry does not exist after conflict error');
+                logger.error(
                   'Queue creation failed but continuing with appointment status update'
                 );
               }
             } else {
-              console.error('❌ Error creating queue entry:', queueError.message);
+              logger.error('❌ Error creating queue entry:', queueError.message);
             }
           }
         }
       } catch (error) {
-        console.error('❌ Failed to create queue entry for appointment:', {
+        logger.error('❌ Failed to create queue entry for appointment:', {
           appointmentId,
           tenantId,
           error: error.message,
@@ -777,9 +888,9 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
         );
 
         if (finalCheck) {
-          console.log(`✅ Queue entry exists despite error: ${finalCheck.queueNumber}`);
+          logger.info(`✅ Queue entry exists despite error: ${finalCheck.queueNumber}`);
         } else {
-          console.warn(
+          logger.warn(
             '⚠️ Queue entry creation failed, but continuing with appointment status update'
           );
         }
@@ -834,7 +945,7 @@ export async function changeAppointmentStatus(appointmentId, input, tenantId, us
           });
         }
       } catch (error) {
-        console.error('Failed to create queue entry for appointment:', error);
+        logger.error('Failed to create queue entry for appointment:', error);
       }
       break;
     case AppointmentStatus.IN_PROGRESS:

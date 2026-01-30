@@ -23,7 +23,7 @@ function SubscriptionCancelContent() {
     if (paypalToken) setToken(paypalToken);
 
     // Log cancellation for debugging
-    console.log('PayPal payment cancelled:', {
+    logger.debug('PayPal payment cancelled:', {
       subscription_id: subId,
       ba_token: baToken,
       token: paypalToken,

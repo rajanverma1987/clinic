@@ -1,7 +1,7 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -10,57 +10,68 @@ import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import * as routeCache from '@/lib/cache/dashboard-cache';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
+import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { FaCheck, FaEdit, FaPrint } from 'react-icons/fa';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+
+const ROUTE_KEY = 'route_prescriptions';
 
 export default function PrescriptionsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const tenantId = user?.tenantId ?? null;
+
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [printPrescriptionId, setPrintPrescriptionId] = useState(null);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchPrescriptions();
+  useLayoutEffect(() => {
+    if (!tenantId) return;
+    const cached = routeCache.getData(ROUTE_KEY, tenantId);
+    if (cached && cached.prescriptions != null) {
+      setPrescriptions(cached.prescriptions);
+      setLoading(false);
     }
-  }, [authLoading, user]);
+  }, [tenantId]);
 
-  const fetchPrescriptions = async () => {
-    setLoading(true);
+  const fetchPrescriptions = useCallback(async () => {
+    const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
+    if (!hasCache) setLoading(true);
     try {
       const response = await apiClient.get('/prescriptions');
       if (response.success && response.data) {
-        // Handle paginated response structure
-        if (response.data.data && Array.isArray(response.data.data)) {
-          setPrescriptions(response.data.data);
-        } else if (Array.isArray(response.data)) {
-          setPrescriptions(response.data);
-        } else {
-          setPrescriptions([]);
-        }
+        const prescriptionsList = extractArrayData(response);
+        setPrescriptions(prescriptionsList);
+        if (tenantId) routeCache.set(ROUTE_KEY, tenantId, { prescriptions: prescriptionsList });
       } else {
         setPrescriptions([]);
       }
     } catch (error) {
-      console.error('Failed to fetch prescriptions:', error);
+      logger.error('Failed to fetch prescriptions:', error);
       setPrescriptions([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      fetchPrescriptions();
+    }
+  }, [authLoading, user, fetchPrescriptions]);
 
   const getStatusLabel = (status) => {
     const statusMap = {
-      draft: 'Draft',
-      active: t('prescriptions.active') || 'Active',
-      dispensed: t('prescriptions.dispensed') || 'Dispensed',
-      cancelled: t('prescriptions.cancelled') || 'Cancelled',
-      expired: 'Expired',
+      draft: t('prescriptions.draft'),
+      active: t('prescriptions.active'),
+      dispensed: t('prescriptions.dispensed'),
+      cancelled: t('prescriptions.cancelled'),
+      expired: t('prescriptions.expired'),
     };
     return statusMap[status] || status;
   };
@@ -80,7 +91,7 @@ export default function PrescriptionsPage() {
   };
 
   const handleActivate = async (prescriptionId) => {
-    if (!confirm('Are you sure you want to activate this prescription?')) {
+    if (!confirm(t('prescriptions.confirmActivate'))) {
       return;
     }
 
@@ -94,7 +105,7 @@ export default function PrescriptionsPage() {
         showError(response.error?.message || 'Failed to activate prescription');
       }
     } catch (error) {
-      console.error('Failed to activate prescription:', error);
+      logger.error('Failed to activate prescription:', error);
       showError(error.message || 'Failed to activate prescription');
     }
   };
@@ -113,12 +124,12 @@ export default function PrescriptionsPage() {
             row.status === 'active'
               ? 'bg-secondary-100 text-secondary-700'
               : row.status === 'dispensed'
-              ? 'bg-primary-100 text-primary-700'
-              : row.status === 'draft'
-              ? 'bg-status-warning/20 text-status-warning'
-              : row.status === 'cancelled'
-              ? 'bg-status-error/20 text-status-error'
-              : 'bg-neutral-100 text-neutral-700'
+                ? 'bg-primary-100 text-primary-700'
+                : row.status === 'draft'
+                  ? 'bg-status-warning/20 text-status-warning'
+                  : row.status === 'cancelled'
+                    ? 'bg-status-error/20 text-status-error'
+                    : 'bg-neutral-100 text-neutral-700'
           }`}
         >
           {getStatusLabel(row.status)}
@@ -136,40 +147,37 @@ export default function PrescriptionsPage() {
           {row.status === 'draft' && (
             <Button
               variant='primary'
-              size='sm'
-              iconOnly
+              size='md'
               onClick={(e) => {
                 e.stopPropagation();
                 handleActivate(row._id);
               }}
-              title={t('prescriptions.activate') || 'Activate'}
+              className='whitespace-nowrap'
             >
-              <FaCheck />
+              {t('prescriptions.activate') || 'Activate'}
             </Button>
           )}
           <Button
             variant='secondary'
-            size='sm'
-            iconOnly
+            size='md'
             onClick={(e) => {
               e.stopPropagation();
               handleEdit(row._id);
             }}
-            title='Edit'
+            className='whitespace-nowrap'
           >
-            <FaEdit />
+            Edit
           </Button>
           <Button
             variant='secondary'
-            size='sm'
-            iconOnly
+            size='md'
             onClick={(e) => {
               e.stopPropagation();
               handlePrint(row._id);
             }}
-            title='Print'
+            className='whitespace-nowrap'
           >
-            <FaPrint />
+            Print
           </Button>
         </div>
       ),
@@ -194,28 +202,31 @@ export default function PrescriptionsPage() {
 
   return (
     <Layout>
+      <PageHeader
+        title={t('prescriptions.title')}
+        subtitle={t('prescriptions.prescriptionList')}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={
+          <Button
+            onClick={() => router.push('/prescriptions/new')}
+            variant='primary'
+            size='md'
+            className='whitespace-nowrap'
+          >
+            + {t('prescriptions.createPrescription')}
+          </Button>
+        }
+      />
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title={t('prescriptions.title')}
-          subtitle={t('prescriptions.prescriptionList')}
-          actionButton={
-            <Button
-              onClick={() => router.push('/prescriptions/new')}
-              variant='primary'
-              size='md'
-              className='whitespace-nowrap'
-            >
-              + {t('prescriptions.createPrescription')}
-            </Button>
-          }
-        />
-
+        <Card>
           <Table
             data={prescriptions}
             columns={columns}
             onRowClick={(row) => router.push(`/prescriptions/${row._id}`)}
             emptyMessage={t('common.noDataFound')}
           />
+        </Card>
 
         <PrescriptionPrintPreview
           prescriptionId={printPrescriptionId}

@@ -80,7 +80,7 @@ export function Header() {
                   width={180}
                   height={50}
                   className='object-contain'
-                  style={{ width: '100%', height: '100%' }}
+                  style={{ width: '100%', height: 'auto', maxHeight: '50px' }}
                   priority
                   quality={90}
                   sizes='180px'
@@ -208,13 +208,13 @@ export function Header() {
                 </Button>
               </>
             ) : (
-              // Not logged in
+              // Not logged in – clinic-only: Login + Get Started (no separate "For Doctors" – single registration CTA)
               <>
                 <Button
                   variant='secondary'
                   size='sm'
                   onClick={() => router.push('/login')}
-                  className='whitespace-nowrap hidden sm:flex px-5 py-2.5 animate-button-pulse'
+                  className='whitespace-nowrap hidden sm:flex px-5 py-2.5'
                 >
                   {t('auth.login')}
                 </Button>
@@ -222,14 +222,14 @@ export function Header() {
                   variant='primary'
                   size='sm'
                   onClick={() => router.push('/register')}
-                  className='whitespace-nowrap px-5 py-2.5 animate-button-pulse'
+                  className='whitespace-nowrap px-5 py-2.5'
                 >
                   <svg
-                    className='mr-2'
+                    className='icon icon-sm shrink-0 mr-2'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
-                    style={{ width: '16px', height: '16px' }}
+                    aria-hidden
                   >
                     <path
                       strokeLinecap='round'
@@ -423,18 +423,18 @@ export function Header() {
                         router.push('/login');
                         setMobileMenuOpen(false);
                       }}
-                      className='w-full animate-button-pulse'
+                      className='w-full'
                     >
                       {t('auth.login')}
                     </Button>
                     <Button
                       variant='primary'
-                      size='sm'
+                      size='md'
                       onClick={() => {
                         router.push('/register');
                         setMobileMenuOpen(false);
                       }}
-                      className='w-full px-5 py-2.5 animate-button-pulse'
+                      className='w-full'
                     >
                       {t('navigation.getStarted')}
                     </Button>

@@ -13,26 +13,29 @@ export function InventoryListItem({ item, onClick }) {
 
   return (
     <div className="dashboard-list-item dashboard-list-item-error group" onClick={onClick}>
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3 flex-1">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
           {/* Icon */}
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(239, 68, 68, 0.1)' }}
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%)',
+              border: '1px solid rgba(239, 68, 68, 0.2)'
+            }}
           >
             {isCritical ? (
-              <WarningIcon className="w-5 h-5 text-status-error" />
+              <WarningIcon className="icon icon-xs text-status-error" />
             ) : (
-              <InventoryIcon className="w-5 h-5 text-status-error" />
+              <InventoryIcon className="icon icon-xs text-status-error" />
             )}
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h4 className="text-body-md font-semibold text-neutral-900 mb-1 truncate">
+            <h4 className="text-body-sm font-semibold text-neutral-900 mb-1 truncate">
               {itemName}
             </h4>
-            <p className="text-body-sm text-neutral-600 mb-2">
+            <p className="text-body-xs text-neutral-600 mb-1.5">
               {isCritical ? 'Out of stock' : `Low stock: ${currentStock} ${unit}`}
             </p>
             <div className="text-body-xs text-neutral-500">
@@ -42,7 +45,7 @@ export function InventoryListItem({ item, onClick }) {
         </div>
 
         {/* Arrow */}
-        <ChevronRightIcon className="w-5 h-5 text-neutral-400 group-hover:text-status-error transition-colors flex-shrink-0 ml-2" />
+        <ChevronRightIcon className="icon icon-sm text-neutral-400 group-hover:text-status-error transition-colors flex-shrink-0" />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
 import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
 import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -13,15 +14,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FaTimes, FaPrint } from 'react-icons/fa';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function EditPrescriptionPage() {
   const router = useRouter();
   const params = useParams();
   const prescriptionId = params?.id;
-  // Get user from auth context - alias as currentUser to avoid conflicts
   const { user: currentUser, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const [patients, setPatients] = useState([]);
@@ -48,7 +48,15 @@ export default function EditPrescriptionPage() {
     { code: 'VITD', name: 'Vitamin D' },
     { code: 'B12', name: 'Vitamin B12' },
   ]);
-  const [formData, setFormData] = useState({ patientId: '', appointmentId: '', clinicalNoteId: '', diagnosis: '', additionalInstructions: '', validUntil: '', refillsAllowed: 0, });
+  const [formData, setFormData] = useState({
+    patientId: '',
+    appointmentId: '',
+    clinicalNoteId: '',
+    diagnosis: '',
+    additionalInstructions: '',
+    validUntil: '',
+    refillsAllowed: 0,
+  });
   const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // Keyboard shortcuts
@@ -81,7 +89,65 @@ export default function EditPrescriptionPage() {
 
   useKeyboardShortcuts(keyboardShortcuts);
 
-  const fetchPrescription = useCallback(async () => {
+  useEffect(() => {
+    if (!authLoading && currentUser && prescriptionId) {
+      // Fetch both in parallel - they're independent
+      fetchData();
+      fetchPrescription();
+    }
+  }, [authLoading, currentUser, prescriptionId]);
+
+  // Sync items after drugs are loaded to ensure drugId matches
+  // This ensures that when drugs load, any items with drugId are properly matched
+  useEffect(() => {
+    if (drugs.length > 0 && items.length > 0) {
+      // Check if any item has a drugId that needs to be synced
+      setItems((prevItems) => {
+        let hasChanges = false;
+        const updatedItems = prevItems.map((item) => {
+          if (item.itemType === 'drug' && item.drugId) {
+            const drugIdStr = String(item.drugId).trim();
+            // Try to find the drug in the list by matching _id
+            const drug = drugs.find((d) => {
+              const drugId = String(d._id).trim();
+              return drugId === drugIdStr;
+            });
+
+            if (drug) {
+              // Ensure drugId is exactly matching the drug's _id (as string)
+              const correctDrugId = String(drug._id).trim();
+              if (item.drugId !== correctDrugId) {
+                logger.debug('Syncing drugId:', {
+                  old: item.drugId,
+                  new: correctDrugId,
+                  drugName: drug.name,
+                });
+                hasChanges = true;
+                return {
+                  ...item,
+                  drugId: correctDrugId,
+                  drugName: drug.name || item.drugName,
+                  form: drug.form || item.form,
+                  strength: drug.strength || item.strength,
+                };
+              }
+            } else {
+              logger.warn('Drug not found in list:', {
+                drugId: drugIdStr,
+                availableIds: drugs.slice(0, 5).map((d) => String(d._id)),
+              });
+            }
+          }
+          return item;
+        });
+
+        // Only update if there were actual changes to prevent infinite loops
+        return hasChanges ? updatedItems : prevItems;
+      });
+    }
+  }, [drugs]); // Only re-run when drugs change
+
+  const fetchPrescription = async () => {
     try {
       const response = await apiClient.get(`/prescriptions/${prescriptionId}`);
       if (response.success && response.data) {
@@ -115,7 +181,7 @@ export default function EditPrescriptionPage() {
               }
             }
 
-            console.log('Prescription item drugId:', {
+            logger.debug('Prescription item drugId:', {
               original: item.drugId,
               normalized: drugIdValue,
               type: typeof item.drugId,
@@ -150,7 +216,7 @@ export default function EditPrescriptionPage() {
             };
           });
 
-          console.log('Mapped prescription items:', mappedItems);
+          logger.debug('Mapped prescription items:', mappedItems);
           setItems(mappedItems);
         } else {
           // Default item if none exist
@@ -173,12 +239,12 @@ export default function EditPrescriptionPage() {
         setError('Prescription not found');
       }
     } catch (error) {
-      console.error('Failed to fetch prescription:', error);
+      logger.error('Failed to fetch prescription:', error);
       setError('Failed to load prescription');
     }
-  }, [prescriptionId]);
+  };
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
       // Fetch clinic settings for print
@@ -188,7 +254,7 @@ export default function EditPrescriptionPage() {
           setClinicSettings(settingsResponse.data);
         }
       } catch (err) {
-        console.error('Failed to fetch clinic settings:', err);
+        logger.error('Failed to fetch clinic settings:', err);
       }
 
       // Fetch all patients (for edit, we show all patients)
@@ -230,79 +296,19 @@ export default function EditPrescriptionPage() {
             }));
         }
 
-        console.log('Fetched drugs list:', drugsList.length, 'drugs');
-        console.log(
+        logger.debug('Fetched drugs list:', drugsList.length, 'drugs');
+        logger.debug(
           'Sample drug IDs:',
           drugsList.slice(0, 3).map((d) => ({ id: d._id, name: d.name }))
         );
         setDrugs(drugsList);
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      logger.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading && currentUser && prescriptionId) {
-      // Fetch both in parallel - they're independent
-      fetchData();
-      fetchPrescription();
-    }
-  }, [authLoading, currentUser, prescriptionId, fetchData, fetchPrescription]);
-
-  // Sync items after drugs are loaded to ensure drugId matches
-  // This ensures that when drugs load, any items with drugId are properly matched
-  useEffect(() => {
-    if (drugs.length > 0) {
-      // Check if any item has a drugId that needs to be synced
-      setItems((prevItems) => {
-        if (prevItems.length === 0) return prevItems;
-        
-        let hasChanges = false;
-        const updatedItems = prevItems.map((item) => {
-          if (item.itemType === 'drug' && item.drugId) {
-            const drugIdStr = String(item.drugId).trim();
-            // Try to find the drug in the list by matching _id
-            const drug = drugs.find((d) => {
-              const drugId = String(d._id).trim();
-              return drugId === drugIdStr;
-            });
-
-            if (drug) {
-              // Ensure drugId is exactly matching the drug's _id (as string)
-              const correctDrugId = String(drug._id).trim();
-              if (item.drugId !== correctDrugId) {
-                console.log('Syncing drugId:', {
-                  old: item.drugId,
-                  new: correctDrugId,
-                  drugName: drug.name,
-                });
-                hasChanges = true;
-                return {
-                  ...item,
-                  drugId: correctDrugId,
-                  drugName: drug.name || item.drugName,
-                  form: drug.form || item.form,
-                  strength: drug.strength || item.strength,
-                };
-              }
-            } else {
-              console.warn('Drug not found in list:', {
-                drugId: drugIdStr,
-                availableIds: drugs.slice(0, 5).map((d) => String(d._id)),
-              });
-            }
-          }
-          return item;
-        });
-
-        // Only update if there were actual changes to prevent infinite loops
-        return hasChanges ? updatedItems : prevItems;
-      });
-    }
-  }, [drugs]); // Only re-run when drugs change
+  };
 
   const addItem = () => {
     setItems([
@@ -450,7 +456,7 @@ export default function EditPrescriptionPage() {
         setError(response.error?.message || 'Failed to update prescription');
       }
     } catch (error) {
-      console.error('Failed to update prescription:', error);
+      logger.error('Failed to update prescription:', error);
       setError(error.message || 'Failed to update prescription');
     } finally {
       setSubmitting(false);
@@ -463,13 +469,13 @@ export default function EditPrescriptionPage() {
 
   // Redirect if not authenticated (non-blocking)
   useEffect(() => {
-    if (!authLoading && !currentUser) {
+    if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [authLoading, currentUser, router]);
+  }, [authLoading, user, router]);
 
   // Show empty state while redirecting
-  if (!currentUser) {
+  if (!user) {
     return null;
   }
 
@@ -481,20 +487,7 @@ export default function EditPrescriptionPage() {
     <Layout>
       <div style={{ padding: '0 10px' }}>
         <div className='mb-6' style={{ paddingTop: '10px' }}>
-          <button
-            onClick={() => router.back()}
-            className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 mb-4'
-            aria-label={t('common.back')}
-          >
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M15 19l-7-7 7-7'
-              />
-            </svg>
-          </button>
+          <BackButton className='mb-4' />
           <h1 className='text-2xl font-bold text-neutral-900'>Edit Prescription</h1>
         </div>
 
@@ -564,7 +557,7 @@ export default function EditPrescriptionPage() {
                       id='diagnosis'
                       value={formData.diagnosis}
                       onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
-                      placeholder='Enter diagnosis'
+                      placeholder={t('prescriptions.diagnosisPlaceholderShort')}
                     />
                   </div>
 
@@ -599,7 +592,7 @@ export default function EditPrescriptionPage() {
                     onChange={(value) =>
                       setFormData({ ...formData, additionalInstructions: value })
                     }
-                    placeholder='Enter additional instructions for the patient'
+                    placeholder={t('prescriptions.instructionsPlaceholder')}
                     rows={4}
                   />
                 </div>
@@ -617,13 +610,23 @@ export default function EditPrescriptionPage() {
                 </div>
 
                 <div className='flex justify-end gap-4 pt-6 border-t'>
-                  <Button type='button' variant='secondary' size='sm' iconOnly onClick={() => router.back()} disabled={submitting} title='Cancel' >
-                    <FaTimes />
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={() => router.back()}
+                    disabled={submitting}
+                  >
+                    Cancel
                   </Button>
-                  <Button type='button' variant='secondary' size='sm' iconOnly onClick={handlePrint} disabled={submitting} title='Print' >
-                    <FaPrint />
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={handlePrint}
+                    disabled={submitting}
+                  >
+                    Print
                   </Button>
-                  <Button type='submit' isLoading={submitting} disabled={submitting} size='md'>
+                  <Button type='submit' isLoading={submitting} disabled={submitting}>
                     Update Prescription
                   </Button>
                 </div>

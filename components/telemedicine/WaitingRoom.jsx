@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { useEffect, useState } from 'react';
 
 /**
@@ -30,11 +31,11 @@ export function WaitingRoom({
 
   return (
     <div
-      className='absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center'
+      className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm flex items-center justify-center'
       style={{ zIndex: 'var(--z-modal, 50)' }}
     >
-      <div className='bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700'>
-        <h3 className='text-white text-xl font-semibold mb-4'>Waiting Room</h3>
+      <div className='bg-white rounded-lg p-6 max-w-md w-full mx-4 border border-neutral-300 shadow-xl'>
+        <h3 className='text-neutral-900 text-xl font-semibold mb-4'>Waiting Room</h3>
         <p className='text-gray-400 text-sm mb-4'>
           {pendingParticipants.length} participant{pendingParticipants.length > 1 ? 's' : ''}{' '}
           waiting
@@ -44,33 +45,29 @@ export function WaitingRoom({
           {pendingParticipants.map((participant) => (
             <div
               key={participant.userId}
-              className='bg-gray-800 rounded-lg p-4 flex items-center justify-between'
+              className='bg-white border border-neutral-300 rounded-lg p-4 flex items-center justify-between shadow-sm'
             >
               <div className='flex items-center space-x-3'>
                 <div className='w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center'>
-                  <span className='text-white font-semibold'>
+                  <span className='text-neutral-900 font-semibold'>
                     {participant.name?.charAt(0)?.toUpperCase() || 'P'}
                   </span>
                 </div>
                 <div>
-                  <p className='text-white font-medium'>{participant.name || 'Participant'}</p>
+                  <p className='text-neutral-800 font-medium'>
+                    {participant.name || 'Participant'}
+                  </p>
                   <p className='text-gray-400 text-xs'>{participant.role || 'Patient'}</p>
                 </div>
               </div>
 
               <div className='flex space-x-2'>
-                <button
-                  onClick={() => onAdmit(participant.userId)}
-                  className='px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm'
-                >
+                <Button variant='secondary' size='sm' onClick={() => onAdmit(participant.userId)}>
                   Admit
-                </button>
-                <button
-                  onClick={() => onReject(participant.userId)}
-                  className='px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm'
-                >
+                </Button>
+                <Button variant='danger' size='sm' onClick={() => onReject(participant.userId)}>
                   Reject
-                </button>
+                </Button>
               </div>
             </div>
           ))}

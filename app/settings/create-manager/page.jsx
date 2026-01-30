@@ -1,12 +1,12 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 
 export default function CreateManagerPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -114,17 +115,16 @@ export default function CreateManagerPage() {
   }
 
   return (
-    <Layout>
+    <Layout
+      title={t('admin.createManager')}
+      subtitle={t('admin.allUsersDescription')}
+      actionButton={
+        <Button variant='secondary' onClick={() => router.push('/settings')}>
+          {t('common.backToSettings')}
+        </Button>
+      }
+    >
       <div style={{ padding: '0 10px' }}>
-        <PageHeader
-          title='Create Manager Account'
-          description='Create a manager account for external use in your clinic with limited access'
-          actionButton={
-            <Button variant='secondary' onClick={() => router.push('/settings')}>
-              Back to Settings
-            </Button>
-          }
-        />
 
         <Card>
           <div className='p-6'>

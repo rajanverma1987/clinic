@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -10,6 +9,7 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -49,7 +49,7 @@ export default function PaymentHistoryPage() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch payment history:', error);
+      logger.error('Failed to fetch payment history:', error);
     } finally {
       setLoading(false);
     }
@@ -145,13 +145,11 @@ export default function PaymentHistoryPage() {
   }
 
   return (
-    <Layout>
+    <Layout
+      title={t('subscription.paymentHistory')}
+      subtitle={t('subscription.paymentHistoryDesc')}
+    >
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title={t('subscription.paymentHistory')}
-          subtitle={t('subscription.paymentHistoryDesc')}
-        />
-
         {subscription && (
           <Card className='mb-6 p-4'>
             <div className='flex items-center justify-between'>

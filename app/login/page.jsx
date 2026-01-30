@@ -5,26 +5,42 @@ import { ImageTransition } from '@/components/layout/ImageTransition';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import {
+  isTestAccount,
+  setTestAccountRoleOverride,
+  TEST_ACCOUNT_ALLOWED_ROLES,
+} from '@/lib/constants/test-account';
 import { validateForm } from '@/lib/utils/form-validation';
 import { showError } from '@/lib/utils/toast';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
-  const { login, user, loading } = useAuth();
+  const searchParams = useSearchParams();
+  const reasonClinicOnly = searchParams.get('reason') === 'clinic_only';
+  const {
+    login,
+    verify2FA,
+    user,
+    loading,
+    setTestAccountRoleOverride: setTestRoleInContext,
+  } = useAuth();
   const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [showTestRolePicker, setShowTestRolePicker] = useState(false);
   const formRef = useRef(null);
 
   // Load remembered email on mount
@@ -38,12 +54,20 @@ export default function LoginPage() {
     }
   }, []);
 
-  // Redirect if already logged in
+  // Redirect if already logged in (skip for test account until they pick a role)
   useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
+    if (!loading && user && !showTestRolePicker) {
+      if (isTestAccount(user.email) && !sessionStorage.getItem('TEST_ACCOUNT_ROLE_OVERRIDE')) {
+        setShowTestRolePicker(true);
+        return;
+      }
+      const path =
+        isTestAccount(user.email) && typeof window !== 'undefined'
+          ? getRoleHomePage(sessionStorage.getItem('TEST_ACCOUNT_ROLE_OVERRIDE') || user.role)
+          : getRoleHomePage(user.role);
+      router.push(path);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, showTestRolePicker]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,30 +83,64 @@ export default function LoginPage() {
 
     // Manual validation as fallback
     if (!email || !email.trim()) {
-      showError(t('auth.email') + ' is required');
+      showError(t('auth.emailRequired'));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      showError('Please enter a valid email address');
+      showError(t('errors.pleaseEnterValidEmail'));
       return;
     }
     if (!password || !password.trim()) {
-      showError(t('auth.password') + ' is required');
+      showError(t('auth.passwordRequired'));
       return;
     }
 
     setIsLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(email, password, rememberMe);
 
     if (result.success) {
+      // Check if 2FA is required
+      if (result.require2FA) {
+        setShowOtp(true);
+        setPendingEmail(email);
+        setPassword(''); // Clear password for security
+        setIsLoading(false);
+        return;
+      }
+
       // Handle remember me
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
       } else {
         localStorage.removeItem('rememberedEmail');
       }
-      router.push('/dashboard');
+
+      // Ensure tokens are stored before redirect - verify token is actually stored
+      let tokenStored = false;
+      let attempts = 0;
+      while (!tokenStored && attempts < 10) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        const storedToken =
+          typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (storedToken) {
+          tokenStored = true;
+        }
+        attempts++;
+      }
+
+      if (!tokenStored) {
+        // Token not in localStorage; redirect anyway
+      }
+
+      // Check if password change is required
+      if (result.forcePasswordChange) {
+        router.push('/change-password?firstLogin=true');
+      } else {
+        // Redirect based on role
+        const redirectPath = getRoleHomePage(result.user?.role || '');
+        router.push(redirectPath);
+      }
     } else {
       setError(result.error || t('auth.loginFailed'));
     }
@@ -90,13 +148,116 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
-  // Show nothing while checking auth or redirecting
-  if (loading || user) {
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    const result = await verify2FA(pendingEmail || email, otp, rememberMe);
+
+    if (result.success) {
+      // Handle remember me
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', pendingEmail || email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+
+      // Ensure tokens are stored before redirect - verify token is actually stored
+      let tokenStored = false;
+      let attempts = 0;
+      while (!tokenStored && attempts < 10) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        const storedToken =
+          typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (storedToken) {
+          tokenStored = true;
+        }
+        attempts++;
+      }
+
+      if (!tokenStored) {
+        // Token not in localStorage; redirect anyway
+      }
+
+      // Check if password change is required
+      if (result.forcePasswordChange) {
+        router.push('/change-password?firstLogin=true');
+      } else if (isTestAccount(result.user?.email)) {
+        setShowTestRolePicker(true);
+      } else {
+        const redirectPath = getRoleHomePage(result.user?.role || '');
+        router.push(redirectPath);
+      }
+    } else {
+      setError(result.error || 'Invalid verification code');
+    }
+
+    setIsLoading(false);
+  };
+
+  const getRoleHomePage = (role) => {
+    const roleRoutes = {
+      super_admin: '/admin',
+      clinic_admin: '/dashboard',
+      admin: '/dashboard',
+      manager: '/dashboard',
+      doctor: '/doctors/profile',
+      nurse: '/patients',
+      receptionist: '/appointments',
+      pharmacist: '/inventory',
+      lab_tech: '/inventory',
+      patient: '/login', // Clinic-only: no patient portal; patient role sends to login
+    };
+    return roleRoutes[role] || '/dashboard';
+  };
+
+  const handleTestAccountRoleChoose = (role) => {
+    setTestAccountRoleOverride(role);
+    setTestRoleInContext(role);
+    setShowTestRolePicker(false);
+    router.push(getRoleHomePage(role));
+  };
+
+  // Show nothing while checking auth or redirecting (except when test account role picker is shown)
+  if (loading || (user && !showTestRolePicker)) {
     return null;
   }
 
   return (
     <div className='h-screen flex bg-neutral-50 overflow-hidden'>
+      {/* TEMPORARY: Test account role picker – REMOVE before production */}
+      {showTestRolePicker && user && (
+        <div
+          className='fixed inset-0 z-[100] flex items-center justify-center bg-neutral-500/30 backdrop-blur-sm p-4'
+          role='dialog'
+          aria-modal='true'
+          aria-labelledby='test-role-picker-title'
+        >
+          <div className='bg-white rounded-2xl shadow-xl border border-neutral-200 max-w-md w-full p-6'>
+            <h2 id='test-role-picker-title' className='text-lg font-bold text-neutral-900 mb-1'>
+              TMP: Choose account type
+            </h2>
+            <p className='text-sm text-neutral-600 mb-4'>
+              Testing account – select which dashboard to open. Remove before production.
+            </p>
+            <div className='grid grid-cols-1 gap-2'>
+              {TEST_ACCOUNT_ALLOWED_ROLES.map((r) => (
+                <Button
+                  key={r.value}
+                  variant='secondary'
+                  size='md'
+                  className='w-full justify-center'
+                  onClick={() => handleTestAccountRoleChoose(r.value)}
+                >
+                  {r.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Left Side - Background Image Only */}
       <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 h-full'>
         {/* Background Image */}
@@ -119,6 +280,11 @@ export default function LoginPage() {
       {/* Right Side - Login Form */}
       <div className='w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 h-full overflow-y-auto'>
         <div className='w-full max-w-md'>
+          {reasonClinicOnly && (
+            <div className='mb-4 p-3 rounded-lg bg-primary-50 border border-primary-200 text-primary-800 text-sm'>
+              {t('auth.clinicOnlyNotice')}
+            </div>
+          )}
           {/* Logo for mobile */}
           <div className='lg:hidden mb-8 text-center'>
             <Link href='/' className='inline-flex items-center justify-center group'>
@@ -130,7 +296,7 @@ export default function LoginPage() {
                   height={112}
                   className='object-contain drop-shadow-md'
                   priority
-                  style={{ width: '128px', height: 'auto' }}
+                  style={{ width: '128px', height: 'auto', maxWidth: '100%' }}
                 />
               </div>
             </Link>
@@ -178,39 +344,159 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <form ref={formRef} onSubmit={handleSubmit} className='space-y-6' noValidate>
-              {error && (
-                <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm animate-fade-in slide-in-right'>
-                  <svg
-                    width='20px'
-                    height='20px'
-                    className='text-status-error mt-0.5 flex-shrink-0'
-                    fill='currentColor'
-                    viewBox='0 0 20 20'
-                  >
-                    <path
-                      fillRule='evenodd'
-                      d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-                      clipRule='evenodd'
-                    />
-                  </svg>
-                  <span className='text-sm font-medium'>{error}</span>
-                </div>
-              )}
-
-              <div>
-                <label
-                  htmlFor='email'
-                  className='block text-sm font-semibold text-neutral-800 mb-2'
-                >
-                  {t('auth.email')}
-                </label>
-                <div className='relative'>
-                  <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+            {!showOtp ? (
+              <form ref={formRef} onSubmit={handleSubmit} className='space-y-6' noValidate>
+                {error && (
+                  <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm animate-fade-in slide-in-right'>
                     <svg
-                      width='20px'
-                      height='20px'
-                      className='text-neutral-900'
+                      className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
+                      fill='currentColor'
+                      viewBox='0 0 20 20'
+                    >
+                      <path
+                        fillRule='evenodd'
+                        d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
+                        clipRule='evenodd'
+                      />
+                    </svg>
+                    <span className='text-sm font-medium'>{error}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label
+                    htmlFor='email'
+                    className='block text-sm font-semibold text-neutral-800 mb-2'
+                  >
+                    {t('auth.email')}
+                  </label>
+                  <div className='relative'>
+                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                      <svg
+                        className='icon icon-sm text-neutral-900'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
+                        />
+                      </svg>
+                    </div>
+                    <Input
+                      id='email'
+                      type='email'
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      placeholder={t('auth.emailPlaceholder')}
+                      autoComplete='email'
+                      className='pl-10'
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor='password'
+                    className='block text-sm font-semibold text-neutral-800 mb-2'
+                  >
+                    {t('auth.password')}
+                  </label>
+                  <div className='relative'>
+                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                      <svg
+                        className='icon icon-sm text-neutral-900'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+                        />
+                      </svg>
+                    </div>
+                    <Input
+                      id='password'
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder={t('auth.passwordPlaceholder')}
+                      autoComplete='current-password'
+                      className='pl-10 pr-10'
+                    />
+                    <button
+                      type='button'
+                      onClick={() => setShowPassword(!showPassword)}
+                      className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
+                    >
+                      {showPassword ? (
+                        <svg
+                          className='icon icon-sm'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21'
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className='icon icon-sm'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
+                          />
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center gap-3 group'>
+                    <Checkbox
+                      id='rememberMe'
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      size='sm'
+                    />
+                    <label
+                      htmlFor='rememberMe'
+                      className='text-sm text-neutral-700 group-hover:text-neutral-900 font-medium transition-colors cursor-pointer'
+                    >
+                      {t('auth.rememberMe')}
+                    </label>
+                  </div>
+                  <Link
+                    href='/forgot-password'
+                    className='text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center group transition-colors'
+                  >
+                    <svg
+                      className='icon icon-xs mr-1 group-hover:translate-x-1 transition-transform'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -219,36 +505,43 @@ export default function LoginPage() {
                         strokeLinecap='round'
                         strokeLinejoin='round'
                         strokeWidth={2}
-                        d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
+                        d='M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z'
                       />
                     </svg>
-                  </div>
-                  <Input
-                    id='email'
-                    type='email'
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    placeholder='you@example.com'
-                    autoComplete='email'
-                    className='pl-10'
-                  />
+                    {t('auth.forgotPassword')}
+                  </Link>
                 </div>
-              </div>
 
-              <div>
-                <label
-                  htmlFor='password'
-                  className='block text-sm font-semibold text-neutral-800 mb-2'
+                <Button
+                  type='submit'
+                  variant='primary'
+                  isLoading={isLoading}
+                  disabled={isLoading}
+                  className='w-full'
+                  size='lg'
                 >
-                  {t('auth.password')}
-                </label>
-                <div className='relative'>
-                  <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                  <svg
+                    className='icon icon-sm mr-2'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M13 7l5 5m0 0l-5 5m5-5H6'
+                    />
+                  </svg>
+                  {t('auth.signIn')}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtp} className='space-y-6' noValidate>
+                <div className='text-center mb-4'>
+                  <div className='inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4'>
                     <svg
-                      width='20px'
-                      height='20px'
-                      className='text-neutral-900'
+                      className='icon icon-lg text-primary-600'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -261,87 +554,74 @@ export default function LoginPage() {
                       />
                     </svg>
                   </div>
-                  <Input
-                    id='password'
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    placeholder='••••••••'
-                    autoComplete='current-password'
-                    className='pl-10 pr-10'
-                  />
-                  <button
-                    type='button'
-                    onClick={() => setShowPassword(!showPassword)}
-                    className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
+                  <h3
+                    className='text-neutral-900 mb-2'
+                    style={{
+                      fontSize: '24px',
+                      lineHeight: '32px',
+                      fontWeight: '600',
+                    }}
                   >
-                    {showPassword ? (
-                      <svg
-                        width='20px'
-                        height='20px'
-                        className=''
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21'
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        width='20px'
-                        height='20px'
-                        className=''
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
-                        />
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
-                        />
-                      </svg>
-                    )}
-                  </button>
+                    Two-Factor Authentication
+                  </h3>
+                  <p
+                    className='text-neutral-600'
+                    style={{
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                    }}
+                  >
+                    Enter the 6-digit code from your authenticator app
+                  </p>
                 </div>
-              </div>
 
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center gap-3 group'>
-                  <Checkbox
-                    id='rememberMe'
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    size='sm'
-                  />
+                {error && (
+                  <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm'>
+                    <svg
+                      className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
+                      fill='currentColor'
+                      viewBox='0 0 20 20'
+                    >
+                      <path
+                        fillRule='evenodd'
+                        d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
+                        clipRule='evenodd'
+                      />
+                    </svg>
+                    <span className='text-sm font-medium'>{error}</span>
+                  </div>
+                )}
+
+                <div>
                   <label
-                    htmlFor='rememberMe'
-                    className='text-sm text-neutral-700 group-hover:text-neutral-900 font-medium transition-colors cursor-pointer'
+                    htmlFor='otp'
+                    className='block text-sm font-semibold text-neutral-800 mb-2'
                   >
-                    {t('auth.rememberMe')}
+                    {t('auth.secretCode')}
                   </label>
+                  <Input
+                    id='otp'
+                    type='text'
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    required
+                    placeholder={t('auth.codePlaceholder')}
+                    maxLength={6}
+                    className='text-center text-2xl tracking-widest font-mono'
+                    autoFocus
+                  />
                 </div>
-                <Link
-                  href='/forgot-password'
-                  className='text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center group transition-colors'
+
+                <Button
+                  type='submit'
+                  variant='primary'
+                  isLoading={isLoading}
+                  disabled={isLoading || otp.length !== 6}
+                  className='w-full'
+                  size='lg'
                 >
                   <svg
-                    width='16px'
-                    height='16px'
-                    className='mr-1 group-hover:translate-x-1 transition-transform'
+                    className='icon icon-sm mr-2'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -350,117 +630,129 @@ export default function LoginPage() {
                       strokeLinecap='round'
                       strokeLinejoin='round'
                       strokeWidth={2}
-                      d='M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z'
+                      d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
                     />
                   </svg>
-                  {t('auth.forgotPassword')}
-                </Link>
-              </div>
+                  Verify Code
+                </Button>
 
-              <Button
-                type='submit'
-                variant='primary'
-                isLoading={isLoading}
-                disabled={isLoading}
-                className='w-full'
-                size='lg'
-              >
-                <svg
-                  width='20px'
-                  height='20px'
-                  className='mr-2'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M13 7l5 5m0 0l-5 5m5-5H6'
-                  />
-                </svg>
-                {t('auth.signIn')}
-              </Button>
-            </form>
-
-            <div className='mt-8'>
-              <div className='relative'>
-                <div className='absolute inset-0 flex items-center'>
-                  <div className='w-full border-t border-neutral-200'></div>
-                </div>
-              </div>
-
-              <div className='mt-6 grid grid-cols-2 gap-4'>
-                <button
+                <Button
                   type='button'
-                  className='w-full inline-flex justify-center items-center px-4 py-2.5 border-2 border-neutral-200 rounded-lg shadow-sm bg-white text-sm font-semibold text-neutral-800 hover:bg-primary-50 hover:border-primary-300 hover:shadow-md hover:text-primary-700 transition-all duration-300 group'
-                >
-                  <svg width='20px' height='20px' className='group-hover:scale-110' viewBox='0 0 24 24'>
-                    <path
-                      fill='#4285F4'
-                      d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z'
-                    />
-                    <path
-                      fill='#34A853'
-                      d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z'
-                    />
-                    <path
-                      fill='#FBBC05'
-                      d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z'
-                    />
-                    <path
-                      fill='#EA4335'
-                      d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z'
-                    />
-                  </svg>
-                  <span className='ml-2'>Google</span>
-                </button>
-                <button
-                  type='button'
-                  className='w-full inline-flex justify-center items-center px-4 py-2.5 border-2 border-neutral-200 rounded-lg shadow-sm bg-white text-sm font-semibold text-neutral-800 hover:bg-secondary-50 hover:border-secondary-300 hover:shadow-md hover:text-secondary-700 group'
+                  variant='secondary'
+                  onClick={() => {
+                    setShowOtp(false);
+                    setOtp('');
+                    setError('');
+                    setPendingEmail('');
+                  }}
+                  className='w-full'
+                  size='lg'
                 >
                   <svg
-                    width='20px'
-                    height='20px'
-                    className='group-hover:scale-110 transition-transform'
-                    fill='currentColor'
+                    className='icon icon-sm mr-2'
+                    fill='none'
+                    stroke='currentColor'
                     viewBox='0 0 24 24'
                   >
-                    <path d='M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z' />
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M10 19l-7-7m0 0l7-7m-7 7h18'
+                    />
                   </svg>
-                  <span className='ml-2'>GitHub</span>
-                </button>
-              </div>
-            </div>
+                  Back to Login
+                </Button>
+              </form>
+            )}
 
-            <div className='mt-8 text-center'>
-              <p className='text-sm text-neutral-700'>
-                {t('auth.dontHaveAccount')}{' '}
-                <Link
-                  href='/register'
-                  className='text-primary-600 hover:text-primary-700 font-bold transition-colors'
-                >
-                  {t('auth.createAccount')}
-                </Link>
-              </p>
-              <p className='text-neutral-500 mt-2' style={{ fontSize: '10px', lineHeight: '14px' }}>
-                By signing in, you agree to our{' '}
-                <Link
-                  href='/legal'
-                  className='text-primary-600 hover:text-primary-700 font-medium underline'
-                  style={{ fontSize: '10px' }}
-                >
-                  Legal Information & Disclaimers
-                </Link>
-              </p>
-            </div>
-            <div className='mt-4 flex justify-center'>
-              <LanguageSwitcher />
-            </div>
+            {!showOtp && (
+              <>
+                <div className='mt-8'>
+                  <div className='relative'>
+                    <div className='absolute inset-0 flex items-center'>
+                      <div className='w-full border-t border-neutral-200'></div>
+                    </div>
+                  </div>
+
+                  <div className='mt-6 grid grid-cols-2 gap-4'>
+                    <Button type='button' variant='secondary' size='sm' className='w-full'>
+                      <svg className='icon icon-sm group-hover:scale-110' viewBox='0 0 24 24'>
+                        <path
+                          fill='#4285F4'
+                          d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z'
+                        />
+                        <path
+                          fill='#34A853'
+                          d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z'
+                        />
+                        <path
+                          fill='#FBBC05'
+                          d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z'
+                        />
+                        <path
+                          fill='#EA4335'
+                          d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z'
+                        />
+                      </svg>
+                      <span className='ml-2'>Google</span>
+                    </Button>
+                    <Button type='button' variant='secondary' size='sm' className='w-full'>
+                      <svg
+                        className='icon icon-sm group-hover:scale-110 transition-transform'
+                        fill='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path d='M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z' />
+                      </svg>
+                      <span className='ml-2'>GitHub</span>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className='mt-8 text-center'>
+                  <p className='text-sm text-neutral-700'>
+                    {t('auth.dontHaveAccount')}{' '}
+                    <Link
+                      href='/register'
+                      className='text-primary-600 hover:text-primary-700 font-bold transition-colors'
+                    >
+                      {t('auth.createAccount')}
+                    </Link>
+                  </p>
+                  <p
+                    className='text-neutral-500 mt-2'
+                    style={{ fontSize: '10px', lineHeight: '14px' }}
+                  >
+                    By signing in, you agree to our{' '}
+                    <Link
+                      href='/legal'
+                      className='text-primary-600 hover:text-primary-700 font-medium underline'
+                      style={{ fontSize: '10px' }}
+                    >
+                      Legal Information & Disclaimers
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
           </FormTransition>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className='min-h-screen flex items-center justify-center bg-neutral-50'>
+          <div className='animate-pulse rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent' />
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

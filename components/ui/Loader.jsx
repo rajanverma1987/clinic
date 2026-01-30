@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Global Premium Medical Loader Component for Healthcare Platform
+ * Global Loader Component – uses clinic logo (/images/logoclinic.png)
  * Use this loader across the entire platform - no custom loaders allowed
  */
 export function Loader({
@@ -14,28 +14,28 @@ export function Loader({
 }) {
   const sizeClasses = {
     xs: {
-      spinner: 20,
-      pulse: '32px',
+      spinner: 28,
+      pulse: '44px',
       border: '2px',
     },
     sm: {
-      spinner: 24,
-      pulse: '40px',
+      spinner: 36,
+      pulse: '56px',
       border: '2px',
     },
     md: {
-      spinner: 32,
-      pulse: '52px',
+      spinner: 44,
+      pulse: '68px',
       border: '3px',
     },
     lg: {
-      spinner: 40,
-      pulse: '64px',
+      spinner: 56,
+      pulse: '84px',
       border: '3px',
     },
     xl: {
-      spinner: 48,
-      pulse: '76px',
+      spinner: 68,
+      pulse: '100px',
       border: '4px',
     },
   };
@@ -78,48 +78,27 @@ export function Loader({
         }}
       />
 
-      {/* Medical Symbol: Blue Cross with White Staff and Green Snake (matches favicon/sidebar) */}
+      {/* Clinic logo (real branding) */}
       <div
         className='absolute inset-0 flex items-center justify-center'
         style={{
           animation: 'fade-pulse 2s ease-in-out infinite',
         }}
       >
-        <svg
+        <img
+          src='/images/logoclinic.png'
+          alt=''
           width={currentSize.spinner}
           height={currentSize.spinner}
-          viewBox='0 0 24 24'
-          fill='none'
-          xmlns='http://www.w3.org/2000/svg'
+          className='object-contain'
           style={{
+            width: currentSize.spinner,
+            height: 'auto',
+            maxHeight: currentSize.spinner,
+            objectFit: 'contain',
             animation: 'logo-pulse 2s ease-in-out infinite',
           }}
-        >
-          {/* Blue Cross Background (rounded ends) */}
-          <rect x='10' y='4' width='4' height='16' rx='2' fill='#2D9CDB' />
-          <rect x='4' y='10' width='16' height='4' rx='2' fill='#2D9CDB' />
-          
-          {/* White Staff (vertical line in center of cross) */}
-          <rect x='11' y='6' width='2' height='12' rx='1' fill='#FFFFFF' />
-          
-          {/* Green Snake (coiled around staff in S-pattern) */}
-          <path
-            d='M 12 7 Q 10 8 10 10 Q 10 12 12 13 Q 14 14 14 16 Q 14 18 12 19'
-            stroke='#27AE60'
-            strokeWidth='1.8'
-            fill='none'
-            strokeLinecap='round'
-            strokeLinejoin='round'
-          />
-          <path
-            d='M 12 7 Q 14 8 14 10 Q 14 12 12 13 Q 10 14 10 16 Q 10 18 12 19'
-            stroke='#27AE60'
-            strokeWidth='1.8'
-            fill='none'
-            strokeLinecap='round'
-            strokeLinejoin='round'
-          />
-        </svg>
+        />
       </div>
 
       {/* Blue spinning ring outside */}

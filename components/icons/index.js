@@ -1,4 +1,7 @@
-// Icon Components Export
+/**
+ * Icon components – Lucide React wrappers. Same API: className (default 'icon icon-sm'), color (default 'currentColor'), ariaHidden (default true).
+ * Use with .icon-xs, .icon-sm, .icon-md, .icon-lg, .icon-xl, .icon-2xl for sizing (see globals.css).
+ */
 export { CalendarIcon } from './CalendarIcon';
 export { UserAddIcon } from './UserAddIcon';
 export { PrescriptionIcon } from './PrescriptionIcon';
@@ -10,3 +13,37 @@ export { InventoryIcon } from './InventoryIcon';
 export { WarningIcon } from './WarningIcon';
 export { ClockIcon } from './ClockIcon';
 export { ChevronRightIcon } from './ChevronRightIcon';
+export { ChevronDownIcon } from './ChevronDownIcon';
+export { PhoneIcon } from './PhoneIcon';
+export { ChatIcon } from './ChatIcon';
+export { CheckIcon } from './CheckIcon';
+export { XIcon } from './XIcon';
+export { SearchIcon } from './SearchIcon';
+export { LayoutDashboardIcon } from './LayoutDashboardIcon';
+export { ReceiptIcon } from './ReceiptIcon';
+export { BarChart2Icon } from './BarChart2Icon';
+export { SettingsIcon } from './SettingsIcon';
+export { CodeIcon } from './CodeIcon';
+export { MapPinIcon } from './MapPinIcon';
+export { PaletteIcon } from './PaletteIcon';
+export { VideoIcon } from './VideoIcon';
+export { LogOutIcon } from './LogOutIcon';
+export { ShieldIcon } from './ShieldIcon';
+export { CreditCardIcon } from './CreditCardIcon';
+export { HistoryIcon } from './HistoryIcon';
+export { TrendingUpIcon } from './TrendingUpIcon';
+export { StarIcon } from './StarIcon';
+export { UserIcon } from './UserIcon';
+export { InfoIcon } from './InfoIcon';
+export { HelpCircleIcon } from './HelpCircleIcon';
+export { Building2Icon } from './Building2Icon';
+export { ChevronLeftIcon } from './ChevronLeftIcon';
+export { MailIcon } from './MailIcon';
+export { RefreshCwIcon } from './RefreshCwIcon';
+export { PlayIcon } from './PlayIcon';
+export { PlusIcon } from './PlusIcon';
+export { BellIcon } from './BellIcon';
+export { LanguagesIcon } from './LanguagesIcon';
+export { SmartphoneIcon } from './SmartphoneIcon';
+export { HomeIcon } from './HomeIcon';
+export { ZapIcon } from './ZapIcon';

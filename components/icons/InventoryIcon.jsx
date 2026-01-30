@@ -1,18 +1,21 @@
-export function InventoryIcon({ className = 'w-5 h-5', color = 'currentColor' }) {
+/**
+ * Inventory icon – Lucide React. Use for inventory, stock, packages.
+ */
+import { Package } from 'lucide-react';
+
+export function InventoryIcon({
+  className = 'icon icon-sm',
+  color = 'currentColor',
+  ariaHidden = true,
+  ...props
+}) {
   return (
-    <svg
+    <Package
       className={className}
-      fill="none"
-      stroke={color}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-      />
-    </svg>
+      color={color}
+      strokeWidth={2}
+      aria-hidden={ariaHidden}
+      {...props}
+    />
   );
 }

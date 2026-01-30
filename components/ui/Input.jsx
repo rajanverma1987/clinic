@@ -13,7 +13,7 @@ export function Input({ label, error, helperText, className = '', disabled, requ
         inputRef.current.setAttribute('data-required', 'true');
         inputRef.current.setAttribute('aria-required', 'true');
       }
-      
+
       // Add validation rules based on input type
       if (props.type === 'email') {
         inputRef.current.setAttribute('data-validate', 'email');
@@ -27,26 +27,26 @@ export function Input({ label, error, helperText, className = '', disabled, requ
     }
   }, [required, props.type, props.name, props.id, label]);
 
-  // Base classes with theme specifications (reduced by 10%)
-  // Default: bg-white, border: neutral-300, radius: 7.2px, padding: 10.8px
-  const baseClasses = `w-full px-3 py-[10.8px] text-body-md border rounded-lg`;
+  // Base classes with theme specifications
+  // Default: bg-white, border: neutral-300, radius: 8px, padding: 12px
+  const baseClasses = `w-full px-4 py-3.5 text-body-md border rounded-[10px]`;
 
   // States following clinic theme
   // Default: bg-white, border: neutral-300, text: neutral-900, placeholder: neutral-500
   // Focus: border primary-500, shadow: 0 0 0 3px rgba(45,156,219,0.20)
   // Error: border status-error, helper text: error red
   const disabledClasses = disabled
-    ? 'bg-neutral-100 border-neutral-300 text-neutral-500 cursor-not-allowed opacity-60'
+    ? 'bg-neutral-100 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400 cursor-not-allowed opacity-60'
     : error
-    ? 'border-status-error bg-white focus:outline-none focus:ring-2 focus:ring-status-error focus:border-status-error'
-    : 'border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-500 hover:border-primary-300 focus:outline-none focus:border-primary-500 focus:shadow-focus focus:ring-2 focus:ring-primary-500/20';
+      ? 'border-status-error bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-status-error focus:border-status-error'
+      : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 hover:border-primary-300 dark:hover:border-primary-500 focus:outline-none focus:border-primary-500 focus:shadow-focus focus:ring-2 focus:ring-primary-500/20';
 
   return (
     <div className='w-full' data-input-wrapper>
       {label && (
         <label
           className={`block text-body-sm font-medium mb-0.5 ${
-            disabled ? 'text-neutral-500' : 'text-neutral-900'
+            disabled ? 'text-neutral-500 dark:text-neutral-400' : 'text-neutral-900 dark:text-neutral-100'
           }`}
           htmlFor={props.id}
         >
@@ -67,16 +67,8 @@ export function Input({ label, error, helperText, className = '', disabled, requ
         // Remove required to prevent browser popup, we handle it via data-required
         required={false}
       />
-      {error && (
-        <p className='mt-0.5 text-body-sm text-status-error'>
-          {error}
-        </p>
-      )}
-      {helperText && !error && (
-        <p className='mt-0.5 text-body-sm text-neutral-500'>
-          {helperText}
-        </p>
-      )}
+      {error && <p className='mt-0.5 text-body-sm text-status-error'>{error}</p>}
+      {helperText && !error && <p className='mt-0.5 text-body-sm text-neutral-500'>{helperText}</p>}
     </div>
   );
 }

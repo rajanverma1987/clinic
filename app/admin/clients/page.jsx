@@ -10,6 +10,7 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -59,7 +60,7 @@ export default function AdminClientsPage() {
         setPlans(plansData);
       }
     } catch (error) {
-      console.error('Failed to fetch plans:', error);
+      logger.error('Failed to fetch plans', error);
     }
   };
 
@@ -71,7 +72,7 @@ export default function AdminClientsPage() {
         setClients(clientsData);
       }
     } catch (error) {
-      console.error('Failed to fetch clients:', error);
+      logger.error('Failed to fetch clients', error);
     } finally {
       setLoading(false);
     }
@@ -115,7 +116,7 @@ export default function AdminClientsPage() {
         fetchClients();
       }
     } catch (error) {
-      console.error('Failed to update subscription:', error);
+      logger.error('Failed to update subscription', error);
       alert(error.message || 'Failed to update subscription');
     } finally {
       setUpdatingClientId(null);
@@ -146,7 +147,7 @@ export default function AdminClientsPage() {
         alert(`Client ${client.isActive ? 'deactivated' : 'activated'} successfully`);
       }
     } catch (error) {
-      console.error('Failed to update client status:', error);
+      logger.error('Failed to update client status', error);
       alert(error.message || 'Failed to update client status');
     }
   };
@@ -255,12 +256,12 @@ export default function AdminClientsPage() {
         </div>
 
         <Card>
-          <Table data={clients} columns={columns} emptyMessage='No clients found' />
+          <Table data={clients} columns={columns} emptyMessage={t('admin.noClientsFound')} />
         </Card>
 
         {/* Update Subscription Modal */}
         {showUpdateModal && currentClient && (
-          <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
             <Card className='max-w-md w-full mx-4'>
               <div className='p-6'>
                 <h2 className='text-xl font-semibold mb-4'>Update Subscription</h2>
@@ -274,9 +275,9 @@ export default function AdminClientsPage() {
                     value={selectedPlanId}
                     onChange={(e) => setSelectedPlanId(e.target.value)}
                     required
-                    placeholder='-- Select Plan --'
+                    placeholder={t('admin.selectPlanPlaceholder')}
                     options={[
-                      { value: '', label: '-- Select Plan --' },
+                      { value: '', label: t('admin.selectPlanPlaceholder') },
                       ...plans.map((plan) => ({
                         value: plan._id,
                         label: `${plan.name} - ${formatCurrency(plan.price)}/${
@@ -314,7 +315,7 @@ export default function AdminClientsPage() {
 
         {/* Payment URL Modal - Shows PayPal approval link for client */}
         {showPaymentUrlModal && paymentUrl && (
-          <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+          <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
             <Card className='max-w-2xl w-full mx-4'>
               <div className='p-6'>
                 <h2 className='text-xl font-semibold mb-4 text-secondary-600'>

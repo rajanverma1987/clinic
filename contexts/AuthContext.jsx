@@ -6,9 +6,26 @@
  */
 
 import { apiClient } from '@/lib/api/client.js';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { setCurrentTenantId } from '@/lib/cache/current-tenant.js';
+import * as dashboardCache from '@/lib/cache/dashboard-cache.js';
+import {
+  clearTestAccountRoleOverride,
+  getTestAccountRoleOverride,
+  isTestAccount,
+  setTestAccountRoleOverride,
+} from '@/lib/constants/test-account.js';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 
 const AuthContext = createContext(undefined);
+
+/** TEMPORARY: Apply test account role override for 706359@gmail.com. REMOVE before production. */
+function applyTestAccountOverride(userInfo) {
+  if (!userInfo || !userInfo.email) return userInfo;
+  if (!isTestAccount(userInfo.email)) return userInfo;
+  const override = getTestAccountRoleOverride();
+  if (!override) return userInfo;
+  return { ...userInfo, role: override };
+}
 
 // Idle timeout: 2 hours (120 minutes)
 const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
@@ -45,7 +62,6 @@ export function AuthProvider({ children }) {
     idleTimeoutRef.current = setTimeout(async () => {
       const idleTime = Date.now() - lastActivityRef.current;
       if (idleTime >= IDLE_TIMEOUT_MS) {
-        console.log('User idle for 2 hours, logging out...');
         // Clear all timeouts and intervals
         if (idleTimeoutRef.current) {
           clearTimeout(idleTimeoutRef.current);
@@ -65,8 +81,10 @@ export function AuthProvider({ children }) {
           if (typeof window !== 'undefined') {
             localStorage.removeItem('refreshToken');
             lastActivityRef.current = 0;
+            dashboardCache.clear();
           }
           setUser(null);
+          setCurrentTenantId(null);
           if (typeof window !== 'undefined') {
             window.location.href = '/login';
           }
@@ -85,44 +103,44 @@ export function AuthProvider({ children }) {
     }
 
     // Check token expiration periodically and refresh if needed
-    tokenRefreshIntervalRef.current = setInterval(async () => {
-      if (!user) return;
+    tokenRefreshIntervalRef.current = setInterval(
+      async () => {
+        if (!user) return;
 
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      if (!token) return;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (!token) return;
 
-      try {
-        // Decode token to check expiration (without verification)
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const expirationTime = payload.exp * 1000; // Convert to milliseconds
-        const timeUntilExpiry = expirationTime - Date.now();
+        try {
+          // Decode token to check expiration (without verification)
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const expirationTime = payload.exp * 1000; // Convert to milliseconds
+          const timeUntilExpiry = expirationTime - Date.now();
 
-        // Refresh token if it expires within the next 30 minutes
-        if (timeUntilExpiry < TOKEN_REFRESH_THRESHOLD_MS && timeUntilExpiry > 0) {
-          console.log('Token expiring soon, refreshing...');
-          const refreshed = await apiClient.refreshToken();
-          if (refreshed) {
-            console.log('Token refreshed successfully');
-            updateLastActivity(); // Update activity on successful refresh
+          // Refresh token if it expires within the next 30 minutes
+          if (timeUntilExpiry < TOKEN_REFRESH_THRESHOLD_MS && timeUntilExpiry > 0) {
+            const refreshed = await apiClient.refreshToken();
+            if (refreshed) {
+              updateLastActivity(); // Update activity on successful refresh
+            }
           }
+        } catch (_error) {
+          // Token check failed; continue silently
         }
-      } catch (error) {
-        console.error('Error checking token expiration:', error);
-      }
-    }, 5 * 60 * 1000); // Check every 5 minutes
+      },
+      5 * 60 * 1000
+    ); // Check every 5 minutes
   }, [user, updateLastActivity]);
 
   const checkAuth = async () => {
     // Fast exit if no token - don't block rendering
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
-    
+    const refreshToken =
+      typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+
     // If no access token but we have refresh token, try to refresh first
     if (!token && refreshToken) {
-      console.log('No access token, attempting refresh...');
       const refreshed = await apiClient.refreshToken();
       if (refreshed) {
-        console.log('Token refreshed successfully on page load');
         // Token refreshed, continue with auth check
         const newToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
         if (newToken) {
@@ -144,7 +162,7 @@ export function AuthProvider({ children }) {
           try {
             const userData = JSON.parse(storedUser);
             // Set user temporarily while we try to validate
-            setUser(userData);
+            setUser(applyTestAccountOverride(userData));
             // Try one more time to get user info
             const response = await apiClient.get('/auth/me', undefined, true);
             if (response.success && response.data) {
@@ -159,9 +177,10 @@ export function AuthProvider({ children }) {
                 lastName: userData.lastName || '',
                 role: userData.role || '',
                 tenantId: userData.tenantId || '',
+                subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
               };
-              setUser(userInfo);
+              setUser(applyTestAccountOverride(userInfo));
               if (typeof window !== 'undefined') {
                 localStorage.setItem('userInfo', JSON.stringify(userInfo));
                 lastActivityRef.current = Date.now();
@@ -169,8 +188,8 @@ export function AuthProvider({ children }) {
               setLoading(false);
               return;
             }
-          } catch (e) {
-            console.error('Error restoring user:', e);
+          } catch (_e) {
+            // Restore failed; continue
           }
         }
         // All attempts failed, clear everything
@@ -191,7 +210,7 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
-    
+
     // Ensure token is set in apiClient
     if (token) {
       apiClient.setToken(token);
@@ -200,16 +219,14 @@ export function AuthProvider({ children }) {
     // Set a shorter timeout for API calls to prevent long blocking
     const timeoutId = setTimeout(() => {
       setLoading(false);
-      console.warn('Auth check timeout - proceeding with stored user if available');
       // If we have stored user info and tokens, keep user logged in
       const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
       if (storedUser && (token || refreshToken)) {
         try {
           const userData = JSON.parse(storedUser);
-          setUser(userData);
-          console.log('Using stored user info due to timeout');
-        } catch (e) {
-          console.error('Error parsing stored user:', e);
+          setUser(applyTestAccountOverride(userData));
+        } catch (_e) {
+          // Parse failed
         }
       }
     }, 5000); // 5 second timeout - increased for better reliability
@@ -223,19 +240,14 @@ export function AuthProvider({ children }) {
         !response.success &&
         (response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN')
       ) {
-        console.log('Auth failed, attempting token refresh...');
         const refreshed = await apiClient.refreshToken();
         if (refreshed) {
-          console.log('Token refreshed, retrying auth check...');
           // Retry after refresh - skip redirect during auth check
           response = await apiClient.get('/auth/me', undefined, true);
-        } else {
-          console.log('Token refresh failed');
         }
       }
 
       if (response.success && response.data) {
-        console.log('Auth check successful');
         // Map the response to match User interface
         const userData = response.data;
         const userId = userData.id || userData.userId || '';
@@ -247,21 +259,42 @@ export function AuthProvider({ children }) {
           lastName: userData.lastName || '',
           role: userData.role || '',
           tenantId: userData.tenantId || '',
+          subscriptionPlan: userData.subscriptionPlan || null,
           isActive: userData.isActive !== undefined ? userData.isActive : true,
         };
-        setUser(userInfo);
+        setUser(applyTestAccountOverride(userInfo));
+        setCurrentTenantId(userInfo.tenantId || null);
         // Store user info for persistence
         if (typeof window !== 'undefined') {
           localStorage.setItem('userInfo', JSON.stringify(userInfo));
           lastActivityRef.current = Date.now();
         }
       } else {
-        console.log('Auth check failed:', response.error);
+        // Check if it's a network error or server error (not auth error)
+        const isNetworkError = response.error?.code === 'NETWORK_ERROR';
+        const isServerError = response.error?.code === 'INTERNAL_ERROR';
+
+        // For network/server errors, keep user logged in with stored info
+        if ((isNetworkError || isServerError) && typeof window !== 'undefined') {
+          const storedUser = localStorage.getItem('userInfo');
+          const currentRefreshToken = localStorage.getItem('refreshToken');
+          if (storedUser && currentRefreshToken) {
+            try {
+              const userData = JSON.parse(storedUser);
+              setUser(applyTestAccountOverride(userData));
+              clearTimeout(timeoutId);
+              setLoading(false);
+              return;
+            } catch (_e) {
+              // Parse failed
+            }
+          }
+        }
+
         // Try one more refresh attempt before giving up
         const currentRefreshToken =
           typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
         if (currentRefreshToken) {
-          console.log('Attempting final token refresh after auth failure...');
           const refreshed = await apiClient.refreshToken();
           if (refreshed) {
             // Retry auth check after refresh
@@ -277,9 +310,10 @@ export function AuthProvider({ children }) {
                 lastName: userData.lastName || '',
                 role: userData.role || '',
                 tenantId: userData.tenantId || '',
+                subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
               };
-              setUser(userInfo);
+              setUser(applyTestAccountOverride(userInfo));
               if (typeof window !== 'undefined') {
                 localStorage.setItem('userInfo', JSON.stringify(userInfo));
                 lastActivityRef.current = Date.now();
@@ -296,26 +330,39 @@ export function AuthProvider({ children }) {
           // Keep user logged in with stored info if refresh token exists
           try {
             const userData = JSON.parse(storedUser);
-            setUser(userData);
-            console.log('Keeping user logged in with stored info');
-          } catch (e) {
-            setUser(null);
+            setUser(applyTestAccountOverride(userData));
+            clearTimeout(timeoutId);
+            setLoading(false);
+            return;
+          } catch (_e) {
+            // Parse failed
           }
-        } else {
-          setUser(null);
         }
-        // Only clear tokens if no refresh token available
-        if (!currentRefreshToken) {
+
+        // Only clear user if it's a real auth error (401/403) and no refresh token
+        const isAuthError =
+          response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN';
+        if (isAuthError && !currentRefreshToken) {
+          setUser(null);
           // No refresh token available, clear everything
           if (typeof window !== 'undefined') {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('userInfo');
           }
+        } else if (!isAuthError) {
+          // For non-auth errors, keep user if we have stored info
+          if (storedUser) {
+            try {
+              const userData = JSON.parse(storedUser);
+              setUser(applyTestAccountOverride(userData));
+            } catch (_e) {
+              // Parse failed
+            }
+          }
         }
       }
-    } catch (error) {
-      console.error('Auth check error:', error);
+    } catch (_error) {
       // Try refresh token as last resort
       const refreshToken =
         typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
@@ -336,9 +383,10 @@ export function AuthProvider({ children }) {
                 lastName: userData.lastName || '',
                 role: userData.role || '',
                 tenantId: userData.tenantId || '',
+                subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
               };
-              setUser(userInfo);
+              setUser(applyTestAccountOverride(userInfo));
               if (typeof window !== 'undefined') {
                 localStorage.setItem('userInfo', JSON.stringify(userInfo));
                 lastActivityRef.current = Date.now();
@@ -348,18 +396,37 @@ export function AuthProvider({ children }) {
               return;
             }
           }
-        } catch (refreshError) {
-          console.error('Refresh token attempt failed:', refreshError);
+        } catch (_refreshError) {
+          // Refresh failed
         }
       }
-      // All attempts failed
-      setUser(null);
-      // Only clear tokens if we're sure auth is impossible
-      if (!refreshToken) {
+      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
+
+      if (storedUser && refreshToken) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(applyTestAccountOverride(userData));
+          clearTimeout(timeoutId);
+          setLoading(false);
+          return;
+        } catch (_e) {
+          // Parse failed
+        }
+      }
+
+      if (!storedUser && !refreshToken) {
+        setUser(null);
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('userInfo');
+        }
+      } else if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(applyTestAccountOverride(userData));
+        } catch (_e) {
+          // Parse failed
         }
       }
     } finally {
@@ -369,22 +436,45 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = false) => {
     try {
-      const response = await apiClient.post('/auth/login', { email, password });
+      const response = await apiClient.post('/auth/login', {
+        email,
+        password,
+        rememberMe,
+      });
 
       if (response.success && response.data) {
-        // Store tokens immediately
-        apiClient.setToken(response.data.accessToken);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('refreshToken', response.data.refreshToken);
-          localStorage.setItem('accessToken', response.data.accessToken); // Ensure it's stored
-          // Store user info for persistence
-          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
-          lastActivityRef.current = Date.now(); // Initialize activity tracking
+        // Check if 2FA is required
+        if (response.data.require2FA) {
+          return {
+            success: true,
+            require2FA: true,
+            email: email, // Return email for 2FA verification
+          };
         }
-        setUser(response.data.user);
-        return { success: true };
+
+        // Store tokens immediately - ensure both are stored before setting user
+        if (typeof window !== 'undefined' && response.data.accessToken) {
+          // Store tokens synchronously - localStorage.setItem is synchronous
+          localStorage.setItem('accessToken', response.data.accessToken);
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+          }
+          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
+          lastActivityRef.current = Date.now();
+        }
+        // Set token in API client after localStorage is set
+        if (response.data.accessToken) {
+          apiClient.setToken(response.data.accessToken);
+        }
+        // Set user state after tokens are stored (synchronously)
+        setUser(applyTestAccountOverride(response.data.user));
+        return {
+          success: true,
+          user: response.data.user,
+          forcePasswordChange: response.data.forcePasswordChange || false,
+        };
       }
 
       return {
@@ -395,6 +485,50 @@ export function AuthProvider({ children }) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Login failed',
+      };
+    }
+  };
+
+  const verify2FA = async (email, otp, rememberMe = false) => {
+    try {
+      const response = await apiClient.post('/auth/verify-2fa', {
+        email,
+        otp,
+        rememberMe,
+      });
+
+      if (response.success && response.data) {
+        // Store tokens immediately - ensure both are stored before setting user
+        if (typeof window !== 'undefined' && response.data.accessToken) {
+          // Store tokens synchronously - localStorage.setItem is synchronous
+          localStorage.setItem('accessToken', response.data.accessToken);
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+          }
+          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
+          lastActivityRef.current = Date.now();
+        }
+        // Set token in API client after localStorage is set
+        if (response.data.accessToken) {
+          apiClient.setToken(response.data.accessToken);
+        }
+        // Set user state after tokens are stored (synchronously)
+        setUser(applyTestAccountOverride(response.data.user));
+        return {
+          success: true,
+          user: response.data.user,
+          forcePasswordChange: response.data.forcePasswordChange || false,
+        };
+      }
+
+      return {
+        success: false,
+        error: response.error?.message || '2FA verification failed',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '2FA verification failed',
       };
     }
   };
@@ -417,7 +551,7 @@ export function AuthProvider({ children }) {
           localStorage.setItem('userInfo', JSON.stringify(response.data.user));
           lastActivityRef.current = Date.now(); // Initialize activity tracking
         }
-        setUser(response.data.user);
+        setUser(applyTestAccountOverride(response.data.user));
         return { success: true };
       }
 
@@ -434,6 +568,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    if (typeof window !== 'undefined') clearTestAccountRoleOverride();
     // Clear all timeouts and intervals
     if (idleTimeoutRef.current) {
       clearTimeout(idleTimeoutRef.current);
@@ -453,17 +588,30 @@ export function AuthProvider({ children }) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('refreshToken');
         lastActivityRef.current = 0;
+        dashboardCache.clear();
       }
       setUser(null);
+      setCurrentTenantId(null);
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
     }
   };
 
+  /** TEMPORARY: Set test account role override (706359@gmail.com). REMOVE before production. */
+  const setTestAccountRoleOverrideToContext = (role) => {
+    setTestAccountRoleOverride(role);
+    setUser((prev) => (prev ? applyTestAccountOverride({ ...prev, role }) : null));
+  };
+
   const refreshUser = async () => {
     await checkAuth();
   };
+
+  // Sync current tenant for IndexedDB/SWR fetchers (no React in fetchers)
+  useEffect(() => {
+    setCurrentTenantId(user?.tenantId ?? null);
+  }, [user?.tenantId]);
 
   // Setup activity listeners when user is logged in
   useEffect(() => {
@@ -503,9 +651,7 @@ export function AuthProvider({ children }) {
 
           // Refresh on activity if token expires within 30 minutes
           if (timeUntilExpiry < TOKEN_REFRESH_THRESHOLD_MS && timeUntilExpiry > 0) {
-            apiClient.refreshToken().catch((err) => {
-              console.error('Failed to refresh token on activity:', err);
-            });
+            apiClient.refreshToken().catch(() => {});
           }
         } catch (error) {
           // Ignore token parsing errors
@@ -536,13 +682,42 @@ export function AuthProvider({ children }) {
     };
   }, [user, updateLastActivity, setupIdleTimeout, setupTokenRefresh]);
 
+  // Hydrate user from localStorage before paint so hard refresh doesn't flash "logged out"
+  // while checkAuth() is in flight (avoids redirect to login before /auth/me completes)
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    const storedUser = localStorage.getItem('userInfo');
+    if ((token || refreshToken) && storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(applyTestAccountOverride(userData));
+        setLoading(false);
+      } catch (e) {
+        // Invalid JSON – ignore, checkAuth will run
+      }
+    }
+  }, []);
+
   useEffect(() => {
-    // Check if user is already logged in
+    // Revalidate session (may update user or clear if tokens invalid)
     checkAuth();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register, refreshUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        verify2FA,
+        logout,
+        register,
+        refreshUser,
+        setTestAccountRoleOverride: setTestAccountRoleOverrideToContext,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

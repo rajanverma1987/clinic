@@ -1,16 +1,36 @@
 /**
- * Inventory service
- * Handles all inventory-related business logic
+ * Inventory Service
+ *
+ * Enterprise-grade service for inventory management with comprehensive
+ * stock tracking, batch management, and transaction logging.
+ *
+ * Features:
+ * - Inventory item management (medicines, supplies, equipment)
+ * - Stock level tracking with low stock alerts
+ * - Batch management with expiry tracking
+ * - Stock transactions (purchase, sale, adjustment, transfer)
+ * - Supplier integration
+ * - Multi-tenant isolation
+ * - Audit logging
+ * - Real-time stock updates
+ *
+ * @module services/inventory.service
+ * @since 1.0.0
  */
 
+import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
+import { withTenant } from '@/lib/db/tenant-helper.js';
+import {
+  notifyMedicineExpired,
+  notifyStockLow,
+  notifyStockUpdated,
+} from '@/lib/realtime/integration-helpers.js';
+import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
 import InventoryItem from '@/models/InventoryItem.js';
 import StockTransaction, { TransactionStatus } from '@/models/StockTransaction.js';
 import Supplier from '@/models/Supplier.js';
-import { withTenant } from '@/lib/db/tenant-helper.js';
-import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 import { parseAmount } from './tax-engine.service.js';
-import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
 
 /**
  * Generate unique transaction number for a tenant
@@ -18,10 +38,9 @@ import { getPaginationParams, createPaginationResult } from '@/lib/utils/paginat
 async function generateTransactionNumber(tenantId) {
   await connectDB();
 
-  const lastTransaction = await StockTransaction.findOne(
-    withTenant(tenantId, {}),
-    { transactionNumber: 1 }
-  )
+  const lastTransaction = await StockTransaction.findOne(withTenant(tenantId, {}), {
+    transactionNumber: 1,
+  })
     .sort({ transactionNumber: -1 })
     .lean();
 
@@ -79,10 +98,9 @@ export async function createInventoryItem(input, tenantId, userId) {
 
   if (input.batches) {
     for (const batch of input.batches) {
-      const expiryDate = batch.expiryDate instanceof Date
-        ? batch.expiryDate
-        : new Date(batch.expiryDate);
-      
+      const expiryDate =
+        batch.expiryDate instanceof Date ? batch.expiryDate : new Date(batch.expiryDate);
+
       batches.push({
         batchNumber: batch.batchNumber,
         expiryDate,
@@ -91,17 +109,19 @@ export async function createInventoryItem(input, tenantId, userId) {
           ? parseAmount(batch.purchasePrice, input.currency || 'USD')
           : undefined,
         purchaseDate: batch.purchaseDate
-          ? (batch.purchaseDate instanceof Date ? batch.purchaseDate : new Date(batch.purchaseDate))
+          ? batch.purchaseDate instanceof Date
+            ? batch.purchaseDate
+            : new Date(batch.purchaseDate)
           : undefined,
         supplierId: batch.supplierId,
       });
-      
+
       totalQuantity += batch.quantity;
     }
   } else if (input.currentStock !== undefined && input.currentStock > 0) {
     // If currentStock is provided without batches, create a default batch
     const defaultBatchNumber = input.batchNumber || `BATCH-${Date.now()}`;
-    const defaultExpiryDate = input.expiryDate 
+    const defaultExpiryDate = input.expiryDate
       ? new Date(input.expiryDate)
       : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
 
@@ -115,7 +135,7 @@ export async function createInventoryItem(input, tenantId, userId) {
       purchaseDate: new Date(),
       supplierId: undefined,
     });
-    
+
     totalQuantity = input.currentStock;
   }
 
@@ -136,7 +156,9 @@ export async function createInventoryItem(input, tenantId, userId) {
     availableQuantity: totalQuantity,
     reservedQuantity: 0,
     costPrice: input.costPrice ? parseAmount(input.costPrice, input.currency || 'USD') : undefined,
-    sellingPrice: input.sellingPrice ? parseAmount(input.sellingPrice, input.currency || 'USD') : undefined,
+    sellingPrice: input.sellingPrice
+      ? parseAmount(input.sellingPrice, input.currency || 'USD')
+      : undefined,
     currency: input.currency || 'USD',
     lowStockThreshold: input.lowStockThreshold,
     reorderPoint: input.reorderPoint,
@@ -287,10 +309,8 @@ export async function getExpiredItems(tenantId, userId) {
   const expiredBatches = [];
 
   for (const item of items) {
-    const expired = item.batches.filter(
-      (batch) => new Date(batch.expiryDate) < new Date()
-    );
-    
+    const expired = item.batches.filter((batch) => new Date(batch.expiryDate) < new Date());
+
     for (const batch of expired) {
       expiredBatches.push({ item, batch });
     }
@@ -327,7 +347,9 @@ export async function createStockTransaction(input, tenantId, userId) {
 
   // Parse dates
   const expiryDate = input.expiryDate
-    ? (input.expiryDate instanceof Date ? input.expiryDate : new Date(input.expiryDate))
+    ? input.expiryDate instanceof Date
+      ? input.expiryDate
+      : new Date(input.expiryDate)
     : undefined;
 
   // Create transaction
@@ -341,9 +363,10 @@ export async function createStockTransaction(input, tenantId, userId) {
     batchNumber: input.batchNumber,
     expiryDate,
     unitPrice: input.unitPrice ? parseAmount(input.unitPrice, item.currency) : undefined,
-    totalAmount: input.unitPrice && input.quantity
-      ? parseAmount(input.unitPrice, item.currency) * Math.abs(input.quantity)
-      : undefined,
+    totalAmount:
+      input.unitPrice && input.quantity
+        ? parseAmount(input.unitPrice, item.currency) * Math.abs(input.quantity)
+        : undefined,
     currency: item.currency,
     supplierId: input.supplierId,
     prescriptionId: input.prescriptionId,
@@ -369,6 +392,34 @@ export async function createStockTransaction(input, tenantId, userId) {
     tenantId,
     AuditAction.CREATE
   );
+
+  // Real-time events (CursorMD/New: stock:updated, stock:low, medicine:expired)
+  const payload = {
+    inventoryItemId: item._id.toString(),
+    name: item.name,
+    availableQuantity: item.availableQuantity,
+    totalQuantity: item.totalQuantity,
+    transactionId: transaction._id.toString(),
+    type: input.type,
+  };
+  await notifyStockUpdated(tenantId, payload);
+
+  const threshold = item.lowStockThreshold ?? item.reorderPoint ?? 0;
+  if (item.availableQuantity <= threshold) {
+    await notifyStockLow(tenantId, {
+      ...payload,
+      lowStockThreshold: threshold,
+    });
+  }
+
+  if (expiryDate && new Date(expiryDate) < new Date()) {
+    await notifyMedicineExpired(tenantId, {
+      inventoryItemId: item._id.toString(),
+      name: item.name,
+      batchNumber: input.batchNumber,
+      expiryDate: expiryDate,
+    });
+  }
 
   return transaction;
 }
@@ -521,9 +572,7 @@ export async function getAllLots(tenantId, userId, filters = {}) {
     query['batches.expiryDate'] = { $lt: new Date() };
   }
 
-  const items = await InventoryItem.find(query)
-    .populate('primarySupplierId', 'name')
-    .lean();
+  const items = await InventoryItem.find(query).populate('primarySupplierId', 'name').lean();
 
   // Flatten batches into lots array
   const lots = [];
@@ -573,4 +622,3 @@ export async function getAllLots(tenantId, userId, filters = {}) {
 
   return lots;
 }
-

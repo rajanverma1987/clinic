@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
 import { createPaymentSchema, paymentQuerySchema } from '@/lib/validations/billing';
 import {
   createPayment,
   listPayments,
 } from '@/services/billing.service';
-import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/api-response';
+import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
 
 /**
  * GET /api/payments
@@ -28,11 +32,7 @@ async function getHandler(req, user) {
     const validationResult = paymentQuerySchema.safeParse(queryParams);
     if (!validationResult.success) {
       return NextResponse.json(
-        errorResponse(
-          'Invalid query parameters',
-          'VALIDATION_ERROR',
-          validationResult.error.errors
-        ),
+        validationErrorResponse(validationResult.error.errors),
         { status: 400 }
       );
     }
@@ -41,14 +41,8 @@ async function getHandler(req, user) {
 
     return NextResponse.json(successResponse(result));
   } catch (error) {
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
-
-    return NextResponse.json(
-      errorResponse('Failed to fetch payments', 'INTERNAL_ERROR'),
-      { status: 500 }
-    );
+    // Error handling is done by withErrorHandler middleware
+    throw error;
   }
 }
 
@@ -63,11 +57,7 @@ async function postHandler(req, user) {
     const validationResult = createPaymentSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        errorResponse(
-          'Validation failed',
-          'VALIDATION_ERROR',
-          validationResult.error.errors
-        ),
+        validationErrorResponse(validationResult.error.errors),
         { status: 400 }
       );
     }
@@ -89,20 +79,25 @@ async function postHandler(req, user) {
       { status: 201 }
     );
   } catch (error) {
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
-
-    return NextResponse.json(
-      errorResponse(
-        (error instanceof Error ? error.message : String(error)) || 'Failed to create payment',
-        'CREATE_ERROR'
-      ),
-      { status: 400 }
-    );
+    // Error handling is done by withErrorHandler middleware
+    throw error;
   }
 }
 
-export const GET = withAuth(getHandler);
-export const POST = withAuth(postHandler);
+// Apply middleware stack
+export const GET = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.PAYMENT, ACTIONS.READ)(getHandler)
+    )
+  )
+);
+
+export const POST = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.PAYMENT, ACTIONS.CREATE)(postHandler)
+    )
+  )
+);
 

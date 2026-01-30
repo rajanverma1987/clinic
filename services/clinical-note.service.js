@@ -1,6 +1,27 @@
 /**
- * Clinical Note service
- * Handles all clinical note-related business logic
+ * Clinical Note Service
+ * 
+ * Enterprise-grade service for clinical documentation with version control,
+ * template support, and HIPAA compliance.
+ * 
+ * Features:
+ * - Clinical note creation and management
+ * - Version history tracking
+ * - Template-based note creation
+ * - Vital signs integration
+ * - Appointment linking
+ * - PHI encryption
+ * - Multi-tenant isolation
+ * - Audit logging (HIPAA requirement)
+ * - Note type management (consultation, follow_up, procedure, etc.)
+ * 
+ * @module services/clinical-note.service
+ * @since 1.0.0
+ * 
+ * @compliance
+ * - HIPAA: All PHI access is logged
+ * - Clinical notes are encrypted at rest
+ * - Version history maintained for audit
  */
 
 import connectDB from '@/lib/db/connection.js';
@@ -12,6 +33,8 @@ import Appointment from '@/models/Appointment.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
+import { logger } from '@/lib/utils/logger.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Create a new clinical note
@@ -231,6 +254,8 @@ export async function updateClinicalNote(noteId, input, tenantId, userId) {
     ...input,
     version: existing.version + 1,
     previousVersionId: existing._id,
+    editedAt: new Date(),
+    editedBy: userId,
   };
 
   // Parse vital signs date if provided

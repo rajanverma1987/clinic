@@ -1,0 +1,100 @@
+graph TB
+    subgraph "USER ROLES & PERMISSIONS"
+        SA[SUPER ADMIN<br/>Full System Access]
+        DOC[DOCTOR<br/>Clinic Owner]
+        ADM[ADMIN<br/>Assigned by Doctor]
+        MGR[MANAGER<br/>Limited Permissions]
+    end
+
+    subgraph "SUPER ADMIN DASHBOARD"
+        SA1[System Analytics]
+        SA2[All Clinics Management]
+        SA3[User Management]
+        SA4[Billing & Subscriptions]
+        SA5[System Logs & Audit]
+        SA6[Revenue Reports]
+        SA7[Support Tickets]
+        SA8[Database Backup Control]
+    end
+
+    subgraph "DOCTOR DASHBOARD"
+        D1[My Clinic Overview]
+        D2[Appointments Today/Week]
+        D3[Patient Management]
+        D4[Medical Records]
+        D5[Prescriptions]
+        D6[Revenue & Billing]
+        D7[Staff Management]
+        D8[Inventory/Medicines]
+        D9[Reports & Analytics]
+        D10[Settings & Profile]
+        D11[Assign Admin/Manager]
+    end
+
+    subgraph "ADMIN DASHBOARD"
+        A1[Clinic Overview]
+        A2[Appointment Management]
+        A3[Patient Records]
+        A4[Staff Scheduling]
+        A5[Billing & Invoicing]
+        A6[Inventory Management]
+        A7[Reports]
+        A8[Patient Communication]
+    end
+
+    subgraph "MANAGER DASHBOARD"
+        M1[View Appointments]
+        M2[Add/Edit Patients]
+        M3[Book Appointments]
+        M4[Basic Billing]
+        M5[View Reports Only]
+        M6[Reception Tasks]
+    end
+
+    subgraph "CORE MODULES"
+        MOD1[Patient Management<br/>- Registration<br/>- History<br/>- Documents<br/>- Insurance]
+        MOD2[Appointment System<br/>- Booking<br/>- Scheduling<br/>- Reminders<br/>- Calendar]
+        MOD3[Billing & Payments<br/>- Invoices<br/>- Receipts<br/>- Insurance Claims<br/>- Outstanding]
+        MOD4[Medical Records<br/>- Prescriptions<br/>- Lab Reports<br/>- Diagnosis<br/>- Treatment Plans]
+        MOD5[Inventory<br/>- Medicines<br/>- Equipment<br/>- Stock Alerts<br/>- Suppliers]
+        MOD6[Staff Management<br/>- Doctors<br/>- Nurses<br/>- Schedules<br/>- Attendance]
+        MOD7[Reports & Analytics<br/>- Daily/Monthly<br/>- Revenue<br/>- Patient Stats<br/>- Popular Treatments]
+        MOD8[Communication<br/>- SMS/Email<br/>- Notifications<br/>- Reminders<br/>- Broadcasts]
+    end
+
+    subgraph "REAL-TIME FEATURES"
+        RT1[Live Appointment Updates]
+        RT2[Patient Queue Status]
+        RT3[Instant Notifications]
+        RT4[Online Booking Widget]
+        RT5[Payment Confirmations]
+    end
+
+    subgraph "BACKEND ARCHITECTURE"
+        API[API Layer]
+        WS[WebSocket Server]
+        CACHE[Redis Cache]
+        DB[(PostgreSQL)]
+        STORAGE[File Storage]
+    end
+
+    SA --> SA1 & SA2 & SA3 & SA4 & SA5 & SA6 & SA7 & SA8
+    DOC --> D1 & D2 & D3 & D4 & D5 & D6 & D7 & D8 & D9 & D10 & D11
+    ADM --> A1 & A2 & A3 & A4 & A5 & A6 & A7 & A8
+    MGR --> M1 & M2 & M3 & M4 & M5 & M6
+
+    D1 & A1 --> MOD1 & MOD2 & MOD3 & MOD4 & MOD5 & MOD6 & MOD7 & MOD8
+    M1 --> MOD2
+    M2 & M3 --> MOD1
+    M4 --> MOD3
+
+    MOD1 & MOD2 & MOD3 & MOD4 --> RT1 & RT2 & RT3 & RT5
+    
+    API --> DB & CACHE & STORAGE
+    WS --> CACHE
+    RT1 & RT2 & RT3 & RT5 --> WS
+
+    style SA fill:#e74c3c,color:#fff
+    style DOC fill:#3498db,color:#fff
+    style ADM fill:#f39c12,color:#fff
+    style MGR fill:#27ae60,color:#fff

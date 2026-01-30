@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext.jsx';
+import { useEffect, useRef, useState } from 'react';
 
-export function SimpleTextEditor({
-  value,
-  onChange,
-  placeholder = 'Enter text...',
-  className = '',
-  rows = 6,
-}) {
+export function SimpleTextEditor({ value, onChange, placeholder, className = '', rows = 6 }) {
+  const { t } = useI18n();
+  const placeholderText = placeholder ?? t('simpleTextEditor.placeholder');
   const editorRef = useRef(null);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -19,7 +17,7 @@ export function SimpleTextEditor({
       // If value is empty or just whitespace, treat as empty
       const normalizedValue = (value || '').trim();
       const normalizedCurrent = currentHtml.trim();
-      
+
       // Only update if different (avoid infinite update loop)
       if (normalizedValue !== normalizedCurrent) {
         // If value is plain text (no HTML tags), set as textContent
@@ -61,70 +59,80 @@ export function SimpleTextEditor({
   };
 
   return (
-    <div className="w-full">
+    <div className='w-full'>
       {/* Toolbar */}
-      <div className="flex items-center gap-1 mb-2 p-2 bg-gray-50 border border-gray-300 rounded-t-lg">
-        <button
-          type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+      <div className='flex items-center gap-1 mb-2 p-2 bg-gray-50 border border-gray-300 rounded-t-lg'>
+        <Button
+          type='button'
+          variant='ghost'
+          size='xs'
+          className='px-3 py-1 text-sm min-h-0'
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('bold', false);
             editorRef.current?.focus();
           }}
-          title="Bold (Ctrl+B)"
+          title='Bold (Ctrl+B)'
         >
           <strong>B</strong>
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+        </Button>
+        <Button
+          type='button'
+          variant='ghost'
+          size='xs'
+          className='px-3 py-1 text-sm min-h-0'
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('italic', false);
             editorRef.current?.focus();
           }}
-          title="Italic (Ctrl+I)"
+          title='Italic (Ctrl+I)'
         >
           <em>I</em>
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+        </Button>
+        <Button
+          type='button'
+          variant='ghost'
+          size='xs'
+          className='px-3 py-1 text-sm min-h-0'
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('underline', false);
             editorRef.current?.focus();
           }}
-          title="Underline (Ctrl+U)"
+          title='Underline (Ctrl+U)'
         >
           <u>U</u>
-        </button>
-        <div className="flex-1" />
-        <button
-          type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+        </Button>
+        <div className='flex-1' />
+        <Button
+          type='button'
+          variant='ghost'
+          size='xs'
+          className='px-3 py-1 text-sm min-h-0'
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('insertUnorderedList', false);
             editorRef.current?.focus();
           }}
-          title="Bullet List"
+          title='Bullet List'
         >
           •
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1 text-sm hover:bg-gray-200 rounded"
+        </Button>
+        <Button
+          type='button'
+          variant='ghost'
+          size='xs'
+          className='px-3 py-1 text-sm min-h-0'
           onClick={(e) => {
             e.preventDefault();
             document.execCommand('insertOrderedList', false);
             editorRef.current?.focus();
           }}
-          title="Numbered List"
+          title='Numbered List'
         >
           1.
-        </button>
+        </Button>
       </div>
 
       {/* Editor */}
@@ -146,7 +154,7 @@ export function SimpleTextEditor({
           minHeight: `${rows * 1.5}rem`,
         }}
         suppressContentEditableWarning
-        data-placeholder={value === '' ? placeholder : ''}
+        data-placeholder={value === '' ? placeholderText : ''}
       />
       <style jsx>{`
         div[contenteditable][data-placeholder]:empty:before {
@@ -158,4 +166,3 @@ export function SimpleTextEditor({
     </div>
   );
 }
-

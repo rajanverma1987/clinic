@@ -5,6 +5,7 @@ import SubscriptionPayment from '@/models/SubscriptionPayment';
 import { SubscriptionStatus } from '@/models/Subscription';
 import { PaymentStatus } from '@/models/SubscriptionPayment';
 import { updatePaymentStatus } from '@/services/subscription.service';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * POST /api/webhooks/paypal
@@ -95,12 +96,12 @@ export async function POST(req) {
         break;
 
       default:
-        console.log('Unhandled PayPal webhook event:', eventType);
+        logger.info('Unhandled PayPal webhook event:', eventType);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('PayPal webhook error:', error);
+    logger.error('PayPal webhook error:', error);
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 400 }

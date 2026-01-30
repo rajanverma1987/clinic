@@ -1,15 +1,20 @@
 import mongoose, { Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+// CursorMD/New database-schema.mermaid: role enum "superadmin|doctor|admin|manager"
+// clinic_admin = Admin in spec (kept for backward compat); patient for portal
 export const UserRole = {
   SUPER_ADMIN: 'super_admin',
-  CLINIC_ADMIN: 'clinic_admin',
+  ADMIN: 'admin',
+  CLINIC_ADMIN: 'clinic_admin', // Admin in spec; backward compat
   DOCTOR: 'doctor',
-  MANAGER: 'manager', // External manager account with limited access
+  MANAGER: 'manager',
   NURSE: 'nurse',
   RECEPTIONIST: 'receptionist',
   ACCOUNTANT: 'accountant',
   PHARMACIST: 'pharmacist',
+  LAB_TECH: 'lab_tech',
+  PATIENT: 'patient',
 };
 
 const UserSchema = new Schema(
@@ -27,7 +32,6 @@ const UserSchema = new Schema(
       required: true,
       lowercase: true,
       trim: true,
-      index: true,
     },
     password: {
       type: String,
@@ -48,14 +52,53 @@ const UserSchema = new Schema(
       type: String,
       enum: Object.values(UserRole),
       required: true,
+      index: true,
     },
     isActive: {
       type: Boolean,
       default: true,
     },
-    lastLoginAt: Date,
-    lastLoginIP: String,
-    passwordChangedAt: Date,
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended'],
+      default: 'active',
+      index: true,
+    },
+    // Two-factor authentication
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      select: false, // Don't return by default
+    },
+    // Profile information (as per NEW-PLANS.md)
+    phone: {
+      type: String,
+      trim: true,
+    },
+    avatar: {
+      type: String,
+    },
+    // Login tracking
+    lastLoginAt: {
+      type: Date,
+    },
+    lastLoginIP: {
+      type: String,
+    },
+    passwordChangedAt: {
+      type: Date,
+    },
+    // Failed login attempt tracking
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    accountLockedUntil: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -87,56 +130,28 @@ UserSchema.pre('save', async function (next) {
 
 // Method to compare password
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-  // Defensive checks
   if (!candidatePassword || typeof candidatePassword !== 'string') {
-    console.error('comparePassword: Invalid candidate password provided');
-    console.error('  Type:', typeof candidatePassword);
-    console.error('  Value:', candidatePassword ? '***' : 'null/undefined');
     return false;
   }
-  
+
   if (!this.password || typeof this.password !== 'string') {
-    console.error('comparePassword: User has no password hash stored');
-    console.error('  Password exists:', !!this.password);
-    console.error('  Password type:', typeof this.password);
     return false;
   }
-  
-  // Check if password hash looks valid (bcrypt hashes start with $2a$, $2b$, or $2y$)
+
   if (!this.password.startsWith('$2a$') && !this.password.startsWith('$2b$') && !this.password.startsWith('$2y$')) {
-    console.error('comparePassword: Password hash format is invalid');
-    console.error('  Hash prefix:', this.password.substring(0, 10));
-    console.error('  Hash length:', this.password.length);
-    console.error('  Full hash (first 30 chars):', this.password.substring(0, 30));
     return false;
   }
-  
-  // Debug logging
-  console.log('comparePassword: Starting comparison');
-  console.log('  Candidate password length:', candidatePassword.length);
-  console.log('  Stored hash length:', this.password.length);
-  console.log('  Stored hash prefix:', this.password.substring(0, 7));
-  console.log('  Candidate password (first 3 chars):', candidatePassword.substring(0, 3) + '***');
-  
+
   try {
     const result = await bcrypt.compare(candidatePassword, this.password);
-    console.log('comparePassword: bcrypt.compare result:', result);
-    
-    // If false, try with trimmed password (in case of whitespace issues)
     if (!result) {
       const trimmedPassword = candidatePassword.trim();
       if (trimmedPassword !== candidatePassword) {
-        console.log('comparePassword: Trying with trimmed password...');
-        const trimmedResult = await bcrypt.compare(trimmedPassword, this.password);
-        console.log('comparePassword: Trimmed comparison result:', trimmedResult);
-        return trimmedResult;
+        return bcrypt.compare(trimmedPassword, this.password);
       }
     }
-    
     return result;
-  } catch (error) {
-    console.error('comparePassword: Error during bcrypt comparison:', error.message);
-    console.error('  Error stack:', error.stack);
+  } catch (_error) {
     return false;
   }
 };

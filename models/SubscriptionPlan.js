@@ -69,6 +69,12 @@ const SubscriptionPlanSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    /** Optional trial length in days (e.g. 14 for SOLO). Card required; first charge after trial. */
+    trialDays: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
   },
   {
     timestamps: true,

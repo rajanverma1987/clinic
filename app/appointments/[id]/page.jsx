@@ -1,14 +1,21 @@
 'use client';
 
+import { CalendarIcon, CheckIcon, PlayIcon, UserIcon, VideoIcon, XIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
+import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { showError } from '@/lib/utils/toast';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
 
@@ -17,9 +24,20 @@ const formatTime = (value) =>
 
 export default function AppointmentDetailsPage({ params }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { t } = useI18n();
+  const { user } = useAuth();
+  const isDoctor = user?.role === 'doctor';
   const [appointment, setAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [showConsultationNotes, setShowConsultationNotes] = useState(false);
+  const [consultationNotes, setConsultationNotes] = useState('');
+  const [diagnosis, setDiagnosis] = useState('');
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [newStatus, setNewStatus] = useState('');
+  const statusFromUrlApplied = useRef(false);
 
   useEffect(() => {
     const fetchAppointment = async () => {
@@ -27,14 +45,19 @@ export default function AppointmentDetailsPage({ params }) {
         const response = await apiClient.get(`/appointments/${params.id}`);
         if (response.success && response.data) {
           setAppointment(response.data);
+          // Load consultation notes if available
+          if (response.data.clinicalNote) {
+            setConsultationNotes(response.data.clinicalNote.notes || '');
+            setDiagnosis(response.data.clinicalNote.diagnosis || '');
+          }
         } else {
-          throw new Error(response.error?.message || 'Appointment not found');
+          throw new Error(response.error?.message || t('appointments.notFound'));
         }
       } catch (err) {
-        console.error('Failed to fetch appointment details:', err);
+        logger.error('Failed to fetch appointment details:', err);
         const message = err?.message?.includes('not found')
-          ? 'Appointment not found'
-          : 'Failed to load appointment details';
+          ? t('appointments.notFound')
+          : t('appointments.loadFailed');
         setError(message);
         showError(message);
       } finally {
@@ -43,7 +66,46 @@ export default function AppointmentDetailsPage({ params }) {
     };
 
     fetchAppointment();
-  }, [params.id]);
+  }, [params.id, t]);
+
+  // Apply status from URL (e.g. from /appointments/[id]/edit?status=confirmed redirect)
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (
+      !appointment ||
+      loading ||
+      statusFromUrlApplied.current ||
+      !statusParam ||
+      !['confirmed', 'cancelled'].includes(statusParam)
+    ) {
+      return;
+    }
+    statusFromUrlApplied.current = true;
+    const applyStatus = async () => {
+      try {
+        setSaving(true);
+        const response = await apiClient.put(`/appointments/${params.id}/status`, {
+          status: statusParam,
+        });
+        if (response.success) {
+          setAppointment((prev) => (prev ? { ...prev, status: statusParam } : prev));
+          showSuccess(t('appointments.statusUpdated') || 'Appointment status updated');
+          router.replace(`/appointments/${params.id}`);
+        } else {
+          showError(
+            response.error?.message ||
+              t('appointments.statusUpdateFailed') ||
+              'Failed to update status'
+          );
+        }
+      } catch (err) {
+        showError(t('appointments.statusUpdateFailed') || 'Failed to update appointment status');
+      } finally {
+        setSaving(false);
+      }
+    };
+    applyStatus();
+  }, [appointment, loading, params.id, searchParams, router, t]);
 
   const patientFullName = useMemo(
     () =>
@@ -63,8 +125,65 @@ export default function AppointmentDetailsPage({ params }) {
     [appointment]
   );
 
+  const handleStatusChange = async (status) => {
+    try {
+      setSaving(true);
+      const response = await apiClient.put(`/appointments/${params.id}/status`, { status });
+      if (response.success) {
+        showSuccess('Appointment status updated');
+        setAppointment({ ...appointment, status });
+        setShowStatusModal(false);
+        fetchAppointment();
+      } else {
+        showError(response.error?.message || 'Failed to update status');
+      }
+    } catch (err) {
+      showError('Failed to update appointment status');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveConsultationNotes = async () => {
+    try {
+      setSaving(true);
+      const response = await apiClient.post(`/clinical-notes`, {
+        appointmentId: params.id,
+        patientId: appointment.patientId?._id || appointment.patientId,
+        notes: consultationNotes,
+        diagnosis: diagnosis,
+      });
+      if (response.success) {
+        showSuccess('Consultation notes saved');
+        setShowConsultationNotes(false);
+        fetchAppointment();
+      } else {
+        showError(response.error?.message || 'Failed to save notes');
+      }
+    } catch (err) {
+      showError('Failed to save consultation notes');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fetchAppointment = async () => {
+    try {
+      const response = await apiClient.get(`/appointments/${params.id}`);
+      if (response.success && response.data) {
+        setAppointment(response.data);
+        if (response.data.clinicalNote) {
+          setConsultationNotes(response.data.clinicalNote.notes || '');
+          setDiagnosis(response.data.clinicalNote.diagnosis || '');
+        }
+      }
+    } catch (err) {
+      logger.error('Failed to fetch appointment:', err);
+    }
+  };
+
   if (loading) {
-    return <Loader fullScreen size='lg' text='Loading appointment details...' />;
+    return <Loader fullScreen size='lg' text={t('auth.loadingAppointmentDetails')} />;
   }
 
   if (error || !appointment) {
@@ -73,18 +192,12 @@ export default function AppointmentDetailsPage({ params }) {
         <div className='max-w-3xl mx-auto'>
           <Card>
             <div className='text-center py-12'>
-              <p className='text-lg font-semibold text-neutral-900 mb-2'>Appointment unavailable</p>
-              <p className='text-neutral-600 mb-6'>
-                {error || 'We could not find the appointment you were looking for.'}
+              <p className='text-lg font-semibold text-neutral-900 mb-2'>
+                {t('appointments.unavailable')}
               </p>
-              <Button
-                variant='secondary'
-                size='sm'
-                iconOnly
-                onClick={() => router.push('/appointments')}
-                title='Back to Appointments'
-              >
-                <FaChevronLeft />
+              <p className='text-neutral-600 mb-6'>{error || t('appointments.notFoundMessage')}</p>
+              <Button variant='secondary' size='md' onClick={() => router.push('/appointments')}>
+                {t('appointments.backToAppointments')}
               </Button>
             </div>
           </Card>
@@ -95,42 +208,125 @@ export default function AppointmentDetailsPage({ params }) {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        <div
-          className='mb-6 flex items-center justify-between flex-wrap gap-3'
-          style={{ paddingTop: '10px' }}
-        >
-          <div>
-            <button
-              onClick={() => router.back()}
-              className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200'
-              aria-label='Back'
+      <PageHeader
+        title='Appointment Details'
+        subtitle={`Appointment ID: ${appointment._id}`}
+        notifications={[]}
+        unreadCount={0}
+        actionButtons={
+          <>
+            <BackButton />
+            {isDoctor && (
+              <select
+                className='px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm'
+                value={appointment.status}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                disabled={saving}
+              >
+                <option value='scheduled'>Scheduled</option>
+                <option value='confirmed'>Confirmed</option>
+                <option value='arrived'>Arrived</option>
+                <option value='in_progress'>In Progress</option>
+                <option value='completed'>Completed</option>
+                <option value='cancelled'>Cancelled</option>
+                <option value='no_show'>No Show</option>
+              </select>
+            )}
+            <Tag
+              size='lg'
+              variant={
+                appointment.status === 'completed'
+                  ? 'success'
+                  : appointment.status === 'cancelled'
+                    ? 'danger'
+                    : 'default'
+              }
             >
-              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M15 19l-7-7 7-7'
-                />
-              </svg>
-            </button>
-            <h1 className='text-3xl font-bold text-neutral-900 mt-4'>Appointment Details</h1>
-            <p className='text-neutral-600'>Appointment ID: {appointment._id}</p>
-          </div>
-          <Tag
-            size='lg'
-            variant={
-              appointment.status === 'completed'
-                ? 'success'
-                : appointment.status === 'cancelled'
-                ? 'danger'
-                : 'default'
-            }
-          >
-            {appointment.status.replace(/_/g, ' ')}
-          </Tag>
-        </div>
+              {appointment.status.replace(/_/g, ' ')}
+            </Tag>
+          </>
+        }
+      />
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
+        {/* Quick Actions for Doctors */}
+        {isDoctor && (
+          <Card className='mb-6 p-4'>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-4'>Quick Actions</h3>
+            <div className='flex flex-wrap gap-3'>
+              {appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
+                <>
+                  <Button
+                    variant='primary'
+                    onClick={() => {
+                      handleStatusChange('in_progress');
+                      router.push(`/appointments/${params.id}?startConsultation=true`);
+                    }}
+                  >
+                    <PlayIcon className='icon icon-sm' />
+                    Start Consultation
+                  </Button>
+                  {appointment.isTelemedicine && (
+                    <Button
+                      variant='primary'
+                      onClick={() =>
+                        router.push(
+                          `/telemedicine/${appointment.telemedicineSessionId || appointment._id}`
+                        )
+                      }
+                    >
+                      <VideoIcon className='icon icon-sm' />
+                      Join Video Call
+                    </Button>
+                  )}
+                </>
+              )}
+              <Button
+                variant='secondary'
+                onClick={() =>
+                  router.push(`/patients/${appointment.patientId?._id || appointment.patientId}`)
+                }
+              >
+                <UserIcon className='icon icon-sm' />
+                View Patient History
+              </Button>
+              {appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
+                <>
+                  <Button
+                    variant='secondary'
+                    onClick={() => router.push(`/appointments/${params.id}/edit`)}
+                  >
+                    <CalendarIcon className='icon icon-sm' />
+                    Reschedule
+                  </Button>
+                  <Button
+                    variant='danger'
+                    onClick={() => {
+                      if (confirm('Are you sure you want to cancel this appointment?')) {
+                        handleStatusChange('cancelled');
+                      }
+                    }}
+                  >
+                    <XIcon className='icon icon-sm' />
+                    Cancel
+                  </Button>
+                </>
+              )}
+              {appointment.status === 'in_progress' && (
+                <Button
+                  variant='primary'
+                  onClick={() => {
+                    if (confirm('Mark this appointment as completed?')) {
+                      handleStatusChange('completed');
+                    }
+                  }}
+                >
+                  <CheckIcon className='icon icon-sm' />
+                  Mark as Completed
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
 
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
           <Card>
@@ -211,23 +407,82 @@ export default function AppointmentDetailsPage({ params }) {
           </Card>
         </div>
 
+        {/* Consultation Notes for Doctors */}
+        {isDoctor && (
+          <Card className='mb-6'>
+            <div className='flex items-center justify-between mb-4'>
+              <h3 className='text-lg font-semibold text-neutral-900'>Consultation Notes</h3>
+              <Button
+                variant='secondary'
+                size='sm'
+                onClick={() => setShowConsultationNotes(!showConsultationNotes)}
+              >
+                {showConsultationNotes ? 'Hide' : 'Add/Edit Notes'}
+              </Button>
+            </div>
+            {showConsultationNotes ? (
+              <div className='space-y-4'>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    Diagnosis
+                  </label>
+                  <Input
+                    type='text'
+                    value={diagnosis}
+                    onChange={(e) => setDiagnosis(e.target.value)}
+                    placeholder='Enter diagnosis...'
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    Clinical Notes
+                  </label>
+                  <textarea
+                    className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                    rows={6}
+                    value={consultationNotes}
+                    onChange={(e) => setConsultationNotes(e.target.value)}
+                    placeholder='Enter consultation notes, observations, treatment plan...'
+                  />
+                </div>
+                <div className='flex justify-end gap-3'>
+                  <Button variant='secondary' onClick={() => setShowConsultationNotes(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant='primary'
+                    size='md'
+                    onClick={handleSaveConsultationNotes}
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : 'Save Notes'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className='text-neutral-600'>
+                {consultationNotes ? (
+                  <div>
+                    {diagnosis && (
+                      <p className='mb-2'>
+                        <span className='font-semibold'>Diagnosis:</span> {diagnosis}
+                      </p>
+                    )}
+                    <p className='whitespace-pre-wrap'>{consultationNotes}</p>
+                  </div>
+                ) : (
+                  <p className='text-neutral-500 italic'>No consultation notes yet</p>
+                )}
+              </div>
+            )}
+          </Card>
+        )}
+
         {appointment.isTelemedicine && (
           <Card className='border-primary-200 bg-primary-100'>
             <div className='flex items-start gap-4'>
               <div className='p-3 bg-primary-100 rounded-full'>
-                <svg
-                  className='w-6 h-6 text-primary-600'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
-                  />
-                </svg>
+                <VideoIcon className='icon icon-md text-primary-600' />
               </div>
               <div>
                 <h3 className='text-lg font-semibold text-neutral-900'>Telemedicine Session</h3>

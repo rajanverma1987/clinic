@@ -1,6 +1,7 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -9,13 +10,17 @@ import { Tabs } from '@/components/ui/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { useParams, useRouter } from 'next/navigation';
+import { logger } from '@/lib/utils/logger';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaChevronLeft, FaEdit, FaPlus } from 'react-icons/fa';
+
+const PATIENT_TAB_IDS = ['overview', 'visits', 'prescriptions', 'invoices', 'lab-tests'];
 
 export default function PatientDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const [patient, setPatient] = useState(null);
@@ -24,7 +29,10 @@ export default function PatientDetailPage() {
   const [invoices, setInvoices] = useState([]);
   const [labTests, setLabTests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    tabFromUrl && PATIENT_TAB_IDS.includes(tabFromUrl) ? tabFromUrl : 'overview'
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
@@ -35,6 +43,17 @@ export default function PatientDetailPage() {
       fetchAllData();
     }
   }, [authLoading, user, params.id]);
+
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t && PATIENT_TAB_IDS.includes(t)) setActiveTab(t);
+  }, [searchParams]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    const base = pathname || `/patients/${params.id}`;
+    router.replace(base + '?tab=' + encodeURIComponent(tabId));
+  };
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -56,7 +75,7 @@ export default function PatientDetailPage() {
           setAppointments(aptData);
         }
       } catch (err) {
-        console.error('Failed to fetch appointments:', err);
+        logger.error('Failed to fetch appointments:', err);
       }
 
       // Fetch prescriptions
@@ -69,7 +88,7 @@ export default function PatientDetailPage() {
           setPrescriptions(presData);
         }
       } catch (err) {
-        console.error('Failed to fetch prescriptions:', err);
+        logger.error('Failed to fetch prescriptions:', err);
       }
 
       // Fetch invoices
@@ -82,7 +101,7 @@ export default function PatientDetailPage() {
           setInvoices(invData);
         }
       } catch (err) {
-        console.error('Failed to fetch invoices:', err);
+        logger.error('Failed to fetch invoices:', err);
       }
 
       // Fetch lab tests (from prescriptions with lab items)
@@ -97,7 +116,7 @@ export default function PatientDetailPage() {
         }));
       setLabTests(labItems);
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      logger.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -164,7 +183,7 @@ export default function PatientDetailPage() {
         setError(response.error?.message || 'Failed to update patient');
       }
     } catch (error) {
-      console.error('Failed to update patient:', error);
+      logger.error('Failed to update patient:', error);
       setError(error.message || 'Failed to update patient');
     } finally {
       setSaving(false);
@@ -193,14 +212,8 @@ export default function PatientDetailPage() {
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
             <p className='text-status-error mb-4'>Patient not found</p>
-            <Button
-              variant='secondary'
-              size='sm'
-              iconOnly
-              onClick={() => router.push('/patients')}
-              title='Back to Patients'
-            >
-              <FaChevronLeft />
+            <Button variant='primary' size='md' onClick={() => router.push('/patients')}>
+              Back to Patients
             </Button>
           </div>
         </div>
@@ -218,68 +231,50 @@ export default function PatientDetailPage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        <div className='mb-6' style={{ paddingTop: '10px' }}>
-          <Button
-            variant='secondary'
-            size='sm'
-            iconOnly
-            onClick={() => router.push('/patients')}
-            className='mb-4'
-            title='Back to Patients'
-          >
-            <FaChevronLeft />
-          </Button>
-          <div className='flex items-center justify-between'>
-            <div>
-              <h1 className='text-h1 text-neutral-900'>
-                {patient.firstName} {patient.lastName}
-              </h1>
-              <p className='text-body-md text-neutral-600 mt-2'>Patient ID: {patient.patientId}</p>
-            </div>
-            <div className='flex gap-2'>
-              {!isEditing ? (
-                <>
-                  <Button
-                    variant='secondary'
-                    size='sm'
-                    iconOnly
-                    onClick={() => setIsEditing(true)}
-                    title='Edit Patient'
-                  >
-                    <FaEdit />
-                  </Button>
-                  <Button
-                    variant='primary'
-                    size='sm'
-                    iconOnly
-                    onClick={() => router.push(`/appointments/new?patientId=${params.id}`)}
-                    title='New Appointment'
-                  >
-                    <FaPlus />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant='secondary'
-                    onClick={() => {
-                      setIsEditing(false);
-                      setFormData(patient || {});
-                      setError('');
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSave} isLoading={saving}>
-                    Save Changes
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
+      <PageHeader
+        title={`${patient.firstName} ${patient.lastName}`}
+        subtitle={`Patient ID: ${patient.patientId}`}
+        notifications={[]}
+        unreadCount={0}
+        actionButtons={
+          <>
+            <Button variant='secondary' size='md' onClick={() => router.push('/patients')}>
+              ← Back to Patients
+            </Button>
+            {!isEditing ? (
+              <>
+                <Button variant='primary' size='md' onClick={() => setIsEditing(true)}>
+                  Edit Patient
+                </Button>
+                <Button
+                  variant='secondary'
+                  size='md'
+                  onClick={() => router.push(`/appointments/new?patientId=${params.id}`)}
+                >
+                  + New Appointment
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant='secondary'
+                  onClick={() => {
+                    setIsEditing(false);
+                    setFormData(patient || {});
+                    setError('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button variant='primary' onClick={handleSave} isLoading={saving}>
+                  Save Changes
+                </Button>
+              </>
+            )}
+          </>
+        }
+      />
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
         {error && (
           <div className='mb-6 p-4 bg-status-error/10 border border-status-error/30 text-status-error rounded-lg'>
             {error}
@@ -287,7 +282,7 @@ export default function PatientDetailPage() {
         )}
 
         <div>
-          <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+          <Tabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
 
           <div className='mt-6'>
             {activeTab === 'overview' && (
@@ -452,7 +447,7 @@ export default function PatientDetailPage() {
                       {isEditing ? (
                         <div className='space-y-2'>
                           <Input
-                            placeholder='Street'
+                            placeholder={t('patients.streetPlaceholder')}
                             value={formData.address?.street || ''}
                             onChange={(e) =>
                               setFormData({
@@ -463,7 +458,7 @@ export default function PatientDetailPage() {
                           />
                           <div className='grid grid-cols-2 gap-2'>
                             <Input
-                              placeholder='City'
+                              placeholder={t('patients.cityPlaceholder')}
                               value={formData.address?.city || ''}
                               onChange={(e) =>
                                 setFormData({
@@ -473,7 +468,7 @@ export default function PatientDetailPage() {
                               }
                             />
                             <Input
-                              placeholder='State'
+                              placeholder={t('patients.statePlaceholder')}
                               value={formData.address?.state || ''}
                               onChange={(e) =>
                                 setFormData({
@@ -484,7 +479,7 @@ export default function PatientDetailPage() {
                             />
                           </div>
                           <Input
-                            placeholder='ZIP Code'
+                            placeholder={t('patients.zipPlaceholder')}
                             value={formData.address?.zipCode || ''}
                             onChange={(e) =>
                               setFormData({
@@ -595,8 +590,8 @@ export default function PatientDetailPage() {
                       </div>
                       <div className='text-sm text-neutral-600'>Total Visits</div>
                     </div>
-                    <div className='text-center p-4 bg-secondary-100 rounded-lg'>
-                      <div className='text-2xl font-bold text-secondary-600'>
+                    <div className='text-center p-4 bg-primary-100 rounded-lg'>
+                      <div className='text-2xl font-bold text-primary-700'>
                         {prescriptions.length}
                       </div>
                       <div className='text-sm text-neutral-600'>Prescriptions</div>
@@ -661,12 +656,12 @@ export default function PatientDetailPage() {
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 apt.status === 'completed'
-                                  ? 'bg-secondary-100 text-secondary-700'
-                                  : apt.status === 'in_progress'
                                   ? 'bg-primary-100 text-primary-700'
-                                  : apt.status === 'cancelled'
-                                  ? 'bg-status-error/10 text-status-error'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                  : apt.status === 'in_progress'
+                                    ? 'bg-primary-100 text-primary-700'
+                                    : apt.status === 'cancelled'
+                                      ? 'bg-status-error/10 text-status-error'
+                                      : 'bg-neutral-100 text-neutral-700'
                               }`}
                             >
                               {apt.status}
@@ -741,8 +736,8 @@ export default function PatientDetailPage() {
                                 pres.status === 'active'
                                   ? 'bg-secondary-100 text-secondary-700'
                                   : pres.status === 'dispensed'
-                                  ? 'bg-primary-100 text-primary-700'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                    ? 'bg-primary-100 text-primary-700'
+                                    : 'bg-neutral-100 text-neutral-700'
                               }`}
                             >
                               {pres.status}
@@ -828,10 +823,10 @@ export default function PatientDetailPage() {
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 inv.status === 'paid'
-                                  ? 'bg-secondary-100 text-secondary-700'
+                                  ? 'bg-primary-100 text-primary-700'
                                   : inv.status === 'pending'
-                                  ? 'bg-status-warning/10 text-status-warning'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                    ? 'bg-status-warning/10 text-status-warning'
+                                    : 'bg-neutral-100 text-neutral-700'
                               }`}
                             >
                               {inv.status}
@@ -900,10 +895,10 @@ export default function PatientDetailPage() {
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 test.status === 'completed'
-                                  ? 'bg-secondary-100 text-secondary-700'
+                                  ? 'bg-primary-100 text-primary-700'
                                   : test.status === 'pending'
-                                  ? 'bg-status-warning/10 text-status-warning'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                    ? 'bg-status-warning/10 text-status-warning'
+                                    : 'bg-neutral-100 text-neutral-700'
                               }`}
                             >
                               {test.status}

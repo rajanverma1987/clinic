@@ -2,6 +2,8 @@
 
 import { InvoicePrintPreview } from '@/components/invoices/InvoicePrintPreview';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
@@ -11,9 +13,9 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaChevronLeft, FaPrint } from 'react-icons/fa';
 
 export default function InvoiceDetailPage() {
   const router = useRouter();
@@ -40,7 +42,7 @@ export default function InvoiceDetailPage() {
         setInvoice(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch invoice:', error);
+      logger.error('Failed to fetch invoice:', error);
     } finally {
       setLoading(false);
     }
@@ -101,35 +103,19 @@ export default function InvoiceDetailPage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        <div className='mb-8' style={{ paddingTop: '10px' }}>
-          <button
-            onClick={() => router.back()}
-            className='flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 mb-4'
-            style={{ marginLeft: '10px' }}
-            aria-label={t('common.back')}
-          >
-            <FaChevronLeft className='w-5 h-5' />
-          </button>
-          <div className='flex items-center justify-between'>
-            <div>
-              <h1 className='text-3xl font-bold text-neutral-900'>
-                Invoice {invoice.invoiceNumber}
-              </h1>
-              <p className='text-neutral-600 mt-2'>Invoice Details</p>
-            </div>
-            <Button
-              variant='secondary'
-              size='sm'
-              iconOnly
-              onClick={() => setShowPrintPreview(true)}
-              title='Print Invoice'
-            >
-              <FaPrint />
-            </Button>
-          </div>
-        </div>
-
+      <PageHeader
+        title={`Invoice ${invoice.invoiceNumber}`}
+        subtitle='Invoice Details'
+        notifications={[]}
+        unreadCount={0}
+        actionButtons={
+          <>
+            <BackButton />
+            <Button onClick={() => setShowPrintPreview(true)}>Print Invoice</Button>
+          </>
+        }
+      />
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           <div className='lg:col-span-2 space-y-6'>
             {/* Invoice Information */}

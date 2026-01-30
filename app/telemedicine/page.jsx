@@ -1,20 +1,22 @@
 'use client';
 
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaVideo, FaCalendar } from 'react-icons/fa';
 
 export default function TelemedicinePage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user } = useAuth();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,7 @@ export default function TelemedicinePage() {
         setSessions(Array.isArray(response.data) ? response.data : []);
       }
     } catch (error) {
-      console.error('Failed to fetch sessions:', error);
+      logger.error('Failed to fetch sessions:', error);
       setSessions([]);
     } finally {
       setLoading(false);
@@ -56,37 +58,37 @@ export default function TelemedicinePage() {
 
   const columns = [
     {
-      header: 'Session ID',
+      header: t('telemedicine.sessionId'),
       accessor: (row) => <span className='font-mono text-sm'>{row.sessionId}</span>,
     },
     {
-      header: 'Patient',
+      header: t('telemedicine.patient'),
       accessor: (row) =>
         `${row.patientId.firstName} ${row.patientId.lastName} (${row.patientId.patientId})`,
     },
     {
-      header: 'Doctor',
+      header: t('telemedicine.doctor'),
       accessor: (row) => `Dr. ${row.doctorId.firstName} ${row.doctorId.lastName}`,
     },
     {
-      header: 'Type',
+      header: t('telemedicine.type'),
       accessor: (row) => <Tag variant='default'>{row.sessionType}</Tag>,
     },
     {
-      header: 'Scheduled Time',
+      header: t('telemedicine.scheduledTime'),
       accessor: (row) => new Date(row.scheduledStartTime).toLocaleString(),
     },
     {
-      header: 'Status',
+      header: t('telemedicine.status'),
       accessor: (row) => <Tag variant={getStatusColor(row.status)}>{row.status}</Tag>,
     },
     {
-      header: 'Actions',
+      header: t('common.actions'),
       accessor: (row) => (
         <div className='flex gap-2'>
           {row.status === 'SCHEDULED' || row.status === 'IN_PROGRESS' ? (
             <Button size='sm' onClick={() => handleJoinSession(row._id)}>
-              Join Session
+              {t('telemedicine.joinSession')}
             </Button>
           ) : (
             <Button
@@ -94,7 +96,7 @@ export default function TelemedicinePage() {
               size='sm'
               onClick={() => router.push(`/telemedicine/${row._id}/summary`)}
             >
-              View Summary
+              {t('telemedicine.viewSummary')}
             </Button>
           )}
         </div>
@@ -108,16 +110,18 @@ export default function TelemedicinePage() {
 
   return (
     <Layout>
+      <PageHeader
+        title={t('telemedicine.title')}
+        subtitle={t('telemedicine.subtitle')}
+        notifications={[]}
+        unreadCount={0}
+        actionButton={
+          <Button onClick={() => router.push('/appointments/new')} variant='primary' size='md'>
+            {t('telemedicine.bookAppointment')}
+          </Button>
+        }
+      />
       <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title='Telemedicine'
-          subtitle='Virtual consultations and video calls'
-          actionButton={
-            <Button onClick={() => router.push('/appointments/new')} variant='primary' size='md'>
-              + Book Appointment
-            </Button>
-          }
-        />
 
         {/* Quick Stats */}
         <div className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-8'>
@@ -125,7 +129,7 @@ export default function TelemedicinePage() {
             <div className='p-6'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <p className='text-sm text-neutral-600'>Today&apos;s Sessions</p>
+                  <p className='text-sm text-neutral-600'>{t('telemedicine.todaySessions')}</p>
                   <p className='text-2xl font-bold text-neutral-900 mt-1'>
                     {
                       sessions.filter(
@@ -137,7 +141,19 @@ export default function TelemedicinePage() {
                   </p>
                 </div>
                 <div className='w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center'>
-                  <FaVideo className='w-6 h-6 text-primary-600' />
+                  <svg
+                    className='icon icon-md text-primary-600'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+                    />
+                  </svg>
                 </div>
               </div>
             </div>
@@ -147,7 +163,7 @@ export default function TelemedicinePage() {
             <div className='p-6'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <p className='text-sm text-neutral-600'>In Progress</p>
+                  <p className='text-sm text-neutral-600'>{t('telemedicine.inProgress')}</p>
                   <p className='text-2xl font-bold text-secondary-600 mt-1'>
                     {sessions.filter((s) => s.status === 'IN_PROGRESS').length}
                   </p>
@@ -163,13 +179,25 @@ export default function TelemedicinePage() {
             <div className='p-6'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <p className='text-sm text-neutral-600'>Scheduled</p>
+                  <p className='text-sm text-neutral-600'>{t('telemedicine.scheduled')}</p>
                   <p className='text-2xl font-bold text-neutral-900 mt-1'>
                     {sessions.filter((s) => s.status === 'SCHEDULED').length}
                   </p>
                 </div>
                 <div className='w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center'>
-                  <FaCalendar className='w-6 h-6 text-primary-600' />
+                  <svg
+                    className='icon icon-md text-primary-600'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+                    />
+                  </svg>
                 </div>
               </div>
             </div>
@@ -179,7 +207,7 @@ export default function TelemedicinePage() {
             <div className='p-6'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <p className='text-sm text-neutral-600'>Completed</p>
+                  <p className='text-sm text-neutral-600'>{t('telemedicine.completed')}</p>
                   <p className='text-2xl font-bold text-neutral-900 mt-1'>
                     {sessions.filter((s) => s.status === 'COMPLETED').length}
                   </p>
@@ -205,15 +233,17 @@ export default function TelemedicinePage() {
         </div>
 
         {/* Sessions List */}
+        <Card>
           <div className='p-4 border-b border-neutral-200'>
-            <h2 className='text-lg font-semibold'>All Sessions</h2>
+            <h2 className='text-lg font-semibold'>{t('telemedicine.allSessions')}</h2>
           </div>
 
           <Table
             data={sessions}
             columns={columns}
-            emptyMessage='No telemedicine sessions found. Schedule your first video consultation!'
+            emptyMessage={t('telemedicine.noSessionsFound')}
           />
+        </Card>
 
         {/* Setup Notice if no sessions */}
         {sessions.length === 0 && !loading && (

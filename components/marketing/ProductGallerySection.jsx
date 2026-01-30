@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
 
 export function ProductGallerySection() {
@@ -291,7 +292,7 @@ export function ProductGallerySection() {
                     <div key={index} className='flex items-start gap-3'>
                       <div className='flex-shrink-0 mt-1'>
                         <svg
-                          className='w-5 h-5 text-primary-600'
+                          className='icon icon-sm text-primary-600'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -318,14 +319,12 @@ export function ProductGallerySection() {
                 </div>
 
                 <div className='mt-8 pt-6 border-t border-neutral-200'>
-                  <button
-                    className='bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors duration-200'
-                    style={{
-                      fontSize: '16px',
-                    }}
+                  <Button
+                    variant='primary'
+                    size='lg'
                   >
                     Explore {features[activeTab].title}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

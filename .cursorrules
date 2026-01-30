@@ -1,6 +1,8 @@
 version: 1
 
 rules:
+
+
   - id: architecture
     description: "Base architecture rules."
     patterns:
@@ -107,22 +109,26 @@ rules:
       - "Keep region-specific logic isolated behind strategy interfaces."
       - "All new modules must support multi-clinic and multi-region out of the box."
 
-  - id: ui-design
-    description: "UI design rules."
+  - id: documentation-and-quality
+    description: "Important docs, enterprise comments, and deep thinking."
     patterns:
-      - "app/**"
-      - "components/**"
+      - "**/*.js"
+      - "**/*.jsx"
+      - "CursorMD/**"
     actions:
-      - "Use the latest UI design trends."
-      - Use the latest UI design trends. make sure the UI is responsive and mobile friendly."
-      - "use react-icons for icons."
-final rule 
+      - "Always follow CursorMD/New: read and adhere to all files in CursorMD/New (clinic-complete-specification.md, clinic-dashboard-architecture.mermaid, database-schema.mermaid, realtime-caching-strategy.md) before implementing or changing features, permissions, data models, APIs, or real-time behavior."
+      - "Always create or update important MD files in CursorMD for significant features, architecture changes, decisions, and specs; keep them accurate and discoverable."
+      - "Comments in code must be proper and enterprise-level: explain why and context, not just what; use JSDoc for public APIs; avoid noise and redundant comments."
+      - "Always think deep, not quick: consider edge cases, security, performance, multi-tenant and i18n impact, and long-term maintainability before implementing."
+
+
+final rule
 
 - id: final-rules
   description: "always compile and fix the error, after fixing, kill the npm run dev process and restart it"
   validatoins Error : in Resoonse always return what is the actual error and what is the expected error and what is the solution to fix the error.
   keep in mind the multi language support when adding new element on the FE.
-  create any .MD file in CursorMD folder to document the project.
+  Never create unnecessary documentation. Only create or update .MD files in CursorMD when the user explicitly asks for documentation.
 
   No Typescript code should be written, only JavaScript.
   dont compile the code unless i ask you to compile it.

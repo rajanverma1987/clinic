@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
+import { useI18n } from '@/contexts/I18nContext';
+import { SettingsTabHeader } from './SettingsTabHeader';
 
 export function ComplianceTab({
   isClinicAdmin,
@@ -12,6 +14,8 @@ export function ComplianceTab({
   saving,
   onSave,
 }) {
+  const { t } = useI18n();
+
   if (!isClinicAdmin) {
     return (
       <Card className='text-center py-12'>
@@ -31,10 +35,10 @@ export function ComplianceTab({
               />
             </svg>
           </div>
-          <h3 className='text-lg font-semibold text-neutral-900 mb-1'>Access Restricted</h3>
-          <p className='text-sm text-neutral-600'>
-            Only clinic administrators can manage compliance settings.
-          </p>
+          <h3 className='text-lg font-semibold text-neutral-900 mb-1'>
+            {t('settings.accessRestricted')}
+          </h3>
+          <p className='text-sm text-neutral-600'>{t('settings.onlyClinicAdminCompliance')}</p>
         </div>
       </Card>
     );
@@ -71,20 +75,22 @@ export function ComplianceTab({
   ];
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave();
-      }}
-      className='space-y-4'
-    >
+    <div className='space-y-3 text-left'>
+      <SettingsTabHeader title={t('settings.compliance')} />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave();
+        }}
+        className='space-y-3'
+      >
       {/* Compliance Standards */}
       <Card>
-        <div className='p-5'>
-          <div className='flex items-center gap-2 mb-5'>
+        <div className='p-4'>
+          <div className='flex items-center gap-2 mb-3'>
             <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
               <svg
-                className='w-4 h-4 text-primary-600'
+                className='icon icon-xs text-primary-600'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -117,7 +123,7 @@ export function ComplianceTab({
                     }`}
                   >
                     <svg
-                      className={`w-4 h-4 ${
+                      className={`icon icon-xs ${
                         complianceForm[option.key] ? 'text-primary-600' : 'text-neutral-400'
                       }`}
                       fill='none'
@@ -160,7 +166,7 @@ export function ComplianceTab({
           <div className='flex items-center gap-2 mb-5'>
             <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
               <svg
-                className='w-4 h-4 text-primary-600'
+                className='icon icon-xs text-primary-600'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -204,13 +210,7 @@ export function ComplianceTab({
           </div>
         </div>
       </Card>
-
-      {/* Action Buttons */}
-      <div className='flex justify-end gap-3 pt-2'>
-        <Button type='submit' isLoading={saving} disabled={saving}>
-          Save Changes
-        </Button>
-      </div>
     </form>
+    </div>
   );
 }

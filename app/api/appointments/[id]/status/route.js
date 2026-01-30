@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
 import { changeStatusSchema } from '@/lib/validations/appointment';
 import { changeAppointmentStatus, cancelAppointment } from '@/services/appointment.service';
-import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/api-response';
+import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
 import { AppointmentStatus } from '@/models/Appointment';
 
 /**
@@ -20,11 +24,7 @@ async function putHandler(
     const validationResult = changeStatusSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        errorResponse(
-          'Validation failed',
-          'VALIDATION_ERROR',
-          validationResult.error.errors
-        ),
+        validationErrorResponse(validationResult.error.errors),
         { status: 400 }
       );
     }
@@ -89,17 +89,15 @@ async function putHandler(
   }
 }
 
-export async function PUT(
-  req,
-  context
-) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
-
-  const params = await context.params;
-  const authenticatedReq = req;
-  authenticatedReq.user = authResult.user;
-
-  return putHandler(authenticatedReq, authResult.user, { params });
-}
+// Apply middleware stack
+export const PUT = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.APPOINTMENT, ACTIONS.UPDATE)(async (req, user, context) => {
+        const params = await context.params;
+        return putHandler(req, user, { params });
+      })
+    )
+  )
+);
 

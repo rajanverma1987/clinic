@@ -63,7 +63,7 @@ export function PremiumFeatureGuard({
           <div className='bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6'>
             <div className='flex items-start gap-3'>
               <svg
-                className='w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5'
+                className='icon icon-sm text-primary-600 flex-shrink-0 mt-0.5'
                 fill='currentColor'
                 viewBox='0 0 20 20'
               >
@@ -86,7 +86,7 @@ export function PremiumFeatureGuard({
               className='whitespace-nowrap'
             >
               <svg
-                className='w-4 h-4 mr-2'
+                className='icon icon-xs mr-2'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -107,7 +107,7 @@ export function PremiumFeatureGuard({
               className='whitespace-nowrap'
             >
               <svg
-                className='w-4 h-4 mr-2'
+                className='icon icon-xs mr-2'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'

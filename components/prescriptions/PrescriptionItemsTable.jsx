@@ -2,6 +2,8 @@
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useI18n } from '@/contexts/I18nContext';
+import { MedicineSearchInput } from './MedicineSearchInput';
 
 export function PrescriptionItemsTable({
   items,
@@ -13,6 +15,7 @@ export function PrescriptionItemsTable({
   onAdd,
   fieldErrors = {},
 }) {
+  const { t } = useI18n();
   const getItemError = (index, field = '') => {
     const key = field ? `item_${index}_${field}` : `item_${index}`;
     return fieldErrors[key];
@@ -29,6 +32,8 @@ export function PrescriptionItemsTable({
             <th>Frequency</th>
             <th>Duration</th>
             <th>Qty</th>
+            <th>{t('prescriptions.route')}</th>
+            <th>{t('prescriptions.refills')}</th>
             <th>Instructions</th>
             <th>Actions</th>
           </tr>
@@ -114,17 +119,19 @@ export function PrescriptionItemsTable({
                 <td>
                   <div>
                     {item.itemType === 'drug' && (
-                      <select
-                        value={item.drugId ? String(item.drugId).trim() : ''}
-                        onChange={(e) => {
-                          const selectedValue = String(e.target.value).trim();
-                          const drug = drugs.find((d) => String(d._id).trim() === selectedValue);
+                      <MedicineSearchInput
+                        drugs={drugs}
+                        value={item.drugId || ''}
+                        onChange={(drugId) => {
+                          const drug = drugs.find(
+                            (d) => String(d._id).trim() === String(drugId).trim()
+                          );
 
                           // Use onUpdateItem to update all fields at once if available
                           if (onUpdateItem) {
                             const updatedItem = {
                               ...item,
-                              drugId: selectedValue,
+                              drugId: drugId,
                               drugName: drug ? drug.name : '',
                               form: drug ? drug.form || '' : '',
                               strength: drug ? drug.strength || '' : '',
@@ -132,7 +139,7 @@ export function PrescriptionItemsTable({
                             onUpdateItem(index, updatedItem);
                           } else {
                             // Fallback: update fields individually
-                            onUpdate(index, 'drugId', selectedValue);
+                            onUpdate(index, 'drugId', drugId);
                             if (drug) {
                               onUpdate(index, 'drugName', drug.name);
                               onUpdate(index, 'form', drug.form || '');
@@ -140,23 +147,23 @@ export function PrescriptionItemsTable({
                             }
                           }
                         }}
+                        onSelect={(drug) => {
+                          if (drug && onUpdateItem) {
+                            const updatedItem = {
+                              ...item,
+                              drugId: drug._id,
+                              drugName: drug.name,
+                              form: drug.form || '',
+                              strength: drug.strength || '',
+                            };
+                            onUpdateItem(index, updatedItem);
+                          }
+                        }}
+                        placeholder='Search medicine...'
                         className={`prescription-form-input ${
                           itemError ? 'border-status-error' : ''
                         }`}
-                        style={{
-                          fontSize: 'var(--text-body-xs)',
-                          padding: 'var(--space-2) var(--space-3)',
-                        }}
-                        required
-                      >
-                        <option value=''>Select drug</option>
-                        {drugs.map((drug) => (
-                          <option key={drug._id} value={String(drug._id)}>
-                            {drug.name} {drug.strength ? `(${drug.strength})` : ''}{' '}
-                            {drug.form ? `[${drug.form}]` : ''}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     )}
                     {item.itemType === 'lab' && (
                       <select
@@ -306,6 +313,57 @@ export function PrescriptionItemsTable({
                         </div>
                       )}
                     </div>
+                  ) : (
+                    <span style={{ color: 'var(--color-neutral-400)' }}>-</span>
+                  )}
+                </td>
+                <td>
+                  {item.itemType === 'drug' ? (
+                    <select
+                      value={item.route || 'oral'}
+                      onChange={(e) => onUpdate(index, 'route', e.target.value)}
+                      className='prescription-form-input'
+                      style={{
+                        fontSize: 'var(--text-body-xs)',
+                        padding: 'var(--space-2) var(--space-3)',
+                      }}
+                    >
+                      <option value='oral'>{t('prescriptions.routeOral')}</option>
+                      <option value='topical'>{t('prescriptions.routeTopical')}</option>
+                      <option value='IV'>{t('prescriptions.routeIV')}</option>
+                      <option value='IM'>{t('prescriptions.routeIM')}</option>
+                      <option value='sublingual'>{t('prescriptions.routeSublingual')}</option>
+                      <option value='inhalation'>{t('prescriptions.routeInhalation')}</option>
+                    </select>
+                  ) : item.itemType === 'lab' ? (
+                    <select
+                      value={item.priority || 'routine'}
+                      onChange={(e) => onUpdate(index, 'priority', e.target.value)}
+                      className='prescription-form-input'
+                      style={{
+                        fontSize: 'var(--text-body-xs)',
+                        padding: 'var(--space-2) var(--space-3)',
+                      }}
+                    >
+                      <option value='routine'>{t('prescriptions.priorityRoutine')}</option>
+                      <option value='urgent'>{t('prescriptions.priorityUrgent')}</option>
+                      <option value='stat'>{t('prescriptions.priorityStat')}</option>
+                    </select>
+                  ) : (
+                    <span style={{ color: 'var(--color-neutral-400)' }}>-</span>
+                  )}
+                </td>
+                <td>
+                  {item.itemType === 'drug' ? (
+                    <Input
+                      type='number'
+                      min='0'
+                      value={item.refills != null ? item.refills : 0}
+                      onChange={(e) =>
+                        onUpdate(index, 'refills', parseInt(e.target.value, 10) || 0)
+                      }
+                      className='text-xs w-16'
+                    />
                   ) : (
                     <span style={{ color: 'var(--color-neutral-400)' }}>-</span>
                   )}

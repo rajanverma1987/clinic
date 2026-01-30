@@ -1,17 +1,18 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Loader } from '@/components/ui/Loader';
 import { Button } from '@/components/ui/Button';
+import { Tabs } from '@/components/ui/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api/client';
-import { FaEye } from 'react-icons/fa';
 
+import { logger } from '@/lib/utils/logger';
 export default function LotsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -47,7 +48,7 @@ export default function LotsPage() {
         setLots(response.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch lots:', error);
+      logger.error('Failed to fetch lots:', error);
       setLots([]);
     } finally {
       setLoading(false);
@@ -103,35 +104,24 @@ export default function LotsPage() {
 
   return (
     <Layout>
-      <div style={{ padding: '0 10px' }}>
-        <DashboardHeader
-          title='Inventory Lots'
-          subtitle='Manage and track inventory batches'
-        />
-
-        {/* Filter Tabs */}
-        <div className='flex gap-2 mb-6' style={{ marginTop: 'var(--space-6)' }}>
-          <Button
-            variant={filter === 'all' ? 'primary' : 'outline'}
-            size='sm'
-            onClick={() => setFilter('all')}
-          >
-            All Lots ({lots.length})
-          </Button>
-          <Button
-            variant={filter === 'expiringSoon' ? 'primary' : 'outline'}
-            size='sm'
-            onClick={() => setFilter('expiringSoon')}
-          >
-            Expiring Soon ({expiringSoonCount})
-          </Button>
-          <Button
-            variant={filter === 'expired' ? 'primary' : 'outline'}
-            size='sm'
-            onClick={() => setFilter('expired')}
-          >
-            Expired ({expiredCount})
-          </Button>
+      <PageHeader
+        title={t('inventory.inventoryLots')}
+        subtitle={t('inventory.inventoryLotsSubtitle')}
+        notifications={[]}
+        unreadCount={0}
+      />
+      <div className='max-w-7xl w-full' style={{ padding: '0 10px' }}>
+        {/* Sub-tabs: underline style, not buttons */}
+        <div className='mb-6' style={{ marginTop: 'var(--space-6)' }}>
+          <Tabs
+            tabs={[
+              { id: 'all', label: 'All Lots', count: lots.length },
+              { id: 'expiringSoon', label: 'Expiring Soon', count: expiringSoonCount },
+              { id: 'expired', label: 'Expired', count: expiredCount },
+            ]}
+            activeTab={filter}
+            onChange={setFilter}
+          />
         </div>
 
         {/* Lots Table */}
@@ -197,13 +187,11 @@ export default function LotsPage() {
                       <td className='px-4 py-3'>{getStatusBadge(lot)}</td>
                       <td className='px-4 py-3'>
                         <Button
-                          variant='outline'
+                          variant='secondary'
                           size='sm'
-                          iconOnly
                           onClick={() => router.push(`/inventory/items/${lot.itemId}`)}
-                          title='View Item'
                         >
-                          <FaEye />
+                          View Item
                         </Button>
                       </td>
                     </tr>

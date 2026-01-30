@@ -1,7 +1,6 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -13,6 +12,7 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -89,14 +89,14 @@ export default function AdminSubscriptionsPage() {
       if (response.success) {
         // Ensure response.data is an array
         const plansData = Array.isArray(response.data) ? response.data : [];
-        console.log('Fetched plans:', plansData.length);
+        logger.debug('Fetched plans', { count: plansData.length });
         setPlans(plansData);
       } else {
-        console.error('API response error:', response.error);
+        logger.warn('API response error', { error: response.error });
         setPlans([]);
       }
     } catch (error) {
-      console.error('Failed to fetch plans:', error);
+      logger.error('Failed to fetch plans', error);
       setPlans([]);
     } finally {
       setLoading(false);
@@ -151,7 +151,7 @@ export default function AdminSubscriptionsPage() {
         alert(`PayPal plan created successfully!\nPlan ID: ${paypalPlanId}`);
       }
     } catch (error) {
-      console.error('Failed to create PayPal plan:', error);
+      logger.error('Failed to create PayPal plan', error);
       alert(error.message || 'Failed to create PayPal plan. Check PayPal credentials.');
     } finally {
       setCreatingPayPalPlan(false);
@@ -211,7 +211,7 @@ export default function AdminSubscriptionsPage() {
         fetchPlans();
       }
     } catch (error) {
-      console.error('Failed to save plan:', error);
+      logger.error('Failed to save plan', error);
       alert(error.message || `Failed to ${editingPlanId ? 'update' : 'create'} subscription plan`);
     } finally {
       setSubmitting(false);
@@ -338,260 +338,264 @@ export default function AdminSubscriptionsPage() {
   }
 
   return (
-    <Layout>
+    <Layout
+      title='Subscription Plans'
+      subtitle='Manage subscription plans for clients'
+      actionButtons={[
+        <Button key='refresh' variant='secondary' onClick={() => fetchPlans()}>
+          Refresh
+        </Button>,
+        <Button
+          key='toggle'
+          onClick={() => {
+            if (showForm) {
+              handleCancel();
+            } else {
+              setShowForm(true);
+              setEditingPlanId(null);
+            }
+          }}
+        >
+          {showForm ? 'Cancel' : '+ Create Plan'}
+        </Button>,
+      ]}
+    >
       <div style={{ padding: '0 10px' }}>
-        <PageHeader
-          title='Subscription Plans'
-          description='Manage subscription plans for clients'
-          actionButtons={[
-            <Button key='refresh' variant='secondary' onClick={() => fetchPlans()}>
-              Refresh
-            </Button>,
-            <Button
-              key='toggle'
-              onClick={() => {
-                if (showForm) {
-                  handleCancel();
-                } else {
-                  setShowForm(true);
-                  setEditingPlanId(null);
-                }
-              }}
-            >
-              {showForm ? 'Cancel' : '+ Create Plan'}
-            </Button>,
-          ]}
-        />
+        {showForm && (
+          <Card className='mb-6'>
+            <form onSubmit={handleSubmit} className='space-y-6' noValidate>
+              <h2 className='text-xl font-semibold mb-4'>
+                {editingPlanId ? 'Edit Subscription Plan' : 'Create Subscription Plan'}
+              </h2>
 
-      {showForm && (
-        <Card className='mb-6'>
-          <form onSubmit={handleSubmit} className='space-y-6' noValidate>
-            <h2 className='text-xl font-semibold mb-4'>
-              {editingPlanId ? 'Edit Subscription Plan' : 'Create Subscription Plan'}
-            </h2>
-
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-              <Input
-                label='Plan Name'
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-
-              <Input
-                label='Price (in dollars)'
-                type='number'
-                step='0.01'
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                required
-              />
-
-              <Select
-                label='Currency'
-                value={formData.currency}
-                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                options={[
-                  { value: 'USD', label: 'USD' },
-                  { value: 'EUR', label: 'EUR' },
-                  { value: 'GBP', label: 'GBP' },
-                  { value: 'INR', label: 'INR' },
-                ]}
-                required
-              />
-
-              <Select
-                label='Billing Cycle'
-                value={formData.billingCycle}
-                onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value })}
-                options={[
-                  { value: 'MONTHLY', label: 'Monthly' },
-                  { value: 'YEARLY', label: 'Yearly' },
-                ]}
-                required
-              />
-            </div>
-
-            <div className='md:col-span-2'>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                PayPal Plan ID (optional - for payment integration)
-              </label>
-              <div className='flex gap-2'>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                 <Input
-                  value={formData.paypalPlanId}
-                  onChange={(e) => setFormData({ ...formData, paypalPlanId: e.target.value })}
-                  placeholder='e.g., P-7L918936KP7498103NEXRFNY'
-                  className='flex-1'
+                  label='Plan Name'
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
                 />
-                <Button
-                  type='button'
-                  variant='secondary'
-                  onClick={handleCreatePayPalPlan}
-                  disabled={
-                    !formData.name ||
-                    !formData.price ||
-                    parseFloat(formData.price) <= 0 ||
-                    creatingPayPalPlan
-                  }
-                  isLoading={creatingPayPalPlan}
-                  title='Create PayPal billing plan automatically'
-                >
-                  Create PayPal Plan
-                </Button>
+
+                <Input
+                  label='Price (in dollars)'
+                  type='number'
+                  step='0.01'
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  required
+                />
+
+                <Select
+                  label='Currency'
+                  value={formData.currency}
+                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                  options={[
+                    { value: 'USD', label: 'USD' },
+                    { value: 'EUR', label: 'EUR' },
+                    { value: 'GBP', label: 'GBP' },
+                    { value: 'INR', label: 'INR' },
+                  ]}
+                  required
+                />
+
+                <Select
+                  label='Billing Cycle'
+                  value={formData.billingCycle}
+                  onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value })}
+                  options={[
+                    { value: 'MONTHLY', label: 'Monthly' },
+                    { value: 'YEARLY', label: 'Yearly' },
+                  ]}
+                  required
+                />
               </div>
-              <p className='text-sm text-neutral-500 mt-1'>
-                {formData.paypalPlanId ? (
-                  <span className='text-secondary-600 font-medium'>
-                    ✓ PayPal integration configured
-                  </span>
-                ) : (
-                  <span>
-                    Leave empty for free plans. For paid plans, click &quot;Create PayPal Plan&quot; button or
-                    enter manually.
-                  </span>
-                )}
-              </p>
-            </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-              <Input
-                label='Max Users (optional)'
-                type='number'
-                value={formData.maxUsers}
-                onChange={(e) => setFormData({ ...formData, maxUsers: e.target.value })}
-              />
-
-              <Input
-                label='Max Patients (optional)'
-                type='number'
-                value={formData.maxPatients}
-                onChange={(e) => setFormData({ ...formData, maxPatients: e.target.value })}
-              />
-
-              <Input
-                label='Max Storage GB (optional)'
-                type='number'
-                value={formData.maxStorageGB}
-                onChange={(e) => setFormData({ ...formData, maxStorageGB: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Description (optional)
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className='w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
-                rows={2}
-              />
-            </div>
-
-            <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-3'>Features</label>
-              <div className='border border-neutral-300 rounded-lg p-4 max-h-96 overflow-y-auto bg-neutral-100'>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-                  {AVAILABLE_FEATURES.map((feature) => (
-                    <label
-                      key={feature}
-                      className='flex items-center gap-3 p-2 rounded hover:bg-neutral-100 cursor-pointer'
-                    >
-                      <Checkbox
-                        checked={formData.features.includes(feature)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormData({
-                              ...formData,
-                              features: [...formData.features, feature],
-                            });
-                          } else {
-                            setFormData({
-                              ...formData,
-                              features: formData.features.filter((f) => f !== feature),
-                            });
-                          }
-                        }}
-                        size='sm'
-                      />
-                      <span className='text-sm text-neutral-700'>{feature}</span>
-                    </label>
-                  ))}
+              <div className='md:col-span-2'>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  PayPal Plan ID (optional - for payment integration)
+                </label>
+                <div className='flex gap-2'>
+                  <Input
+                    value={formData.paypalPlanId}
+                    onChange={(e) => setFormData({ ...formData, paypalPlanId: e.target.value })}
+                    placeholder='e.g., P-7L918936KP7498103NEXRFNY'
+                    className='flex-1'
+                  />
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={handleCreatePayPalPlan}
+                    disabled={
+                      !formData.name ||
+                      !formData.price ||
+                      parseFloat(formData.price) <= 0 ||
+                      creatingPayPalPlan
+                    }
+                    isLoading={creatingPayPalPlan}
+                    title='Create PayPal billing plan automatically'
+                  >
+                    Create PayPal Plan
+                  </Button>
                 </div>
-                {formData.features.length === 0 && (
-                  <p className='text-sm text-neutral-500 mt-2 text-center'>
-                    Select features to include in this plan
+                <p className='text-sm text-neutral-500 mt-1'>
+                  {formData.paypalPlanId ? (
+                    <span className='text-secondary-600 font-medium'>
+                      ✓ PayPal integration configured
+                    </span>
+                  ) : (
+                    <span>
+                      Leave empty for free plans. For paid plans, click &quot;Create PayPal
+                      Plan&quot; button or enter manually.
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                <Input
+                  label='Max Users (optional)'
+                  type='number'
+                  value={formData.maxUsers}
+                  onChange={(e) => setFormData({ ...formData, maxUsers: e.target.value })}
+                />
+
+                <Input
+                  label='Max Patients (optional)'
+                  type='number'
+                  value={formData.maxPatients}
+                  onChange={(e) => setFormData({ ...formData, maxPatients: e.target.value })}
+                />
+
+                <Input
+                  label='Max Storage GB (optional)'
+                  type='number'
+                  value={formData.maxStorageGB}
+                  onChange={(e) => setFormData({ ...formData, maxStorageGB: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  Description (optional)
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className='w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-3'>Features</label>
+                <div className='border border-neutral-300 rounded-lg p-4 max-h-96 overflow-y-auto bg-neutral-100'>
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                    {AVAILABLE_FEATURES.map((feature) => (
+                      <label
+                        key={feature}
+                        className='flex items-center gap-3 p-2 rounded hover:bg-neutral-100 cursor-pointer'
+                      >
+                        <Checkbox
+                          checked={formData.features.includes(feature)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({
+                                ...formData,
+                                features: [...formData.features, feature],
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                features: formData.features.filter((f) => f !== feature),
+                              });
+                            }
+                          }}
+                          size='sm'
+                        />
+                        <span className='text-sm text-neutral-700'>{feature}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {formData.features.length === 0 && (
+                    <p className='text-sm text-neutral-500 mt-2 text-center'>
+                      Select features to include in this plan
+                    </p>
+                  )}
+                </div>
+                {formData.features.length > 0 && (
+                  <p className='text-sm text-neutral-500 mt-2'>
+                    {formData.features.length} feature(s) selected
                   </p>
                 )}
               </div>
-              {formData.features.length > 0 && (
-                <p className='text-sm text-neutral-500 mt-2'>
-                  {formData.features.length} feature(s) selected
-                </p>
-              )}
-            </div>
 
-            <div className='flex flex-col gap-3'>
-              <div className='flex items-center gap-3'>
-                <Checkbox
-                  id='isPopular'
-                  checked={formData.isPopular}
-                  onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
-                  size='sm'
-                />
-                <label htmlFor='isPopular' className='block text-sm text-neutral-700 cursor-pointer'>
-                  Mark as popular plan
-                </label>
+              <div className='flex flex-col gap-3'>
+                <div className='flex items-center gap-3'>
+                  <Checkbox
+                    id='isPopular'
+                    checked={formData.isPopular}
+                    onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
+                    size='sm'
+                  />
+                  <label
+                    htmlFor='isPopular'
+                    className='block text-sm text-neutral-700 cursor-pointer'
+                  >
+                    Mark as popular plan
+                  </label>
+                </div>
+                <div className='flex items-center gap-3'>
+                  <Checkbox
+                    id='isHidden'
+                    checked={formData.isHidden}
+                    onChange={(e) => setFormData({ ...formData, isHidden: e.target.checked })}
+                    size='sm'
+                  />
+                  <label
+                    htmlFor='isHidden'
+                    className='block text-sm text-neutral-700 cursor-pointer'
+                  >
+                    Hide from Pricing Page
+                  </label>
+                </div>
               </div>
-              <div className='flex items-center gap-3'>
-                <Checkbox
-                  id='isHidden'
-                  checked={formData.isHidden}
-                  onChange={(e) => setFormData({ ...formData, isHidden: e.target.checked })}
-                  size='sm'
-                />
-                <label htmlFor='isHidden' className='block text-sm text-neutral-700 cursor-pointer'>
-                  Hide from Pricing Page
-                </label>
+
+              <div className='flex gap-4'>
+                <Button type='submit' isLoading={submitting} disabled={submitting}>
+                  {editingPlanId ? 'Update Plan' : 'Create Plan'}
+                </Button>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  onClick={handleCancel}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
               </div>
-            </div>
-
-            <div className='flex gap-4'>
-              <Button type='submit' isLoading={submitting} disabled={submitting}>
-                {editingPlanId ? 'Update Plan' : 'Create Plan'}
-              </Button>
-              <Button
-                type='button'
-                variant='secondary'
-                onClick={handleCancel}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
-
-      <Card>
-        {plans.length === 0 ? (
-          <div className='p-8 text-center'>
-            <p className='text-neutral-500 mb-4'>No subscription plans found</p>
-            <Button onClick={() => fetchPlans()} variant='secondary'>
-              Refresh
-            </Button>
-          </div>
-        ) : (
-          <>
-            <div className='p-4 border-b border-neutral-200'>
-              <p className='text-sm text-neutral-600'>
-                Showing {plans.length} subscription plan(s)
-              </p>
-            </div>
-            <Table data={plans} columns={columns} emptyMessage='No subscription plans found' />
-          </>
+            </form>
+          </Card>
         )}
-      </Card>
+
+        <Card>
+          {plans.length === 0 ? (
+            <div className='p-8 text-center'>
+              <p className='text-neutral-500 mb-4'>No subscription plans found</p>
+              <Button onClick={() => fetchPlans()} variant='secondary'>
+                Refresh
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className='p-4 border-b border-neutral-200'>
+                <p className='text-sm text-neutral-600'>
+                  Showing {plans.length} subscription plan(s)
+                </p>
+              </div>
+              <Table data={plans} columns={columns} emptyMessage='No subscription plans found' />
+            </>
+          )}
+        </Card>
       </div>
     </Layout>
   );

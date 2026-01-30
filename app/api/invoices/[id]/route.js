@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
 import { updateInvoiceSchema } from '@/lib/validations/billing';
 import {
   getInvoiceById,
   updateInvoice,
   deleteInvoice,
 } from '@/services/billing.service';
-import { successResponse, errorResponse, handleMongoError } from '@/lib/utils/api-response';
+import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
 
 /**
  * GET /api/invoices/:id
@@ -29,18 +33,8 @@ async function getHandler(
 
     return NextResponse.json(successResponse(invoice));
   } catch (error) {
-    console.error('Error in GET /api/invoices/[id]:', error);
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
-
-    return NextResponse.json(
-      errorResponse(
-        error instanceof Error ? error.message : 'Failed to fetch invoice',
-        'INTERNAL_ERROR'
-      ),
-      { status: 500 }
-    );
+    // Error handling is done by withErrorHandler middleware
+    throw error;
   }
 }
 
@@ -93,17 +87,8 @@ async function putHandler(
       })
     );
   } catch (error) {
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
-
-    return NextResponse.json(
-      errorResponse(
-        (error instanceof Error ? error.message : String(error)) || 'Failed to update invoice',
-        'UPDATE_ERROR'
-      ),
-      { status: 400 }
-    );
+    // Error handling is done by withErrorHandler middleware
+    throw error;
   }
 }
 
@@ -130,52 +115,42 @@ async function deleteHandler(
       successResponse({ message: 'Invoice deleted successfully' })
     );
   } catch (error) {
-    return NextResponse.json(
-      errorResponse('Failed to delete invoice', 'DELETE_ERROR'),
-      { status: 500 }
-    );
+    // Error handling is done by withErrorHandler middleware
+    throw error;
   }
 }
 
-export async function GET(
-  req,
-  context
-) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
+// Apply middleware stack
+export const GET = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.INVOICE, ACTIONS.READ)(async (req, user, context) => {
+        const params = await context.params;
+        return getHandler(req, user, { params });
+      })
+    )
+  )
+);
 
-  const params = await context.params;
-  const authenticatedReq = req;
-  authenticatedReq.user = authResult.user;
+export const PUT = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.INVOICE, ACTIONS.UPDATE)(async (req, user, context) => {
+        const params = await context.params;
+        return putHandler(req, user, { params });
+      })
+    )
+  )
+);
 
-  return getHandler(authenticatedReq, authResult.user, { params });
-}
-
-export async function PUT(
-  req,
-  context
-) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
-
-  const params = await context.params;
-  const authenticatedReq = req;
-  authenticatedReq.user = authResult.user;
-
-  return putHandler(authenticatedReq, authResult.user, { params });
-}
-
-export async function DELETE(
-  req,
-  context
-) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
-
-  const params = await context.params;
-  const authenticatedReq = req;
-  authenticatedReq.user = authResult.user;
-
-  return deleteHandler(authenticatedReq, authResult.user, { params });
-}
+export const DELETE = withErrorHandler(
+  apiRateLimit(
+    withAuth(
+      requirePermission(RESOURCES.INVOICE, ACTIONS.DELETE)(async (req, user, context) => {
+        const params = await context.params;
+        return deleteHandler(req, user, { params });
+      })
+    )
+  )
+);
 

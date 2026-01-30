@@ -12,6 +12,8 @@ import Invoice from '@/models/Invoice';
 import Payment from '@/models/Payment';
 import Prescription from '@/models/Prescription';
 import InventoryItem from '@/models/InventoryItem';
+import Doctor from '@/models/Doctor';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/admin/stats
@@ -58,8 +60,17 @@ async function getHandler(req, user) {
     const totalPlans = await SubscriptionPlan.countDocuments();
     const activePlans = await SubscriptionPlan.countDocuments({ status: 'ACTIVE' });
 
+    // Doctors (platform KPIs: total, verified, pending)
+    const totalDoctors = await Doctor.countDocuments({});
+    const verifiedDoctors = await Doctor.countDocuments({ verificationStatus: 'verified' });
+    const pendingDoctors = await Doctor.countDocuments({ verificationStatus: 'pending' });
+
     // Get all patients across all tenants
     const totalPatients = await Patient.countDocuments({ deletedAt: null });
+    const activePatients = await Patient.countDocuments({
+      deletedAt: null,
+      isActive: true,
+    });
     const patientsThisMonth = await Patient.countDocuments({
       deletedAt: null,
       createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
@@ -209,9 +220,18 @@ async function getHandler(req, user) {
           total: totalPlans,
           active: activePlans,
         },
+        // Doctors (Phase 5.1 platform KPIs)
+        doctors: {
+          total: totalDoctors,
+          verified: verifiedDoctors,
+          pending: pendingDoctors,
+        },
+        // Commission (placeholder; can be computed from billing later)
+        commission: 0,
         // Patients
         patients: {
           total: totalPatients,
+          active: activePatients,
           thisMonth: patientsThisMonth,
           recent: recentPatients,
         },
@@ -254,7 +274,7 @@ async function getHandler(req, user) {
       })
     );
   } catch (error) {
-    console.error('Admin stats error:', error);
+    logger.error('Admin stats error:', error);
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to fetch admin stats',

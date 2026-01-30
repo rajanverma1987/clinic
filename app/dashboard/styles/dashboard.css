@@ -1,321 +1,467 @@
-/* Dashboard-specific styles following theme system */
+/* Dashboard-specific styles following theme system - Professional Clinic Design */
 
-/* Card Backgrounds */
+/* Dashboard Container */
+.dashboard-container {
+  max-width: 100%;
+  padding: 0;
+  /* Single height token so all dashboard cards align */
+  --dashboard-card-height: 420px;
+}
+
+.dashboard-section {
+  margin-bottom: var(--space-6);
+}
+
+/* Grid cell for 3-per-row cards – even size (same height as Patients Summary) */
+.dashboard-card-cell {
+  min-height: var(--dashboard-card-height);
+  height: var(--dashboard-card-height);
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-card-cell > * {
+  flex: 1;
+  min-height: 0;
+}
+
+.dashboard-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Card Backgrounds - solid surfaces */
 .dashboard-card-gradient {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 252, 255, 0.95) 100%);
+  background: var(--color-neutral-50);
+}
+.dark .dashboard-card-gradient {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
 }
 
 /* Accent Bars - Vertical gradient bars for section headers */
 .accent-bar {
-  width: 4px;
-  height: 24px;
-  border-radius: var(--radius-md);
+  width: 3px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
 }
 
 .accent-bar-primary {
-  background: linear-gradient(180deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  background: var(--color-primary-500);
 }
 
 .accent-bar-secondary {
-  background: linear-gradient(
-    180deg,
-    var(--color-secondary-500) 0%,
-    var(--color-secondary-700) 100%
-  );
+  background: var(--color-primary-500);
 }
 
 .accent-bar-warning {
-  background: linear-gradient(180deg, var(--color-status-warning) 0%, #d97706 100%);
+  background: var(--color-status-warning);
 }
 
 .accent-bar-error {
-  background: linear-gradient(180deg, var(--color-status-error) 0%, #dc2626 100%);
+  background: var(--color-status-error);
+}
+
+.accent-bar-success {
+  background: var(--color-secondary-500);
 }
 
 /* Radial gradient orbs - decorative backgrounds */
 .radial-orb {
-  position: absolute;
-  pointer-events: none;
-  border-radius: 50%;
+  display: none;
 }
 
-.radial-orb-primary {
-  background: radial-gradient(circle, rgba(45, 156, 219, 0.2) 0%, transparent 70%);
-}
-
-.radial-orb-secondary {
-  background: radial-gradient(circle, rgba(39, 174, 96, 0.2) 0%, transparent 70%);
-}
-
-.radial-orb-warning {
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
-}
-
-.radial-orb-error {
-  background: radial-gradient(circle, rgba(239, 68, 68, 0.2) 0%, transparent 70%);
-}
-
-/* Stats Cards - Ultra Premium */
+/* Stats Cards - Exact Size Match from Image */
 .stat-card {
   position: relative;
   overflow: hidden;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   cursor: pointer;
-  min-height: 160px;
-  border-radius: var(--radius-xl);
+  height: 120px;
+  border-radius: var(--radius-md);
   background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  box-shadow: var(--shadow-sm);
+}
+.dark .stat-card {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+.dark .stat-card-primary,
+.dark .stat-card-secondary,
+.dark .stat-card-warning,
+.dark .stat-card-error {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
 }
 
 .stat-card-primary {
-  border: 1px solid rgba(45, 156, 219, 0.15);
-  box-shadow: 0 4px 12px rgba(45, 156, 219, 0.1);
+  border-color: color-mix(in srgb, var(--color-primary-500) 18%, transparent);
+  background: var(--color-neutral-50);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-card-primary:hover {
-  transform: scale(1.02);
-  box-shadow: 0 16px 32px rgba(45, 156, 219, 0.18), 0 0 0 1px rgba(45, 156, 219, 0.1);
-  border-color: rgba(45, 156, 219, 0.35);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--color-primary-500) 28%, transparent);
 }
 
 .stat-card-secondary {
-  border: 1px solid rgba(39, 174, 96, 0.15);
-  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.1);
+  border-color: color-mix(in srgb, var(--color-primary-500) 18%, transparent);
+  background: var(--color-neutral-50);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-card-secondary:hover {
-  transform: scale(1.02);
-  box-shadow: 0 16px 32px rgba(39, 174, 96, 0.18), 0 0 0 1px rgba(39, 174, 96, 0.1);
-  border-color: rgba(39, 174, 96, 0.35);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--color-primary-500) 28%, transparent);
 }
 
 .stat-card-warning {
-  border: 1px solid rgba(245, 158, 11, 0.15);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+  border-color: color-mix(in srgb, var(--color-status-warning) 18%, transparent);
+  background: var(--color-neutral-50);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-card-warning:hover {
-  transform: scale(1.02);
-  box-shadow: 0 16px 32px rgba(245, 158, 11, 0.18), 0 0 0 1px rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.35);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--color-status-warning) 28%, transparent);
 }
 
 .stat-card-error {
-  border: 1px solid rgba(239, 68, 68, 0.15);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+  border-color: color-mix(in srgb, var(--color-status-error) 18%, transparent);
+  background: var(--color-neutral-50);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-card-error:hover {
-  transform: scale(1.02);
-  box-shadow: 0 16px 32px rgba(239, 68, 68, 0.18), 0 0 0 1px rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.35);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--color-status-error) 28%, transparent);
 }
 
-/* Stat Card Label */
+.stat-card-success {
+  border-color: color-mix(in srgb, var(--color-secondary-500) 18%, transparent);
+  background: var(--color-neutral-50);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-card-success:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--color-secondary-500) 28%, transparent);
+}
+
+/* Stat Card Label – uses body-xs from design tokens */
 .stat-label {
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--text-body-xs);
+  line-height: var(--text-body-xs-line-height);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
+  color: var(--color-neutral-600);
+  margin-bottom: 0;
+  font-family: var(--font-family);
+}
+.dark .stat-label {
+  color: var(--color-text-secondary);
+}
+.dark .stat-value {
+  color: var(--color-text-primary);
 }
 
-/* Stat Card Value */
+/* Stat Card Value – aligned with text-h3 hierarchy */
 .stat-value {
-  font-size: 32px;
-  line-height: 40px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-neutral-900);
+  font-family: var(--font-family);
 }
 
-/* Stat Card Icon Container */
+/* Stat Card Icon Container - Compact Design */
 .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-xl);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 
 .stat-icon-primary {
   background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
-  box-shadow: 0 4px 12px rgba(45, 156, 219, 0.25);
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 25%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 20%, transparent);
 }
 
 .stat-icon-secondary {
-  background: linear-gradient(
-    135deg,
-    var(--color-secondary-500) 0%,
-    var(--color-secondary-700) 100%
-  );
-  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.25);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 25%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 20%, transparent);
 }
 
 .stat-icon-warning {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+  background: linear-gradient(
+    135deg,
+    var(--color-status-warning) 0%,
+    color-mix(in srgb, var(--color-status-warning) 85%, black) 100%
+  );
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-status-warning) 25%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 20%, transparent);
 }
 
 .stat-icon-error {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+  background: linear-gradient(
+    135deg,
+    var(--color-status-error) 0%,
+    color-mix(in srgb, var(--color-status-error) 85%, black) 100%
+  );
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-status-error) 25%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 20%, transparent);
+}
+
+.stat-icon-success {
+  background: linear-gradient(
+    135deg,
+    var(--color-secondary-500) 0%,
+    color-mix(in srgb, var(--color-secondary-500) 85%, black) 100%
+  );
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-secondary-500) 25%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 20%, transparent);
 }
 
 .stat-card:hover .stat-icon {
-  transform: scale(1.08);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transform: scale(1.02) translateY(-1px);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
 }
 
-/* List Cards - Ultra Premium */
+/* List Cards - Professional Clinic Design - Consistent Height */
 .dashboard-list-card {
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius-xl);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  box-shadow: var(--shadow-sm);
+  min-height: var(--dashboard-card-height);
+  height: var(--dashboard-card-height);
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-list-card:hover {
-  transform: scale(1.01);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-neutral-300);
 }
 
 .dashboard-list-card-primary {
-  border: 1px solid rgba(45, 156, 219, 0.15);
+  border-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  background: var(--color-neutral-50);
 }
 
 .dashboard-list-card-secondary {
-  border: 1px solid rgba(39, 174, 96, 0.15);
+  border-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  background: var(--color-neutral-50);
 }
 
 .dashboard-list-card-warning {
-  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-color: color-mix(in srgb, var(--color-status-warning) 20%, transparent);
+  background: var(--color-neutral-50);
 }
 
 .dashboard-list-card-error {
-  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-color: color-mix(in srgb, var(--color-status-error) 20%, transparent);
+  background: var(--color-neutral-50);
+}
+.dark .dashboard-list-card,
+.dark .dashboard-list-card-primary,
+.dark .dashboard-list-card-secondary,
+.dark .dashboard-list-card-warning,
+.dark .dashboard-list-card-error {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
 }
 
-/* List Items - Ultra Premium */
+/* List Items - Compact Premium Design */
 .dashboard-list-item {
-  padding: var(--space-4);
-  border-radius: var(--radius-xl);
-  border: 2px solid transparent;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  background: var(--color-neutral-50);
+  margin-bottom: 4px;
+}
+
+.dashboard-list-item:last-child {
+  margin-bottom: 0;
 }
 
 .dashboard-list-item-primary {
-  background: rgba(45, 156, 219, 0.04);
-  border-color: rgba(45, 156, 219, 0.2);
+  background: color-mix(in srgb, var(--color-primary-500) 3%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 15%, transparent);
 }
 
 .dashboard-list-item-primary:hover {
-  background: rgba(45, 156, 219, 0.1);
-  border-color: rgba(45, 156, 219, 0.45);
-  box-shadow: 0 6px 12px rgba(45, 156, 219, 0.15);
-  transform: scale(1.02);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  transform: translateX(4px);
 }
 
 .dashboard-list-item-secondary {
-  background: rgba(39, 174, 96, 0.04);
-  border-color: rgba(39, 174, 96, 0.2);
+  background: color-mix(in srgb, var(--color-primary-500) 3%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 15%, transparent);
 }
 
 .dashboard-list-item-secondary:hover {
-  background: rgba(39, 174, 96, 0.1);
-  border-color: rgba(39, 174, 96, 0.45);
-  box-shadow: 0 6px 12px rgba(39, 174, 96, 0.15);
-  transform: scale(1.02);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  transform: translateX(4px);
 }
 
 .dashboard-list-item-warning {
-  background: rgba(245, 158, 11, 0.04);
-  border-color: rgba(245, 158, 11, 0.2);
+  background: color-mix(in srgb, var(--color-status-warning) 3%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-warning) 15%, transparent);
 }
 
 .dashboard-list-item-warning:hover {
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.45);
-  box-shadow: 0 6px 12px rgba(245, 158, 11, 0.15);
-  transform: scale(1.02);
+  background: color-mix(in srgb, var(--color-status-warning) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-warning) 30%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-warning) 12%, transparent);
+  transform: translateX(4px);
 }
 
 .dashboard-list-item-error {
-  background: rgba(239, 68, 68, 0.04);
-  border-color: rgba(239, 68, 68, 0.2);
+  background: color-mix(in srgb, var(--color-status-error) 3%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-error) 15%, transparent);
 }
 
 .dashboard-list-item-error:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.45);
-  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.15);
-  transform: scale(1.02);
+  background: color-mix(in srgb, var(--color-status-error) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-error) 30%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-error) 12%, transparent);
+  transform: translateX(4px);
 }
 
-/* Alert Cards */
+/* Alert Cards - Compact Design */
 .alert-card {
-  padding: 16px;
-  border-radius: var(--radius-xl);
-  border: 2px solid transparent;
-  transition: all 0.2s ease;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--color-neutral-50);
 }
 
 .alert-card-error {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-error) 6%, transparent) 0%,
+    color-mix(in srgb, var(--color-status-error) 2%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-status-error) 25%, transparent);
 }
 
 .alert-card-error:hover {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.3);
-  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.15);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-error) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-status-error) 4%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-status-error) 35%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-error) 15%, transparent);
+  transform: translateY(-1px);
 }
 
 .alert-card-warning {
-  background: rgba(245, 158, 11, 0.08);
-  border-color: rgba(245, 158, 11, 0.2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-warning) 6%, transparent) 0%,
+    color-mix(in srgb, var(--color-status-warning) 2%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-status-warning) 25%, transparent);
 }
 
 .alert-card-warning:hover {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.3);
-  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.15);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-warning) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-status-warning) 4%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-status-warning) 35%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-warning) 15%, transparent);
+  transform: translateY(-1px);
 }
 
 .alert-card-info {
-  background: rgba(45, 156, 219, 0.08);
-  border-color: rgba(45, 156, 219, 0.2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 6%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 2%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-primary-500) 25%, transparent);
 }
 
 .alert-card-info:hover {
-  background: rgba(45, 156, 219, 0.12);
-  border-color: rgba(45, 156, 219, 0.3);
-  box-shadow: 0 4px 8px rgba(45, 156, 219, 0.15);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 4%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-primary-500) 35%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  transform: translateY(-1px);
 }
 
 /* Alert Badge */
 .alert-badge {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-xl);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .alert-badge-error {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.08));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-error) 15%, transparent),
+    color-mix(in srgb, var(--color-status-error) 8%, transparent)
+  );
 }
 
 .alert-badge-warning {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-warning) 15%, transparent),
+    color-mix(in srgb, var(--color-status-warning) 8%, transparent)
+  );
 }
 
 .alert-badge-info {
-  background: linear-gradient(135deg, rgba(45, 156, 219, 0.15), rgba(45, 156, 219, 0.08));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent),
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent)
+  );
 }
 
 /* Alert Action Button */
@@ -330,53 +476,66 @@
 }
 
 .alert-action-btn-error {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+  background: linear-gradient(
+    135deg,
+    var(--color-status-error) 0%,
+    color-mix(in srgb, var(--color-status-error) 85%, black) 100%
+  );
+  color: var(--color-neutral-50);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-status-error) 20%, transparent);
 }
 
 .alert-action-btn-error:hover {
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-error) 30%, transparent);
   transform: scale(1.05);
 }
 
 .alert-action-btn-warning {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  background: linear-gradient(
+    135deg,
+    var(--color-status-warning) 0%,
+    color-mix(in srgb, var(--color-status-warning) 85%, black) 100%
+  );
+  color: var(--color-neutral-50);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-status-warning) 20%, transparent);
 }
 
 .alert-action-btn-warning:hover {
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-warning) 30%, transparent);
   transform: scale(1.05);
 }
 
 .alert-action-btn-info {
   background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(45, 156, 219, 0.2);
+  color: var(--color-neutral-50);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
 }
 
 .alert-action-btn-info:hover {
-  box-shadow: 0 4px 12px rgba(45, 156, 219, 0.3);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
   transform: scale(1.05);
 }
 
-/* Quick Action Buttons - Ultra Premium */
+/* Quick Action Buttons - Button Style Design */
 .quick-action-btn {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-2);
-  min-height: 70px;
-  border-radius: var(--radius-xl);
-  border: 2px solid var(--color-primary-200);
-  background: var(--color-neutral-50);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: var(--gap-2);
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-primary-300);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  color: var(--color-neutral-50);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .quick-action-btn::before {
@@ -386,45 +545,48 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, var(--color-primary-100) 0%, transparent 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 10%, transparent) 0%,
+    transparent 100%
+  );
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.3s ease;
 }
 
 .quick-action-btn:hover {
-  border-color: var(--color-primary-500);
-  background: var(--color-primary-100);
-  transform: scale(1.02);
-  box-shadow: 0 8px 16px rgba(45, 156, 219, 0.12);
+  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
+  border-color: var(--color-primary-400);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 16px color-mix(in srgb, var(--color-primary-500) 30%, transparent),
+    0 2px 4px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
 }
 
 .quick-action-btn:hover::before {
   opacity: 1;
 }
 
-.quick-action-icon {
-  width: 48px;
-  height: 48px;
-  background: var(--color-primary-100);
-  border-radius: var(--radius-xl);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: var(--space-2);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 2px 8px rgba(45, 156, 219, 0.1);
+.quick-action-btn:active {
+  transform: translateY(0);
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
 }
 
-.quick-action-btn:hover .quick-action-icon {
-  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(45, 156, 219, 0.25);
+.quick-action-btn svg,
+.quick-action-btn .icon {
+  width: var(--icon-size-sm, 20px);
+  height: var(--icon-size-sm, 20px);
+  stroke: var(--color-neutral-50);
+  fill: var(--color-neutral-50);
+  color: var(--color-neutral-50);
+  filter: none !important;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
 }
 
-.quick-action-btn:hover .quick-action-icon svg {
-  stroke: white !important;
+.quick-action-btn:hover svg {
   transform: scale(1.1);
 }
 
@@ -439,34 +601,45 @@
 }
 
 .empty-state-icon {
-  width: 64px;
-  height: 64px;
+  width: var(--icon-size-empty, 64px);
+  height: var(--icon-size-empty, 64px);
   margin-bottom: 16px;
   opacity: 0.3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-state-icon svg,
+.empty-state-icon .icon {
+  width: 100%;
+  height: 100%;
 }
 
-/* Trend Indicator */
+/* Trend Indicator - Status Only (Green for positive trends) */
 .trend-indicator {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
 }
 
 .trend-up {
-  color: var(--color-secondary-500);
-  background: rgba(39, 174, 96, 0.1);
+  color: var(--color-secondary-700);
+  background: color-mix(in srgb, var(--color-secondary-500) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-secondary-500) 20%, transparent);
 }
 
 .trend-down {
   color: var(--color-status-error);
-  background: rgba(239, 68, 68, 0.1);
+  background: color-mix(in srgb, var(--color-status-error) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-status-error) 20%, transparent);
 }
 
-/* Loading Skeleton */
+/* Loading Skeleton – design tokens and layout-matched shapes */
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -477,20 +650,49 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: var(--radius-md);
+  flex-shrink: 0;
 }
 
 .skeleton-text {
-  height: 16px;
-  margin-bottom: 8px;
+  height: var(--text-body-xs-line-height, 16px);
+  margin-bottom: 0;
+  min-width: 48px;
 }
 
 .skeleton-text-lg {
-  height: 24px;
-  margin-bottom: 12px;
+  height: var(--text-body-md-line-height, 24px);
+  margin-bottom: 0;
+  min-width: 64px;
+}
+
+/* Stat card icon placeholder – matches .stat-icon (40px) */
+.skeleton-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+}
+
+/* List item placeholder – matches dashboard list item height */
+.skeleton-list-item {
+  height: 72px;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-list-item-sm {
+  height: 48px;
+  border-radius: var(--radius-md);
+}
+
+/* Chart/card body – fills remaining space when in flex container */
+.skeleton-chart {
+  flex: 1;
+  min-height: 160px;
+  border-radius: var(--radius-lg);
 }
 
 .skeleton-card {
   height: 160px;
+  border-radius: var(--radius-lg);
 }
 
 @keyframes shimmer {
@@ -502,65 +704,487 @@
   }
 }
 
-/* Chart Styles - Ultra Premium */
+/* Chart Styles - Professional Clinic Design */
 .chart-card {
   position: relative;
   overflow: hidden;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: var(--radius-xl);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--color-neutral-900) 6%, transparent),
+    0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent);
+  min-height: var(--dashboard-card-height);
+  height: var(--dashboard-card-height);
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-card-primary {
-  border: 1px solid rgba(45, 156, 219, 0.15);
+  border-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  background: linear-gradient(
+    135deg,
+    var(--color-neutral-50) 0%,
+    color-mix(in srgb, var(--color-primary-500) 2%, transparent) 100%
+  );
 }
 
 .chart-card-primary:hover {
-  transform: scale(1.01);
-  box-shadow: 0 12px 24px rgba(45, 156, 219, 0.15), 0 0 0 1px rgba(45, 156, 219, 0.1);
-  border-color: rgba(45, 156, 219, 0.3);
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--color-primary-500) 15%, transparent),
+    0 4px 8px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
 }
 
 .chart-card-secondary {
-  border: 1px solid rgba(39, 174, 96, 0.15);
+  border-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  background: linear-gradient(
+    135deg,
+    var(--color-neutral-50) 0%,
+    color-mix(in srgb, var(--color-primary-500) 2%, transparent) 100%
+  );
 }
 
 .chart-card-secondary:hover {
-  transform: scale(1.01);
-  box-shadow: 0 12px 24px rgba(39, 174, 96, 0.15), 0 0 0 1px rgba(39, 174, 96, 0.1);
-  border-color: rgba(39, 174, 96, 0.3);
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 24px color-mix(in srgb, var(--color-primary-500) 12%, transparent),
+    0 4px 8px color-mix(in srgb, var(--color-primary-500) 8%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
 }
 
-/* Section Header - Ultra Premium */
+.chart-card-warning {
+  border-color: color-mix(in srgb, var(--color-status-warning) 20%, transparent);
+  background: linear-gradient(
+    135deg,
+    var(--color-neutral-50) 0%,
+    color-mix(in srgb, var(--color-status-warning) 2%, transparent) 100%
+  );
+}
+
+.chart-card-warning:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 24px color-mix(in srgb, var(--color-status-warning) 12%, transparent),
+    0 4px 8px color-mix(in srgb, var(--color-status-warning) 8%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-status-warning) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-warning) 30%, transparent);
+}
+
+/* Section Header - Compact Premium Design */
 .section-header {
   display: flex;
   align-items: center;
   gap: var(--gap-3);
   margin-bottom: var(--space-4);
   position: relative;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-neutral-200);
 }
 
 .section-title {
-  font-size: var(--text-body-lg);
-  line-height: var(--text-body-lg-line-height);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--color-neutral-900);
   font-family: var(--font-family);
 }
 
-/* Responsive utilities */
+/* Empty State - Compact Design */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: var(--icon-size-empty, 64px);
+  height: var(--icon-size-empty, 64px);
+  margin-bottom: 16px;
+  opacity: 0.4;
+  color: var(--color-neutral-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-state-icon svg,
+.empty-state-icon .icon {
+  width: 100%;
+  height: 100%;
+}
+
+.empty-state p {
+  color: var(--color-neutral-500);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* Appointment List Item - Professional Clinic Design */
+.dashboard-appointment-item {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-neutral-50);
+  margin-bottom: 8px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.dashboard-appointment-item:hover {
+  background: color-mix(in srgb, var(--color-primary-500) 5%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  transform: translateX(4px);
+}
+
+.dashboard-appointment-item:last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-appointment-item-current {
+  border-color: var(--color-primary-500);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-neutral-50));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+}
+
+/* Time Badge - Professional Design */
+.time-badge {
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-500);
+  color: var(--color-neutral-50);
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+}
+
+.time-badge-ongoing {
+  background: var(--color-secondary-500);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-secondary-500) 20%, transparent);
+}
+
+/* Next Patient Card - Professional Design */
+.dashboard-next-patient-card {
+  border: 1px solid var(--color-neutral-200);
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--color-neutral-900) 6%, transparent),
+    0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-50);
+  min-height: var(--dashboard-card-height);
+  height: var(--dashboard-card-height);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Patient History Badge - Quick Action Button Style */
+.patient-history-badge {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  border: 1px solid var(--color-primary-200);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.patient-history-badge:hover {
+  background: var(--color-primary-200);
+  border-color: var(--color-primary-300);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+}
+
+.patient-history-badge-active {
+  background: var(--color-primary-500);
+  color: var(--color-neutral-50);
+  border-color: var(--color-primary-600);
+}
+
+.patient-history-badge-active:hover {
+  background: var(--color-primary-600);
+  border-color: var(--color-primary-700);
+}
+
+/* Patient Action Buttons - Professional Design */
+.patient-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-700);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.patient-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+}
+
+.patient-action-btn-phone {
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  color: var(--color-neutral-50);
+  border-color: var(--color-primary-600);
+  flex: 1;
+}
+
+.patient-action-btn-phone:hover {
+  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.patient-action-btn-document {
+  background: var(--color-neutral-50);
+  color: var(--color-primary-600);
+  border-color: var(--color-primary-200);
+}
+
+.patient-action-btn-document:hover {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+}
+
+.patient-action-btn-chat {
+  background: var(--color-neutral-50);
+  color: var(--color-primary-600);
+  border-color: var(--color-primary-200);
+}
+
+.patient-action-btn-chat:hover {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+}
+
+/* Responsive utilities - Compact Design */
 @media (max-width: 640px) {
   .stat-value {
     font-size: 24px;
-    line-height: 32px;
+    line-height: 30px;
   }
 
   .stat-card {
-    min-height: 120px;
+    min-height: 100px;
   }
 
   .quick-action-btn {
     min-height: 80px;
-    padding: 12px;
+    padding: 12px 10px;
+  }
+
+  /* Allow tall cards to shrink on very small screens */
+  .chart-card,
+  .dashboard-list-card,
+  .dashboard-next-patient-card {
+    height: auto;
+    min-height: 320px;
+  }
+
+  .section-header {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+  }
+
+  .section-title {
+    font-size: 14px;
+    line-height: 18px;
+  }
+
+  .dashboard-list-item {
+    padding: 10px;
+  }
+
+  .dashboard-appointment-item {
+    padding: 10px;
+  }
+
+  .time-badge {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Calendar Widget – fill card height, no empty bottom */
+.calendar-widget-card {
+  display: flex;
+  flex-direction: column;
+}
+.calendar-widget-card > div {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 !important; /* inner .calendar-widget-inner controls padding */
+}
+.calendar-widget-inner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+@media (min-width: 640px) {
+  .calendar-widget-inner {
+    padding: 14px 18px;
+  }
+}
+
+.calendar-widget-header {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-2);
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  flex-shrink: 0;
+}
+.calendar-widget-title {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+.calendar-widget-month-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-left: auto;
+}
+.calendar-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-neutral-600);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.calendar-nav-btn:hover {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+}
+.calendar-nav-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 4px var(--color-primary-500);
+}
+
+.calendar-widget {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.calendar-week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+.calendar-week-day {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-neutral-500);
+  padding: 4px 0;
+}
+.calendar-days-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 4px;
+}
+.calendar-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-700);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 0;
+  min-height: 0;
+}
+.calendar-day:hover:not(:disabled) {
+  background: var(--color-primary-50);
+  border-color: var(--color-primary-200);
+  color: var(--color-primary-700);
+}
+.calendar-day-other-month {
+  color: var(--color-neutral-400);
+  background: transparent;
+  cursor: not-allowed;
+}
+.calendar-day-today {
+  background: var(--color-primary-500);
+  color: white;
+  border-color: var(--color-primary-600);
+  font-weight: 600;
+}
+.calendar-day-selected {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+  color: var(--color-primary-700);
+  font-weight: 600;
+}
+.calendar-day:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.calendar-day:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 4px var(--color-primary-500);
+}
+
+/* Zero-flicker: highlight updated rows for 2s (event-driven cache updates) */
+.data-row-updated {
+  animation: data-row-highlight 2s ease-out;
+}
+@keyframes data-row-highlight {
+  0% {
+    background-color: var(--color-primary-100);
+  }
+  100% {
+    background-color: transparent;
   }
 }

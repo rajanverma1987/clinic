@@ -1,5 +1,7 @@
 'use client';
 
+import { ChevronDownIcon } from '@/components/icons';
+
 export function FAQSection({ openFaqIndex, onFaqToggle }) {
   const faqs = [
     {
@@ -98,19 +100,7 @@ export function FAQSection({ openFaqIndex, onFaqToggle }) {
                         : 'bg-neutral-100 text-neutral-600 group-hover:bg-primary-50 group-hover:text-primary-600'
                     }`}
                   >
-                    <svg
-                      style={{ width: '20px', height: '20px' }}
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M19 9l-7 7-7-7'
-                      />
-                    </svg>
+                    <ChevronDownIcon style={{ width: 20, height: 20 }} />
                   </div>
                 </button>
 

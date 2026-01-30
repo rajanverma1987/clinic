@@ -24,30 +24,30 @@ export function LotListItem({ lot, onClick }) {
 
   return (
     <div
-      className={`dashboard-list-item dashboard-list-item-${getStatusColor()}`}
+      className={`dashboard-list-item dashboard-list-item-${getStatusColor()} group`}
       onClick={onClick}
       style={{ cursor: 'pointer' }}
     >
-      <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-between gap-3'>
         <div className='flex-1 min-w-0'>
-          <div className='flex items-center gap-2 mb-1'>
-            <span className='font-semibold text-neutral-900 truncate'>{lot.itemName}</span>
-            <span className='text-xs text-neutral-500 font-mono'>{lot.batchNumber}</span>
+          <div className='flex items-center gap-2 mb-1.5'>
+            <span className='text-body-md font-semibold text-neutral-900 truncate'>{lot.itemName}</span>
+            <span className='text-body-xs text-neutral-500 font-mono px-2 py-0.5 bg-neutral-100 rounded'>{lot.batchNumber}</span>
           </div>
-          <div className='flex items-center gap-3 text-xs text-neutral-600'>
+          <div className='flex items-center gap-3 text-body-xs text-neutral-600'>
             <span>{lot.quantity} {lot.unit}</span>
             <span>•</span>
             <span>{formatDate(lot.expiryDate)}</span>
           </div>
         </div>
-        <div className='ml-3'>
+        <div className='flex-shrink-0'>
           <span
-            className={`px-2 py-1 rounded text-xs font-semibold ${
+            className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold ${
               lot.isExpired
-                ? 'bg-red-100 text-red-700'
+                ? 'bg-red-50 text-red-700 border border-red-200'
                 : lot.isExpiringSoon
-                ? 'bg-yellow-100 text-yellow-700'
-                : 'bg-green-100 text-green-700'
+                ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                : 'bg-green-50 text-green-700 border border-green-200'
             }`}
           >
             {getStatusText()}

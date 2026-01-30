@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import { createPayPalPlan } from '@/services/paypal.service';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * POST /api/admin/subscription-plans/create-paypal-plan
@@ -43,7 +44,7 @@ async function postHandler(req, user) {
             })
         );
     } catch (error) {
-        console.error('Failed to create PayPal plan:', error);
+        logger.error('Failed to create PayPal plan:', error);
         return NextResponse.json(
             errorResponse(
                 (error instanceof Error ? error.message : String(error)) || 'Failed to create PayPal plan. Check PayPal credentials.',

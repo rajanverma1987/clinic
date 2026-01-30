@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import { sendEmail } from '@/lib/email/email-service';
+import { logger } from '@/lib/utils/logger.js';
 
 /**
  * POST /api/telemedicine/sessions/send-link
@@ -93,7 +94,7 @@ Doctor's Clinic Team
 
     return NextResponse.json(successResponse({ message: 'Email sent successfully' }));
   } catch (error) {
-    console.error('Error sending telemedicine link email:', error);
+    logger.error('Error sending telemedicine link email:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to send email',

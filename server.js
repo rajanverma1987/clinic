@@ -1,7 +1,12 @@
 /**
  * Custom Next.js Server with Socket.IO
  * Required for real-time chat functionality
+ * Uses central logger (lib/utils/logger.js) for all server-side logging.
  */
+
+const path = require('path');
+require('dotenv').config({ path: path.resolve(process.cwd(), '.env') });
+require('dotenv').config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const { createServer } = require('http');
 const { parse } = require('url');
@@ -16,13 +21,15 @@ const port = parseInt(process.env.PORT || '5053', 10);
 const app = next({ dev, hostname });
 const handle = app.getRequestHandler();
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
+  const { logger } = await import('./lib/utils/logger.js');
+
   const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
       await handle(req, res, parsedUrl);
     } catch (err) {
-      console.error('Error occurred handling', req.url, err);
+      logger.error('Error occurred handling request', err, { url: req.url });
       res.statusCode = 500;
       res.end('internal server error');
     }
@@ -38,11 +45,17 @@ app.prepare().then(() => {
     transports: ['websocket', 'polling'],
   });
 
-  // Socket.IO connection handling
-  io.on('connection', (socket) => {
-    console.log('[Socket.IO] ✅ Client connected:', socket.id);
+  // Initialize real-time manager for appointments, queue, etc. (separate from telemedicine)
+  try {
+    const { initRealtimeManager } = require('./lib/realtime/realtime-manager.js');
+    initRealtimeManager(io);
+  } catch (err) {
+    logger.warn('Failed to initialize real-time manager; continuing without real-time features', {
+      error: err?.message,
+    });
+  }
 
-    // Join session room
+  io.on('connection', (socket) => {
     socket.on('join-session', (sessionId) => {
       if (!sessionId) {
         socket.emit('error', { message: 'Session ID is required' });
@@ -50,7 +63,6 @@ app.prepare().then(() => {
       }
 
       socket.join(`session:${sessionId}`);
-      console.log(`[Socket.IO] Client ${socket.id} joined session: ${sessionId}`);
 
       // Notify others in the session
       socket.to(`session:${sessionId}`).emit('user-joined', {
@@ -63,7 +75,6 @@ app.prepare().then(() => {
     socket.on('leave-session', (sessionId) => {
       if (sessionId) {
         socket.leave(`session:${sessionId}`);
-        console.log(`[Socket.IO] Client ${socket.id} left session: ${sessionId}`);
 
         // Notify others in the session
         socket.to(`session:${sessionId}`).emit('user-left', {
@@ -81,8 +92,6 @@ app.prepare().then(() => {
         socket.emit('error', { message: 'Session ID and message are required' });
         return;
       }
-
-      console.log(`[Socket.IO] 📨 Chat message in session ${sessionId} from ${senderId}`);
 
       // Broadcast to all OTHER clients in the session (exclude sender to prevent duplicate)
       socket.to(`session:${sessionId}`).emit('chat-message', {
@@ -107,19 +116,16 @@ app.prepare().then(() => {
       }
     });
 
-    // Handle disconnect
-    socket.on('disconnect', () => {
-      console.log('[Socket.IO] ❌ Client disconnected:', socket.id);
-    });
+    socket.on('disconnect', () => {});
   });
 
   httpServer
     .once('error', (err) => {
-      console.error(err);
+      logger.error('Server listen error', err);
       process.exit(1);
     })
     .listen(port, () => {
-      console.log(`> Ready on http://${hostname}:${port}`);
-      console.log(`> Socket.IO server initialized`);
+      logger.info(`Ready on http://${hostname}:${port}`);
+      logger.info('Socket.IO server initialized');
     });
 });

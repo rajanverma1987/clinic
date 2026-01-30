@@ -3,6 +3,7 @@ import { errorResponse, handleMongoError, successResponse } from '@/lib/utils/ap
 import { withAuth } from '@/middleware/auth';
 import Tenant from '@/models/Tenant';
 import { NextResponse } from 'next/server';
+import { canEditClinicSettings } from '@/lib/permissions/cursor-md-matrix';
 
 /**
  * GET /api/settings
@@ -10,6 +11,21 @@ import { NextResponse } from 'next/server';
  */
 async function getHandler(req, user) {
   try {
+    if (!user.tenantId && user.role !== 'super_admin') {
+      return NextResponse.json(errorResponse('Tenant context required', 'MISSING_TENANT'), {
+        status: 400,
+      });
+    }
+    if (user.role === 'super_admin' && !user.tenantId) {
+      return NextResponse.json(
+        errorResponse(
+          'Super admin has no tenant context. Use a clinic account or select a tenant.',
+          'NO_TENANT_CONTEXT'
+        ),
+        { status: 400 }
+      );
+    }
+
     await connectDB();
     const tenant = await Tenant.findById(user.tenantId);
 
@@ -35,7 +51,11 @@ async function getHandler(req, user) {
       return NextResponse.json(handleMongoError(error), { status: 400 });
     }
 
-    return NextResponse.json(errorResponse('Failed to fetch settings', 'INTERNAL_ERROR'), {
+    const message =
+      process.env.NODE_ENV === 'development' && error instanceof Error
+        ? error.message
+        : 'Failed to fetch settings';
+    return NextResponse.json(errorResponse(message, 'INTERNAL_ERROR'), {
       status: 500,
     });
   }
@@ -43,10 +63,17 @@ async function getHandler(req, user) {
 
 /**
  * PUT /api/settings
- * Update tenant settings
+ * Update tenant settings (CursorMD/New: only Doctor and Super Admin can modify clinic profile / billing)
  */
 async function putHandler(req, user) {
   try {
+    if (!canEditClinicSettings(user.role)) {
+      return NextResponse.json(
+        errorResponse('Only Doctor or Super Admin can modify clinic settings', 'FORBIDDEN'),
+        { status: 403 }
+      );
+    }
+
     await connectDB();
     const body = await req.json();
 

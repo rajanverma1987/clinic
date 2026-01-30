@@ -1,11 +1,12 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { ChevronLeftIcon } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
+import { useRouter } from 'next/navigation';
 
 /**
- * Reusable Back Button Component
- * Icon-only back button with proper positioning and styling
+ * Reusable Back Button – uses design-system Button (ghost, icon-only).
  */
 export function BackButton({ onClick, className = '', ariaLabel }) {
   const router = useRouter();
@@ -20,15 +21,15 @@ export function BackButton({ onClick, className = '', ariaLabel }) {
   };
 
   return (
-    <button
+    <Button
+      variant='ghost'
+      size='sm'
+      iconOnly
       onClick={handleClick}
-      className={`flex items-center justify-center w-10 h-10 rounded-lg border-2 border-neutral-200 hover:border-primary-300 hover:bg-primary-50 text-neutral-600 hover:text-primary-600 transition-all duration-200 ${className}`}
       aria-label={ariaLabel || t('common.back')}
+      className={`rounded-lg border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 ${className}`}
     >
-      <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 19l-7-7 7-7' />
-      </svg>
-    </button>
+      <ChevronLeftIcon className='icon icon-sm' />
+    </Button>
   );
 }
-

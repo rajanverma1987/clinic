@@ -1,0 +1,159 @@
+/**
+ * Rate Limiting Middleware
+ * Protects API endpoints from abuse
+ * Based on NEW-PLANS.md requirements
+ */
+
+import { NextResponse } from 'next/server';
+import { errorResponse } from '@/lib/utils/api-response';
+import { RateLimitError } from '@/lib/errors/custom-errors';
+
+// In-memory store for rate limiting (in production, use Redis)
+const rateLimitStore = new Map();
+
+/**
+ * Rate limit configuration
+ */
+const RATE_LIMITS = {
+  // Public endpoints
+  public: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requests per window
+  },
+  // Authentication endpoints
+  auth: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 login attempts per window
+  },
+  // API endpoints
+  api: {
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 60, // 60 requests per minute
+  },
+  // Strict endpoints (sensitive operations)
+  strict: {
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 10, // 10 requests per minute
+  },
+};
+
+/**
+ * Get client identifier for rate limiting
+ */
+function getClientId(req) {
+  // Try to get user ID first (for authenticated requests)
+  const authHeader = req.headers.get('authorization');
+  if (authHeader) {
+    try {
+      const token = authHeader.substring(7);
+      const { verifyAccessToken } = require('@/lib/auth/jwt.js');
+      const user = verifyAccessToken(token);
+      return `user:${user.userId}`;
+    } catch (e) {
+      // Token invalid, fall through to IP-based
+    }
+  }
+
+  // Fall back to IP address
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+             req.headers.get('x-real-ip') ||
+             req.headers.get('cf-connecting-ip') ||
+             'unknown';
+  
+  return `ip:${ip}`;
+}
+
+/**
+ * Clean up expired entries from rate limit store
+ */
+function cleanupStore() {
+  const now = Date.now();
+  for (const [key, value] of rateLimitStore.entries()) {
+    if (value.resetTime < now) {
+      rateLimitStore.delete(key);
+    }
+  }
+}
+
+// Cleanup every 5 minutes
+if (typeof setInterval !== 'undefined') {
+  setInterval(cleanupStore, 5 * 60 * 1000);
+}
+
+/**
+ * Rate limit middleware factory
+ */
+export function rateLimit(config = 'api') {
+  const limitConfig = typeof config === 'string' 
+    ? RATE_LIMITS[config] || RATE_LIMITS.api
+    : config;
+
+  return (handler) => {
+    return async (req, ...args) => {
+      const clientId = getClientId(req);
+      const key = `${config}:${clientId}`;
+      const now = Date.now();
+
+      // Cleanup old entries periodically
+      if (Math.random() < 0.01) { // 1% chance to cleanup
+        cleanupStore();
+      }
+
+      // Get or create rate limit entry
+      let entry = rateLimitStore.get(key);
+      
+      if (!entry || entry.resetTime < now) {
+        // Create new window
+        entry = {
+          count: 0,
+          resetTime: now + limitConfig.windowMs,
+        };
+        rateLimitStore.set(key, entry);
+      }
+
+      // Increment count
+      entry.count++;
+
+      // Check if limit exceeded
+      if (entry.count > limitConfig.max) {
+        const retryAfter = Math.ceil((entry.resetTime - now) / 1000);
+        
+        return NextResponse.json(
+          errorResponse(
+            `Too many requests. Please try again after ${retryAfter} seconds.`,
+            'RATE_LIMIT_EXCEEDED',
+            { retryAfter, limit: limitConfig.max, windowMs: limitConfig.windowMs }
+          ),
+          {
+            status: 429,
+            headers: {
+              'Retry-After': String(retryAfter),
+              'X-RateLimit-Limit': String(limitConfig.max),
+              'X-RateLimit-Remaining': String(Math.max(0, limitConfig.max - entry.count)),
+              'X-RateLimit-Reset': String(Math.ceil(entry.resetTime / 1000)),
+            },
+          }
+        );
+      }
+
+      // Add rate limit headers
+      const response = await handler(req, ...args);
+      
+      if (response instanceof NextResponse) {
+        response.headers.set('X-RateLimit-Limit', String(limitConfig.max));
+        response.headers.set('X-RateLimit-Remaining', String(Math.max(0, limitConfig.max - entry.count)));
+        response.headers.set('X-RateLimit-Reset', String(Math.ceil(entry.resetTime / 1000)));
+      }
+
+      return response;
+    };
+  };
+}
+
+/**
+ * Pre-configured rate limiters
+ */
+export const publicRateLimit = rateLimit('public');
+export const authRateLimit = rateLimit('auth');
+export const apiRateLimit = rateLimit('api');
+export const strictRateLimit = rateLimit('strict');
