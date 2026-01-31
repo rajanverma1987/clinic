@@ -128,12 +128,25 @@ const nextConfig = {
 
     return config;
   },
-  // CORS headers
+  // CORS and CSP headers (CSP allows Next.js inline scripts; theme is in /theme-init.js to avoid inline)
   async headers() {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self' data:",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+    ].join('; ');
     return [
       {
         source: '/:path*',
         headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: csp,
+          },
           {
             key: 'X-Frame-Options',
             value: 'SAMEORIGIN',
