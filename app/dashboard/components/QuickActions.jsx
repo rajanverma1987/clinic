@@ -42,12 +42,7 @@ export function QuickActions({ onNavigate, loading = false }) {
   }, [open]);
 
   if (loading) {
-    return (
-      <div
-        className='h-9 w-32 rounded-lg bg-neutral-100 animate-pulse'
-        aria-hidden
-      />
-    );
+    return <div className='h-9 w-32 rounded-lg bg-neutral-100 animate-pulse' aria-hidden />;
   }
 
   return (
@@ -57,7 +52,7 @@ export function QuickActions({ onNavigate, loading = false }) {
         variant='secondary'
         size='sm'
         onClick={() => setOpen((v) => !v)}
-        className='gap-2'
+        className='gap-2 focus:ring-0 focus:ring-offset-0'
         aria-expanded={open}
         aria-haspopup='true'
         aria-label={t('dashboard.quickActions')}

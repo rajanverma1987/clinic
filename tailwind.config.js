@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 const config = {
   darkMode: 'class',
+  blocklist: ['focus:ring-primary-500'],
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',

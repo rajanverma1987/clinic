@@ -784,7 +784,7 @@ export async function getDashboardStats(tenantId, userId) {
           invoiceDate: { $gte: today, $lte: endOfToday },
           status: { $ne: InvoiceStatus.CANCELLED },
           deletedAt: null,
-        })
+        }),
       )
         .select('totalAmount')
         .lean()
@@ -797,7 +797,7 @@ export async function getDashboardStats(tenantId, userId) {
           invoiceDate: { $gte: yesterday, $lte: endOfYesterday },
           status: { $ne: InvoiceStatus.CANCELLED },
           deletedAt: null,
-        })
+        }),
       )
         .select('totalAmount')
         .lean()
@@ -810,7 +810,7 @@ export async function getDashboardStats(tenantId, userId) {
           invoiceDate: { $gte: thisMonth },
           status: { $ne: InvoiceStatus.CANCELLED },
           deletedAt: null,
-        })
+        }),
       )
         .select('totalAmount')
         .lean()
@@ -826,7 +826,7 @@ export async function getDashboardStats(tenantId, userId) {
         withTenant(tenantId, {
           createdAt: { $gte: thisMonth },
           deletedAt: null,
-        })
+        }),
       ).catch((err) => {
         logger.error('Error counting new patients this month:', err);
         return 0;
@@ -835,7 +835,7 @@ export async function getDashboardStats(tenantId, userId) {
         withTenant(tenantId, {
           createdAt: { $gte: lastMonth, $lte: endOfLastMonth },
           deletedAt: null,
-        })
+        }),
       ).catch((err) => {
         logger.error('Error counting new patients last month:', err);
         return 0;
@@ -852,7 +852,7 @@ export async function getDashboardStats(tenantId, userId) {
         withTenant(tenantId, {
           status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
           deletedAt: null,
-        })
+        }),
       ).catch((err) => {
         logger.error('Error counting pending invoices:', err);
         return 0;
@@ -862,7 +862,7 @@ export async function getDashboardStats(tenantId, userId) {
           status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
           deletedAt: null,
           invoiceDate: { $lte: endOfYesterday },
-        })
+        }),
       ).catch((err) => {
         logger.error('Error counting pending invoices yesterday:', err);
         return 0;
@@ -871,14 +871,14 @@ export async function getDashboardStats(tenantId, userId) {
 
     const todayRevenue = (Array.isArray(todayInvoicesRaw) ? todayInvoicesRaw : []).reduce(
       (sum, inv) => sum + (inv.totalAmount || 0),
-      0
+      0,
     );
     const yesterdayRevenue = (
       Array.isArray(yesterdayInvoicesRaw) ? yesterdayInvoicesRaw : []
     ).reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
     const monthRevenue = (Array.isArray(monthInvoicesRaw) ? monthInvoicesRaw : []).reduce(
       (sum, inv) => sum + (inv.totalAmount || 0),
-      0
+      0,
     );
 
     // Calculate trends
@@ -920,7 +920,7 @@ export async function getDashboardStats(tenantId, userId) {
     const invoicesTrend =
       pendingInvoicesYesterday > 0
         ? (((pendingInvoices - pendingInvoicesYesterday) / pendingInvoicesYesterday) * 100).toFixed(
-            1
+            1,
           )
         : pendingInvoices > 0
           ? '100'
@@ -981,7 +981,7 @@ export async function getDoctorPerformanceReport(input, tenantId, userId) {
   const doctors = await Doctor.find(
     withTenant(tenantId, {
       isActive: true,
-    })
+    }),
   )
     .populate('userId', 'firstName lastName')
     .lean();
@@ -1010,10 +1010,10 @@ export async function getDoctorPerformanceReport(input, tenantId, userId) {
     // Calculate statistics
     const totalAppointments = appointments.length;
     const completed = appointments.filter(
-      (apt) => apt.status === AppointmentStatus.COMPLETED
+      (apt) => apt.status === AppointmentStatus.COMPLETED,
     ).length;
     const cancelled = appointments.filter(
-      (apt) => apt.status === AppointmentStatus.CANCELLED
+      (apt) => apt.status === AppointmentStatus.CANCELLED,
     ).length;
     const noShows = appointments.filter((apt) => apt.status === AppointmentStatus.NO_SHOW).length;
     const completionRate = totalAppointments > 0 ? (completed / totalAppointments) * 100 : 0;
@@ -1028,7 +1028,7 @@ export async function getDoctorPerformanceReport(input, tenantId, userId) {
           appointmentId: { $in: appointmentIds },
           status: { $ne: InvoiceStatus.CANCELLED },
           deletedAt: null,
-        })
+        }),
       )
         .select('totalAmount')
         .lean();
@@ -1114,7 +1114,7 @@ export async function getDepartmentReport(input, tenantId, userId) {
   const departments = await Department.find(
     withTenant(tenantId, {
       isActive: true,
-    })
+    }),
   )
     .populate('headDoctorId', 'userId')
     .lean();
@@ -1127,7 +1127,7 @@ export async function getDepartmentReport(input, tenantId, userId) {
       withTenant(tenantId, {
         departmentId: dept._id,
         isActive: true,
-      })
+      }),
     ).lean();
 
     const doctorIds = doctors.map((d) => d._id);
@@ -1153,10 +1153,10 @@ export async function getDepartmentReport(input, tenantId, userId) {
     // Calculate statistics
     const totalAppointments = appointments.length;
     const completed = appointments.filter(
-      (apt) => apt.status === AppointmentStatus.COMPLETED
+      (apt) => apt.status === AppointmentStatus.COMPLETED,
     ).length;
     const cancelled = appointments.filter(
-      (apt) => apt.status === AppointmentStatus.CANCELLED
+      (apt) => apt.status === AppointmentStatus.CANCELLED,
     ).length;
     const noShows = appointments.filter((apt) => apt.status === AppointmentStatus.NO_SHOW).length;
     const completionRate = totalAppointments > 0 ? (completed / totalAppointments) * 100 : 0;
@@ -1170,7 +1170,7 @@ export async function getDepartmentReport(input, tenantId, userId) {
           appointmentId: { $in: appointmentIds },
           status: { $ne: InvoiceStatus.CANCELLED },
           deletedAt: null,
-        })
+        }),
       )
         .select('totalAmount')
         .lean();
