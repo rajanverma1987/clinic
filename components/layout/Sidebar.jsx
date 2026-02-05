@@ -32,15 +32,16 @@ import {
   VideoIcon,
   ZapIcon,
 } from '@/components/icons';
+import { SidebarTooltip } from '@/components/ui/SidebarTooltip';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useFeatures } from '@/contexts/FeatureContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
+import { isManagerPathForbidden } from '@/lib/constants/route-security.js';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants.js';
 import { logger } from '@/lib/utils/logger.js';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { SidebarTooltip } from '@/components/ui/SidebarTooltip';
 import { ProfileMenu } from './ProfileMenu.jsx';
 
 export function Sidebar({ isMobileOpen = false, onMobileClose }) {
@@ -264,6 +265,8 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       !hasPermission(user?.role, item.requiredPermission.resource, item.requiredPermission.action)
     )
       return false;
+    // Manager: hide nav items that are in MANAGER_RESTRICTIONS.cannotAccess (CLAUDE-AI §2)
+    if (user?.role === 'manager' && item.href && isManagerPathForbidden(item.href)) return false;
     // Subscription gate: Admin and Manager see feature-gated items only if plan includes them (same as Doctor)
     const subscriptionAllows =
       item.requiredFeature === null ||
@@ -396,7 +399,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         <div
           className='sidebar-logo flex-shrink-0 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-center bg-white dark:bg-neutral-800'
           style={{
-            padding: isCollapsed ? 'var(--space-3) var(--space-2)' : 'var(--space-4) var(--space-4) var(--space-3)',
+            padding: isCollapsed
+              ? 'var(--space-3) var(--space-2)'
+              : 'var(--space-4) var(--space-4) var(--space-3)',
             transition: 'padding 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
@@ -455,7 +460,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.dashboard') })}
+                onMouseEnter={(e) =>
+                  isCollapsed &&
+                  setTooltip({ anchor: e.currentTarget, label: t('admin.dashboard') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
@@ -482,7 +490,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/clients'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.clients') })}
+                onMouseEnter={(e) =>
+                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.clients') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
@@ -509,7 +519,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/subscriptions'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.subscriptions') })}
+                onMouseEnter={(e) =>
+                  isCollapsed &&
+                  setTooltip({ anchor: e.currentTarget, label: t('admin.subscriptions') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
@@ -536,7 +549,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/users'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.allUsers') })}
+                onMouseEnter={(e) =>
+                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.allUsers') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
@@ -563,7 +578,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/patients'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.patients') })}
+                onMouseEnter={(e) =>
+                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.patients') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
@@ -590,7 +607,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/appointments'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.appointments') })}
+                onMouseEnter={(e) =>
+                  isCollapsed &&
+                  setTooltip({ anchor: e.currentTarget, label: t('admin.appointments') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
@@ -617,7 +637,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/doctors'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.doctors') })}
+                onMouseEnter={(e) =>
+                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.doctors') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
@@ -644,7 +666,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/create-admin'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.createAdmin') })}
+                onMouseEnter={(e) =>
+                  isCollapsed &&
+                  setTooltip({ anchor: e.currentTarget, label: t('admin.createAdmin') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
@@ -671,7 +696,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/content'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.content') })}
+                onMouseEnter={(e) =>
+                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.content') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/content') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
                 title={isCollapsed ? undefined : ''}
@@ -692,7 +719,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/financial'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.financial') })}
+                onMouseEnter={(e) =>
+                  isCollapsed &&
+                  setTooltip({ anchor: e.currentTarget, label: t('admin.financial') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/financial') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
                 title={isCollapsed ? undefined : ''}
@@ -713,7 +743,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/reports'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.reports') })}
+                onMouseEnter={(e) =>
+                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.reports') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/reports') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
                 title={isCollapsed ? undefined : ''}
@@ -734,11 +766,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/analytics'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.analytics') || 'Analytics' })}
+                onMouseEnter={(e) =>
+                  isCollapsed &&
+                  setTooltip({
+                    anchor: e.currentTarget,
+                    label: t('admin.analytics') || 'Analytics',
+                  })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/analytics') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
                 title={isCollapsed ? undefined : ''}
-                aria-label={isCollapsed ? (t('admin.analytics') || 'Analytics') : undefined}
+                aria-label={isCollapsed ? t('admin.analytics') || 'Analytics' : undefined}
               >
                 <span
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
@@ -755,7 +793,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/activity-logs'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.activityLogs') })}
+                onMouseEnter={(e) =>
+                  isCollapsed &&
+                  setTooltip({ anchor: e.currentTarget, label: t('admin.activityLogs') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/activity-logs') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
                 title={isCollapsed ? undefined : ''}
@@ -776,7 +817,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/settings'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.settings') })}
+                onMouseEnter={(e) =>
+                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.settings') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/settings') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
                 title={isCollapsed ? undefined : ''}
@@ -797,7 +840,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 href='/admin/reviews'
                 onClick={handleLinkClick}
                 prefetch={false}
-                onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.reviews') })}
+                onMouseEnter={(e) =>
+                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.reviews') })
+                }
                 onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                 className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/reviews') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
                 title={isCollapsed ? undefined : ''}
@@ -823,7 +868,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 const longerMatchExists = menuItems.some(
                   (other) =>
                     other.href.length > item.href.length &&
-                    (pathname === other.href || pathname?.startsWith(other.href + '/'))
+                    (pathname === other.href || pathname?.startsWith(other.href + '/')),
                 );
                 const isActive = itemMatches && !longerMatchExists;
                 const displayLabel = item.labelKey ? t(item.labelKey) : item.label;
@@ -839,7 +884,9 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                     onClick={handleLinkClick}
                     prefetch={true}
                     className={`flex items-center ${
-                      isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                      isCollapsed
+                        ? 'justify-center px-3 py-3 mx-1 rounded-xl'
+                        : 'px-6 py-4 rounded-lg'
                     } min-h-[44px] text-body-sm font-medium ${
                       isActive
                         ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
@@ -889,10 +936,15 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                   href='/subscription'
                   onClick={handleLinkClick}
                   prefetch={false}
-                  onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('subscription.title') })}
+                  onMouseEnter={(e) =>
+                    isCollapsed &&
+                    setTooltip({ anchor: e.currentTarget, label: t('subscription.title') })
+                  }
                   onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                   className={`flex items-center ${
-                    isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                    isCollapsed
+                      ? 'justify-center px-3 py-3 mx-1 rounded-xl'
+                      : 'px-6 py-4 rounded-lg'
                   } min-h-[44px] text-body-sm font-medium ${
                     pathname === '/subscription' || pathname?.startsWith('/subscription/')
                       ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
@@ -916,10 +968,15 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                   href='/payment-history'
                   onClick={handleLinkClick}
                   prefetch={false}
-                  onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('subscription.paymentHistory') })}
+                  onMouseEnter={(e) =>
+                    isCollapsed &&
+                    setTooltip({ anchor: e.currentTarget, label: t('subscription.paymentHistory') })
+                  }
                   onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
                   className={`flex items-center ${
-                    isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                    isCollapsed
+                      ? 'justify-center px-3 py-3 mx-1 rounded-xl'
+                      : 'px-6 py-4 rounded-lg'
                   } min-h-[44px] text-body-sm font-medium ${
                     pathname === '/payment-history'
                       ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
@@ -944,7 +1001,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
           <button
             type='button'
             onClick={handleToggle}
-            onMouseEnter={(e) => isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('common.expandSidebar') })}
+            onMouseEnter={(e) =>
+              isCollapsed &&
+              setTooltip({ anchor: e.currentTarget, label: t('common.expandSidebar') })
+            }
             onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
             className={`sidebar-collapse-toggle group w-full flex items-center transition-all duration-300 ease-out ${
               isCollapsed
@@ -973,11 +1033,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         </div>
 
         {mounted && isCollapsed && (
-          <SidebarTooltip
-            anchor={tooltip.anchor}
-            label={tooltip.label}
-            visible={!!tooltip.label}
-          />
+          <SidebarTooltip anchor={tooltip.anchor} label={tooltip.label} visible={!!tooltip.label} />
         )}
       </div>
     </>

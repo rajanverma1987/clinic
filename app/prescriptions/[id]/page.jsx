@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -93,7 +94,9 @@ export default function PrescriptionDetailPage() {
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
             <div className='text-status-error mb-4'>{error || 'Prescription not found'}</div>
-            <Button variant='primary' size='md' onClick={() => router.push('/prescriptions')}>Back to Prescriptions</Button>
+            <Button variant='primary' size='md' onClick={() => router.push('/prescriptions')}>
+              Back to Prescriptions
+            </Button>
           </div>
         </div>
       </Layout>
@@ -112,7 +115,11 @@ export default function PrescriptionDetailPage() {
         actionButtons={
           <>
             <BackButton />
-            <Button variant='primary' size='md' onClick={() => router.push(`/prescriptions/${prescriptionId}/edit`)}>
+            <Button
+              variant='primary'
+              size='md'
+              onClick={() => router.push(`/prescriptions/${prescriptionId}/edit`)}
+            >
               Edit
             </Button>
             <Button
@@ -130,8 +137,18 @@ export default function PrescriptionDetailPage() {
                 }
               }}
             >
-              <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
+              <svg
+                className='icon icon-xs mr-2'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                />
               </svg>
               Download PDF
             </Button>
@@ -142,22 +159,51 @@ export default function PrescriptionDetailPage() {
                   const response = await apiClient.post(`/prescriptions/${prescriptionId}/email`, {
                     patientEmail: prescription.patientId?.email,
                   });
-                  if (response.success) alert('Prescription sent to patient email successfully');
-                  else alert('Failed to send prescription via email');
+                  if (response.success)
+                    showSuccess(
+                      t('prescriptions.emailSentSuccess') ||
+                        'Prescription sent to patient email successfully',
+                    );
+                  else
+                    showError(
+                      t('prescriptions.emailSendFailed') || 'Failed to send prescription via email',
+                    );
                 } catch (err) {
-                  alert('Failed to send prescription via email');
+                  showError(
+                    t('prescriptions.emailSendFailed') || 'Failed to send prescription via email',
+                  );
                 }
               }}
               disabled={!prescription.patientId?.email}
             >
-              <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' />
+              <svg
+                className='icon icon-xs mr-2'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
+                />
               </svg>
               Email
             </Button>
             <Button variant='secondary' size='md' onClick={() => setShowPrintPreview(true)}>
-              <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z' />
+              <svg
+                className='icon icon-xs mr-2'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z'
+                />
               </svg>
               Print
             </Button>
@@ -174,7 +220,7 @@ export default function PrescriptionDetailPage() {
                   <h2 className='text-lg font-semibold'>Prescription Details</h2>
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                      prescription.status
+                      prescription.status,
                     )}`}
                   >
                     {getStatusLabel(prescription.status)}
@@ -265,36 +311,24 @@ export default function PrescriptionDetailPage() {
             {/* Prescription Items */}
             <Card>
               <h2 className='text-lg font-semibold mb-4'>Prescription Items</h2>
-              <div className='overflow-x-auto'>
-                <table className='min-w-full divide-y divide-gray-200'>
-                  <thead className='bg-neutral-50'>
+              <div className='clinic-table-wrap'>
+                <table className='clinic-table'>
+                  <thead>
                     <tr>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        #
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Type
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Item
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Details
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Instructions
-                      </th>
+                      <th>#</th>
+                      <th>Type</th>
+                      <th>Item</th>
+                      <th>Details</th>
+                      <th>Instructions</th>
                     </tr>
                   </thead>
-                  <tbody className='bg-white divide-y divide-gray-200'>
+                  <tbody>
                     {prescription.items && prescription.items.length > 0 ? (
                       prescription.items.map((item, index) => (
-                        <tr key={index} className='hover:bg-neutral-50'>
-                          <td className='px-4 py-3 text-sm text-neutral-900'>{index + 1}</td>
-                          <td className='px-4 py-3 text-sm text-neutral-900 capitalize'>
-                            {item.itemType || 'drug'}
-                          </td>
-                          <td className='px-4 py-3 text-sm text-neutral-900'>
+                        <tr key={index}>
+                          <td>{index + 1}</td>
+                          <td className='capitalize'>{item.itemType || 'drug'}</td>
+                          <td>
                             {item.itemType === 'drug' && item.drugName && (
                               <div>
                                 <div className='font-medium'>{item.drugName}</div>
@@ -335,7 +369,7 @@ export default function PrescriptionDetailPage() {
                               <div className='font-medium'>{item.itemName}</div>
                             )}
                           </td>
-                          <td className='px-4 py-3 text-sm text-neutral-900'>
+                          <td>
                             {item.itemType === 'drug' && (
                               <div className='space-y-1'>
                                 {item.frequency && <div>Frequency: {item.frequency}</div>}
@@ -378,7 +412,7 @@ export default function PrescriptionDetailPage() {
                               <div className='text-xs text-neutral-500'>{item.itemDescription}</div>
                             )}
                           </td>
-                          <td className='px-4 py-3 text-sm text-neutral-900'>
+                          <td>
                             {item.instructions && (
                               <div className='whitespace-pre-wrap'>{item.instructions}</div>
                             )}
@@ -386,10 +420,8 @@ export default function PrescriptionDetailPage() {
                         </tr>
                       ))
                     ) : (
-                      <tr>
-                        <td colSpan='5' className='px-4 py-8 text-center text-neutral-500'>
-                          No items in this prescription
-                        </td>
+                      <tr data-empty>
+                        <td colSpan={5}>No items in this prescription</td>
                       </tr>
                     )}
                   </tbody>

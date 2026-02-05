@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiClient } from '@/lib/api/client';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -27,6 +28,7 @@ const APPOINTMENT_TYPES = [
 export default function AdminAppointmentsPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const { open: openConfirm } = useConfirmation();
   const { user, loading: authLoading } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ export default function AdminAppointmentsPage() {
       }
       fetchAppointments();
     }
-  }, [authLoading, user, pagination.page, statusFilter, typeFilter, startDate, endDate]);
+  }, [authLoading, user, pagination.page, statusFilter, typeFilter]);
 
   const fetchAppointments = async (pageOverride) => {
     try {
@@ -79,7 +81,7 @@ export default function AdminAppointmentsPage() {
       }
     } catch (err) {
       logger.error('Failed to fetch appointments', err);
-      showError('Failed to fetch appointments');
+      showError(t('admin.failedToFetchAppointments'));
     } finally {
       setLoading(false);
     }
@@ -93,7 +95,19 @@ export default function AdminAppointmentsPage() {
         credentials: 'include',
         headers: { Accept: 'text/csv' },
       });
-      if (!res.ok) throw new Error('Download failed');
+      if (!res.ok) {
+        const text = await res.text();
+        let errMsg = t('admin.downloadFailed') || 'Download failed';
+        try {
+          const j = JSON.parse(text);
+          if (j?.error) errMsg = j.error;
+        } catch {
+          // Keep default errMsg if response is not JSON
+        }
+        if (res.status === 403) errMsg = t('errors.unauthorized') || 'Unauthorized';
+        if (res.status === 404) errMsg = t('admin.reportNotFound') || 'Report not found';
+        throw new Error(errMsg);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -101,9 +115,9 @@ export default function AdminAppointmentsPage() {
       a.download = `appointment-${appointmentId}-report.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      showSuccess('Report downloaded');
+      showSuccess(t('admin.reportDownloaded') || 'Report downloaded');
     } catch (err) {
-      showError('Failed to download report');
+      showError(err?.message || t('admin.downloadFailed') || 'Failed to download report');
     } finally {
       setDownloadingId(null);
     }
@@ -115,25 +129,28 @@ export default function AdminAppointmentsPage() {
   };
 
   const handleCancel = async (id) => {
-    if (
-      !confirm(
-        'Cancel this appointment? The patient and doctor will not be automatically notified from this screen.'
-      )
-    )
-      return;
-    try {
-      const response = await apiClient.put(`/admin/appointments/${id}/status`, {
-        status: 'cancelled',
-      });
-      if (response?.success) {
-        showSuccess('Appointment cancelled');
-        fetchAppointments();
-      } else {
-        showError(response?.error?.message || 'Failed to cancel');
-      }
-    } catch (err) {
-      showError('Failed to cancel appointment');
-    }
+    openConfirm({
+      title: t('appointments.cancelAppointment'),
+      message:
+        t('admin.appointmentCancelConfirm') ||
+        'Cancel this appointment? The patient and doctor will not be automatically notified from this screen.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await apiClient.put(`/admin/appointments/${id}/status`, {
+            status: 'cancelled',
+          });
+          if (response?.success) {
+            showSuccess(t('appointments.cancelled') || 'Appointment cancelled');
+            fetchAppointments();
+          } else {
+            showError(response?.error?.message || 'Failed to cancel');
+          }
+        } catch (err) {
+          showError(t('admin.failedToCancelAppointment'));
+        }
+      },
+    });
   };
 
   if (authLoading || loading) return <Loader type='page' text={t('common.loading')} />;
@@ -145,22 +162,22 @@ export default function AdminAppointmentsPage() {
   return (
     <Layout
       title={t('admin.appointments')}
-      subtitle='All appointments across the platform'
+      subtitle={t('admin.appointmentsSubtitleAll')}
       actionButton={
         <div className='flex gap-2'>
           <Button variant='secondary' onClick={() => router.push('/admin/appointments/analytics')}>
-            Analytics
+            {t('admin.analytics')}
           </Button>
           <Button variant='primary' onClick={() => router.push('/admin')}>
-            {t('common.back')} to Dashboard
+            {t('common.backToDashboard')}
           </Button>
         </div>
       }
     >
       <div style={{ padding: '0 10px' }}>
-        <Card className='mb-6'>
-          <div className='p-6'>
-            <div className='grid grid-cols-1 md:grid-cols-6 gap-4'>
+        <Card className='mb-6 overflow-hidden'>
+          <div className='p-4 sm:p-6'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>
                   Booking ID
@@ -174,7 +191,9 @@ export default function AdminAppointmentsPage() {
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Status</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.appointmentsStatusLabel')}
+                </label>
                 <select
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                   value={statusFilter}
@@ -184,13 +203,13 @@ export default function AdminAppointmentsPage() {
                   }}
                 >
                   <option value=''>{t('common.all')}</option>
-                  <option value='scheduled'>Scheduled</option>
-                  <option value='confirmed'>Confirmed</option>
-                  <option value='arrived'>Arrived</option>
-                  <option value='in_progress'>In Progress</option>
-                  <option value='completed'>Completed</option>
-                  <option value='cancelled'>Cancelled</option>
-                  <option value='no_show'>No Show</option>
+                  <option value='scheduled'>{t('admin.appointmentsScheduled')}</option>
+                  <option value='confirmed'>{t('admin.appointmentsConfirmed')}</option>
+                  <option value='arrived'>{t('admin.appointmentsArrived')}</option>
+                  <option value='in_progress'>{t('admin.appointmentsInProgress')}</option>
+                  <option value='completed'>{t('admin.appointmentsCompleted')}</option>
+                  <option value='cancelled'>{t('admin.appointmentsCancelled')}</option>
+                  <option value='no_show'>{t('admin.appointmentsNoShow')}</option>
                 </select>
               </div>
               <div>
@@ -214,30 +233,24 @@ export default function AdminAppointmentsPage() {
                 </select>
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>From date</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.appointmentsFromDate')}
+                </label>
                 <Input
                   type='date'
                   value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    setPagination((p) => ({ ...p, page: 1 }));
-                  }}
+                  onChange={(e) => setStartDate(e.target.value)}
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>To date</label>
-                <Input
-                  type='date'
-                  value={endDate}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    setPagination((p) => ({ ...p, page: 1 }));
-                  }}
-                />
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.appointmentsToDate')}
+                </label>
+                <Input type='date' value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
-              <div className='flex items-end'>
-                <Button variant='primary' onClick={handleSearch} className='w-full'>
-                  Apply
+              <div className='flex items-end sm:col-span-2 lg:col-span-1'>
+                <Button variant='primary' onClick={handleSearch} className='w-full min-w-[100px]'>
+                  {t('admin.activityLogsApply')}
                 </Button>
               </div>
             </div>
@@ -273,57 +286,39 @@ export default function AdminAppointmentsPage() {
               {t('admin.appointments')} ({pagination.total})
             </h2>
             {appointments.length === 0 ? (
-              <p className='text-neutral-500'>No appointments found</p>
+              <p className='text-neutral-500'>{t('admin.appointmentsNoAppointmentsFound')}</p>
             ) : (
-              <div className='overflow-x-auto'>
-                <table className='w-full'>
+              <div className='clinic-table-wrap'>
+                <table className='clinic-table'>
                   <thead>
-                    <tr className='border-b border-neutral-200'>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>
-                        Booking ID
-                      </th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>
-                        Date / Time
-                      </th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>
-                        Patient
-                      </th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>
-                        Doctor
-                      </th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>
-                        Tenant
-                      </th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>
-                        Status
-                      </th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>
-                        Actions
-                      </th>
+                    <tr>
+                      <th>Booking ID</th>
+                      <th>Date / Time</th>
+                      <th>Patient</th>
+                      <th>Doctor</th>
+                      <th>Tenant</th>
+                      <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {appointments.map((a) => (
-                      <tr key={a._id} className='border-b border-neutral-100 hover:bg-neutral-50'>
-                        <td className='py-2 px-3 text-sm font-medium'>
-                          {a.appointmentNumber || '—'}
-                        </td>
-                        <td className='py-2 px-3 text-sm'>
+                      <tr key={a._id}>
+                        <td className='font-medium'>{a.appointmentNumber || '—'}</td>
+                        <td>
                           {a.appointmentDate
                             ? new Date(a.appointmentDate).toLocaleDateString()
                             : '—'}
                           {a.startTime &&
                             ` ${new Date(a.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                         </td>
-                        <td className='py-2 px-3 text-sm'>{a.patientName || '—'}</td>
-                        <td className='py-2 px-3 text-sm'>{a.doctorName || '—'}</td>
-                        <td className='py-2 px-3 text-sm text-neutral-600'>
-                          {a.tenantName || '—'}
-                        </td>
-                        <td className='py-2 px-3'>
+                        <td>{a.patientName || '—'}</td>
+                        <td>{a.doctorName || '—'}</td>
+                        <td className='text-neutral-600'>{a.tenantName || '—'}</td>
+                        <td>
                           <Tag className='bg-neutral-100 text-neutral-800'>{a.status || '—'}</Tag>
                         </td>
-                        <td className='py-2 px-3'>
+                        <td>
                           <div className='flex gap-2 flex-wrap'>
                             <Button
                               variant='secondary'

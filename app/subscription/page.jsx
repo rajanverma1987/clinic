@@ -9,6 +9,7 @@ import { Loader } from '@/components/ui/Loader';
 import { SubscriptionCard } from '@/components/ui/SubscriptionCard';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { CARD_FEATURES_BY_PLAN } from '@/lib/constants/plan-features';
@@ -20,12 +21,14 @@ import {
   YEARLY_SAVE,
 } from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function SubscriptionPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { open: openConfirm } = useConfirmation();
   const { t } = useI18n();
   const [subscription, setSubscription] = useState(null);
   const [availablePlans, setAvailablePlans] = useState([]);
@@ -87,7 +90,7 @@ export default function SubscriptionPage() {
     if (!user) return;
     const plan = availablePlans.find((p) => p._id === planId);
     if (!plan) {
-      alert(t('subscription.updateFailed'));
+      showError(t('subscription.updateFailed'));
       return;
     }
     const planPrice = Number(plan.price) || 0;
@@ -100,123 +103,172 @@ export default function SubscriptionPage() {
     const msg = t('subscription.confirmUpgrade')
       .replace('{{action}}', action)
       .replace('{{planName}}', plan.name);
-    if (!window.confirm(msg)) return;
 
-    const method = isPaidPlan ? (paymentMethod === 'card' ? 'card' : 'paypal') : null;
-    setUpgrading(true);
-    setUpgradingMethod(method);
-    try {
-      if (isPaidPlan && (subscription || !subscription)) {
-        const response = await apiClient.post('/subscriptions', {
-          planId,
-          customerEmail: user.email,
-          customerName: `${user.firstName} ${user.lastName}`.trim() || user.email,
-          paymentMethod: method || 'paypal',
-        });
-        if (response.success && response.data) {
-          if (response.data.checkoutUrl) {
-            window.location.href = response.data.checkoutUrl;
-          } else if (response.data.approvalUrl) {
-            window.location.href = response.data.approvalUrl;
-          } else {
-            alert(t('subscription.subscriptionUpdated'));
-            fetchSubscription();
+    openConfirm({
+      title: t('subscription.confirmUpgradeTitle') || 'Confirm',
+      message: msg,
+      confirmLabel: t('common.confirm'),
+      cancelLabel: t('common.cancel'),
+      variant: 'info',
+      onConfirm: async () => {
+        const method = isPaidPlan ? (paymentMethod === 'card' ? 'card' : 'paypal') : null;
+        setUpgrading(true);
+        setUpgradingMethod(method);
+        try {
+          if (isPaidPlan && (subscription || !subscription)) {
+            const response = await apiClient.post('/subscriptions', {
+              planId,
+              customerEmail: user.email,
+              customerName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+              paymentMethod: method || 'paypal',
+            });
+            if (response.success && response.data) {
+              if (response.data.checkoutUrl) {
+                window.location.href = response.data.checkoutUrl;
+              } else if (response.data.approvalUrl) {
+                window.location.href = response.data.approvalUrl;
+              } else {
+                showSuccess(t('subscription.subscriptionUpdated'));
+                fetchSubscription();
+              }
+            } else {
+              showError(response.error?.message || t('subscription.updateFailed'));
+            }
+          } else if ((isFreePlan || !isPaidPlan) && subscription) {
+            const response = await apiClient.put(
+              `/subscriptions/${subscription._id}?action=upgrade`,
+              {
+                planId,
+              },
+            );
+            if (response.success) {
+              showSuccess(t('subscription.subscriptionUpdated'));
+              fetchSubscription();
+            } else {
+              showError(response.error?.message || t('subscription.updateFailed'));
+            }
           }
-        } else {
-          alert(response.error?.message || t('subscription.updateFailed'));
+        } catch (error) {
+          logger.error('Failed to update subscription', error);
+          showError(error.message || t('subscription.updateFailed'));
+        } finally {
+          setUpgrading(false);
+          setUpgradingMethod(null);
         }
-      } else if ((isFreePlan || !isPaidPlan) && subscription) {
-        const response = await apiClient.put(`/subscriptions/${subscription._id}?action=upgrade`, {
-          planId,
-        });
-        if (response.success) {
-          alert(t('subscription.subscriptionUpdated'));
-          fetchSubscription();
-        } else {
-          alert(response.error?.message || t('subscription.updateFailed'));
-        }
-      }
-    } catch (error) {
-      logger.error('Failed to update subscription', error);
-      alert(error.message || t('subscription.updateFailed'));
-    } finally {
-      setUpgrading(false);
-      setUpgradingMethod(null);
-    }
+      },
+    });
   };
 
-  const handleAddAddon = async (addon) => {
+  const handleAddAddon = (addon) => {
     if (!subscription?._id) return;
     const name = t(addon.labelKey);
     const msg = t('subscription.confirmAddAddon').replace('{{name}}', name);
-    if (!window.confirm(msg)) return;
-    setAddonLoading(addon.key);
-    try {
-      const response = await apiClient.post(`/subscriptions/${subscription._id}/addons`, {
-        addonKey: addon.key,
-        quantity: 1,
-      });
-      if (response.success) {
-        await fetchSubscription();
-        alert(t('subscription.addonAdded'));
-      }
-    } catch (error) {
-      alert(error.message || t('subscription.updateFailed'));
-    } finally {
-      setAddonLoading(null);
-    }
+    openConfirm({
+      title: t('common.confirm'),
+      message: msg,
+      confirmLabel: t('common.confirm'),
+      cancelLabel: t('common.cancel'),
+      variant: 'info',
+      onConfirm: async () => {
+        setAddonLoading(addon.key);
+        try {
+          const response = await apiClient.post(`/subscriptions/${subscription._id}/addons`, {
+            addonKey: addon.key,
+            quantity: 1,
+          });
+          if (response.success) {
+            await fetchSubscription();
+            showSuccess(t('subscription.addonAdded'));
+          } else {
+            showError(response.error?.message || t('subscription.updateFailed'));
+          }
+        } catch (error) {
+          showError(error.message || t('subscription.updateFailed'));
+        } finally {
+          setAddonLoading(null);
+        }
+      },
+    });
   };
 
-  const handleRemoveAddon = async (addonKey, labelKey) => {
+  const handleRemoveAddon = (addonKey, labelKey) => {
     if (!subscription?._id) return;
     const name = t(labelKey);
     const msg = t('subscription.confirmRemoveAddon').replace('{{name}}', name);
-    if (!window.confirm(msg)) return;
-    setAddonLoading(addonKey);
-    try {
-      const response = await apiClient.delete(`/subscriptions/${subscription._id}/addons`, {
-        data: { addonKey },
-      });
-      if (response.success) {
-        await fetchSubscription();
-        alert(t('subscription.addonRemoved'));
-      }
-    } catch (error) {
-      alert(error.message || t('subscription.updateFailed'));
-    } finally {
-      setAddonLoading(null);
-    }
+    openConfirm({
+      title: t('common.confirm'),
+      message: msg,
+      confirmLabel: t('common.confirm'),
+      cancelLabel: t('common.cancel'),
+      variant: 'warning',
+      onConfirm: async () => {
+        setAddonLoading(addonKey);
+        try {
+          const response = await apiClient.delete(`/subscriptions/${subscription._id}/addons`, {
+            data: { addonKey },
+          });
+          if (response.success) {
+            await fetchSubscription();
+            showSuccess(t('subscription.addonRemoved'));
+          } else {
+            showError(response.error?.message || t('subscription.updateFailed'));
+          }
+        } catch (error) {
+          showError(error.message || t('subscription.updateFailed'));
+        } finally {
+          setAddonLoading(null);
+        }
+      },
+    });
   };
 
-  const handleCancel = async () => {
+  const handleCancel = () => {
     if (!subscription) return;
     const confirmMessage = subscription.cancelAtPeriodEnd
       ? t('subscription.confirmReactivate')
       : t('subscription.confirmCancel');
-    if (!window.confirm(confirmMessage)) return;
-    setCancelling(true);
-    try {
-      const response = await apiClient.post(`/subscriptions/${subscription._id}?action=cancel`, {
-        cancelAtPeriodEnd: !subscription.cancelAtPeriodEnd,
-      });
-      if (response.success) fetchSubscription();
-    } catch (error) {
-      logger.error('Failed to cancel subscription', error);
-      alert(error.message || t('subscription.updateFailed'));
-    } finally {
-      setCancelling(false);
-    }
+    openConfirm({
+      title: subscription.cancelAtPeriodEnd
+        ? t('subscription.reactivateSubscription')
+        : t('subscription.cancelSubscription'),
+      message: confirmMessage,
+      confirmLabel: t('common.confirm'),
+      cancelLabel: t('common.cancel'),
+      variant: 'danger',
+      onConfirm: async () => {
+        setCancelling(true);
+        try {
+          const response = await apiClient.post(
+            `/subscriptions/${subscription._id}?action=cancel`,
+            {
+              cancelAtPeriodEnd: !subscription.cancelAtPeriodEnd,
+            },
+          );
+          if (response.success) {
+            fetchSubscription();
+            showSuccess(t('subscription.subscriptionUpdated'));
+          } else {
+            showError(response.error?.message || t('subscription.updateFailed'));
+          }
+        } catch (error) {
+          logger.error('Failed to cancel subscription', error);
+          showError(error.message || t('subscription.updateFailed'));
+        } finally {
+          setCancelling(false);
+        }
+      },
+    });
   };
 
   const formatCurrency = (amount, currency) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(
-      amount / 100
+      amount / 100,
     );
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      return new Date(dateString).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -370,7 +422,7 @@ export default function SubscriptionPage() {
                   <span className='sub-detail-value'>
                     {formatCurrency(
                       subscription.planId?.price || 0,
-                      subscription.planId?.currency || 'USD'
+                      subscription.planId?.currency || 'USD',
                     )}{' '}
                     /{' '}
                     {subscription.planId?.billingCycle === 'YEARLY'
@@ -384,7 +436,7 @@ export default function SubscriptionPage() {
                   <p className='sub-detail-value'>
                     {t('subscription.trialEndsOn').replace(
                       '{{date}}',
-                      formatDate(subscription.trialEnd)
+                      formatDate(subscription.trialEnd),
                     )}
                     .{' '}
                     {t('subscription.afterTrialPlanContinues')
@@ -394,9 +446,9 @@ export default function SubscriptionPage() {
                         subscription.planId
                           ? formatCurrency(
                               subscription.planId.price || 0,
-                              subscription.planId.currency || 'USD'
+                              subscription.planId.currency || 'USD',
                             )
-                          : ''
+                          : '',
                       )}
                   </p>
                 </div>
@@ -409,7 +461,7 @@ export default function SubscriptionPage() {
                   <p>
                     {t('subscription.cancelWarning').replace(
                       '{{date}}',
-                      formatDate(subscription.currentPeriodEnd)
+                      formatDate(subscription.currentPeriodEnd),
                     )}
                   </p>
                 </div>

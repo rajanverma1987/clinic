@@ -78,6 +78,54 @@
   background: var(--color-status-warning);
 }
 
+/* Doctor Pending Tasks card – use theme variables (no Tailwind warning-* scale) */
+.dashboard-pending-tasks-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--color-status-warning);
+  flex-shrink: 0;
+}
+
+.dashboard-pending-task-item {
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.dashboard-pending-task-warning {
+  background: color-mix(in srgb, var(--color-status-warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-status-warning) 40%, transparent);
+  color: var(--color-neutral-900);
+}
+
+.dashboard-pending-task-warning:hover {
+  background: color-mix(in srgb, var(--color-status-warning) 20%, transparent);
+}
+
+.dashboard-pending-task-warning .dashboard-pending-task-arrow {
+  color: var(--color-status-warning);
+  font-weight: 600;
+}
+
+.dashboard-pending-task-primary {
+  background: var(--color-primary-100);
+  border: 1px solid var(--color-primary-300);
+  color: var(--color-neutral-900);
+}
+
+.dashboard-pending-task-primary:hover {
+  background: color-mix(in srgb, var(--color-primary-300) 25%, transparent);
+}
+
+.dashboard-pending-task-primary .dashboard-pending-task-arrow {
+  color: var(--color-primary-500);
+  font-weight: 600;
+}
+
 .accent-bar-error {
   background: var(--color-status-error);
 }
@@ -95,7 +143,9 @@
 .stat-card {
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   cursor: pointer;
   min-height: 128px;
   border-radius: 12px;
@@ -284,6 +334,9 @@
 .stat-value {
   font-size: 22px;
   line-height: 1.25;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-neutral-900);

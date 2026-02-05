@@ -1,14 +1,17 @@
 'use client';
 
-import { CalendarIcon, DocumentIcon, MailIcon, UserIcon } from '@/components/icons';
+import { DocumentIcon } from '@/components/icons/DocumentIcon';
+import { MailIcon } from '@/components/icons/MailIcon';
+import { PencilIcon } from '@/components/icons/PencilIcon';
+import { UserIcon } from '@/components/icons/UserIcon';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { useRouter } from 'next/navigation';
 
 /**
- * Patient card for list view: demographics, last visit, total visits, conditions, active Rx, allergies, last lab, actions.
- * Optional enriched fields (lastVisitDate, appointmentCount, etc.) when API provides them.
+ * Patient card for list view: demographics, last visit, total visits, conditions, active Rx, allergies, last lab.
+ * View action is an icon-only button in the top-right; optional doctor actions (message, notes) as icons.
  */
 export function PatientCard({ patient, isDoctor }) {
   const { t } = useI18n();
@@ -48,94 +51,110 @@ export function PatientCard({ patient, isDoctor }) {
 
   const recordPath = isDoctor ? `/doctors/patients/${patient._id}` : `/patients/${patient._id}`;
 
+  const handleCardClick = () => router.push(recordPath);
+
   return (
-    <Card
-      className='p-4 border border-neutral-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer'
-      onClick={() => router.push(recordPath)}
-    >
-      <div className='flex flex-col gap-3'>
-        <div className='flex items-start justify-between gap-2'>
-          <div className='flex items-center gap-3 min-w-0'>
-            <div className='w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0'>
-              <UserIcon className='icon icon-lg text-primary-600' />
-            </div>
-            <div className='min-w-0'>
-              <h3 className='font-semibold text-neutral-900 truncate'>{name}</h3>
-              <p className='text-body-xs text-neutral-600'>
-                ID: {patient.patientId || patient._id?.slice(-8) || '—'}
-              </p>
-            </div>
+    <Card className='patient-card group relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:border-neutral-300 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900/50 dark:hover:border-neutral-600'>
+      {/* Top-right: icon-only actions */}
+      <div
+        className='absolute right-3 top-3 flex items-center gap-1'
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={handleCardClick}
+          className='patient-card__action h-8 w-8 min-w-8 rounded-lg p-0'
+          title={t('patients.viewRecord')}
+          aria-label={t('patients.viewRecord')}
+        >
+          <DocumentIcon className='icon icon-sm' ariaHidden />
+        </Button>
+        {isDoctor && (
+          <>
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={() => router.push('/doctors/messages')}
+              className='patient-card__action h-8 w-8 min-w-8 rounded-lg p-0'
+              title={t('patients.message')}
+              aria-label={t('patients.message')}
+            >
+              <MailIcon className='icon icon-sm' ariaHidden />
+            </Button>
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={() => router.push(`${recordPath}?tab=notes`)}
+              className='patient-card__action h-8 w-8 min-w-8 rounded-lg p-0'
+              title={t('patients.addNotes')}
+              aria-label={t('patients.addNotes')}
+            >
+              <PencilIcon className='icon icon-sm' ariaHidden />
+            </Button>
+          </>
+        )}
+      </div>
+
+      <div
+        className='flex cursor-pointer flex-col gap-4 pr-10'
+        onClick={handleCardClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleCardClick();
+          }
+        }}
+        role='button'
+        tabIndex={0}
+      >
+        <div className='flex items-start gap-3'>
+          <div className='flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40'>
+            <UserIcon className='icon icon-lg text-primary-600 dark:text-primary-400' />
+          </div>
+          <div className='min-w-0 flex-1'>
+            <h3 className='truncate font-semibold text-neutral-900 dark:text-neutral-100'>
+              {name}
+            </h3>
+            <p className='text-body-xs text-neutral-500 dark:text-neutral-400'>
+              ID: {patient.patientId || patient._id?.slice(-8) || '—'}
+            </p>
           </div>
         </div>
 
-        <div className='grid grid-cols-2 gap-x-4 gap-y-1 text-body-xs text-neutral-700'>
-          <span className='text-neutral-500'>{t('patients.phone')}:</span>
-          <span className='truncate'>{patient.phone || '—'}</span>
-          <span className='text-neutral-500'>{t('patients.email')}:</span>
-          <span className='truncate'>{patient.email || '—'}</span>
-          <span className='text-neutral-500'>{t('patients.dateOfBirth')}:</span>
-          <span>{dob}</span>
-          <span className='text-neutral-500'>{t('patients.lastVisit')}:</span>
-          <span>{lastVisit}</span>
-          <span className='text-neutral-500'>{t('patients.totalVisits')}:</span>
-          <span>{totalVisits}</span>
-          <span className='text-neutral-500'>{t('patients.conditions')}:</span>
-          <span className='truncate' title={conditions}>
+        <div className='grid grid-cols-2 gap-x-4 gap-y-2 text-body-xs'>
+          <span className='text-neutral-500 dark:text-neutral-400'>{t('patients.phone')}:</span>
+          <span className='truncate text-neutral-700 dark:text-neutral-300'>
+            {patient.phone || '—'}
+          </span>
+          <span className='text-neutral-500 dark:text-neutral-400'>{t('patients.email')}:</span>
+          <span className='truncate text-neutral-700 dark:text-neutral-300'>
+            {patient.email || '—'}
+          </span>
+          <span className='text-neutral-500 dark:text-neutral-400'>
+            {t('patients.dateOfBirth')}:
+          </span>
+          <span className='text-neutral-700 dark:text-neutral-300'>{dob}</span>
+          <span className='text-neutral-500 dark:text-neutral-400'>{t('patients.lastVisit')}:</span>
+          <span className='text-neutral-700 dark:text-neutral-300'>{lastVisit}</span>
+          <span className='text-neutral-500 dark:text-neutral-400'>
+            {t('patients.totalVisits')}:
+          </span>
+          <span className='text-neutral-700 dark:text-neutral-300'>{totalVisits}</span>
+          <span className='text-neutral-500 dark:text-neutral-400'>
+            {t('patients.conditions')}:
+          </span>
+          <span className='truncate text-neutral-700 dark:text-neutral-300' title={conditions}>
             {conditions}
           </span>
-          <span className='text-neutral-500'>{t('patients.activeRx')}:</span>
-          <span>{activeRx}</span>
-          <span className='text-neutral-500'>{t('patients.allergies')}:</span>
-          <span className='truncate' title={allergies}>
+          <span className='text-neutral-500 dark:text-neutral-400'>{t('patients.activeRx')}:</span>
+          <span className='text-neutral-700 dark:text-neutral-300'>{activeRx}</span>
+          <span className='text-neutral-500 dark:text-neutral-400'>{t('patients.allergies')}:</span>
+          <span className='truncate text-neutral-700 dark:text-neutral-300' title={allergies}>
             {allergies}
           </span>
-          <span className='text-neutral-500'>{t('patients.lastLab')}:</span>
-          <span>{lastLab}</span>
-        </div>
-
-        <div
-          className='flex flex-wrap gap-2 pt-2 border-t border-neutral-200'
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Button
-            variant='secondary'
-            size='sm'
-            onClick={() => router.push(recordPath)}
-            className='whitespace-nowrap'
-          >
-            <DocumentIcon className='icon icon-xs' ariaHidden />
-            {t('patients.viewRecord')}
-          </Button>
-          <Button
-            variant='secondary'
-            size='sm'
-            onClick={() => router.push(`/appointments/new?patientId=${patient._id}`)}
-            className='whitespace-nowrap'
-          >
-            <CalendarIcon className='icon icon-sm shrink-0' ariaHidden />
-            {t('appointments.bookAppointment')}
-          </Button>
-          {isDoctor && (
-            <>
-              <Button
-                variant='secondary'
-                size='sm'
-                onClick={() => router.push('/doctors/messages')}
-                className='whitespace-nowrap'
-              >
-                <MailIcon className='icon icon-xs' ariaHidden />
-                {t('patients.message')}
-              </Button>
-              <Button
-                variant='secondary'
-                size='sm'
-                onClick={() => router.push(`${recordPath}?tab=notes`)}
-                className='whitespace-nowrap'
-              >
-                {t('patients.addNotes')}
-              </Button>
-            </>
-          )}
+          <span className='text-neutral-500 dark:text-neutral-400'>{t('patients.lastLab')}:</span>
+          <span className='text-neutral-700 dark:text-neutral-300'>{lastLab}</span>
         </div>
       </div>
     </Card>

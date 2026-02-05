@@ -21,6 +21,8 @@ import { extractArrayData, extractPaginationData } from '@/lib/utils/api-respons
 import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
 import { logger } from '@/lib/utils/logger';
 import { addRecentSearch, getRecentSearches } from '@/lib/utils/recent-search-cache';
+import { showError, showSuccess } from '@/lib/utils/toast';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
@@ -37,6 +39,7 @@ export default function PatientsPage() {
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -85,19 +88,18 @@ export default function PatientsPage() {
     if (!authLoading && user) {
       fetchSettings();
       const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
-      if (hasCache && !searchTerm && statusFilter === 'all' && sortBy === 'createdAt') {
+      if (hasCache && !debouncedSearchTerm && statusFilter === 'all' && sortBy === 'createdAt') {
         fetchPatients(false);
         return;
       }
-      if (!searchTerm && currentPage === 1 && statusFilter === 'all' && sortBy === 'createdAt') {
+      if (!debouncedSearchTerm && currentPage === 1 && statusFilter === 'all' && sortBy === 'createdAt') {
         fetchPatients(false);
       } else {
-        const timeoutId = setTimeout(() => fetchPatients(true), searchTerm ? 300 : 0);
-        return () => clearTimeout(timeoutId);
+        fetchPatients(!!debouncedSearchTerm);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user, currentPage, searchTerm, statusFilter, sortBy, sortOrder]);
+  }, [authLoading, user, currentPage, debouncedSearchTerm, statusFilter, sortBy, sortOrder]);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -143,8 +145,9 @@ export default function PatientsPage() {
           sortBy: sortBy || 'createdAt',
           sortOrder: sortOrder || 'desc',
         });
-        if (searchTerm) {
-          params.append('search', searchTerm);
+        const effectiveSearch = debouncedSearchTerm ?? searchTerm;
+        if (effectiveSearch) {
+          params.append('search', effectiveSearch);
         }
         if (statusFilter && statusFilter !== 'all') {
           params.append('status', statusFilter);
@@ -158,7 +161,7 @@ export default function PatientsPage() {
           setPatients(patientsList);
           setTotalPages(pagination.totalPages);
           setTotalCount(pagination.total ?? 0);
-          if (searchTerm) addRecentSearch('patients', searchTerm);
+          if (effectiveSearch) addRecentSearch('patients', effectiveSearch);
           if (tenantId)
             routeCache.set(ROUTE_KEY, tenantId, {
               patients: patientsList,
@@ -177,7 +180,7 @@ export default function PatientsPage() {
         }
       }
     },
-    [tenantId, currentPage, searchTerm, statusFilter, sortBy, sortOrder]
+    [tenantId, currentPage, searchTerm, debouncedSearchTerm, statusFilter, sortBy, sortOrder],
   );
 
   // Memoize search handler to prevent SearchBar from re-rendering unnecessarily
@@ -201,13 +204,29 @@ export default function PatientsPage() {
     setSubmitting(true);
 
     try {
-      // Combine country code with phone number
       const fullPhone = formData.phone ? `${countryCode}${formData.phone}` : '';
-      const response = await apiClient.post('/patients', {
+      const payload = {
         ...formData,
         phone: fullPhone,
-      });
+      };
+      if (!payload.firstName?.trim() || !payload.lastName?.trim()) {
+        showError(t('patients.firstLastNameRequired'));
+        setSubmitting(false);
+        return;
+      }
+      if (!payload.phone?.trim()) {
+        showError(t('patients.phoneRequired'));
+        setSubmitting(false);
+        return;
+      }
+      if (!payload.dateOfBirth) {
+        showError(t('patients.dateOfBirthRequired'));
+        setSubmitting(false);
+        return;
+      }
+      const response = await apiClient.post('/patients', payload);
       if (response.success) {
+        showSuccess(t('patients.patientCreated'));
         setShowModal(false);
         setFormData({
           firstName: '',
@@ -217,20 +236,38 @@ export default function PatientsPage() {
           dateOfBirth: '',
           gender: 'male',
         });
-        setCountryCode('+1'); // Reset country code
+        setCountryCode('+1');
+        setCurrentPage(1);
         fetchPatients();
+      } else {
+        const msg =
+          response.error?.message ||
+          response.error?.errors?.[0]?.message ||
+          t('patients.createFailed');
+        showError(msg);
       }
     } catch (error) {
       logger.error('Failed to create patient', error);
+      const msg = error?.message || error?.error?.message || t('patients.createFailed');
+      showError(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleQuickAppointment = (patientId, e) => {
-    e.stopPropagation(); // Prevent row click navigation
-    router.push(`/appointments/new?patientId=${patientId}`);
-  };
+  const handleRowClick = useCallback(
+    (row) => {
+      if (!user) return;
+      const id = row?._id ?? row?.id;
+      if (!id) return;
+      try {
+        router.push(user.role === 'doctor' ? `/doctors/patients/${id}` : `/patients/${id}`);
+      } catch (_) {
+        // Guard against any unexpected throw (e.g. router not ready)
+      }
+    },
+    [user, router],
+  );
 
   const columns = [
     { header: t('patients.patientId'), accessor: 'patientId' },
@@ -245,21 +282,6 @@ export default function PatientsPage() {
       accessor: (row) => new Date(row.dateOfBirth).toLocaleDateString(),
     },
     { header: t('patients.gender'), accessor: 'gender' },
-    {
-      header: t('common.actions'),
-      accessor: (row) => (
-        <Button
-          size='md'
-          variant='secondary'
-          onClick={(e) => handleQuickAppointment(row._id, e)}
-          title={t('patients.addAppointmentTooltip')}
-          className='whitespace-nowrap'
-        >
-          <CalendarIcon className='icon icon-sm shrink-0' ariaHidden />
-          {t('appointments.bookAppointment') || 'Add Appointment'}
-        </Button>
-      ),
-    },
   ];
 
   // Redirect if not authenticated (non-blocking)
@@ -285,15 +307,37 @@ export default function PatientsPage() {
         subtitle={formatDateDisplay()}
         notifications={[]}
         unreadCount={0}
-        actionButton={
-          <Button
-            onClick={() => setShowModal(true)}
-            variant='secondary'
-            size='md'
-            className='whitespace-nowrap'
-          >
-            + {t('patients.addPatient')}
-          </Button>
+        actionButtons={
+          <>
+            <Button
+              variant='secondary'
+              size='md'
+              className='whitespace-nowrap'
+              onClick={() => router.push('/appointments/new')}
+            >
+              <CalendarIcon className='icon icon-sm shrink-0' ariaHidden />
+              {t('appointments.bookAppointment')}
+            </Button>
+            <Button
+              variant='secondary'
+              size='md'
+              className='whitespace-nowrap'
+              onClick={() => {
+                setShowModal(true);
+                setFormData({
+                  firstName: '',
+                  lastName: '',
+                  phone: '',
+                  email: '',
+                  dateOfBirth: '',
+                  gender: 'male',
+                });
+                setCountryCode('+1');
+              }}
+            >
+              + {t('patients.addPatient')}
+            </Button>
+          </>
         }
       />
       <div style={{ padding: '0 10px' }}>
@@ -318,7 +362,7 @@ export default function PatientsPage() {
                   role='listbox'
                 >
                   <div className='px-3 py-1.5 text-xs text-neutral-500 border-b border-neutral-100'>
-                    {t('common.recentSearches') || 'Recent searches'}
+                    {t('common.recentSearches')}
                   </div>
                   {recentSearches.map((term) => (
                     <button
@@ -373,7 +417,11 @@ export default function PatientsPage() {
             </select>
           </div>
           {searchLoading && (
-            <div className='mt-2 text-body-sm text-neutral-500 flex items-center gap-2' role='status' aria-label={t('common.searching')}>
+            <div
+              className='mt-2 text-body-sm text-neutral-500 flex items-center gap-2'
+              role='status'
+              aria-label={t('common.searching')}
+            >
               <CompactLoader size='xs' aria-label={t('common.searching')} />
               <span
                 className='text-body-sm text-neutral-500'
@@ -423,11 +471,7 @@ export default function PatientsPage() {
             <Table
               data={patients}
               columns={columns}
-              onRowClick={(row) =>
-                router.push(
-                  user?.role === 'doctor' ? `/doctors/patients/${row._id}` : `/patients/${row._id}`
-                )
-              }
+              onRowClick={handleRowClick}
               emptyMessage={t('patients.noPatientsFound')}
             />
           ) : (

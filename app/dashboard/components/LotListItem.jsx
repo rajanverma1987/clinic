@@ -3,7 +3,7 @@
 export function LotListItem({ lot, onClick }) {
   const formatDate = (date) => {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
+    return new Date(date).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',

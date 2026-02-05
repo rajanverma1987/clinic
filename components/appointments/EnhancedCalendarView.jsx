@@ -127,16 +127,16 @@ export default function EnhancedCalendarView({
       });
 
       if (response.success) {
-        showSuccess('Appointment rescheduled successfully');
+        showSuccess(t('appointments.rescheduledSuccess'));
         if (onAppointmentUpdate) {
           onAppointmentUpdate(response.data);
         }
       } else {
-        showError('Failed to reschedule appointment');
+        showError(t('appointments.failedToReschedule'));
       }
     } catch (err) {
       logger.error('Failed to reschedule appointment', err);
-      showError('Failed to reschedule appointment');
+      showError(t('appointments.failedToReschedule'));
     } finally {
       setUpdating(false);
       setDraggedAppointment(null);
@@ -266,7 +266,7 @@ export default function EnhancedCalendarView({
                 {/* Day header */}
                 <div className='h-12 border-b border-neutral-200 p-2 text-center'>
                   <div className='text-sm font-semibold'>
-                    {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                    {day.toLocaleDateString(undefined, { weekday: 'short' })}
                   </div>
                   <div className='text-xs text-neutral-600'>{day.getDate()}</div>
                 </div>
@@ -420,15 +420,15 @@ export default function EnhancedCalendarView({
           </Button>
           <div className='ml-4 font-semibold text-lg'>
             {viewMode === VIEW_MODES.DAY &&
-              currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              currentDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             {viewMode === VIEW_MODES.WEEK && (
               <>
-                {getViewRange().start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
-                {getViewRange().end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {getViewRange().start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} -{' '}
+                {getViewRange().end.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
               </>
             )}
             {viewMode === VIEW_MODES.MONTH &&
-              currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
           </div>
         </div>
 

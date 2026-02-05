@@ -1,13 +1,14 @@
 'use client';
 
 import { RefreshCwIcon, SearchIcon } from '@/components/icons';
-import { useI18n } from '@/contexts/I18nContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import GlobalSearch from '@/components/search/GlobalSearch';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useI18n } from '@/contexts/I18nContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Fragment, useEffect, useState } from 'react';
 
 /** Normalize actionButtons to an array so we always render the same way (array or single node). */
@@ -86,42 +87,6 @@ export function PageHeader({
             </div>
           )}
           <div className='min-w-0'>
-            {breadcrumbs && breadcrumbs.length > 0 && (
-              <nav
-                className='text-body-xs text-neutral-500 flex items-center gap-1.5 mb-0.5'
-                aria-label='Breadcrumb'
-              >
-                {breadcrumbs.map((crumb, index) => (
-                  <span key={index} className='flex items-center gap-1.5'>
-                    {index > 0 && <span className='text-neutral-300 dark:text-neutral-500'>/</span>}
-                    {crumb.href ? (
-                      <a
-                        href={crumb.href}
-                        className='hover:text-primary-600 transition-colors'
-                        onClick={(e) => {
-                          if (crumb.onClick) {
-                            e.preventDefault();
-                            crumb.onClick();
-                          }
-                        }}
-                      >
-                        {crumb.label}
-                      </a>
-                    ) : (
-                      <span
-                        className={
-                          index === breadcrumbs.length - 1
-                            ? 'text-neutral-900 dark:text-neutral-100 font-medium'
-                            : ''
-                        }
-                      >
-                        {crumb.label}
-                      </span>
-                    )}
-                  </span>
-                ))}
-              </nav>
-            )}
             <h1 className='sticky-header-bar__title'>{title}</h1>
             {(subtitle || description) && (
               <div className='sticky-header-bar__meta'>{subtitle || description}</div>
@@ -209,6 +174,15 @@ export function PageHeader({
           )}
         </div>
       </div>
+      {breadcrumbs && breadcrumbs.length > 0 && (
+        <Breadcrumb
+          items={breadcrumbs.map((c) => ({
+            label: c.label,
+            href: c.href,
+            onClick: c.onClick,
+          }))}
+        />
+      )}
       <GlobalSearch isOpen={showSearchModal} onClose={() => setShowSearchModal(false)} />
     </header>
   );

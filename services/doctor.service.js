@@ -1,9 +1,9 @@
 /**
  * Doctor Service
- * 
+ *
  * Enterprise-grade service for doctor profile management with schedule,
  * department assignment, and professional information tracking.
- * 
+ *
  * Features:
  * - Doctor profile creation and management
  * - Professional information (qualifications, specializations, experience)
@@ -13,20 +13,18 @@
  * - Availability tracking
  * - Multi-tenant isolation
  * - Audit logging
- * 
+ *
  * @module services/doctor.service
  * @since 1.0.0
  */
 
+import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
+import Department from '@/models/Department.js';
 import Doctor from '@/models/Doctor.js';
 import User from '@/models/User.js';
-import Department from '@/models/Department.js';
-import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
-import { logger } from '@/lib/utils/logger.js';
-import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Create a new doctor profile
@@ -39,7 +37,7 @@ export async function createDoctor(input, tenantId, userId) {
     withTenant(tenantId, {
       _id: input.userId,
       isActive: true,
-    })
+    }),
   );
 
   if (!user) {
@@ -50,7 +48,7 @@ export async function createDoctor(input, tenantId, userId) {
   const existing = await Doctor.findOne(
     withTenant(tenantId, {
       userId: input.userId,
-    })
+    }),
   );
 
   if (existing) {
@@ -63,7 +61,7 @@ export async function createDoctor(input, tenantId, userId) {
       withTenant(tenantId, {
         _id: { $in: input.departments },
         deletedAt: null,
-      })
+      }),
     );
 
     if (departments.length !== input.departments.length) {
@@ -94,7 +92,7 @@ export async function createDoctor(input, tenantId, userId) {
     doctor._id.toString(),
     userId,
     tenantId,
-    AuditAction.CREATE
+    AuditAction.CREATE,
   );
 
   return doctor;
@@ -109,7 +107,7 @@ export async function getDoctorById(doctorId, tenantId, userId) {
   const doctor = await Doctor.findOne(
     withTenant(tenantId, {
       _id: doctorId,
-    })
+    }),
   )
     .populate('userId', 'firstName lastName email phone avatar')
     .populate('departments', 'name code')
@@ -131,13 +129,58 @@ export async function getDoctorByUserId(userId, tenantId) {
   const doctor = await Doctor.findOne(
     withTenant(tenantId, {
       userId: userId,
-    })
+    }),
   )
     .populate('userId', 'firstName lastName email phone avatar')
     .populate('departments', 'name code')
     .lean();
 
   return doctor;
+}
+
+/**
+ * Get doctor by user ID, or create a minimal profile if none exists.
+ * Used when a doctor user fetches their own profile so the profile page always has a record to edit.
+ */
+export async function getOrCreateDoctorByUserId(userId, tenantId) {
+  await connectDB();
+
+  const existing = await Doctor.findOne(
+    withTenant(tenantId, {
+      userId: userId,
+    }),
+  )
+    .populate('userId', 'firstName lastName email phone avatar')
+    .populate('departments', 'name code')
+    .lean();
+
+  if (existing) return existing;
+
+  const user = await User.findOne(
+    withTenant(tenantId, {
+      _id: userId,
+      isActive: true,
+    }),
+  );
+  if (!user) return null;
+
+  const doctor = await Doctor.create({
+    tenantId,
+    userId: user._id,
+    professional: {},
+    schedule: { workingDays: [], slots: [], leaves: [] },
+    consultationFee: 0,
+    departments: [],
+    bio: '',
+    status: 'active',
+  });
+
+  const populated = await Doctor.findById(doctor._id)
+    .populate('userId', 'firstName lastName email phone avatar')
+    .populate('departments', 'name code')
+    .lean();
+
+  return populated;
 }
 
 /**
@@ -179,15 +222,10 @@ export async function listDoctors(query, tenantId, userId) {
     .lean();
 
   // Audit list access
-  await AuditLogger.auditWrite(
-    'doctor',
-    'list',
-    userId,
-    tenantId,
-    AuditAction.READ,
-    undefined,
-    { count: doctors.length, filters: query }
-  );
+  await AuditLogger.auditWrite('doctor', 'list', userId, tenantId, AuditAction.READ, undefined, {
+    count: doctors.length,
+    filters: query,
+  });
 
   return createPaginationResult(doctors, total, page || 1, limit || 10);
 }
@@ -201,7 +239,7 @@ export async function updateDoctor(doctorId, input, tenantId, userId) {
   const existing = await Doctor.findOne(
     withTenant(tenantId, {
       _id: doctorId,
-    })
+    }),
   );
 
   if (!existing) {
@@ -217,7 +255,7 @@ export async function updateDoctor(doctorId, input, tenantId, userId) {
       withTenant(tenantId, {
         _id: { $in: input.departments },
         deletedAt: null,
-      })
+      }),
     );
 
     if (departments.length !== input.departments.length) {
@@ -231,7 +269,7 @@ export async function updateDoctor(doctorId, input, tenantId, userId) {
   const doctor = await Doctor.findByIdAndUpdate(
     doctorId,
     { $set: updateData },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   )
     .populate('userId', 'firstName lastName email phone avatar')
     .populate('departments', 'name code');
@@ -243,7 +281,7 @@ export async function updateDoctor(doctorId, input, tenantId, userId) {
       userId,
       tenantId,
       AuditAction.UPDATE,
-      { before, after: doctor.toObject() }
+      { before, after: doctor.toObject() },
     );
   }
 
@@ -261,7 +299,7 @@ export async function getDoctorSchedule(doctorId, tenantId) {
   const doctor = await Doctor.findOne(
     withTenant(tenantId, {
       _id: doctorId,
-    })
+    }),
   )
     .select('schedule')
     .lean();
@@ -334,7 +372,7 @@ export async function addDoctorLeave(doctorId, leaveData, tenantId, userId) {
   const doctor = await Doctor.findOne(
     withTenant(tenantId, {
       _id: doctorId,
-    })
+    }),
   );
 
   if (!doctor) {
@@ -371,7 +409,7 @@ export async function addDoctorLeave(doctorId, leaveData, tenantId, userId) {
     tenantId,
     AuditAction.UPDATE,
     undefined,
-    { action: 'add_leave', leave }
+    { action: 'add_leave', leave },
   );
 
   return doctor;
@@ -386,7 +424,7 @@ export async function removeDoctorLeave(doctorId, leaveIndex, tenantId, userId) 
   const doctor = await Doctor.findOne(
     withTenant(tenantId, {
       _id: doctorId,
-    })
+    }),
   );
 
   if (!doctor) {
@@ -409,7 +447,7 @@ export async function removeDoctorLeave(doctorId, leaveIndex, tenantId, userId) 
     tenantId,
     AuditAction.UPDATE,
     undefined,
-    { action: 'remove_leave', leave: removedLeave }
+    { action: 'remove_leave', leave: removedLeave },
   );
 
   return doctor;
@@ -424,7 +462,7 @@ export async function updateDoctorSchedule(doctorId, scheduleData, tenantId, use
   const doctor = await Doctor.findOne(
     withTenant(tenantId, {
       _id: doctorId,
-    })
+    }),
   );
 
   if (!doctor) {
@@ -454,9 +492,16 @@ export async function updateDoctorSchedule(doctorId, scheduleData, tenantId, use
     }
   }
 
-  const breaks = scheduleData.breaks && typeof scheduleData.breaks === 'object' ? scheduleData.breaks : doctor.schedule?.breaks || {};
-  const emergencySlots = Array.isArray(scheduleData.emergencySlots) ? scheduleData.emergencySlots : doctor.schedule?.emergencySlots || [];
-  const blockedSlots = Array.isArray(scheduleData.blockedSlots) ? scheduleData.blockedSlots : doctor.schedule?.blockedSlots || [];
+  const breaks =
+    scheduleData.breaks && typeof scheduleData.breaks === 'object'
+      ? scheduleData.breaks
+      : doctor.schedule?.breaks || {};
+  const emergencySlots = Array.isArray(scheduleData.emergencySlots)
+    ? scheduleData.emergencySlots
+    : doctor.schedule?.emergencySlots || [];
+  const blockedSlots = Array.isArray(scheduleData.blockedSlots)
+    ? scheduleData.blockedSlots
+    : doctor.schedule?.blockedSlots || [];
 
   doctor.schedule = {
     workingDays,
@@ -465,8 +510,10 @@ export async function updateDoctorSchedule(doctorId, scheduleData, tenantId, use
     slotDuration: scheduleData.slotDuration ?? doctor.schedule?.slotDuration ?? 30,
     bufferTime: scheduleData.bufferTime ?? doctor.schedule?.bufferTime ?? 0,
     breaks,
-    advanceBookingMinDays: scheduleData.advanceBookingMinDays ?? doctor.schedule?.advanceBookingMinDays ?? 0,
-    advanceBookingMaxDays: scheduleData.advanceBookingMaxDays ?? doctor.schedule?.advanceBookingMaxDays ?? 90,
+    advanceBookingMinDays:
+      scheduleData.advanceBookingMinDays ?? doctor.schedule?.advanceBookingMinDays ?? 0,
+    advanceBookingMaxDays:
+      scheduleData.advanceBookingMaxDays ?? doctor.schedule?.advanceBookingMaxDays ?? 90,
     emergencySlots,
     blockedSlots,
   };
@@ -480,7 +527,7 @@ export async function updateDoctorSchedule(doctorId, scheduleData, tenantId, use
     tenantId,
     AuditAction.UPDATE,
     { before, after: doctor.schedule.toObject() },
-    { action: 'update_schedule' }
+    { action: 'update_schedule' },
   );
 
   return doctor;
@@ -495,7 +542,7 @@ export async function deleteDoctor(doctorId, tenantId, userId) {
   const doctor = await Doctor.findOne(
     withTenant(tenantId, {
       _id: doctorId,
-    })
+    }),
   );
 
   if (!doctor) {
@@ -511,7 +558,7 @@ export async function deleteDoctor(doctorId, tenantId, userId) {
     doctor._id.toString(),
     userId,
     tenantId,
-    AuditAction.DELETE
+    AuditAction.DELETE,
   );
 
   return true;

@@ -19,17 +19,17 @@ import { CompactLoader } from './Loader';
  */
 
 const BASE =
-  'inline-flex items-center justify-center gap-icon-text font-medium whitespace-nowrap transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none flex-shrink-0 self-center [&_svg]:shrink-0 [&_svg]:text-current [&_svg]:stroke-current [&_svg]:fill-current group relative overflow-hidden';
+  'inline-flex items-center justify-center gap-icon-text font-medium whitespace-nowrap transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none flex-shrink-0 self-center [&_svg]:shrink-0 [&_svg]:text-current [&_svg]:stroke-current [&_svg]:fill-none group relative overflow-hidden';
 
 const VARIANTS = {
   primary:
-    'bg-[#15803d] text-white border border-white shadow-[0_0_0_0.5px_#15803d] hover:bg-primary-500 hover:shadow-[0_0_0_0.5px_#3b82f6] active:bg-primary-600 focus:ring-primary-500 focus:ring-offset-0 transition-all duration-200',
+    'bg-[#15803d] text-white border border-white shadow-[0_0_0_0.5px_#15803d] hover:bg-primary-500 hover:shadow-[0_0_0_0.5px_var(--color-primary-500)] active:bg-primary-600 focus:ring-primary-500 focus:ring-offset-0 transition-all duration-200',
   success:
-    'bg-[#15803d] text-white border border-white shadow-[0_0_0_0.5px_#15803d] hover:bg-primary-500 hover:shadow-[0_0_0_0.5px_#3b82f6] active:bg-primary-600 focus:ring-primary-500 focus:ring-offset-0 transition-all duration-200',
+    'bg-[#15803d] text-white border border-white shadow-[0_0_0_0.5px_#15803d] hover:bg-primary-500 hover:shadow-[0_0_0_0.5px_var(--color-primary-500)] active:bg-primary-600 focus:ring-primary-500 focus:ring-offset-0 transition-all duration-200',
   secondary:
-    'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_#3b82f6] focus:ring-primary-500',
+    'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_var(--color-primary-500)] focus:ring-primary-500',
   outline:
-    'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_#3b82f6] focus:ring-primary-500',
+    'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_var(--color-primary-500)] focus:ring-primary-500',
   danger:
     'bg-status-error text-white border border-status-error hover:bg-red-600 hover:border-red-600 active:bg-red-700 focus:ring-status-error shadow-sm',
   destructive:
@@ -87,10 +87,10 @@ export function Button({
   const isDisabled = disabled || isLoading;
   const variantStyle = VARIANTS[variant] ?? VARIANTS.primary;
   const sizeStyle = iconOnly
-    ? ICON_ONLY_SIZES[size] ?? ICON_ONLY_SIZES.md
-    : SIZES[size] ?? SIZES.md;
+    ? (ICON_ONLY_SIZES[size] ?? ICON_ONLY_SIZES.md)
+    : (SIZES[size] ?? SIZES.md);
   const shapeStyle =
-    iconOnly && shape === 'rounded' ? SHAPES.rounded : SHAPES[shape] ?? SHAPES.rounded;
+    iconOnly && shape === 'rounded' ? SHAPES.rounded : (SHAPES[shape] ?? SHAPES.rounded);
   const pillShape = iconOnly && shape === 'pill' ? SHAPES.pill : shapeStyle;
   const isSecondaryStyle = variant === 'secondary' || variant === 'outline';
   const iconOnlyPill = iconOnly && shape === 'pill';

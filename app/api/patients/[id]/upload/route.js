@@ -1,45 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
 import connectDB from '@/lib/db/connection';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
+import { validateFileForRoute } from '@/lib/utils/route-validation';
 import Patient from '@/models/Patient';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
+import { NextResponse } from 'next/server';
 
 /**
  * POST /api/patients/:id/upload
- * Upload a photo/attachment for a patient
+ * Upload a photo/attachment for a patient (validation from ROUTE_VALIDATION).
  */
-async function postHandler(
-  req,
-  user,
-  { params }
-) {
+async function postHandler(req, user, { params }) {
   try {
     await connectDB();
     const formData = await req.formData();
     const file = formData.get('file');
 
     if (!file) {
-      return NextResponse.json(
-        errorResponse('No file provided', 'VALIDATION_ERROR'),
-        { status: 400 }
-      );
+      return NextResponse.json(errorResponse('No file provided', 'VALIDATION_ERROR'), {
+        status: 400,
+      });
     }
 
-    // Validate file type (images only)
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
+    const pathname = new URL(req.url).pathname;
+    const validation = validateFileForRoute(pathname, {
+      size: file.size,
+      type: file.type,
+      name: file.name,
+    });
+    if (!validation.valid) {
       return NextResponse.json(
-        errorResponse('Invalid file type. Only images are allowed.', 'VALIDATION_ERROR'),
-        { status: 400 }
-      );
-    }
-
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        errorResponse('File size exceeds 5MB limit', 'VALIDATION_ERROR'),
-        { status: 400 }
+        errorResponse(validation.error || 'Invalid file', 'VALIDATION_ERROR'),
+        { status: 400 },
       );
     }
 
@@ -51,10 +41,7 @@ async function postHandler(
     });
 
     if (!patient) {
-      return NextResponse.json(
-        errorResponse('Patient not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('Patient not found', 'NOT_FOUND'), { status: 404 });
     }
 
     // Convert file to base64 for storage (in production, use cloud storage like S3)
@@ -87,15 +74,15 @@ async function postHandler(
         fileType: attachment.fileType,
         uploadedAt: attachment.uploadedAt,
       }),
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to upload file',
-        'UPLOAD_ERROR'
+        'UPLOAD_ERROR',
       ),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -105,11 +92,7 @@ async function postHandler(
  * Delete a patient attachment
  * attachmentId is passed as query parameter
  */
-async function deleteHandler(
-  req,
-  user,
-  { params }
-) {
+async function deleteHandler(req, user, { params }) {
   try {
     await connectDB();
 
@@ -120,17 +103,11 @@ async function deleteHandler(
     });
 
     if (!patient) {
-      return NextResponse.json(
-        errorResponse('Patient not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('Patient not found', 'NOT_FOUND'), { status: 404 });
     }
 
     if (!patient.attachments || patient.attachments.length === 0) {
-      return NextResponse.json(
-        errorResponse('No attachments found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('No attachments found', 'NOT_FOUND'), { status: 404 });
     }
 
     // Get attachmentId from query parameter
@@ -138,47 +115,38 @@ async function deleteHandler(
     const attachmentId = searchParams.get('attachmentId');
 
     if (!attachmentId) {
-      return NextResponse.json(
-        errorResponse('Attachment ID is required', 'VALIDATION_ERROR'),
-        { status: 400 }
-      );
+      return NextResponse.json(errorResponse('Attachment ID is required', 'VALIDATION_ERROR'), {
+        status: 400,
+      });
     }
 
     // Remove attachment by uploadedAt timestamp (used as ID)
     const attachmentIndex = patient.attachments.findIndex(
-      (att) => new Date(att.uploadedAt).getTime().toString() === attachmentId
+      (att) => new Date(att.uploadedAt).getTime().toString() === attachmentId,
     );
 
     if (attachmentIndex === -1) {
-      return NextResponse.json(
-        errorResponse('Attachment not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('Attachment not found', 'NOT_FOUND'), { status: 404 });
     }
 
     patient.attachments.splice(attachmentIndex, 1);
     await patient.save();
 
-    return NextResponse.json(
-      successResponse({ message: 'Attachment deleted successfully' })
-    );
+    return NextResponse.json(successResponse({ message: 'Attachment deleted successfully' }));
   } catch (error) {
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to delete attachment',
-        'DELETE_ERROR'
+        'DELETE_ERROR',
       ),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 // Note: Next.js 14+ uses async params
-export async function POST(
-  req,
-  context
-) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
+export async function POST(req, context) {
+  const authResult = await import('@/middleware/auth').then((m) => m.authenticate(req));
   if ('error' in authResult) return authResult.error;
 
   const params = await context.params;
@@ -188,11 +156,8 @@ export async function POST(
   return postHandler(authenticatedReq, authResult.user, { params });
 }
 
-export async function DELETE(
-  req,
-  context
-) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
+export async function DELETE(req, context) {
+  const authResult = await import('@/middleware/auth').then((m) => m.authenticate(req));
   if ('error' in authResult) return authResult.error;
 
   const params = await context.params;
@@ -201,4 +166,3 @@ export async function DELETE(
 
   return deleteHandler(authenticatedReq, authResult.user, { params });
 }
-

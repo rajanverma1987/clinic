@@ -222,8 +222,11 @@ export async function registerUser(input) {
 
 /**
  * Login user
+ * @param {object} input - { email, password, tenantId?, rememberMe? }
+ * @param {object} [options] - { clientIP?: string } from request (for audit)
  */
-export async function loginUser(input) {
+export async function loginUser(input, options = {}) {
+  const clientIP = options.clientIP ?? 'unknown';
   await connectDB();
 
   // Normalize email and password (trim whitespace)
@@ -285,7 +288,6 @@ export async function loginUser(input) {
   }
 
   // Update last login - batch with other updates
-  const clientIP = 'unknown'; // TODO: Extract from request
   user.lastLoginAt = new Date();
   user.lastLoginIP = clientIP;
   if (user.failedLoginAttempts > 0) {
@@ -342,10 +344,13 @@ export async function loginUser(input) {
 
 /**
  * Verify 2FA OTP and complete login
+ * @param {object} input - { email, otp, tenantId?, rememberMe? }
+ * @param {object} [options] - { clientIP?: string } from request (for audit)
  */
-export async function verify2FA(input) {
+export async function verify2FA(input, options = {}) {
   await connectDB();
 
+  const clientIP = options.clientIP ?? 'unknown';
   const { email, otp, tenantId, rememberMe = false } = input;
 
   // Find user
@@ -398,7 +403,6 @@ export async function verify2FA(input) {
   }
 
   // Update last login
-  const clientIP = 'unknown'; // TODO: Extract from request
   user.lastLoginAt = new Date();
   user.lastLoginIP = clientIP;
   await user.save();

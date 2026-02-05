@@ -36,7 +36,7 @@ export function ICD10SearchInput({
       .filter(
         (item) =>
           (item.code && item.code.toLowerCase().includes(q)) ||
-          (item.title && item.title.toLowerCase().includes(q))
+          (item.title && item.title.toLowerCase().includes(q)),
       )
       .slice(0, 12);
     setFiltered(list);
@@ -75,7 +75,7 @@ export function ICD10SearchInput({
   };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }} className='icd10-search-wrapper'>
       <Input
         ref={inputRef}
         type='text'
@@ -86,7 +86,7 @@ export function ICD10SearchInput({
           onSelect && onSelect(null);
         }}
         onFocus={() => query.trim() && filtered.length > 0 && setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        onBlur={() => setTimeout(() => setOpen(false), 220)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder ?? t('prescriptions.primaryDiagnosis')}
         className={className}
@@ -95,6 +95,7 @@ export function ICD10SearchInput({
         <ul
           ref={listRef}
           role='listbox'
+          onMouseDown={(e) => e.preventDefault()}
           style={{
             position: 'absolute',
             left: 0,
@@ -107,7 +108,7 @@ export function ICD10SearchInput({
             border: '1px solid var(--color-neutral-200)',
             borderRadius: 'var(--radius-md)',
             boxShadow: 'var(--shadow-md)',
-            zIndex: 50,
+            zIndex: 10070,
             maxHeight: 240,
             overflowY: 'auto',
           }}
@@ -117,6 +118,11 @@ export function ICD10SearchInput({
               key={item.code || i}
               role='option'
               aria-selected={i === selectedIndex}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSelect(item);
+              }}
               onClick={() => handleSelect(item)}
               style={{
                 padding: 'var(--space-2) var(--space-3)',

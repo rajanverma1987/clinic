@@ -104,7 +104,7 @@ function AdminDoctorVerificationContent() {
       }
     } catch (error) {
       logger.error('Failed to fetch doctors', error);
-      showError('Failed to fetch doctors');
+      showError(t('admin.failedToFetchDoctors'));
       setDoctors([]);
     } finally {
       setLoading(false);
@@ -146,7 +146,7 @@ function AdminDoctorVerificationContent() {
       }
     } catch (error) {
       logger.error('Failed to fetch doctor details', error);
-      showError('Failed to fetch doctor details');
+      showError(t('admin.failedToFetchDoctorDetails'));
     }
   };
 
@@ -158,7 +158,7 @@ function AdminDoctorVerificationContent() {
         comment: verificationComment,
       });
       if (response.success) {
-        showSuccess('Doctor approved successfully');
+        showSuccess(t('admin.doctorApprovedSuccess'));
         setSelectedDoctor(null);
         setVerificationComment('');
         fetchDoctors();
@@ -166,7 +166,7 @@ function AdminDoctorVerificationContent() {
         showError(response.error?.message || 'Failed to approve doctor');
       }
     } catch (error) {
-      showError('Failed to approve doctor');
+      showError(t('admin.failedToApproveDoctor'));
     } finally {
       setSubmitting(false);
     }
@@ -174,7 +174,7 @@ function AdminDoctorVerificationContent() {
 
   const handleReject = async (doctorId) => {
     if (!verificationComment.trim()) {
-      showError('Please provide a reason for rejection');
+      showError(t('admin.reasonForRejectionRequired'));
       return;
     }
     try {
@@ -184,7 +184,7 @@ function AdminDoctorVerificationContent() {
         comment: verificationComment,
       });
       if (response.success) {
-        showSuccess('Doctor rejected. Email notification sent.');
+        showSuccess(t('admin.doctorRejectedEmailSent'));
         setSelectedDoctor(null);
         setVerificationComment('');
         fetchDoctors();
@@ -192,7 +192,7 @@ function AdminDoctorVerificationContent() {
         showError(response.error?.message || 'Failed to reject doctor');
       }
     } catch (error) {
-      showError('Failed to reject doctor');
+      showError(t('admin.failedToRejectDoctor'));
     } finally {
       setSubmitting(false);
     }
@@ -200,7 +200,7 @@ function AdminDoctorVerificationContent() {
 
   const handleRequestDocuments = async (doctorId) => {
     if (!requestDocumentType.trim()) {
-      showError('Please specify which documents are needed');
+      showError(t('admin.specifyDocumentsNeeded'));
       return;
     }
     try {
@@ -209,21 +209,21 @@ function AdminDoctorVerificationContent() {
         comment: verificationComment,
       });
       if (response.success) {
-        showSuccess('Document request sent to doctor');
+        showSuccess(t('admin.documentRequestSent'));
         setRequestDocumentType('');
         setVerificationComment('');
       } else {
         showError(response.error?.message || 'Failed to request documents');
       }
     } catch (error) {
-      showError('Failed to request documents');
+      showError(t('admin.failedToRequestDocuments'));
     }
   };
 
   const handleRequestMoreInfoSubmit = async () => {
     if (!selectedDoctor?._id) return;
     if (requestMoreInfoItems.length === 0 && !requestMoreInfoMessage.trim()) {
-      showError('Select at least one item or enter a message');
+      showError(t('admin.selectItemOrMessage'));
       return;
     }
     try {
@@ -234,7 +234,7 @@ function AdminDoctorVerificationContent() {
           items: requestMoreInfoItems.length ? requestMoreInfoItems : ['other'],
           comment: requestMoreInfoMessage,
           deadline: requestMoreInfoDeadline || undefined,
-        }
+        },
       );
       if (response.success) {
         showSuccess(t('admin.verifyRequestSent'));
@@ -246,7 +246,7 @@ function AdminDoctorVerificationContent() {
         showError(response.error?.message || 'Failed to send request');
       }
     } catch (error) {
-      showError('Failed to send request');
+      showError(t('admin.failedToSendRequest'));
     } finally {
       setSubmitting(false);
     }
@@ -651,7 +651,7 @@ function AdminDoctorVerificationContent() {
                                       setRequestMoreInfoItems((prev) => [...prev, item.value]);
                                     } else {
                                       setRequestMoreInfoItems((prev) =>
-                                        prev.filter((x) => x !== item.value)
+                                        prev.filter((x) => x !== item.value),
                                       );
                                     }
                                   }}

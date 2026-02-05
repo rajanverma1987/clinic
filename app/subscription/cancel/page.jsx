@@ -4,12 +4,28 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
+import { useI18n } from '@/contexts/I18nContext';
+import { logger } from '@/lib/utils/logger';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+
+function SubscriptionCancelFallback() {
+  const { t } = useI18n();
+  return (
+    <div className='flex items-center justify-center min-h-[60vh]'>
+      <Card className='max-w-md w-full text-center'>
+        <div className='py-12'>
+          <Loader type='page' text={t('common.loading')} />
+        </div>
+      </Card>
+    </div>
+  );
+}
 
 function SubscriptionCancelContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const [subscriptionId, setSubscriptionId] = useState('');
   const [token, setToken] = useState('');
 
@@ -52,23 +68,23 @@ function SubscriptionCancelContent() {
           </div>
 
           {/* Title */}
-          <h1 className='text-3xl font-bold text-neutral-900 mb-3'>Payment Cancelled</h1>
+          <h1 className='text-3xl font-bold text-neutral-900 mb-3'>{t('subscription.paymentCancelled')}</h1>
 
           {/* Description */}
-          <p className='text-neutral-600 mb-2 text-lg'>Your subscription payment was cancelled.</p>
-          <p className='text-neutral-500 mb-8'>No charges have been made to your account.</p>
+          <p className='text-neutral-600 mb-2 text-lg'>{t('subscription.subscriptionPaymentCancelled')}</p>
+          <p className='text-neutral-500 mb-8'>{t('subscription.noChargesMade')}</p>
 
           {/* Details */}
           {subscriptionId && (
             <div className='bg-neutral-100 rounded-lg p-4 mb-8'>
               <div className='text-sm text-neutral-600 space-y-1'>
                 <p>
-                  <strong>PayPal Subscription ID:</strong>{' '}
+                  <strong>{t('subscription.paypalSubscriptionId')}:</strong>{' '}
                   <span className='font-mono text-neutral-800 text-xs'>{subscriptionId}</span>
                 </p>
                 {token && (
                   <p>
-                    <strong>Token:</strong>{' '}
+                    <strong>{t('subscription.token')}:</strong>{' '}
                     <span className='font-mono text-neutral-800 text-xs'>{token}</span>
                   </p>
                 )}
@@ -78,23 +94,23 @@ function SubscriptionCancelContent() {
 
           {/* What Happened */}
           <div className='bg-primary-100 border-l-4 border-primary-400 p-4 mb-8 text-left'>
-            <h3 className='text-sm font-semibold text-primary-900 mb-2'>What happened?</h3>
+            <h3 className='text-sm font-semibold text-primary-900 mb-2'>{t('subscription.whatHappened')}</h3>
             <ul className='text-sm text-primary-700 space-y-2'>
               <li className='flex items-start'>
                 <span className='mr-2'>•</span>
-                <span>You cancelled the payment process on PayPal</span>
+                <span>{t('subscription.cancelledOnPaypal')}</span>
               </li>
               <li className='flex items-start'>
                 <span className='mr-2'>•</span>
-                <span>Your subscription was not activated</span>
+                <span>{t('subscription.subscriptionNotActivated')}</span>
               </li>
               <li className='flex items-start'>
                 <span className='mr-2'>•</span>
-                <span>No payment was processed</span>
+                <span>{t('subscription.noPaymentProcessed')}</span>
               </li>
               <li className='flex items-start'>
                 <span className='mr-2'>•</span>
-                <span>You can try subscribing again anytime</span>
+                <span>{t('subscription.trySubscribingAgain')}</span>
               </li>
             </ul>
           </div>
@@ -102,31 +118,31 @@ function SubscriptionCancelContent() {
           {/* Action Buttons */}
           <div className='flex flex-col sm:flex-row gap-4 justify-center mb-6'>
             <Button onClick={() => router.push('/subscription')} className='flex-1 sm:flex-none'>
-              Try Again
+              {t('subscription.tryAgain')}
             </Button>
             <Button
               variant='secondary'
               onClick={() => router.push('/pricing')}
               className='flex-1 sm:flex-none'
             >
-              View All Plans
+              {t('subscription.viewAllPlans')}
             </Button>
             <Button
               variant='secondary'
               onClick={() => router.push('/dashboard')}
               className='flex-1 sm:flex-none'
             >
-              Go to Dashboard
+              {t('subscription.goToDashboard')}
             </Button>
           </div>
 
           {/* Support Section */}
           <div className='pt-6 border-t border-neutral-200'>
             <p className='text-sm text-neutral-600 mb-3'>
-              Need help or have questions about our plans?
+              {t('subscription.needHelp')}
             </p>
             <Button variant='secondary' size='sm' onClick={() => router.push('/support/contact')}>
-              Contact Support
+              {t('subscription.contactSupport')}
             </Button>
           </div>
         </div>
@@ -138,17 +154,7 @@ function SubscriptionCancelContent() {
 export default function SubscriptionCancelPage() {
   return (
     <Layout>
-      <Suspense
-        fallback={
-          <div className='flex items-center justify-center min-h-[60vh]'>
-            <Card className='max-w-md w-full text-center'>
-              <div className='py-12'>
-                <Loader type='page' text={t('common.loading')} />
-              </div>
-            </Card>
-          </div>
-        }
-      >
+      <Suspense fallback={<SubscriptionCancelFallback />}>
         <SubscriptionCancelContent />
       </Suspense>
     </Layout>

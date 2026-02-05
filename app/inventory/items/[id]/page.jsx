@@ -14,17 +14,20 @@ import { Textarea } from '@/components/ui/Textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
+import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function InventoryItemDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const managerReadOnly = isManagerPathReadOnly(pathname);
   const { currency, locale } = useSettings();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -181,7 +184,7 @@ export default function InventoryItemDetailPage() {
         actionButtons={
           <>
             <BackButton />
-            {!isEditing && (
+            {!managerReadOnly && !isEditing && (
               <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>
             )}
           </>

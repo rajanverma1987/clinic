@@ -8,22 +8,27 @@ import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
 const ROUTE_KEY = 'route_prescriptions';
 
 export default function PrescriptionsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const { open: openConfirm } = useConfirmation();
   const tenantId = user?.tenantId ?? null;
+  const managerReadOnly = isManagerPathReadOnly(pathname);
 
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,23 +96,25 @@ export default function PrescriptionsPage() {
   };
 
   const handleActivate = async (prescriptionId) => {
-    if (!confirm(t('prescriptions.confirmActivate'))) {
-      return;
-    }
-
-    try {
-      const response = await apiClient.post(`/prescriptions/${prescriptionId}/activate`);
-      if (response.success) {
-        showSuccess(t('prescriptions.activated') || 'Prescription activated successfully');
-        // Refresh the prescriptions list
-        fetchPrescriptions();
-      } else {
-        showError(response.error?.message || 'Failed to activate prescription');
-      }
-    } catch (error) {
-      logger.error('Failed to activate prescription:', error);
-      showError(error.message || 'Failed to activate prescription');
-    }
+    openConfirm({
+      title: t('prescriptions.activate'),
+      message: t('prescriptions.confirmActivate'),
+      variant: 'primary',
+      onConfirm: async () => {
+        try {
+          const response = await apiClient.post(`/prescriptions/${prescriptionId}/activate`);
+          if (response.success) {
+            showSuccess(t('prescriptions.activated') || 'Prescription activated successfully');
+            fetchPrescriptions();
+          } else {
+            showError(response.error?.message || 'Failed to activate prescription');
+          }
+        } catch (error) {
+          logger.error('Failed to activate prescription:', error);
+          showError(error.message || 'Failed to activate prescription');
+        }
+      },
+    });
   };
 
   const columns = [
@@ -208,14 +215,16 @@ export default function PrescriptionsPage() {
         notifications={[]}
         unreadCount={0}
         actionButton={
-          <Button
-            onClick={() => router.push('/prescriptions/new')}
-            variant='primary'
-            size='md'
-            className='whitespace-nowrap'
-          >
-            + {t('prescriptions.createPrescription')}
-          </Button>
+          managerReadOnly ? null : (
+            <Button
+              onClick={() => router.push('/prescriptions/new')}
+              variant='primary'
+              size='md'
+              className='whitespace-nowrap'
+            >
+              + {t('prescriptions.createPrescription')}
+            </Button>
+          )
         }
       />
       <div style={{ padding: '0 10px' }}>

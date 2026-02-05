@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ const defaultValues = {
 
 export default function AdminSettingsGeneralPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState(defaultValues);
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,7 @@ export default function AdminSettingsGeneralPage() {
         setForm({ ...defaultValues, ...response.data });
       }
     } catch (err) {
-      showError('Failed to load settings');
+      showError(t('admin.failedToLoadSettings'));
     } finally {
       setLoading(false);
     }
@@ -58,13 +60,13 @@ export default function AdminSettingsGeneralPage() {
       setSaving(true);
       const response = await apiClient.put('/admin/settings/general', form);
       if (response.success) {
-        showSuccess('Settings saved');
+        showSuccess(t('admin.settingsSaved'));
         if (response.data) setForm((f) => ({ ...f, ...response.data }));
       } else {
         showError(response.error?.message || 'Failed to save');
       }
     } catch (err) {
-      showError('Failed to save settings');
+      showError(t('admin.failedToSaveSettings'));
     } finally {
       setSaving(false);
     }
@@ -87,7 +89,9 @@ export default function AdminSettingsGeneralPage() {
         <Card className='p-6 max-w-2xl'>
           <form onSubmit={handleSubmit} className='space-y-4'>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Platform name</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Platform name
+              </label>
               <Input
                 type='text'
                 value={form.platformName}
@@ -96,7 +100,9 @@ export default function AdminSettingsGeneralPage() {
               />
             </div>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Support email</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Support email
+              </label>
               <Input
                 type='email'
                 value={form.supportEmail}
@@ -105,7 +111,9 @@ export default function AdminSettingsGeneralPage() {
               />
             </div>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Support phone</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Support phone
+              </label>
               <Input
                 type='text'
                 value={form.supportPhone}
@@ -114,7 +122,9 @@ export default function AdminSettingsGeneralPage() {
               />
             </div>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Business hours</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Business hours
+              </label>
               <Input
                 type='text'
                 value={form.businessHours}
@@ -141,7 +151,9 @@ export default function AdminSettingsGeneralPage() {
               />
             </div>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Currency format</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Currency format
+              </label>
               <Input
                 type='text'
                 value={form.currencyFormat}
@@ -153,7 +165,11 @@ export default function AdminSettingsGeneralPage() {
               <Button type='submit' variant='primary' disabled={saving}>
                 {saving ? 'Saving…' : 'Save'}
               </Button>
-              <Button type='button' variant='secondary' onClick={() => router.push('/admin/settings')}>
+              <Button
+                type='button'
+                variant='secondary'
+                onClick={() => router.push('/admin/settings')}
+              >
                 Cancel
               </Button>
             </div>

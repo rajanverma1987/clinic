@@ -1,23 +1,23 @@
 /**
  * Doctor Registration API Route
- * 
+ *
  * Handles doctor self-registration (5-step onboarding process)
  * Creates pending doctor account that requires admin approval
- * 
+ *
  * @module app/api/doctors/register/route
  * @since 1.0.0
  */
 
-import { NextResponse } from 'next/server';
+import connectDB from '@/lib/db/connection.js';
+import { errorResponse, successResponse, validationErrorResponse } from '@/lib/utils/api-response';
+import { logger } from '@/lib/utils/logger.js';
 import { withErrorHandler } from '@/middleware/error-handler';
 import { apiRateLimit } from '@/middleware/rate-limit';
-import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
-import { z } from 'zod';
-import connectDB from '@/lib/db/connection.js';
-import User, { UserRole } from '@/models/User.js';
 import Doctor from '@/models/Doctor.js';
-import { logger } from '@/lib/utils/logger.js';
+import User, { UserRole } from '@/models/User.js';
 import bcrypt from 'bcryptjs';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 /**
  * Doctor registration validation schema
@@ -35,12 +35,16 @@ const doctorRegisterSchema = z.object({
   languages: z.array(z.string()).optional(),
   bio: z.string().optional(),
   workingDays: z.array(z.string()).min(1, 'At least one working day is required'),
-  slots: z.array(z.object({
-    day: z.string(),
-    startTime: z.string(),
-    endTime: z.string(),
-    slotDuration: z.number().min(15).max(60),
-  })).optional(),
+  slots: z
+    .array(
+      z.object({
+        day: z.string(),
+        startTime: z.string(),
+        endTime: z.string(),
+        slotDuration: z.number().min(15).max(60),
+      }),
+    )
+    .optional(),
   consultationFee: z.number().min(0, 'Consultation fee must be 0 or greater'),
   videoConsultationFee: z.number().min(0).optional(),
   followUpFee: z.number().min(0).optional(),
@@ -54,16 +58,15 @@ const doctorRegisterSchema = z.object({
 async function postHandler(req) {
   try {
     await connectDB();
-    
+
     const body = await req.json();
-    
+
     // Validate input
     const validationResult = doctorRegisterSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        validationErrorResponse(validationResult.error.errors),
-        { status: 400 }
-      );
+      return NextResponse.json(validationErrorResponse(validationResult.error.errors), {
+        status: 400,
+      });
     }
 
     const data = validationResult.data;
@@ -74,10 +77,9 @@ async function postHandler(req) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        errorResponse('Email already registered', 'EMAIL_EXISTS'),
-        { status: 400 }
-      );
+      return NextResponse.json(errorResponse('Email already registered', 'EMAIL_EXISTS'), {
+        status: 400,
+      });
     }
 
     // Check if license number already exists
@@ -88,7 +90,7 @@ async function postHandler(req) {
     if (existingDoctor) {
       return NextResponse.json(
         errorResponse('License number already registered', 'LICENSE_EXISTS'),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -112,7 +114,7 @@ async function postHandler(req) {
 
     // Create doctor profile (pending approval) – dp-6: verificationStatus for admin verification
     const doctor = await Doctor.create({
-      userId: user._id,
+      userId: user.userId,
       // No tenantId yet - will be assigned on approval (ensure a platform/default tenant if Doctor.tenantId is required)
       professional: {
         licenseNumber: data.licenseNumber,
@@ -136,7 +138,7 @@ async function postHandler(req) {
     });
 
     logger.info('Doctor registration submitted', {
-      userId: user._id,
+      userId: user.userId,
       email: user.email,
       licenseNumber: data.licenseNumber,
     });
@@ -145,15 +147,15 @@ async function postHandler(req) {
       successResponse({
         message: 'Registration submitted successfully. Your account is pending admin approval.',
         doctorId: doctor._id,
-        userId: user._id,
+        userId: user.userId,
       }),
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     logger.error('Doctor registration error', error);
     return NextResponse.json(
       errorResponse('Registration failed. Please try again.', 'INTERNAL_ERROR'),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -161,6 +163,6 @@ async function postHandler(req) {
 export const POST = withErrorHandler(
   apiRateLimit(
     postHandler,
-    { maxRequests: 5, windowMs: 15 * 60 * 1000 } // 5 requests per 15 minutes
-  )
+    { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 requests per 15 minutes
+  ),
 );

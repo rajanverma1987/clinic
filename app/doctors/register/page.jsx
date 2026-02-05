@@ -2,16 +2,16 @@
 
 /**
  * Doctor Onboarding Page
- * 
+ *
  * 5-step registration process for doctors to join the platform
- * 
+ *
  * Steps:
  * 1. Personal Information (Name, Email, Phone, Password)
  * 2. Professional Information (License, Qualification, Specialization, Experience)
  * 3. Schedule Setup (Working Days, Time Slots)
  * 4. Consultation Fees & Services
  * 5. Review & Submit
- * 
+ *
  * @module app/doctors/register/page
  * @since 1.0.0
  */
@@ -19,13 +19,13 @@
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger.js';
+import { showError, showSuccess } from '@/lib/utils/toast';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import Link from 'next/link';
-import { logger } from '@/lib/utils/logger.js';
 
 export default function DoctorRegisterPage() {
   const router = useRouter();
@@ -44,23 +44,23 @@ export default function DoctorRegisterPage() {
     confirmPassword: '',
     specialty: '',
     experienceYears: '',
-    
+
     // Step 2: Professional Details
     licenseNumber: '',
     qualifications: [], // Array of {degree, university, year}
     certifications: [], // Array of {name, issuingOrganization, year}
     specializations: [],
-    
+
     // Step 3: Clinic Details
     clinics: [{ name: '', address: '', lat: '', lng: '', workingHours: {}, consultationFee: '' }], // Multiple locations
     workingHours: {}, // Per location
-    
+
     // Step 4: Documents Upload
     medicalLicense: null,
     degreeCertificates: [], // Array of files
     idProof: null,
     clinicRegistration: null,
-    
+
     // Step 5: Banking Details
     bankAccountNumber: '',
     bankName: '',
@@ -69,7 +69,7 @@ export default function DoctorRegisterPage() {
     panNumber: '',
     taxDetails: {},
     paymentPreferences: 'weekly', // weekly, bi-weekly, monthly
-    
+
     // Terms
     agreeToTerms: false,
   });
@@ -100,10 +100,17 @@ export default function DoctorRegisterPage() {
 
   const handleNext = () => {
     setError('');
-    
+
     // Validation based on step
     if (step === 1) {
-      if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.specialty) {
+      if (
+        !formData.firstName ||
+        !formData.lastName ||
+        !formData.email ||
+        !formData.phone ||
+        !formData.password ||
+        !formData.specialty
+      ) {
         setError('Please fill in all required fields');
         return;
       }
@@ -124,27 +131,44 @@ export default function DoctorRegisterPage() {
         return;
       }
     } else if (step === 2) {
-      if (!formData.licenseNumber || formData.qualifications.length === 0 || formData.specializations.length === 0) {
+      if (
+        !formData.licenseNumber ||
+        formData.qualifications.length === 0 ||
+        formData.specializations.length === 0
+      ) {
         setError('Please fill in all required professional information');
         return;
       }
     } else if (step === 3) {
-      if (formData.clinics.length === 0 || !formData.clinics[0].name || !formData.clinics[0].address) {
+      if (
+        formData.clinics.length === 0 ||
+        !formData.clinics[0].name ||
+        !formData.clinics[0].address
+      ) {
         setError('Please add at least one clinic with name and address');
         return;
       }
     } else if (step === 4) {
-      if (!formData.medicalLicense || formData.degreeCertificates.length === 0 || !formData.idProof) {
+      if (
+        !formData.medicalLicense ||
+        formData.degreeCertificates.length === 0 ||
+        !formData.idProof
+      ) {
         setError('Please upload all required documents');
         return;
       }
     } else if (step === 5) {
-      if (!formData.bankAccountNumber || !formData.bankName || !formData.ifscCode || !formData.accountHolderName) {
+      if (
+        !formData.bankAccountNumber ||
+        !formData.bankName ||
+        !formData.ifscCode ||
+        !formData.accountHolderName
+      ) {
         setError('Please fill in all banking details');
         return;
       }
     }
-    
+
     setStep((prev) => Math.min(prev + 1, 5));
   };
 
@@ -172,16 +196,16 @@ export default function DoctorRegisterPage() {
       submitFormData.append('password', formData.password);
       submitFormData.append('specialty', formData.specialty);
       submitFormData.append('experienceYears', formData.experienceYears);
-      
+
       // Professional info
       submitFormData.append('licenseNumber', formData.licenseNumber);
       submitFormData.append('qualifications', JSON.stringify(formData.qualifications));
       submitFormData.append('certifications', JSON.stringify(formData.certifications));
       submitFormData.append('specializations', JSON.stringify(formData.specializations));
-      
+
       // Clinic details
       submitFormData.append('clinics', JSON.stringify(formData.clinics));
-      
+
       // Documents
       if (formData.medicalLicense) {
         submitFormData.append('medicalLicense', formData.medicalLicense);
@@ -195,7 +219,7 @@ export default function DoctorRegisterPage() {
       if (formData.clinicRegistration) {
         submitFormData.append('clinicRegistration', formData.clinicRegistration);
       }
-      
+
       // Banking details
       submitFormData.append('bankAccountNumber', formData.bankAccountNumber);
       submitFormData.append('bankName', formData.bankName);
@@ -211,7 +235,7 @@ export default function DoctorRegisterPage() {
       });
 
       if (response.success) {
-        alert('Registration successful! Your account is pending approval.');
+        showSuccess('Registration successful! Your account is pending approval.');
         router.push('/doctors/login');
       } else {
         setError(response.error?.message || 'Registration failed. Please try again.');
@@ -226,8 +250,16 @@ export default function DoctorRegisterPage() {
 
   const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   const commonSpecializations = [
-    'Cardiology', 'Dermatology', 'Pediatrics', 'Orthopedics', 'Neurology',
-    'Gynecology', 'Psychiatry', 'General Medicine', 'Dentistry', 'Ophthalmology',
+    'Cardiology',
+    'Dermatology',
+    'Pediatrics',
+    'Orthopedics',
+    'Neurology',
+    'Gynecology',
+    'Psychiatry',
+    'General Medicine',
+    'Dentistry',
+    'Ophthalmology',
   ];
   const commonLanguages = ['English', 'Spanish', 'French', 'Hindi', 'Arabic', 'Mandarin'];
 
@@ -252,18 +284,14 @@ export default function DoctorRegisterPage() {
               <div key={s} className='flex items-center flex-1'>
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                    step >= s
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-neutral-200 text-neutral-600'
+                    step >= s ? 'bg-primary-600 text-white' : 'bg-neutral-200 text-neutral-600'
                   }`}
                 >
                   {s}
                 </div>
                 {s < 5 && (
                   <div
-                    className={`flex-1 h-1 mx-2 ${
-                      step > s ? 'bg-primary-600' : 'bg-neutral-200'
-                    }`}
+                    className={`flex-1 h-1 mx-2 ${step > s ? 'bg-primary-600' : 'bg-neutral-200'}`}
                   />
                 )}
               </div>
@@ -289,7 +317,7 @@ export default function DoctorRegisterPage() {
           {step === 1 && (
             <div className='space-y-6'>
               <h2 className='text-2xl font-bold text-neutral-900'>Basic Information</h2>
-              
+
               <div className='grid grid-cols-2 gap-4'>
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 mb-2'>
@@ -339,10 +367,10 @@ export default function DoctorRegisterPage() {
                           });
                           if (response.success) {
                             setOtpSent({ ...otpSent, email: true });
-                            alert('Verification email sent!');
+                            showSuccess('Verification email sent!');
                           }
                         } catch (err) {
-                          alert('Failed to send verification email');
+                          showError('Failed to send verification email');
                         }
                       }}
                     >
@@ -372,10 +400,10 @@ export default function DoctorRegisterPage() {
                           });
                           if (response.success) {
                             handleInputChange('emailVerified', true);
-                            alert('Email verified successfully!');
+                            showSuccess('Email verified successfully!');
                           }
                         } catch (err) {
-                          alert('Invalid OTP');
+                          showError('Invalid OTP');
                         }
                       }}
                     >
@@ -411,10 +439,10 @@ export default function DoctorRegisterPage() {
                           });
                           if (response.success) {
                             setOtpSent({ ...otpSent, phone: true });
-                            alert('OTP sent to your phone!');
+                            showSuccess('OTP sent to your phone!');
                           }
                         } catch (err) {
-                          alert('Failed to send OTP');
+                          showError('Failed to send OTP');
                         }
                       }}
                     >
@@ -444,10 +472,10 @@ export default function DoctorRegisterPage() {
                           });
                           if (response.success) {
                             handleInputChange('phoneVerified', true);
-                            alert('Phone verified successfully!');
+                            showSuccess('Phone verified successfully!');
                           }
                         } catch (err) {
-                          alert('Invalid OTP');
+                          showError('Invalid OTP');
                         }
                       }}
                     >
@@ -458,7 +486,9 @@ export default function DoctorRegisterPage() {
               </div>
 
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Password *</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  Password *
+                </label>
                 <Input
                   type='password'
                   value={formData.password}
@@ -525,7 +555,7 @@ export default function DoctorRegisterPage() {
           {step === 2 && (
             <div className='space-y-6'>
               <h2 className='text-2xl font-bold text-neutral-900'>Professional Details</h2>
-              
+
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>
                   Medical Registration Number *
@@ -626,7 +656,9 @@ export default function DoctorRegisterPage() {
                     <div key={index} className='p-3 border border-neutral-200 rounded-lg'>
                       <div className='grid grid-cols-3 gap-3'>
                         <div>
-                          <label className='block text-xs text-neutral-600 mb-1'>Certification Name</label>
+                          <label className='block text-xs text-neutral-600 mb-1'>
+                            Certification Name
+                          </label>
                           <Input
                             type='text'
                             value={cert.name || ''}
@@ -639,13 +671,18 @@ export default function DoctorRegisterPage() {
                           />
                         </div>
                         <div>
-                          <label className='block text-xs text-neutral-600 mb-1'>Issuing Organization</label>
+                          <label className='block text-xs text-neutral-600 mb-1'>
+                            Issuing Organization
+                          </label>
                           <Input
                             type='text'
                             value={cert.issuingOrganization || ''}
                             onChange={(e) => {
                               const certs = [...formData.certifications];
-                              certs[index] = { ...certs[index], issuingOrganization: e.target.value };
+                              certs[index] = {
+                                ...certs[index],
+                                issuingOrganization: e.target.value,
+                              };
                               handleInputChange('certifications', certs);
                             }}
                             placeholder='Organization'
@@ -742,7 +779,7 @@ export default function DoctorRegisterPage() {
           {step === 3 && (
             <div className='space-y-6'>
               <h2 className='text-2xl font-bold text-neutral-900'>Clinic Details</h2>
-              
+
               <div className='space-y-4'>
                 {formData.clinics.map((clinic, index) => (
                   <Card key={index} className='p-4'>
@@ -762,7 +799,7 @@ export default function DoctorRegisterPage() {
                         </Button>
                       )}
                     </div>
-                    
+
                     <div className='space-y-4'>
                       <div>
                         <label className='block text-sm font-medium text-neutral-700 mb-2'>
@@ -779,7 +816,7 @@ export default function DoctorRegisterPage() {
                           required
                         />
                       </div>
-                      
+
                       <div>
                         <label className='block text-sm font-medium text-neutral-700 mb-2'>
                           Address * (Click map to set location)
@@ -806,11 +843,12 @@ export default function DoctorRegisterPage() {
                             className='rounded-lg'
                           />
                           <p className='text-xs text-neutral-500 mt-1'>
-                            Map will update based on address. You can also click on map to set coordinates.
+                            Map will update based on address. You can also click on map to set
+                            coordinates.
                           </p>
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className='block text-sm font-medium text-neutral-700 mb-2'>
                           Working Hours *
@@ -824,8 +862,10 @@ export default function DoctorRegisterPage() {
                                 value={clinic.workingHours?.[day]?.start || '09:00'}
                                 onChange={(e) => {
                                   const clinics = [...formData.clinics];
-                                  if (!clinics[index].workingHours) clinics[index].workingHours = {};
-                                  if (!clinics[index].workingHours[day]) clinics[index].workingHours[day] = {};
+                                  if (!clinics[index].workingHours)
+                                    clinics[index].workingHours = {};
+                                  if (!clinics[index].workingHours[day])
+                                    clinics[index].workingHours[day] = {};
                                   clinics[index].workingHours[day].start = e.target.value;
                                   handleInputChange('clinics', clinics);
                                 }}
@@ -837,8 +877,10 @@ export default function DoctorRegisterPage() {
                                 value={clinic.workingHours?.[day]?.end || '17:00'}
                                 onChange={(e) => {
                                   const clinics = [...formData.clinics];
-                                  if (!clinics[index].workingHours) clinics[index].workingHours = {};
-                                  if (!clinics[index].workingHours[day]) clinics[index].workingHours[day] = {};
+                                  if (!clinics[index].workingHours)
+                                    clinics[index].workingHours = {};
+                                  if (!clinics[index].workingHours[day])
+                                    clinics[index].workingHours[day] = {};
                                   clinics[index].workingHours[day].end = e.target.value;
                                   handleInputChange('clinics', clinics);
                                 }}
@@ -849,8 +891,10 @@ export default function DoctorRegisterPage() {
                                 checked={clinic.workingHours?.[day]?.enabled || false}
                                 onChange={(e) => {
                                   const clinics = [...formData.clinics];
-                                  if (!clinics[index].workingHours) clinics[index].workingHours = {};
-                                  if (!clinics[index].workingHours[day]) clinics[index].workingHours[day] = {};
+                                  if (!clinics[index].workingHours)
+                                    clinics[index].workingHours = {};
+                                  if (!clinics[index].workingHours[day])
+                                    clinics[index].workingHours[day] = {};
                                   clinics[index].workingHours[day].enabled = e.target.checked;
                                   handleInputChange('clinics', clinics);
                                 }}
@@ -860,7 +904,7 @@ export default function DoctorRegisterPage() {
                           ))}
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className='block text-sm font-medium text-neutral-700 mb-2'>
                           Consultation Fee (₹) *
@@ -880,13 +924,20 @@ export default function DoctorRegisterPage() {
                     </div>
                   </Card>
                 ))}
-                
+
                 <Button
                   variant='secondary'
                   onClick={() => {
                     handleInputChange('clinics', [
                       ...formData.clinics,
-                      { name: '', address: '', lat: '', lng: '', workingHours: {}, consultationFee: '' },
+                      {
+                        name: '',
+                        address: '',
+                        lat: '',
+                        lng: '',
+                        workingHours: {},
+                        consultationFee: '',
+                      },
                     ]);
                   }}
                 >
@@ -912,7 +963,7 @@ export default function DoctorRegisterPage() {
               <p className='text-sm text-neutral-600'>
                 Please upload all required documents. Accepted formats: PDF, JPG, PNG (Max 5MB each)
               </p>
-              
+
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>
                   Medical License * (PDF/Image)
@@ -940,13 +991,23 @@ export default function DoctorRegisterPage() {
                           if (file && file.size <= 5 * 1024 * 1024) {
                             handleInputChange('medicalLicense', file);
                           } else {
-                            alert('File size must be less than 5MB');
+                            showError('File size must be less than 5MB');
                           }
                         }}
                       />
                       <div className='space-y-2'>
-                        <svg className='w-12 h-12 text-neutral-400 mx-auto' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' />
+                        <svg
+                          className='w-12 h-12 text-neutral-400 mx-auto'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12'
+                          />
                         </svg>
                         <p className='text-sm text-neutral-600'>Click to upload or drag and drop</p>
                       </div>
@@ -961,7 +1022,10 @@ export default function DoctorRegisterPage() {
                 </label>
                 <div className='space-y-3'>
                   {formData.degreeCertificates.map((file, index) => (
-                    <div key={index} className='flex items-center justify-between p-3 border border-neutral-200 rounded-lg'>
+                    <div
+                      key={index}
+                      className='flex items-center justify-between p-3 border border-neutral-200 rounded-lg'
+                    >
                       <p className='text-sm text-neutral-700'>{file.name}</p>
                       <Button
                         variant='ghost'
@@ -984,10 +1048,10 @@ export default function DoctorRegisterPage() {
                       multiple
                       onChange={(e) => {
                         const files = Array.from(e.target.files).filter(
-                          (file) => file.size <= 5 * 1024 * 1024
+                          (file) => file.size <= 5 * 1024 * 1024,
                         );
                         if (files.length !== e.target.files.length) {
-                          alert('Some files were too large (max 5MB each)');
+                          showError('Some files were too large (max 5MB each)');
                         }
                         handleInputChange('degreeCertificates', [
                           ...formData.degreeCertificates,
@@ -1029,13 +1093,23 @@ export default function DoctorRegisterPage() {
                           if (file && file.size <= 5 * 1024 * 1024) {
                             handleInputChange('idProof', file);
                           } else {
-                            alert('File size must be less than 5MB');
+                            showError('File size must be less than 5MB');
                           }
                         }}
                       />
                       <div className='space-y-2'>
-                        <svg className='w-12 h-12 text-neutral-400 mx-auto' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' />
+                        <svg
+                          className='w-12 h-12 text-neutral-400 mx-auto'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12'
+                          />
                         </svg>
                         <p className='text-sm text-neutral-600'>Click to upload or drag and drop</p>
                       </div>
@@ -1071,15 +1145,27 @@ export default function DoctorRegisterPage() {
                           if (file && file.size <= 5 * 1024 * 1024) {
                             handleInputChange('clinicRegistration', file);
                           } else {
-                            alert('File size must be less than 5MB');
+                            showError('File size must be less than 5MB');
                           }
                         }}
                       />
                       <div className='space-y-2'>
-                        <svg className='w-12 h-12 text-neutral-400 mx-auto' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' />
+                        <svg
+                          className='w-12 h-12 text-neutral-400 mx-auto'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12'
+                          />
                         </svg>
-                        <p className='text-sm text-neutral-600'>Click to upload or drag and drop (Optional)</p>
+                        <p className='text-sm text-neutral-600'>
+                          Click to upload or drag and drop (Optional)
+                        </p>
                       </div>
                     </label>
                   )}
@@ -1104,7 +1190,7 @@ export default function DoctorRegisterPage() {
               <p className='text-sm text-neutral-600'>
                 Provide your banking information for receiving payments from consultations
               </p>
-              
+
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>
                   Account Holder Name *
@@ -1188,8 +1274,8 @@ export default function DoctorRegisterPage() {
 
               <div className='p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
                 <p className='text-sm text-yellow-800'>
-                  <strong>Note:</strong> Your account will be pending admin verification after submission. 
-                  You will receive an email notification once your account is approved.
+                  <strong>Note:</strong> Your account will be pending admin verification after
+                  submission. You will receive an email notification once your account is approved.
                 </p>
               </div>
 
@@ -1218,7 +1304,11 @@ export default function DoctorRegisterPage() {
                 <Button variant='secondary' onClick={handleBack}>
                   Back
                 </Button>
-                <Button variant='primary' onClick={handleSubmit} disabled={loading || !formData.agreeToTerms}>
+                <Button
+                  variant='primary'
+                  onClick={handleSubmit}
+                  disabled={loading || !formData.agreeToTerms}
+                >
                   {loading ? 'Submitting...' : 'Submit Registration'}
                 </Button>
               </div>

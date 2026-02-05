@@ -16,6 +16,10 @@ import { verify2FA } from '@/services/auth.service';
  * Verify 2FA OTP and complete login
  */
 async function postHandler(req) {
+  const clientIP =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown';
   const body = await req.json();
 
   // Validate input
@@ -27,8 +31,8 @@ async function postHandler(req) {
     );
   }
 
-  // Verify 2FA and complete login
-  const result = await verify2FA(validationResult.data);
+  // Verify 2FA and complete login (pass client IP for audit)
+  const result = await verify2FA(validationResult.data, { clientIP });
 
   // Set refresh token as HTTP-only cookie
   const response = NextResponse.json(successResponse(result), { status: 200 });

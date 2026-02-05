@@ -3,15 +3,15 @@
  * Sends email and SMS notifications for appointment bookings
  */
 
+import { PRIMARY_900 } from '@/lib/constants/brand-colors';
+import connectDB from '@/lib/db/connection';
 import { sendEmail } from '@/lib/email/email-service';
 import { sendSMS } from '@/lib/sms/sms-service';
-import { createNotification } from './notification.service';
-import connectDB from '@/lib/db/connection';
-import Appointment from '@/models/Appointment';
-import Patient from '@/models/Patient';
-import User from '@/models/User';
-import Doctor from '@/models/Doctor';
 import { logger } from '@/lib/utils/logger.js';
+import Appointment from '@/models/Appointment';
+import Doctor from '@/models/Doctor';
+import User from '@/models/User';
+import { createNotification } from './notification.service';
 
 /**
  * Send appointment booking confirmation
@@ -55,7 +55,7 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
     const emailSubject = `Appointment Confirmed - ${formattedDate}`;
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2D9CDB;">Appointment Confirmed</h2>
+        <h2 style="color: ${PRIMARY_900};">Appointment Confirmed</h2>
         <p>Dear ${patient.firstName} ${patient.lastName},</p>
         <p>Your appointment has been confirmed with the following details:</p>
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
@@ -66,9 +66,13 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
           <p><strong>Type:</strong> ${appointment.type === 'video' ? 'Video Consultation' : 'In-Clinic'}</p>
           ${appointment.reason ? `<p><strong>Reason:</strong> ${appointment.reason}</p>` : ''}
         </div>
-        ${appointment.type === 'video' ? `
+        ${
+          appointment.type === 'video'
+            ? `
           <p><strong>Video Call Link:</strong> <a href="${process.env.NEXT_PUBLIC_APP_URL}/telemedicine/${appointment._id}">Join Video Call</a></p>
-        ` : ''}
+        `
+            : ''
+        }
         <p>Please arrive 10 minutes before your appointment time.</p>
         <p>If you need to reschedule or cancel, please contact us at least 24 hours in advance.</p>
         <p>Thank you for choosing ${tenant.name || 'our clinic'}.</p>
@@ -105,7 +109,7 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
           html: emailHtml,
           text: emailText,
         },
-        tenantId
+        tenantId,
       );
     }
 
@@ -116,7 +120,7 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
           to: patient.phone,
           message: smsText,
         },
-        tenantId
+        tenantId,
       );
     }
 
@@ -193,7 +197,7 @@ export async function sendAppointmentReminder(appointmentId, tenantId) {
           to: patient.phone,
           message: smsText,
         },
-        tenantId
+        tenantId,
       );
     }
 

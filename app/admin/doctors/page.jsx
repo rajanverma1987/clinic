@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
@@ -18,6 +19,7 @@ import { useEffect, useState } from 'react';
 export default function AdminDoctorsPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const { open: openConfirm } = useConfirmation();
   const { user, loading: authLoading } = useAuth();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ export default function AdminDoctorsPage() {
       }
     } catch (error) {
       logger.error('Failed to fetch doctors', error);
-      showError('Failed to fetch doctors');
+      showError(t('admin.failedToFetchDoctors'));
     } finally {
       setLoading(false);
     }
@@ -76,16 +78,20 @@ export default function AdminDoctorsPage() {
         comment: verificationComment,
       });
       if (response.success) {
-        showSuccess(`Doctor ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+        showSuccess(
+          action === 'approve'
+            ? t('admin.doctorApprovedSuccess')
+            : t('admin.doctorRejectedSuccess'),
+        );
         setShowVerifyModal(false);
         setSelectedDoctor(null);
         setVerificationComment('');
         fetchDoctors();
       } else {
-        showError(response.error?.message || 'Failed to verify doctor');
+        showError(response.error?.message || t('admin.failedToVerifyDoctor'));
       }
     } catch (error) {
-      showError('Failed to verify doctor');
+      showError(t('admin.failedToVerifyDoctor'));
     }
   };
 
@@ -95,36 +101,44 @@ export default function AdminDoctorsPage() {
         status: suspend ? 'suspended' : 'active',
       });
       if (response.success) {
-        showSuccess(`Doctor ${suspend ? 'suspended' : 'activated'} successfully`);
+        showSuccess(
+          suspend ? t('admin.doctorSuspendedSuccess') : t('admin.doctorActivatedSuccess'),
+        );
         fetchDoctors();
       } else {
-        showError(response.error?.message || 'Failed to update doctor status');
+        showError(response.error?.message || t('admin.failedToUpdateDoctorStatus'));
       }
     } catch (error) {
-      showError('Failed to update doctor status');
+      showError(t('admin.failedToUpdateDoctorStatus'));
     }
   };
 
   const handleDelete = async (doctorId) => {
-    if (!confirm('Are you sure you want to delete this doctor? This action cannot be undone.')) {
-      return;
-    }
-    try {
-      const response = await apiClient.delete(`/admin/doctors/${doctorId}`);
-      if (response.success) {
-        showSuccess('Doctor deleted successfully');
-        fetchDoctors();
-      } else {
-        showError(response.error?.message || 'Failed to delete doctor');
-      }
-    } catch (error) {
-      showError('Failed to delete doctor');
-    }
+    openConfirm({
+      title: t('common.delete'),
+      message:
+        t('admin.doctorDeleteConfirm') ||
+        'Are you sure you want to delete this doctor? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await apiClient.delete(`/admin/doctors/${doctorId}`);
+          if (response.success) {
+            showSuccess(t('admin.doctorDeleted') || 'Doctor deleted successfully');
+            fetchDoctors();
+          } else {
+            showError(response.error?.message || t('admin.failedToDeleteDoctor'));
+          }
+        } catch (error) {
+          showError(t('admin.failedToDeleteDoctor'));
+        }
+      },
+    });
   };
 
   const handleBulkAction = async (action) => {
     if (selectedDoctors.length === 0) {
-      showError('Please select at least one doctor');
+      showError(t('admin.selectAtLeastOneDoctor'));
       return;
     }
     try {
@@ -133,14 +147,14 @@ export default function AdminDoctorsPage() {
         action, // export, notify, suspend, activate
       });
       if (response.success) {
-        showSuccess('Bulk action completed successfully');
+        showSuccess(t('admin.bulkActionSuccess'));
         setSelectedDoctors([]);
         fetchDoctors();
       } else {
-        showError(response.error?.message || 'Failed to perform bulk action');
+        showError(response.error?.message || t('admin.failedToPerformBulkAction'));
       }
     } catch (error) {
-      showError('Failed to perform bulk action');
+      showError(t('admin.failedToPerformBulkAction'));
     }
   };
 
@@ -164,24 +178,26 @@ export default function AdminDoctorsPage() {
 
   return (
     <Layout
-      title='Doctor Management'
-      subtitle='Manage all doctors across the platform'
+      title={t('admin.doctors')}
+      subtitle={t('admin.doctorsManagementSubtitle')}
       actionButton={
         <Button variant='primary' onClick={() => router.push('/admin')}>
-          Back to Dashboard
+          {t('common.backToDashboard')}
         </Button>
       }
     >
       <div style={{ padding: '0 10px' }}>
         {/* Filters */}
-        <Card className='mb-6'>
-          <div className='p-6'>
-            <div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
+        <Card className='mb-6 overflow-hidden'>
+          <div className='p-4 sm:p-6'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Search</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.doctorsSearchLabel')}
+                </label>
                 <Input
                   type='text'
-                  placeholder='Search by name, specialty, location...'
+                  placeholder={t('admin.patientsSearchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && fetchDoctors()}
@@ -199,18 +215,20 @@ export default function AdminDoctorsPage() {
                     setPagination({ ...pagination, page: 1 });
                   }}
                 >
-                  <option value=''>All Status</option>
-                  <option value='verified'>Verified</option>
-                  <option value='pending'>Pending</option>
-                  <option value='rejected'>Rejected</option>
-                  <option value='suspended'>Suspended</option>
+                  <option value=''>{t('admin.doctorsAllStatus')}</option>
+                  <option value='verified'>{t('admin.doctorsVerified')}</option>
+                  <option value='pending'>{t('admin.doctorsPending')}</option>
+                  <option value='rejected'>{t('admin.doctorsRejected')}</option>
+                  <option value='suspended'>{t('admin.doctorsSuspended')}</option>
                 </select>
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Specialty</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.doctorsSpecialtyLabel')}
+                </label>
                 <Input
                   type='text'
-                  placeholder='Filter by specialty'
+                  placeholder={t('admin.doctorsFilterBySpecialty')}
                   value={specialtyFilter}
                   onChange={(e) => {
                     setSpecialtyFilter(e.target.value);
@@ -219,10 +237,12 @@ export default function AdminDoctorsPage() {
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Location</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.doctorsLocationLabel')}
+                </label>
                 <Input
                   type='text'
-                  placeholder='Filter by location'
+                  placeholder={t('admin.doctorsFilterByLocation')}
                   value={locationFilter}
                   onChange={(e) => {
                     setLocationFilter(e.target.value);
@@ -230,9 +250,9 @@ export default function AdminDoctorsPage() {
                   }}
                 />
               </div>
-              <div className='flex items-end'>
-                <Button variant='primary' onClick={fetchDoctors} className='w-full'>
-                  Apply Filters
+              <div className='flex items-end sm:col-span-2 lg:col-span-1'>
+                <Button variant='primary' onClick={fetchDoctors} className='w-full min-w-[120px]'>
+                  {t('admin.applyFilters')}
                 </Button>
               </div>
             </div>
@@ -276,14 +296,14 @@ export default function AdminDoctorsPage() {
               <Loader type='section' text={t('common.loading')} />
             ) : doctors.length === 0 ? (
               <div className='text-center py-12'>
-                <p className='text-neutral-500'>No doctors found</p>
+                <p className='text-neutral-500'>{t('admin.doctorsNoDoctorsFound')}</p>
               </div>
             ) : (
-              <div className='overflow-x-auto'>
-                <table className='w-full'>
+              <div className='clinic-table-wrap'>
+                <table className='clinic-table'>
                   <thead>
-                    <tr className='border-b border-neutral-200'>
-                      <th className='text-left py-3 px-4'>
+                    <tr>
+                      <th className='w-10'>
                         <input
                           type='checkbox'
                           checked={selectedDoctors.length === doctors.length && doctors.length > 0}
@@ -296,33 +316,18 @@ export default function AdminDoctorsPage() {
                           }}
                         />
                       </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Doctor
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Specialty
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Location
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Status
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Rating
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Actions
-                      </th>
+                      <th>Doctor</th>
+                      <th>Specialty</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Rating</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {doctors.map((doctor) => (
-                      <tr
-                        key={doctor._id}
-                        className='border-b border-neutral-100 hover:bg-neutral-50'
-                      >
-                        <td className='py-3 px-4'>
+                      <tr key={doctor._id}>
+                        <td>
                           <input
                             type='checkbox'
                             checked={selectedDoctors.includes(doctor._id)}
@@ -331,13 +336,13 @@ export default function AdminDoctorsPage() {
                                 setSelectedDoctors([...selectedDoctors, doctor._id]);
                               } else {
                                 setSelectedDoctors(
-                                  selectedDoctors.filter((id) => id !== doctor._id)
+                                  selectedDoctors.filter((id) => id !== doctor._id),
                                 );
                               }
                             }}
                           />
                         </td>
-                        <td className='py-3 px-4'>
+                        <td>
                           <div>
                             <p className='font-medium text-neutral-900'>
                               {doctor.userId?.firstName || doctor.firstName}{' '}
@@ -348,26 +353,26 @@ export default function AdminDoctorsPage() {
                             </p>
                           </div>
                         </td>
-                        <td className='py-3 px-4'>
+                        <td>
                           <span className='text-sm text-neutral-700'>
                             {doctor.professional?.specialization?.[0] || doctor.specialty || 'N/A'}
                           </span>
                         </td>
-                        <td className='py-3 px-4'>
+                        <td>
                           <span className='text-sm text-neutral-700'>
                             {doctor.clinics?.[0]?.address || 'N/A'}
                           </span>
                         </td>
-                        <td className='py-3 px-4'>
+                        <td>
                           <Tag
                             className={getVerificationStatusColor(
-                              doctor.verificationStatus || 'pending'
+                              doctor.verificationStatus || 'pending',
                             )}
                           >
                             {doctor.verificationStatus || 'pending'}
                           </Tag>
                         </td>
-                        <td className='py-3 px-4'>
+                        <td>
                           <div className='flex items-center gap-1'>
                             <span className='text-sm font-medium text-neutral-900'>
                               {doctor.averageRating ? doctor.averageRating.toFixed(1) : 'N/A'}
@@ -383,7 +388,7 @@ export default function AdminDoctorsPage() {
                             )}
                           </div>
                         </td>
-                        <td className='py-3 px-4'>
+                        <td>
                           <div className='flex gap-2'>
                             <Button
                               variant='secondary'

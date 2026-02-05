@@ -82,12 +82,12 @@ export function PhoneInput({
             <>
               <div
                 className='fixed inset-0'
-                style={{ zIndex: 'var(--z-dropdown-backdrop-high, 10051)' }}
+                style={{ zIndex: 10055 }}
                 onClick={() => setShowDropdown(false)}
               />
               <div
                 className='absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto'
-                style={{ zIndex: 'var(--z-dropdown-menu, 15)' }}
+                style={{ zIndex: 10060 }}
               >
                 {COUNTRY_CODES.map((item) => (
                   <button

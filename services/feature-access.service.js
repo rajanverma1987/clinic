@@ -1,12 +1,20 @@
 /**
  * Feature Access Control Service
- * Checks if a tenant has access to specific features based on their subscription
+ * Checks if a tenant has access to specific features based on their subscription.
+ * Env-level overrides from FEATURE_FLAGS (route-security) apply first (e.g. disable Telemedicine in production).
  */
 
+import { FEATURE_FLAGS } from '@/lib/constants/route-security';
 import connectDB from '@/lib/db/connection.js';
-import Subscription from '@/models/Subscription.js';
-import SubscriptionPlan from '@/models/SubscriptionPlan.js';
-import { SubscriptionStatus } from '@/models/Subscription.js';
+import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
+
+const ENV = process.env.NODE_ENV || 'development';
+const FLAGS = FEATURE_FLAGS[ENV] ?? FEATURE_FLAGS.development;
+
+/** Feature name (plan) -> FEATURE_FLAGS key */
+const FEATURE_TO_FLAG = {
+  Telemedicine: 'TELEMEDICINE',
+};
 
 /**
  * Feature mapping - maps feature names to application modules/pages
@@ -21,7 +29,7 @@ export const FEATURE_MAPPING = {
   'Reports & Analytics': ['/reports', '/api/reports'],
   'Advanced Reports & Analytics': ['/reports', '/api/reports'],
   'Multi-Location Support': ['multi-location'],
-  'Telemedicine': ['telemedicine'],
+  Telemedicine: ['telemedicine'],
   'API Access': ['api-access'],
   'Custom Branding': ['custom-branding'],
   'Data Export': ['data-export'],
@@ -49,9 +57,14 @@ export async function getTenantFeatures(tenantId) {
 }
 
 /**
- * Check if tenant has access to a specific feature
+ * Check if tenant has access to a specific feature.
+ * Env flags (FEATURE_FLAGS) override: if flag is false, access is denied even if plan includes it.
  */
 export async function hasFeatureAccess(tenantId, featureName) {
+  const flagKey = FEATURE_TO_FLAG[featureName];
+  if (flagKey && FLAGS[flagKey] === false) return false;
+  if (FLAGS.BETA_FEATURES === false && featureName && featureName.toLowerCase().includes('beta'))
+    return false;
   const features = await getTenantFeatures(tenantId);
   return features.includes(featureName);
 }
@@ -61,7 +74,7 @@ export async function hasFeatureAccess(tenantId, featureName) {
  */
 export async function hasAnyFeatureAccess(tenantId, featureNames) {
   const features = await getTenantFeatures(tenantId);
-  return featureNames.some(feature => features.includes(feature));
+  return featureNames.some((feature) => features.includes(feature));
 }
 
 /**
@@ -69,7 +82,7 @@ export async function hasAnyFeatureAccess(tenantId, featureNames) {
  */
 export async function hasAllFeatureAccess(tenantId, featureNames) {
   const features = await getTenantFeatures(tenantId);
-  return featureNames.every(feature => features.includes(feature));
+  return featureNames.every((feature) => features.includes(feature));
 }
 
 /**
@@ -124,4 +137,3 @@ export async function checkLimit(tenantId, limitType, currentCount) {
     limit,
   };
 }
-

@@ -24,7 +24,7 @@
 .prescription-form-header {
   position: relative;
   padding: var(--space-6);
-  border-bottom: 2px solid var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-neutral-100);
   background: linear-gradient(
     135deg,
     color-mix(in srgb, var(--color-neutral-50) 98%, transparent) 0%,
@@ -149,9 +149,10 @@
 }
 
 .prescription-items-section {
-  border-top: 2px solid var(--color-neutral-100);
+  border-top: 1px solid var(--color-neutral-100);
   padding-top: var(--space-6);
   margin-top: var(--space-6);
+  overflow: visible;
 }
 
 .prescription-items-header {
@@ -197,7 +198,7 @@
 
 .prescription-items-table thead {
   background: var(--color-neutral-100);
-  border-bottom: 2px solid var(--color-neutral-200);
+  border-bottom: 1px solid var(--color-neutral-200);
 }
 
 .prescription-items-table th {
@@ -211,16 +212,44 @@
   vertical-align: middle;
 }
 
-.prescription-items-table th.prescription-items-col-index { width: 2.5rem; min-width: 2.5rem; }
-.prescription-items-table th.prescription-items-col-type { width: 9rem; min-width: 9rem; }
-.prescription-items-table th.prescription-items-col-item { min-width: 22rem; }
-.prescription-items-table th.prescription-items-col-frequency { width: 9rem; min-width: 9rem; }
-.prescription-items-table th.prescription-items-col-duration { width: 5rem; min-width: 5rem; }
-.prescription-items-table th.prescription-items-col-qty { width: 4rem; min-width: 4rem; }
-.prescription-items-table th.prescription-items-col-route { width: 7rem; min-width: 7rem; }
-.prescription-items-table th.prescription-items-col-refills { width: 4.5rem; min-width: 4.5rem; }
-.prescription-items-table th.prescription-items-col-instructions { min-width: 12rem; }
-.prescription-items-table th.prescription-items-col-actions { width: 6.5rem; min-width: 6.5rem; }
+.prescription-items-table th.prescription-items-col-index {
+  width: 2.5rem;
+  min-width: 2.5rem;
+}
+.prescription-items-table th.prescription-items-col-type {
+  width: 9rem;
+  min-width: 9rem;
+}
+.prescription-items-table th.prescription-items-col-item {
+  min-width: 22rem;
+}
+.prescription-items-table th.prescription-items-col-frequency {
+  width: 9rem;
+  min-width: 9rem;
+}
+.prescription-items-table th.prescription-items-col-duration {
+  width: 5rem;
+  min-width: 5rem;
+}
+.prescription-items-table th.prescription-items-col-qty {
+  width: 4rem;
+  min-width: 4rem;
+}
+.prescription-items-table th.prescription-items-col-route {
+  width: 7rem;
+  min-width: 7rem;
+}
+.prescription-items-table th.prescription-items-col-refills {
+  width: 4.5rem;
+  min-width: 4.5rem;
+}
+.prescription-items-table th.prescription-items-col-instructions {
+  min-width: 12rem;
+}
+.prescription-items-table th.prescription-items-col-actions {
+  width: 6.5rem;
+  min-width: 6.5rem;
+}
 
 .prescription-items-table td {
   padding: var(--space-3) var(--space-4);
@@ -245,6 +274,17 @@
   min-width: 100%;
 }
 
+/* Keep drug dropdown above following rows when at bottom of table */
+.prescription-items-table td.prescription-items-col-item {
+  position: relative;
+  z-index: 1;
+}
+
+.prescription-item-drug-cell {
+  position: relative;
+  z-index: 10;
+}
+
 .prescription-items-table .prescription-items-na {
   color: var(--color-neutral-400);
   font-size: var(--text-body-xs);
@@ -266,7 +306,6 @@
   margin-top: var(--space-1);
 }
 
-
 .prescription-form-actions {
   display: flex;
   justify-content: flex-end;
@@ -276,7 +315,7 @@
   padding-bottom: var(--space-6);
   margin-top: var(--space-6);
   margin-bottom: var(--space-4);
-  border-top: 2px solid var(--color-neutral-100);
+  border-top: 1px solid var(--color-neutral-100);
 }
 
 /* Patient Details Panel Premium Styles */
@@ -297,7 +336,7 @@
   display: flex;
   gap: var(--gap-1);
   padding: var(--space-2);
-  border-bottom: 2px solid var(--color-neutral-100);
+  border-bottom: 1px solid var(--color-neutral-100);
   background: var(--color-neutral-50);
 }
 

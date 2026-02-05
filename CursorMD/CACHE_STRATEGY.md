@@ -68,6 +68,29 @@ Keys are built as `prefix:keyPart1:keyPart2:...`. Always include `tenantId` in k
 - **Client:** After POST/PUT/DELETE, call `apiClient.clearCacheForEndpoint('/resource')` (or more specific prefix) so subsequent GETs for that resource see fresh data. Optional: call after mutations from dashboard (e.g. after adding patient, clear `/patients` and optionally `/reports`).
 - **Server:** Invalidate when data changes (e.g. after bulk update affecting dashboard). Use `CacheManager.invalidate('reports', 'dashboard', tenantId)` or `invalidatePattern('reports:dashboard:*')` if needed. Not yet wired in every mutation; add when required.
 
+## Enterprise cache handling (bounded caches)
+
+All caches are bounded so memory and storage cannot grow without limit (how big companies run caches).
+
+### Limits (`lib/constants/cache-limits.js`)
+
+| Cache | Limit | Eviction |
+|-------|--------|----------|
+| API response cache (in-memory) | 500 entries | Oldest-by-timestamp evicted when full |
+| Dashboard cache (memory per scope) | 20 entries per scope | Oldest-by-updatedAt evicted when over |
+| Dashboard localStorage | 100 keys total (prefix `dashboard_cache:`) | Oldest-by-updatedAt evicted when over |
+| Recent search | 10 per scope | Already capped in `recent-search-cache.js` |
+
+### Redis (server)
+
+- **Key prefix:** Set `CACHE_KEY_PREFIX` (e.g. `clinic_prod`, `clinic_staging`) so all keys are prefixed. Isolates environments and allows flushing by prefix.
+- **Production:** Run Redis with `maxmemory` and `maxmemory-policy` (e.g. `allkeys-lru`) so the server evicts keys when memory is full. Prevents Redis from using unbounded RAM.
+
+### Client
+
+- **API cache:** On each `setCachedResponse`, if size > 500, oldest entries (by timestamp) are removed before adding.
+- **Dashboard cache:** On each `set(scope, id, data)`, if the scope has more than 20 entries the oldest are removed; if localStorage has more than 100 dashboard keys the oldest are removed.
+
 ## Rules
 
 1. **Tenant isolation:** Server cache keys always include `tenantId`.
@@ -75,9 +98,11 @@ Keys are built as `prefix:keyPart1:keyPart2:...`. Always include `tenantId` in k
 3. **Slightly longer for reports:** 2 min for dashboard and report endpoints.
 4. **No PHI in keys:** Use IDs and path/query only; never patient names or PHI in cache keys.
 5. **Fail safely:** Cache read/write errors must not break requests; always fall back to DB/fetch.
+6. **Bounded size:** All in-memory and localStorage caches have max entries and evict oldest when over limit.
 
 ## Files
 
-- Client: `lib/utils/api-cache.js`, `lib/api/client.js`
-- Server: `lib/cache/cache-manager.js`, `lib/cache/redis-client.js`
-- Example server cache: `app/api/reports/dashboard/route.js`
+- Limits: `lib/constants/cache-limits.js`
+- Client: `lib/utils/api-cache.js`, `lib/cache/dashboard-cache.js`, `lib/api/client.js`
+- Server: `lib/cache/cache-manager.js`, `lib/cache/redis-client.js`, `lib/cache/invalidation-rules.js`
+- TTLs: `lib/constants/cache-ttl.js`, `lib/constants/dashboard.js`

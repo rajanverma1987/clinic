@@ -178,55 +178,33 @@ export default function InvoiceDetailPage() {
             <Card>
               <div className='p-6'>
                 <h2 className='text-xl font-semibold mb-4'>Invoice Items</h2>
-                <div className='overflow-x-auto'>
-                  <table className='min-w-full divide-y divide-gray-200'>
-                    <thead className='bg-neutral-100'>
+                <div className='clinic-table-wrap'>
+                  <table className='clinic-table'>
+                    <thead>
                       <tr>
-                        <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                          #
-                        </th>
-                        <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                          Type
-                        </th>
-                        <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                          Description
-                        </th>
-                        <th className='px-4 py-3 text-center text-xs font-medium text-neutral-500 uppercase'>
-                          Qty
-                        </th>
-                        <th className='px-4 py-3 text-right text-xs font-medium text-neutral-500 uppercase'>
-                          Unit Price
-                        </th>
-                        <th className='px-4 py-3 text-right text-xs font-medium text-neutral-500 uppercase'>
-                          Discount
-                        </th>
-                        <th className='px-4 py-3 text-right text-xs font-medium text-neutral-500 uppercase'>
-                          Tax
-                        </th>
-                        <th className='px-4 py-3 text-right text-xs font-medium text-neutral-500 uppercase'>
-                          Total
-                        </th>
+                        <th>#</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th className='text-center'>Qty</th>
+                        <th className='text-right'>Unit Price</th>
+                        <th className='text-right'>Discount</th>
+                        <th className='text-right'>Tax</th>
+                        <th className='text-right'>Total</th>
                       </tr>
                     </thead>
-                    <tbody className='bg-white divide-y divide-gray-200'>
+                    <tbody>
                       {items.map((item, index) => (
                         <tr key={index}>
-                          <td className='px-4 py-3 text-sm'>{index + 1}</td>
-                          <td className='px-4 py-3 text-sm'>
+                          <td>{index + 1}</td>
+                          <td>
                             {(item.type || '').charAt(0).toUpperCase() + (item.type || '').slice(1)}
                           </td>
-                          <td className='px-4 py-3 text-sm'>{item.description || ''}</td>
-                          <td className='px-4 py-3 text-sm text-center'>{item.quantity || 1}</td>
-                          <td className='px-4 py-3 text-sm text-right'>
-                            {formatCurrency(item.unitPrice || 0)}
-                          </td>
-                          <td className='px-4 py-3 text-sm text-right'>
-                            {formatCurrency(item.discountAmount || 0)}
-                          </td>
-                          <td className='px-4 py-3 text-sm text-right'>
-                            {formatCurrency(item.taxAmount || 0)}
-                          </td>
-                          <td className='px-4 py-3 text-sm text-right font-medium'>
+                          <td>{item.description || ''}</td>
+                          <td className='text-center'>{item.quantity || 1}</td>
+                          <td className='text-right'>{formatCurrency(item.unitPrice || 0)}</td>
+                          <td className='text-right'>{formatCurrency(item.discountAmount || 0)}</td>
+                          <td className='text-right'>{formatCurrency(item.taxAmount || 0)}</td>
+                          <td className='text-right font-medium'>
                             {formatCurrency(item.totalWithTax || item.total || 0)}
                           </td>
                         </tr>

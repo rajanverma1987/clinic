@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
@@ -27,6 +28,7 @@ export default function AppointmentDetailsPage({ params }) {
   const searchParams = useSearchParams();
   const { t } = useI18n();
   const { user } = useAuth();
+  const { open: openConfirm } = useConfirmation();
   const isDoctor = user?.role === 'doctor';
   const [appointment, setAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -130,15 +132,15 @@ export default function AppointmentDetailsPage({ params }) {
       setSaving(true);
       const response = await apiClient.put(`/appointments/${params.id}/status`, { status });
       if (response.success) {
-        showSuccess('Appointment status updated');
+        showSuccess(t('appointments.statusUpdated'));
         setAppointment({ ...appointment, status });
         setShowStatusModal(false);
         fetchAppointment();
       } else {
-        showError(response.error?.message || 'Failed to update status');
+        showError(response.error?.message || t('errors.failedToUpdateAppointmentStatus'));
       }
     } catch (err) {
-      showError('Failed to update appointment status');
+      showError(t('errors.failedToUpdateAppointmentStatus'));
     } finally {
       setSaving(false);
     }
@@ -154,14 +156,14 @@ export default function AppointmentDetailsPage({ params }) {
         diagnosis: diagnosis,
       });
       if (response.success) {
-        showSuccess('Consultation notes saved');
+        showSuccess(t('appointments.consultationNotesSaved'));
         setShowConsultationNotes(false);
         fetchAppointment();
       } else {
-        showError(response.error?.message || 'Failed to save notes');
+        showError(response.error?.message || t('appointments.failedToSaveConsultationNotes'));
       }
     } catch (err) {
-      showError('Failed to save consultation notes');
+      showError(t('appointments.failedToSaveConsultationNotes'));
     } finally {
       setSaving(false);
     }
@@ -301,9 +303,12 @@ export default function AppointmentDetailsPage({ params }) {
                   <Button
                     variant='danger'
                     onClick={() => {
-                      if (confirm('Are you sure you want to cancel this appointment?')) {
-                        handleStatusChange('cancelled');
-                      }
+                      openConfirm({
+                        title: t('common.areYouSure'),
+                        message: t('appointments.confirmCancel') || 'Are you sure you want to cancel this appointment?',
+                        variant: 'danger',
+                        onConfirm: () => handleStatusChange('cancelled'),
+                      });
                     }}
                   >
                     <XIcon className='icon icon-sm' />
@@ -315,9 +320,12 @@ export default function AppointmentDetailsPage({ params }) {
                 <Button
                   variant='primary'
                   onClick={() => {
-                    if (confirm('Mark this appointment as completed?')) {
-                      handleStatusChange('completed');
-                    }
+                    openConfirm({
+                      title: t('common.areYouSure'),
+                      message: t('appointments.confirmMarkCompleted') || 'Mark this appointment as completed?',
+                      variant: 'info',
+                      onConfirm: () => handleStatusChange('completed'),
+                    });
                   }}
                 >
                   <CheckIcon className='icon icon-sm' />

@@ -4,13 +4,14 @@
  * Based on Registeration-Login.md requirements
  */
 
+import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
+import { PRIMARY_900 } from '@/lib/constants/brand-colors';
 import connectDB from '@/lib/db/connection.js';
-import User, { UserRole } from '@/models/User.js';
-import Doctor from '@/models/Doctor.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
-import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
-import crypto from 'crypto';
 import { sendEmail } from '@/lib/email/email-service.js';
+import Doctor from '@/models/Doctor.js';
+import User, { UserRole } from '@/models/User.js';
+import crypto from 'crypto';
 
 /**
  * Register a new staff member
@@ -40,7 +41,7 @@ export async function registerStaff(input, tenantId, createdBy) {
   const existingUser = await User.findOne(
     withTenant(tenantId, {
       email: email.toLowerCase().trim(),
-    })
+    }),
   );
 
   if (existingUser) {
@@ -83,7 +84,8 @@ export async function registerStaff(input, tenantId, createdBy) {
 
   // Send welcome email if requested
   if (sendWelcomeEmail) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
     const loginUrl = `${appUrl}/login`;
     const roleDisplay = role.replace('_', ' ').toUpperCase();
 
@@ -95,10 +97,10 @@ export async function registerStaff(input, tenantId, createdBy) {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #0f89c7; color: white; padding: 20px; text-align: center; }
+          .header { background: ${PRIMARY_900}; color: white; padding: 20px; text-align: center; }
           .content { padding: 20px; background: #f9fafb; }
-          .credentials { background: #fff; border: 2px solid #0f89c7; padding: 15px; margin: 20px 0; border-radius: 5px; }
-          .button { display: inline-block; padding: 12px 24px; background: #0f89c7; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .credentials { background: #fff; border: 1px solid ${PRIMARY_900}; padding: 15px; margin: 20px 0; border-radius: 5px; }
+          .button { display: inline-block; padding: 12px 24px; background: ${PRIMARY_900}; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
           .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
         </style>
       </head>
@@ -166,7 +168,7 @@ This is an automated message. Please do not reply to this email.
         html: emailHtml,
         text: emailText,
       },
-      tenantId
+      tenantId,
     );
   }
 
@@ -178,7 +180,7 @@ This is an automated message. Please do not reply to this email.
     tenantId,
     AuditAction.CREATE,
     undefined,
-    { action: 'staff_registration', email, role, sendWelcomeEmail }
+    { action: 'staff_registration', email, role, sendWelcomeEmail },
   );
 
   return {

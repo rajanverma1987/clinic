@@ -9,7 +9,7 @@
   max-width: 420px;
   padding: var(--space-4);
   background: var(--color-neutral-50);
-  border: 2px solid;
+  border: 1px solid;
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(12px);
@@ -139,4 +139,3 @@
   background: var(--color-neutral-100);
   color: var(--color-neutral-900);
 }
-

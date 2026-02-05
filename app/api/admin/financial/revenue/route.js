@@ -22,7 +22,7 @@ function getMonthKeys(lastN = 12) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     keys.push({
       key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-      label: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+      label: d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' }),
       start: new Date(d.getFullYear(), d.getMonth(), 1),
       end: new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999),
     });

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
+import { PRIMARY_900 } from '@/lib/constants/brand-colors';
 import { sendEmail } from '@/lib/email/email-service';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { logger } from '@/lib/utils/logger.js';
+import { NextResponse } from 'next/server';
 
 /**
  * POST /api/telemedicine/sessions/send-link
@@ -15,13 +15,16 @@ async function postHandler(req, user) {
 
     if (!sessionId || !patientEmail || !videoLink) {
       return NextResponse.json(
-        errorResponse('Missing required fields: sessionId, patientEmail, videoLink', 'VALIDATION_ERROR'),
-        { status: 400 }
+        errorResponse(
+          'Missing required fields: sessionId, patientEmail, videoLink',
+          'VALIDATION_ERROR',
+        ),
+        { status: 400 },
       );
     }
 
     // Create email content
-    const subject = 'Video Consultation Link - Doctor\'s Clinic';
+    const subject = "Video Consultation Link - Doctor's Clinic";
     const html = `
 <!DOCTYPE html>
 <html>
@@ -44,7 +47,7 @@ async function postHandler(req, user) {
     
     <div style="text-align: center; margin: 30px 0;">
       <a href="${videoLink}" 
-         style="background: #2563eb; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-size: 16px; font-weight: bold;">
+         style="background: ${PRIMARY_900}; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-size: 16px; font-weight: bold;">
         🎥 Join Video Consultation
       </a>
     </div>
@@ -85,28 +88,28 @@ Doctor's Clinic Team
     `;
 
     // Send email to patient (pass user's tenantId if available)
-    await sendEmail({
-      to: patientEmail,
-      subject,
-      html,
-      text,
-    }, user?.tenantId || null);
+    await sendEmail(
+      {
+        to: patientEmail,
+        subject,
+        html,
+        text,
+      },
+      user?.tenantId || null,
+    );
 
     return NextResponse.json(successResponse({ message: 'Email sent successfully' }));
   } catch (error) {
     logger.error('Error sending telemedicine link email:', error);
     return NextResponse.json(
-      errorResponse(
-        error instanceof Error ? error.message : 'Failed to send email',
-        'EMAIL_ERROR'
-      ),
-      { status: 500 }
+      errorResponse(error instanceof Error ? error.message : 'Failed to send email', 'EMAIL_ERROR'),
+      { status: 500 },
     );
   }
 }
 
 export async function POST(req) {
-  const authResult = await import('@/middleware/auth').then(m => m.authenticate(req));
+  const authResult = await import('@/middleware/auth').then((m) => m.authenticate(req));
   if ('error' in authResult) return authResult.error;
 
   const authenticatedReq = req;
@@ -114,4 +117,3 @@ export async function POST(req) {
 
   return postHandler(authenticatedReq, authResult.user);
 }
-

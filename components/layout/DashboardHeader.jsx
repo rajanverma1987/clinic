@@ -35,10 +35,10 @@ export function DashboardHeader({
         }).format(date || new Date());
       } catch (error) {
         logger.error('Date formatting error:', error);
-        return new Date(date || new Date()).toLocaleDateString('en-US', options);
+        return new Date(date || new Date()).toLocaleDateString(undefined, options);
       }
     },
-    [settings]
+    [settings],
   );
 
   return (
@@ -61,7 +61,7 @@ export function DashboardHeader({
       <div
         className='absolute inset-0 opacity-[0.02]'
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232D9CDB' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%231e4fb5' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
         }}
       ></div>
 
@@ -80,7 +80,8 @@ export function DashboardHeader({
               style={{
                 width: '10px',
                 height: '10px',
-                background: 'linear-gradient(135deg, #2D9CDB 0%, #56CCF2 100%)',
+                background:
+                  'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-300) 100%)',
                 borderRadius: '50%',
                 boxShadow: '0 0 8px rgba(45, 156, 219, 0.4)',
               }}

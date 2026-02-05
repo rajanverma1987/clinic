@@ -5,14 +5,17 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function SessionSummaryPage() {
   const router = useRouter();
   const params = useParams();
+  const { t } = useI18n();
   const sessionId = params.id;
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +50,7 @@ export default function SessionSummaryPage() {
 
   const handleSubmitRating = async () => {
     if (rating === 0) {
-      alert('Please select a rating');
+      showError(t('telemedicine.selectRating') || 'Please select a rating');
       return;
     }
     try {
@@ -57,14 +60,14 @@ export default function SessionSummaryPage() {
         reviewText: review,
       });
       if (response.success) {
-        alert('Thank you for your feedback!');
+        showSuccess(t('telemedicine.thankYouFeedback') || 'Thank you for your feedback!');
         setShowRating(false);
         fetchSession();
       } else {
-        alert('Failed to submit rating');
+        showError(t('telemedicine.failedToSubmitRating') || 'Failed to submit rating');
       }
     } catch (err) {
-      alert('Failed to submit rating');
+      showError(t('telemedicine.failedToSubmitRating') || 'Failed to submit rating');
     } finally {
       setSubmittingRating(false);
     }
@@ -85,7 +88,7 @@ ${session.notes ? `Clinical Notes:\n${session.notes}\n\n` : ''}
 ${session.diagnosis ? `Diagnosis:\n${session.diagnosis}\n\n` : ''}
 Connection Quality: ${session.connectionQuality || 'N/A'}
     `.trim();
-    
+
     const blob = new Blob([summaryContent], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -245,7 +248,12 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
         {showRating && !session.review && (
           <Card className='mt-6 p-6 bg-gradient-to-br from-primary-50 to-blue-50 border-2 border-primary-200'>
             <h3 className='text-xl font-bold text-neutral-900 mb-4 flex items-center gap-2'>
-              <svg className='icon icon-md text-primary-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <svg
+                className='icon icon-md text-primary-600'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
                 <path
                   strokeLinecap='round'
                   strokeLinejoin='round'
@@ -315,13 +323,20 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                 onClick={() => {
                   const patientId = session.patientId?._id || session.patientId;
                   if (patientId) {
-                    router.push(`/prescriptions/new?patientId=${patientId}&appointmentId=${session.appointmentId || ''}`);
+                    router.push(
+                      `/prescriptions/new?patientId=${patientId}&appointmentId=${session.appointmentId || ''}`,
+                    );
                   } else {
                     router.push('/prescriptions/new');
                   }
                 }}
               >
-                <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <svg
+                  className='icon icon-xs mr-2'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
                   <path
                     strokeLinecap='round'
                     strokeLinejoin='round'
@@ -342,7 +357,12 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                   }
                 }}
               >
-                <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <svg
+                  className='icon icon-xs mr-2'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
                   <path
                     strokeLinecap='round'
                     strokeLinejoin='round'
@@ -353,7 +373,12 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                 Book Follow-up
               </Button>
               <Button variant='primary' onClick={downloadSummary}>
-                <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <svg
+                  className='icon icon-xs mr-2'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
                   <path
                     strokeLinecap='round'
                     strokeLinejoin='round'
@@ -364,7 +389,12 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                 Download Summary
               </Button>
               <Button variant='secondary' onClick={() => window.print()}>
-                <svg className='icon icon-xs mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <svg
+                  className='icon icon-xs mr-2'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
                   <path
                     strokeLinecap='round'
                     strokeLinejoin='round'

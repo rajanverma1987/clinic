@@ -1,11 +1,38 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export function ProductGallerySection() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
+
+  const exploreHref =
+    features[activeTab].title === 'Dashboard'
+      ? '/dashboard'
+      : features[activeTab].title === 'Calendar'
+        ? '/appointments'
+        : features[activeTab].title === 'Patients'
+          ? '/patients'
+          : features[activeTab].title === 'Billing'
+            ? '/invoices'
+            : features[activeTab].title === 'Reports'
+              ? '/reports'
+              : features[activeTab].title === 'Prescriptions'
+                ? '/prescriptions'
+                : '/register';
+
+  const handleExplore = (e) => {
+    e.preventDefault();
+    if (!user && exploreHref !== '/register') {
+      router.push('/register');
+    } else {
+      router.push(exploreHref);
+    }
+  };
 
   const features = [
     {
@@ -320,27 +347,9 @@ export function ProductGallerySection() {
                 </div>
 
                 <div className='mt-8 pt-6 border-t border-neutral-200'>
-                  <Link
-                    href={
-                      features[activeTab].title === 'Dashboard'
-                        ? '/dashboard'
-                        : features[activeTab].title === 'Calendar'
-                          ? '/appointments'
-                          : features[activeTab].title === 'Patients'
-                            ? '/patients'
-                            : features[activeTab].title === 'Billing'
-                              ? '/invoices'
-                              : features[activeTab].title === 'Reports'
-                                ? '/reports'
-                                : features[activeTab].title === 'Prescriptions'
-                                  ? '/prescriptions'
-                                  : '/register'
-                    }
-                  >
-                    <Button variant='primary' size='lg'>
-                      Explore {features[activeTab].title}
-                    </Button>
-                  </Link>
+                  <Button variant='primary' size='lg' onClick={handleExplore}>
+                    Explore {features[activeTab].title}
+                  </Button>
                 </div>
               </div>
             </div>

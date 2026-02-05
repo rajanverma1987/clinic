@@ -4,10 +4,13 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
+import { showSuccess } from '@/lib/utils/toast';
 import { useState } from 'react';
 
 export default function APIDocsPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [apiToken, setApiToken] = useState('');
   const [showToken, setShowToken] = useState(false);
 
@@ -98,7 +101,9 @@ export default function APIDocsPage() {
     <Layout>
       <div className='mb-8'>
         <h1 className='text-3xl font-bold text-gray-900'>API Documentation</h1>
-        <p className='text-neutral-600 mt-2'>Integrate Doctor&apos;s Clinic with your applications</p>
+        <p className='text-neutral-600 mt-2'>
+          Integrate Doctor&apos;s Clinic with your applications
+        </p>
       </div>
 
       {/* API Key Section */}
@@ -127,7 +132,7 @@ export default function APIDocsPage() {
                   variant='secondary'
                   onClick={() => {
                     navigator.clipboard.writeText(apiToken);
-                    alert('API key copied to clipboard!');
+                    showSuccess(t('apiDocs.copied') || 'API key copied to clipboard!');
                   }}
                 >
                   Copy
@@ -184,7 +189,7 @@ const data = await response.json();
                   >
                     <span
                       className={`px-3 py-1 rounded-md text-xs font-semibold ${getMethodColor(
-                        endpoint.method
+                        endpoint.method,
                       )}`}
                     >
                       {endpoint.method}

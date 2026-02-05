@@ -9,20 +9,23 @@ import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
 const ROUTE_KEY = 'route_inventory';
 
 export default function InventoryPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const tenantId = user?.tenantId ?? null;
+  const managerReadOnly = isManagerPathReadOnly(pathname);
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -123,14 +126,16 @@ export default function InventoryPage() {
         notifications={[]}
         unreadCount={0}
         actionButton={
-          <Button
-            onClick={() => router.push('/inventory/items/new')}
-            variant='primary'
-            size='md'
-            className='whitespace-nowrap'
-          >
-            + {t('inventory.addItem')}
-          </Button>
+          managerReadOnly ? null : (
+            <Button
+              onClick={() => router.push('/inventory/items/new')}
+              variant='primary'
+              size='md'
+              className='whitespace-nowrap'
+            >
+              + {t('inventory.addItem')}
+            </Button>
+          )
         }
       />
       <div style={{ padding: '0 10px' }}>

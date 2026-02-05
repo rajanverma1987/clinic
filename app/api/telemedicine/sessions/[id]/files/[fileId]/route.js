@@ -3,21 +3,20 @@
  * Download encrypted file from session
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
-import { AuditLogger } from '@/lib/audit/audit-logger.js';
+import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 import { logger } from '@/lib/utils/logger.js';
 
 /**
  * GET /api/telemedicine/sessions/[id]/files/[fileId]
  * Download encrypted file
  */
-export async function GET(
-  req,
-  context
-) {
+async function getHandler(req, user, context) {
   try {
     const params = await context.params;
     const sessionId = params.id;
@@ -40,7 +39,6 @@ export async function GET(
       );
     }
 
-    // Find file in sharedFiles array
     const file = session.sharedFiles?.find(f =>
       f._id?.toString() === fileId || f.fileName === fileId
     );
@@ -52,9 +50,15 @@ export async function GET(
       );
     }
 
-    // Audit log (get user from request if available)
-    // TODO: Extract user from auth token
-    // await AuditLogger.auditWrite(...)
+    await AuditLogger.auditWrite(
+      'telemedicine_session',
+      sessionId,
+      user.userId,
+      user.tenantId || 'system',
+      AuditAction.READ,
+      undefined,
+      { action: 'file_download', fileId, fileName: file.fileName }
+    );
 
     return NextResponse.json(successResponse({
       fileName: file.fileName,
@@ -76,3 +80,5 @@ export async function GET(
     );
   }
 }
+
+export const GET = withErrorHandler(withAuth(getHandler));

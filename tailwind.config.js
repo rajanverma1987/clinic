@@ -18,14 +18,17 @@ const config = {
       },
     },
     extend: {
-      // Color System - Clinic Theme
+      // Color System – from CSS vars in globals.css (:root)
       colors: {
         primary: {
-          900: '#0B67A0',
-          700: '#0F89C7',
-          500: '#2D9CDB',
-          300: '#56CCF2',
-          100: '#E6F7FE',
+          900: 'var(--color-primary-900)',
+          700: 'var(--color-primary-700)',
+          600: 'var(--color-primary-600)',
+          500: 'var(--color-primary)' /* main primary = 700 */,
+          300: 'var(--color-primary-300)',
+          200: 'var(--color-primary-200)',
+          100: 'var(--color-primary-100)',
+          50: 'var(--color-primary-50)',
         },
         secondary: {
           700: '#1E874F', // Green variant - darker green
@@ -46,7 +49,7 @@ const config = {
           success: '#27AE60', // Green for success/active states
           warning: '#F2C94C',
           error: '#EB5757',
-          info: '#2D9CDB', // Blue for info
+          info: 'var(--color-primary)',
         },
         success: {
           700: '#1E874F',
@@ -57,7 +60,7 @@ const config = {
           100: '#E8F8EF',
         },
       },
-      // Typography - Inter Font Family
+      // Typography – Inter primary (cross-platform UI); JetBrains Mono for numbers
       fontFamily: {
         sans: [
           '"Inter"',
@@ -69,8 +72,9 @@ const config = {
           'Arial',
           'sans-serif',
         ],
+        mono: ['"JetBrains Mono"', '"Roboto Mono"', 'ui-monospace', 'monospace'],
       },
-      // Typography Sizes
+      // Typography – body 14–16px, line-height 1.5–1.6; metrics 18–24px for quick scanning
       fontSize: {
         h1: ['32px', { lineHeight: '40px', fontWeight: '700' }],
         h2: ['24px', { lineHeight: '32px', fontWeight: '600' }],
@@ -78,9 +82,12 @@ const config = {
         h4: ['18px', { lineHeight: '24px', fontWeight: '600' }],
         'body-lg': ['18px', { lineHeight: '28px', fontWeight: '400' }],
         'body-md': ['16px', { lineHeight: '24px', fontWeight: '400' }],
-        'body-sm': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+        'body-sm': ['14px', { lineHeight: '21px', fontWeight: '400' }],
         'body-xs': ['12px', { lineHeight: '16px', fontWeight: '400' }],
         button: ['16px', { lineHeight: '20px', fontWeight: '600' }],
+        'metric-lg': ['24px', { lineHeight: '1.25', fontWeight: '600' }],
+        'metric-md': ['20px', { lineHeight: '1.3', fontWeight: '600' }],
+        'metric-sm': ['18px', { lineHeight: '1.35', fontWeight: '600' }],
       },
       // Spacing Scale
       spacing: {
@@ -97,14 +104,19 @@ const config = {
         // Standard gap between icon and text (single source: --icon-text-gap in globals.css)
         'icon-text': 'var(--icon-text-gap)',
       },
-      // Border Radius
+      // Border Radius – aligned with globals.css :root (--radius-*)
       borderRadius: {
+        none: '0',
+        sm: '4px',
         DEFAULT: '8px',
-        button: '8px',
-        card: '10px',
-        input: '8px',
-        lg: '10px',
+        md: '6px',
+        lg: '8px',
         xl: '12px',
+        '2xl': '16px',
+        full: '9999px',
+        button: '8px',
+        card: '8px',
+        input: '8px',
       },
       // Custom Shadows - Clinic Theme
       boxShadow: {
@@ -113,7 +125,7 @@ const config = {
         lg: '0 4px 12px rgba(0,0,0,0.08)',
         xl: '0 8px 20px rgba(0,0,0,0.12)',
         // Focus shadow for inputs
-        focus: '0 0 0 3px rgba(45,156,219,0.20)',
+        focus: '0 0 0 3px rgba(18,57,146,0.20)',
       },
     },
   },

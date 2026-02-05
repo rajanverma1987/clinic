@@ -11,6 +11,7 @@ import { apiClient } from '@/lib/api/client';
 import { CARD_FEATURES_BY_PLAN } from '@/lib/constants/plan-features';
 import { YEARLY_SAVE } from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -91,7 +92,7 @@ export default function PricingPage() {
         } else if (response.data.approvalUrl) {
           window.location.href = response.data.approvalUrl;
         } else {
-          alert(t('subscription.subscriptionUpdated'));
+          showSuccess(t('subscription.subscriptionUpdated'));
           setSelectingPlanId(null);
           setSelectingMethod(null);
           router.push('/subscription');
@@ -101,7 +102,7 @@ export default function PricingPage() {
       }
     } catch (error) {
       logger.error('Failed to create subscription', error);
-      alert(error.message || t('subscription.updateFailed'));
+      showError(error.message || t('subscription.updateFailed'));
       setSelectingPlanId(null);
       setSelectingMethod(null);
     }

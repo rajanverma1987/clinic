@@ -25,9 +25,8 @@ export function Loader({
   inline = false,
   'aria-label': ariaLabel,
 }) {
-  const preset = type && LOADER_PRESETS[type] && !LOADER_PRESETS[type].useSkeleton
-    ? LOADER_PRESETS[type]
-    : null;
+  const preset =
+    type && LOADER_PRESETS[type] && !LOADER_PRESETS[type].useSkeleton ? LOADER_PRESETS[type] : null;
   const effectiveFullScreen = preset ? preset.fullScreen : fullScreen;
   const effectiveInline = preset ? preset.inline : inline;
   const effectiveSize = preset ? preset.size : size;
@@ -78,7 +77,7 @@ export function Loader({
 
   const variantColors = {
     primary: {
-      main: '#2D9CDB',
+      main: 'var(--color-primary-500)',
       light: 'rgba(45, 156, 219, 0.2)',
       pulse: 'rgba(45, 156, 219, 0.15)',
     },
@@ -290,10 +289,7 @@ export function Loader({
   }
 
   return (
-    <div
-      className={`flex items-center justify-center ${className}`}
-      {...a11yProps}
-    >
+    <div className={`flex items-center justify-center ${className}`} {...a11yProps}>
       {content}
 
       <style jsx>{`
@@ -377,7 +373,7 @@ export function CompactLoader({
   };
 
   const variantColors = {
-    primary: '#2D9CDB',
+    primary: 'var(--color-primary-500)',
     secondary: '#27AE60',
     neutral: '#828282',
     white: '#ffffff',

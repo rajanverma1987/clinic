@@ -1,0 +1,56 @@
+---
+description: Enforce token-optimization and accuracy behavior; minimal changes, concise responses, no hallucinations
+alwaysApply: true
+---
+
+# Token Optimization & Accuracy — Cursor Must Follow
+
+**MANDATORY.** Align with workspace settings in `.vscode/settings.json` and `CursorMD/CURSOR_IDE_TOKEN_OPTIMIZATION.md`. The AI must behave as if these settings are always on.
+
+## Model Choice — Accurate, Current, Task-Appropriate Only
+
+- **Use only accurate, up-to-date models** suitable for the task. Do not use outdated or incompatible models for the job at hand.
+- **Approved models for this workspace:** Claude Opus 4.5 (`claude-opus-4-5`) for chat, edit, fix, and agent; Claude Sonnet 4.5 (`claude-sonnet-4-5`) for autocomplete, generate, and explain. These are current and task-appropriate.
+- **Do not recommend or assume:** Older Claude (e.g. 3.x) or GPT-4 for accuracy-critical work; any model that is deprecated, unsupported, or known to be incompatible with the task (e.g. wrong API surface, weak reasoning).
+- **When giving Cursor/setup advice:** Tell the user to set Cursor to use only the approved models above and to avoid outdated or incompatible models for each task type. If the user asks “which model?”, recommend only accurate, current, task-appropriate options from this rule.
+- **Task–model fit:** Complex/critical tasks (editing, fixing, architecture, agent) → Opus 4.5. Simple/boilerplate (autocomplete, generate, explain) → Sonnet 4.5. Never suggest a model that is outdated or incompatible for that task.
+
+## Response Length & Style
+
+- **Concise**: Prefer short, direct answers. Avoid long preambles, repeated explanations, or step-by-step narration when a brief summary suffices.
+- **Code-focused**: For simple tasks (fix one bug, add one field), lead with code or the minimal change. Skip lengthy “here’s how it works” unless the user asks or it’s non-obvious.
+- **No bloat**: Do not paste entire files back when only a small edit is needed. Show the minimal diff or the exact lines to change.
+- **Summaries**: After edits, give 1–3 lines: what changed, what to test, and any critical follow-up. No play-by-play.
+
+## Accuracy — No False Statements
+
+- **Documented APIs only**: Suggest code that uses APIs from the project’s actual dependencies (e.g. `package.json`). Do not invent or assume APIs.
+- **Uncertainty**: If unsure about an API, signature, or behavior, say **“I’m not certain”** or **“Verify in docs”** instead of guessing. Do not guess package exports or method names.
+- **Verify before suggesting**: Prefer checking the codebase or known docs before proposing code. Wrong suggestions waste tokens and time.
+
+## Minimal Changes — Preserve Working Code
+
+- **Smallest fix**: For bugs or small requests, change only what is broken or requested. Do not refactor, rename, or “clean up” unrelated code unless asked.
+- **No rewrites**: Do not rewrite entire files or large blocks of working code. Edit in place; add or change only the necessary lines.
+- **Scope**: Prefer editing the fewest files needed (ideally 1–3). Do not touch extra files “for consistency” unless the user asks.
+
+## Production Quality (When Writing Code)
+
+- **No placeholders**: No “TODO”, “FIXME”, or “implement later” in shipped code. Either implement fully or state what’s left for the user.
+- **Error handling**: Include proper error handling and loading states where the codebase expects them.
+- **Security & compliance**: Respect tenantId, RBAC, and PHI; no secrets or PHI in logs/URLs.
+
+## Context & Scope
+
+- **Relevant files only**: When reading the codebase, focus on files relevant to the task. Do not pull in unnecessary context.
+- **No invented structure**: Do not assume routes, components, or APIs that are not in the project. Follow CursorMD/New and existing patterns.
+
+## Summary
+
+- **Models:** Use only **accurate, current, task-appropriate** models (Opus 4.5 / Sonnet 4.5 as above). **Never** recommend or assume outdated or incompatible models for the task.
+- Be **concise** and **code-first** when the task is small.
+- Be **accurate**: only documented/real APIs; say “I’m not certain” when unsure.
+- Make **minimal** changes; **preserve** working code; limit **scope** to what’s needed.
+- **No** placeholder comments or unnecessary rewrites.
+
+**Enforcement**: Re-read this rule at the start of each task. Follow it on every response.

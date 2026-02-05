@@ -6,15 +6,22 @@ import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { SettingsTabHeader } from './SettingsTabHeader';
+import { logger } from '@/lib/utils/logger.js';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useEffect, useState } from 'react';
-import { logger } from '@/lib/utils/logger.js';
+import { SettingsTabHeader } from './SettingsTabHeader';
 
-export function HolidayManagementTab({ settings, onUpdate, showAddForm: controlledShowAdd, setShowAddForm: setControlledShowAdd }) {
+export function HolidayManagementTab({
+  settings,
+  onUpdate,
+  showAddForm: controlledShowAdd,
+  setShowAddForm: setControlledShowAdd,
+}) {
   const { t } = useI18n();
+  const { open: openConfirm } = useConfirmation();
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -79,29 +86,32 @@ export function HolidayManagementTab({ settings, onUpdate, showAddForm: controll
   };
 
   const handleDeleteHoliday = async (holidayId) => {
-    if (!confirm(t('errors.confirmDeleteHoliday'))) {
-      return;
-    }
-    setSaving(true);
-    try {
-      const updatedHolidays = holidays.filter((h) => h.id !== holidayId);
-      const response = await apiClient.put('/settings', {
-        settings: {
-          holidays: updatedHolidays,
-        },
-      });
-      if (response.success) {
-        setHolidays(updatedHolidays);
-        showSuccess(t('errors.holidayDeleted'));
-        if (onUpdate) onUpdate();
-      } else {
-        showError(response.error?.message || t('errors.failedToDeleteHoliday'));
-      }
-    } catch (error) {
-      showError(error.message || t('errors.failedToDeleteHoliday'));
-    } finally {
-      setSaving(false);
-    }
+    openConfirm({
+      title: t('common.delete'),
+      message: t('errors.confirmDeleteHoliday'),
+      onConfirm: async () => {
+        setSaving(true);
+        try {
+          const updatedHolidays = holidays.filter((h) => h.id !== holidayId);
+          const response = await apiClient.put('/settings', {
+            settings: {
+              holidays: updatedHolidays,
+            },
+          });
+          if (response.success) {
+            setHolidays(updatedHolidays);
+            showSuccess(t('errors.holidayDeleted'));
+            if (onUpdate) onUpdate();
+          } else {
+            showError(response.error?.message || t('errors.failedToDeleteHoliday'));
+          }
+        } catch (error) {
+          showError(error.message || t('errors.failedToDeleteHoliday'));
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
   };
 
   if (loading) {
@@ -115,17 +125,16 @@ export function HolidayManagementTab({ settings, onUpdate, showAddForm: controll
   return (
     <div className='space-y-3 text-left'>
       <SettingsTabHeader title={t('settings.holidaysClosures')} />
-      {!addButtonInHeader && (
-        <div className='flex justify-end'>
-          <Button
-            onClick={() => setShowAddForm(!showAddForm)}
-            variant={showAddForm ? 'secondary' : 'primary'}
-            size='sm'
-          >
-            {showAddForm ? t('common.cancel') : `+ ${t('settings.addHoliday')}`}
-          </Button>
-        </div>
-      )}
+      {/* Always show Add New Holiday button (toggle form visibility only) */}
+      <div className='flex justify-end'>
+        <Button
+          onClick={() => setShowAddForm(!showAddForm)}
+          variant={showAddForm ? 'secondary' : 'primary'}
+          size='sm'
+        >
+          {showAddForm ? t('common.cancel') : `+ ${t('settings.addHoliday')}`}
+        </Button>
+      </div>
 
       {/* Add Holiday Form */}
       {showAddForm && (
@@ -168,7 +177,13 @@ export function HolidayManagementTab({ settings, onUpdate, showAddForm: controll
               <label className='text-sm text-neutral-700'>Recurring every year</label>
             </div>
             <div className='flex gap-2 pt-2 border-t border-neutral-200'>
-              <Button type='submit' variant='primary' isLoading={saving} disabled={saving} className='flex-1'>
+              <Button
+                type='submit'
+                variant='primary'
+                isLoading={saving}
+                disabled={saving}
+                className='flex-1'
+              >
                 Add Holiday
               </Button>
               <Button
@@ -225,7 +240,7 @@ export function HolidayManagementTab({ settings, onUpdate, showAddForm: controll
                     <div>
                       <p className='font-semibold text-neutral-900 text-sm'>{holiday.name}</p>
                       <p className='text-xs text-neutral-600'>
-                        {new Date(holiday.date).toLocaleDateString('en-US', {
+                        {new Date(holiday.date).toLocaleDateString(undefined, {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',

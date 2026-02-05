@@ -12,6 +12,7 @@ import { WaitingRoom } from '@/components/telemedicine/WaitingRoom';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { AuditLogger } from '@/lib/audit/audit-logger';
@@ -23,6 +24,7 @@ import {
   encryptMessage,
 } from '@/lib/encryption/e2ee';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { getUserFriendlyMessage } from '@/lib/utils/user-messages';
 import { VideoCallManager } from '@/lib/webrtc/video-call-manager';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -36,6 +38,7 @@ function VideoConsultationRoomContent() {
   const { t } = useI18n();
   const authContext = useAuth();
   const user = authContext?.user || null;
+  const { open: openConfirm } = useConfirmation();
   const sessionId = params.id;
 
   // Check if this is a patient link
@@ -1022,23 +1025,26 @@ function VideoConsultationRoomContent() {
   };
 
   const handleEndCall = async () => {
-    if (window.confirm('Are you sure you want to end this consultation?')) {
-      // Audit log: User left call
-      if (user) {
-        try {
-          await AuditLogger.auditWrite(
-            'telemedicine_session',
-            sessionId,
-            user.userId || user._id,
-            user.tenantId,
-            'ACCESS',
-            { action: 'leave_call', duration: sessionDuration },
-            { timestamp: new Date().toISOString() }
-          );
-        } catch (error) {
-          logger.warn('Failed to log audit:', error);
+    openConfirm({
+      title: t('telemedicine.confirmEndConsultation') || 'End consultation?',
+      message: t('common.confirmationDescription') || 'Are you sure you want to end this consultation?',
+      variant: 'danger',
+      onConfirm: async () => {
+        if (user) {
+          try {
+            await AuditLogger.auditWrite(
+              'telemedicine_session',
+              sessionId,
+              user.userId || user._id,
+              user.tenantId,
+              'ACCESS',
+              { action: 'leave_call', duration: sessionDuration },
+              { timestamp: new Date().toISOString() }
+            );
+          } catch (error) {
+            logger.warn('Failed to log audit:', error);
+          }
         }
-      }
 
       // End the call
       if (callManagerRef.current) {
@@ -1085,7 +1091,8 @@ function VideoConsultationRoomContent() {
           window.close();
         }
       }
-    }
+      },
+    });
   };
 
   const handleToggleMute = () => {
@@ -1210,7 +1217,7 @@ function VideoConsultationRoomContent() {
     } catch (error) {
       logger.error('Screen share error:', error);
       const errorMsg = error.message || 'Failed to share screen';
-      alert(getUserFriendlyMessage(errorMsg));
+      showError(getUserFriendlyMessage(errorMsg));
     }
   };
 
@@ -1550,7 +1557,7 @@ function VideoConsultationRoomContent() {
 
     try {
       await navigator.clipboard.writeText(patientLink);
-      alert('Video call link copied! You can now share it with the patient.');
+      showSuccess(t('telemedicine.linkCopied') || 'Video call link copied! You can now share it with the patient.');
     } catch (error) {
       setShowShareModal(true);
     }
@@ -1558,7 +1565,7 @@ function VideoConsultationRoomContent() {
 
   const handleSendEmail = async () => {
     if (!sessionData?.patientId?.email) {
-      alert('Patient email address is not available. Please copy the link and share it manually.');
+      showError(t('telemedicine.noPatientEmail') || 'Patient email address is not available. Please copy the link and share it manually.');
       return;
     }
 
@@ -1576,15 +1583,15 @@ function VideoConsultationRoomContent() {
       );
 
       if (response.success) {
-        alert('Video call link sent to patient via email!');
+        showSuccess(t('telemedicine.linkSentByEmail') || 'Video call link sent to patient via email!');
         setShowShareModal(false);
       } else {
         const errorMsg = response.error?.message || 'Failed to send email';
-        alert(getUserFriendlyMessage(errorMsg));
+        showError(getUserFriendlyMessage(errorMsg));
       }
     } catch (error) {
       logger.error('Failed to send email:', error);
-      alert('Unable to send email. Please copy the link and share it manually.');
+      showError(t('telemedicine.unableToSendEmail') || 'Unable to send email. Please copy the link and share it manually.');
     }
   };
 
@@ -1942,10 +1949,10 @@ function VideoConsultationRoomContent() {
                         window.open(response.data.paymentUrl, '_blank');
                         setShowPaymentModal(false);
                       } else {
-                        alert('Failed to initiate payment');
+                        showError(t('telemedicine.failedToInitiatePayment') || 'Failed to initiate payment');
                       }
                     } catch (err) {
-                      alert('Failed to collect payment');
+                      showError(t('telemedicine.failedToCollectPayment') || 'Failed to collect payment');
                     }
                   }}
                 >

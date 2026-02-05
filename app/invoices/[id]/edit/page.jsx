@@ -9,19 +9,23 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
+import { isManagerPathLimitedWrite } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function EditInvoicePage() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const invoiceId = params?.id;
   const { user: currentUser, loading: authLoading } = useAuth();
+  const user = currentUser; // alias for any child or callback that expects `user`
   const { t } = useI18n();
   const { currency, locale } = useSettings();
+  const managerLimitedWrite = isManagerPathLimitedWrite(pathname);
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -104,7 +108,7 @@ export default function EditInvoicePage() {
               taxRate: item.taxRate || 0,
               appointmentId: item.appointmentId?._id || item.appointmentId || undefined,
               prescriptionId: item.prescriptionId?._id || item.prescriptionId || undefined,
-            }))
+            })),
           );
         }
       } else {
@@ -249,13 +253,13 @@ export default function EditInvoicePage() {
 
   // Redirect if not authenticated (non-blocking)
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !currentUser) {
       router.push('/login');
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, currentUser, router]);
 
   // Show empty state while redirecting
-  if (!user) {
+  if (!currentUser) {
     return null;
   }
 
@@ -347,44 +351,26 @@ export default function EditInvoicePage() {
                 </Button>
               </div>
 
-              <div className='overflow-x-auto'>
-                <table className='min-w-full divide-y divide-neutral-200 border border-neutral-200 rounded-lg'>
-                  <thead className='bg-neutral-100'>
+              <div className='clinic-table-wrap'>
+                <table className='clinic-table'>
+                  <thead>
                     <tr>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        #
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Type
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Description
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Quantity
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Unit Price
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Discount (%)
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Tax Rate (%)
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Total
-                      </th>
-                      <th className='px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase'>
-                        Actions
-                      </th>
+                      <th>#</th>
+                      <th>Type</th>
+                      <th>Description</th>
+                      <th>Quantity</th>
+                      <th>Unit Price</th>
+                      <th>Discount (%)</th>
+                      <th>Tax Rate (%)</th>
+                      <th>Total</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
-                  <tbody className='bg-white divide-y divide-gray-200'>
+                  <tbody>
                     {items.map((item, index) => (
-                      <tr key={index} className='hover:bg-neutral-100'>
-                        <td className='px-4 py-3 text-sm text-neutral-900'>{index + 1}</td>
-                        <td className='px-4 py-3 text-sm'>
+                      <tr key={index}>
+                        <td>{index + 1}</td>
+                        <td>
                           <select
                             required
                             value={item.type}
@@ -398,7 +384,7 @@ export default function EditInvoicePage() {
                             <option value='other'>Other</option>
                           </select>
                         </td>
-                        <td className='px-4 py-3 text-sm'>
+                        <td>
                           <Input
                             required
                             value={item.description}
@@ -407,7 +393,7 @@ export default function EditInvoicePage() {
                             className='text-xs w-full'
                           />
                         </td>
-                        <td className='px-4 py-3 text-sm'>
+                        <td>
                           <Input
                             type='number'
                             min='1'
@@ -419,7 +405,7 @@ export default function EditInvoicePage() {
                             className='text-xs w-20'
                           />
                         </td>
-                        <td className='px-4 py-3 text-sm'>
+                        <td>
                           <Input
                             type='number'
                             min='0'
@@ -430,9 +416,10 @@ export default function EditInvoicePage() {
                               updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)
                             }
                             className='text-xs w-24'
+                            disabled={managerLimitedWrite}
                           />
                         </td>
-                        <td className='px-4 py-3 text-sm'>
+                        <td>
                           <Input
                             type='number'
                             min='0'
@@ -442,9 +429,10 @@ export default function EditInvoicePage() {
                               updateItem(index, 'discount', parseFloat(e.target.value) || 0)
                             }
                             className='text-xs w-20'
+                            disabled={managerLimitedWrite}
                           />
                         </td>
-                        <td className='px-4 py-3 text-sm'>
+                        <td>
                           <Input
                             type='number'
                             min='0'
@@ -454,12 +442,13 @@ export default function EditInvoicePage() {
                               updateItem(index, 'taxRate', parseFloat(e.target.value) || 0)
                             }
                             className='text-xs w-20'
+                            disabled={managerLimitedWrite}
                           />
                         </td>
-                        <td className='px-4 py-3 text-sm font-medium text-neutral-900'>
+                        <td className='font-medium'>
                           {formatCurrencyUtil(calculateItemTotal(item).total, currency, locale)}
                         </td>
-                        <td className='px-4 py-3 text-sm'>
+                        <td>
                           {items.length > 1 && (
                             <Button
                               type='button'
@@ -490,6 +479,7 @@ export default function EditInvoicePage() {
                     value={formData.discountType}
                     onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
                     className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                    disabled={managerLimitedWrite}
                   >
                     <option value='percentage'>Percentage</option>
                     <option value='fixed'>Fixed Amount</option>
@@ -507,6 +497,7 @@ export default function EditInvoicePage() {
                     onChange={(e) =>
                       setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })
                     }
+                    disabled={managerLimitedWrite}
                   />
                 </div>
 
@@ -516,6 +507,7 @@ export default function EditInvoicePage() {
                     value={formData.discountReason}
                     onChange={(e) => setFormData({ ...formData, discountReason: e.target.value })}
                     placeholder={t('invoices.discountReasonPlaceholder')}
+                    disabled={managerLimitedWrite}
                   />
                 </div>
               </div>

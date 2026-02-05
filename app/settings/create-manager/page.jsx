@@ -43,31 +43,31 @@ export default function CreateManagerPage() {
 
     // Validation
     if (!formData.firstName || !formData.firstName.trim()) {
-      showError('First name is required');
+      showError(t('admin.firstNameRequired'));
       return;
     }
     if (!formData.lastName || !formData.lastName.trim()) {
-      showError('Last name is required');
+      showError(t('admin.lastNameRequired'));
       return;
     }
     if (!formData.email || !formData.email.trim()) {
-      showError('Email is required');
+      showError(t('admin.emailRequired'));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      showError('Please enter a valid email address');
+      showError(t('admin.invalidEmail'));
       return;
     }
     if (!formData.password || !formData.password.trim()) {
-      showError('Password is required');
+      showError(t('admin.passwordRequired'));
       return;
     }
     if (formData.password.length < 8) {
-      showError('Password must be at least 8 characters');
+      showError(t('admin.passwordMinLength'));
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      showError('Passwords do not match');
+      showError(t('admin.passwordsDoNotMatch'));
       return;
     }
 
@@ -75,7 +75,7 @@ export default function CreateManagerPage() {
 
     try {
       // Create manager account with limited access
-      const response = await apiClient.post('/api/users', {
+      const response = await apiClient.post('/users', {
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
@@ -84,7 +84,7 @@ export default function CreateManagerPage() {
       });
 
       if (response.success) {
-        showSuccess('Manager account created successfully!');
+        showSuccess(t('errors.managerAccountCreatedSuccess'));
         // Reset form
         setFormData({
           email: '',
@@ -98,7 +98,15 @@ export default function CreateManagerPage() {
         showError(response.error?.message || 'Failed to create manager account');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create manager account';
+      const rawMessage =
+        error instanceof Error ? error.message : 'Failed to create manager account';
+      const isHtmlOrParseError =
+        typeof rawMessage === 'string' &&
+        (rawMessage.includes('<!DOCTYPE') || rawMessage.includes('Unexpected token'));
+      const errorMessage = isHtmlOrParseError
+        ? t('settings.createManagerServerError') ||
+          'Server returned an error. Check your permissions or try again.'
+        : rawMessage;
       setError(errorMessage);
       showError(errorMessage);
     } finally {
@@ -125,7 +133,6 @@ export default function CreateManagerPage() {
       }
     >
       <div style={{ padding: '0 10px' }}>
-
         <Card>
           <div className='p-6'>
             <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
@@ -174,9 +181,7 @@ export default function CreateManagerPage() {
               </div>
 
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  Email *
-                </label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>Email *</label>
                 <Input
                   type='email'
                   value={formData.email}
@@ -235,4 +240,3 @@ export default function CreateManagerPage() {
     </Layout>
   );
 }
-

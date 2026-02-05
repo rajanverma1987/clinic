@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useI18n } from '@/contexts/I18nContext';
-import { useState } from 'react';
 import { logger } from '@/lib/utils/logger.js';
+import { showError } from '@/lib/utils/toast';
+import { useState } from 'react';
 
 export function ShareModal({ isOpen, onClose, sessionId, sessionData, onSendEmail }) {
   const { t } = useI18n();
@@ -27,7 +28,10 @@ export function ShareModal({ isOpen, onClose, sessionId, sessionData, onSendEmai
 
   const handleEmailSend = async () => {
     if (!sessionData?.patientId?.email) {
-      alert('Patient email address is not available. Please copy the link and share it manually.');
+      showError(
+        t('telemedicine.patientEmailNotAvailable') ||
+          'Patient email address is not available. Please copy the link and share it manually.',
+      );
       return;
     }
 
@@ -36,7 +40,10 @@ export function ShareModal({ isOpen, onClose, sessionId, sessionData, onSendEmai
       onClose();
     } catch (error) {
       logger.error('Failed to send email:', error);
-      alert('Unable to send email. Please copy the link and share it manually.');
+      showError(
+        t('telemedicine.unableToSendEmail') ||
+          'Unable to send email. Please copy the link and share it manually.',
+      );
     }
   };
 

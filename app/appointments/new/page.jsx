@@ -16,8 +16,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useFeatures } from '@/hooks/useFeatures.js';
 import { apiClient } from '@/lib/api/client';
-import { showError, showSuccess, showWarning } from '@/lib/utils/toast';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess, showWarning } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
@@ -110,7 +110,7 @@ function NewAppointmentPageContent() {
   useEffect(() => {
     if (formData.patientId && formData.isTelemedicine && patients.length > 0) {
       const selectedPatient = patients.find(
-        (p) => p._id === formData.patientId || p.id === formData.patientId
+        (p) => p._id === formData.patientId || p.id === formData.patientId,
       );
       if (selectedPatient?.email) {
         // Always update email from patient collection when Video Consultation is enabled
@@ -124,7 +124,7 @@ function NewAppointmentPageContent() {
     if (doctorIdFromUrl && doctors.length > 0) {
       // Verify doctor exists in the list before setting
       const doctorExists = doctors.some(
-        (d) => d.id === doctorIdFromUrl || d._id === doctorIdFromUrl
+        (d) => d.id === doctorIdFromUrl || d._id === doctorIdFromUrl,
       );
       if (doctorExists) {
         setFormData((prev) => ({ ...prev, doctorId: doctorIdFromUrl }));
@@ -172,7 +172,7 @@ function NewAppointmentPageContent() {
 
         // Filter to only show active doctors and clinic admins
         const doctorsList = allUsers.filter(
-          (u) => (u.role === 'doctor' || u.role === 'clinic_admin') && u.isActive
+          (u) => (u.role === 'doctor' || u.role === 'clinic_admin') && u.isActive,
         );
 
         logger.debug('Filtered doctors:', doctorsList); // Debug log
@@ -182,7 +182,7 @@ function NewAppointmentPageContent() {
         // Pre-select doctor from URL if provided, otherwise use current user
         if (doctorIdFromUrl) {
           const urlDoctor = doctorsList.find(
-            (d) => d.id === doctorIdFromUrl || d._id === doctorIdFromUrl
+            (d) => d.id === doctorIdFromUrl || d._id === doctorIdFromUrl,
           );
           if (urlDoctor) {
             setFormData((prev) => ({ ...prev, doctorId: urlDoctor.id || urlDoctor._id }));
@@ -190,7 +190,7 @@ function NewAppointmentPageContent() {
         } else if (currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') {
           // Only pre-select current user if no doctorId from URL
           const currentDoctor = doctorsList.find(
-            (d) => d.id === currentUser.userId || d._id === currentUser.userId
+            (d) => d.id === currentUser.userId || d._id === currentUser.userId,
           );
           if (currentDoctor) {
             setFormData((prev) => ({ ...prev, doctorId: currentDoctor.id || currentDoctor._id }));
@@ -243,12 +243,12 @@ function NewAppointmentPageContent() {
       // Validate telemedicine requirements
       if (formData.isTelemedicine) {
         if (!formData.telemedicineConsent) {
-          showWarning('Please confirm patient consent for video consultation');
+          showWarning(t('appointments.confirmVideoConsent'));
           setSubmitting(false);
           return;
         }
         if (!formData.patientEmail) {
-          showWarning('Patient email is required for video consultations');
+          showWarning(t('appointments.patientEmailRequiredForVideo'));
           setSubmitting(false);
           return;
         }
@@ -284,8 +284,8 @@ function NewAppointmentPageContent() {
           formData.isRecurring
             ? t('appointments.recurringScheduled', { count: appointmentCount })
             : formData.isTelemedicine
-            ? t('appointments.videoScheduled')
-            : t('appointments.scheduledSuccess')
+              ? t('appointments.videoScheduled')
+              : t('appointments.scheduledSuccess'),
         );
         setTimeout(() => {
           router.push('/appointments');
@@ -362,7 +362,7 @@ function NewAppointmentPageContent() {
                   onSelect={(patientId) => {
                     // Find the selected patient to get their email
                     const selectedPatient = patients.find(
-                      (p) => p._id === patientId || p.id === patientId
+                      (p) => p._id === patientId || p.id === patientId,
                     );
                     setFormData((prev) => ({
                       ...prev,
@@ -402,7 +402,7 @@ function NewAppointmentPageContent() {
                 />
                 {doctors.length === 0 && (
                   <p className='text-sm text-neutral-500 mt-1'>
-                    No doctors available. Add doctors in Settings → Doctors & Staff.
+                    {t('appointments.noDoctorsAvailableAddInSettings')}
                   </p>
                 )}
               </div>
@@ -561,19 +561,22 @@ function NewAppointmentPageContent() {
                     )}
                     <div className='bg-primary-100 border border-primary-200 rounded-lg p-3'>
                       <p className='text-xs text-primary-700'>
-                        <strong>Note:</strong> {formData.recurringOccurrences || 4} appointment
-                        {formData.recurringOccurrences !== 1 ? 's' : ''} will be created{' '}
+                        <strong>{t('common.note') || 'Note'}:</strong>{' '}
+                        {t('appointments.noteRecurring', {
+                          count: formData.recurringOccurrences || 4,
+                        })}{' '}
+                        {t('appointments.recurringWillBeCreated')}{' '}
                         {formData.recurringFrequency === 'daily'
-                          ? 'daily'
+                          ? t('appointments.recurringDaily')
                           : formData.recurringFrequency === 'weekly'
-                          ? 'weekly'
-                          : formData.recurringFrequency === 'biweekly'
-                          ? 'every 2 weeks'
-                          : 'monthly'}{' '}
-                        starting from {formData.appointmentDate || 'selected date'}
+                            ? t('appointments.recurringWeekly')
+                            : formData.recurringFrequency === 'biweekly'
+                              ? t('appointments.recurringBiweekly')
+                              : t('appointments.recurringMonthly')}{' '}
+                        {t('appointments.recurringStartingFrom')} {formData.appointmentDate || t('appointments.recurringSelectedDate')}
                         {formData.recurringEndDate
-                          ? ` until ${formData.recurringEndDate}`
-                          : ` (${formData.recurringOccurrences || 4} total)`}
+                          ? ` ${t('appointments.recurringUntil')} ${formData.recurringEndDate}`
+                          : ` (${formData.recurringOccurrences || 4} ${t('appointments.recurringTotal')})`}
                         .
                       </p>
                     </div>
@@ -609,11 +612,11 @@ function NewAppointmentPageContent() {
                         </svg>
                       </div>
                       <div className='text-left flex-1'>
-                        <div className='font-semibold text-neutral-900'>In-Person Visit</div>
-                        <div className='text-sm text-neutral-600'>Patient visits clinic</div>
+                        <div className='font-semibold text-neutral-900'>{t('appointments.inPersonVisit')}</div>
+                        <div className='text-sm text-neutral-600'>{t('appointments.inPersonVisitDesc')}</div>
                       </div>
                       <div className='flex items-center gap-2 px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-full'>
-                        ✓ Selected
+                        ✓ {t('common.selected')}
                       </div>
                     </div>
                   </div>
@@ -709,8 +712,8 @@ function NewAppointmentPageContent() {
                         </svg>
                       </div>
                       <div className='text-left'>
-                        <div className='font-semibold text-neutral-900'>In-Person Visit</div>
-                        <div className='text-sm text-neutral-600'>Patient visits clinic</div>
+                        <div className='font-semibold text-neutral-900'>{t('appointments.inPersonVisit')}</div>
+                        <div className='text-sm text-neutral-600'>{t('appointments.inPersonVisitDesc')}</div>
                       </div>
                     </div>
                   </button>
@@ -720,7 +723,7 @@ function NewAppointmentPageContent() {
                     onClick={() => {
                       // When Video Consultation is selected, auto-populate email from patient
                       const selectedPatient = patients.find(
-                        (p) => p._id === formData.patientId || p.id === formData.patientId
+                        (p) => p._id === formData.patientId || p.id === formData.patientId,
                       );
                       setFormData((prev) => ({
                         ...prev,
@@ -758,8 +761,8 @@ function NewAppointmentPageContent() {
                         </svg>
                       </div>
                       <div className='text-left'>
-                        <div className='font-semibold text-neutral-900'>Video Consultation</div>
-                        <div className='text-sm text-neutral-600'>Remote via video call</div>
+                        <div className='font-semibold text-neutral-900'>{t('appointments.videoConsultation')}</div>
+                        <div className='text-sm text-neutral-600'>{t('appointments.videoConsultationDesc')}</div>
                       </div>
                     </div>
                   </button>
@@ -876,9 +879,14 @@ function NewAppointmentPageContent() {
   );
 }
 
+function AppointmentPageFallback() {
+  const { t } = useI18n();
+  return <Loader type='page' text={t('common.loading')} />;
+}
+
 export default function NewAppointmentPage() {
   return (
-    <Suspense fallback={<Loader type='page' text={t('common.loading')} />}>
+    <Suspense fallback={<AppointmentPageFallback />}>
       <NewAppointmentPageContent />
     </Suspense>
   );

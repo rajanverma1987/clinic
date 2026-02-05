@@ -174,7 +174,7 @@ export async function createInventoryItem(input, tenantId, userId) {
     item._id.toString(),
     userId,
     tenantId,
-    AuditAction.CREATE
+    AuditAction.CREATE,
   );
 
   return item;
@@ -190,7 +190,7 @@ export async function getInventoryItemById(itemId, tenantId, userId) {
     withTenant(tenantId, {
       _id: itemId,
       deletedAt: null,
-    })
+    }),
   )
     .populate('drugId', 'name genericName')
     .populate('primarySupplierId', 'name code')
@@ -266,7 +266,7 @@ export async function listInventoryItems(query, tenantId, userId) {
     tenantId,
     AuditAction.READ,
     undefined,
-    { count: items.length, filters: query }
+    { count: items.length, filters: query },
   );
 
   return createPaginationResult(items, total, page || 1, limit || 10);
@@ -283,7 +283,7 @@ export async function getLowStockItems(tenantId, userId) {
       deletedAt: null,
       isActive: true,
       $expr: { $lte: ['$availableQuantity', '$lowStockThreshold'] },
-    })
+    }),
   )
     .populate('primarySupplierId', 'name code phone')
     .sort({ availableQuantity: 1 })
@@ -303,7 +303,7 @@ export async function getExpiredItems(tenantId, userId) {
       deletedAt: null,
       isActive: true,
       'batches.expiryDate': { $lt: new Date() },
-    })
+    }),
   ).lean();
 
   const expiredBatches = [];
@@ -330,7 +330,7 @@ export async function createStockTransaction(input, tenantId, userId) {
     withTenant(tenantId, {
       _id: input.inventoryItemId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!item) {
@@ -390,7 +390,7 @@ export async function createStockTransaction(input, tenantId, userId) {
     transaction._id.toString(),
     userId,
     tenantId,
-    AuditAction.CREATE
+    AuditAction.CREATE,
   );
 
   // Real-time events (CursorMD/New: stock:updated, stock:low, medicine:expired)
@@ -440,7 +440,7 @@ export async function createSupplier(input, tenantId, userId) {
     supplier._id.toString(),
     userId,
     tenantId,
-    AuditAction.CREATE
+    AuditAction.CREATE,
   );
 
   return supplier;
@@ -456,7 +456,7 @@ export async function listSuppliers(tenantId, userId) {
     withTenant(tenantId, {
       deletedAt: null,
       isActive: true,
-    })
+    }),
   )
     .sort({ name: 1 })
     .lean();
@@ -474,7 +474,7 @@ export async function updateInventoryItem(itemId, input, tenantId, userId) {
     withTenant(tenantId, {
       _id: itemId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!item) {
@@ -495,7 +495,7 @@ export async function updateInventoryItem(itemId, input, tenantId, userId) {
   const updated = await InventoryItem.findByIdAndUpdate(
     itemId,
     { $set: updateData },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (updated) {
@@ -505,7 +505,7 @@ export async function updateInventoryItem(itemId, input, tenantId, userId) {
       userId,
       tenantId,
       AuditAction.UPDATE,
-      { before, after: updated.toObject() }
+      { before, after: updated.toObject() },
     );
   }
 
@@ -522,7 +522,7 @@ export async function deleteInventoryItem(itemId, tenantId, userId) {
     withTenant(tenantId, {
       _id: itemId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!item) {
@@ -538,7 +538,7 @@ export async function deleteInventoryItem(itemId, tenantId, userId) {
     item._id.toString(),
     userId,
     tenantId,
-    AuditAction.DELETE
+    AuditAction.DELETE,
   );
 
   return true;
@@ -554,7 +554,11 @@ export async function getAllLots(tenantId, userId, filters = {}) {
   const query = withTenant(tenantId, {
     deletedAt: null,
     isActive: true,
-    'batches.0': { $exists: true }, // Only items with batches
+    $or: [
+      { 'batches.0': { $exists: true } },
+      { batchNumber: { $exists: true, $ne: '' } },
+      { expiryDate: { $exists: true, $ne: null } },
+    ],
   });
 
   // Filter by expiring soon (within next 30 days)
@@ -581,30 +585,61 @@ export async function getAllLots(tenantId, userId, filters = {}) {
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
   for (const item of items) {
-    if (!item.batches || item.batches.length === 0) continue;
+    const hasBatches = item.batches && item.batches.length > 0;
 
-    for (const batch of item.batches) {
-      const expiryDate = new Date(batch.expiryDate);
-      const isExpired = expiryDate < now;
-      const isExpiringSoon = expiryDate <= thirtyDaysFromNow && expiryDate >= now;
-      const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+    if (hasBatches) {
+      for (const batch of item.batches) {
+        const expiryDate = new Date(batch.expiryDate);
+        const isExpired = expiryDate < now;
+        const isExpiringSoon = expiryDate <= thirtyDaysFromNow && expiryDate >= now;
+        const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+
+        lots.push({
+          _id: `${item._id}_${batch.batchNumber}`,
+          itemId: item._id.toString(),
+          itemName: item.name,
+          itemCode: item.code,
+          itemType: item.type,
+          batchNumber: batch.batchNumber,
+          expiryDate: expiryDate,
+          quantity: batch.quantity,
+          purchasePrice: batch.purchasePrice,
+          purchaseDate: batch.purchaseDate,
+          supplierId: batch.supplierId,
+          supplierName: item.primarySupplierId?.name || item.supplier || null,
+          isExpired,
+          isExpiringSoon,
+          daysUntilExpiry: isExpired ? 0 : daysUntilExpiry,
+          unit: item.unit,
+          location: item.location,
+        });
+      }
+    }
+
+    // Include top-level batch fields as a single lot when no batches array (edit form persistence)
+    if (!hasBatches && (item.batchNumber || item.expiryDate)) {
+      const expiryDate = item.expiryDate ? new Date(item.expiryDate) : null;
+      const isExpired = expiryDate ? expiryDate < now : false;
+      const isExpiringSoon = expiryDate && expiryDate <= thirtyDaysFromNow && expiryDate >= now;
+      const daysUntilExpiry =
+        expiryDate && !isExpired ? Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24)) : 0;
 
       lots.push({
-        _id: `${item._id}_${batch.batchNumber}`, // Composite ID
+        _id: `${item._id}_${item.batchNumber || 'default'}`,
         itemId: item._id.toString(),
         itemName: item.name,
         itemCode: item.code,
         itemType: item.type,
-        batchNumber: batch.batchNumber,
-        expiryDate: expiryDate,
-        quantity: batch.quantity,
-        purchasePrice: batch.purchasePrice,
-        purchaseDate: batch.purchaseDate,
-        supplierId: batch.supplierId,
-        supplierName: item.primarySupplierId?.name || null,
+        batchNumber: item.batchNumber || '—',
+        expiryDate: expiryDate || now,
+        quantity: item.totalQuantity || 0,
+        purchasePrice: item.costPrice,
+        purchaseDate: null,
+        supplierId: null,
+        supplierName: item.supplier || item.primarySupplierId?.name || null,
         isExpired,
         isExpiringSoon,
-        daysUntilExpiry: isExpired ? 0 : daysUntilExpiry,
+        daysUntilExpiry,
         unit: item.unit,
         location: item.location,
       });

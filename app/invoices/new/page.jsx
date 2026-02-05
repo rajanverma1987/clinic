@@ -9,17 +9,20 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
+import { isManagerPathLimitedWrite } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function NewInvoicePage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user: currentUser, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { currency, locale } = useSettings();
+  const managerLimitedWrite = isManagerPathLimitedWrite(pathname);
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -553,6 +556,7 @@ export default function NewInvoicePage() {
                               updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)
                             }
                             className='input-compact text-xs w-full min-w-0 text-center'
+                            disabled={managerLimitedWrite}
                           />
                         </td>
                         <td className='px-2 py-1.5 align-middle text-center'>
@@ -565,6 +569,7 @@ export default function NewInvoicePage() {
                               updateItem(index, 'discount', parseFloat(e.target.value) || 0)
                             }
                             className='input-compact text-xs w-full min-w-0 text-center'
+                            disabled={managerLimitedWrite}
                           />
                         </td>
                         <td className='px-2 py-1.5 align-middle text-center'>
@@ -577,6 +582,7 @@ export default function NewInvoicePage() {
                               updateItem(index, 'taxRate', parseFloat(e.target.value) || 0)
                             }
                             className='input-compact text-xs w-full min-w-0 text-center'
+                            disabled={managerLimitedWrite}
                           />
                         </td>
                         <td className='px-2 py-1.5 text-neutral-900 font-medium align-middle whitespace-nowrap text-right'>
@@ -615,6 +621,7 @@ export default function NewInvoicePage() {
                     value={formData.discountType}
                     onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
                     className='form-control-height w-full px-3 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                    disabled={managerLimitedWrite}
                   >
                     <option value='percentage'>{t('invoices.percentage')}</option>
                     <option value='fixed'>{t('invoices.fixedAmount')}</option>
@@ -632,6 +639,7 @@ export default function NewInvoicePage() {
                       setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })
                     }
                     className='text-sm'
+                    disabled={managerLimitedWrite}
                   />
                 </div>
                 <div>
@@ -643,6 +651,7 @@ export default function NewInvoicePage() {
                     onChange={(e) => setFormData({ ...formData, discountReason: e.target.value })}
                     placeholder={t('invoices.discountReasonPlaceholder')}
                     className='text-sm'
+                    disabled={managerLimitedWrite}
                   />
                 </div>
               </div>

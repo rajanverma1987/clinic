@@ -4,39 +4,41 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 const items = [
   {
     href: '/admin/financial/revenue',
-    label: 'Revenue Dashboard',
-    desc: 'Total revenue, commission, pending settlements, by doctor/specialty',
+    labelKey: 'admin.financialRevenueDashboard',
+    descKey: 'admin.financialRevenueDashboardDesc',
   },
   {
     href: '/admin/financial/disputes',
-    label: 'Payment Disputes',
-    desc: 'List disputes, issue refund, contact, escalate, mark resolved',
+    labelKey: 'admin.financialPaymentDisputes',
+    descKey: 'admin.financialPaymentDisputesDesc',
   },
   {
     href: '/admin/financial/settlements',
-    label: 'Doctor Settlements',
-    desc: 'Pending settlements, mark as paid, reports',
+    labelKey: 'admin.financialDoctorSettlements',
+    descKey: 'admin.financialDoctorSettlementsDesc',
   },
   {
     href: '/admin/financial/commission',
-    label: 'Commission Settings',
-    desc: 'Platform commission %, doctor/specialty rates, payment cycle',
+    labelKey: 'admin.financialCommissionSettings',
+    descKey: 'admin.financialCommissionSettingsDesc',
   },
   {
     href: '/admin/financial/invoicing',
-    label: 'Invoicing',
-    desc: 'Generate invoices, tax, templates, email',
+    labelKey: 'admin.financialInvoicing',
+    descKey: 'admin.financialInvoicingDesc',
   },
 ];
 
 export default function AdminFinancialPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   useEffect(() => {
     if (!authLoading && user?.role !== 'super_admin') router.push('/dashboard');
@@ -44,21 +46,21 @@ export default function AdminFinancialPage() {
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
     <Layout
-      title='Financial Management'
-      subtitle='Revenue, settlements, commission, invoicing'
+      title={t('admin.financialManagement')}
+      subtitle={t('admin.financialManagementSubtitle')}
       actionButton={
         <Button variant='primary' onClick={() => router.push('/admin')}>
-          Back to Dashboard
+          {t('common.backToDashboard')}
         </Button>
       }
     >
       <div style={{ padding: '0 10px' }} className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-        {items.map(({ href, label, desc }) => (
+        {items.map(({ href, labelKey, descKey }) => (
           <Card key={href} className='p-6'>
-            <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{label}</h3>
-            <p className='text-sm text-neutral-600 mb-4'>{desc}</p>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{t(labelKey)}</h3>
+            <p className='text-sm text-neutral-600 mb-4'>{t(descKey)}</p>
             <Button variant='secondary' onClick={() => router.push(href)}>
-              Open
+              {t('common.open')}
             </Button>
           </Card>
         ))}

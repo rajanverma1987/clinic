@@ -1,16 +1,19 @@
 'use client';
 
+import { EyeIcon, PencilIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
+import { Tabs, getTabPanelId, getTabPanelLabelledBy } from '@/components/ui/Tabs';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -65,7 +68,7 @@ export default function DoctorPatientRecordsPage() {
   const handleTabChange = (id) => {
     setActiveTab(id);
     const path = `/doctors/patients/${patientId}`;
-    router.replace(path + '?tab=' + encodeURIComponent(id));
+    queueMicrotask(() => router.replace(path + '?tab=' + encodeURIComponent(id)));
   };
 
   const fetchAllData = async () => {
@@ -80,7 +83,7 @@ export default function DoctorPatientRecordsPage() {
 
       // Fetch appointments
       const appointmentsResponse = await apiClient.get(
-        `/appointments?patientId=${patientId}&limit=100&sortBy=appointmentDate&sortOrder=desc`
+        `/appointments?patientId=${patientId}&limit=100&sortBy=appointmentDate&sortOrder=desc`,
       );
       if (appointmentsResponse.success) {
         const appointmentsData = extractArrayData(appointmentsResponse);
@@ -89,7 +92,7 @@ export default function DoctorPatientRecordsPage() {
 
       // Fetch prescriptions
       const prescriptionsResponse = await apiClient.get(
-        `/prescriptions?patientId=${patientId}&limit=100&sortBy=createdAt&sortOrder=desc`
+        `/prescriptions?patientId=${patientId}&limit=100&sortBy=createdAt&sortOrder=desc`,
       );
       if (prescriptionsResponse.success) {
         const prescriptionsData = extractArrayData(prescriptionsResponse);
@@ -98,7 +101,7 @@ export default function DoctorPatientRecordsPage() {
 
       // Fetch clinical notes
       const notesResponse = await apiClient.get(
-        `/clinical-notes?patientId=${patientId}&limit=100&sortBy=createdAt&sortOrder=desc`
+        `/clinical-notes?patientId=${patientId}&limit=100&sortBy=createdAt&sortOrder=desc`,
       );
       if (notesResponse.success) {
         const notesData = extractArrayData(notesResponse);
@@ -118,7 +121,7 @@ export default function DoctorPatientRecordsPage() {
       // Fetch lab reports
       try {
         const labResponse = await apiClient.get(
-          `/lab-results?patientId=${patientId}&limit=100&sortBy=createdAt&sortOrder=desc`
+          `/lab-results?patientId=${patientId}&limit=100&sortBy=createdAt&sortOrder=desc`,
         );
         if (labResponse.success) {
           const labData = extractArrayData(labResponse);
@@ -146,7 +149,7 @@ export default function DoctorPatientRecordsPage() {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -154,7 +157,7 @@ export default function DoctorPatientRecordsPage() {
   };
 
   const formatDateTime = (dateString) => {
-    return new Date(dateString).toLocaleString('en-US', {
+    return new Date(dateString).toLocaleString(undefined, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -272,370 +275,379 @@ export default function DoctorPatientRecordsPage() {
           </Card>
         </section>
 
-        {/* Tabs: Timeline, Vitals, Prescriptions, Lab Results, Imaging, Allergies, Conditions, Notes */}
-        <div className='border-b border-neutral-200'>
-          <div className='flex gap-2 overflow-x-auto pb-px'>
-            {[
-              { id: 'timeline', label: 'Timeline' },
-              { id: 'vitals', label: 'Vitals' },
-              { id: 'prescriptions', label: 'Prescriptions' },
-              { id: 'lab-results', label: 'Lab Results' },
-              { id: 'imaging', label: 'Imaging' },
-              { id: 'allergies', label: 'Allergies' },
-              { id: 'conditions', label: 'Conditions' },
-              { id: 'notes', label: 'Notes' },
-            ].map(({ id, label }) => (
-              <button
-                type='button'
-                key={id}
-                className={`px-4 py-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === id
-                    ? 'text-primary-600 border-b-2 border-primary-600'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
-                onClick={() => handleTabChange(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <Tabs
+          tabs={[
+            { id: 'timeline', label: 'Timeline' },
+            { id: 'vitals', label: 'Vitals' },
+            { id: 'prescriptions', label: 'Prescriptions' },
+            { id: 'lab-results', label: 'Lab Results' },
+            { id: 'imaging', label: 'Imaging' },
+            { id: 'allergies', label: 'Allergies' },
+            { id: 'conditions', label: 'Conditions' },
+            { id: 'notes', label: 'Notes' },
+          ]}
+          activeTab={activeTab}
+          onChange={handleTabChange}
+          idPrefix='doctor-patient-tabs'
+          ariaLabel='Patient record'
+        />
 
-        {/* Timeline tab: chronological entries with View Full / Edit */}
-        {activeTab === 'timeline' &&
-          (() => {
-            const timelineItems = [
-              ...appointments.map((a) => ({
-                _id: a._id,
-                type: 'consultation',
-                label: `${a.type || 'Consultation'} • ${a.status}`,
-                date: a.appointmentDate || a.startTime,
-                link: `/appointments/${a._id}`,
-                editLink: `/appointments/${a._id}/edit`,
-              })),
-              ...prescriptions.map((p) => ({
-                _id: p._id,
-                type: 'prescription',
-                label: `Prescription ${p.prescriptionNumber || p._id?.slice(-8)} • ${p.status}`,
-                date: p.createdAt,
-                link: `/prescriptions/${p._id}`,
-                editLink: `/prescriptions/${p._id}/edit`,
-              })),
-              ...clinicalNotes.map((n) => ({
-                _id: n._id,
-                type: 'clinical_note',
-                label: `Clinical note • ${n.type || 'Note'}`,
-                date: n.createdAt,
-                link: `/clinical-notes/${n._id}`,
-                editLink: null,
-              })),
-              ...labReports.map((r) => ({
-                _id: r._id,
-                type: 'lab_result',
-                label: `Lab result • ${r.testId?.name || r._id?.slice(-8)}`,
-                date: r.reportedAt || r.createdAt,
-                link: null,
-                editLink: null,
-              })),
-            ].sort((a, b) => new Date(b.date) - new Date(a.date));
+        <div
+          role='tabpanel'
+          id={getTabPanelId('doctor-patient-tabs', activeTab)}
+          aria-labelledby={getTabPanelLabelledBy('doctor-patient-tabs', activeTab)}
+        >
+          {/* Timeline tab: chronological entries with View Full / Edit */}
+          {activeTab === 'timeline' &&
+            (() => {
+              const timelineItems = [
+                ...appointments.map((a) => ({
+                  _id: a._id,
+                  type: 'consultation',
+                  label: `${a.type || 'Consultation'} • ${a.status}`,
+                  date: a.appointmentDate || a.startTime,
+                  link: `/appointments/${a._id}`,
+                  editLink: `/appointments/${a._id}/edit`,
+                })),
+                ...prescriptions.map((p) => ({
+                  _id: p._id,
+                  type: 'prescription',
+                  label: `Prescription ${p.prescriptionNumber || p._id?.slice(-8)} • ${p.status}`,
+                  date: p.createdAt,
+                  link: `/prescriptions/${p._id}`,
+                  editLink: `/prescriptions/${p._id}/edit`,
+                })),
+                ...clinicalNotes.map((n) => ({
+                  _id: n._id,
+                  type: 'clinical_note',
+                  label: `Clinical note • ${n.type || 'Note'}`,
+                  date: n.createdAt,
+                  link: `/clinical-notes/${n._id}`,
+                  editLink: null,
+                })),
+                ...labReports.map((r) => ({
+                  _id: r._id,
+                  type: 'lab_result',
+                  label: `Lab result • ${r.testId?.name || r._id?.slice(-8)}`,
+                  date: r.reportedAt || r.createdAt,
+                  link: null,
+                  editLink: null,
+                })),
+              ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            return (
-              <Card>
-                <div className='p-6'>
-                  <h3 className='text-lg font-bold text-neutral-900 mb-4'>Timeline</h3>
-                  {timelineItems.length > 0 ? (
-                    <ul className='space-y-3'>
-                      {timelineItems.map((item) => (
-                        <li
-                          key={`${item.type}-${item._id}`}
-                          className='flex items-center justify-between gap-4 p-3 border border-neutral-200 rounded-lg hover:bg-neutral-50'
-                        >
-                          <div className='flex-1 min-w-0'>
-                            <p className='font-medium text-neutral-900 capitalize'>{item.label}</p>
-                            <p className='text-sm text-neutral-600'>{formatDateTime(item.date)}</p>
-                          </div>
-                          <div className='flex gap-2 flex-shrink-0'>
-                            {item.link && (
-                              <Button
-                                variant='secondary'
-                                size='sm'
-                                onClick={() => router.push(item.link)}
-                              >
-                                View Full
-                              </Button>
-                            )}
-                            {item.editLink && (
-                              <Button
-                                variant='secondary'
-                                size='sm'
-                                onClick={() => router.push(item.editLink)}
-                              >
-                                Edit
-                              </Button>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className='text-neutral-500 text-center py-8'>No timeline entries yet.</p>
-                  )}
-                </div>
-              </Card>
-            );
-          })()}
-
-        {/* Vitals tab */}
-        {activeTab === 'vitals' && (
-          <Card>
-            <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Vitals</h3>
-              <p className='text-neutral-600 text-sm'>
-                Vital signs (e.g. BP, pulse, temperature) can be displayed here when available from
-                the vitals API.
-              </p>
-            </div>
-          </Card>
-        )}
-
-        {/* Tab Content - overview removed; timeline is primary. Prescriptions tab */}
-        {activeTab === 'prescriptions' && (
-          <Card>
-            <div className='p-6'>
-              <div className='flex items-center justify-between mb-4'>
-                <h3 className='text-lg font-bold text-neutral-900'>All Prescriptions</h3>
-                <Button
-                  variant='primary'
-                  size='sm'
-                  onClick={() => router.push(`/prescriptions/new?patientId=${patientId}`)}
-                >
-                  New Prescription
-                </Button>
-              </div>
-              {prescriptions.length > 0 ? (
-                <div className='space-y-4'>
-                  {prescriptions.map((pres) => (
-                    <div
-                      key={pres._id}
-                      className='p-4 border border-neutral-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer'
-                      onClick={() => router.push(`/prescriptions/${pres._id}`)}
-                    >
-                      <div className='flex items-start justify-between mb-2'>
-                        <div>
-                          <p className='font-semibold text-neutral-900'>
-                            {pres.prescriptionNumber || pres._id.slice(-8)}
-                          </p>
-                          <p className='text-sm text-neutral-600'>
-                            {formatDate(pres.createdAt)} • {pres.diagnosis || 'No diagnosis'}
-                          </p>
-                        </div>
-                        <Tag
-                          className={
-                            pres.status === 'active'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }
-                        >
-                          {pres.status}
-                        </Tag>
-                      </div>
-                      <div className='text-sm text-neutral-600'>
-                        {pres.items.length} medicine{pres.items.length !== 1 ? 's' : ''} prescribed
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className='text-center py-12'>
-                  <p className='text-neutral-500 mb-4'>No prescriptions found</p>
-                  <Button
-                    variant='primary'
-                    onClick={() => router.push(`/prescriptions/new?patientId=${patientId}`)}
-                  >
-                    Create First Prescription
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
-
-        {activeTab === 'lab-results' && (
-          <Card>
-            <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Lab Reports</h3>
-              {labReports.length > 0 ? (
-                <div className='space-y-4'>
-                  {labReports.map((report) => (
-                    <div
-                      key={report._id}
-                      className='p-4 border border-neutral-200 rounded-lg hover:shadow-md transition-shadow'
-                    >
-                      <div className='flex items-start justify-between mb-2'>
-                        <div>
-                          <p className='font-semibold text-neutral-900'>
-                            {report.testName || report.name || 'Lab Test'}
-                          </p>
-                          <p className='text-sm text-neutral-600'>
-                            {formatDate(report.date || report.createdAt)}
-                          </p>
-                        </div>
-                        <Tag
-                          className={
-                            report.status === 'completed'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }
-                        >
-                          {report.status || 'Pending'}
-                        </Tag>
-                      </div>
-                      {report.results && report.results.length > 0 && (
-                        <div className='mt-3 space-y-2'>
-                          {report.results.slice(0, 3).map((result, index) => (
-                            <div key={index} className='text-sm'>
-                              <span className='font-medium text-neutral-900'>
-                                {result.parameter}:
-                              </span>{' '}
-                              <span className='text-neutral-700'>
-                                {result.value} {result.unit || ''}
-                              </span>
-                              {result.normalRange && (
-                                <span className='text-neutral-500 ml-2'>
-                                  (Range: {result.normalRange})
-                                </span>
+              return (
+                <Card>
+                  <div className='p-6'>
+                    <h3 className='text-lg font-bold text-neutral-900 mb-4'>Timeline</h3>
+                    {timelineItems.length > 0 ? (
+                      <ul className='space-y-3'>
+                        {timelineItems.map((item) => (
+                          <li
+                            key={`${item.type}-${item._id}`}
+                            className='flex items-center justify-between gap-4 p-3 border border-neutral-200 rounded-lg hover:bg-neutral-50'
+                          >
+                            <div className='flex-1 min-w-0'>
+                              <p className='font-medium text-neutral-900 capitalize'>
+                                {item.label}
+                              </p>
+                              <p className='text-sm text-neutral-600'>
+                                {formatDateTime(item.date)}
+                              </p>
+                            </div>
+                            <div className='flex gap-2 flex-shrink-0'>
+                              {item.link && (
+                                <Button
+                                  variant='secondary'
+                                  size='sm'
+                                  onClick={() => router.push(item.link)}
+                                  className='p-2 min-w-[2.25rem]'
+                                  title={t('common.show')}
+                                  aria-label={t('common.show')}
+                                >
+                                  <EyeIcon className='icon icon-sm' ariaHidden />
+                                </Button>
+                              )}
+                              {item.editLink && (
+                                <Button
+                                  variant='secondary'
+                                  size='sm'
+                                  onClick={() => router.push(item.editLink)}
+                                  className='p-2 min-w-[2.25rem]'
+                                  title={t('common.edit')}
+                                  aria-label={t('common.edit')}
+                                >
+                                  <PencilIcon className='icon icon-sm' ariaHidden />
+                                </Button>
                               )}
                             </div>
-                          ))}
-                          {report.results.length > 3 && (
-                            <p className='text-xs text-neutral-500'>
-                              +{report.results.length - 3} more results
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      <Button
-                        variant='secondary'
-                        size='sm'
-                        className='mt-3'
-                        onClick={() => router.push(`/lab-results/${report._id}`)}
-                      >
-                        View Full Report
-                      </Button>
-                    </div>
-                  ))}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className='text-neutral-500 text-center py-8'>No timeline entries yet.</p>
+                    )}
+                  </div>
+                </Card>
+              );
+            })()}
+
+          {/* Vitals tab */}
+          {activeTab === 'vitals' && (
+            <Card>
+              <div className='p-6'>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Vitals</h3>
+                <p className='text-neutral-600 text-sm'>
+                  Vital signs (e.g. BP, pulse, temperature) can be displayed here when available
+                  from the vitals API.
+                </p>
+              </div>
+            </Card>
+          )}
+
+          {/* Tab Content - overview removed; timeline is primary. Prescriptions tab */}
+          {activeTab === 'prescriptions' && (
+            <Card>
+              <div className='p-6'>
+                <div className='flex items-center justify-between mb-4'>
+                  <h3 className='text-lg font-bold text-neutral-900'>All Prescriptions</h3>
+                  <Button
+                    variant='primary'
+                    size='sm'
+                    onClick={() => router.push(`/prescriptions/new?patientId=${patientId}`)}
+                  >
+                    New Prescription
+                  </Button>
                 </div>
-              ) : (
-                <p className='text-neutral-500 text-center py-12'>No lab reports found</p>
-              )}
-            </div>
-          </Card>
-        )}
+                {prescriptions.length > 0 ? (
+                  <div className='space-y-4'>
+                    {prescriptions.map((pres) => (
+                      <div
+                        key={pres._id}
+                        className='p-4 border border-neutral-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer'
+                        onClick={() => router.push(`/prescriptions/${pres._id}`)}
+                      >
+                        <div className='flex items-start justify-between mb-2'>
+                          <div>
+                            <p className='font-semibold text-neutral-900'>
+                              {pres.prescriptionNumber || pres._id.slice(-8)}
+                            </p>
+                            <p className='text-sm text-neutral-600'>
+                              {formatDate(pres.createdAt)} • {pres.diagnosis || 'No diagnosis'}
+                            </p>
+                          </div>
+                          <Tag
+                            className={
+                              pres.status === 'active'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }
+                          >
+                            {pres.status}
+                          </Tag>
+                        </div>
+                        <div className='text-sm text-neutral-600'>
+                          {pres.items.length} medicine{pres.items.length !== 1 ? 's' : ''}{' '}
+                          prescribed
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className='text-center py-12'>
+                    <p className='text-neutral-500 mb-4'>No prescriptions found</p>
+                    <Button
+                      variant='primary'
+                      onClick={() => router.push(`/prescriptions/new?patientId=${patientId}`)}
+                    >
+                      Create First Prescription
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
 
-        {activeTab === 'imaging' && (
-          <Card>
-            <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Imaging</h3>
-              <p className='text-neutral-600 text-sm'>
-                Imaging studies and reports will be listed here when available.
-              </p>
-            </div>
-          </Card>
-        )}
+          {activeTab === 'lab-results' && (
+            <Card>
+              <div className='p-6'>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Lab Reports</h3>
+                {labReports.length > 0 ? (
+                  <div className='space-y-4'>
+                    {labReports.map((report) => (
+                      <div
+                        key={report._id}
+                        className='p-4 border border-neutral-200 rounded-lg hover:shadow-md transition-shadow'
+                      >
+                        <div className='flex items-start justify-between mb-2'>
+                          <div>
+                            <p className='font-semibold text-neutral-900'>
+                              {report.testName || report.name || 'Lab Test'}
+                            </p>
+                            <p className='text-sm text-neutral-600'>
+                              {formatDate(report.date || report.createdAt)}
+                            </p>
+                          </div>
+                          <Tag
+                            className={
+                              report.status === 'completed'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }
+                          >
+                            {report.status || 'Pending'}
+                          </Tag>
+                        </div>
+                        {report.results && report.results.length > 0 && (
+                          <div className='mt-3 space-y-2'>
+                            {report.results.slice(0, 3).map((result, index) => (
+                              <div key={index} className='text-sm'>
+                                <span className='font-medium text-neutral-900'>
+                                  {result.parameter}:
+                                </span>{' '}
+                                <span className='text-neutral-700'>
+                                  {result.value} {result.unit || ''}
+                                </span>
+                                {result.normalRange && (
+                                  <span className='text-neutral-500 ml-2'>
+                                    (Range: {result.normalRange})
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                            {report.results.length > 3 && (
+                              <p className='text-xs text-neutral-500'>
+                                +{report.results.length - 3} more results
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <Button
+                          variant='secondary'
+                          size='sm'
+                          className='mt-3'
+                          onClick={() => router.push(`/lab-results/${report._id}`)}
+                        >
+                          View Full Report
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className='text-neutral-500 text-center py-12'>No lab reports found</p>
+                )}
+              </div>
+            </Card>
+          )}
 
-        {activeTab === 'allergies' && (
-          <Card>
-            <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Allergies</h3>
-              {patient.allergies &&
-              (Array.isArray(patient.allergies) ? patient.allergies : [patient.allergies]).filter(
-                Boolean
-              ).length > 0 ? (
-                <div className='flex flex-wrap gap-2'>
-                  {(Array.isArray(patient.allergies) ? patient.allergies : [patient.allergies]).map(
-                    (allergy, index) => (
+          {activeTab === 'imaging' && (
+            <Card>
+              <div className='p-6'>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Imaging</h3>
+                <p className='text-neutral-600 text-sm'>
+                  Imaging studies and reports will be listed here when available.
+                </p>
+              </div>
+            </Card>
+          )}
+
+          {activeTab === 'allergies' && (
+            <Card>
+              <div className='p-6'>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Allergies</h3>
+                {patient.allergies &&
+                (Array.isArray(patient.allergies) ? patient.allergies : [patient.allergies]).filter(
+                  Boolean,
+                ).length > 0 ? (
+                  <div className='flex flex-wrap gap-2'>
+                    {(Array.isArray(patient.allergies)
+                      ? patient.allergies
+                      : [patient.allergies]
+                    ).map((allergy, index) => (
                       <Tag key={index} className='bg-red-100 text-red-800'>
                         {typeof allergy === 'string'
                           ? allergy
                           : allergy?.name || allergy?.substance || 'Unknown'}
                       </Tag>
-                    )
-                  )}
-                </div>
-              ) : (
-                <p className='text-neutral-500'>No allergies recorded.</p>
-              )}
-            </div>
-          </Card>
-        )}
-
-        {activeTab === 'conditions' && (
-          <Card>
-            <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Conditions</h3>
-              {patient.chronicConditions && patient.chronicConditions.length > 0 ? (
-                <div className='flex flex-wrap gap-2 mb-4'>
-                  {patient.chronicConditions.map((condition, index) => (
-                    <Tag key={index} className='bg-yellow-100 text-yellow-800'>
-                      {condition}
-                    </Tag>
-                  ))}
-                </div>
-              ) : null}
-              {patient.medicalHistory && (
-                <div className='mt-4'>
-                  <h4 className='font-semibold text-neutral-900 mb-2'>Medical History</h4>
-                  <p className='text-neutral-700 whitespace-pre-wrap'>{patient.medicalHistory}</p>
-                </div>
-              )}
-              {(!patient.chronicConditions || patient.chronicConditions.length === 0) &&
-                !patient.medicalHistory && (
-                  <p className='text-neutral-500'>No conditions or medical history recorded.</p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className='text-neutral-500'>No allergies recorded.</p>
                 )}
-            </div>
-          </Card>
-        )}
-
-        {activeTab === 'notes' && (
-          <Card>
-            <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Notes</h3>
-              <p className='text-sm text-neutral-600 mb-4'>Private notes visible only to you.</p>
-              <textarea
-                className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                rows={10}
-                value={personalNotes}
-                onChange={(e) => setPersonalNotes(e.target.value)}
-                placeholder='Enter your personal notes about this patient...'
-              />
-              <div className='flex justify-end mt-4'>
-                <Button
-                  variant='primary'
-                  onClick={async () => {
-                    try {
-                      setSavingNotes(true);
-                      const response = await apiClient.put(`/patients/${patientId}/doctor-notes`, {
-                        notes: personalNotes,
-                      });
-                      if (response.success) {
-                        alert('Notes saved');
-                      } else {
-                        alert('Failed to save notes');
-                      }
-                    } catch (err) {
-                      alert('Failed to save notes');
-                    } finally {
-                      setSavingNotes(false);
-                    }
-                  }}
-                  disabled={savingNotes}
-                >
-                  {savingNotes ? 'Saving...' : 'Save Notes'}
-                </Button>
               </div>
-            </div>
-          </Card>
-        )}
+            </Card>
+          )}
+
+          {activeTab === 'conditions' && (
+            <Card>
+              <div className='p-6'>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Conditions</h3>
+                {patient.chronicConditions && patient.chronicConditions.length > 0 ? (
+                  <div className='flex flex-wrap gap-2 mb-4'>
+                    {patient.chronicConditions.map((condition, index) => (
+                      <Tag key={index} className='bg-yellow-100 text-yellow-800'>
+                        {condition}
+                      </Tag>
+                    ))}
+                  </div>
+                ) : null}
+                {patient.medicalHistory && (
+                  <div className='mt-4'>
+                    <h4 className='font-semibold text-neutral-900 mb-2'>Medical History</h4>
+                    <p className='text-neutral-700 whitespace-pre-wrap'>{patient.medicalHistory}</p>
+                  </div>
+                )}
+                {(!patient.chronicConditions || patient.chronicConditions.length === 0) &&
+                  !patient.medicalHistory && (
+                    <p className='text-neutral-500'>No conditions or medical history recorded.</p>
+                  )}
+              </div>
+            </Card>
+          )}
+
+          {activeTab === 'notes' && (
+            <Card>
+              <div className='p-6'>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Notes</h3>
+                <p className='text-sm text-neutral-600 mb-4'>Private notes visible only to you.</p>
+                <textarea
+                  className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                  rows={10}
+                  value={personalNotes}
+                  onChange={(e) => setPersonalNotes(e.target.value)}
+                  placeholder='Enter your personal notes about this patient...'
+                />
+                <div className='flex justify-end mt-4'>
+                  <Button
+                    variant='primary'
+                    onClick={async () => {
+                      try {
+                        setSavingNotes(true);
+                        const response = await apiClient.put(
+                          `/patients/${patientId}/doctor-notes`,
+                          {
+                            notes: personalNotes,
+                          },
+                        );
+                        if (response.success) {
+                          showSuccess(t('doctors.notesSaved') || 'Notes saved');
+                        } else {
+                          showError(t('doctors.notesSaveFailed') || 'Failed to save notes');
+                        }
+                      } catch (err) {
+                        showError(t('doctors.notesSaveFailed') || 'Failed to save notes');
+                      } finally {
+                        setSavingNotes(false);
+                      }
+                    }}
+                    disabled={savingNotes}
+                  >
+                    {savingNotes ? 'Saving...' : 'Save Notes'}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+        </div>
       </div>
     </Layout>
   );

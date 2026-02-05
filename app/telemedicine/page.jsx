@@ -122,7 +122,6 @@ export default function TelemedicinePage() {
         }
       />
       <div style={{ padding: '0 10px' }}>
-
         {/* Quick Stats */}
         <div className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-8'>
           <Card>
@@ -135,7 +134,7 @@ export default function TelemedicinePage() {
                       sessions.filter(
                         (s) =>
                           new Date(s.scheduledStartTime).toDateString() ===
-                          new Date().toDateString()
+                          new Date().toDateString(),
                       ).length
                     }
                   </p>
@@ -274,10 +273,10 @@ export default function TelemedicinePage() {
               </p>
               <div className='flex gap-4 justify-center'>
                 <Button onClick={() => router.push('/appointments/new')}>
-                  Book Video Consultation
+                  {t('telemedicine.bookVideoConsultation')}
                 </Button>
                 <Button variant='secondary' size='md' onClick={() => router.push('/appointments')}>
-                  View Appointments
+                  {t('telemedicine.viewAppointments')}
                 </Button>
               </div>
             </div>

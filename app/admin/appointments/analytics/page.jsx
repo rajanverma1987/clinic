@@ -6,14 +6,16 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { showError } from '@/lib/utils/toast';
 import { logger } from '@/lib/utils/logger';
+import { showError } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function AdminAppointmentAnalyticsPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ export default function AdminAppointmentAnalyticsPage() {
       }
     } catch (err) {
       logger.error('Failed to fetch analytics:', err);
-      showError('Failed to fetch analytics');
+      showError(t('admin.failedToFetchAnalytics'));
     } finally {
       setLoading(false);
     }
@@ -72,14 +74,20 @@ export default function AdminAppointmentAnalyticsPage() {
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>From date</label>
-                <Input type='date' value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <Input
+                  type='date'
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
               </div>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>To date</label>
                 <Input type='date' value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
               <div className='flex items-end'>
-                <Button variant='primary' onClick={fetchAnalytics}>Apply</Button>
+                <Button variant='primary' onClick={fetchAnalytics}>
+                  Apply
+                </Button>
               </div>
             </div>
           </div>
@@ -106,43 +114,53 @@ export default function AdminAppointmentAnalyticsPage() {
             </div>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
               <Card className='p-6'>
-                <h3 className='text-lg font-semibold text-neutral-900 mb-4'>Average consultation duration</h3>
-                <p className='text-2xl font-bold text-neutral-900'>{data.avgConsultationDurationMinutes?.toFixed(1) ?? '—'} min</p>
+                <h3 className='text-lg font-semibold text-neutral-900 mb-4'>
+                  Average consultation duration
+                </h3>
+                <p className='text-2xl font-bold text-neutral-900'>
+                  {data.avgConsultationDurationMinutes?.toFixed(1) ?? '—'} min
+                </p>
               </Card>
               <Card className='p-6'>
                 <h3 className='text-lg font-semibold text-neutral-900 mb-4'>Peak hours (top 5)</h3>
                 <ul className='space-y-2'>
                   {(data.peakHours || []).map(({ hour, count }) => (
                     <li key={hour} className='flex justify-between text-sm'>
-                      <span>{hour}:00 – {hour + 1}:00</span>
+                      <span>
+                        {hour}:00 – {hour + 1}:00
+                      </span>
                       <span className='font-medium'>{count} appointments</span>
                     </li>
                   ))}
-                  {(!data.peakHours || data.peakHours.length === 0) && <li className='text-neutral-500'>No data</li>}
+                  {(!data.peakHours || data.peakHours.length === 0) && (
+                    <li className='text-neutral-500'>No data</li>
+                  )}
                 </ul>
               </Card>
             </div>
             <Card className='p-6'>
-              <h3 className='text-lg font-semibold text-neutral-900 mb-4'>Doctor-wise stats (top 20)</h3>
-              <div className='overflow-x-auto'>
-                <table className='w-full'>
+              <h3 className='text-lg font-semibold text-neutral-900 mb-4'>
+                Doctor-wise stats (top 20)
+              </h3>
+              <div className='clinic-table-wrap'>
+                <table className='clinic-table'>
                   <thead>
-                    <tr className='border-b border-neutral-200'>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>Doctor ID</th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>Total</th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>Completed</th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>Cancelled</th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>Completion %</th>
+                    <tr>
+                      <th>Doctor ID</th>
+                      <th>Total</th>
+                      <th>Completed</th>
+                      <th>Cancelled</th>
+                      <th>Completion %</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(data.doctorStats || []).map((s) => (
-                      <tr key={s.doctorId} className='border-b border-neutral-100'>
-                        <td className='py-2 px-3 text-sm'>{s.doctorId}</td>
-                        <td className='py-2 px-3 text-sm'>{s.total}</td>
-                        <td className='py-2 px-3 text-sm'>{s.completed}</td>
-                        <td className='py-2 px-3 text-sm'>{s.cancelled}</td>
-                        <td className='py-2 px-3 text-sm'>{s.completionRate?.toFixed(1)}%</td>
+                      <tr key={s.doctorId}>
+                        <td>{s.doctorId}</td>
+                        <td>{s.total}</td>
+                        <td>{s.completed}</td>
+                        <td>{s.cancelled}</td>
+                        <td>{s.completionRate?.toFixed(1)}%</td>
                       </tr>
                     ))}
                   </tbody>

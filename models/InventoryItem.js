@@ -15,7 +15,7 @@ const InventoryItemSchema = new Schema(
       ref: 'Tenant',
       required: true,
     },
-    
+
     // Item Details
     name: {
       type: String,
@@ -38,7 +38,7 @@ const InventoryItemSchema = new Schema(
       type: String,
       trim: true,
     },
-    
+
     // Drug Information
     drugId: {
       type: Schema.Types.ObjectId,
@@ -54,7 +54,7 @@ const InventoryItemSchema = new Schema(
     },
     form: String,
     strength: String,
-    
+
     // Stock Management
     totalQuantity: {
       type: Number,
@@ -75,7 +75,7 @@ const InventoryItemSchema = new Schema(
       required: true,
       default: 'units',
     },
-    
+
     // Batches
     batches: [
       {
@@ -87,7 +87,7 @@ const InventoryItemSchema = new Schema(
         supplierId: { type: Schema.Types.ObjectId, ref: 'Supplier' },
       },
     ],
-    
+
     // Pricing
     costPrice: Number, // Minor units
     sellingPrice: Number, // Minor units
@@ -96,7 +96,7 @@ const InventoryItemSchema = new Schema(
       required: true,
       default: 'USD',
     },
-    
+
     // Stock Alerts
     lowStockThreshold: {
       type: Number,
@@ -107,16 +107,20 @@ const InventoryItemSchema = new Schema(
       default: 5,
     },
     reorderQuantity: Number,
-    
+
     // Supplier
     primarySupplierId: {
       type: Schema.Types.ObjectId,
       ref: 'Supplier',
     },
-    
+    /** Top-level batch/supplier for single-batch items (edit form and lots display) */
+    batchNumber: { type: String, trim: true },
+    expiryDate: { type: Date },
+    supplier: { type: String, trim: true },
+
     // Location
     location: String,
-    
+
     // Metadata
     isActive: {
       type: Boolean,
@@ -129,7 +133,7 @@ const InventoryItemSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes
@@ -141,5 +145,5 @@ InventoryItemSchema.index({ tenantId: 1, totalQuantity: 1 }); // For low stock q
 InventoryItemSchema.index({ tenantId: 1, deletedAt: 1 });
 InventoryItemSchema.index({ 'batches.expiryDate': 1 }); // For expiry tracking
 
-export default mongoose.models.InventoryItem || mongoose.model('InventoryItem', InventoryItemSchema);
-
+export default mongoose.models.InventoryItem ||
+  mongoose.model('InventoryItem', InventoryItemSchema);

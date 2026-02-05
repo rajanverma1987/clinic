@@ -127,6 +127,18 @@ const TenantSchema = new Schema(
           },
         },
       ],
+      /** Multi-location: branch addresses for the clinic (Settings > Locations) */
+      locations: [
+        {
+          id: String,
+          name: String,
+          address: String,
+          phone: String,
+          email: String,
+          isMain: { type: Boolean, default: false },
+          isActive: { type: Boolean, default: true },
+        },
+      ],
     },
     isActive: {
       type: Boolean,
@@ -135,7 +147,7 @@ const TenantSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes

@@ -10,6 +10,7 @@ import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
@@ -36,6 +37,7 @@ const ROUTE_KEY = 'route_invoices';
 export default function InvoicesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { open: openConfirm } = useConfirmation();
   const { t } = useI18n();
   const { currency, locale } = useSettings();
   const tenantId = user?.tenantId ?? null;
@@ -86,7 +88,7 @@ export default function InvoicesPage() {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           invoicesList = invoicesList.filter(
-            (inv) => inv.status === 'pending' && inv.dueDate && new Date(inv.dueDate) < today
+            (inv) => inv.status === 'pending' && inv.dueDate && new Date(inv.dueDate) < today,
           );
         }
         setInvoices(invoicesList);
@@ -122,58 +124,66 @@ export default function InvoicesPage() {
     return statusMap[status] || status;
   };
 
-  const handleDelete = async (invoiceId, invoiceNumber) => {
-    if (
-      !confirm(
-        t('invoices.confirmDeleteInvoiceMessage').replace('{{invoiceNumber}}', invoiceNumber || '')
-      )
-    ) {
-      return;
-    }
-
-    setDeletingInvoiceId(invoiceId);
-    try {
-      const response = await apiClient.delete(`/invoices/${invoiceId}`);
-      if (response.success) {
-        showSuccess('Invoice deleted successfully');
-        fetchInvoices(); // Refresh the list
-      } else {
-        showError(response.error?.message || 'Failed to delete invoice');
-      }
-    } catch (error) {
-      logger.error('Failed to delete invoice', error);
-      showError(error.message || 'Failed to delete invoice');
-    } finally {
-      setDeletingInvoiceId(null);
-    }
+  const handleDelete = (invoiceId, invoiceNumber) => {
+    openConfirm({
+      title: t('invoices.deleteTitle'),
+      message: t('invoices.confirmDeleteInvoiceMessage').replace(
+        '{{invoiceNumber}}',
+        invoiceNumber || '',
+      ),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      variant: 'danger',
+      onConfirm: async () => {
+        setDeletingInvoiceId(invoiceId);
+        try {
+          const response = await apiClient.delete(`/invoices/${invoiceId}`);
+          if (response.success) {
+            showSuccess(t('invoices.invoiceDeleted'));
+            fetchInvoices();
+          } else {
+            showError(response.error?.message || t('invoices.failedToDeleteInvoice'));
+          }
+        } catch (error) {
+          logger.error('Failed to delete invoice', error);
+          showError(error.message || t('invoices.failedToDeleteInvoice'));
+        } finally {
+          setDeletingInvoiceId(null);
+        }
+      },
+    });
   };
 
-  const handleMarkPaid = async (invoiceId, invoiceNumber) => {
-    if (
-      !confirm(
-        t('invoices.confirmMarkPaidMessage').replace('{{invoiceNumber}}', invoiceNumber || '')
-      )
-    ) {
-      return;
-    }
-
-    setMarkingPaidId(invoiceId);
-    try {
-      const response = await apiClient.put(`/invoices/${invoiceId}`, {
-        status: 'paid',
-      });
-      if (response.success) {
-        showSuccess(t('invoices.invoiceMarkedPaid'));
-        fetchInvoices();
-      } else {
-        showError(response.error?.message || t('invoices.failedToMarkPaid'));
-      }
-    } catch (error) {
-      logger.error('Failed to mark invoice as paid', error);
-      showError(error.message || t('invoices.failedToMarkPaid'));
-    } finally {
-      setMarkingPaidId(null);
-    }
+  const handleMarkPaid = (invoiceId, invoiceNumber) => {
+    openConfirm({
+      title: t('invoices.markPaidTitle'),
+      message: t('invoices.confirmMarkPaidMessage').replace(
+        '{{invoiceNumber}}',
+        invoiceNumber || '',
+      ),
+      confirmLabel: t('invoices.markPaid'),
+      cancelLabel: t('common.cancel'),
+      variant: 'info',
+      onConfirm: async () => {
+        setMarkingPaidId(invoiceId);
+        try {
+          const response = await apiClient.put(`/invoices/${invoiceId}`, {
+            status: 'paid',
+          });
+          if (response.success) {
+            showSuccess(t('invoices.invoiceMarkedPaid'));
+            fetchInvoices();
+          } else {
+            showError(response.error?.message || t('invoices.failedToMarkPaid'));
+          }
+        } catch (error) {
+          logger.error('Failed to mark invoice as paid', error);
+          showError(error.message || t('invoices.failedToMarkPaid'));
+        } finally {
+          setMarkingPaidId(null);
+        }
+      },
+    });
   };
 
   const handleRecordPayment = async () => {
@@ -298,7 +308,7 @@ export default function InvoicesPage() {
                   e.stopPropagation();
                   setRecordPaymentInvoice(row);
                   setPaymentAmount(
-                    String(row.balanceAmount ?? row.totalAmount - (row.paidAmount || 0) ?? 0)
+                    String(row.balanceAmount ?? row.totalAmount - (row.paidAmount || 0) ?? 0),
                   );
                   setPaymentMethod('cash');
                   setPaymentNotes('');
@@ -466,7 +476,7 @@ export default function InvoicesPage() {
                 {t('invoices.pending')}:{' '}
                 {formatCurrency(
                   recordPaymentInvoice.balanceAmount ??
-                    recordPaymentInvoice.totalAmount - (recordPaymentInvoice.paidAmount || 0)
+                    recordPaymentInvoice.totalAmount - (recordPaymentInvoice.paidAmount || 0),
                 )}
               </p>
               <div>

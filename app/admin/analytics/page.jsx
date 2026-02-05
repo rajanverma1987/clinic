@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -15,6 +16,7 @@ import { useEffect, useState } from 'react';
 
 export default function AdminAnalyticsPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,7 @@ export default function AdminAnalyticsPage() {
       }
     } catch (err) {
       logger.error('Failed to fetch analytics', err);
-      showError('Failed to fetch analytics');
+      showError(t('admin.failedToFetchAnalytics'));
     } finally {
       setLoading(false);
     }
@@ -69,16 +71,16 @@ export default function AdminAnalyticsPage() {
       a.download = `platform-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      showSuccess('Export downloaded');
+      showSuccess(t('admin.exportDownloadedShort'));
     } catch (err) {
-      showError('Failed to export');
+      showError(t('admin.failedToExport'));
     } finally {
       setExporting(false);
     }
   };
 
   const handleScheduleReport = () => {
-    showSuccess('Schedule report email – coming soon');
+    showSuccess(t('admin.scheduleReportComingSoon'));
   };
 
   if (authLoading || (loading && !data)) return <Loader type='page' text={t('common.loading')} />;

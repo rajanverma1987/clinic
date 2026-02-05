@@ -21,6 +21,7 @@ import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger.js';
 import { useRouter } from 'next/navigation';
@@ -45,6 +46,7 @@ const TYPE_ICONS = {
 
 export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnreadCount, onUnreadCountChange }) {
   const router = useRouter();
+  const { t } = useI18n();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -182,8 +184,9 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
   if (!isOpen) return null;
 
   return (
-    <div className='fixed inset-0 bg-neutral-600/25 dark:bg-black/40 z-50 flex items-start justify-end pt-16 pr-4'>
-      <Card className='w-full max-w-md shadow-2xl'>
+    <div className='fixed inset-0 z-50 flex items-start justify-end pt-16 pr-4' onClick={onClose} role='presentation'>
+      <div className='absolute inset-0 bg-neutral-500/20 dark:bg-black/30' aria-hidden />
+      <Card className='relative w-full max-w-md shadow-2xl' onClick={(e) => e.stopPropagation()}>
         <div className='p-4 border-b border-neutral-200 dark:border-neutral-600 flex items-center justify-between'>
           <h2 className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
             Notifications {unreadCount > 0 && (

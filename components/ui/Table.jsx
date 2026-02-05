@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * Table Header Component
- * Header row: bg-primary-100, text-primary-700, weight: 600, height: 48px
+ * Table subcomponents – styled by .clinic-table in globals.css when used inside <table className="clinic-table">.
+ * TableHeader / TableHeaderRow / TableHeaderCell: no inline styles so .clinic-table thead/th apply.
+ * TableRow: optional selected state; TableCell: pass className for overrides.
  */
 export function TableHeader({ children, className = '', ...props }) {
   return (
@@ -12,34 +13,22 @@ export function TableHeader({ children, className = '', ...props }) {
   );
 }
 
-/**
- * Table Header Row
- */
 export function TableHeaderRow({ children, className = '', ...props }) {
   return (
-    <tr className={`bg-primary-100 dark:bg-primary-900/50 ${className}`} {...props}>
+    <tr className={className} {...props}>
       {children}
     </tr>
   );
 }
 
-/**
- * Table Header Cell
- */
 export function TableHeaderCell({ children, className = '', ...props }) {
   return (
-    <th
-      className={`px-4 py-3 text-body-sm font-semibold text-primary-700 dark:text-primary-300 text-left h-12 ${className}`}
-      {...props}
-    >
+    <th className={className} {...props}>
       {children}
     </th>
   );
 }
 
-/**
- * Table Body Component
- */
 export function TableBody({ children, className = '', ...props }) {
   return (
     <tbody className={className} {...props}>
@@ -48,38 +37,21 @@ export function TableBody({ children, className = '', ...props }) {
   );
 }
 
-/**
- * Table Row
- * Height: 44-48px, border-bottom: neutral-200
- * Hover: bg-neutral-100
- * Selected: bg-primary-100, border-left: 3px solid primary-500
- */
+/** Row: .clinic-table styles border/hover; add selected and onClick when needed. */
 export function TableRow({ children, className = '', selected = false, onClick, ...props }) {
-  const baseClasses = `h-11 border-b border-neutral-200`;
-  const hoverClasses = onClick ? 'hover:bg-neutral-100 cursor-pointer' : 'hover:bg-neutral-100';
-  // Selected: bg-primary-100, border-left: 3px solid primary-500 (per theme spec)
-  const selectedClasses = selected ? 'bg-primary-100 border-l-[3px] border-l-primary-500' : '';
-
+  const selectedClasses = selected
+    ? '!bg-primary-100 dark:!bg-primary-900/40 border-l-[3px] border-l-primary-500'
+    : '';
   return (
-    <tr
-      className={`${baseClasses} ${hoverClasses} ${selectedClasses} ${className}`}
-      onClick={onClick}
-      {...props}
-    >
+    <tr className={`${selectedClasses} ${className}`.trim()} onClick={onClick} {...props}>
       {children}
     </tr>
   );
 }
 
-/**
- * Table Cell
- */
 export function TableCell({ children, className = '', ...props }) {
   return (
-    <td
-      className={`px-4 py-3 text-body-md text-neutral-900 dark:text-neutral-100 ${className}`}
-      {...props}
-    >
+    <td className={className} {...props}>
       {children}
     </td>
   );
@@ -110,24 +82,24 @@ export function Table({
     'aria-busy': loading === true ? true : loading === false ? false : undefined,
   };
   if ('loading' in tableProps) delete tableProps.loading;
-  // Data-driven table rendering
+  // Data-driven table rendering – uses global .clinic-table design
   if (data !== undefined && columns !== undefined) {
     return (
-      <div className='overflow-x-auto'>
-        <table className={`w-full border-collapse ${className}`} {...tableProps}>
+      <div className={`clinic-table-wrap ${className}`.trim()}>
+        <table className='clinic-table' {...tableProps}>
           <TableHeader>
             <TableHeaderRow>
               {columns.map((column, index) => (
-                <TableHeaderCell key={index}>{column.header}</TableHeaderCell>
+                <TableHeaderCell key={index} className={column.headerClassName}>
+                  {column.header}
+                </TableHeaderCell>
               ))}
             </TableHeaderRow>
           </TableHeader>
           <TableBody>
             {data.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className='text-center py-8 text-neutral-500'>
-                  {emptyMessage}
-                </TableCell>
+              <TableRow data-empty>
+                <TableCell colSpan={columns.length}>{emptyMessage}</TableCell>
               </TableRow>
             ) : (
               data.map((row, rowIndex) => (
@@ -136,7 +108,7 @@ export function Table({
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {columns.map((column, colIndex) => (
-                    <TableCell key={colIndex}>
+                    <TableCell key={colIndex} className={column.cellClassName}>
                       {typeof column.accessor === 'function'
                         ? column.accessor(row)
                         : row[column.accessor] || ''}
@@ -153,8 +125,8 @@ export function Table({
 
   // Children-based table rendering (backward compatibility)
   return (
-    <div className='overflow-x-auto'>
-      <table className={`w-full border-collapse ${className}`} {...tableProps}>
+    <div className={`clinic-table-wrap ${className}`.trim()}>
+      <table className='clinic-table' {...tableProps}>
         {children}
       </table>
     </div>

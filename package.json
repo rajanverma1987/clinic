@@ -36,7 +36,8 @@
     "check:buttons:enterprise": "node scripts/check-button-consistency-enterprise.js",
     "check:buttons:json": "node scripts/check-button-consistency-enterprise.js --json",
     "check:buttons:html": "node scripts/check-button-consistency-enterprise.js --html",
-    "check:buttons:ci": "CI=true node scripts/check-button-consistency-enterprise.js --json"
+    "check:buttons:ci": "CI=true node scripts/check-button-consistency-enterprise.js --json",
+    "generate:dashboard-json": "node scripts/generate-dashboard-structure-json.js"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^9.2.0",

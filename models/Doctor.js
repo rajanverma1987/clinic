@@ -99,6 +99,14 @@ const DoctorSchema = new Schema(
       min: 0,
       default: 0,
     },
+    videoConsultationFee: { type: Number, min: 0, default: 0 },
+    followUpFee: { type: Number, min: 0, default: 0 },
+    procedureFees: [{ name: { type: String, trim: true }, fee: { type: Number, min: 0 } }],
+    insuranceAccepted: [{ type: String, trim: true }],
+    clinics: {
+      type: Schema.Types.Mixed,
+      default: [],
+    },
     departments: [
       {
         type: Schema.Types.ObjectId,

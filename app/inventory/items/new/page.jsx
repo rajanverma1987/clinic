@@ -11,14 +11,22 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function NewInventoryItemPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
+
+  useEffect(() => {
+    if (!authLoading && user?.role === 'manager' && isManagerPathReadOnly(pathname)) {
+      router.replace('/inventory');
+    }
+  }, [authLoading, user?.role, pathname, router]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -48,12 +56,8 @@ export default function NewInventoryItemPage() {
         type: formData.type,
         unit: formData.unit,
         description: formData.description || undefined,
-        costPrice: formData.costPrice
-          ? Math.round(parseFloat(formData.costPrice) * 100)
-          : undefined,
-        sellingPrice: formData.sellingPrice
-          ? Math.round(parseFloat(formData.sellingPrice) * 100)
-          : undefined,
+        costPrice: formData.costPrice ? parseFloat(formData.costPrice) : undefined,
+        sellingPrice: formData.sellingPrice ? parseFloat(formData.sellingPrice) : undefined,
         currentStock: formData.currentStock ? parseInt(formData.currentStock) : 0,
         lowStockThreshold: formData.lowStockThreshold ? parseInt(formData.lowStockThreshold) : 0,
         expiryDate: formData.expiryDate || undefined,
@@ -81,10 +85,8 @@ export default function NewInventoryItemPage() {
     }
   }, [authLoading, user, router]);
 
-  // Show empty state while redirecting
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
+  if (user.role === 'manager' && isManagerPathReadOnly(pathname)) return null;
 
   return (
     <Layout>

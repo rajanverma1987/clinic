@@ -4,7 +4,7 @@ export function PrescriptionPrintView({ prescriptionData }) {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString(undefined, { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 

@@ -6,6 +6,7 @@
 
 import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth/jwt.js';
+import { PRIMARY_900 } from '@/lib/constants/brand-colors';
 import connectDB from '@/lib/db/connection.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { sendEmail } from '@/lib/email/email-service.js';
@@ -25,7 +26,7 @@ export async function registerPatient(input, tenantId) {
     withTenant(tenantId, {
       $or: [{ email: input.email?.toLowerCase().trim() }, { phone: input.phone?.trim() }],
       deletedAt: null,
-    })
+    }),
   );
 
   if (!patient) {
@@ -102,9 +103,9 @@ export async function registerPatient(input, tenantId) {
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #0f89c7; color: white; padding: 20px; text-align: center; }
+        .header { background: ${PRIMARY_900}; color: white; padding: 20px; text-align: center; }
         .content { padding: 20px; background: #f9fafb; }
-        .button { display: inline-block; padding: 12px 24px; background: #0f89c7; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .button { display: inline-block; padding: 12px 24px; background: ${PRIMARY_900}; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
         .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
       </style>
     </head>
@@ -161,7 +162,7 @@ This is an automated message. Please do not reply to this email.
       html: emailHtml,
       text: emailText,
     },
-    tenantId
+    tenantId,
   );
 
   // Audit log
@@ -172,7 +173,7 @@ This is an automated message. Please do not reply to this email.
     tenantId,
     AuditAction.CREATE,
     undefined,
-    { action: 'portal_registration' }
+    { action: 'portal_registration' },
   );
 
   return {
@@ -224,7 +225,7 @@ export async function loginPatient(input, tenantId) {
       email: normalizedEmail,
       'portalAccess.enabled': true,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!patient) {
@@ -246,7 +247,7 @@ export async function loginPatient(input, tenantId) {
     tenantId,
     AuditAction.ACCESS,
     undefined,
-    { action: 'portal_login' }
+    { action: 'portal_login' },
   );
 
   // Generate tokens
@@ -292,7 +293,7 @@ export async function getPatientProfile(patientId, tenantId, userId) {
       _id: patientId,
       'portalAccess.enabled': true,
       deletedAt: null,
-    })
+    }),
   )
     .select('-medicalHistory -allergies -currentMedications -nationalId') // Exclude PHI
     .lean();
@@ -318,7 +319,7 @@ export async function updatePatientProfile(patientId, input, tenantId, userId) {
       _id: patientId,
       'portalAccess.enabled': true,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!patient) {
@@ -346,7 +347,7 @@ export async function updatePatientProfile(patientId, input, tenantId, userId) {
   const updated = await Patient.findByIdAndUpdate(
     patientId,
     { $set: updateData },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (updated) {
@@ -357,7 +358,7 @@ export async function updatePatientProfile(patientId, input, tenantId, userId) {
       tenantId,
       AuditAction.UPDATE,
       { before, after: updated.toObject() },
-      { action: 'portal_profile_update' }
+      { action: 'portal_profile_update' },
     );
   }
 

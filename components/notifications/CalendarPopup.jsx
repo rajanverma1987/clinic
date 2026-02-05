@@ -10,9 +10,9 @@ import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger.js';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { logger } from '@/lib/utils/logger.js';
 
 export function CalendarPopup({ isOpen, onClose, buttonRef }) {
   const { t } = useI18n();
@@ -43,7 +43,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
           const appointmentsList = response.data.data || [];
           // Filter out video consultations and arrived status
           const filteredAppointments = appointmentsList.filter(
-            (apt) => !apt.isTelemedicine && apt.status !== 'arrived'
+            (apt) => !apt.isTelemedicine && apt.status !== 'arrived',
           );
           setAppointments(filteredAppointments);
         }
@@ -187,7 +187,8 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
         <div
           className='bg-gradient-to-br from-primary-500 to-primary-600 text-white p-4'
           style={{
-            background: 'linear-gradient(135deg, #2D9CDB 0%, #0F89C7 100%)',
+            background:
+              'linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-900) 100%)',
           }}
         >
           <div className='flex items-center justify-between mb-2'>
@@ -282,7 +283,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
                       {appointment.type && (
                         <span
                           className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium border ${getStatusColor(
-                            appointment.status
+                            appointment.status,
                           )}`}
                         >
                           {appointment.type}
@@ -292,7 +293,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
                     <div className='flex-shrink-0'>
                       <span
                         className={`inline-block px-2 py-1 rounded-md text-xs font-semibold border ${getStatusColor(
-                          appointment.status
+                          appointment.status,
                         )}`}
                       >
                         {appointment.status || 'Scheduled'}

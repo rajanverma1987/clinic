@@ -43,31 +43,31 @@ export default function CreateAdminPage() {
 
     // Validation
     if (!formData.firstName || !formData.firstName.trim()) {
-      showError('First name is required');
+      showError(t('admin.firstNameRequired'));
       return;
     }
     if (!formData.lastName || !formData.lastName.trim()) {
-      showError('Last name is required');
+      showError(t('admin.lastNameRequired'));
       return;
     }
     if (!formData.email || !formData.email.trim()) {
-      showError('Email is required');
+      showError(t('admin.emailRequired'));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      showError('Please enter a valid email address');
+      showError(t('admin.invalidEmail'));
       return;
     }
     if (!formData.password || !formData.password.trim()) {
-      showError('Password is required');
+      showError(t('admin.passwordRequired'));
       return;
     }
     if (formData.password.length < 8) {
-      showError('Password must be at least 8 characters');
+      showError(t('admin.passwordMinLength'));
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      showError('Passwords do not match');
+      showError(t('admin.passwordsDoNotMatch'));
       return;
     }
 
@@ -75,7 +75,7 @@ export default function CreateAdminPage() {
 
     try {
       // Use the admin create API or direct user creation
-      const response = await apiClient.post('/api/users', {
+      const response = await apiClient.post('/users', {
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
@@ -84,7 +84,7 @@ export default function CreateAdminPage() {
       });
 
       if (response.success) {
-        showSuccess(`${formData.role === 'super_admin' ? 'Super Admin' : 'Admin'} account created successfully!`);
+        showSuccess(t('admin.adminAccountCreatedSuccess'));
         // Reset form
         setFormData({
           email: '',
@@ -95,11 +95,15 @@ export default function CreateAdminPage() {
           role: 'super_admin',
         });
       } else {
-        setError(response.error?.message || 'Failed to create admin account');
-        showError(response.error?.message || 'Failed to create admin account');
+        setError(response.error?.message || t('admin.failedToCreateAdminAccount'));
+        showError(response.error?.message || t('admin.failedToCreateAdminAccount'));
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create admin account';
+      const raw = error instanceof Error ? error.message : t('admin.failedToCreateAdminAccount');
+      const errorMessage =
+        raw && (raw.includes('Unexpected token') || raw.includes('<!DOCTYPE'))
+          ? t('errors.invalidServerResponse')
+          : raw;
       setError(errorMessage);
       showError(errorMessage);
     } finally {
@@ -184,8 +188,8 @@ export default function CreateAdminPage() {
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   required
                 >
-                  <option value='super_admin'>Super Admin</option>
-                  <option value='clinic_admin'>Clinic Admin</option>
+                  <option value='super_admin'>{t('admin.createAdminSuperAdmin')}</option>
+                  <option value='clinic_admin'>{t('admin.createAdminClinicAdmin')}</option>
                 </select>
                 <p className='text-sm text-neutral-500 mt-1'>
                   Super Admin: Full system access. Clinic Admin: Manages a specific clinic.
@@ -212,7 +216,7 @@ export default function CreateAdminPage() {
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
-                <p className='text-sm text-neutral-500 mt-1'>Minimum 8 characters</p>
+                <p className='text-sm text-neutral-500 mt-1'>{t('admin.createAdminMinimumChars')}</p>
               </div>
 
               <div>

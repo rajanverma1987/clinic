@@ -4,34 +4,70 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 const items = [
-  { href: '/admin/settings/general', label: 'General Settings', desc: 'Platform name, logo, contact, social, operating hours' },
-  { href: '/admin/settings/booking', label: 'Booking Settings', desc: 'Advance booking, cancellation, reschedule, no-show, buffer time' },
-  { href: '/admin/settings/payment', label: 'Payment Settings', desc: 'Gateways, methods, refund policy, fees, currency' },
-  { href: '/admin/settings/notification', label: 'Notification Settings', desc: 'Email/SMS templates, push, triggers' },
-  { href: '/admin/settings/email-sms', label: 'Email/SMS Configuration', desc: 'SMTP, SMS gateway, sender ID, templates' },
-  { href: '/admin/settings/seo', label: 'SEO Settings', desc: 'Meta tags, sitemap, robots, analytics' },
-  { href: '/admin/settings/security', label: 'Security Settings', desc: 'Password policies, 2FA, IP whitelist, rate limiting' },
+  {
+    href: '/admin/settings/general',
+    labelKey: 'admin.settingsGeneral',
+    descKey: 'admin.settingsGeneralDesc',
+  },
+  {
+    href: '/admin/settings/booking',
+    labelKey: 'admin.settingsBooking',
+    descKey: 'admin.settingsBookingDesc',
+  },
+  {
+    href: '/admin/settings/payment',
+    labelKey: 'admin.settingsPayment',
+    descKey: 'admin.settingsPaymentDesc',
+  },
+  {
+    href: '/admin/settings/notification',
+    labelKey: 'admin.settingsNotification',
+    descKey: 'admin.settingsNotificationDesc',
+  },
+  {
+    href: '/admin/settings/email-sms',
+    labelKey: 'admin.settingsEmailSms',
+    descKey: 'admin.settingsEmailSmsDesc',
+  },
+  { href: '/admin/settings/seo', labelKey: 'admin.settingsSeo', descKey: 'admin.settingsSeoDesc' },
+  {
+    href: '/admin/settings/security',
+    labelKey: 'admin.settingsSecurity',
+    descKey: 'admin.settingsSecurityDesc',
+  },
 ];
 
 export default function AdminSettingsPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   useEffect(() => {
     if (!authLoading && user?.role !== 'super_admin') router.push('/dashboard');
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Settings & Configuration' subtitle='General, booking, payment, notification, SEO, security' actionButton={<Button variant='primary' onClick={() => router.push('/admin')}>Back to Dashboard</Button>}>
+    <Layout
+      title={t('admin.settingsConfiguration')}
+      subtitle={t('admin.settingsConfigurationSubtitle')}
+      actionButton={
+        <Button variant='primary' onClick={() => router.push('/admin')}>
+          {t('common.backToDashboard')}
+        </Button>
+      }
+    >
       <div style={{ padding: '0 10px' }} className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-        {items.map(({ href, label, desc }) => (
+        {items.map(({ href, labelKey, descKey }) => (
           <Card key={href} className='p-6'>
-            <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{label}</h3>
-            <p className='text-sm text-neutral-600 mb-4'>{desc}</p>
-            <Button variant='secondary' onClick={() => router.push(href)}>Configure</Button>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{t(labelKey)}</h3>
+            <p className='text-sm text-neutral-600 mb-4'>{t(descKey)}</p>
+            <Button variant='secondary' onClick={() => router.push(href)}>
+              {t('admin.configure')}
+            </Button>
           </Card>
         ))}
       </div>

@@ -43,11 +43,11 @@ For older browser support, use `rgba()` with values that match your tokens, and 
 
 Use Tailwind’s `@layer` so specificity and order are predictable:
 
-| Layer        | Use for |
-|-------------|---------|
-| `@layer base` | Resets, `body`, typography defaults, `:root` tokens. |
+| Layer                  | Use for                                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `@layer base`          | Resets, `body`, typography defaults, `:root` tokens.                                                             |
 | (no layer or implicit) | Layout/component-specific classes (e.g. `.sticky-header-bar`, `.Modal-backdrop`) that are not generic utilities. |
-| `@layer utilities` | Small, reusable utility classes (e.g. `.animate-fade-in`, `.space-section`). |
+| `@layer utilities`     | Small, reusable utility classes (e.g. `.animate-fade-in`, `.space-section`).                                     |
 
 - **Base:** Only global defaults and tokens.
 - **Component/layout:** Page and component structure; can live in `globals.css` or co-located `.css` files.
@@ -90,10 +90,10 @@ Use Tailwind’s `@layer` so specificity and order are predictable:
 
 ## 5. File Organization
 
-| Location | Purpose |
-|----------|---------|
-| `app/globals.css` | Tokens (`:root`), base styles, shared layout, shared utilities. |
-| `components/ui/*.css` | Component-specific styles (Modal, Alert, Toast, etc.). Import next to the component. |
+| Location                   | Purpose                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| `app/globals.css`          | Tokens (`:root`), base styles, shared layout, shared utilities.                      |
+| `components/ui/*.css`      | Component-specific styles (Modal, Alert, Toast, etc.). Import next to the component. |
 | `app/<route>/styles/*.css` | Route-specific styles (e.g. dashboard, prescription form). Import in layout or page. |
 
 - **One global entry:** Only `app/globals.css` is imported in the root layout; all other CSS is imported by the component or route that uses it.
@@ -105,7 +105,7 @@ Use Tailwind’s `@layer` so specificity and order are predictable:
 
 - **Breakpoints:** Align with Tailwind: `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px, `2xl` 1536px. Use the same values in custom `@media` when needed.
 - **Touch targets:** Buttons and interactive elements at least 44×44px where possible (use `--size-*` or Tailwind size classes).
-- **Focus:** Use `:focus-visible` and a visible focus ring (e.g. `outline: 2px solid var(--color-primary-500)`); avoid removing focus outline without a replacement.
+- **Focus:** Use `:focus-visible` and a visible focus ring (e.g. `outline: 1px solid var(--color-primary-500)`); avoid removing focus outline without a replacement.
 - **Reduced motion:** Prefer `@media (prefers-reduced-motion: reduce)` to disable or simplify animations when set.
 
 ---

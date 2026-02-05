@@ -18,6 +18,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { PRIMARY_900 } from '../lib/constants/brand-colors.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -603,7 +604,7 @@ function processFile(filePath) {
         rawButtons.length > 0 ||
         importCheck.needsImport ||
         buttonUsages.some(
-          (u) => !VALID_VARIANTS.includes(u.variant) || !VALID_SIZES.includes(u.size)
+          (u) => !VALID_VARIANTS.includes(u.variant) || !VALID_SIZES.includes(u.size),
         ),
     };
   } catch (error) {
@@ -717,10 +718,10 @@ function generateHTMLReport(stats, jsonReport) {
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
     .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    h1 { color: #2d9cdb; margin-top: 0; }
+    h1 { color: ${PRIMARY_900}; margin-top: 0; }
     .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
-    .stat-card { background: #f8f9fa; padding: 20px; border-radius: 6px; border-left: 4px solid #2d9cdb; }
-    .stat-value { font-size: 32px; font-weight: bold; color: #2d9cdb; }
+    .stat-card { background: #f8f9fa; padding: 20px; border-radius: 6px; border-left: 4px solid ${PRIMARY_900}; }
+    .stat-value { font-size: 32px; font-weight: bold; color: ${PRIMARY_900}; }
     .stat-label { color: #666; margin-top: 5px; }
     .section { margin: 30px 0; }
     .issue-item { background: #fff; border: 1px solid #e0e0e0; padding: 15px; margin: 10px 0; border-radius: 4px; }
@@ -765,7 +766,7 @@ function generateHTMLReport(stats, jsonReport) {
           ([key, passed]) =>
             `<div class="threshold ${passed ? 'passed' : 'failed'}">
           ${passed ? '✅' : '❌'} ${key}: ${passed ? 'PASSED' : 'FAILED'}
-        </div>`
+        </div>`,
         )
         .join('')}
     </div>
@@ -793,7 +794,7 @@ function generateHTMLReport(stats, jsonReport) {
         .slice(0, 20)
         .map(
           (issue) =>
-            `<div class="issue-item warning">${issue.file}:${issue.line} - ${issue.reason}</div>`
+            `<div class="issue-item warning">${issue.file}:${issue.line} - ${issue.reason}</div>`,
         )
         .join('')}
     </div>
@@ -839,7 +840,7 @@ function printConsoleReport(stats) {
   console.log(`   Raw buttons: ${stats.totalRawButtons}`);
   console.log(`   Files with issues: ${stats.filesWithIssues}`);
   console.log(
-    `   Execution time: ${((Date.now() - performanceMetrics.startTime) / 1000).toFixed(2)}s\n`
+    `   Execution time: ${((Date.now() - performanceMetrics.startTime) / 1000).toFixed(2)}s\n`,
   );
 
   const totalIssues =
@@ -874,7 +875,7 @@ function printConsoleReport(stats) {
   Object.entries(thresholdChecks).forEach(([name, { count, max }]) => {
     const passed = count <= max;
     console.log(
-      `   ${passed ? '✅' : '❌'} ${name}: ${count}/${max} ${passed ? 'PASSED' : 'FAILED'}`
+      `   ${passed ? '✅' : '❌'} ${name}: ${count}/${max} ${passed ? 'PASSED' : 'FAILED'}`,
     );
   });
   console.log('');

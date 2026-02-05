@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -125,13 +126,13 @@ export default function AdminSubscriptionsPage() {
   const handleCreatePayPalPlan = async () => {
     // Validate required fields
     if (!formData.name || !formData.price) {
-      alert('Please enter Plan Name and Price first');
+      showError(t('admin.enterPlanNamePrice') || 'Please enter Plan Name and Price first');
       return;
     }
 
     const price = parseFloat(formData.price);
     if (price <= 0) {
-      alert('Price must be greater than 0 to create PayPal plan');
+      showError(t('admin.priceMustBePositive') || 'Price must be greater than 0 to create PayPal plan');
       return;
     }
 
@@ -148,11 +149,11 @@ export default function AdminSubscriptionsPage() {
       if (response.success && response.data) {
         const paypalPlanId = response.data?.paypalPlanId;
         setFormData({ ...formData, paypalPlanId });
-        alert(`PayPal plan created successfully!\nPlan ID: ${paypalPlanId}`);
+        showSuccess(t('admin.paypalPlanCreated') + (paypalPlanId ? ` Plan ID: ${paypalPlanId}` : ''));
       }
     } catch (error) {
       logger.error('Failed to create PayPal plan', error);
-      alert(error.message || 'Failed to create PayPal plan. Check PayPal credentials.');
+      showError(error.message || t('admin.paypalPlanCreateFailed') || 'Failed to create PayPal plan.');
     } finally {
       setCreatingPayPalPlan(false);
     }
@@ -212,7 +213,7 @@ export default function AdminSubscriptionsPage() {
       }
     } catch (error) {
       logger.error('Failed to save plan', error);
-      alert(error.message || `Failed to ${editingPlanId ? 'update' : 'create'} subscription plan`);
+      showError(error.message || (editingPlanId ? t('admin.planUpdateFailed') : t('admin.planCreateFailed')) || 'Failed to save plan');
     } finally {
       setSubmitting(false);
     }
@@ -286,7 +287,7 @@ export default function AdminSubscriptionsPage() {
             size='sm'
             onClick={() => {
               navigator.clipboard.writeText(row._id);
-              alert('Plan ID copied to clipboard!');
+              showSuccess(t('admin.planIdCopied') || 'Plan ID copied to clipboard');
             }}
             title='Copy Plan ID for manual assignment'
           >

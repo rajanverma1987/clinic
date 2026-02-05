@@ -3,21 +3,20 @@
  * Doctor admits patient from waiting room
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
-import { AuditLogger } from '@/lib/audit/audit-logger.js';
+import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 import { logger } from '@/lib/utils/logger.js';
 
 /**
  * POST /api/telemedicine/sessions/[id]/admit
  * Admit participant to call
  */
-export async function POST(
-  req,
-  context
-) {
+async function postHandler(req, user, context) {
   try {
     const params = await context.params;
     const sessionId = params.id;
@@ -49,7 +48,6 @@ export async function POST(
       );
     }
 
-    // Update participant status to admitted
     await TelemedicineSession.updateOne(
       {
         sessionId,
@@ -60,8 +58,15 @@ export async function POST(
       }
     );
 
-    // TODO: Extract user from auth token for audit log
-    // await AuditLogger.auditWrite(...)
+    await AuditLogger.auditWrite(
+      'telemedicine_session',
+      sessionId,
+      user.userId,
+      user.tenantId || 'system',
+      AuditAction.UPDATE,
+      undefined,
+      { action: 'admit', participantId }
+    );
 
     return NextResponse.json(successResponse({
       message: 'Participant admitted',
@@ -78,3 +83,5 @@ export async function POST(
     );
   }
 }
+
+export const POST = withErrorHandler(withAuth(postHandler));

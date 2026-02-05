@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiClient } from '@/lib/api/client';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -18,12 +19,15 @@ import { useCallback, useEffect, useState } from 'react';
 export default function AdminPatientsPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const { open: openConfirm } = useConfirmation();
   const { user, loading: authLoading } = useAuth();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [tenantFilter, setTenantFilter] = useState('');
+  const [debouncedTenantFilter, setDebouncedTenantFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [doctorFilter, setDoctorFilter] = useState('');
@@ -35,6 +39,16 @@ export default function AdminPatientsPage() {
   const [selectedPatients, setSelectedPatients] = useState([]);
   const [exporting, setExporting] = useState(false);
   const [flagModal, setFlagModal] = useState({ open: false, patient: null, reason: '' });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedTenantFilter(tenantFilter), 400);
+    return () => clearTimeout(timer);
+  }, [tenantFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const fetchDoctors = useCallback(async () => {
     try {
@@ -65,8 +79,9 @@ export default function AdminPatientsPage() {
     authLoading,
     user,
     pagination.page,
+    debouncedSearchTerm,
     statusFilter,
-    tenantFilter,
+    debouncedTenantFilter,
     dateFrom,
     dateTo,
     doctorFilter,
@@ -85,9 +100,9 @@ export default function AdminPatientsPage() {
         sortBy,
         sortOrder,
       });
-      if (searchTerm) params.append('search', searchTerm);
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm.trim());
       if (statusFilter) params.append('status', statusFilter);
-      if (tenantFilter) params.append('tenantId', tenantFilter);
+      if (debouncedTenantFilter) params.append('tenantId', debouncedTenantFilter);
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
       if (doctorFilter) params.append('doctorId', doctorFilter);
@@ -109,7 +124,7 @@ export default function AdminPatientsPage() {
       }
     } catch (error) {
       logger.error('Failed to fetch patients', error);
-      showError('Failed to fetch patients');
+      showError(t('admin.failedToFetchPatients'));
     } finally {
       setLoading(false);
     }
@@ -135,27 +150,32 @@ export default function AdminPatientsPage() {
         showError(response.error?.message || 'Failed to flag patient');
       }
     } catch (err) {
-      showError('Failed to flag patient');
+      showError(t('admin.failedToFlagPatient'));
     }
   };
 
   const handleUnflag = async (patientId) => {
-    if (!confirm(t('admin.patientsUnflagConfirm'))) return;
-    try {
-      const response = await apiClient.put(`/admin/patients/${patientId}`, {
-        status: undefined,
-        flagged: false,
-        flagReason: '',
-      });
-      if (response.success) {
-        showSuccess('Flag removed');
-        fetchPatients();
-      } else {
-        showError(response.error?.message || 'Failed to unflag');
-      }
-    } catch (err) {
-      showError('Failed to unflag patient');
-    }
+    openConfirm({
+      title: t('admin.patientsUnflag'),
+      message: t('admin.patientsUnflagConfirm'),
+      onConfirm: async () => {
+        try {
+          const response = await apiClient.put(`/admin/patients/${patientId}`, {
+            status: undefined,
+            flagged: false,
+            flagReason: '',
+          });
+          if (response.success) {
+            showSuccess(t('admin.patientsFlagRemoved'));
+            fetchPatients();
+          } else {
+            showError(response.error?.message || t('admin.patientsUnflagFailed'));
+          }
+        } catch (err) {
+          showError(t('admin.patientsUnflagFailed'));
+        }
+      },
+    });
   };
 
   const handleSuspend = async (patientId, suspend) => {
@@ -170,34 +190,35 @@ export default function AdminPatientsPage() {
         showError(response.error?.message || 'Failed to update patient status');
       }
     } catch (error) {
-      showError('Failed to update patient status');
+      showError(t('admin.failedToUpdatePatientStatus'));
     }
   };
 
   const handleDelete = async (patientId) => {
-    if (
-      !confirm(
-        'Are you sure you want to delete this patient? This action can be reversed by support.'
-      )
-    )
-      return;
-    try {
-      const response = await apiClient.delete(`/admin/patients/${patientId}`);
-      if (response.success) {
-        showSuccess('Patient deleted successfully');
-        fetchPatients();
-      } else {
-        showError(response.error?.message || 'Failed to delete patient');
-      }
-    } catch (error) {
-      showError('Failed to delete patient');
-    }
+    openConfirm({
+      title: t('common.delete'),
+      message: t('admin.patientsDeleteConfirm'),
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await apiClient.delete(`/admin/patients/${patientId}`);
+          if (response.success) {
+            showSuccess(t('admin.patientsDeleted'));
+            fetchPatients();
+          } else {
+            showError(response.error?.message || t('admin.patientsDeleteFailed'));
+          }
+        } catch (error) {
+          showError(t('admin.patientsDeleteFailed'));
+        }
+      },
+    });
   };
 
   const handleExport = async (patientIds = null) => {
     const ids = patientIds ?? selectedPatients;
     if (!ids.length) {
-      showError('Please select at least one patient to export');
+      showError(t('admin.selectAtLeastOnePatientToExport'));
       return;
     }
     try {
@@ -205,7 +226,7 @@ export default function AdminPatientsPage() {
       const response = await apiClient.post('/admin/patients/export', { patientIds: ids });
       if (response.success && response.data?.url) {
         window.open(response.data.url, '_blank');
-        showSuccess('Export started. Download will open in a new tab.');
+        showSuccess(t('admin.exportStarted'));
       } else if (response.success && response.data?.csv) {
         const blob = new Blob([response.data.csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -214,7 +235,7 @@ export default function AdminPatientsPage() {
         a.download = `patients-export-${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
-        showSuccess('Export downloaded.');
+        showSuccess(t('admin.exportDownloaded'));
       } else if (response.success && response.data?.blob) {
         const url = URL.createObjectURL(new Blob([response.data.blob]));
         const a = document.createElement('a');
@@ -222,12 +243,12 @@ export default function AdminPatientsPage() {
         a.download = `patients-export-${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
-        showSuccess('Export downloaded.');
+        showSuccess(t('admin.exportDownloaded'));
       } else {
-        showError('Export format not supported. Use table selection and copy, or contact support.');
+        showError(t('admin.exportFormatNotSupported'));
       }
     } catch (error) {
-      showError('Export failed. Try selecting rows and copying, or contact support.');
+      showError(t('admin.exportFailed'));
     } finally {
       setExporting(false);
     }
@@ -458,11 +479,11 @@ export default function AdminPatientsPage() {
                 <p className='text-neutral-500'>{t('admin.patientsNoPatients')}</p>
               </div>
             ) : (
-              <div className='overflow-x-auto'>
-                <table className='w-full'>
+              <div className='clinic-table-wrap'>
+                <table className='clinic-table'>
                   <thead>
-                    <tr className='border-b border-neutral-200'>
-                      <th className='text-left py-3 px-4'>
+                    <tr>
+                      <th className='w-10'>
                         <input
                           type='checkbox'
                           checked={
@@ -474,30 +495,30 @@ export default function AdminPatientsPage() {
                           }}
                         />
                       </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Patient
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Contact
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Tenant
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Status
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        Flag
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        {t('common.actions')}
-                      </th>
+                      <th>Patient</th>
+                      <th>Contact</th>
+                      <th>Tenant</th>
+                      <th>Status</th>
+                      <th>Flag</th>
+                      <th>{t('common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {patients.map((p) => (
-                      <tr key={p._id} className='border-b border-neutral-100 hover:bg-neutral-50'>
-                        <td className='py-3 px-4'>
+                      <tr
+                        key={p._id}
+                        className='cursor-pointer'
+                        onClick={() => router.push(`/admin/patients/${p._id}`)}
+                        role='button'
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            router.push(`/admin/patients/${p._id}`);
+                          }
+                        }}
+                      >
+                        <td onClick={(e) => e.stopPropagation()}>
                           <input
                             type='checkbox'
                             checked={selectedPatients.includes(p._id)}
@@ -509,7 +530,7 @@ export default function AdminPatientsPage() {
                             }}
                           />
                         </td>
-                        <td className='py-3 px-4'>
+                        <td>
                           <div>
                             <p className='font-medium text-neutral-900'>
                               {p.firstName} {p.lastName}
@@ -517,16 +538,14 @@ export default function AdminPatientsPage() {
                             <p className='text-sm text-neutral-500'>{p.patientId || '—'}</p>
                           </div>
                         </td>
-                        <td className='py-3 px-4'>
+                        <td>
                           <div className='text-sm'>
                             <p>{p.email || '—'}</p>
                             <p>{p.phone || '—'}</p>
                           </div>
                         </td>
-                        <td className='py-3 px-4 text-sm text-neutral-700'>
-                          {p.tenantName || p.tenantId || '—'}
-                        </td>
-                        <td className='py-3 px-4'>
+                        <td className='text-neutral-700'>{p.tenantName || p.tenantId || '—'}</td>
+                        <td>
                           <Tag
                             className={
                               p.status === 'active'
@@ -537,30 +556,36 @@ export default function AdminPatientsPage() {
                             {p.status || 'active'}
                           </Tag>
                         </td>
-                        <td className='py-3 px-4'>
+                        <td>
                           {p.flagged ? (
-                            <Tag className='bg-amber-100 text-amber-800'>Flagged</Tag>
+                            <Tag className='bg-amber-100 text-amber-800'>
+                              {t('admin.patientsFlagged')}
+                            </Tag>
                           ) : (
                             '—'
                           )}
                         </td>
-                        <td className='py-3 px-4'>
+                        <td onClick={(e) => e.stopPropagation()}>
                           <div className='flex gap-2 flex-wrap'>
                             <Button
                               variant='secondary'
                               size='sm'
-                              onClick={() => router.push(`/admin/patients/${p._id}`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/admin/patients/${p._id}`);
+                              }}
                             >
                               {t('admin.patientsView')}
                             </Button>
                             <Button
                               variant='secondary'
                               size='sm'
-                              onClick={() =>
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 router.push(
-                                  `/admin/activity-logs?resource=patient&resourceId=${p._id}`
-                                )
-                              }
+                                  `/admin/activity-logs?resource=patient&resourceId=${p._id}`,
+                                );
+                              }}
                             >
                               {t('admin.patientsActivityLog')}
                             </Button>
@@ -568,7 +593,10 @@ export default function AdminPatientsPage() {
                               <Button
                                 variant='secondary'
                                 size='sm'
-                                onClick={() => handleUnflag(p._id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUnflag(p._id);
+                                }}
                               >
                                 {t('admin.patientsUnflag')}
                               </Button>
@@ -576,7 +604,10 @@ export default function AdminPatientsPage() {
                               <Button
                                 variant='secondary'
                                 size='sm'
-                                onClick={() => setFlagModal({ open: true, patient: p, reason: '' })}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFlagModal({ open: true, patient: p, reason: '' });
+                                }}
                               >
                                 {t('admin.patientsFlag')}
                               </Button>
@@ -584,13 +615,23 @@ export default function AdminPatientsPage() {
                             <Button
                               variant='secondary'
                               size='sm'
-                              onClick={() => handleSuspend(p._id, p.status !== 'inactive')}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSuspend(p._id, p.status !== 'inactive');
+                              }}
                             >
                               {p.status === 'inactive'
                                 ? t('admin.patientsActivate')
                                 : t('admin.patientsDeactivate')}
                             </Button>
-                            <Button variant='danger' size='sm' onClick={() => handleDelete(p._id)}>
+                            <Button
+                              variant='danger'
+                              size='sm'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(p._id);
+                              }}
+                            >
                               {t('admin.patientsDelete')}
                             </Button>
                           </div>

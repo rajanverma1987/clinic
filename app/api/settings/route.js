@@ -1,9 +1,9 @@
 import connectDB from '@/lib/db/connection';
+import { canEditClinicSettings } from '@/lib/permissions/cursor-md-matrix';
 import { errorResponse, handleMongoError, successResponse } from '@/lib/utils/api-response';
 import { withAuth } from '@/middleware/auth';
 import Tenant from '@/models/Tenant';
 import { NextResponse } from 'next/server';
-import { canEditClinicSettings } from '@/lib/permissions/cursor-md-matrix';
 
 /**
  * GET /api/settings
@@ -20,9 +20,9 @@ async function getHandler(req, user) {
       return NextResponse.json(
         errorResponse(
           'Super admin has no tenant context. Use a clinic account or select a tenant.',
-          'NO_TENANT_CONTEXT'
+          'NO_TENANT_CONTEXT',
         ),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,7 +44,7 @@ async function getHandler(req, user) {
         region: tenantObj.region,
         settings: tenantObj.settings,
         isActive: tenantObj.isActive,
-      })
+      }),
     );
   } catch (error) {
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
@@ -70,7 +70,7 @@ async function putHandler(req, user) {
     if (!canEditClinicSettings(user.role)) {
       return NextResponse.json(
         errorResponse('Only Doctor or Super Admin can modify clinic settings', 'FORBIDDEN'),
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -139,6 +139,10 @@ async function putHandler(req, user) {
         tenant.settings.holidays = body.settings.holidays;
         tenant.markModified('settings.holidays');
       }
+      if (body.settings.locations !== undefined && body.settings.locations !== null) {
+        tenant.settings.locations = body.settings.locations;
+        tenant.markModified('settings.locations');
+      }
     }
     if (body.isActive !== undefined) tenant.isActive = body.isActive;
 
@@ -153,7 +157,7 @@ async function putHandler(req, user) {
         settings: tenant.settings,
         isActive: tenant.isActive,
         updatedAt: tenant.updatedAt,
-      })
+      }),
     );
   } catch (error) {
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
@@ -163,9 +167,9 @@ async function putHandler(req, user) {
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to update settings',
-        'UPDATE_ERROR'
+        'UPDATE_ERROR',
       ),
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

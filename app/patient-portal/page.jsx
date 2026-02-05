@@ -162,21 +162,21 @@ export default function PatientPortalHomePage() {
   const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
     if (!newsletterEmail || !newsletterEmail.includes('@')) {
-      alert('Please enter a valid email address');
+      const { showError } = await import('@/lib/utils/toast');
+      showError('Please enter a valid email address');
       return;
     }
 
     try {
       setNewsletterSubmitting(true);
-      // TODO: Create API endpoint for newsletter subscription
-      // For now, just show success message
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
-      setNewsletterSuccess(true);
+      // Newsletter subscription API not yet implemented
+      const { showInfo } = await import('@/lib/utils/toast');
+      showInfo('Newsletter subscription is not yet available.');
       setNewsletterEmail('');
-      setTimeout(() => setNewsletterSuccess(false), 3000);
     } catch (err) {
       logger.error('Failed to subscribe to newsletter', err);
-      alert('Failed to subscribe. Please try again.');
+      const { showError } = await import('@/lib/utils/toast');
+      showError('Failed to subscribe. Please try again.');
     } finally {
       setNewsletterSubmitting(false);
     }

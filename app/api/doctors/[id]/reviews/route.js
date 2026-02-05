@@ -42,7 +42,7 @@ async function getHandler(req, { params }) {
       .limit(100)
       .lean();
 
-    // Format reviews
+    // Format reviews (doctorResponse as string for display; isFlagged for UI)
     const formattedReviews = reviews.map((review) => ({
       _id: review._id,
       appointmentId: review.appointmentId?._id,
@@ -54,8 +54,9 @@ async function getHandler(req, { params }) {
       reviewText: review.reviewText || '',
       appointmentDate: review.appointmentId?.appointmentDate || review.appointmentId?.startTime,
       createdAt: review.createdAt,
-      doctorResponse: review.doctorResponse || null,
+      doctorResponse: review.doctorResponse?.text ?? review.doctorResponse ?? null,
       isVerified: review.isVerified,
+      isFlagged: review.isFlagged === true,
       helpfulCount: review.helpfulCount || 0,
     }));
 

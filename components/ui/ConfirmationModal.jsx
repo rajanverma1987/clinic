@@ -7,7 +7,7 @@
  */
 import { InfoIcon, WarningIcon, XIcon } from '@/components/icons';
 import { useI18n } from '@/contexts/I18nContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';
 import './ConfirmationModal.css';
@@ -32,10 +32,20 @@ export function ConfirmationModal({
 }) {
   const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const frame = requestAnimationFrame(() => {
+        containerRef.current?.focus();
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -48,6 +58,18 @@ export function ConfirmationModal({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || confirmLoading) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose?.();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, confirmLoading, onClose]);
+
   const handleConfirm = () => {
     if (confirmLoading) return;
     onConfirm?.();
@@ -55,6 +77,28 @@ export function ConfirmationModal({
 
   const handleBackdropClick = () => {
     if (closeOnBackdrop && !confirmLoading) onClose?.();
+  };
+
+  const handleContainerKeyDown = (e) => {
+    if (e.key !== 'Tab' || !containerRef.current) return;
+    const focusable = containerRef.current.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    const list = Array.from(focusable);
+    if (list.length === 0) return;
+    const first = list[0];
+    const last = list[list.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   };
 
   const displayTitle = title ?? t('common.areYouSure');
@@ -72,15 +116,18 @@ export function ConfirmationModal({
       className='ConfirmationModal-backdrop'
       onClick={handleBackdropClick}
       style={{ zIndex: 'var(--z-modal, 10050)' }}
-      role='dialog'
-      aria-modal='true'
-      aria-labelledby='confirmation-modal-title'
-      aria-describedby='confirmation-modal-description'
     >
       <div
+        ref={containerRef}
         className={`ConfirmationModal-container ${variantClass}`}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleContainerKeyDown}
         style={{ zIndex: 'var(--z-modal-content, 10051)' }}
+        role='dialog'
+        aria-modal='true'
+        aria-labelledby='confirmation-modal-title'
+        aria-describedby='confirmation-modal-description'
+        tabIndex={-1}
       >
         <div className='ConfirmationModal-header'>
           <div className={`ConfirmationModal-icon ConfirmationModal-icon--${variant}`}>

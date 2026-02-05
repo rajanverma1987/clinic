@@ -28,8 +28,8 @@ async function loginHandler(req) {
       );
     }
 
-    // Login user
-    const result = await loginUser(validationResult.data);
+    // Login user (pass client IP for audit)
+    const result = await loginUser(validationResult.data, { clientIP: ipAddress });
 
     // If 2FA is required, return early without setting cookies
     if (result.require2FA) {

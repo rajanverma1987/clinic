@@ -8,13 +8,11 @@
   pointer-events: auto;
 }
 
-/* Backdrop overlay */
+/* Backdrop overlay - no blur to avoid full-page blur on landing */
 .LanguageSwitcher-backdrop {
   position: fixed;
   inset: 0;
   background: color-mix(in srgb, var(--color-neutral-900) 5%, transparent);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
   z-index: 10051;
   animation: fadeIn 0.2s ease-out;
   cursor: pointer;

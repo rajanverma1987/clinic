@@ -16,7 +16,7 @@ import { useUpdatesAvailable } from '@/hooks/useUpdatesAvailable';
 import { apiClient } from '@/lib/api/client';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
-import { showError } from '@/lib/utils/toast';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { Suspense, lazy, useCallback, useEffect, useRef, useState, useTransition } from 'react';
 
@@ -37,13 +37,13 @@ import { StatsCard } from './components/StatsCard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const ChartCard = lazy(() =>
-  import('./components/ChartCard').then((m) => ({ default: m.ChartCard }))
+  import('./components/ChartCard').then((m) => ({ default: m.ChartCard })),
 );
 const CalendarWidget = lazy(() =>
-  import('./components/CalendarWidget').then((m) => ({ default: m.CalendarWidget }))
+  import('./components/CalendarWidget').then((m) => ({ default: m.CalendarWidget })),
 );
 const CriticalAlerts = lazy(() =>
-  import('./components/CriticalAlerts').then((m) => ({ default: m.CriticalAlerts }))
+  import('./components/CriticalAlerts').then((m) => ({ default: m.CriticalAlerts })),
 );
 
 // Custom hooks – SWR for clinic (real-time + 30s poll), existing for doctor
@@ -95,17 +95,17 @@ export default function DashboardPage() {
             telemedicineSessionId: sessionId,
           });
         } else {
-          showError(response.error?.message || 'Failed to create video session');
+          showError(response.error?.message || t('errors.failedToCreateVideoSession'));
           return;
         }
       }
       if (sessionId) {
         window.open(`/telemedicine/${sessionId}?role=doctor`, '_blank');
       } else {
-        showError('Unable to start video session');
+        showError(t('errors.unableToStartVideoSession'));
       }
     } catch (error) {
-      showError(error.message || 'Failed to start video session');
+      showError(error.message || t('errors.failedToStartVideoSession'));
     }
   }, []);
 
@@ -129,14 +129,11 @@ export default function DashboardPage() {
   const { updatesAvailable, applyUpdates } = useUpdatesAvailable(
     clinicListsSWR.listsData,
     clinicListsSWR.isValidating,
-    clinicListsSWR.fetchDashboardLists
+    clinicListsSWR.fetchDashboardLists,
   );
   const [isPending, startTransition] = useTransition();
   // Non-blocking navigation so clicks stay responsive
-  const navigate = useCallback(
-    (path) => startTransition(() => router.push(path)),
-    [router]
-  );
+  const navigate = useCallback((path) => startTransition(() => router.push(path)), [router]);
 
   const handleManualRefresh = useCallback(() => {
     startTransition(() => {
@@ -186,28 +183,38 @@ export default function DashboardPage() {
 
   const refreshIntervalRef = useRef(null);
   const hasFetchedRef = useRef(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setChartsEnabled(true), 200);
     return () => clearTimeout(t);
   }, []);
 
-  // Auto-refresh (silent, no flicker) – uses standard interval from lib/constants/dashboard
+  // Mark initial load done once stats + lists have loaded (so auto-refresh interval can start)
   useEffect(() => {
-    if (authLoading || !user || !hasFetchedRef.current) return;
+    if (
+      user &&
+      !authLoading &&
+      user.role !== 'super_admin' &&
+      !statsLoading &&
+      !listsLoading
+    ) {
+      setInitialLoadDone(true);
+      hasFetchedRef.current = true;
+    }
+  }, [user, authLoading, statsLoading, listsLoading]);
+
+  // Auto-refresh (silent, no flicker) – start only after initial load
+  useEffect(() => {
+    if (authLoading || !user || user.role === 'super_admin' || !initialLoadDone) return;
 
     const runRefresh = () => {
-      if (hasFetchedRef.current) {
-        fetchStats().catch(() => {});
-        fetchDashboardLists().catch(() => {});
-        if (!isDoctor) {
-          fetchChartData().catch(() => {});
-        }
-      }
+      fetchStats().catch(() => {});
+      fetchDashboardLists().catch(() => {});
+      if (!isDoctor) fetchChartData().catch(() => {});
     };
 
     refreshIntervalRef.current = setInterval(runRefresh, DASHBOARD_AUTO_REFRESH_MS);
 
-    // Pause when tab hidden to avoid needless work
     const handleVisibility = () => {
       if (document.hidden) {
         if (refreshIntervalRef.current) {
@@ -215,7 +222,7 @@ export default function DashboardPage() {
           refreshIntervalRef.current = null;
         }
       } else {
-        if (!refreshIntervalRef.current && hasFetchedRef.current) {
+        if (!refreshIntervalRef.current) {
           runRefresh();
           refreshIntervalRef.current = setInterval(runRefresh, DASHBOARD_AUTO_REFRESH_MS);
         }
@@ -224,42 +231,31 @@ export default function DashboardPage() {
 
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // Refetch when window gains focus (e.g. user returns from adding a patient elsewhere)
     const handleFocus = () => {
-      if (hasFetchedRef.current) {
-        fetchStats().catch(() => {});
-        fetchDashboardLists().catch(() => {});
-        if (!isDoctor) {
-          fetchChartData().catch(() => {});
-        }
-      }
+      fetchStats().catch(() => {});
+      fetchDashboardLists().catch(() => {});
+      if (!isDoctor) fetchChartData().catch(() => {});
     };
     window.addEventListener('focus', handleFocus);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('focus', handleFocus);
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
+      if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
-  }, [authLoading, user, isDoctor]); // Removed function dependencies
+  }, [authLoading, user, initialLoadDone, isDoctor]);
 
-  // Redirect when no user or super_admin; mark ready so refresh interval can run (SWR fetches on mount – no duplicate fetch)
+  // Redirect when no user or super_admin
   useEffect(() => {
     if (authLoading) return;
-
     if (!user) {
       const timer = setTimeout(() => navigate('/login'), 100);
       return () => clearTimeout(timer);
     }
-
     if (user.role === 'super_admin') {
       navigate('/admin');
       return;
     }
-
-    hasFetchedRef.current = true;
   }, [authLoading, user, router]);
 
   // Utility functions
@@ -371,13 +367,6 @@ export default function DashboardPage() {
             onRefresh={handleManualRefresh}
             actionButton={
               <div className='flex items-center gap-3 shrink-0'>
-                {!isDoctor && (
-                  <UpdatesAvailableBanner
-                    visible={updatesAvailable}
-                    onRefresh={() => startTransition(applyUpdates)}
-                    compact
-                  />
-                )}
                 <QuickActions onNavigate={navigate} loading={false} />
               </div>
             }
@@ -406,10 +395,10 @@ export default function DashboardPage() {
               {/* Doctor-specific: Pending Tasks Card */}
               {isDoctor && (
                 <div className='lg:col-span-2'>
-                  <Card className='p-6 h-full'>
+                  <Card className='p-6 h-full dashboard-pending-tasks-card'>
                     <div className='flex items-center justify-between gap-3 mb-4 pb-3 border-b border-neutral-200'>
                       <div className='flex items-center gap-3'>
-                        <div className='w-3 h-3 bg-warning-500 rounded-full'></div>
+                        <div className='dashboard-pending-tasks-dot' />
                         <h3 className='text-lg font-bold text-neutral-900'>
                           {t('dashboard.pendingTasks')}
                         </h3>
@@ -425,66 +414,66 @@ export default function DashboardPage() {
                     <div className='space-y-3'>
                       {stats?.pendingReviews > 0 && (
                         <div
-                          className='p-3 bg-warning-50 border border-warning-200 rounded-lg cursor-pointer hover:bg-warning-100 transition-colors'
+                          className='dashboard-pending-task-item dashboard-pending-task-warning'
                           onClick={() => navigate('/doctors/reviews')}
                         >
                           <div className='flex items-center justify-between'>
-                            <span className='text-sm font-medium text-warning-900'>
+                            <span className='text-sm font-medium'>
                               {stats.pendingReviews} {t('dashboard.reviewsPending')}
                             </span>
-                            <span className='text-warning-600'>→</span>
+                            <span className='dashboard-pending-task-arrow'>→</span>
                           </div>
                         </div>
                       )}
                       {stats?.patientsWaiting > 0 && (
                         <div
-                          className='p-3 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors'
+                          className='dashboard-pending-task-item dashboard-pending-task-primary'
                           onClick={() => navigate('/appointments?status=in_queue,arrived')}
                         >
                           <div className='flex items-center justify-between'>
-                            <span className='text-sm font-medium text-primary-900'>
+                            <span className='text-sm font-medium'>
                               {stats.patientsWaiting} {t('dashboard.patientsWaiting')}
                             </span>
-                            <span className='text-primary-600'>→</span>
+                            <span className='dashboard-pending-task-arrow'>→</span>
                           </div>
                         </div>
                       )}
                       {(stats?.labReportsToReview ?? 0) > 0 && (
                         <div
-                          className='p-3 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors'
+                          className='dashboard-pending-task-item dashboard-pending-task-primary'
                           onClick={() => navigate('/reports')}
                         >
                           <div className='flex items-center justify-between'>
-                            <span className='text-sm font-medium text-primary-900'>
+                            <span className='text-sm font-medium'>
                               {stats.labReportsToReview} {t('dashboard.labReportsToReview')}
                             </span>
-                            <span className='text-primary-600'>→</span>
+                            <span className='dashboard-pending-task-arrow'>→</span>
                           </div>
                         </div>
                       )}
                       {(stats?.newMessages ?? 0) > 0 && (
                         <div
-                          className='p-3 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors'
+                          className='dashboard-pending-task-item dashboard-pending-task-primary'
                           onClick={() => navigate('/doctors/messages')}
                         >
                           <div className='flex items-center justify-between'>
-                            <span className='text-sm font-medium text-primary-900'>
+                            <span className='text-sm font-medium'>
                               {stats.newMessages} {t('dashboard.newMessages')}
                             </span>
-                            <span className='text-primary-600'>→</span>
+                            <span className='dashboard-pending-task-arrow'>→</span>
                           </div>
                         </div>
                       )}
                       {(stats?.prescriptionsToApprove ?? 0) > 0 && (
                         <div
-                          className='p-3 bg-primary-50 border border-primary-200 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors'
+                          className='dashboard-pending-task-item dashboard-pending-task-primary'
                           onClick={() => navigate('/prescriptions?status=draft')}
                         >
                           <div className='flex items-center justify-between'>
-                            <span className='text-sm font-medium text-primary-900'>
+                            <span className='text-sm font-medium'>
                               {stats.prescriptionsToApprove} {t('dashboard.prescriptionsToApprove')}
                             </span>
-                            <span className='text-primary-600'>→</span>
+                            <span className='dashboard-pending-task-arrow'>→</span>
                           </div>
                         </div>
                       )}
@@ -662,14 +651,10 @@ export default function DashboardPage() {
                     requests={appointmentRequests}
                     loading={listsLoading}
                     onAccept={(request) => {
-                      navigate(
-                        `/appointments/${request._id || request.id}/edit?status=confirmed`
-                      );
+                      navigate(`/appointments/${request._id || request.id}/edit?status=confirmed`);
                     }}
                     onDecline={(request) => {
-                      navigate(
-                        `/appointments/${request._id || request.id}/edit?status=cancelled`
-                      );
+                      navigate(`/appointments/${request._id || request.id}/edit?status=cancelled`);
                     }}
                     onMessage={(request) => {
                       if (request._id) {
@@ -695,7 +680,7 @@ export default function DashboardPage() {
                           newPatients: stats?.newPatientsThisMonth || 0,
                           oldPatients: Math.max(
                             0,
-                            (stats?.activePatients || 0) - (stats?.newPatientsThisMonth || 0)
+                            (stats?.activePatients || 0) - (stats?.newPatientsThisMonth || 0),
                           ),
                           totalPatients: stats?.activePatients || 0,
                         }
@@ -762,12 +747,12 @@ export default function DashboardPage() {
                         const start = new Date(
                           appointment.schedule?.startTime ||
                             appointment.startTime ||
-                            appointment.appointmentDate
+                            appointment.appointmentDate,
                         );
                         const end = new Date(
                           appointment.schedule?.endTime ||
                             appointment.endTime ||
-                            appointment.appointmentDate
+                            appointment.appointmentDate,
                         );
                         const now = Date.now();
                         const isCurrentSlot =
@@ -790,12 +775,12 @@ export default function DashboardPage() {
                             onStart={handleStartVideo}
                             onReschedule={() =>
                               navigate(
-                                `/appointments/${appointment._id || appointment.id}?reschedule=1`
+                                `/appointments/${appointment._id || appointment.id}?reschedule=1`,
                               )
                             }
                             onCancel={() =>
                               navigate(
-                                `/appointments/${appointment._id || appointment.id}?cancel=1`
+                                `/appointments/${appointment._id || appointment.id}?cancel=1`,
                               )
                             }
                           />
@@ -973,9 +958,7 @@ export default function DashboardPage() {
                           <div
                             key={request._id || request.id}
                             className='p-3 border-b border-neutral-100 dark:border-neutral-700 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 cursor-pointer transition-colors'
-                            onClick={() =>
-                              navigate(`/appointments/${request._id || request.id}`)
-                            }
+                            onClick={() => navigate(`/appointments/${request._id || request.id}`)}
                           >
                             <div className='flex items-center justify-between'>
                               <div className='flex-1'>
@@ -984,10 +967,10 @@ export default function DashboardPage() {
                                 </p>
                                 <p className='text-sm text-neutral-600 dark:text-neutral-400'>
                                   {new Date(
-                                    request.appointmentDate || request.startTime
+                                    request.appointmentDate || request.startTime,
                                   ).toLocaleDateString()}{' '}
                                   at{' '}
-                                  {new Date(request.startTime).toLocaleTimeString('en-US', {
+                                  {new Date(request.startTime).toLocaleTimeString(undefined, {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                   })}
@@ -1003,7 +986,7 @@ export default function DashboardPage() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     navigate(
-                                      `/appointments/${request._id || request.id}/edit?status=confirmed`
+                                      `/appointments/${request._id || request.id}/edit?status=confirmed`,
                                     );
                                   }}
                                 >
@@ -1015,7 +998,7 @@ export default function DashboardPage() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     navigate(
-                                      `/appointments/${request._id || request.id}/edit?status=cancelled`
+                                      `/appointments/${request._id || request.id}/edit?status=cancelled`,
                                     );
                                   }}
                                 >
@@ -1038,13 +1021,13 @@ export default function DashboardPage() {
                         onAccept={(request) => {
                           // Handle accept appointment
                           navigate(
-                            `/appointments/${request._id || request.id}/edit?status=confirmed`
+                            `/appointments/${request._id || request.id}/edit?status=confirmed`,
                           );
                         }}
                         onDecline={(request) => {
                           // Handle decline appointment
                           navigate(
-                            `/appointments/${request._id || request.id}/edit?status=cancelled`
+                            `/appointments/${request._id || request.id}/edit?status=cancelled`,
                           );
                         }}
                         onMessage={(request) => {
@@ -1115,19 +1098,21 @@ export default function DashboardPage() {
                             </span>
                             <div className='flex items-center gap-2'>
                               <span className='text-2xl font-bold text-neutral-900'>
-                                {stats.averageRating.toFixed(1)}
+                                {stats.averageRating != null
+                                  ? Number(stats.averageRating).toFixed(1)
+                                  : '—'}
                               </span>
                               <div className='flex'>
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <StarIcon
                                     key={star}
                                     className={`icon icon-sm ${
-                                      star <= Math.round(stats.averageRating)
+                                      star <= Math.round(stats.averageRating ?? 0)
                                         ? 'text-yellow-400 fill-current'
                                         : 'text-neutral-300'
                                     }`}
                                     fill={
-                                      star <= Math.round(stats.averageRating)
+                                      star <= Math.round(stats.averageRating ?? 0)
                                         ? 'currentColor'
                                         : 'none'
                                     }

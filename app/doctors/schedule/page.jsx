@@ -11,6 +11,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -89,7 +90,7 @@ export default function DoctorSchedulePage() {
       end.setDate(end.getDate() + 6);
       end.setHours(23, 59, 59, 999);
       const res = await apiClient.get(
-        `/appointments?doctorId=${uid}&startDate=${start.toISOString()}&endDate=${end.toISOString()}&limit=100`
+        `/appointments?doctorId=${uid}&startDate=${start.toISOString()}&endDate=${end.toISOString()}&limit=100`,
       );
       const list = extractArrayData(res);
       setWeekAppointments(Array.isArray(list) ? list : []);
@@ -153,7 +154,7 @@ export default function DoctorSchedulePage() {
           setClinics(clinicsResponse.data.clinics || []);
           if (clinicsResponse.data.clinics.length > 0) {
             setSelectedClinic(
-              clinicsResponse.data.clinics[0]._id || clinicsResponse.data.clinics[0].id
+              clinicsResponse.data.clinics[0]._id || clinicsResponse.data.clinics[0].id,
             );
           }
         }
@@ -232,13 +233,13 @@ export default function DoctorSchedulePage() {
       });
 
       if (response.success) {
-        alert(t('doctors.scheduleSavedSuccess'));
+        showSuccess(t('doctors.scheduleSavedSuccess'));
       } else {
-        alert(t('doctors.scheduleSaveFailed'));
+        showError(response.error?.message || t('doctors.scheduleSaveFailed'));
       }
     } catch (err) {
       logger.error('Failed to save schedule', err);
-      alert(t('doctors.scheduleSaveFailed'));
+      showError(err?.message || t('doctors.scheduleSaveFailed'));
     } finally {
       setSaving(false);
     }
@@ -422,7 +423,7 @@ export default function DoctorSchedulePage() {
                     .sort(
                       (a, b) =>
                         new Date(a.startTime || a.appointmentDate) -
-                        new Date(b.startTime || b.appointmentDate)
+                        new Date(b.startTime || b.appointmentDate),
                     );
                   return dayList.length > 0 ? (
                     <ul className='space-y-2'>
@@ -520,7 +521,7 @@ export default function DoctorSchedulePage() {
                           className='icon icon-xs text-primary-600 rounded'
                         />
                         <span className='font-medium text-neutral-900'>
-                          {t(`settings.${dayKey}`)}
+                          {t(`doctors.day${dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}`)}
                         </span>
                       </label>
                     </div>
@@ -658,7 +659,8 @@ export default function DoctorSchedulePage() {
                 <Button
                   variant='secondary'
                   size='sm'
-                  onClick={() => router.push(`/doctors/${doctorId}/leaves`)}
+                  onClick={() => doctorId && router.push(`/doctors/${doctorId}/leaves`)}
+                  disabled={!doctorId}
                 >
                   {t('doctors.manageLeaves')}
                 </Button>

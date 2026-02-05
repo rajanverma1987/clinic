@@ -1,75 +1,134 @@
 'use client';
 
-export function Tabs({ tabs, activeTab, onChange, className = '', variant = 'default' }) {
-  if (variant === 'pills') {
-    return (
-      <div className={`w-full flex gap-2 overflow-x-auto scrollbar-hide ${className}`}>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              type='button'
-              key={tab.id}
-              onClick={() => onChange(tab.id)}
-              className={`
-                px-4 py-2 rounded-full font-medium text-body-sm whitespace-nowrap
-                ${
+import { useCallback, useRef } from 'react';
+
+/**
+ * Accessible tab list. Use idPrefix for stable ids (tab panels should use role="tabpanel" and aria-labelledby={`${idPrefix}-tab-${activeTab}`}).
+ */
+export function Tabs({
+  tabs,
+  activeTab,
+  onChange,
+  className = '',
+  variant = 'default',
+  idPrefix = 'tabs',
+  ariaLabel = 'Tabs',
+}) {
+  const tabListRef = useRef(null);
+  const tabIds = tabs.map((t) => t.id);
+  const currentIndex = tabIds.indexOf(activeTab);
+
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (!tabListRef.current || tabIds.length === 0) return;
+      let nextIndex = currentIndex;
+      switch (e.key) {
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          e.preventDefault();
+          nextIndex = currentIndex <= 0 ? tabIds.length - 1 : currentIndex - 1;
+          break;
+        case 'ArrowRight':
+        case 'ArrowDown':
+          e.preventDefault();
+          nextIndex = currentIndex >= tabIds.length - 1 ? 0 : currentIndex + 1;
+          break;
+        case 'Home':
+          e.preventDefault();
+          nextIndex = 0;
+          break;
+        case 'End':
+          e.preventDefault();
+          nextIndex = tabIds.length - 1;
+          break;
+        default:
+          return;
+      }
+      onChange(tabIds[nextIndex]);
+      const nextEl = tabListRef.current.querySelector(
+        `[id="${idPrefix}-tab-${tabIds[nextIndex]}"]`,
+      );
+      if (nextEl) nextEl.focus();
+    },
+    [currentIndex, tabIds, onChange, idPrefix],
+  );
+
+  const tabListClass =
+    variant === 'pills'
+      ? 'w-full flex gap-2 overflow-x-auto scrollbar-hide py-2'
+      : 'w-full flex flex-wrap items-center gap-x-6 gap-y-1 overflow-x-auto scrollbar-hide py-2';
+
+  const nav = (
+    <nav
+      ref={tabListRef}
+      role='tablist'
+      aria-label={ariaLabel}
+      className={tabListClass}
+      onKeyDown={handleKeyDown}
+    >
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.id;
+        const tabId = `${idPrefix}-tab-${tab.id}`;
+        return (
+          <button
+            type='button'
+            key={tab.id}
+            id={tabId}
+            role='tab'
+            aria-selected={isActive}
+            tabIndex={isActive ? 0 : -1}
+            onClick={() => onChange(tab.id)}
+            className={
+              variant === 'pills'
+                ? `px-4 py-2 rounded-full font-medium text-body-sm whitespace-nowrap ${
+                    isActive
+                      ? 'bg-primary-500 text-white shadow-md'
+                      : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
+                  }`
+                : `py-2 px-1 border-b-2 font-medium text-body-sm whitespace-nowrap ${
+                    isActive
+                      ? 'border-primary-500 text-primary-500 dark:text-primary-300'
+                      : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-500'
+                  }`
+            }
+          >
+            {tab.label}
+            {tab.count !== undefined && (
+              <span
+                className={`${variant === 'pills' ? 'ml-1.5' : 'ml-2'} px-2 py-0.5 rounded-full text-body-xs ${
                   isActive
-                    ? 'bg-primary-500 text-white shadow-md'
-                    : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
-                }
-              `}
-            >
-              {tab.label}
-              {tab.count !== undefined && (
-                <span
-                  className={`ml-1.5 px-1.5 py-0.5 rounded-full text-body-xs ${
-                    isActive ? 'bg-primary-700' : 'bg-neutral-100 dark:bg-neutral-700'
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    );
+                    ? variant === 'pills'
+                      ? 'bg-primary-700'
+                      : 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300'
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+                }`}
+              >
+                {tab.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </nav>
+  );
+
+  if (variant === 'pills') {
+    return <div className={`w-full ${className}`}>{nav}</div>;
   }
 
   return (
     <div className={`w-full border-b border-neutral-200 dark:border-neutral-600 ${className}`}>
-      <nav className='w-full flex flex-wrap items-center gap-x-6 gap-y-1 overflow-x-auto scrollbar-hide py-2'>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              type='button'
-              key={tab.id}
-              onClick={() => onChange(tab.id)}
-              className={`
-                py-2 px-1 border-b-2 font-medium text-body-sm whitespace-nowrap
-                ${
-                  isActive
-                    ? 'border-primary-500 text-primary-500 dark:text-primary-300'
-                    : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-500'
-                }
-              `}
-            >
-              {tab.label}
-              {tab.count !== undefined && (
-                <span
-                  className={`ml-2 px-2 py-0.5 rounded-full text-body-xs ${
-                    isActive ? 'bg-primary-100 text-primary-700' : 'bg-neutral-100 text-neutral-600'
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+      {nav}
     </div>
   );
+}
+
+/** Id for a tab panel that matches Tabs idPrefix. Use with role="tabpanel" aria-labelledby={getTabPanelLabelledBy(idPrefix, activeTab)} */
+export function getTabPanelId(idPrefix, tabId) {
+  return `${idPrefix}-panel-${tabId}`;
+}
+
+/** aria-labelledby value for the active tab panel */
+export function getTabPanelLabelledBy(idPrefix, tabId) {
+  return `${idPrefix}-tab-${tabId}`;
 }

@@ -18,6 +18,7 @@
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger.js';
 import { useRouter } from 'next/navigation';
@@ -45,6 +46,7 @@ const RESULT_ICONS = {
 };
 
 export default function GlobalSearch({ isOpen, onClose }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -177,10 +179,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
   return (
     <div className='fixed inset-0 z-50 flex items-start justify-center pt-20 px-4'>
       {/* Backdrop */}
-      <div
-        className='fixed inset-0 bg-neutral-600/25 dark:bg-black/40'
-        onClick={onClose}
-      />
+      <div className='fixed inset-0 bg-neutral-600/25 dark:bg-black/40' onClick={onClose} />
 
       {/* Search Modal */}
       <Card className='relative z-10 w-full max-w-2xl shadow-2xl'>
@@ -190,7 +189,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
             <Input
               ref={inputRef}
               type='text'
-              placeholder='Search patients, appointments, prescriptions... (Ctrl+K)'
+              placeholder={t('search.placeholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className='pr-20'
@@ -249,8 +248,8 @@ export default function GlobalSearch({ isOpen, onClose }) {
                 </div>
               ) : (
                 <div className='text-center py-8 text-neutral-500 dark:text-neutral-400'>
-                  <p>No results found for &quot;{query}&quot;</p>
-                  <p className='text-xs mt-2'>Try different keywords</p>
+                  <p>{t('search.noResultsFor', { query })}</p>
+                  <p className='text-xs mt-2'>{t('search.tryDifferentKeywords')}</p>
                 </div>
               )}
             </div>
@@ -259,12 +258,12 @@ export default function GlobalSearch({ isOpen, onClose }) {
           {/* Quick Tips */}
           {query.length < MIN_SEARCH_LENGTH && (
             <div className='mt-4 text-sm text-neutral-500 dark:text-neutral-400'>
-              <p className='mb-2'>Quick tips:</p>
+              <p className='mb-2'>{t('search.quickTips')}</p>
               <ul className='list-disc list-inside space-y-1 text-xs'>
-                <li>Search by patient name, phone, or ID</li>
-                <li>Search appointments by date or patient</li>
-                <li>Search medicines by name or code</li>
-                <li>Press Enter to open selected result</li>
+                <li>{t('search.quickTipPatient')}</li>
+                <li>{t('search.quickTipAppointments')}</li>
+                <li>{t('search.quickTipMedicines')}</li>
+                <li>{t('search.quickTipEnter')}</li>
               </ul>
             </div>
           )}

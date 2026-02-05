@@ -1,16 +1,17 @@
 'use client';
 
+import { EyeIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Loader } from '@/components/ui/Loader';
 import { Button } from '@/components/ui/Button';
+import { Loader } from '@/components/ui/Loader';
 import { Tabs } from '@/components/ui/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
+import { apiClient } from '@/lib/api/client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { apiClient } from '@/lib/api/client';
 
 import { logger } from '@/lib/utils/logger';
 export default function LotsPage() {
@@ -111,102 +112,94 @@ export default function LotsPage() {
         unreadCount={0}
       />
       <div className='data-tabs-container w-full'>
-        {/* Sub-tabs: full width */}
-        <div className='data-tabs-content mb-6'>
-          <Tabs
-            tabs={[
-              { id: 'all', label: 'All Lots', count: lots.length },
-              { id: 'expiringSoon', label: 'Expiring Soon', count: expiringSoonCount },
-              { id: 'expired', label: 'Expired', count: expiredCount },
-            ]}
-            activeTab={filter}
-            onChange={setFilter}
-          />
-        </div>
+        <div className='tab-content-wide-width'>
+          {/* Sub-tabs */}
+          <div className='data-tabs-content mb-6'>
+            <Tabs
+              variant='pills'
+              tabs={[
+                { id: 'all', label: 'All Lots', count: lots.length },
+                { id: 'expiringSoon', label: 'Expiring Soon', count: expiringSoonCount },
+                { id: 'expired', label: 'Expired', count: expiredCount },
+              ]}
+              activeTab={filter}
+              onChange={setFilter}
+              idPrefix='inventory-lots-tabs'
+              ariaLabel={t('inventory.inventoryLots')}
+            />
+          </div>
 
-        {/* Tab content: standard inline loader when loading (filter/tab change) */}
-        {loading ? (
-          <div className='tab-content-loading' aria-busy='true' aria-label={t('common.loading')}>
-            <Loader type='section' text={t('common.loading')} />
-          </div>
-        ) : lots.length === 0 ? (
-          <div className='bg-white rounded-lg border border-neutral-200 p-8 text-center'>
-            <p className='text-neutral-600'>No lots found</p>
-          </div>
-        ) : (
-          <div className='bg-white rounded-lg border border-neutral-200 overflow-hidden'>
-            <div className='overflow-x-auto'>
-              <table className='w-full'>
-                <thead className='bg-neutral-50 border-b border-neutral-200'>
-                  <tr>
-                    <th className='px-4 py-3 text-left text-sm font-semibold text-neutral-700'>
-                      Item Name
-                    </th>
-                    <th className='px-4 py-3 text-left text-sm font-semibold text-neutral-700'>
-                      Batch Number
-                    </th>
-                    <th className='px-4 py-3 text-left text-sm font-semibold text-neutral-700'>
-                      Quantity
-                    </th>
-                    <th className='px-4 py-3 text-left text-sm font-semibold text-neutral-700'>
-                      Expiry Date
-                    </th>
-                    <th className='px-4 py-3 text-left text-sm font-semibold text-neutral-700'>
-                      Supplier
-                    </th>
-                    <th className='px-4 py-3 text-left text-sm font-semibold text-neutral-700'>
-                      Status
-                    </th>
-                    <th className='px-4 py-3 text-left text-sm font-semibold text-neutral-700'>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className='divide-y divide-neutral-200'>
-                  {lots.map((lot) => (
-                    <tr
-                      key={lot._id}
-                      className='hover:bg-neutral-50 transition-colors'
-                    >
-                      <td className='px-4 py-3'>
-                        <div>
-                          <div className='font-medium text-neutral-900'>{lot.itemName}</div>
-                          {lot.itemCode && (
-                            <div className='text-xs text-neutral-500'>{lot.itemCode}</div>
-                          )}
-                        </div>
-                      </td>
-                      <td className='px-4 py-3 text-sm text-neutral-700 font-mono'>
-                        {lot.batchNumber}
-                      </td>
-                      <td className='px-4 py-3 text-sm text-neutral-700'>
-                        {lot.quantity} {lot.unit}
-                      </td>
-                      <td className='px-4 py-3 text-sm text-neutral-700'>
-                        {formatDate(lot.expiryDate)}
-                      </td>
-                      <td className='px-4 py-3 text-sm text-neutral-600'>
-                        {lot.supplierName || 'N/A'}
-                      </td>
-                      <td className='px-4 py-3'>{getStatusBadge(lot)}</td>
-                      <td className='px-4 py-3'>
-                        <Button
-                          variant='secondary'
-                          size='sm'
-                          onClick={() => router.push(`/inventory/items/${lot.itemId}`)}
-                        >
-                          View Item
-                        </Button>
-                      </td>
+          <div
+            role='tabpanel'
+            id={`inventory-lots-tabs-panel-${filter}`}
+            aria-labelledby={`inventory-lots-tabs-tab-${filter}`}
+          >
+            {/* Tab content: standard inline loader when loading (filter/tab change) */}
+            {loading ? (
+              <div
+                className='tab-content-loading'
+                aria-busy='true'
+                aria-label={t('common.loading')}
+              >
+                <Loader type='section' text={t('common.loading')} />
+              </div>
+            ) : lots.length === 0 ? (
+              <div className='bg-white rounded-lg border border-neutral-200 p-8 text-center'>
+                <p className='text-neutral-600'>No lots found</p>
+              </div>
+            ) : (
+              <div className='clinic-table-wrap'>
+                <table className='clinic-table'>
+                  <thead>
+                    <tr>
+                      <th>Item Name</th>
+                      <th>Batch Number</th>
+                      <th>Quantity</th>
+                      <th>Expiry Date</th>
+                      <th>Supplier</th>
+                      <th>Status</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {lots.map((lot) => (
+                      <tr key={lot._id}>
+                        <td>
+                          <div>
+                            <div className='font-medium'>{lot.itemName}</div>
+                            {lot.itemCode && (
+                              <div className='text-xs text-neutral-500'>{lot.itemCode}</div>
+                            )}
+                          </div>
+                        </td>
+                        <td className='font-mono'>{lot.batchNumber}</td>
+                        <td>
+                          {lot.quantity} {lot.unit}
+                        </td>
+                        <td>{formatDate(lot.expiryDate)}</td>
+                        <td className='text-neutral-600'>{lot.supplierName || 'N/A'}</td>
+                        <td>{getStatusBadge(lot)}</td>
+                        <td>
+                          <Button
+                            variant='secondary'
+                            size='sm'
+                            onClick={() => router.push(`/inventory/items/${lot.itemId}`)}
+                            className='p-2 min-w-[2.25rem]'
+                            title={t('inventory.viewItem')}
+                            aria-label={t('inventory.viewItem')}
+                          >
+                            <EyeIcon className='icon icon-sm' ariaHidden />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </Layout>
   );
 }
-

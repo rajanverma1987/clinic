@@ -415,7 +415,7 @@ export default function DoctorAnalyticsPage() {
                             />
                           </div>
                           <div className='text-xs text-neutral-600 w-20 text-right'>
-                            {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                           </div>
                           <div className='text-xs font-medium text-neutral-900 w-8'>{count}</div>
                         </div>

@@ -29,7 +29,8 @@ export function SubscriptionCard({
   onSelect,
   onPayWithCard,
   onPayWithPayPal,
-  ctaText,
+  ctaText: ctaTextProp,
+  ctaLabel: ctaLabelProp, // optional alias for ctaText; use ctaText only in render to avoid ReferenceError
   ctaDisabled = false,
   showPaymentMethods = false,
   loadingCard = false,
@@ -125,7 +126,7 @@ export function SubscriptionCard({
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0,
                       }).format(price / 100)
-                    : ''
+                    : '',
                 )}
             </p>
           </div>
@@ -221,7 +222,7 @@ export function SubscriptionCard({
             onClick={onSelect}
             disabled={ctaDisabled}
           >
-            {ctaText}
+            {ctaTextProp ?? ctaLabelProp ?? t('pricing.getStarted')}
           </Button>
         ) : null}
       </div>

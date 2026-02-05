@@ -9,7 +9,11 @@ import { GeneralSettingsTab } from '@/components/settings/GeneralSettingsTab';
 import { HolidayManagementTab } from '@/components/settings/HolidayManagementTab';
 import { ProfileTab } from '@/components/settings/ProfileTab';
 import { QueueSettingsTab } from '@/components/settings/QueueSettingsTab';
-import { SettingsTabs } from '@/components/settings/SettingsTabs';
+import {
+  getSettingsTabPanelId,
+  getSettingsTabPanelLabelledBy,
+  SettingsTabs,
+} from '@/components/settings/SettingsTabs';
 import { SMTPSettingsTab } from '@/components/settings/SMTPSettingsTab';
 import { TaxSettingsTab } from '@/components/settings/TaxSettingsTab';
 import { Card } from '@/components/ui';
@@ -22,7 +26,7 @@ import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useDeferredValue, useEffect, useState } from 'react';
 
 const SETTINGS_TAB_IDS = [
   'profile',
@@ -36,6 +40,22 @@ const SETTINGS_TAB_IDS = [
   'holidays',
 ];
 const ADMIN_ONLY_TABS = ['general', 'compliance', 'doctors', 'smtp'];
+
+/** Tab id → breadcrumb label (must match SettingsTabs labels for i18n). */
+function getSettingsTabLabel(t, tabId) {
+  const labels = {
+    profile: t('settings.profile'),
+    general: t('settings.clinicInfo'),
+    compliance: t('settings.compliance'),
+    doctors: t('settings.doctorsStaff'),
+    hours: t('settings.clinicHours'),
+    queue: t('settings.queueSettings'),
+    tax: t('settings.taxSettings'),
+    smtp: t('settings.emailSettings') || 'Email Settings',
+    holidays: 'Holidays',
+  };
+  return labels[tabId] || tabId;
+}
 
 function SettingsPageFallback() {
   const { t } = useI18n();
@@ -55,7 +75,7 @@ function SettingsPageContent() {
   const searchParams = useSearchParams();
   const { user: currentUser, loading: authLoading, logout } = useAuth();
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(null);
@@ -136,21 +156,30 @@ function SettingsPageContent() {
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showHolidayAddForm, setShowHolidayAddForm] = useState(false);
 
-  // Sync tab from URL on load (and when user is available)
+  // Who can access settings (and thus admin-only tabs like Clinic info): doctor, clinic_admin
+  const canAccessSettings = hasPermission(currentUser?.role, RESOURCES.SETTINGS, ACTIONS.READ);
+
+  // Sync tab from URL when URL has a tab param (don't overwrite with profile when param missing – avoids reverting after tab click before URL updates)
   useEffect(() => {
     if (authLoading || !currentUser) return;
     const tabFromUrl = searchParams.get('tab');
     if (tabFromUrl && SETTINGS_TAB_IDS.includes(tabFromUrl)) {
-      const isAdmin = currentUser.role === 'clinic_admin';
-      if (isAdmin || !ADMIN_ONLY_TABS.includes(tabFromUrl)) {
+      const canOpenTab = !ADMIN_ONLY_TABS.includes(tabFromUrl) || canAccessSettings;
+      if (canOpenTab) {
         setActiveTab(tabFromUrl);
         return;
       }
-      // Non-admin with admin-only tab in URL: switch to profile and fix URL
+      // User cannot access this tab (e.g. manager with admin-only tab in URL): switch to profile
       router.replace((pathname || '/settings') + '?tab=profile');
+      setActiveTab('profile');
+      return;
     }
-    setActiveTab('profile');
-  }, [authLoading, currentUser, searchParams, pathname, router]);
+    if (tabFromUrl === 'profile') {
+      setActiveTab('profile');
+    } else if (!tabFromUrl || tabFromUrl === '') {
+      setActiveTab('general');
+    }
+  }, [authLoading, currentUser, canAccessSettings, searchParams, pathname, router]);
 
   useEffect(() => {
     if (!authLoading && currentUser) {
@@ -162,7 +191,6 @@ function SettingsPageContent() {
   }, [authLoading, currentUser]);
 
   // Manager has no Settings access (per permission matrix) – redirect to dashboard
-  const canAccessSettings = hasPermission(currentUser?.role, RESOURCES.SETTINGS, ACTIONS.READ);
   useEffect(() => {
     if (!authLoading && currentUser && !canAccessSettings) {
       router.replace('/dashboard');
@@ -180,8 +208,13 @@ function SettingsPageContent() {
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    router.replace((pathname || '/settings') + '?tab=' + encodeURIComponent(tabId));
+    queueMicrotask(() => {
+      router.replace((pathname || '/settings') + '?tab=' + encodeURIComponent(tabId));
+    });
   };
+
+  const deferredTab = useDeferredValue(activeTab);
+  const isTabPending = activeTab !== deferredTab;
 
   // Reset header-controlled form state when leaving tab
   useEffect(() => {
@@ -473,7 +506,7 @@ function SettingsPageContent() {
           },
         },
         {},
-        true
+        true,
       ); // skipRedirect = true to prevent automatic logout
 
       if (response.success) {
@@ -580,7 +613,7 @@ function SettingsPageContent() {
       if (response.success) {
         fetchUsers();
         showSuccess(
-          !isActive ? t('errors.userActivatedSuccess') : t('errors.userDeactivatedSuccess')
+          !isActive ? t('errors.userActivatedSuccess') : t('errors.userDeactivatedSuccess'),
         );
       } else {
         const errorMessage =
@@ -613,7 +646,7 @@ function SettingsPageContent() {
       });
       if (response.success) {
         showSuccess(
-          t('errors.statusUpdated', { status: t(newStatus ? 'common.active' : 'common.inactive') })
+          t('errors.statusUpdated', { status: t(newStatus ? 'common.active' : 'common.inactive') }),
         );
         // Refresh user data
         setTimeout(() => {
@@ -738,150 +771,168 @@ function SettingsPageContent() {
       <PageHeader
         title={t('settings.title') || 'Settings'}
         subtitle={t('settings.description') || 'Manage your clinic settings and preferences'}
+        breadcrumbs={[
+          { label: t('settings.title') || 'Settings', href: '/settings' },
+          { label: getSettingsTabLabel(t, activeTab) },
+        ]}
         notifications={[]}
         unreadCount={0}
         actionButton={tabActionButtons}
       />
       <div className='data-tabs-container w-full'>
-        {/* Tabs bar below header – full width */}
+        {/* Tabs bar below header – full width within container */}
         <SettingsTabs
           activeTab={activeTab}
           setActiveTab={handleTabChange}
           canAccessAdminTabs={canAccessAdminTabs}
         />
 
-        {/* Profile Settings */}
-        {activeTab === 'profile' && (
-          <div className='w-full'>
-            <ProfileTab
-              currentUser={currentUser}
-              logout={logout}
-              saving={saving}
-              onToggleStatus={handleToggleMyStatus}
-              availabilityForm={availabilityForm}
-              setAvailabilityForm={setAvailabilityForm}
-            />
+        {/* Tab content: standard width; accessible tabpanel for active tab */}
+        <div
+          className='tab-content-standard-width mt-4'
+          role='tabpanel'
+          id={getSettingsTabPanelId(activeTab)}
+          aria-labelledby={getSettingsTabPanelLabelledBy(activeTab)}
+          aria-busy={isTabPending}
+        >
+          {isTabPending && (
+            <div className='flex min-h-[200px] items-center justify-center py-8'>
+              <Loader type='section' text={t('common.loading')} />
+            </div>
+          )}
+          {!isTabPending && deferredTab === 'profile' && (
+            <div className='w-full'>
+              <ProfileTab
+                currentUser={currentUser}
+                logout={logout}
+                saving={saving}
+                onToggleStatus={handleToggleMyStatus}
+                availabilityForm={availabilityForm}
+                setAvailabilityForm={setAvailabilityForm}
+                onEditProfileClick={() => handleTabChange('profile')}
+              />
 
-            {/* Create Manager Account - Only for Doctors and Clinic Admins */}
-            {(currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') && (
-              <Card className='mt-4'>
-                <div className='p-4'>
-                  <div className='flex items-center justify-between mb-3'>
-                    <div>
-                      <h3 className='text-lg font-semibold text-neutral-900'>
-                        {t('settings.managerAccounts')}
-                      </h3>
-                      <p className='text-sm text-neutral-600 mt-1'>
-                        {t('settings.managerAccountsDesc')}
-                      </p>
+              {/* Create Manager Account - Only for Doctors and Clinic Admins */}
+              {(currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') && (
+                <Card className='mt-4'>
+                  <div className='p-4'>
+                    <div className='flex items-center justify-between mb-3'>
+                      <div>
+                        <h3 className='text-lg font-semibold text-neutral-900'>
+                          {t('settings.managerAccounts')}
+                        </h3>
+                        <p className='text-sm text-neutral-600 mt-1'>
+                          {t('settings.managerAccountsDesc')}
+                        </p>
+                      </div>
+                      <Button
+                        variant='primary'
+                        onClick={() => router.push('/settings/create-manager')}
+                      >
+                        {t('settings.createManagerButton')}
+                      </Button>
                     </div>
-                    <Button
-                      variant='primary'
-                      onClick={() => router.push('/settings/create-manager')}
-                    >
-                      {t('settings.createManagerButton')}
-                    </Button>
+                    <div className='p-4 bg-blue-50 border border-blue-200 rounded-lg'>
+                      <p className='text-sm text-blue-800'>{t('settings.managerAccountsNotice')}</p>
+                    </div>
                   </div>
-                  <div className='p-4 bg-blue-50 border border-blue-200 rounded-lg'>
-                    <p className='text-sm text-blue-800'>{t('settings.managerAccountsNotice')}</p>
-                  </div>
-                </div>
-              </Card>
-            )}
-          </div>
-        )}
+                </Card>
+              )}
+            </div>
+          )}
 
-        {/* General Settings - Admin Only */}
-        {activeTab === 'general' && (
-          <GeneralSettingsTab
-            isClinicAdmin={isClinicAdmin}
-            clinicForm={clinicForm}
-            setClinicForm={setClinicForm}
-            saving={saving}
-            onSave={handleSaveGeneral}
-          />
-        )}
+          {/* General Settings - Admin Only */}
+          {!isTabPending && deferredTab === 'general' && (
+            <GeneralSettingsTab
+              isClinicAdmin={isClinicAdmin}
+              clinicForm={clinicForm}
+              setClinicForm={setClinicForm}
+              saving={saving}
+              onSave={handleSaveGeneral}
+            />
+          )}
 
-        {/* Compliance Settings - Admin Only */}
-        {activeTab === 'compliance' && (
-          <ComplianceTab
-            isClinicAdmin={isClinicAdmin}
-            complianceForm={complianceForm}
-            setComplianceForm={setComplianceForm}
-            saving={saving}
-            onSave={handleSaveCompliance}
-          />
-        )}
+          {/* Compliance Settings - Admin Only */}
+          {!isTabPending && deferredTab === 'compliance' && (
+            <ComplianceTab
+              isClinicAdmin={isClinicAdmin}
+              complianceForm={complianceForm}
+              setComplianceForm={setComplianceForm}
+              saving={saving}
+              onSave={handleSaveCompliance}
+            />
+          )}
 
-        {/* Doctors & Staff - Admin Only */}
-        {activeTab === 'doctors' && (
-          <DoctorsTab
-            isClinicAdmin={isClinicAdmin}
-            users={users}
-            newUserForm={newUserForm}
-            setNewUserForm={setNewUserForm}
-            showNewUserForm={showNewUserForm}
-            setShowNewUserForm={setShowNewUserForm}
-            generatedPassword={generatedPassword}
-            setGeneratedPassword={setGeneratedPassword}
-            onGeneratePassword={generatePassword}
-            onCreateUser={handleCreateUser}
-            onToggleUserStatus={handleToggleUserStatus}
-          />
-        )}
+          {/* Doctors & Staff - Admin Only */}
+          {!isTabPending && deferredTab === 'doctors' && (
+            <DoctorsTab
+              isClinicAdmin={isClinicAdmin}
+              users={users}
+              newUserForm={newUserForm}
+              setNewUserForm={setNewUserForm}
+              showNewUserForm={showNewUserForm}
+              setShowNewUserForm={setShowNewUserForm}
+              generatedPassword={generatedPassword}
+              setGeneratedPassword={setGeneratedPassword}
+              onGeneratePassword={generatePassword}
+              onCreateUser={handleCreateUser}
+              onToggleUserStatus={handleToggleUserStatus}
+            />
+          )}
 
-        {/* Clinic Hours */}
-        {activeTab === 'hours' && (
-          <ClinicHoursTab
-            clinicHours={clinicHours}
-            updateClinicHour={updateClinicHour}
-            addTimeSlot={addTimeSlot}
-            removeTimeSlot={removeTimeSlot}
-            updateTimeSlot={updateTimeSlot}
-            saving={saving}
-            onSave={handleSaveHours}
-          />
-        )}
+          {/* Clinic Hours */}
+          {!isTabPending && deferredTab === 'hours' && (
+            <ClinicHoursTab
+              clinicHours={clinicHours}
+              updateClinicHour={updateClinicHour}
+              addTimeSlot={addTimeSlot}
+              removeTimeSlot={removeTimeSlot}
+              updateTimeSlot={updateTimeSlot}
+              saving={saving}
+              onSave={handleSaveHours}
+            />
+          )}
 
-        {/* Queue Settings */}
-        {activeTab === 'queue' && (
-          <QueueSettingsTab
-            queueForm={queueForm}
-            setQueueForm={setQueueForm}
-            saving={saving}
-            onSave={handleSaveQueue}
-          />
-        )}
+          {/* Queue Settings */}
+          {!isTabPending && deferredTab === 'queue' && (
+            <QueueSettingsTab
+              queueForm={queueForm}
+              setQueueForm={setQueueForm}
+              saving={saving}
+              onSave={handleSaveQueue}
+            />
+          )}
 
-        {/* Tax Settings */}
-        {activeTab === 'tax' && (
-          <TaxSettingsTab
-            taxForm={taxForm}
-            setTaxForm={setTaxForm}
-            saving={saving}
-            onSave={handleSaveTax}
-          />
-        )}
+          {/* Tax Settings */}
+          {!isTabPending && deferredTab === 'tax' && (
+            <TaxSettingsTab
+              taxForm={taxForm}
+              setTaxForm={setTaxForm}
+              saving={saving}
+              onSave={handleSaveTax}
+            />
+          )}
 
-        {/* SMTP/Email Settings */}
-        {activeTab === 'smtp' && (
-          <SMTPSettingsTab
-            smtpForm={smtpForm}
-            setSmtpForm={setSmtpForm}
-            saving={saving}
-            onSave={handleSaveSmtp}
-          />
-        )}
+          {/* SMTP/Email Settings */}
+          {!isTabPending && deferredTab === 'smtp' && (
+            <SMTPSettingsTab
+              smtpForm={smtpForm}
+              setSmtpForm={setSmtpForm}
+              saving={saving}
+              onSave={handleSaveSmtp}
+            />
+          )}
 
-        {/* Holiday Management */}
-        {activeTab === 'holidays' && (
-          <HolidayManagementTab
-            settings={settings}
-            onUpdate={fetchSettings}
-            showAddForm={showHolidayAddForm}
-            setShowAddForm={setShowHolidayAddForm}
-          />
-        )}
+          {/* Holiday Management */}
+          {!isTabPending && deferredTab === 'holidays' && (
+            <HolidayManagementTab
+              settings={settings}
+              onUpdate={fetchSettings}
+              showAddForm={showHolidayAddForm}
+              setShowAddForm={setShowHolidayAddForm}
+            />
+          )}
+        </div>
       </div>
     </Layout>
   );

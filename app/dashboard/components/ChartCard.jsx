@@ -28,6 +28,15 @@ export function ChartCard({ title, data, colorScheme = 'primary', loading = fals
   const maxBarValue = Math.max(...chartData.map((d) => d.value || d.total || d.count || 0), 1);
   const chartHeight = 160;
 
+  /** Resolve display date from item: supports period, date (reports), or key "YYYY-MM" (admin). */
+  const getItemDate = (item) => {
+    if (item.period) return new Date(item.period);
+    if (item.date) return new Date(item.date);
+    if (item.key && /^\d{4}-\d{2}$/.test(String(item.key)))
+      return new Date(String(item.key) + '-01');
+    return new Date(0);
+  };
+
   const colorClasses = {
     primary:
       'bg-gradient-to-t from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600',
@@ -56,9 +65,20 @@ export function ChartCard({ title, data, colorScheme = 'primary', loading = fals
       {/* Content */}
       <div className='relative z-10 p-4 h-full flex flex-col'>
         {/* Header */}
-        <div className='section-header' style={{ alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <div className={`accent-bar accent-bar-${colorScheme}`} style={{ flexShrink: 0, height: '20px', width: '4px' }} />
-          <h2 className='section-title' style={{ margin: 0, fontSize: '16px', fontWeight: '600', lineHeight: '20px' }}>{title}</h2>
+        <div
+          className='section-header'
+          style={{ alignItems: 'center', gap: '12px', marginBottom: '16px' }}
+        >
+          <div
+            className={`accent-bar accent-bar-${colorScheme}`}
+            style={{ flexShrink: 0, height: '20px', width: '4px' }}
+          />
+          <h2
+            className='section-title'
+            style={{ margin: 0, fontSize: '16px', fontWeight: '600', lineHeight: '20px' }}
+          >
+            {title}
+          </h2>
         </div>
 
         {/* Chart */}
@@ -96,7 +116,7 @@ export function ChartCard({ title, data, colorScheme = 'primary', loading = fals
                           minHeight: value > 0 ? '3px' : '0',
                           boxShadow: value > 0 ? '0 2px 4px rgba(0, 0, 0, 0.1)' : 'none',
                         }}
-                        title={`${new Date(item.period || item.date).toLocaleDateString()}: ${value}`}
+                        title={`${getItemDate(item).toLocaleDateString()}: ${value}`}
                       />
                       <div
                         className='absolute -top-8 left-1/2 opacity-0 group-hover:opacity-100 bg-neutral-200 text-neutral-900 border border-neutral-300 text-xs px-2 py-1 rounded-md whitespace-nowrap z-10 shadow-lg transition-opacity duration-200 pointer-events-none'
@@ -106,15 +126,15 @@ export function ChartCard({ title, data, colorScheme = 'primary', loading = fals
                       </div>
                       <span className='text-body-xs text-neutral-500 mt-2 text-center leading-tight font-medium'>
                         {(() => {
-                          const date = new Date(item.period || item.date);
+                          const date = getItemDate(item);
+                          if (item.label && chartData.length > 7) return item.label;
                           if (chartData.length <= 7) {
-                            return date.toLocaleDateString('en-US', {
+                            return date.toLocaleDateString(undefined, {
                               month: 'short',
                               day: 'numeric',
                             });
-                          } else {
-                            return date.toLocaleDateString('en-US', { month: 'short' });
                           }
+                          return date.toLocaleDateString(undefined, { month: 'short' });
                         })()}
                       </span>
                     </div>

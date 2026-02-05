@@ -1,5 +1,6 @@
 'use client';
 
+import { RefreshCwIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +12,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -32,12 +34,22 @@ export default function DoctorEarningsPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== 'doctor') {
+      setLoading(false);
       router.push('/dashboard');
       return;
     }
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     fetchDoctorId();
   }, [authLoading, user, userId, router]);
+
+  useEffect(() => {
+    if (!loading) return;
+    const timeout = setTimeout(() => setLoading(false), 15000);
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   useEffect(() => {
     if (doctorId) {
@@ -51,14 +63,19 @@ export default function DoctorEarningsPage() {
   const fetchDoctorId = async () => {
     if (!userId || userId === 'undefined') return;
     try {
+      setLoading(true);
       const doctorResponse = await apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`);
       if (doctorResponse.success && doctorResponse.data) {
         setDoctorId(doctorResponse.data._id);
+        // Keep loading true; effect will run fetchEarnings and clear loading when done
       } else {
-        throw new Error('Doctor profile not found');
+        setDoctorId(null);
+        setLoading(false);
       }
     } catch (err) {
       logger.error('Failed to fetch doctor profile:', err);
+      setDoctorId(null);
+      setLoading(false);
     }
   };
 
@@ -91,7 +108,7 @@ export default function DoctorEarningsPage() {
       }
 
       const revenueResponse = await apiClient.get(
-        `/reports/revenue?doctorId=${doctorId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+        `/reports/revenue?doctorId=${doctorId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
       );
 
       if (revenueResponse.success) {
@@ -147,14 +164,14 @@ export default function DoctorEarningsPage() {
       }
 
       const appointmentsResponse = await apiClient.get(
-        `/appointments?doctorId=${doctorId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&limit=50`
+        `/appointments?doctorId=${doctorId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&limit=50`,
       );
 
       if (appointmentsResponse.success && Array.isArray(appointmentsResponse.data)) {
         // Fetch invoices for these appointments
         const appointmentIds = appointmentsResponse.data.map((apt) => apt._id);
         const invoicesResponse = await apiClient.get(
-          `/invoices?appointmentIds=${appointmentIds.join(',')}&limit=50`
+          `/invoices?appointmentIds=${appointmentIds.join(',')}&limit=50`,
         );
 
         if (invoicesResponse.success && Array.isArray(invoicesResponse.data)) {
@@ -188,7 +205,7 @@ export default function DoctorEarningsPage() {
       const endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999); // End of year
 
       const response = await apiClient.get(
-        `/doctors/${doctorId}/tax-report?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+        `/doctors/${doctorId}/tax-report?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
       );
       if (response.success) {
         setTaxReports(response.data);
@@ -205,17 +222,17 @@ export default function DoctorEarningsPage() {
         doctorId,
       });
       if (response.success) {
-        alert(t('doctors.invoicesGeneratedSuccess'));
+        showSuccess(t('doctors.invoicesGeneratedSuccess'));
         fetchTransactions();
       } else {
-        alert(t('doctors.invoicesGeneratedFailed'));
+        showError(t('doctors.invoicesGeneratedFailed'));
       }
     } catch (err) {
-      alert(t('doctors.invoicesGeneratedFailed'));
+      showError(t('doctors.invoicesGeneratedFailed'));
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <Layout>
         <Loader type='page' text={t('common.loading')} />
@@ -229,6 +246,25 @@ export default function DoctorEarningsPage() {
 
   const formatCurrency = (amount) => formatCurrencyUtil(amount, currency, locale);
 
+  if (!doctorId && !loading) {
+    return (
+      <Layout>
+        <div style={{ padding: '0 10px' }} className='space-y-6'>
+          <PageHeader
+            title={t('doctors.earningsPayments')}
+            subtitle={t('doctors.earningsPaymentsSubtitle')}
+          />
+          <Card>
+            <div className='p-8 text-center text-neutral-600'>
+              {t('doctors.doctorProfileNotFound') ||
+                'Doctor profile not found. Please complete your profile.'}
+            </div>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div style={{ padding: '0 10px' }} className='space-y-6'>
@@ -237,324 +273,321 @@ export default function DoctorEarningsPage() {
           subtitle={t('doctors.earningsPaymentsSubtitle')}
         />
 
-        {/* Period Selector */}
-        <div className='flex gap-2'>
-          <Button
-            variant={selectedPeriod === 'day' ? 'primary' : 'secondary'}
-            size='sm'
-            onClick={() => setSelectedPeriod('day')}
-          >
-            {t('doctors.today')}
-          </Button>
-          <Button
-            variant={selectedPeriod === 'week' ? 'primary' : 'secondary'}
-            size='sm'
-            onClick={() => setSelectedPeriod('week')}
-          >
-            {t('doctors.thisWeek')}
-          </Button>
-          <Button
-            variant={selectedPeriod === 'month' ? 'primary' : 'secondary'}
-            size='sm'
-            onClick={() => setSelectedPeriod('month')}
-          >
-            {t('doctors.thisMonth')}
-          </Button>
-        </div>
-
-        {/* Earnings Summary Cards */}
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-          <Card>
-            <div className='p-6'>
-              <div className='flex items-center justify-between mb-2'>
-                <h3 className='text-sm font-medium text-neutral-600'>
-                  {t('doctors.totalRevenue')}
-                </h3>
-              </div>
-              <p className='text-3xl font-bold text-neutral-900'>
-                {formatCurrency(earnings?.totalRevenue || 0)}
-              </p>
-              <p className='text-sm text-neutral-500 mt-1'>
-                {selectedPeriod === 'day' && t('doctors.today')}
-                {selectedPeriod === 'week' && t('doctors.thisWeek')}
-                {selectedPeriod === 'month' && t('doctors.thisMonth')}
-              </p>
+        {loading ? (
+          <Loader type='section' text={t('common.loading')} />
+        ) : (
+          <>
+            {/* Period Selector */}
+            <div className='flex gap-2'>
+              <Button
+                variant={selectedPeriod === 'day' ? 'primary' : 'secondary'}
+                size='sm'
+                onClick={() => setSelectedPeriod('day')}
+              >
+                {t('doctors.today')}
+              </Button>
+              <Button
+                variant={selectedPeriod === 'week' ? 'primary' : 'secondary'}
+                size='sm'
+                onClick={() => setSelectedPeriod('week')}
+              >
+                {t('doctors.thisWeek')}
+              </Button>
+              <Button
+                variant={selectedPeriod === 'month' ? 'primary' : 'secondary'}
+                size='sm'
+                onClick={() => setSelectedPeriod('month')}
+              >
+                {t('doctors.thisMonth')}
+              </Button>
             </div>
-          </Card>
 
-          <Card>
-            <div className='p-6'>
-              <div className='flex items-center justify-between mb-2'>
-                <h3 className='text-sm font-medium text-neutral-600'>{t('doctors.paid')}</h3>
-              </div>
-              <p className='text-3xl font-bold text-primary-600'>
-                {formatCurrency(earnings?.totalPaid || 0)}
-              </p>
-              <p className='text-sm text-neutral-500 mt-1'>{t('doctors.completedPayments')}</p>
-            </div>
-          </Card>
-
-          <Card>
-            <div className='p-6'>
-              <div className='flex items-center justify-between mb-2'>
-                <h3 className='text-sm font-medium text-neutral-600'>{t('doctors.pending')}</h3>
-              </div>
-              <p className='text-3xl font-bold text-yellow-600'>
-                {formatCurrency(earnings?.totalPending || 0)}
-              </p>
-              <p className='text-sm text-neutral-500 mt-1'>{t('doctors.awaitingPayment')}</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Payment Method Breakdown */}
-        {earnings?.paymentMethodBreakdown &&
-          Object.keys(earnings.paymentMethodBreakdown).length > 0 && (
-            <Card>
-              <div className='p-6'>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
-                  {t('doctors.paymentMethodBreakdown')}
-                </h2>
-                <div className='space-y-3'>
-                  {Object.entries(earnings.paymentMethodBreakdown).map(([method, amount]) => (
-                    <div
-                      key={method}
-                      className='flex items-center justify-between p-3 bg-neutral-50 rounded-lg'
-                    >
-                      <span className='font-medium text-neutral-900 capitalize'>{method}</span>
-                      <span className='text-lg font-semibold text-neutral-900'>
-                        {formatCurrency(amount)}
-                      </span>
-                    </div>
-                  ))}
+            {/* Earnings Summary Cards */}
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+              <Card>
+                <div className='p-6'>
+                  <div className='flex items-center justify-between mb-2'>
+                    <h3 className='text-sm font-medium text-neutral-600'>
+                      {t('doctors.totalRevenue')}
+                    </h3>
+                  </div>
+                  <p className='text-3xl font-bold text-neutral-900'>
+                    {formatCurrency(earnings?.totalRevenue || 0)}
+                  </p>
+                  <p className='text-sm text-neutral-500 mt-1'>
+                    {selectedPeriod === 'day' && t('doctors.today')}
+                    {selectedPeriod === 'week' && t('doctors.thisWeek')}
+                    {selectedPeriod === 'month' && t('doctors.thisMonth')}
+                  </p>
                 </div>
-              </div>
-            </Card>
-          )}
+              </Card>
 
-        {/* Pending Settlements */}
-        {pendingSettlements.length > 0 && (
-          <Card className='border-yellow-200 bg-yellow-50'>
-            <div className='p-6'>
-              <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-lg font-bold text-neutral-900'>
-                  {t('doctors.pendingSettlements')}
-                </h2>
-                <Button
-                  variant='primary'
-                  size='sm'
-                  onClick={() => router.push(`/doctors/${doctorId}/settlements`)}
-                >
-                  {t('doctors.viewAll')}
-                </Button>
-              </div>
-              <div className='space-y-3'>
-                {pendingSettlements.slice(0, 5).map((settlement) => (
-                  <div
-                    key={settlement._id}
-                    className='p-4 bg-white border border-yellow-200 rounded-lg flex items-center justify-between'
-                  >
-                    <div>
-                      <p className='font-semibold text-neutral-900'>
-                        Settlement #{settlement.settlementNumber || settlement._id.slice(-8)}
-                      </p>
-                      <p className='text-sm text-neutral-600'>
-                        {t('doctors.period')} {new Date(settlement.startDate).toLocaleDateString()}{' '}
-                        - {new Date(settlement.endDate).toLocaleDateString()}
+              <Card>
+                <div className='p-6'>
+                  <div className='flex items-center justify-between mb-2'>
+                    <h3 className='text-sm font-medium text-neutral-600'>{t('doctors.paid')}</h3>
+                  </div>
+                  <p className='text-3xl font-bold text-primary-600'>
+                    {formatCurrency(earnings?.totalPaid || 0)}
+                  </p>
+                  <p className='text-sm text-neutral-500 mt-1'>{t('doctors.completedPayments')}</p>
+                </div>
+              </Card>
+
+              <Card>
+                <div className='p-6'>
+                  <div className='flex items-center justify-between mb-2'>
+                    <h3 className='text-sm font-medium text-neutral-600'>{t('doctors.pending')}</h3>
+                  </div>
+                  <p className='text-3xl font-bold text-yellow-600'>
+                    {formatCurrency(earnings?.totalPending || 0)}
+                  </p>
+                  <p className='text-sm text-neutral-500 mt-1'>{t('doctors.awaitingPayment')}</p>
+                </div>
+              </Card>
+            </div>
+
+            {/* Payment Method Breakdown */}
+            {earnings?.paymentMethodBreakdown &&
+              Object.keys(earnings.paymentMethodBreakdown).length > 0 && (
+                <Card>
+                  <div className='p-6'>
+                    <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                      {t('doctors.paymentMethodBreakdown')}
+                    </h2>
+                    <div className='space-y-3'>
+                      {Object.entries(earnings.paymentMethodBreakdown).map(([method, amount]) => (
+                        <div
+                          key={method}
+                          className='flex items-center justify-between p-3 bg-neutral-50 rounded-lg'
+                        >
+                          <span className='font-medium text-neutral-900 capitalize'>{method}</span>
+                          <span className='text-lg font-semibold text-neutral-900'>
+                            {formatCurrency(amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+            {/* Pending Settlements */}
+            {pendingSettlements.length > 0 && (
+              <Card className='border-yellow-200 bg-yellow-50'>
+                <div className='p-6'>
+                  <div className='flex items-center justify-between mb-4'>
+                    <h2 className='text-lg font-bold text-neutral-900'>
+                      {t('doctors.pendingSettlements')}
+                    </h2>
+                    <Button
+                      variant='primary'
+                      size='sm'
+                      onClick={() => router.push(`/doctors/${doctorId}/settlements`)}
+                    >
+                      {t('doctors.viewAll')}
+                    </Button>
+                  </div>
+                  <div className='space-y-3'>
+                    {pendingSettlements.slice(0, 5).map((settlement) => (
+                      <div
+                        key={settlement._id}
+                        className='p-4 bg-white border border-yellow-200 rounded-lg flex items-center justify-between'
+                      >
+                        <div>
+                          <p className='font-semibold text-neutral-900'>
+                            Settlement #{settlement.settlementNumber || settlement._id.slice(-8)}
+                          </p>
+                          <p className='text-sm text-neutral-600'>
+                            {t('doctors.period')}{' '}
+                            {new Date(settlement.startDate).toLocaleDateString()} -{' '}
+                            {new Date(settlement.endDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className='text-right'>
+                          <p className='text-lg font-bold text-neutral-900'>
+                            {formatCurrency(settlement.amount || 0)}
+                          </p>
+                          <p className='text-xs text-neutral-500'>
+                            {t('doctors.due')} {new Date(settlement.dueDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Tax Reports */}
+            {taxReports && (
+              <Card>
+                <div className='p-6'>
+                  <div className='flex items-center justify-between mb-4'>
+                    <h2 className='text-lg font-bold text-neutral-900'>
+                      {t('doctors.taxReportThisYear')}
+                    </h2>
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      onClick={async () => {
+                        try {
+                          const response = await apiClient.get(
+                            `/doctors/${doctorId}/tax-report/download`,
+                          );
+                          if (response.success && response.data?.pdfUrl) {
+                            window.open(response.data.pdfUrl, '_blank');
+                          } else {
+                            showError(t('doctors.taxDownloadNotAvailable'));
+                          }
+                        } catch (err) {
+                          showError(t('doctors.taxDownloadFailed'));
+                        }
+                      }}
+                    >
+                      {t('doctors.downloadTaxReport')}
+                    </Button>
+                  </div>
+                  <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                    <div className='p-4 bg-neutral-50 rounded-lg'>
+                      <p className='text-sm text-neutral-600 mb-1'>{t('doctors.totalEarnings')}</p>
+                      <p className='text-2xl font-bold text-neutral-900'>
+                        {formatCurrency(taxReports.totalEarnings || 0)}
                       </p>
                     </div>
-                    <div className='text-right'>
-                      <p className='text-lg font-bold text-neutral-900'>
-                        {formatCurrency(settlement.amount || 0)}
+                    <div className='p-4 bg-neutral-50 rounded-lg'>
+                      <p className='text-sm text-neutral-600 mb-1'>{t('doctors.taxDeducted')}</p>
+                      <p className='text-2xl font-bold text-red-600'>
+                        {formatCurrency(taxReports.taxDeducted || 0)}
                       </p>
-                      <p className='text-xs text-neutral-500'>
-                        {t('doctors.due')} {new Date(settlement.dueDate).toLocaleDateString()}
+                    </div>
+                    <div className='p-4 bg-neutral-50 rounded-lg'>
+                      <p className='text-sm text-neutral-600 mb-1'>{t('doctors.netEarnings')}</p>
+                      <p className='text-2xl font-bold text-green-600'>
+                        {formatCurrency(taxReports.netEarnings || 0)}
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Tax Reports */}
-        {taxReports && (
-          <Card>
-            <div className='p-6'>
-              <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-lg font-bold text-neutral-900'>
-                  {t('doctors.taxReportThisYear')}
-                </h2>
-                <Button
-                  variant='secondary'
-                  size='sm'
-                  onClick={async () => {
-                    try {
-                      const response = await apiClient.get(
-                        `/doctors/${doctorId}/tax-report/download`
-                      );
-                      if (response.success && response.data?.pdfUrl) {
-                        window.open(response.data.pdfUrl, '_blank');
-                      } else {
-                        alert(t('doctors.taxDownloadNotAvailable'));
-                      }
-                    } catch (err) {
-                      alert(t('doctors.taxDownloadFailed'));
-                    }
-                  }}
-                >
-                  {t('doctors.downloadTaxReport')}
-                </Button>
-              </div>
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                <div className='p-4 bg-neutral-50 rounded-lg'>
-                  <p className='text-sm text-neutral-600 mb-1'>{t('doctors.totalEarnings')}</p>
-                  <p className='text-2xl font-bold text-neutral-900'>
-                    {formatCurrency(taxReports.totalEarnings || 0)}
-                  </p>
                 </div>
-                <div className='p-4 bg-neutral-50 rounded-lg'>
-                  <p className='text-sm text-neutral-600 mb-1'>{t('doctors.taxDeducted')}</p>
-                  <p className='text-2xl font-bold text-red-600'>
-                    {formatCurrency(taxReports.taxDeducted || 0)}
-                  </p>
-                </div>
-                <div className='p-4 bg-neutral-50 rounded-lg'>
-                  <p className='text-sm text-neutral-600 mb-1'>{t('doctors.netEarnings')}</p>
-                  <p className='text-2xl font-bold text-green-600'>
-                    {formatCurrency(taxReports.netEarnings || 0)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Transaction History */}
-        <Card>
-          <div className='p-6'>
-            <div className='flex items-center justify-between mb-4'>
-              <h2 className='text-lg font-bold text-neutral-900'>
-                {t('doctors.transactionHistory')}
-              </h2>
-              <div className='flex gap-2'>
-                <Button variant='secondary' size='sm' onClick={() => fetchTransactions()}>
-                  {t('doctors.refresh')}
-                </Button>
-                <Button
-                  variant='primary'
-                  size='sm'
-                  onClick={async () => {
-                    try {
-                      const response = await apiClient.post(`/invoices/generate-bulk`, {
-                        doctorId,
-                        period: selectedPeriod,
-                      });
-                      if (response.success) {
-                        alert(t('doctors.invoicesGeneratedSuccess'));
-                        fetchTransactions();
-                      } else {
-                        alert(t('doctors.invoicesGeneratedFailed'));
-                      }
-                    } catch (err) {
-                      alert(t('doctors.invoicesGeneratedFailed'));
-                    }
-                  }}
-                >
-                  {t('doctors.generateInvoices')}
-                </Button>
-              </div>
-            </div>
-
-            {transactions.length > 0 ? (
-              <div className='overflow-x-auto'>
-                <table className='w-full'>
-                  <thead>
-                    <tr className='border-b border-neutral-200'>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        {t('doctors.date')}
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        {t('doctors.patient')}
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        {t('doctors.invoiceNumber')}
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        {t('doctors.amount')}
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        {t('doctors.status')}
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        {t('doctors.paymentMethod')}
-                      </th>
-                      <th className='text-left py-3 px-4 text-sm font-semibold text-neutral-700'>
-                        {t('doctors.actions')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map((transaction) => (
-                      <tr
-                        key={transaction._id}
-                        className='border-b border-neutral-100 hover:bg-neutral-50'
-                      >
-                        <td className='py-3 px-4 text-sm text-neutral-600'>
-                          {new Date(
-                            transaction.invoiceDate || transaction.createdAt
-                          ).toLocaleDateString()}
-                        </td>
-                        <td className='py-3 px-4 text-sm text-neutral-900'>
-                          {transaction.patientId?.firstName} {transaction.patientId?.lastName}
-                        </td>
-                        <td className='py-3 px-4 text-sm text-neutral-600'>
-                          {transaction.invoiceNumber || transaction._id.slice(-8)}
-                        </td>
-                        <td className='py-3 px-4 text-sm font-medium text-neutral-900'>
-                          {formatCurrency(transaction.totalAmount || 0)}
-                        </td>
-                        <td className='py-3 px-4'>
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              transaction.status === 'PAID'
-                                ? 'bg-green-100 text-green-800'
-                                : transaction.status === 'PENDING'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {transaction.status || 'PENDING'}
-                          </span>
-                        </td>
-                        <td className='py-3 px-4 text-sm text-neutral-600 capitalize'>
-                          {transaction.paymentMethod || 'N/A'}
-                        </td>
-                        <td className='py-3 px-4'>
-                          <Button
-                            variant='secondary'
-                            size='sm'
-                            onClick={() => generateInvoice(transaction._id)}
-                            disabled={transaction.invoiceGenerated}
-                          >
-                            {transaction.invoiceGenerated
-                              ? t('doctors.invoiceGenerated')
-                              : t('doctors.generateInvoice')}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className='text-center py-12'>
-                <p className='text-neutral-500'>{t('doctors.noTransactionsThisPeriod')}</p>
-              </div>
+              </Card>
             )}
-          </div>
-        </Card>
+
+            {/* Transaction History */}
+            <Card>
+              <div className='p-6'>
+                <div className='flex items-center justify-between mb-4'>
+                  <h2 className='text-lg font-bold text-neutral-900'>
+                    {t('doctors.transactionHistory')}
+                  </h2>
+                  <div className='flex gap-2'>
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      onClick={() => fetchTransactions()}
+                      className='p-2 min-w-[2.25rem]'
+                      title={t('doctors.refresh')}
+                      aria-label={t('doctors.refresh')}
+                    >
+                      <RefreshCwIcon className='icon icon-sm' ariaHidden />
+                    </Button>
+                    <Button
+                      variant='primary'
+                      size='sm'
+                      onClick={async () => {
+                        try {
+                          const response = await apiClient.post(`/invoices/generate-bulk`, {
+                            doctorId,
+                            period: selectedPeriod,
+                          });
+                          if (response.success) {
+                            showSuccess(t('doctors.invoicesGeneratedSuccess'));
+                            fetchTransactions();
+                          } else {
+                            showError(t('doctors.invoicesGeneratedFailed'));
+                          }
+                        } catch (err) {
+                          showError(t('doctors.invoicesGeneratedFailed'));
+                        }
+                      }}
+                    >
+                      {t('doctors.generateInvoices')}
+                    </Button>
+                  </div>
+                </div>
+
+                {transactions.length > 0 ? (
+                  <div className='clinic-table-wrap'>
+                    <table className='clinic-table'>
+                      <thead>
+                        <tr>
+                          <th>{t('doctors.date')}</th>
+                          <th>{t('doctors.patient')}</th>
+                          <th>{t('doctors.invoiceNumber')}</th>
+                          <th>{t('doctors.amount')}</th>
+                          <th>{t('doctors.status')}</th>
+                          <th>{t('doctors.paymentMethod')}</th>
+                          <th>{t('doctors.actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transactions.map((transaction) => (
+                          <tr key={transaction._id}>
+                            <td className='text-neutral-600'>
+                              {new Date(
+                                transaction.invoiceDate || transaction.createdAt,
+                              ).toLocaleDateString()}
+                            </td>
+                            <td>
+                              {transaction.patientId?.firstName} {transaction.patientId?.lastName}
+                            </td>
+                            <td className='text-neutral-600'>
+                              {transaction.invoiceNumber || transaction._id.slice(-8)}
+                            </td>
+                            <td className='font-medium'>
+                              {formatCurrency(transaction.totalAmount || 0)}
+                            </td>
+                            <td>
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  transaction.status === 'PAID'
+                                    ? 'bg-green-100 text-green-800'
+                                    : transaction.status === 'PENDING'
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-red-100 text-red-800'
+                                }`}
+                              >
+                                {transaction.status || 'PENDING'}
+                              </span>
+                            </td>
+                            <td className='capitalize text-neutral-600'>
+                              {transaction.paymentMethod || 'N/A'}
+                            </td>
+                            <td>
+                              <Button
+                                variant='secondary'
+                                size='sm'
+                                onClick={() => generateInvoice(transaction._id)}
+                                disabled={transaction.invoiceGenerated}
+                              >
+                                {transaction.invoiceGenerated
+                                  ? t('doctors.invoiceGenerated')
+                                  : t('doctors.generateInvoice')}
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className='text-center py-12'>
+                    <p className='text-neutral-500'>{t('doctors.noTransactionsThisPeriod')}</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </>
+        )}
       </div>
     </Layout>
   );

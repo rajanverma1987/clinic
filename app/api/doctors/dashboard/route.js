@@ -57,13 +57,13 @@ async function getHandler(req, user) {
         success: false,
         error: 'Unauthorized - Doctor access only',
       },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
   try {
     // Get doctor profile; if none yet (e.g. new doctor), return empty stats so UI does not break
-    const doctor = await Doctor.findOne({ userId: user._id, tenantId: user.tenantId }).lean();
+    const doctor = await Doctor.findOne({ userId: user.userId, tenantId: user.tenantId }).lean();
     if (!doctor) {
       return NextResponse.json(
         successResponse({
@@ -88,7 +88,7 @@ async function getHandler(req, user) {
           prescriptionsToApprove: 0,
           recentActivity: [],
           doctorId: null,
-        })
+        }),
       );
     }
 
@@ -285,13 +285,13 @@ async function getHandler(req, user) {
       // Video calls this month (sessions where doctorId is Doctor _id or User _id)
       TelemedicineSession.countDocuments({
         tenantId,
-        doctorId: { $in: [doctorId, user._id] },
+        doctorId: { $in: [doctorId, user.userId] },
         sessionType: 'VIDEO',
         scheduledStartTime: { $gte: startOfMonth, $lte: endOfMonth },
       }),
 
       // Lab reports to review (draft results for orders by this doctor)
-      LabOrder.find({ tenantId, doctorId: user._id })
+      LabOrder.find({ tenantId, doctorId: user.userId })
         .select('_id')
         .lean()
         .then((orders) => orders.map((o) => o._id))
@@ -302,16 +302,16 @@ async function getHandler(req, user) {
                 status: 'draft',
                 orderId: { $in: orderIds },
               })
-            : 0
+            : 0,
         ),
 
       // New messages (unread inbox for this user)
-      Message.getUnreadCount(user._id, tenantId, 'inbox'),
+      Message.getUnreadCount(user.userId, tenantId, 'inbox'),
 
       // Prescriptions to approve (draft by this doctor)
       Prescription.countDocuments({
         tenantId,
-        doctorId: user._id,
+        doctorId: user.userId,
         status: 'draft',
       }),
     ]);
@@ -328,7 +328,7 @@ async function getHandler(req, user) {
     let recentActivity = [];
     try {
       const { logs } = await getAuditLogs({
-        userId: user._id,
+        userId: user.userId,
         tenantId,
         limit: 5,
         skip: 0,
@@ -368,13 +368,13 @@ async function getHandler(req, user) {
         prescriptionsToApprove,
         recentActivity,
         doctorId: doctorId.toString(),
-      })
+      }),
     );
   } catch (error) {
     logger.error('Error fetching doctor dashboard stats:', error);
     return NextResponse.json(
       errorResponse(error.message || 'Failed to fetch dashboard statistics'),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

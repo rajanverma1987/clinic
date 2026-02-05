@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -69,7 +70,7 @@ export default function DoctorMessagesPage() {
 
   const handleSendMessage = async () => {
     if (!composeData.to || !composeData.message) {
-      alert('Please fill in all required fields');
+      showError(t('doctors.fillRequiredFields') || 'Please fill in all required fields');
       return;
     }
 
@@ -81,16 +82,16 @@ export default function DoctorMessagesPage() {
       });
 
       if (response.success) {
-        alert('Message sent successfully');
+        showSuccess(t('doctors.messageSentSuccess') || 'Message sent successfully');
         setComposeOpen(false);
         setComposeData({ to: '', subject: '', message: '' });
         fetchMessages();
       } else {
-        alert('Failed to send message');
+        showError(t('doctors.messageSendFailed') || 'Failed to send message');
       }
     } catch (err) {
       logger.error('Failed to send message', err);
-      alert('Failed to send message');
+      showError(t('doctors.messageSendFailed') || 'Failed to send message');
     }
   };
 

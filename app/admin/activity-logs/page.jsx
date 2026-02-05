@@ -6,15 +6,17 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
-import { showError } from '@/lib/utils/toast';
 import { logger } from '@/lib/utils/logger';
+import { showError } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function AdminActivityLogsPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function AdminActivityLogsPage() {
       }
     } catch (err) {
       logger.error('Failed to fetch activity logs:', err);
-      showError('Failed to fetch activity logs');
+      showError(t('admin.activityLogsFetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -66,15 +68,16 @@ export default function AdminActivityLogsPage() {
   if (authLoading || loading) return <Loader type='page' text={t('common.loading')} />;
   if (user?.role !== 'super_admin') return null;
 
-  const pages = (pagination.pages ?? Math.ceil((pagination.total || 0) / (pagination.limit || 50))) || 1;
+  const pages =
+    (pagination.pages ?? Math.ceil((pagination.total || 0) / (pagination.limit || 50))) || 1;
 
   return (
     <Layout
-      title='Activity logs'
-      subtitle='Audit trail of user actions'
+      title={t('admin.activityLogs')}
+      subtitle={t('admin.activityLogsSubtitle')}
       actionButton={
         <Button variant='primary' onClick={() => router.push('/admin/users')}>
-          Back to Users
+          {t('admin.backToUsers')}
         </Button>
       }
     >
@@ -83,35 +86,48 @@ export default function AdminActivityLogsPage() {
           <div className='p-6'>
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>User ID</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.activityLogsUserId')}
+                </label>
                 <Input
                   type='text'
-                  placeholder='Filter by user ID'
+                  placeholder={t('admin.activityLogsFilterUserId')}
                   value={userIdFilter}
                   onChange={(e) => setUserIdFilter(e.target.value)}
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Action</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.activityLogsAction')}
+                </label>
                 <Input
                   type='text'
-                  placeholder='e.g. create, update, delete'
+                  placeholder={t('admin.activityLogsFilterActionPlaceholder')}
                   value={actionFilter}
                   onChange={(e) => setActionFilter(e.target.value)}
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Resource</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.activityLogsResource')}
+                </label>
                 <Input
                   type='text'
-                  placeholder='e.g. patient, appointment'
+                  placeholder={t('admin.activityLogsFilterResourcePlaceholder')}
                   value={resourceFilter}
                   onChange={(e) => setResourceFilter(e.target.value)}
                 />
               </div>
               <div className='flex items-end'>
-                <Button variant='primary' onClick={() => { setPagination((p) => ({ ...p, page: 1 })); fetchLogs(); }} className='w-full'>
-                  Apply
+                <Button
+                  variant='primary'
+                  onClick={() => {
+                    setPagination((p) => ({ ...p, page: 1 }));
+                    fetchLogs();
+                  }}
+                  className='w-full'
+                >
+                  {t('admin.activityLogsApply')}
                 </Button>
               </div>
             </div>
@@ -119,43 +135,49 @@ export default function AdminActivityLogsPage() {
         </Card>
         <Card>
           <div className='p-6'>
-            <h2 className='text-lg font-semibold text-neutral-900 mb-4'>Logs ({pagination.total})</h2>
+            <h2 className='text-lg font-semibold text-neutral-900 mb-4'>
+              {t('admin.activityLogsLogsCount', { count: pagination.total })}
+            </h2>
             {logs.length === 0 ? (
-              <p className='text-neutral-500'>No activity logs found</p>
+              <p className='text-neutral-500'>{t('admin.activityLogsNotFound')}</p>
             ) : (
-              <div className='overflow-x-auto'>
-                <table className='w-full'>
+              <div className='clinic-table-wrap'>
+                <table className='clinic-table'>
                   <thead>
-                    <tr className='border-b border-neutral-200'>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>Time</th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>User</th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>Action</th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>Resource</th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>Resource ID</th>
-                      <th className='text-left py-2 px-3 text-sm font-semibold text-neutral-700'>PHI</th>
+                    <tr>
+                      <th>{t('admin.activityLogsTime')}</th>
+                      <th>{t('admin.activityLogsUser')}</th>
+                      <th>{t('admin.activityLogsAction')}</th>
+                      <th>{t('admin.activityLogsResource')}</th>
+                      <th>{t('admin.activityLogsResourceId')}</th>
+                      <th>{t('admin.activityLogsPhi')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {logs.map((l) => (
-                      <tr key={l._id} className='border-b border-neutral-100 hover:bg-neutral-50'>
-                        <td className='py-2 px-3 text-sm text-neutral-600'>
+                      <tr key={l._id}>
+                        <td className='text-neutral-600'>
                           {l.timestamp ? new Date(l.timestamp).toLocaleString() : '—'}
                         </td>
-                        <td className='py-2 px-3 text-sm'>{l.userName || l.userEmail || l.userId || '—'}</td>
-                        <td className='py-2 px-3 text-sm'>{l.action || '—'}</td>
-                        <td className='py-2 px-3 text-sm'>{l.resource || '—'}</td>
-                        <td className='py-2 px-3 text-sm text-neutral-600'>{l.resourceId || '—'}</td>
-                        <td className='py-2 px-3 text-sm'>{l.phiAccessed ? 'Yes' : '—'}</td>
+                        <td>{l.userName || l.userEmail || l.userId || '—'}</td>
+                        <td>{l.action || '—'}</td>
+                        <td>{l.resource || '—'}</td>
+                        <td className='text-neutral-600'>{l.resourceId || '—'}</td>
+                        <td>{l.phiAccessed ? 'Yes' : '—'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             )}
-            {(pages > 1) && (
+            {pages > 1 && (
               <div className='mt-6 flex items-center justify-between'>
                 <div className='text-sm text-neutral-600'>
-                  Page {pagination.page} of {pages} ({pagination.total} total)
+                  {t('admin.activityLogsPageOf', {
+                    page: pagination.page,
+                    pages,
+                    total: pagination.total,
+                  })}
                 </div>
                 <div className='flex gap-2'>
                   <Button
@@ -164,7 +186,7 @@ export default function AdminActivityLogsPage() {
                     onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
                     disabled={pagination.page <= 1}
                   >
-                    Previous
+                    {t('common.previous')}
                   </Button>
                   <Button
                     variant='secondary'
@@ -172,7 +194,7 @@ export default function AdminActivityLogsPage() {
                     onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
                     disabled={pagination.page >= pages}
                   >
-                    Next
+                    {t('common.next')}
                   </Button>
                 </div>
               </div>

@@ -3,8 +3,17 @@
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+/** Normalize API notification to dropdown shape: { id, unread, title, message, type, ... } */
+function normalizeNotification(n) {
+  const id = n._id?.toString() ?? n.id;
+  const unread = n.channels?.inApp?.read !== true;
+  return { ...n, id, unread };
+}
 
 export function TopNavbar() {
   const { user, loading: authLoading } = useAuth();
@@ -13,33 +22,33 @@ export function TopNavbar() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch notifications when user is available
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const [listRes, countRes] = await Promise.all([
+        apiClient.get('/notifications'),
+        apiClient.get('/notifications/unread-count'),
+      ]);
+      if (listRes?.success && listRes?.data?.notifications) {
+        setNotifications(
+          (listRes.data.notifications || []).map(normalizeNotification)
+        );
+      }
+      if (countRes?.success && typeof countRes?.data?.count === 'number') {
+        setUnreadCount(countRes.data.count);
+      }
+    } catch (err) {
+      logger.warn('TopNavbar: failed to fetch notifications', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (!authLoading && user) {
-      // TODO: Replace with real API call
-      // For now, start with empty notifications
-      setNotifications([]);
-      setUnreadCount(0);
-
-      // Example API call (uncomment when ready):
-      // const fetchNotifications = async () => {
-      //   try {
-      //     const response = await apiClient.get('/notifications');
-      //     if (response.success && response.data) {
-      //       setNotifications(response.data.notifications || []);
-      //       setUnreadCount(response.data.unreadCount || 0);
-      //     }
-      //   } catch (error) {
-      //     console.error('Failed to fetch notifications:', error);
-      //   }
-      // };
-      // fetchNotifications();
+      fetchNotifications();
     } else {
-      // Clear notifications when user logs out
       setNotifications([]);
       setUnreadCount(0);
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, fetchNotifications]);
 
   const handleNotificationClick = (notification) => {
     // Handle notification click - navigate based on type
@@ -56,18 +65,26 @@ export function TopNavbar() {
     }
   };
 
-  const handleMarkAsRead = (notificationId) => {
-    // Mark individual notification as read
+  const handleMarkAsRead = async (notificationId) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, unread: false } : n))
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
+    try {
+      await apiClient.put(`/notifications/${notificationId}/read`, {});
+    } catch (err) {
+      logger.warn('TopNavbar: failed to mark notification as read', err);
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
     setUnreadCount(0);
+    try {
+      await apiClient.put('/notifications/read-all', {});
+    } catch (err) {
+      logger.warn('TopNavbar: failed to mark all as read', err);
+    }
   };
 
   // Don't show navbar on login/register/forgot-password pages

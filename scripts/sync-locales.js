@@ -13,6 +13,7 @@ const path = require('path');
 const LOCALES_DIR = path.join(__dirname, '../lib/i18n/locales');
 const EN_PATH = path.join(LOCALES_DIR, 'en.json');
 const ES_PATH = path.join(LOCALES_DIR, 'es.json');
+const FR_PATH = path.join(LOCALES_DIR, 'fr.json');
 const AR_PATH = path.join(LOCALES_DIR, 'ar.json');
 
 function deepMergeKeys(base, source) {
@@ -35,15 +36,18 @@ function deepMergeKeys(base, source) {
 function run() {
   const en = JSON.parse(fs.readFileSync(EN_PATH, 'utf8'));
   const es = JSON.parse(fs.readFileSync(ES_PATH, 'utf8'));
+  const fr = JSON.parse(fs.readFileSync(FR_PATH, 'utf8'));
   const ar = JSON.parse(fs.readFileSync(AR_PATH, 'utf8'));
 
   const esMerged = deepMergeKeys(en, es);
+  const frMerged = deepMergeKeys(en, fr);
   const arMerged = deepMergeKeys(en, ar);
 
   fs.writeFileSync(ES_PATH, JSON.stringify(esMerged, null, 2) + '\n', 'utf8');
+  fs.writeFileSync(FR_PATH, JSON.stringify(frMerged, null, 2) + '\n', 'utf8');
   fs.writeFileSync(AR_PATH, JSON.stringify(arMerged, null, 2) + '\n', 'utf8');
 
-  console.log('Locale sync complete: es.json and ar.json now have 100% key parity with en.json.');
+  console.log('Locale sync complete: es.json, fr.json and ar.json now have 100% key parity with en.json.');
 }
 
 run();

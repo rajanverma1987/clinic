@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { getRolePermissions } from '@/lib/permissions/constants';
@@ -111,19 +112,26 @@ export default function StaffPage() {
     return true;
   });
 
+  const openConfirm = useConfirmation().open;
   const handleDeactivate = async (row) => {
-    if (!window.confirm(t('staff.confirmDeactivate'))) return;
-    try {
-      const res = await apiClient.put(`/users/${row.id}`, { isActive: false });
-      if (res?.success) {
-        showSuccess(row.isActive ? t('staff.deactivate') + ' OK' : t('staff.activate') + ' OK');
-        fetchStaff();
-      } else {
-        showError(res?.error?.message || 'Failed to update');
-      }
-    } catch (err) {
-      showError(err?.message || 'Failed to update');
-    }
+    openConfirm({
+      title: t('staff.confirmDeactivate'),
+      message: t('common.confirmationDescription'),
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await apiClient.put(`/users/${row.id}`, { isActive: false });
+          if (res?.success) {
+            showSuccess(row.isActive ? t('staff.deactivate') + ' OK' : t('staff.activate') + ' OK');
+            fetchStaff();
+          } else {
+            showError(res?.error?.message || 'Failed to update');
+          }
+        } catch (err) {
+          showError(err?.message || 'Failed to update');
+        }
+      },
+    });
   };
 
   const handleActivate = async (row) => {
@@ -141,18 +149,24 @@ export default function StaffPage() {
   };
 
   const handleRemove = async (row) => {
-    if (!window.confirm(t('staff.confirmRemove'))) return;
-    try {
-      const res = await apiClient.delete(`/users/${row.id}`);
-      if (res?.success) {
-        showSuccess('User removed');
-        fetchStaff();
-      } else {
-        showError(res?.error?.message || 'Failed to remove');
-      }
-    } catch (err) {
-      showError(err?.message || 'Failed to remove');
-    }
+    openConfirm({
+      title: t('staff.confirmRemove'),
+      message: t('common.confirmationDescription'),
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await apiClient.delete(`/users/${row.id}`);
+          if (res?.success) {
+            showSuccess(t('staff.userRemoved'));
+            fetchStaff();
+          } else {
+            showError(res?.error?.message || 'Failed to remove');
+          }
+        } catch (err) {
+          showError(err?.message || 'Failed to remove');
+        }
+      },
+    });
   };
 
   const openEdit = (row) => {
@@ -255,11 +269,20 @@ export default function StaffPage() {
     },
     {
       header: t('staff.role'),
-      accessor: (row) => (
-        <span className='px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 capitalize'>
-          {(row.role || '').replace(/_/g, ' ')}
-        </span>
-      ),
+      headerClassName: 'min-w-[8rem]',
+      cellClassName: 'min-w-[8rem]',
+      accessor: (row) => {
+        const role = row.role ?? row.roles?.[0] ?? '';
+        const label = typeof role === 'string' ? role.replace(/_/g, ' ') : String(role);
+        return (
+          <span
+            className='inline-block min-w-[7rem] px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 capitalize whitespace-nowrap'
+            title={label}
+          >
+            {label || '—'}
+          </span>
+        );
+      },
     },
     {
       header: t('staff.permissions'),
@@ -321,14 +344,14 @@ export default function StaffPage() {
   return (
     <Layout>
       <PageHeader
-          title={t('staff.title')}
-          subtitle={t('staff.subtitle')}
-          action={
-            <Button variant='primary' onClick={() => setShowAddModal(true)}>
-              {t('staff.addStaff')}
-            </Button>
-          }
-        />
+        title={t('staff.title')}
+        subtitle={t('staff.subtitle')}
+        action={
+          <Button variant='primary' onClick={() => setShowAddModal(true)}>
+            {t('staff.addStaff')}
+          </Button>
+        }
+      />
       <div style={{ padding: '0 10px' }} className='space-y-6'>
         <Card>
           <div className='p-4 flex flex-wrap gap-4'>

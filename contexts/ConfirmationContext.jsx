@@ -5,7 +5,7 @@
  * Use useConfirmation().open({ title, message, onConfirm, variant }) to replace window.confirm.
  */
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useRef, useState } from 'react';
 
 const ConfirmationContext = createContext(undefined);
 
@@ -22,6 +22,8 @@ const DEFAULT_STATE = {
 
 export function ConfirmationProvider({ children }) {
   const [state, setState] = useState(DEFAULT_STATE);
+  const onConfirmRef = useRef(null);
+  onConfirmRef.current = state.onConfirm;
 
   const open = useCallback((options = {}) => {
     setState({
@@ -45,7 +47,7 @@ export function ConfirmationProvider({ children }) {
   }, []);
 
   const handleConfirm = useCallback(async () => {
-    const fn = state.onConfirm;
+    const fn = onConfirmRef.current;
     if (typeof fn !== 'function') {
       close();
       return;
@@ -64,7 +66,7 @@ export function ConfirmationProvider({ children }) {
     } else {
       close();
     }
-  }, [state.onConfirm, close, setConfirmLoading]);
+  }, [close, setConfirmLoading]);
 
   const value = { open, close, setConfirmLoading };
 

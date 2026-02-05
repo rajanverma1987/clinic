@@ -4,19 +4,33 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 const items = [
-  { href: '/admin/content/specialties', label: 'Specialty Management', desc: 'Add, edit, reorder and activate/deactivate specialties' },
-  { href: '/admin/content/blog', label: 'Blog / Articles', desc: 'Create health articles, rich text, SEO, publish/draft' },
-  { href: '/admin/content/faqs', label: 'FAQs', desc: 'Add FAQs, categorize Patients/Doctors/General, reorder' },
-  { href: '/admin/content/pages', label: 'Static Pages', desc: 'Edit About, Contact, Terms, Privacy, footer links' },
-  { href: '/admin/content/banners', label: 'Banner Management', desc: 'Homepage sliders, promotional banners, schedule' },
+  {
+    href: '/admin/content/specialties',
+    labelKey: 'admin.specialtyManagement',
+    descKey: 'admin.specialtyManagementSubtitle',
+  },
+  { href: '/admin/content/blog', labelKey: 'admin.contentBlog', descKey: 'admin.contentBlogDesc' },
+  { href: '/admin/content/faqs', labelKey: 'admin.contentFaqs', descKey: 'admin.contentFaqsDesc' },
+  {
+    href: '/admin/content/pages',
+    labelKey: 'admin.contentPages',
+    descKey: 'admin.contentPagesDesc',
+  },
+  {
+    href: '/admin/content/banners',
+    labelKey: 'admin.contentBannerManagement',
+    descKey: 'admin.contentBannerManagementDesc',
+  },
 ];
 
 export default function AdminContentPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -30,16 +44,22 @@ export default function AdminContentPage() {
 
   return (
     <Layout
-      title='Content Management'
-      subtitle='Manage website content'
-      actionButton={<Button variant='primary' onClick={() => router.push('/admin')}>Back to Dashboard</Button>}
+      title={t('admin.contentManagement')}
+      subtitle={t('admin.contentManagementSubtitle')}
+      actionButton={
+        <Button variant='primary' onClick={() => router.push('/admin')}>
+          {t('common.backToDashboard')}
+        </Button>
+      }
     >
       <div style={{ padding: '0 10px' }} className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-        {items.map(({ href, label, desc }) => (
+        {items.map(({ href, labelKey, descKey }) => (
           <Card key={href} className='p-6'>
-            <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{label}</h3>
-            <p className='text-sm text-neutral-600 mb-4'>{desc}</p>
-            <Button variant='secondary' onClick={() => router.push(href)}>Manage</Button>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{t(labelKey)}</h3>
+            <p className='text-sm text-neutral-600 mb-4'>{t(descKey)}</p>
+            <Button variant='secondary' onClick={() => router.push(href)}>
+              {t('common.manage')}
+            </Button>
           </Card>
         ))}
       </div>

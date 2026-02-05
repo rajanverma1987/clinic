@@ -58,7 +58,7 @@ export function generatePrescriptionPrintHTML(data) {
       align-items: flex-start;
       margin-bottom: 20px;
       padding-bottom: 12px;
-      border-bottom: 2px solid #000;
+      border-bottom: 1px solid #000;
     }
 
     .doctor-info {
@@ -214,7 +214,7 @@ export function generatePrescriptionPrintHTML(data) {
     .footer {
       margin-top: 24px;
       padding-top: 16px;
-      border-top: 2px solid #000;
+      border-top: 1px solid #000;
     }
 
     .footer-section {
@@ -301,8 +301,8 @@ export function generatePrescriptionPrintHTML(data) {
     <div class="patient-section">
       <div class="patient-left">
         <div class="patient-id">ID: ${data.patientId} - ${data.patientName}${
-    data.patientGender ? ` (${data.patientGender.charAt(0).toUpperCase()})` : ''
-  }${data.patientAge ? ` / ${data.patientAge} Y` : ''}</div>
+          data.patientGender ? ` (${data.patientGender.charAt(0).toUpperCase()})` : ''
+        }${data.patientAge ? ` / ${data.patientAge} Y` : ''}</div>
         ${
           data.patientAddress
             ? `<div class="patient-details">Address: ${data.patientAddress}</div>`
@@ -313,11 +313,11 @@ export function generatePrescriptionPrintHTML(data) {
             ? `
           <div class="patient-vitals">
             ${data.weight ? `Weight(kg): ${data.weight}` : ''}${
-                data.weight && data.height ? ', ' : ''
-              }
+              data.weight && data.height ? ', ' : ''
+            }
             ${data.height ? `Height (cms): ${data.height}` : ''}${
-                (data.weight || data.height) && data.bloodPressure ? ', ' : ''
-              }
+              (data.weight || data.height) && data.bloodPressure ? ', ' : ''
+            }
             ${data.bloodPressure ? `BP: ${data.bloodPressure} mmHg` : ''}
           </div>
         `
@@ -341,8 +341,8 @@ export function generatePrescriptionPrintHTML(data) {
       </div>
       <div class="patient-right">
         <div>Date: ${formatDate(data.visitDate)}${
-    data.visitTime ? `, ${formatTime(data.visitDate)}` : ''
-  }</div>
+          data.visitTime ? `, ${formatTime(data.visitDate)}` : ''
+        }</div>
       </div>
     </div>
 
@@ -463,8 +463,8 @@ export function generatePrescriptionPrintHTML(data) {
                             item.name.includes('TAB')
                               ? 'Tab'
                               : item.name.includes('CAP')
-                              ? 'Cap'
-                              : 'Unit'
+                                ? 'Cap'
+                                : 'Unit'
                           })`
                         : ''
                     }`
@@ -546,8 +546,8 @@ export function generatePrescriptionPrintHTML(data) {
         <div class="signature-line">
           <div style="font-weight: bold; margin-bottom: 5px;">Signature</div>
           <div>Dr. ${data.doctorName}${
-    data.doctorQualification ? ` ${data.doctorQualification}` : ''
-  }</div>
+            data.doctorQualification ? ` ${data.doctorQualification}` : ''
+          }</div>
         </div>
       </div>
     </div>

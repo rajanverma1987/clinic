@@ -6,12 +6,12 @@
  * GET /api/admin/patients - List all patients with search, filters, pagination
  */
 
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
-import Patient from '@/models/Patient';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { logger } from '@/lib/utils/logger.js';
+import { withAuth } from '@/middleware/auth';
+import Patient from '@/models/Patient';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/admin/patients
@@ -20,10 +20,7 @@ import { logger } from '@/lib/utils/logger.js';
 async function getHandler(req, user) {
   try {
     if (user.role !== 'super_admin') {
-      return NextResponse.json(
-        errorResponse('Unauthorized', 'UNAUTHORIZED'),
-        { status: 403 }
-      );
+      return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
     }
 
     await connectDB();
@@ -74,22 +71,29 @@ async function getHandler(req, user) {
 
     if (search && search.trim()) {
       const trim = search.trim();
-      query.$or = [
-        { firstName: { $regex: trim, $options: 'i' } },
-        { lastName: { $regex: trim, $options: 'i' } },
-        { email: { $regex: trim, $options: 'i' } },
-        { phone: { $regex: trim, $options: 'i' } },
-        { patientId: { $regex: trim, $options: 'i' } },
-      ];
+      const tokens = trim.split(/\s+/).filter(Boolean);
+      const fields = ['firstName', 'lastName', 'email', 'phone', 'patientId'];
+      if (tokens.length === 0) {
+        // single token: match any field (original behavior)
+        query.$or = fields.map((f) => ({ [f]: { $regex: trim, $options: 'i' } }));
+      } else {
+        // multiple tokens (e.g. "John Doe"): each token must match at least one field (exact name from table)
+        query.$and = tokens.map((token) => ({
+          $or: fields.map((f) => ({ [f]: { $regex: token, $options: 'i' } })),
+        }));
+      }
     }
 
     const order = sortOrder === 'asc' ? 1 : -1;
-    const sortField = sortBy === 'name' ? { lastName: order, firstName: order } : { [sortBy]: order };
+    const sortField =
+      sortBy === 'name' ? { lastName: order, firstName: order } : { [sortBy]: order };
 
     const total = await Patient.countDocuments(query);
     const skip = (page - 1) * limit;
     const patients = await Patient.find(query)
-      .select('firstName lastName email phone dateOfBirth gender status patientId tenantId createdAt flagged flaggedAt flagReason')
+      .select(
+        'firstName lastName email phone dateOfBirth gender status patientId tenantId createdAt flagged flaggedAt flagReason',
+      )
       .populate('tenantId', 'name slug')
       .sort(sortField)
       .skip(skip)
@@ -124,16 +128,13 @@ async function getHandler(req, user) {
           pages: Math.ceil(total / limit) || 1,
           totalPages: Math.ceil(total / limit) || 1,
         },
-      })
+      }),
     );
   } catch (err) {
     logger.error('Admin patients list error:', err);
     return NextResponse.json(
-      errorResponse(
-        err instanceof Error ? err.message : 'Failed to fetch patients',
-        'FETCH_ERROR'
-      ),
-      { status: 500 }
+      errorResponse(err instanceof Error ? err.message : 'Failed to fetch patients', 'FETCH_ERROR'),
+      { status: 500 },
     );
   }
 }

@@ -4,17 +4,18 @@ export function generateInvoicePrintHTML(data) {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
   const clinicSettings = data.clinicSettings || {};
-  const currency = clinicSettings.settings?.currency || clinicSettings.currency || data.currency || 'USD';
+  const currency =
+    clinicSettings.settings?.currency || clinicSettings.currency || data.currency || 'USD';
   const locale = clinicSettings.settings?.locale || clinicSettings.locale || 'en-US';
-  
+
   // Extract clinic information
   const clinicName = clinicSettings.name || 'Clinic Name';
   const clinicPhone = clinicSettings.settings?.phone || '';
@@ -30,11 +31,19 @@ export function generateInvoicePrintHTML(data) {
   const formatAppointment = (appointmentId) => {
     if (!appointmentId) return '';
     if (typeof appointmentId === 'object' && appointmentId !== null) {
-      const appointmentDate = appointmentId.appointmentDate 
-        ? new Date(appointmentId.appointmentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      const appointmentDate = appointmentId.appointmentDate
+        ? new Date(appointmentId.appointmentDate).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
         : '';
-      const startTime = appointmentId.startTime 
-        ? new Date(appointmentId.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      const startTime = appointmentId.startTime
+        ? new Date(appointmentId.startTime).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          })
         : '';
       return appointmentDate + (startTime ? ' at ' + startTime : '');
     }
@@ -104,7 +113,7 @@ export function generateInvoicePrintHTML(data) {
       align-items: flex-start;
       margin-bottom: 20px;
       padding-bottom: 15px;
-      border-bottom: 2px solid #000;
+      border-bottom: 1px solid #000;
     }
     
     .clinic-info {
@@ -198,8 +207,8 @@ export function generateInvoicePrintHTML(data) {
     .totals-row.total {
       font-weight: bold;
       font-size: 12pt;
-      border-top: 2px solid #000;
-      border-bottom: 2px solid #000;
+      border-top: 1px solid #000;
+      border-bottom: 1px solid #000;
       padding: 10px 0;
       margin-top: 5px;
     }
@@ -299,7 +308,9 @@ export function generateInvoicePrintHTML(data) {
         </tr>
       </thead>
       <tbody>
-        ${items.map((item, index) => `
+        ${items
+          .map(
+            (item, index) => `
           <tr>
             <td>${index + 1}</td>
             <td>${item.description || ''}</td>
@@ -309,7 +320,9 @@ export function generateInvoicePrintHTML(data) {
             <td class="text-right">${formatCurrency(item.taxAmount || 0)}</td>
             <td class="text-right"><strong>${formatCurrency(item.totalWithTax || item.total || 0)}</strong></td>
           </tr>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </tbody>
     </table>
 
@@ -319,48 +332,72 @@ export function generateInvoicePrintHTML(data) {
         <span>Subtotal:</span>
         <span>${formatCurrency(subtotal)}</span>
       </div>
-      ${totalDiscount > 0 ? `
+      ${
+        totalDiscount > 0
+          ? `
       <div class="totals-row">
         <span>Discount:</span>
         <span>-${formatCurrency(totalDiscount)}</span>
       </div>
-      ` : ''}
-      ${totalTax > 0 ? `
+      `
+          : ''
+      }
+      ${
+        totalTax > 0
+          ? `
       <div class="totals-row">
         <span>Tax:</span>
         <span>${formatCurrency(totalTax)}</span>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
       <div class="totals-row total">
         <span>Total Amount:</span>
         <span>${formatCurrency(totalAmount)}</span>
       </div>
-      ${paidAmount > 0 ? `
+      ${
+        paidAmount > 0
+          ? `
       <div class="totals-row">
         <span>Paid Amount:</span>
         <span>${formatCurrency(paidAmount)}</span>
       </div>
-      ` : ''}
-      ${balanceAmount > 0 && invoice.status !== 'paid' ? `
+      `
+          : ''
+      }
+      ${
+        balanceAmount > 0 && invoice.status !== 'paid'
+          ? `
       <div class="totals-row">
         <span>Balance Due:</span>
         <span><strong>${formatCurrency(balanceAmount)}</strong></span>
       </div>
-      ` : ''}
-      ${invoice.status === 'paid' ? `
+      `
+          : ''
+      }
+      ${
+        invoice.status === 'paid'
+          ? `
       <div class="totals-row">
         <span>Status:</span>
         <span><strong style="color: #16a34a;">Fully Paid</strong></span>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
 
-    ${invoice.notes ? `
+    ${
+      invoice.notes
+        ? `
     <div class="notes">
       <div class="section-title">Notes:</div>
       <div>${invoice.notes}</div>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
     <!-- Footer -->
     <div class="footer">
@@ -374,4 +411,3 @@ export function generateInvoicePrintHTML(data) {
 </html>
   `;
 }
-

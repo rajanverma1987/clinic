@@ -493,9 +493,7 @@ export default function SupportPage() {
                                 }}
                               >
                                 <svg
-                                  className={`text-primary-600 ${
-                                    isOpen ? 'rotate-180' : ''
-                                  }`}
+                                  className={`text-primary-600 ${isOpen ? 'rotate-180' : ''}`}
                                   fill='none'
                                   stroke='currentColor'
                                   viewBox='0 0 24 24'
@@ -562,12 +560,13 @@ export default function SupportPage() {
 
         {/* Still Need Help CTA */}
         <section
-          className='bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 relative overflow-hidden'
+          className='bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 relative overflow-visible'
           style={{
             paddingTop: '80px',
             paddingBottom: '80px',
             paddingLeft: '32px',
             paddingRight: '32px',
+            minHeight: '280px',
           }}
         >
           {/* Background pattern */}
@@ -599,15 +598,15 @@ export default function SupportPage() {
               </svg>
             </div>
             <h2
-              className='text-white'
+              className='text-white relative z-10'
               style={{
-                fontSize: '40px',
-                lineHeight: '48px',
+                fontSize: 'clamp(28px, 5vw, 42px)',
+                lineHeight: '1.2',
                 letterSpacing: '-0.02em',
                 fontWeight: '700',
                 marginBottom: '16px',
                 color: '#ffffff',
-                textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                textShadow: '0 2px 8px rgba(0,0,0,0.4), 0 0 1px rgba(0,0,0,0.5)',
               }}
             >
               Still Need Help?

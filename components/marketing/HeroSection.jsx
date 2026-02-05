@@ -1,10 +1,10 @@
 'use client';
 
+import { CalendarIcon, CheckIcon, PlayIcon, UserIcon, XIcon, ZapIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { CheckIcon, ZapIcon, UserIcon, PlayIcon, CalendarIcon, XIcon } from '@/components/icons';
 
 export function HeroSection({ onContactClick }) {
   const { t } = useI18n();
@@ -51,7 +51,7 @@ export function HeroSection({ onContactClick }) {
       <div
         className='absolute inset-0 opacity-[0.02]'
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232D9CDB' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231e4fb5' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           backgroundSize: '60px 60px',
         }}
       ></div>
@@ -95,7 +95,7 @@ export function HeroSection({ onContactClick }) {
                 className='block'
                 style={{
                   marginTop: '12px',
-                  color: '#2D9CDB',
+                  color: 'var(--color-primary-900)',
                   fontWeight: '700',
                 }}
               >
@@ -184,7 +184,10 @@ export function HeroSection({ onContactClick }) {
                   fontWeight: '500',
                 }}
               >
-                <CheckIcon style={{ width: 18, height: 18, marginRight: '8px' }} className='text-secondary-500' />
+                <CheckIcon
+                  style={{ width: 18, height: 18, marginRight: '8px' }}
+                  className='text-secondary-500'
+                />
                 <span>{t('homepage.noCreditCardRequired')}</span>
               </div>
               <div
@@ -195,7 +198,10 @@ export function HeroSection({ onContactClick }) {
                   fontWeight: '500',
                 }}
               >
-                <CalendarIcon style={{ width: 18, height: 18, marginRight: '8px' }} className='text-primary-500' />
+                <CalendarIcon
+                  style={{ width: 18, height: 18, marginRight: '8px' }}
+                  className='text-primary-500'
+                />
                 <span>{t('homepage.freeTrial')}</span>
               </div>
               <div
@@ -206,7 +212,10 @@ export function HeroSection({ onContactClick }) {
                   fontWeight: '500',
                 }}
               >
-                <XIcon style={{ width: 18, height: 18, marginRight: '8px' }} className='text-neutral-500' />
+                <XIcon
+                  style={{ width: 18, height: 18, marginRight: '8px' }}
+                  className='text-neutral-500'
+                />
                 <span>{t('homepage.cancelAnytime')}</span>
               </div>
             </div>

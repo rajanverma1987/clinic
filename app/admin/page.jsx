@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
@@ -19,6 +20,7 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
+  const { open: openConfirm } = useConfirmation();
   const { currency, locale } = useSettings();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1013,7 +1015,15 @@ export default function AdminDashboardPage() {
                 </p>
                 <Button
                   variant='secondary'
-                  onClick={() => alert('Database tools coming soon')}
+                  onClick={() =>
+                    openConfirm({
+                      title: t('admin.comingSoon'),
+                      message: t('admin.comingSoon'),
+                      variant: 'info',
+                      confirmLabel: t('common.ok'),
+                      cancelLabel: null,
+                    })
+                  }
                   className='w-full'
                   size='sm'
                 >
@@ -1045,7 +1055,15 @@ export default function AdminDashboardPage() {
                 </p>
                 <Button
                   variant='secondary'
-                  onClick={() => alert('Audit logs coming soon')}
+                  onClick={() =>
+                    openConfirm({
+                      title: t('admin.comingSoon'),
+                      message: t('admin.comingSoon'),
+                      variant: 'info',
+                      confirmLabel: t('common.ok'),
+                      cancelLabel: null,
+                    })
+                  }
                   className='w-full'
                   size='sm'
                 >

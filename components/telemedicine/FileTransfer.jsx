@@ -2,8 +2,9 @@
 
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
-import { useRef, useState } from 'react';
 import { logger } from '@/lib/utils/logger.js';
+import { showError } from '@/lib/utils/toast';
+import { useRef, useState } from 'react';
 
 /**
  * Encrypted File Transfer Component
@@ -29,7 +30,7 @@ export function FileTransfer({
     // Validate file size (max 10MB for HIPAA compliance)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      alert(t('errors.fileSizeExceeded'));
+      showError(t('errors.fileSizeExceeded'));
       return;
     }
 
@@ -70,7 +71,7 @@ export function FileTransfer({
       reader.readAsArrayBuffer(file);
     } catch (error) {
       logger.error('File upload error:', error);
-      alert(t('errors.fileUploadFailed'));
+      showError(t('errors.fileUploadFailed'));
       setUploading(false);
       setUploadProgress(0);
     }
@@ -78,11 +79,10 @@ export function FileTransfer({
 
   const handleDownload = async (file) => {
     try {
-      // Download and decrypt file
       await onDownload(file);
     } catch (error) {
       logger.error('File download error:', error);
-      alert(t('errors.fileDownloadFailed'));
+      showError(t('errors.fileDownloadFailed'));
     }
   };
 
@@ -142,10 +142,15 @@ export function FileTransfer({
         </label>
         {uploading && (
           <div className='mt-2 w-full bg-neutral-200 rounded-full h-2'>
-            <div className='bg-primary-600 h-2 rounded-full' style={{ width: `${uploadProgress}%` }} />
+            <div
+              className='bg-primary-600 h-2 rounded-full'
+              style={{ width: `${uploadProgress}%` }}
+            />
           </div>
         )}
-        <p className='text-xs text-neutral-600 mt-2 text-center'>Max file size: 10MB • 🔒 Encrypted</p>
+        <p className='text-xs text-neutral-600 mt-2 text-center'>
+          Max file size: 10MB • 🔒 Encrypted
+        </p>
       </div>
 
       {/* Files List */}
@@ -189,7 +194,13 @@ export function FileTransfer({
                 className='ml-2 p-2 text-primary-600 hover:text-primary-700'
                 title={t('telemedicine.downloadFile')}
               >
-                <svg width='20px' height='20px' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <svg
+                  width='20px'
+                  height='20px'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
                   <path
                     strokeLinecap='round'
                     strokeLinejoin='round'

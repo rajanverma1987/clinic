@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
@@ -24,6 +25,7 @@ const defaultValues = {
 
 export default function AdminSettingsSecurityPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState(defaultValues);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ export default function AdminSettingsSecurityPage() {
         setForm({ ...defaultValues, ...response.data });
       }
     } catch (err) {
-      showError('Failed to load settings');
+      showError(t('admin.failedToLoadSettings'));
     } finally {
       setLoading(false);
     }
@@ -74,13 +76,13 @@ export default function AdminSettingsSecurityPage() {
       };
       const response = await apiClient.put('/admin/settings/security', payload);
       if (response.success) {
-        showSuccess('Settings saved');
+        showSuccess(t('admin.settingsSaved'));
         if (response.data) setForm((f) => ({ ...f, ...response.data }));
       } else {
-        showError(response.error?.message || 'Failed to save');
+        showError(response.error?.message || t('admin.failedToSaveSettings'));
       }
     } catch (err) {
-      showError('Failed to save settings');
+      showError(t('admin.failedToSaveSettings'));
     } finally {
       setSaving(false);
     }
@@ -103,7 +105,9 @@ export default function AdminSettingsSecurityPage() {
         <Card className='p-6 max-w-2xl'>
           <form onSubmit={handleSubmit} className='space-y-4'>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Session timeout (minutes)</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Session timeout (minutes)
+              </label>
               <Input
                 type='number'
                 min={5}
@@ -113,7 +117,9 @@ export default function AdminSettingsSecurityPage() {
               />
             </div>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Password minimum length</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Password minimum length
+              </label>
               <Input
                 type='number'
                 min={6}
@@ -127,10 +133,15 @@ export default function AdminSettingsSecurityPage() {
                 type='checkbox'
                 id='passwordRequireSpecial'
                 checked={form.passwordRequireSpecial}
-                onChange={(e) => setForm((f) => ({ ...f, passwordRequireSpecial: e.target.checked }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, passwordRequireSpecial: e.target.checked }))
+                }
                 className='rounded border-neutral-300'
               />
-              <label htmlFor='passwordRequireSpecial' className='text-sm font-medium text-neutral-700'>
+              <label
+                htmlFor='passwordRequireSpecial'
+                className='text-sm font-medium text-neutral-700'
+              >
                 Require special characters in password
               </label>
             </div>
@@ -147,7 +158,9 @@ export default function AdminSettingsSecurityPage() {
               </label>
             </div>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Failed login max attempts</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Failed login max attempts
+              </label>
               <Input
                 type='number'
                 min={3}
@@ -157,13 +170,17 @@ export default function AdminSettingsSecurityPage() {
               />
             </div>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Failed login lockout (minutes)</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Failed login lockout (minutes)
+              </label>
               <Input
                 type='number'
                 min={5}
                 max={1440}
                 value={form.failedLoginLockoutMinutes}
-                onChange={(e) => setForm((f) => ({ ...f, failedLoginLockoutMinutes: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, failedLoginLockoutMinutes: e.target.value }))
+                }
               />
             </div>
             <div className='flex items-center gap-2'>
@@ -179,7 +196,9 @@ export default function AdminSettingsSecurityPage() {
               </label>
             </div>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Audit log retention (days)</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Audit log retention (days)
+              </label>
               <Input
                 type='number'
                 min={30}
@@ -192,7 +211,11 @@ export default function AdminSettingsSecurityPage() {
               <Button type='submit' variant='primary' disabled={saving}>
                 {saving ? 'Saving…' : 'Save'}
               </Button>
-              <Button type='button' variant='secondary' onClick={() => router.push('/admin/settings')}>
+              <Button
+                type='button'
+                variant='secondary'
+                onClick={() => router.push('/admin/settings')}
+              >
                 Cancel
               </Button>
             </div>

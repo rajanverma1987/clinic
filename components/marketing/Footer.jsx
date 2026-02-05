@@ -257,7 +257,9 @@ function FooterComponent() {
                 className='text-neutral-600 text-center sm:text-left'
                 style={{ fontSize: '10px', lineHeight: '14px' }}
               >
-                &copy; {currentYear} {t('footer.allRightsReserved') || 'All rights reserved'}.
+                <span suppressHydrationWarning>
+                  &copy; {currentYear} {t('footer.allRightsReserved') || 'All rights reserved'}.
+                </span>
               </p>
             </div>
           </div>

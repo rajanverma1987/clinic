@@ -1,40 +1,37 @@
 /**
  * Rate Limiting Middleware
- * Protects API endpoints from abuse
- * Based on NEW-PLANS.md requirements
+ * Protects API endpoints from abuse.
+ * Uses route-specific RATE_LIMITS from route-security when path matches; otherwise built-in presets.
  */
 
-import { NextResponse } from 'next/server';
+import { RATE_LIMITS as ROUTE_RATE_LIMITS } from '@/lib/constants/route-security';
 import { errorResponse } from '@/lib/utils/api-response';
-import { RateLimitError } from '@/lib/errors/custom-errors';
+import { NextResponse } from 'next/server';
 
 // In-memory store for rate limiting (in production, use Redis)
 const rateLimitStore = new Map();
 
+/** Parse window string to ms: '15m' -> 900000, '1h' -> 3600000 */
+function parseWindow(windowStr) {
+  if (!windowStr) return 60 * 1000;
+  const m = String(windowStr)
+    .trim()
+    .match(/^(\d+)\s*(s|m|h|d)?$/i);
+  if (!m) return 15 * 60 * 1000;
+  const n = parseInt(m[1], 10);
+  const unit = (m[2] || 'm').toLowerCase();
+  const mult = { s: 1000, m: 60 * 1000, h: 60 * 60 * 1000, d: 24 * 60 * 60 * 1000 };
+  return n * (mult[unit] ?? mult.m);
+}
+
 /**
- * Rate limit configuration
+ * Built-in rate limit presets (used when no route-specific limit in route-security)
  */
 const RATE_LIMITS = {
-  // Public endpoints
-  public: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests per window
-  },
-  // Authentication endpoints
-  auth: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 login attempts per window
-  },
-  // API endpoints
-  api: {
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 60, // 60 requests per minute
-  },
-  // Strict endpoints (sensitive operations)
-  strict: {
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 10, // 10 requests per minute
-  },
+  public: { windowMs: 15 * 60 * 1000, max: 100 },
+  auth: { windowMs: 15 * 60 * 1000, max: 5 },
+  api: { windowMs: 1 * 60 * 1000, max: 60 },
+  strict: { windowMs: 1 * 60 * 1000, max: 10 },
 };
 
 /**
@@ -55,11 +52,12 @@ function getClientId(req) {
   }
 
   // Fall back to IP address
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-             req.headers.get('x-real-ip') ||
-             req.headers.get('cf-connecting-ip') ||
-             'unknown';
-  
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    req.headers.get('cf-connecting-ip') ||
+    'unknown';
+
   return `ip:${ip}`;
 }
 
@@ -81,27 +79,32 @@ if (typeof setInterval !== 'undefined') {
 }
 
 /**
- * Rate limit middleware factory
+ * Rate limit middleware factory.
+ * For preset 'auth', if request path matches ROUTE_RATE_LIMITS (e.g. /api/auth/login), use that config.
  */
 export function rateLimit(config = 'api') {
-  const limitConfig = typeof config === 'string' 
-    ? RATE_LIMITS[config] || RATE_LIMITS.api
-    : config;
-
   return (handler) => {
     return async (req, ...args) => {
+      let limitConfig =
+        typeof config === 'string' ? RATE_LIMITS[config] || RATE_LIMITS.api : config;
+      const pathname = new URL(req.url || 'http://x', 'http://x').pathname;
+      const routeLimit = ROUTE_RATE_LIMITS[pathname];
+      if (routeLimit) {
+        limitConfig = { windowMs: parseWindow(routeLimit.window), max: routeLimit.max };
+      }
       const clientId = getClientId(req);
-      const key = `${config}:${clientId}`;
+      const key = `${config}:${pathname}:${clientId}`;
       const now = Date.now();
 
       // Cleanup old entries periodically
-      if (Math.random() < 0.01) { // 1% chance to cleanup
+      if (Math.random() < 0.01) {
+        // 1% chance to cleanup
         cleanupStore();
       }
 
       // Get or create rate limit entry
       let entry = rateLimitStore.get(key);
-      
+
       if (!entry || entry.resetTime < now) {
         // Create new window
         entry = {
@@ -117,12 +120,12 @@ export function rateLimit(config = 'api') {
       // Check if limit exceeded
       if (entry.count > limitConfig.max) {
         const retryAfter = Math.ceil((entry.resetTime - now) / 1000);
-        
+
         return NextResponse.json(
           errorResponse(
             `Too many requests. Please try again after ${retryAfter} seconds.`,
             'RATE_LIMIT_EXCEEDED',
-            { retryAfter, limit: limitConfig.max, windowMs: limitConfig.windowMs }
+            { retryAfter, limit: limitConfig.max, windowMs: limitConfig.windowMs },
           ),
           {
             status: 429,
@@ -132,16 +135,19 @@ export function rateLimit(config = 'api') {
               'X-RateLimit-Remaining': String(Math.max(0, limitConfig.max - entry.count)),
               'X-RateLimit-Reset': String(Math.ceil(entry.resetTime / 1000)),
             },
-          }
+          },
         );
       }
 
       // Add rate limit headers
       const response = await handler(req, ...args);
-      
+
       if (response instanceof NextResponse) {
         response.headers.set('X-RateLimit-Limit', String(limitConfig.max));
-        response.headers.set('X-RateLimit-Remaining', String(Math.max(0, limitConfig.max - entry.count)));
+        response.headers.set(
+          'X-RateLimit-Remaining',
+          String(Math.max(0, limitConfig.max - entry.count)),
+        );
         response.headers.set('X-RateLimit-Reset', String(Math.ceil(entry.resetTime / 1000)));
       }
 

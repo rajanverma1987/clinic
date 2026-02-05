@@ -1,6 +1,12 @@
 'use client';
 
-import { Building2Icon, CheckIcon, RefreshCwIcon, VideoIcon } from '@/components/icons';
+import {
+  Building2Icon,
+  CheckIcon,
+  ListChecksIcon,
+  RefreshCwIcon,
+  VideoIcon,
+} from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +15,7 @@ import { CompactLoader, Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
@@ -24,6 +31,7 @@ const ROUTE_KEY = 'route_queue';
 export default function QueuePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { open: openConfirm } = useConfirmation();
   const { t } = useI18n();
   const { locale } = useSettings();
   const userId = user?._id ?? user?.id ?? user?.userId ?? null;
@@ -144,7 +152,7 @@ export default function QueuePage() {
         isFetchingRef.current = false;
       }
     },
-    [showCompleted, userId]
+    [showCompleted, userId],
   );
 
   // Effect: Initial fetch and refetch on doctor change. For doctors, wait until resolvedDoctorId is set.
@@ -210,7 +218,7 @@ export default function QueuePage() {
             telemedicineSessionId: sessionId,
           });
         } else {
-          showError(response.error?.message || 'Failed to create video session');
+          showError(response.error?.message || t('errors.failedToCreateVideoSession'));
           return;
         }
       }
@@ -219,11 +227,11 @@ export default function QueuePage() {
         // Open in new tab with doctor role
         window.open(`/telemedicine/${sessionId}?role=doctor`, '_blank');
       } else {
-        showError('Unable to start video session');
+        showError(t('errors.unableToStartVideoSession'));
       }
     } catch (error) {
       logger.error('Failed to start video', error);
-      showError(error.message || 'Failed to start video session');
+      showError(error.message || t('errors.failedToStartVideoSession'));
     }
   };
 
@@ -335,9 +343,13 @@ export default function QueuePage() {
                 variant='secondary'
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (confirm(t('queue.confirmComplete'))) {
-                    handleStatusChange(row._id, 'completed');
-                  }
+                  openConfirm({
+                    title: t('queue.confirmComplete'),
+                    message:
+                      t('queue.confirmCompleteDescription') || t('common.confirmationDescription'),
+                    variant: 'danger',
+                    onConfirm: () => handleStatusChange(row._id, 'completed'),
+                  });
                 }}
               >
                 <CheckIcon className='icon icon-sm' />
@@ -450,6 +462,7 @@ export default function QueuePage() {
             onClick={() => setShowCompleted(!showCompleted)}
             className='flex items-center gap-2'
           >
+            <ListChecksIcon className='icon icon-sm shrink-0' ariaHidden />
             {showCompleted ? t('queue.hideCompleted') : t('queue.showCompleted')}
           </Button>,
           <Button
@@ -457,14 +470,15 @@ export default function QueuePage() {
             onClick={() => fetchQueue(true)}
             disabled={loading}
             size='md'
-            className='flex items-center gap-2'
+            className='p-2 min-w-[2.25rem]'
+            title={t('queue.refresh')}
+            aria-label={t('queue.refresh')}
           >
             {loading ? (
               <CompactLoader size='sm' aria-label={t('common.loading')} />
             ) : (
-              <RefreshCwIcon className='icon icon-sm shrink-0' ariaHidden />
+              <RefreshCwIcon className='icon icon-sm' ariaHidden />
             )}
-            {loading ? t('common.loading') : t('queue.refresh')}
           </Button>,
         ]}
       />

@@ -8,16 +8,19 @@ import { Select } from '@/components/ui/Select';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function AdminClientsPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const { open: openConfirm } = useConfirmation();
+  const { user, loading: authLoading } = useAuth();
   const [clients, setClients] = useState([]);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +111,7 @@ export default function AdminClientsPage() {
           setPaymentUrl(response.data.approvalUrl);
           setShowPaymentUrlModal(true);
         } else {
-          alert('Subscription updated successfully');
+          showSuccess(t('admin.subscriptionUpdated') || 'Subscription updated successfully');
         }
 
         setCurrentClient(null);
@@ -117,39 +120,36 @@ export default function AdminClientsPage() {
       }
     } catch (error) {
       logger.error('Failed to update subscription', error);
-      alert(error.message || 'Failed to update subscription');
+      showError(error.message || t('admin.subscriptionUpdateFailed') || 'Failed to update subscription');
     } finally {
       setUpdatingClientId(null);
     }
   };
 
   const handleToggleClientAccess = async (client) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to ${client.isActive ? 'deactivate' : 'activate'} this client? ` +
-          `${
-            client.isActive
-              ? 'They will lose access to their account.'
-              : 'They will regain access to their account.'
-          }`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const response = await apiClient.put(`/admin/clients/${client._id}`, {
-        isActive: !client.isActive,
-      });
-
-      if (response.success) {
-        fetchClients();
-        alert(`Client ${client.isActive ? 'deactivated' : 'activated'} successfully`);
-      }
-    } catch (error) {
-      logger.error('Failed to update client status', error);
-      alert(error.message || 'Failed to update client status');
-    }
+    const action = client.isActive ? 'deactivate' : 'activate';
+    openConfirm({
+      title: client.isActive ? t('admin.clientDeactivate') : t('admin.clientActivate'),
+      message:
+        client.isActive
+          ? t('admin.clientDeactivateConfirm')
+          : t('admin.clientActivateConfirm'),
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await apiClient.put(`/admin/clients/${client._id}`, {
+            isActive: !client.isActive,
+          });
+          if (response.success) {
+            fetchClients();
+            showSuccess(client.isActive ? t('admin.clientDeactivated') : t('admin.clientActivated'));
+          }
+        } catch (error) {
+          logger.error('Failed to update client status', error);
+          showError(error.message || t('admin.clientStatusUpdateFailed'));
+        }
+      },
+    });
   };
 
   const columns = [
@@ -348,7 +348,7 @@ export default function AdminClientsPage() {
                       size='sm'
                       onClick={() => {
                         navigator.clipboard.writeText(paymentUrl);
-                        alert('Payment link copied to clipboard!');
+                        showSuccess(t('admin.paymentLinkCopied') || 'Payment link copied to clipboard');
                       }}
                     >
                       Copy Link

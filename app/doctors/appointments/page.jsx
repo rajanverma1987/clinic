@@ -102,7 +102,7 @@ export default function DoctorAppointmentsPage() {
       }
 
       const response = await apiClient.get(
-        `/appointments?doctorId=${doctorId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&limit=100`
+        `/appointments?doctorId=${doctorId}&startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}&limit=100`,
       );
 
       if (response.success) {
@@ -138,7 +138,7 @@ export default function DoctorAppointmentsPage() {
   };
 
   const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(undefined, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -198,7 +198,9 @@ export default function DoctorAppointmentsPage() {
                                   {apt.patientId?.firstName} {apt.patientId?.lastName}
                                 </span>
                                 <Tag
-                                  className={STATUS_COLORS[apt.status] || 'bg-gray-100 text-gray-800'}
+                                  className={
+                                    STATUS_COLORS[apt.status] || 'bg-gray-100 text-gray-800'
+                                  }
                                 >
                                   {apt.status}
                                 </Tag>
@@ -239,8 +241,7 @@ export default function DoctorAppointmentsPage() {
       <div className='grid grid-cols-7 gap-2'>
         {days.map((day, index) => {
           const dayAppointments = getAppointmentsForDate(day);
-          const isToday =
-            day.toDateString() === new Date().toDateString();
+          const isToday = day.toDateString() === new Date().toDateString();
 
           return (
             <div
@@ -251,7 +252,7 @@ export default function DoctorAppointmentsPage() {
             >
               <div className='mb-2'>
                 <div className='text-xs font-medium text-neutral-600'>
-                  {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {day.toLocaleDateString(undefined, { weekday: 'short' })}
                 </div>
                 <div
                   className={`text-lg font-bold ${
@@ -272,9 +273,7 @@ export default function DoctorAppointmentsPage() {
                       <div className='font-medium text-neutral-900 truncate'>
                         {apt.patientId?.firstName} {apt.patientId?.lastName}
                       </div>
-                      <div className='text-neutral-600'>
-                        {formatTime(apt.startTime)}
-                      </div>
+                      <div className='text-neutral-600'>{formatTime(apt.startTime)}</div>
                       <Tag
                         className={`${STATUS_COLORS[apt.status] || 'bg-gray-100 text-gray-800'} text-xs mt-1`}
                       >
@@ -344,8 +343,8 @@ export default function DoctorAppointmentsPage() {
                     isToday
                       ? 'bg-primary-50 border-primary-300'
                       : isCurrentMonth
-                      ? 'bg-white border-neutral-200'
-                      : 'bg-neutral-50 border-neutral-100'
+                        ? 'bg-white border-neutral-200'
+                        : 'bg-neutral-50 border-neutral-100'
                   }`}
                 >
                   <div
@@ -353,8 +352,8 @@ export default function DoctorAppointmentsPage() {
                       isToday
                         ? 'text-primary-600'
                         : isCurrentMonth
-                        ? 'text-neutral-900'
-                        : 'text-neutral-400'
+                          ? 'text-neutral-900'
+                          : 'text-neutral-400'
                     }`}
                   >
                     {day.getDate()}
@@ -402,10 +401,7 @@ export default function DoctorAppointmentsPage() {
   return (
     <Layout>
       <div style={{ padding: '0 10px' }} className='space-y-6'>
-        <PageHeader
-          title='Appointments Calendar'
-          subtitle='View and manage your appointments'
-        />
+        <PageHeader title='Appointments Calendar' subtitle='View and manage your appointments' />
 
         {/* View Controls */}
         <Card>
@@ -413,6 +409,7 @@ export default function DoctorAppointmentsPage() {
             <div className='flex items-center justify-between'>
               <div className='flex gap-2'>
                 <Button
+                  type='button'
                   variant={viewMode === 'day' ? 'primary' : 'secondary'}
                   size='sm'
                   onClick={() => setViewMode('day')}
@@ -420,6 +417,7 @@ export default function DoctorAppointmentsPage() {
                   Day
                 </Button>
                 <Button
+                  type='button'
                   variant={viewMode === 'week' ? 'primary' : 'secondary'}
                   size='sm'
                   onClick={() => setViewMode('week')}
@@ -427,6 +425,7 @@ export default function DoctorAppointmentsPage() {
                   Week
                 </Button>
                 <Button
+                  type='button'
                   variant={viewMode === 'month' ? 'primary' : 'secondary'}
                   size='sm'
                   onClick={() => setViewMode('month')}
@@ -451,11 +450,11 @@ export default function DoctorAppointmentsPage() {
                   {viewMode === 'day'
                     ? formatDate(currentDate)
                     : viewMode === 'week'
-                    ? `Week of ${formatDate(currentDate)}`
-                    : currentDate.toLocaleDateString('en-US', {
-                        month: 'long',
-                        year: 'numeric',
-                      })}
+                      ? `Week of ${formatDate(currentDate)}`
+                      : currentDate.toLocaleDateString(undefined, {
+                          month: 'long',
+                          year: 'numeric',
+                        })}
                 </div>
               </div>
             </div>
@@ -474,10 +473,10 @@ export default function DoctorAppointmentsPage() {
         {/* Quick Actions */}
         <div className='flex gap-2'>
           <Button variant='primary' onClick={() => router.push('/appointments/new')}>
-            New Appointment
+            {t('dashboard.newAppointment')}
           </Button>
           <Button variant='secondary' onClick={() => router.push('/appointments')}>
-            List View
+            {t('appointments.listView')}
           </Button>
         </div>
       </div>

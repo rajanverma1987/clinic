@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
@@ -15,24 +16,30 @@ import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'All' },
-  { value: 'open', label: 'Open' },
-  { value: 'contacted', label: 'Contacted' },
-  { value: 'escalated', label: 'Escalated' },
-  { value: 'resolved', label: 'Resolved' },
-  { value: 'refund_issued', label: 'Refund issued' },
+const getStatusOptions = (t) => [
+  { value: '', label: t('common.all') },
+  { value: 'open', label: t('admin.disputeStatusOpen') },
+  { value: 'contacted', label: t('admin.disputeStatusContacted') },
+  { value: 'escalated', label: t('admin.disputeStatusEscalated') },
+  { value: 'resolved', label: t('admin.disputeStatusResolved') },
+  { value: 'refund_issued', label: t('admin.disputeStatusRefundIssued') },
 ];
 
 export default function AdminFinancialDisputesPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const { currency, locale } = useSettings();
   const [disputes, setDisputes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
-  const [actionModal, setActionModal] = useState({ open: false, dispute: null, action: '', adminNotes: '' });
+  const [actionModal, setActionModal] = useState({
+    open: false,
+    dispute: null,
+    action: '',
+    adminNotes: '',
+  });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -48,7 +55,10 @@ export default function AdminFinancialDisputesPage() {
   const fetchDisputes = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({ page: pagination.page.toString(), limit: pagination.limit.toString() });
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+      });
       if (statusFilter) params.append('status', statusFilter);
       const response = await apiClient.get(`/admin/financial/disputes?${params.toString()}`);
       if (response.success && response.data) {
@@ -64,7 +74,7 @@ export default function AdminFinancialDisputesPage() {
       }
     } catch (err) {
       logger.error('Failed to fetch disputes', err);
-      showError('Failed to fetch disputes');
+      showError(t('admin.failedToFetchDisputes'));
     } finally {
       setLoading(false);
     }
@@ -91,31 +101,36 @@ export default function AdminFinancialDisputesPage() {
       }
       const response = await apiClient.put(`/admin/financial/disputes/${dispute._id}`, payload);
       if (response.success) {
-        showSuccess(action === 'refund' ? 'Refund issued' : `Marked as ${action}`);
+        showSuccess(
+          action === 'refund'
+            ? t('admin.disputeRefundIssued')
+            : t('admin.disputeMarkedAs', { action }),
+        );
         setActionModal({ open: false, dispute: null, action: '', adminNotes: '' });
         fetchDisputes();
       } else {
-        showError(response.error?.message || 'Action failed');
+        showError(response.error?.message || t('admin.disputeActionFailed'));
       }
     } catch (err) {
-      showError('Action failed');
+      showError(t('admin.disputeActionFailed'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (authLoading || (loading && !disputes.length)) return <Loader type='page' text={t('common.loading')} />;
+  if (authLoading || (loading && !disputes.length))
+    return <Loader type='page' text={t('common.loading')} />;
   if (user?.role !== 'super_admin') return null;
 
   const pages = pagination.totalPages || 1;
 
   return (
     <Layout
-      title='Payment Disputes'
-      subtitle='Review and resolve payment disputes; issue refunds, contact, escalate, or mark resolved'
+      title={t('admin.financialPaymentDisputes')}
+      subtitle={t('admin.financialPaymentDisputesDesc')}
       actionButton={
         <Button variant='primary' onClick={() => router.push('/admin/financial')}>
-          Back to Financial
+          {t('admin.backToFinancial')}
         </Button>
       }
     >
@@ -124,19 +139,28 @@ export default function AdminFinancialDisputesPage() {
           <div className='p-6'>
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Status</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.disputeStatusLabel')}
+                </label>
                 <select
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                   value={statusFilter}
-                  onChange={(e) => { setStatusFilter(e.target.value); setPagination((p) => ({ ...p, page: 1 })); }}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPagination((p) => ({ ...p, page: 1 }));
+                  }}
                 >
-                  {STATUS_OPTIONS.map((o) => (
-                    <option key={o.value || 'all'} value={o.value}>{o.label}</option>
+                  {getStatusOptions(t).map((o) => (
+                    <option key={o.value || 'all'} value={o.value}>
+                      {o.label}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className='flex items-end'>
-                <Button variant='primary' onClick={() => fetchDisputes()}>Apply</Button>
+                <Button variant='primary' onClick={() => fetchDisputes()}>
+                  {t('admin.activityLogsApply')}
+                </Button>
               </div>
             </div>
           </div>
@@ -150,8 +174,10 @@ export default function AdminFinancialDisputesPage() {
           <Loader type='section' text={t('common.loading')} />
         ) : disputes.length === 0 ? (
           <Card className='p-12 text-center'>
-            <p className='text-neutral-500'>No disputes found</p>
-            <p className='text-sm text-neutral-400 mt-2'>Disputes can be created from the API or patient portal.</p>
+            <p className='text-neutral-500'>{t('admin.disputeNoDisputesFound')}</p>
+            <p className='text-sm text-neutral-400 mt-2'>
+              Disputes can be created from the API or patient portal.
+            </p>
           </Card>
         ) : (
           <div className='space-y-4'>
@@ -161,27 +187,73 @@ export default function AdminFinancialDisputesPage() {
                   <div>
                     <div className='flex items-center gap-2 flex-wrap'>
                       <span className='font-semibold text-neutral-900'>{d.patientName || '—'}</span>
-                      <Tag className={d.status === 'open' ? 'bg-amber-100 text-amber-800' : d.status === 'refund_issued' ? 'bg-green-100 text-green-800' : 'bg-neutral-100 text-neutral-800'}>
+                      <Tag
+                        className={
+                          d.status === 'open'
+                            ? 'bg-amber-100 text-amber-800'
+                            : d.status === 'refund_issued'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-neutral-100 text-neutral-800'
+                        }
+                      >
                         {d.status}
                       </Tag>
                     </div>
-                    <p className='text-sm text-neutral-600 mt-1'>{d.tenantName || '—'} · Invoice {d.invoiceNumber || '—'}</p>
-                    <p className='text-lg font-medium text-neutral-900 mt-2'>{formatCurrency(d.amount)} {d.currency}</p>
-                    <p className='text-sm text-neutral-700 mt-2'><strong>Reason:</strong> {d.reason || '—'}</p>
-                    {d.evidence && <p className='text-sm text-neutral-600 mt-1'><strong>Evidence:</strong> {d.evidence}</p>}
-                    {d.adminNotes && <p className='text-sm text-neutral-500 mt-1 italic'>Admin: {d.adminNotes}</p>}
+                    <p className='text-sm text-neutral-600 mt-1'>
+                      {d.tenantName || '—'} · Invoice {d.invoiceNumber || '—'}
+                    </p>
+                    <p className='text-lg font-medium text-neutral-900 mt-2'>
+                      {formatCurrency(d.amount)} {d.currency}
+                    </p>
+                    <p className='text-sm text-neutral-700 mt-2'>
+                      <strong>Reason:</strong> {d.reason || '—'}
+                    </p>
+                    {d.evidence && (
+                      <p className='text-sm text-neutral-600 mt-1'>
+                        <strong>Evidence:</strong> {d.evidence}
+                      </p>
+                    )}
+                    {d.adminNotes && (
+                      <p className='text-sm text-neutral-500 mt-1 italic'>Admin: {d.adminNotes}</p>
+                    )}
                   </div>
                   <div className='flex flex-col gap-2'>
                     {d.status === 'open' && (
                       <>
-                        <Button variant='secondary' size='sm' onClick={() => handleAction(d, 'contacted')}>Contact</Button>
-                        <Button variant='secondary' size='sm' onClick={() => handleAction(d, 'escalated')}>Escalate</Button>
+                        <Button
+                          variant='secondary'
+                          size='sm'
+                          onClick={() => handleAction(d, 'contacted')}
+                        >
+                          Contact
+                        </Button>
+                        <Button
+                          variant='secondary'
+                          size='sm'
+                          onClick={() => handleAction(d, 'escalated')}
+                        >
+                          Escalate
+                        </Button>
                       </>
                     )}
-                    {(d.status === 'open' || d.status === 'contacted' || d.status === 'escalated') && (
+                    {(d.status === 'open' ||
+                      d.status === 'contacted' ||
+                      d.status === 'escalated') && (
                       <>
-                        <Button variant='primary' size='sm' onClick={() => handleAction(d, 'refund')}>Issue Refund</Button>
-                        <Button variant='secondary' size='sm' onClick={() => handleAction(d, 'resolved')}>Mark Resolved</Button>
+                        <Button
+                          variant='primary'
+                          size='sm'
+                          onClick={() => handleAction(d, 'refund')}
+                        >
+                          Issue Refund
+                        </Button>
+                        <Button
+                          variant='secondary'
+                          size='sm'
+                          onClick={() => handleAction(d, 'resolved')}
+                        >
+                          Mark Resolved
+                        </Button>
                       </>
                     )}
                   </div>
@@ -218,12 +290,18 @@ export default function AdminFinancialDisputesPage() {
         )}
 
         {actionModal.open && actionModal.dispute && (
-          <div className='fixed inset-0 z-50 flex items-center justify-center bg-neutral-500/30 backdrop-blur-sm' role='dialog' aria-modal='true'>
+          <div
+            className='fixed inset-0 z-50 flex items-center justify-center bg-neutral-500/30 backdrop-blur-sm'
+            role='dialog'
+            aria-modal='true'
+          >
             <Card className='w-full max-w-md mx-4 p-6'>
               <h3 className='text-lg font-semibold text-neutral-900 mb-4'>
                 {actionModal.action === 'refund' ? 'Issue Refund' : `Mark as ${actionModal.action}`}
               </h3>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Admin notes (optional)</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Admin notes (optional)
+              </label>
               <textarea
                 className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 mb-4'
                 rows={3}
@@ -232,7 +310,12 @@ export default function AdminFinancialDisputesPage() {
                 onChange={(e) => setActionModal((m) => ({ ...m, adminNotes: e.target.value }))}
               />
               <div className='flex gap-2 justify-end'>
-                <Button variant='secondary' onClick={() => setActionModal({ open: false, dispute: null, action: '', adminNotes: '' })}>
+                <Button
+                  variant='secondary'
+                  onClick={() =>
+                    setActionModal({ open: false, dispute: null, action: '', adminNotes: '' })
+                  }
+                >
                   Cancel
                 </Button>
                 <Button variant='primary' onClick={submitAction} disabled={submitting}>

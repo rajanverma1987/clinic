@@ -1,12 +1,12 @@
 'use client';
 
 import '@/app/prescriptions/styles/prescription-form.css';
+import { FileDownIcon, PrinterIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ClinicalDecisionSupport } from '@/components/prescriptions/ClinicalDecisionSupport';
 import { ICD10SearchInput } from '@/components/prescriptions/ICD10SearchInput';
 import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
-import { FileDownIcon, PrinterIcon } from '@/components/icons';
 import { PrescriptionFormPrintPreview } from '@/components/prescriptions/PrescriptionFormPrintPreview';
 import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
 import { PrescriptionPatientHeader } from '@/components/prescriptions/PrescriptionPatientHeader';
@@ -132,7 +132,7 @@ function NewPrescriptionPageContent() {
         description: 'Cancel (Esc)',
       },
     ],
-    [router]
+    [router],
   );
 
   useKeyboardShortcuts(keyboardShortcuts);
@@ -169,7 +169,7 @@ function NewPrescriptionPageContent() {
     try {
       // First try to get from queue (in_progress)
       const queueResponse = await apiClient.get(
-        `/queue?patientId=${patientId}&status=in_progress&limit=1`
+        `/queue?patientId=${patientId}&status=in_progress&limit=1`,
       );
 
       if (queueResponse.success && queueResponse.data) {
@@ -199,7 +199,7 @@ function NewPrescriptionPageContent() {
 
       // Fallback: Get from appointments (in_progress)
       const appointmentsResponse = await apiClient.get(
-        `/appointments?patientId=${patientId}&status=in_progress&limit=1`
+        `/appointments?patientId=${patientId}&status=in_progress&limit=1`,
       );
 
       if (appointmentsResponse.success && appointmentsResponse.data) {
@@ -307,7 +307,7 @@ function NewPrescriptionPageContent() {
 
       // Fetch appointments with in_progress status to get patients
       const appointmentsResponse = await apiClient.get(
-        '/appointments?status=in_progress&limit=100'
+        '/appointments?status=in_progress&limit=100',
       );
 
       // Store appointments for linking
@@ -329,7 +329,7 @@ function NewPrescriptionPageContent() {
                 if (apt.patientId?._id) return apt.patientId._id;
                 return null;
               })
-              .filter((id) => id !== null)
+              .filter((id) => id !== null),
           ),
         ];
       }
@@ -603,7 +603,7 @@ function NewPrescriptionPageContent() {
       const response = await apiClient.post('/prescriptions', prescriptionData);
       if (response.success) {
         clearDraft();
-        showSuccess('Prescription signed and sent successfully');
+        showSuccess(t('prescriptions.signedAndSentSuccess'));
         router.push('/prescriptions');
       } else {
         const errorMessage = response.error?.message || 'Failed to create prescription';
@@ -637,7 +637,7 @@ function NewPrescriptionPageContent() {
       const response = await apiClient.post('/prescriptions', prescriptionData);
       if (response.success) {
         clearDraft();
-        showSuccess('Prescription saved as draft successfully!');
+        showSuccess(t('prescriptions.savedAsDraftSuccess'));
       } else {
         const errorMessage = response.error?.message || 'Failed to save prescription as draft';
         setError(errorMessage);
@@ -658,7 +658,7 @@ function NewPrescriptionPageContent() {
   const handlePrintPreview = () => {
     const selectedPatient = patients.find((p) => p._id === formData.patientId);
     if (!selectedPatient) {
-      alert('Please select a patient first');
+      showError(t('prescriptions.selectPatientFirst') || 'Please select a patient first');
       return;
     }
     setShowPrintPreview(true);
@@ -739,8 +739,8 @@ function NewPrescriptionPageContent() {
                           .some(
                             (a) =>
                               (it.drugName || '').toLowerCase().includes(a) ||
-                              (it.genericName || '').toLowerCase().includes(a)
-                          )
+                              (it.genericName || '').toLowerCase().includes(a),
+                          ),
                     ) && (
                       <div
                         className='prescription-form-section'
@@ -758,13 +758,15 @@ function NewPrescriptionPageContent() {
                     onOrderTest={(testName) => {
                       setFormData((prev) => ({
                         ...prev,
-                        advice: (prev.advice || '') + ` [Order: ${testName}]`,
+                        additionalInstructions:
+                          (prev.additionalInstructions || '') + ` [Order: ${testName}]`,
                       }));
                     }}
                     onReferral={() => {
                       setFormData((prev) => ({
                         ...prev,
-                        advice: (prev.advice || '') + ' [Referral suggested]',
+                        additionalInstructions:
+                          (prev.additionalInstructions || '') + ' [Referral suggested]',
                       }));
                     }}
                   />
@@ -1112,7 +1114,7 @@ function NewPrescriptionPageContent() {
                         // Download prescription as PDF
                         const selectedPatient = patients.find((p) => p._id === formData.patientId);
                         if (!selectedPatient) {
-                          alert('Please select a patient first');
+                          showError(t('prescriptions.selectPatientFirst') || 'Please select a patient first');
                           return;
                         }
                         try {

@@ -16,6 +16,7 @@ export function ProfileTab({
   onToggleStatus,
   availabilityForm,
   setAvailabilityForm,
+  onEditProfileClick,
 }) {
   const { t } = useI18n();
 
@@ -51,7 +52,10 @@ export function ProfileTab({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={currentUser.avatar}
-                      alt={`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Profile'}
+                      alt={
+                        `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() ||
+                        'Profile'
+                      }
                       className='absolute inset-0 w-full h-full object-cover'
                     />
                   ) : (
@@ -95,7 +99,12 @@ export function ProfileTab({
                       {getRoleLabel(currentUser?.role)}
                     </span>
                     <span className='text-sm text-neutral-600 flex items-center gap-2'>
-                      <svg className='icon icon-xs' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <svg
+                        className='icon icon-xs'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
                         <path
                           strokeLinecap='round'
                           strokeLinejoin='round'
@@ -138,13 +147,28 @@ export function ProfileTab({
 
             {/* Action Buttons */}
             <div className='flex flex-col sm:flex-row gap-3 w-full lg:w-auto'>
-              <Link
-                href={currentUser?.role === 'doctor' ? '/doctors/profile' : '/change-password'}
-              >
-                <Button variant='secondary' size='md' className='flex-1 lg:flex-none'>
+              {currentUser?.role === 'doctor' ? (
+                <Link href='/doctors/profile'>
+                  <Button variant='secondary' size='md' className='flex-1 lg:flex-none'>
+                    {t('settings.editProfile')}
+                  </Button>
+                </Link>
+              ) : onEditProfileClick ? (
+                <Button
+                  variant='secondary'
+                  size='md'
+                  className='flex-1 lg:flex-none'
+                  onClick={onEditProfileClick}
+                >
                   {t('settings.editProfile')}
                 </Button>
-              </Link>
+              ) : (
+                <Link href='/settings?tab=profile'>
+                  <Button variant='secondary' size='md' className='flex-1 lg:flex-none'>
+                    {t('settings.editProfile')}
+                  </Button>
+                </Link>
+              )}
               <Button variant='danger' size='md' className='flex-1 lg:flex-none' onClick={logout}>
                 {t('auth.logout')}
               </Button>
