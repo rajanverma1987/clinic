@@ -60,15 +60,36 @@ export function Loader({
   const variantConfig = {
     primary: {
       main: 'var(--color-primary-500)',
+      mainRgb: '30, 79, 181', // RGB for rgba() usage
+      textColor: '#1a1a1a',
+      textRgb: '26, 26, 26',
       pulse: 'rgba(45, 156, 219, 0.15)',
+      glow: 'rgba(30, 79, 181, 0.15)',
+      ringGlow: 'rgba(30, 79, 181, 0.25)',
+      ringInner: 'rgba(30, 79, 181, 0.6)',
+      ringRight: 'rgba(30, 79, 181, 0.5)',
     },
     secondary: {
       main: '#27AE60',
+      mainRgb: '39, 174, 96',
+      textColor: '#1a1a1a',
+      textRgb: '26, 26, 26',
       pulse: 'rgba(39, 174, 96, 0.15)',
+      glow: 'rgba(39, 174, 96, 0.15)',
+      ringGlow: 'rgba(39, 174, 96, 0.25)',
+      ringInner: 'rgba(39, 174, 96, 0.6)',
+      ringRight: 'rgba(39, 174, 96, 0.5)',
     },
     neutral: {
       main: '#828282',
+      mainRgb: '130, 130, 130',
+      textColor: '#2d2d2d',
+      textRgb: '45, 45, 45',
       pulse: 'rgba(130, 130, 130, 0.15)',
+      glow: 'rgba(130, 130, 130, 0.15)',
+      ringGlow: 'rgba(130, 130, 130, 0.25)',
+      ringInner: 'rgba(130, 130, 130, 0.6)',
+      ringRight: 'rgba(130, 130, 130, 0.5)',
     },
   };
 
@@ -79,31 +100,79 @@ export function Loader({
 
   const spinner = (
     <div
-      className="loader-root relative flex shrink-0 items-center justify-center"
+      className='loader-root relative flex shrink-0 items-center justify-center'
       style={{ width: pulsePx, height: pulsePx }}
-      aria-hidden="true"
+      aria-hidden='true'
     >
+      {/* Outer glow aura - subtle background */}
       <div
-        className="loader-bg-pulse absolute inset-0 rounded-full"
-        style={{ background: colors.pulse }}
+        className='loader-glow-ring absolute rounded-full'
+        style={{
+          top: -ringOffset - 4,
+          left: -ringOffset - 4,
+          right: -ringOffset - 4,
+          bottom: -ringOffset - 4,
+          width: `calc(${pulsePx} + ${(ringOffset + 4) * 2}px)`,
+          height: `calc(${pulsePx} + ${(ringOffset + 4) * 2}px)`,
+          zIndex: 0,
+          background: `radial-gradient(circle, rgba(${colors.mainRgb}, 0.08) 0%, transparent 65%)`,
+          filter: 'blur(6px)',
+          WebkitFilter: 'blur(6px)',
+        }}
       />
-      <div className="loader-logo-wrap absolute inset-0 flex items-center justify-center">
-        <img
-          src="/images/logoclinic.png"
-          alt=""
-          width={cfg.spinner}
-          height={cfg.spinner}
-          className="loader-logo object-contain"
+      {/* Premium gradient background pulse */}
+      <div
+        className='loader-bg-pulse absolute inset-0 rounded-full'
+        style={{
+          background: `radial-gradient(circle at center, ${colors.pulse} 0%, rgba(${colors.mainRgb}, 0.08) 40%, transparent 75%)`,
+          filter: 'blur(10px)',
+          WebkitFilter: 'blur(10px)',
+        }}
+      />
+      {/* Logo container with premium styling */}
+      <div className='loader-logo-wrap absolute inset-0 flex items-center justify-center z-10'>
+        <div
+          className='loader-logo-container relative'
           style={{
             width: cfg.spinner,
-            height: 'auto',
-            maxHeight: cfg.spinner,
-            objectFit: 'contain',
+            height: cfg.spinner,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        />
+        >
+          {/* Inner glow effect behind logo */}
+          <div
+            className='loader-logo-glow absolute inset-0 rounded-full'
+            style={{
+              background: `radial-gradient(circle, rgba(${colors.mainRgb}, 0.2) 0%, rgba(${colors.mainRgb}, 0.05) 50%, transparent 80%)`,
+              filter: 'blur(6px)',
+              WebkitFilter: 'blur(6px)',
+              zIndex: -1,
+            }}
+          />
+          <img
+            src='/images/logoclinic.png'
+            alt=''
+            width={cfg.spinner}
+            height={cfg.spinner}
+            className='loader-logo object-contain'
+            style={{
+              width: cfg.spinner,
+              height: 'auto',
+              maxHeight: cfg.spinner,
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 3px 10px rgba(0, 0, 0, 0.12)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.08))',
+              WebkitFilter: 'drop-shadow(0 3px 10px rgba(0, 0, 0, 0.12)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.08))',
+              position: 'relative',
+              zIndex: 1,
+            }}
+          />
+        </div>
       </div>
+      {/* Premium spinning ring with gradient - main ring */}
       <div
-        className="loader-ring absolute rounded-full"
+        className='loader-ring absolute rounded-full'
         style={{
           top: -ringOffset,
           left: -ringOffset,
@@ -116,9 +185,32 @@ export function Loader({
           borderStyle: 'solid',
           borderColor: 'transparent',
           borderTopColor: colors.main,
-          borderRightColor: 'transparent',
+          borderRightColor: `rgba(${colors.mainRgb}, 0.4)`,
           borderBottomColor: 'transparent',
           borderLeftColor: 'transparent',
+          filter: `drop-shadow(0 0 8px rgba(${colors.mainRgb}, 0.3)) drop-shadow(0 0 4px rgba(${colors.mainRgb}, 0.2))`,
+          WebkitFilter: `drop-shadow(0 0 8px rgba(${colors.mainRgb}, 0.3)) drop-shadow(0 0 4px rgba(${colors.mainRgb}, 0.2))`,
+        }}
+      />
+      {/* Secondary inner ring for depth - counter-rotating */}
+      <div
+        className='loader-ring-inner absolute rounded-full'
+        style={{
+          top: -ringOffset + 3,
+          left: -ringOffset + 3,
+          right: -ringOffset + 3,
+          bottom: -ringOffset + 3,
+          width: `calc(${pulsePx} + ${(ringOffset - 3) * 2}px)`,
+          height: `calc(${pulsePx} + ${(ringOffset - 3) * 2}px)`,
+          zIndex: 2,
+          borderWidth: '1.5px',
+          borderStyle: 'solid',
+          borderColor: 'transparent',
+          borderTopColor: `rgba(${colors.mainRgb}, 0.5)`,
+          borderRightColor: `rgba(${colors.mainRgb}, 0.3)`,
+          borderBottomColor: 'transparent',
+          borderLeftColor: 'transparent',
+          opacity: 0.7,
         }}
       />
     </div>
@@ -129,7 +221,18 @@ export function Loader({
     return message ? (
       <div {...a11yProps} className={wrapperClass}>
         {spinner}
-        <span className="text-body-sm font-medium tracking-wide text-neutral-700 whitespace-nowrap">
+        <span
+          className='loader-text-pulse text-body-md font-bold tracking-tight whitespace-nowrap'
+          style={{
+            color: colors.textColor,
+            textShadow: `0 2px 10px rgba(${colors.textRgb}, 0.15), 0 1px 4px rgba(${colors.textRgb}, 0.2)`,
+            letterSpacing: '-0.015em',
+            fontWeight: 600,
+            WebkitFontSmoothing: 'antialiased',
+            MozOsxFontSmoothing: 'grayscale',
+            textRendering: 'optimizeLegibility',
+          }}
+        >
           {message}
         </span>
       </div>
@@ -142,17 +245,23 @@ export function Loader({
 
   const content = message ? (
     <div
-      className="flex flex-col items-center"
-      style={{ gap: effectiveFullScreen ? '2.5rem' : '1.5rem' }}
+      className='flex flex-col items-center'
+      style={{ gap: effectiveFullScreen ? '3rem' : '1.75rem' }}
     >
       {spinner}
       <span
-        className="loader-text-pulse loader-message font-medium tracking-wide text-neutral-700 text-center max-w-xs"
+        className='loader-text-pulse loader-message font-bold tracking-tight text-center max-w-md'
         style={{
-          fontSize: effectiveFullScreen ? '1rem' : 'var(--text-body-sm, 14px)',
-          lineHeight: effectiveFullScreen ? '1.5rem' : 'var(--text-body-sm-line-height, 20px)',
-          letterSpacing: '0.025em',
+          color: colors.textColor,
+          fontSize: effectiveFullScreen ? '1.25rem' : 'var(--text-body-md, 16px)',
+          lineHeight: effectiveFullScreen ? '1.75rem' : 'var(--text-body-md-line-height, 24px)',
+          letterSpacing: '-0.015em',
           marginTop: effectiveFullScreen ? '0.5rem' : undefined,
+          fontWeight: 600,
+          textShadow: `0 3px 16px rgba(${colors.textRgb}, 0.15), 0 1px 6px rgba(${colors.textRgb}, 0.2), 0 0 1px rgba(${colors.textRgb}, 0.1)`,
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+          textRendering: 'optimizeLegibility',
         }}
       >
         {message}
@@ -169,24 +278,31 @@ export function Loader({
         style={{
           zIndex: 'var(--z-loader, 10070)',
           background:
-            'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.98) 100%)',
-          backdropFilter: 'blur(12px)',
+            'linear-gradient(135deg, rgba(255, 255, 255, 0.99) 0%, rgba(250, 252, 255, 0.98) 30%, rgba(247, 250, 252, 0.98) 70%, rgba(245, 248, 250, 0.99) 100%)',
+          backdropFilter: 'blur(20px) saturate(190%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(190%)',
         }}
-        role="status"
-        aria-busy="true"
-        aria-live="polite"
+        role='status'
+        aria-busy='true'
+        aria-live='polite'
         aria-label={ariaLabel ?? message ?? undefined}
       >
-        {content}
+        {/* Premium background pattern overlay */}
+        <div
+          className='absolute inset-0 opacity-[0.02]'
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 2px 2px, var(--color-primary-500) 1px, transparent 0)',
+            backgroundSize: '40px 40px',
+          }}
+        />
+        <div className='relative z-10'>{content}</div>
       </div>
     );
   }
 
   return (
-    <div
-      className={`flex items-center justify-center ${className}`.trim()}
-      {...a11yProps}
-    >
+    <div className={`flex items-center justify-center ${className}`.trim()} {...a11yProps}>
       {content}
     </div>
   );
@@ -203,34 +319,57 @@ export function CompactLoader({
 }) {
   const sizeMap = { xs: 16, sm: 20, md: 24, lg: 32 };
   const variantColors = {
-    primary: 'var(--color-primary-500)',
-    secondary: '#27AE60',
-    neutral: '#828282',
-    white: '#ffffff',
+    primary: { color: 'var(--color-primary-500)', rgb: '30, 79, 181' },
+    secondary: { color: '#27AE60', rgb: '39, 174, 96' },
+    neutral: { color: '#828282', rgb: '130, 130, 130' },
+    white: { color: '#ffffff', rgb: '255, 255, 255' },
   };
   const px = sizeMap[size] ?? sizeMap.sm;
-  const color = variantColors[variant] ?? variantColors.primary;
+  const colorConfig = variantColors[variant] ?? variantColors.primary;
+  const color = colorConfig.color;
+  const colorRgb = colorConfig.rgb;
 
   return (
     <span
       className={`loader-compact inline-flex items-center justify-center ${className}`.trim()}
       style={{ width: px, height: px }}
-      role="status"
+      role='status'
       aria-label={ariaLabel}
-      aria-busy="true"
+      aria-busy='true'
     >
+      {/* Premium compact loader with glow */}
       <span
-        className="loader-compact-ring block rounded-full border-2 border-solid border-transparent"
+        className='loader-compact-ring block rounded-full border-2 border-solid border-transparent relative'
         style={{
           width: '100%',
           height: '100%',
           borderTopColor: color,
-          borderRightColor: color,
+          borderRightColor: variant === 'white' ? color : `rgba(${colorRgb}, 0.8)`,
           borderBottomColor: 'transparent',
           borderLeftColor: 'transparent',
+          filter: variant === 'white' ? 'none' : `drop-shadow(0 0 3px rgba(${colorRgb}, 0.2))`,
+          WebkitFilter:
+            variant === 'white' ? 'none' : `drop-shadow(0 0 3px rgba(${colorRgb}, 0.2))`,
         }}
-        aria-hidden="true"
+        aria-hidden='true'
       />
+      {/* Inner glow dot */}
+      {variant !== 'white' && (
+        <span
+          className='absolute rounded-full'
+          style={{
+            width: '30%',
+            height: '30%',
+            background: `radial-gradient(circle, rgba(${colorRgb}, 0.8) 0%, transparent 70%)`,
+            opacity: 0.6,
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+          }}
+          aria-hidden='true'
+        />
+      )}
     </span>
   );
 }

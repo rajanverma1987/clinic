@@ -3,19 +3,22 @@
  * GET /api/admin/appointments/analytics?startDate=&endDate=
  */
 
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import Appointment from '@/models/Appointment';
-import { logger } from '@/lib/utils/logger.js';
+import { NextResponse } from 'next/server';
 
 async function getHandler(req, user) {
-  try {
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
-    }
-    await connectDB();
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
+  await connectDB();
     const { searchParams } = new URL(req.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -35,13 +38,20 @@ async function getHandler(req, user) {
 
     const withDuration = appointments.filter((a) => a.startedAt && a.completedAt);
     const avgDurationMinutes = withDuration.length
-      ? withDuration.reduce((sum, a) => sum + (new Date(a.completedAt) - new Date(a.startedAt)) / 60000, 0) / withDuration.length
+      ? withDuration.reduce(
+          (sum, a) => sum + (new Date(a.completedAt) - new Date(a.startedAt)) / 60000,
+          0,
+        ) / withDuration.length
       : 0;
 
     const byHour = {};
     for (let h = 0; h < 24; h++) byHour[h] = 0;
     appointments.forEach((a) => {
-      const t = a.startTime ? new Date(a.startTime) : a.appointmentDate ? new Date(a.appointmentDate) : null;
+      const t = a.startTime
+        ? new Date(a.startTime)
+        : a.appointmentDate
+          ? new Date(a.appointmentDate)
+          : null;
       if (t) byHour[t.getHours()]++;
     });
     const peakHours = Object.entries(byHour)
@@ -79,14 +89,22 @@ async function getHandler(req, user) {
       dateRange: { start: start.toISOString(), end: end.toISOString() },
     };
 
-    return NextResponse.json(successResponse(data));
-  } catch (err) {
-    logger.error('Admin appointment analytics error:', err);
-    return NextResponse.json(
-      errorResponse(err instanceof Error ? err.message : 'Failed to fetch analytics', 'FETCH_ERROR'),
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(successResponse(data));
 }
 
-export const GET = withAuth(getHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates REPORT:READ permission
+ * 6. Handler - Executes business logic (super_admin check inside handler)
+ */
+export const GET = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.REPORT, ACTIONS.READ)(getHandler))),
+  ),
+);

@@ -16,22 +16,40 @@ import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const LIMIT = 10;
+const CACHE_TTL_MS = 30000; // 30 seconds cache
+
+// Simple in-memory cache per user
+const cache = new Map();
 
 export function AppointmentsTab() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { prefetchAppointment } = usePrefetchDetail();
+  const hasFetchedRef = useRef(false);
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchAppointments = useCallback(async () => {
+  const fetchAppointments = useCallback(async (forceRefresh = false) => {
     if (!user || authLoading) return;
+    
+    const cacheKey = `appointments-tab-${user._id || user.id}`;
+    const cached = cache.get(cacheKey);
+    const now = Date.now();
+    
+    // Use cache if available and not expired
+    if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+      setAppointments(cached.data);
+      setLoading(false);
+      hasFetchedRef.current = true;
+      return;
+    }
+    
     setError(null);
     setLoading(true);
     try {
@@ -43,8 +61,11 @@ export function AppointmentsTab() {
           (apt) => apt && !apt.isTelemedicine && apt.status !== 'arrived',
         );
         setAppointments(filtered);
+        // Update cache
+        cache.set(cacheKey, { data: filtered, timestamp: now });
       } else {
         setAppointments([]);
+        cache.set(cacheKey, { data: [], timestamp: now });
       }
     } catch (err) {
       logger.error('Failed to fetch appointments (tab)', err);
@@ -52,11 +73,14 @@ export function AppointmentsTab() {
       setError(err?.message || t('common.error'));
     } finally {
       setLoading(false);
+      hasFetchedRef.current = true;
     }
   }, [user, authLoading, t]);
 
   useEffect(() => {
-    if (!authLoading && user) fetchAppointments();
+    if (!authLoading && user && !hasFetchedRef.current) {
+      fetchAppointments();
+    }
   }, [authLoading, user, fetchAppointments]);
 
   const getStatusLabel = (status) => {
@@ -194,7 +218,7 @@ export function AppointmentsTab() {
             </svg>
           </div>
           <p className='text-status-error text-body-md font-medium mb-4'>{error}</p>
-          <Button variant='primary' size='md' onClick={() => fetchAppointments()}>
+          <Button variant='primary' size='md' onClick={() => fetchAppointments(true)}>
             {t('common.retry')}
           </Button>
         </Card>

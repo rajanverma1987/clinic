@@ -4,28 +4,28 @@
  * Body: { doctorIds: string[], action: 'suspend' | 'activate' | 'export' | 'notify' }
  */
 
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import Doctor from '@/models/Doctor';
-import { logger } from '@/lib/utils/logger.js';
+import { NextResponse } from 'next/server';
 
 async function postHandler(req, user) {
-  try {
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(
-        errorResponse('Unauthorized', 'UNAUTHORIZED'),
-        { status: 403 }
-      );
-    }
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
 
-    const body = await req.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({}));
     const { doctorIds, action } = body || {};
     if (!Array.isArray(doctorIds) || !doctorIds.length || !action) {
       return NextResponse.json(
         errorResponse('doctorIds (array) and action are required', 'VALIDATION_ERROR'),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,34 +34,45 @@ async function postHandler(req, user) {
     if (action === 'suspend') {
       await Doctor.updateMany(
         { _id: { $in: doctorIds } },
-        { $set: { verificationStatus: 'suspended', status: 'inactive', updatedAt: new Date() } }
+        { $set: { verificationStatus: 'suspended', status: 'inactive', updatedAt: new Date() } },
       );
       return NextResponse.json(successResponse({ updated: doctorIds.length, action: 'suspend' }));
     }
     if (action === 'activate') {
       await Doctor.updateMany(
         { _id: { $in: doctorIds } },
-        { $set: { verificationStatus: 'verified', status: 'active', updatedAt: new Date() } }
+        { $set: { verificationStatus: 'verified', status: 'active', updatedAt: new Date() } },
       );
       return NextResponse.json(successResponse({ updated: doctorIds.length, action: 'activate' }));
     }
     if (action === 'export' || action === 'notify') {
       return NextResponse.json(
-        successResponse({ message: 'Action recorded', action, count: doctorIds.length })
+        successResponse({ message: 'Action recorded', action, count: doctorIds.length }),
       );
     }
 
     return NextResponse.json(
-      errorResponse('Supported bulk actions: suspend, activate, export, notify', 'VALIDATION_ERROR'),
-      { status: 400 }
+      errorResponse(
+        'Supported bulk actions: suspend, activate, export, notify',
+        'VALIDATION_ERROR',
+      ),
+      { status: 400 },
     );
-  } catch (err) {
-    logger.error('Admin doctors bulk-action error:', err);
-    return NextResponse.json(
-      errorResponse(err instanceof Error ? err.message : 'Bulk action failed', 'INTERNAL_ERROR'),
-      { status: 500 }
-    );
-  }
 }
 
-export const POST = withAuth(postHandler);
+/**
+ * Apply enterprise middleware stack to POST endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates DOCTOR:UPDATE permission
+ * 6. Handler - Executes business logic (super_admin check inside handler)
+ */
+export const POST = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.DOCTOR, ACTIONS.UPDATE)(postHandler))),
+  ),
+);

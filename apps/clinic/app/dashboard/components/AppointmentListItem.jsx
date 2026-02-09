@@ -38,7 +38,7 @@ function AppointmentListItemInner({
   const patientName =
     appointment.patientId?.name ||
     `${appointment.patientId?.firstName || ''} ${appointment.patientId?.lastName || ''}`.trim() ||
-    'Unknown Patient';
+    t('common.unknownPatient');
   const firstName = appointment.patientId?.firstName || '';
   const lastName = appointment.patientId?.lastName || '';
   const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
@@ -46,7 +46,7 @@ function AppointmentListItemInner({
 
   const visitType = appointment.type || 'consultation';
   const chiefComplaint = appointment.chiefComplaint || appointment.reason || '—';
-  const reason = appointment.reason || appointment.type || 'General Consultation';
+  const reason = appointment.reason || appointment.type || t('common.generalConsultation');
 
   const status = appointment.status || 'scheduled';
   const isOngoing = status === 'in_progress' || status === 'arrived';

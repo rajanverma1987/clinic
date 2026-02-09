@@ -113,12 +113,60 @@ export async function getRevenueReport(input, tenantId, userId) {
     filter.status = input.status;
   }
 
-  // Get invoices - optimized with lean() and selective population
-  const invoices = await Invoice.find(filter)
-    .populate('patientId', 'firstName lastName')
-    .populate('appointmentId', 'doctorId startTime')
-    .select('invoiceDate totalAmount balanceAmount status appointmentId patientId')
-    .lean();
+  // Early return optimization: Quick check if any invoices exist
+  const hasInvoices = await Invoice.countDocuments(filter);
+  if (hasInvoices === 0) {
+    return {
+      totalRevenue: 0,
+      totalPaid: 0,
+      totalPending: 0,
+      paymentMethodBreakdown: {},
+      invoices: [],
+      payments: [],
+      trends: {},
+    };
+  }
+
+  // Optimize: Use aggregation with $lookup instead of populate for better performance
+  const pipeline = [
+    { $match: filter },
+    {
+      $lookup: {
+        from: 'patients',
+        localField: 'patientId',
+        foreignField: '_id',
+        as: 'patient',
+        pipeline: [{ $project: { firstName: 1, lastName: 1 } }],
+      },
+    },
+    {
+      $lookup: {
+        from: 'appointments',
+        localField: 'appointmentId',
+        foreignField: '_id',
+        as: 'appointment',
+        pipeline: [{ $project: { doctorId: 1, startTime: 1 } }],
+      },
+    },
+    {
+      $addFields: {
+        patientId: { $arrayElemAt: ['$patient', 0] },
+        appointmentId: { $arrayElemAt: ['$appointment', 0] },
+      },
+    },
+    {
+      $project: {
+        invoiceDate: 1,
+        totalAmount: 1,
+        balanceAmount: 1,
+        status: 1,
+        appointmentId: 1,
+        patientId: 1,
+      },
+    },
+  ];
+
+  const invoices = await Invoice.aggregate(pipeline);
 
   // Filter by doctor if specified (through appointments)
   let filteredInvoices = invoices;
@@ -143,7 +191,9 @@ export async function getRevenueReport(input, tenantId, userId) {
     paymentFilter.paymentMethod = input.paymentMethod;
   }
 
-  const payments = await Payment.find(paymentFilter).lean();
+  // Early return optimization: Quick check if any payments exist
+  const hasPayments = await Payment.countDocuments(paymentFilter);
+  const payments = hasPayments > 0 ? await Payment.find(paymentFilter).lean() : [];
 
   // Calculate totals
   const totalRevenue = filteredInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
@@ -251,40 +301,26 @@ export async function getPatientReport(input, tenantId, userId) {
       deletedAt: null,
     });
 
-    // Get all patients - optimized with field selection
+    // Optimize: Add date filter to MongoDB query instead of filtering in memory
+    if (input.includeNewPatients && dateFilter) {
+      filter.createdAt = dateFilter;
+    }
+
+    // Get patients - optimized with field selection and date filter in query
     let allPatients = [];
+    let patients = [];
     try {
       allPatients = await Patient.find(filter)
         .select('gender dateOfBirth bloodGroup createdAt')
         .lean();
+      
+      // If includeNewPatients is true and dateFilter exists, patients are already filtered by MongoDB
+      // Otherwise, use all patients
+      patients = input.includeNewPatients && dateFilter ? allPatients : allPatients;
     } catch (err) {
       logger.error('Error fetching patients:', err);
       allPatients = [];
-    }
-
-    // Filter by date if provided (for new patients)
-    let patients = allPatients;
-    if (input.includeNewPatients && dateFilter) {
-      try {
-        const startDate = dateFilter.$gte ? new Date(dateFilter.$gte) : null;
-        const endDate = dateFilter.$lte ? new Date(dateFilter.$lte) : null;
-
-        if (startDate && endDate) {
-          patients = allPatients.filter((p) => {
-            if (!p.createdAt) return false;
-            try {
-              const created = new Date(p.createdAt);
-              if (isNaN(created.getTime())) return false;
-              return created >= startDate && created <= endDate;
-            } catch (e) {
-              return false;
-            }
-          });
-        }
-      } catch (err) {
-        logger.error('Error filtering patients by date:', err);
-        // Continue with all patients if date filtering fails
-      }
+      patients = [];
     }
 
     // Gender breakdown
@@ -724,6 +760,35 @@ export async function getDashboardStats(tenantId, userId) {
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
+    // Early return optimization: Quick check if tenant has any data
+    const tenantDataCheck = await Promise.all([
+      Appointment.countDocuments(withTenant(tenantId, { deletedAt: null })),
+      Patient.countDocuments(withTenant(tenantId, { deletedAt: null })),
+      Invoice.countDocuments(withTenant(tenantId, { deletedAt: null })),
+    ]);
+
+    const [hasAppointments, hasPatients, hasInvoices] = tenantDataCheck;
+
+    // If no data exists, return zeros immediately
+    if (!hasAppointments && !hasPatients && !hasInvoices) {
+      await AuditLogger.auditRead('report', 'dashboard', userId, tenantId);
+      return {
+        todayAppointments: 0,
+        todayRevenue: 0,
+        monthRevenue: 0,
+        activePatients: 0,
+        newPatientsThisMonth: 0,
+        completedToday: 0,
+        pendingInvoices: 0,
+        appointmentsTrend: 0,
+        revenueTrend: 0,
+        patientsTrend: 0,
+        newPatientsTrend: 0,
+        completionTrend: 0,
+        invoicesTrend: 0,
+      };
+    }
+
     const [
       todayStats,
       yesterdayStats,
@@ -752,60 +817,75 @@ export async function getDashboardStats(tenantId, userId) {
           revenue: 0,
         };
       }),
-      Invoice.find(
-        withTenant(tenantId, {
-          invoiceDate: { $gte: thisMonth },
-          status: { $ne: InvoiceStatus.CANCELLED },
-          deletedAt: null,
-        }),
-      )
-        .select('totalAmount')
-        .lean()
-        .catch((err) => {
-          logger.error('Error fetching month invoices:', err);
-          return [];
-        }),
-      Patient.countDocuments(withTenant(tenantId, { deletedAt: null })).catch((err) => {
-        logger.error('Error counting active patients:', err);
-        return 0;
-      }),
-      Patient.countDocuments(
-        withTenant(tenantId, {
-          createdAt: { $gte: thisMonth },
-          deletedAt: null,
-        }),
-      ).catch((err) => {
-        logger.error('Error counting new patients this month:', err);
-        return 0;
-      }),
-      Patient.countDocuments(
-        withTenant(tenantId, {
-          createdAt: { $gte: lastMonth, $lte: endOfLastMonth },
-          deletedAt: null,
-        }),
-      ).catch((err) => {
-        logger.error('Error counting new patients last month:', err);
-        return 0;
-      }),
-      Invoice.countDocuments(
-        withTenant(tenantId, {
-          status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
-          deletedAt: null,
-        }),
-      ).catch((err) => {
-        logger.error('Error counting pending invoices:', err);
-        return 0;
-      }),
-      Invoice.countDocuments(
-        withTenant(tenantId, {
-          status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
-          deletedAt: null,
-          invoiceDate: { $lte: endOfYesterday },
-        }),
-      ).catch((err) => {
-        logger.error('Error counting pending invoices yesterday:', err);
-        return 0;
-      }),
+      // Only fetch invoices if they exist (optimization for empty collections)
+      hasInvoices
+        ? Invoice.find(
+            withTenant(tenantId, {
+              invoiceDate: { $gte: thisMonth },
+              status: { $ne: InvoiceStatus.CANCELLED },
+              deletedAt: null,
+            }),
+          )
+            .select('totalAmount')
+            .lean()
+            .limit(10000) // Safety limit to prevent memory issues
+            .catch((err) => {
+              logger.error('Error fetching month invoices:', err);
+              return [];
+            })
+        : Promise.resolve([]),
+      // Optimize: Skip count queries if collections are empty
+      hasPatients
+        ? Patient.countDocuments(withTenant(tenantId, { deletedAt: null })).catch((err) => {
+            logger.error('Error counting active patients:', err);
+            return 0;
+          })
+        : Promise.resolve(0),
+      hasPatients
+        ? Patient.countDocuments(
+            withTenant(tenantId, {
+              createdAt: { $gte: thisMonth },
+              deletedAt: null,
+            }),
+          ).catch((err) => {
+            logger.error('Error counting new patients this month:', err);
+            return 0;
+          })
+        : Promise.resolve(0),
+      hasPatients
+        ? Patient.countDocuments(
+            withTenant(tenantId, {
+              createdAt: { $gte: lastMonth, $lte: endOfLastMonth },
+              deletedAt: null,
+            }),
+          ).catch((err) => {
+            logger.error('Error counting new patients last month:', err);
+            return 0;
+          })
+        : Promise.resolve(0),
+      hasInvoices
+        ? Invoice.countDocuments(
+            withTenant(tenantId, {
+              status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+              deletedAt: null,
+            }),
+          ).catch((err) => {
+            logger.error('Error counting pending invoices:', err);
+            return 0;
+          })
+        : Promise.resolve(0),
+      hasInvoices
+        ? Invoice.countDocuments(
+            withTenant(tenantId, {
+              status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+              deletedAt: null,
+              invoiceDate: { $lte: endOfYesterday },
+            }),
+          ).catch((err) => {
+            logger.error('Error counting pending invoices yesterday:', err);
+            return 0;
+          })
+        : Promise.resolve(0),
     ]);
 
     const todayAppointments = todayStats.totalAppointments;

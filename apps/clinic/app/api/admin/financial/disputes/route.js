@@ -4,24 +4,27 @@
  * POST /api/admin/financial/disputes - body: { tenantId, patientId, invoiceId?, paymentId?, amount, reason, evidence? }
  */
 
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import PaymentDispute from '@/models/PaymentDispute';
-import { logger } from '@/lib/utils/logger.js';
+import { NextResponse } from 'next/server';
 
 async function postHandler(req, user) {
-  try {
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
-    }
-    const body = await req.json().catch(() => ({}));
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
+  const body = await req.json().catch(() => ({}));
     const { tenantId, patientId, invoiceId, paymentId, amount, reason, evidence } = body;
     if (!tenantId || !patientId || amount == null || !reason) {
       return NextResponse.json(
         errorResponse('tenantId, patientId, amount, and reason are required', 'VALIDATION_ERROR'),
-        { status: 400 }
+        { status: 400 },
       );
     }
     await connectDB();
@@ -42,29 +45,24 @@ async function postHandler(req, user) {
       status: dispute.status,
       createdAt: dispute.createdAt,
     };
-    return NextResponse.json(successResponse(data), { status: 201 });
-  } catch (err) {
-    logger.error('Admin dispute create error:', err);
-    return NextResponse.json(
-      errorResponse(err instanceof Error ? err.message : 'Failed to create dispute', 'CREATE_ERROR'),
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(successResponse(data), { status: 201 });
 }
 
 async function getHandler(req, user) {
-  try {
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
-    }
-    await connectDB();
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
+  await connectDB();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') || '';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20')));
 
     const query = { deletedAt: null };
-    if (status && ['open', 'contacted', 'escalated', 'resolved', 'refund_issued'].includes(status)) {
+    if (
+      status &&
+      ['open', 'contacted', 'escalated', 'resolved', 'refund_issued'].includes(status)
+    ) {
       query.status = status;
     }
 
@@ -87,7 +85,9 @@ async function getHandler(req, user) {
       invoiceNumber: d.invoiceId?.invoiceNumber,
       paymentId: d.paymentId?.toString(),
       patientId: d.patientId?._id?.toString(),
-      patientName: d.patientId ? `${d.patientId.firstName || ''} ${d.patientId.lastName || ''}`.trim() : null,
+      patientName: d.patientId
+        ? `${d.patientId.firstName || ''} ${d.patientId.lastName || ''}`.trim()
+        : null,
       patientEmail: d.patientId?.email,
       amount: d.amount,
       currency: d.currency,
@@ -103,16 +103,40 @@ async function getHandler(req, user) {
       successResponse({
         data,
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
-      })
+      }),
     );
-  } catch (err) {
-    logger.error('Admin disputes list error:', err);
-    return NextResponse.json(
-      errorResponse(err instanceof Error ? err.message : 'Failed to fetch disputes', 'FETCH_ERROR'),
-      { status: 500 }
-    );
-  }
 }
 
-export const GET = withAuth(getHandler);
-export const POST = withAuth(postHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates PAYMENT:READ permission
+ * 6. Handler - Executes business logic (super_admin check inside handler)
+ */
+export const GET = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.PAYMENT, ACTIONS.READ)(getHandler))),
+  ),
+);
+
+/**
+ * Apply enterprise middleware stack to POST endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates PAYMENT:CREATE permission
+ * 6. Handler - Executes business logic (super_admin check inside handler)
+ */
+export const POST = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.PAYMENT, ACTIONS.CREATE)(postHandler))),
+  ),
+);

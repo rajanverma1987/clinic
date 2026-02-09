@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
@@ -112,10 +113,6 @@ export default function InventoryPage() {
     return null;
   }
 
-  if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
-  }
-
   return (
     <Layout>
       <PageHeader
@@ -137,7 +134,13 @@ export default function InventoryPage() {
         }
       />
       <div style={{ padding: '0 10px' }}>
-        <Card className='mb-6'>
+        {loading ? (
+          <Card>
+            <TableSkeleton rows={10} cols={6} />
+          </Card>
+        ) : (
+          <>
+            <Card className='mb-6'>
           <div className='flex items-center gap-4'>
             <div
               role='button'
@@ -175,6 +178,8 @@ export default function InventoryPage() {
             emptyMessage={t('common.noDataFound')}
           />
         </Card>
+          </>
+        )}
       </div>
     </Layout>
   );

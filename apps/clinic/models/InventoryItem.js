@@ -143,7 +143,9 @@ InventoryItemSchema.index({ tenantId: 1, type: 1 });
 InventoryItemSchema.index({ tenantId: 1, drugId: 1 });
 InventoryItemSchema.index({ tenantId: 1, totalQuantity: 1 }); // For low stock queries
 InventoryItemSchema.index({ tenantId: 1, deletedAt: 1 });
-InventoryItemSchema.index({ 'batches.expiryDate': 1 }); // For expiry tracking
+InventoryItemSchema.index({ tenantId: 1, isActive: 1, deletedAt: 1 }); // Compound index for getAllLots
+InventoryItemSchema.index({ tenantId: 1, 'batches.expiryDate': 1 }); // For expiry queries
+InventoryItemSchema.index({ tenantId: 1, isActive: 1, 'batches.expiryDate': 1, deletedAt: 1 }); // Compound for expiringSoon/expired filters // For expiry tracking
 
 export default mongoose.models.InventoryItem ||
   mongoose.model('InventoryItem', InventoryItemSchema);

@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import * as dashboardCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
@@ -10,6 +11,7 @@ import { useCallback, useLayoutEffect, useState } from 'react';
  */
 export function useDashboardLists() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const tenantId = user?.tenantId ?? null;
 
   const [todayAppointments, setTodayAppointments] = useState([]);
@@ -143,7 +145,7 @@ export function useDashboardLists() {
         queueRes.status === 'fulfilled' ? extractArrayData(queueRes.value) || [] : [];
       const queueList = Array.isArray(queueArray) ? queueArray : [];
       const active = queueList.filter(
-        (q) => q.status === 'waiting' || q.status === 'in_progress'
+        (q) => q.status === 'waiting' || q.status === 'in_progress',
       ).length;
       const waiting = queueList.filter((q) => q.status === 'waiting').length;
       const inProgress = queueList.filter((q) => q.status === 'in_progress').length;
@@ -157,7 +159,10 @@ export function useDashboardLists() {
         alerts.push({
           type: 'lot',
           severity: 'warning',
-          message: `${lotsList.length} lot${lotsList.length > 1 ? 's' : ''} expiring soon`,
+          message: t('dashboard.lotsExpiringSoon', {
+            count: lotsList.length,
+            plural: lotsList.length > 1 ? 's' : '',
+          }),
           count: lotsList.length,
         });
       }

@@ -15,7 +15,7 @@ import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
 import { showError } from '@/lib/utils/toast';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 
 const REPORTS_AUTO_REFRESH_MS = 2 * 60 * 1000; // 2 minutes – silent refresh for current tab
 const REPORTS_TAB_IDS = ['revenue', 'patients', 'appointments', 'inventory'];
@@ -95,10 +95,14 @@ export default function ReportsPage() {
     if (t && REPORTS_TAB_IDS.includes(t)) setActiveTab(t);
   }, [searchParams]);
 
+  const [isPending, startTransition] = useTransition();
+  
   const handleTabChange = (tabId) => {
+    // Update UI immediately for instant feedback
     setReportError(null);
     setActiveTab(tabId);
-    queueMicrotask(() => {
+    // Update URL in a non-blocking transition
+    startTransition(() => {
       router.replace((pathname || '/reports') + '?tab=' + encodeURIComponent(tabId));
     });
   };

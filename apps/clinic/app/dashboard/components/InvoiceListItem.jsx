@@ -1,12 +1,14 @@
 'use client';
 
 import { ChevronRightIcon, DocumentIcon } from '@/components/icons';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function InvoiceListItem({ invoice, onClick, formatCurrency }) {
+  const { t } = useI18n();
   const patientName =
     invoice.patientId?.name ||
     `${invoice.patientId?.firstName || ''} ${invoice.patientId?.lastName || ''}`.trim() ||
-    'Unknown Patient';
+    t('common.unknownPatient');
 
   const invoiceNumber = invoice.invoiceNumber || invoice._id?.slice(-6) || 'N/A';
   const amount = formatCurrency

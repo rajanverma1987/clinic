@@ -23,6 +23,7 @@ import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { decryptField } from '@/lib/encryption/phi-encryption.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 import { logger } from '@/lib/utils/logger.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
 import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
@@ -76,7 +77,7 @@ export async function createPrescription(input, tenantId, userId) {
     withTenant(tenantId, {
       _id: input.patientId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!patient) {
@@ -88,7 +89,7 @@ export async function createPrescription(input, tenantId, userId) {
     withTenant(tenantId, {
       _id: userId,
       isActive: true,
-    })
+    }),
   );
 
   if (!doctor) {
@@ -111,13 +112,13 @@ export async function createPrescription(input, tenantId, userId) {
         doctorId: userId,
         status: { $ne: 'CANCELLED' },
         deletedAt: null,
-      })
+      }),
     ).lean();
 
     if (existingPrescription) {
       throw new Error(
         `A prescription already exists for this appointment (${existingPrescription.prescriptionNumber}). ` +
-          `Please update the existing prescription instead of creating a new one.`
+          `Please update the existing prescription instead of creating a new one.`,
       );
     }
   }
@@ -141,7 +142,7 @@ export async function createPrescription(input, tenantId, userId) {
             _id: item.drugId,
             type: 'medicine',
             deletedAt: null,
-          })
+          }),
         );
 
         if (inventoryItem) {
@@ -185,7 +186,7 @@ export async function createPrescription(input, tenantId, userId) {
 
       // For non-drug items (lab, procedure, other), return as-is
       return item;
-    })
+    }),
   );
 
   // Generate prescription number
@@ -242,7 +243,7 @@ export async function createPrescription(input, tenantId, userId) {
     prescription._id.toString(),
     userId,
     tenantId,
-    AuditAction.CREATE
+    AuditAction.CREATE,
   );
 
   // Auto-complete queue entry if prescription is created for an in-progress queue entry
@@ -275,7 +276,7 @@ export async function createPrescription(input, tenantId, userId) {
 
       if (!queueUpdateResult) {
         logger.error(
-          `[Prescription] Failed to update queue entry ${queueEntry._id} to completed status`
+          `[Prescription] Failed to update queue entry ${queueEntry._id} to completed status`,
         );
         // Log but don't fail prescription creation
       } else {
@@ -292,22 +293,22 @@ export async function createPrescription(input, tenantId, userId) {
                 status: AppointmentStatus.COMPLETED,
                 completedAt: now,
               },
-            }
+            },
           );
 
           if (!appointmentUpdateResult) {
             logger.error(
-              `[Prescription] Failed to update appointment ${queueEntry.appointmentId} to completed status`
+              `[Prescription] Failed to update appointment ${queueEntry.appointmentId} to completed status`,
             );
           } else {
             logger.info(
-              `[Prescription] Successfully completed appointment ${queueEntry.appointmentId}`
+              `[Prescription] Successfully completed appointment ${queueEntry.appointmentId}`,
             );
           }
         } catch (appointmentError) {
           logger.error(
             `[Prescription] Error updating appointment ${queueEntry.appointmentId}:`,
-            appointmentError
+            appointmentError,
           );
           // Log error but don't fail prescription creation
         }
@@ -317,7 +318,7 @@ export async function createPrescription(input, tenantId, userId) {
       try {
         await recalculatePositions(tenantId, userId);
         logger.info(
-          `[Prescription] Successfully recalculated queue positions for doctor ${userId}`
+          `[Prescription] Successfully recalculated queue positions for doctor ${userId}`,
         );
       } catch (recalcError) {
         logger.error(`[Prescription] Failed to recalculate queue positions:`, recalcError);
@@ -325,7 +326,7 @@ export async function createPrescription(input, tenantId, userId) {
       }
 
       logger.info(
-        `[Prescription] Queue entry ${queueEntry._id} automatically marked as completed after prescription creation`
+        `[Prescription] Queue entry ${queueEntry._id} automatically marked as completed after prescription creation`,
       );
     }
   } catch (error) {
@@ -377,7 +378,7 @@ export async function getPrescriptionById(prescriptionId, tenantId, userId) {
     withTenant(tenantId, {
       _id: prescriptionId,
       deletedAt: null,
-    })
+    }),
   )
     .populate('patientId', 'firstName lastName patientId phone')
     .populate('doctorId', 'firstName lastName')
@@ -395,6 +396,21 @@ export async function getPrescriptionById(prescriptionId, tenantId, userId) {
 
 /**
  * List prescriptions with pagination and filters
+ *
+ * @param {Object} query - Query parameters: { page?, limit?, patientId?, doctorId?, status?, isActive?, startDate?, endDate? }
+ * @param {string|ObjectId} tenantId - Tenant ID for multi-tenant isolation
+ * @param {string|ObjectId} userId - User ID for audit logging
+ * @returns {Promise<Object>} Paginated result with prescriptions (item instructions decrypted)
+ *
+ * @throws {Error} If database query fails
+ *
+ * @enterprise
+ * - Uses aggregation pipeline with $lookup for optimal performance (avoids N+1 queries)
+ * - Includes audit logging for compliance
+ * - Proper error handling and logging
+ * - Tenant isolation enforced via withTenant
+ * - Performance monitoring via measureTime
+ * - Automatically decrypts PHI fields (item instructions)
  */
 export async function listPrescriptions(query, tenantId, userId) {
   await connectDB();
@@ -436,35 +452,89 @@ export async function listPrescriptions(query, tenantId, userId) {
     }
   }
 
+  // Early return optimization: Quick check if any prescriptions exist
+  const hasPrescriptions = await Prescription.countDocuments(filter);
+  if (hasPrescriptions === 0) {
+    // No prescriptions exist - return empty result immediately
+    await AuditLogger.auditWrite(
+      'prescription',
+      'list',
+      userId,
+      tenantId,
+      AuditAction.READ,
+      undefined,
+      { count: 0, filters: query, emptyCollection: true },
+    );
+    return createPaginationResult([], 0, page || 1, limit || 10);
+  }
+
   // Get total count
   const total = await Prescription.countDocuments(filter);
 
-  // Get paginated results
-  const prescriptions = await Prescription.find(filter)
-    .populate('patientId', 'firstName lastName patientId')
-    .populate('doctorId', 'firstName lastName')
-    .sort({ createdAt: -1 })
-    .skip(((page || 1) - 1) * (limit || 10))
-    .limit(limit || 10)
-    .lean();
+  // Optimize: Use aggregation with $lookup instead of populate to avoid N+1 queries
+  const pipeline = [
+    { $match: filter },
+    {
+      $lookup: {
+        from: 'patients',
+        localField: 'patientId',
+        foreignField: '_id',
+        as: 'patient',
+        pipeline: [{ $project: { firstName: 1, lastName: 1, patientId: 1 } }],
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'doctorId',
+        foreignField: '_id',
+        as: 'doctor',
+        pipeline: [{ $project: { firstName: 1, lastName: 1 } }],
+      },
+    },
+    {
+      $addFields: {
+        patientId: { $arrayElemAt: ['$patient', 0] },
+        doctorId: { $arrayElemAt: ['$doctor', 0] },
+      },
+    },
+    { $sort: { createdAt: -1 } },
+    { $skip: ((page || 1) - 1) * (limit || 10) },
+    { $limit: limit || 10 },
+  ];
 
-  // Decrypt item instructions for each prescription (needed when using .lean())
-  const decryptedPrescriptions = prescriptions.map((prescription) =>
-    decryptPrescriptionItems(prescription)
-  );
+  try {
+    const prescriptions = await measureTime(`listPrescriptions-${tenantId}`, () =>
+      Prescription.aggregate(pipeline),
+    );
 
-  // Audit list access
-  await AuditLogger.auditWrite(
-    'prescription',
-    'list',
-    userId,
-    tenantId,
-    AuditAction.READ,
-    undefined,
-    { count: decryptedPrescriptions.length, filters: query }
-  );
+    // Decrypt item instructions for each prescription (needed when using aggregation)
+    const decryptedPrescriptions = prescriptions.map((prescription) =>
+      decryptPrescriptionItems(prescription),
+    );
 
-  return createPaginationResult(decryptedPrescriptions, total, page || 1, limit || 10);
+    // Audit list access
+    await AuditLogger.auditWrite(
+      'prescription',
+      'list',
+      userId,
+      tenantId,
+      AuditAction.READ,
+      undefined,
+      { count: decryptedPrescriptions.length, filters: query },
+    );
+
+    return createPaginationResult(decryptedPrescriptions, total, page || 1, limit || 10);
+  } catch (error) {
+    logger.error('Error listing prescriptions:', {
+      error: error.message,
+      stack: error.stack,
+      tenantId,
+      userId,
+      query,
+    });
+    throw error;
+  }
 }
 
 /**
@@ -477,7 +547,7 @@ export async function updatePrescription(prescriptionId, input, tenantId, userId
     withTenant(tenantId, {
       _id: prescriptionId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!existing) {
@@ -515,7 +585,7 @@ export async function updatePrescription(prescriptionId, input, tenantId, userId
               _id: item.drugId,
               type: 'medicine',
               deletedAt: null,
-            })
+            }),
           );
 
           if (inventoryItem) {
@@ -550,7 +620,7 @@ export async function updatePrescription(prescriptionId, input, tenantId, userId
 
         // For non-drug items (lab, procedure, other), return as-is
         return item;
-      })
+      }),
     );
   }
 
@@ -566,7 +636,7 @@ export async function updatePrescription(prescriptionId, input, tenantId, userId
   const prescription = await Prescription.findByIdAndUpdate(
     prescriptionId,
     { $set: updateData },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (prescription) {
@@ -576,7 +646,7 @@ export async function updatePrescription(prescriptionId, input, tenantId, userId
       userId,
       tenantId,
       AuditAction.UPDATE,
-      { before, after: prescription.toObject() }
+      { before, after: prescription.toObject() },
     );
 
     // Convert to plain object and decrypt item instructions
@@ -595,7 +665,7 @@ export async function activatePrescription(prescriptionId, tenantId, userId) {
     prescriptionId,
     { status: PrescriptionStatus.ACTIVE },
     tenantId,
-    userId
+    userId,
   );
 }
 
@@ -609,7 +679,7 @@ export async function signPrescription(prescriptionId, input, tenantId, userId) 
     withTenant(tenantId, {
       _id: prescriptionId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!prescription) {
@@ -645,7 +715,7 @@ export async function signPrescription(prescriptionId, input, tenantId, userId) 
     tenantId,
     AuditAction.UPDATE,
     { before, after: prescription.toObject() },
-    { action: 'signed' }
+    { action: 'signed' },
   );
 
   const prescriptionObj = prescription.toObject();
@@ -662,7 +732,7 @@ export async function dispensePrescription(prescriptionId, input, tenantId, user
     withTenant(tenantId, {
       _id: prescriptionId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!prescription) {
@@ -694,7 +764,7 @@ export async function dispensePrescription(prescriptionId, input, tenantId, user
     tenantId,
     AuditAction.UPDATE,
     { before, after: prescription.toObject() },
-    { action: 'dispensed' }
+    { action: 'dispensed' },
   );
 
   // Convert to plain object and decrypt item instructions
@@ -710,7 +780,7 @@ export async function cancelPrescription(prescriptionId, tenantId, userId) {
     prescriptionId,
     { status: PrescriptionStatus.CANCELLED },
     tenantId,
-    userId
+    userId,
   );
 }
 
@@ -724,7 +794,7 @@ export async function deletePrescription(prescriptionId, tenantId, userId) {
     withTenant(tenantId, {
       _id: prescriptionId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!prescription) {
@@ -740,7 +810,7 @@ export async function deletePrescription(prescriptionId, tenantId, userId) {
     prescription._id.toString(),
     userId,
     tenantId,
-    AuditAction.DELETE
+    AuditAction.DELETE,
   );
 
   return true;

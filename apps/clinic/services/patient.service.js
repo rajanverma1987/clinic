@@ -221,6 +221,13 @@ export async function searchPatients(
   let patients;
   let total;
 
+  // Early return optimization: Quick check if any patients exist
+  const hasPatients = await Patient.countDocuments(query);
+  if (hasPatients === 0) {
+    await logPHIAccess(userId, tenantId, 'patient', null, ipAddress, userAgent);
+    return createPaginationResult([], 0, page, limit);
+  }
+
   if (useLastVisitSort) {
     const skip = (page - 1) * limit;
     const pipeline = [

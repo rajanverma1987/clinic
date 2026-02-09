@@ -8,8 +8,10 @@
 
 import connectDB from '@/lib/db/connection';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
-import { logger } from '@/lib/utils/logger.js';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import Patient from '@/models/Patient';
 import { NextResponse } from 'next/server';
 
@@ -18,12 +20,11 @@ import { NextResponse } from 'next/server';
  * Query: search, tenantId, status, dateFrom, dateTo, doctorId, hasAppointments, sortBy, sortOrder, page, limit
  */
 async function getHandler(req, user) {
-  try {
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
-    }
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
 
-    await connectDB();
+  await connectDB();
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const tenantId = searchParams.get('tenantId') || '';
@@ -130,13 +131,16 @@ async function getHandler(req, user) {
         },
       }),
     );
-  } catch (err) {
-    logger.error('Admin patients list error:', err);
-    return NextResponse.json(
-      errorResponse(err instanceof Error ? err.message : 'Failed to fetch patients', 'FETCH_ERROR'),
-      { status: 500 },
-    );
-  }
 }
 
-export const GET = withAuth(getHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Handler - Executes business logic (super_admin check inside handler)
+ */
+export const GET = withErrorHandler(withRequestLogger(apiRateLimit(withAuth(getHandler))));

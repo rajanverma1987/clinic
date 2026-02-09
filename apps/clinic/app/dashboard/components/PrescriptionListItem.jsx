@@ -1,12 +1,14 @@
 'use client';
 
 import { ChevronRightIcon, PrescriptionIcon } from '@/components/icons';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function PrescriptionListItem({ prescription, onClick }) {
+  const { t } = useI18n();
   const patientName =
     prescription.patientId?.name ||
     `${prescription.patientId?.firstName || ''} ${prescription.patientId?.lastName || ''}`.trim() ||
-    'Unknown Patient';
+    t('common.unknownPatient');
 
   const medication =
     prescription.medication || prescription.medications?.[0]?.name || 'Prescription';

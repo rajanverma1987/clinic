@@ -43,9 +43,9 @@ export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onM
                 const patient = request.patientId || request;
                 const firstName = patient?.firstName || '';
                 const lastName = patient?.lastName || '';
-                const patientName = patient?.name || `${firstName} ${lastName}`.trim() || 'Unknown Patient';
+                const patientName = patient?.name || `${firstName} ${lastName}`.trim() || t('common.unknownPatient');
                 const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
-                const reason = request.reason || request.type || 'General Consultation';
+                const reason = request.reason || request.type || t('common.generalConsultation');
 
                 return (
                   <div key={request._id || request.id || index} className='dashboard-appointment-item'>

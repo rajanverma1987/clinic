@@ -1,33 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import {
-    createSubscription,
-    getTenantSubscription,
-    listSubscriptions,
+  createSubscription,
+  getTenantSubscription,
+  listSubscriptions,
 } from '@/services/subscription.service';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/subscriptions
  * Get current tenant's subscription or list all (admin)
  */
 async function getHandler(req, user) {
-    try {
-        // If super admin, list all subscriptions
-        if (user.role === 'super_admin') {
-            const subscriptions = await listSubscriptions();
-            return NextResponse.json(successResponse(subscriptions));
-        }
-
-        // Otherwise, get tenant's subscription
-        const subscription = await getTenantSubscription(user.tenantId);
-        return NextResponse.json(successResponse(subscription));
-    } catch (error) {
-        return NextResponse.json(
-            errorResponse((error instanceof Error ? error.message : String(error)) || 'Failed to fetch subscription', 'FETCH_ERROR'),
-            { status: 400 }
-        );
+  // If super admin, list all subscriptions
+    if (user.role === 'super_admin') {
+      const subscriptions = await listSubscriptions();
+      return NextResponse.json(successResponse(subscriptions));
     }
+
+  // Otherwise, get tenant's subscription
+  const subscription = await getTenantSubscription(user.tenantId);
+  return NextResponse.json(successResponse(subscription));
 }
 
 /**
@@ -35,34 +33,56 @@ async function getHandler(req, user) {
  * Create subscription for tenant. Payment: PayPal only.
  */
 async function postHandler(req, user) {
-    try {
-        const body = await req.json();
-        const paymentMethod = 'paypal';
-        if (!body.planId) {
-            return NextResponse.json(
-                errorResponse('Plan ID is required', 'VALIDATION_ERROR'),
-                { status: 400 }
-            );
-        }
-
-        const result = await createSubscription(
-            user.tenantId,
-            body.planId,
-            user.userId,
-            body.customerEmail,
-            body.customerName,
-            paymentMethod
-        );
-
-        return NextResponse.json(successResponse(result), { status: 201 });
-    } catch (error) {
-        return NextResponse.json(
-            errorResponse((error instanceof Error ? error.message : String(error)) || 'Failed to create subscription', 'CREATE_ERROR'),
-            { status: 400 }
-        );
+  const body = await req.json();
+    const paymentMethod = 'paypal';
+    if (!body.planId) {
+      return NextResponse.json(errorResponse('Plan ID is required', 'VALIDATION_ERROR'), {
+        status: 400,
+      });
     }
+
+    const result = await createSubscription(
+      user.tenantId,
+      body.planId,
+      user.userId,
+      body.customerEmail,
+      body.customerName,
+      paymentMethod,
+    );
+
+  return NextResponse.json(successResponse(result), { status: 201 });
 }
 
-export const GET = withAuth(getHandler);
-export const POST = withAuth(postHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates SUBSCRIPTION:READ permission
+ * 6. Handler - Executes business logic
+ */
+export const GET = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.SUBSCRIPTION, ACTIONS.READ)(getHandler))),
+  ),
+);
 
+/**
+ * Apply enterprise middleware stack to POST endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates SUBSCRIPTION:CREATE permission (or MANAGE for super admin)
+ * 6. Handler - Executes business logic
+ */
+export const POST = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.SUBSCRIPTION, ACTIONS.CREATE)(postHandler))),
+  ),
+);

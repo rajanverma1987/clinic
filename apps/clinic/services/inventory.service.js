@@ -26,10 +26,13 @@ import {
   notifyStockLow,
   notifyStockUpdated,
 } from '@/lib/realtime/integration-helpers.js';
+import { logger } from '@/lib/utils/logger.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
 import InventoryItem from '@/models/InventoryItem.js';
 import StockTransaction, { TransactionStatus } from '@/models/StockTransaction.js';
 import Supplier from '@/models/Supplier.js';
+import mongoose from 'mongoose';
 import { parseAmount } from './tax-engine.service.js';
 
 /**
@@ -247,16 +250,48 @@ export async function listInventoryItems(query, tenantId, userId) {
     ];
   }
 
+  // Early return optimization: Quick check if any items exist
+  const hasItems = await InventoryItem.countDocuments(filter);
+  if (hasItems === 0) {
+    // No items exist - return empty result immediately
+    await AuditLogger.auditWrite(
+      'inventory_item',
+      'list',
+      userId,
+      tenantId,
+      AuditAction.READ,
+      undefined,
+      { count: 0, filters: query, emptyCollection: true },
+    );
+    return createPaginationResult([], 0, page || 1, limit || 10);
+  }
+
   // Get total count
   const total = await InventoryItem.countDocuments(filter);
 
-  // Get paginated results
-  const items = await InventoryItem.find(filter)
-    .populate('primarySupplierId', 'name')
-    .sort({ name: 1 })
-    .skip(((page || 1) - 1) * (limit || 10))
-    .limit(limit || 10)
-    .lean();
+  // Get paginated results - use aggregation with $lookup instead of populate for better performance
+  const pipeline = [
+    { $match: filter },
+    {
+      $lookup: {
+        from: 'suppliers',
+        localField: 'primarySupplierId',
+        foreignField: '_id',
+        as: 'supplier',
+        pipeline: [{ $project: { name: 1 } }],
+      },
+    },
+    {
+      $addFields: {
+        primarySupplierId: { $arrayElemAt: ['$supplier', 0] },
+      },
+    },
+    { $sort: { name: 1 } },
+    { $skip: ((page || 1) - 1) * (limit || 10) },
+    { $limit: limit || 10 },
+  ];
+
+  const items = await InventoryItem.aggregate(pipeline);
 
   // Audit list access
   await AuditLogger.auditWrite(
@@ -274,21 +309,44 @@ export async function listInventoryItems(query, tenantId, userId) {
 
 /**
  * Get low stock items
+ * Optimized: Uses aggregation instead of populate for better performance
  */
 export async function getLowStockItems(tenantId, userId) {
   await connectDB();
 
-  const items = await InventoryItem.find(
-    withTenant(tenantId, {
-      deletedAt: null,
-      isActive: true,
-      $expr: { $lte: ['$availableQuantity', '$lowStockThreshold'] },
-    }),
-  )
-    .populate('primarySupplierId', 'name code phone')
-    .sort({ availableQuantity: 1 })
-    .lean();
+  const filter = withTenant(tenantId, {
+    deletedAt: null,
+    isActive: true,
+    $expr: { $lte: ['$availableQuantity', '$lowStockThreshold'] },
+  });
 
+  // Early return optimization: Quick check if any low stock items exist
+  const hasLowStock = await InventoryItem.countDocuments(filter);
+  if (hasLowStock === 0) {
+    return [];
+  }
+
+  // Use aggregation with $lookup instead of populate for better performance
+  const pipeline = [
+    { $match: filter },
+    {
+      $lookup: {
+        from: 'suppliers',
+        localField: 'primarySupplierId',
+        foreignField: '_id',
+        as: 'supplier',
+        pipeline: [{ $project: { name: 1, code: 1, phone: 1 } }],
+      },
+    },
+    {
+      $addFields: {
+        primarySupplierId: { $arrayElemAt: ['$supplier', 0] },
+      },
+    },
+    { $sort: { availableQuantity: 1 } },
+  ];
+
+  const items = await InventoryItem.aggregate(pipeline);
   return items;
 }
 
@@ -547,113 +605,253 @@ export async function deleteInventoryItem(itemId, tenantId, userId) {
 /**
  * Get all lots/batches from inventory items
  * Returns flattened list of all batches with item information
+ * Optimized: Uses MongoDB aggregation pipeline instead of fetching all items and flattening in JS
+ *
+ * @param {string|ObjectId} tenantId - Tenant ID for multi-tenant isolation
+ * @param {string|ObjectId} userId - User ID for audit logging
+ * @param {Object} filters - Filter options: { expiringSoon?: boolean, expired?: boolean }
+ * @returns {Promise<Array>} Array of lot objects with item and batch information
+ *
+ * @throws {Error} If database query fails
+ *
+ * @enterprise
+ * - Uses aggregation pipeline for optimal performance
+ * - Includes audit logging for compliance
+ * - Proper error handling and logging
+ * - Tenant isolation enforced
+ * - Performance monitoring via measureTime
  */
 export async function getAllLots(tenantId, userId, filters = {}) {
   await connectDB();
 
-  const query = withTenant(tenantId, {
+  // Validate inputs
+  if (!tenantId) {
+    throw new Error('tenantId is required');
+  }
+  if (!userId) {
+    throw new Error('userId is required');
+  }
+
+  const now = new Date();
+  const thirtyDaysFromNow = new Date();
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+  // Early return optimization: Check if any items exist before expensive aggregation
+  const baseFilter = {
+    tenantId: typeof tenantId === 'string' ? new mongoose.Types.ObjectId(tenantId) : tenantId,
     deletedAt: null,
     isActive: true,
+  };
+
+  const itemCount = await InventoryItem.countDocuments(baseFilter);
+  if (itemCount === 0) {
+    // No items exist - return empty array immediately
+    await AuditLogger.auditWrite(
+      'inventory_item',
+      'lots',
+      userId,
+      tenantId,
+      AuditAction.READ,
+      undefined,
+      { count: 0, filters, emptyCollection: true },
+    );
+    return [];
+  }
+
+  // Build match stage
+  const matchStage = {
+    ...baseFilter,
     $or: [
       { 'batches.0': { $exists: true } },
       { batchNumber: { $exists: true, $ne: '' } },
       { expiryDate: { $exists: true, $ne: null } },
     ],
-  });
+  };
 
   // Filter by expiring soon (within next 30 days)
   if (filters.expiringSoon) {
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-    query['batches.expiryDate'] = {
+    matchStage['batches.expiryDate'] = {
       $lte: thirtyDaysFromNow,
-      $gte: new Date(), // Not expired yet
+      $gte: now,
     };
   }
 
   // Filter by expired
   if (filters.expired) {
-    query['batches.expiryDate'] = { $lt: new Date() };
+    matchStage['batches.expiryDate'] = { $lt: now };
   }
 
-  const items = await InventoryItem.find(query).populate('primarySupplierId', 'name').lean();
+  // Use aggregation pipeline to flatten batches efficiently
+  const pipeline = [
+    { $match: matchStage },
+    {
+      $lookup: {
+        from: 'suppliers',
+        localField: 'primarySupplierId',
+        foreignField: '_id',
+        as: 'supplier',
+        pipeline: [{ $project: { name: 1 } }],
+      },
+    },
+    {
+      $unwind: { path: '$supplier', preserveNullAndEmptyArrays: true },
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        code: 1,
+        type: 1,
+        unit: 1,
+        location: 1,
+        batches: 1,
+        batchNumber: 1,
+        expiryDate: 1,
+        totalQuantity: 1,
+        costPrice: 1,
+        supplier: 1,
+        supplierName: { $ifNull: ['$supplier.name', '$supplier'] },
+      },
+    },
+    // Unwind batches array to create one document per batch
+    {
+      $unwind: {
+        path: '$batches',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    // Filter out items without batches (if expiringSoon or expired filter is active)
+    ...(filters.expiringSoon || filters.expired
+      ? [
+          {
+            $match: {
+              $or: [
+                { batches: { $exists: true, $ne: null } },
+                { expiryDate: { $exists: true, $ne: null } },
+              ],
+            },
+          },
+        ]
+      : []),
+    // Project final lot structure
+    {
+      $project: {
+        _id: {
+          $concat: [
+            { $toString: '$_id' },
+            '_',
+            {
+              $ifNull: [{ $ifNull: ['$batches.batchNumber', '$batchNumber'] }, 'default'],
+            },
+          ],
+        },
+        itemId: { $toString: '$_id' },
+        itemName: '$name',
+        itemCode: '$code',
+        itemType: '$type',
+        batchNumber: {
+          $ifNull: [{ $ifNull: ['$batches.batchNumber', '$batchNumber'] }, '—'],
+        },
+        expiryDate: {
+          $ifNull: ['$batches.expiryDate', '$expiryDate', now],
+        },
+        quantity: {
+          $ifNull: ['$batches.quantity', '$totalQuantity', 0],
+        },
+        purchasePrice: {
+          $ifNull: ['$batches.purchasePrice', '$costPrice'],
+        },
+        purchaseDate: '$batches.purchaseDate',
+        supplierId: '$batches.supplierId',
+        supplierName: '$supplierName',
+        unit: '$unit',
+        location: '$location',
+        isExpired: {
+          $cond: [
+            {
+              $lt: [{ $ifNull: ['$batches.expiryDate', '$expiryDate', now] }, now],
+            },
+            true,
+            false,
+          ],
+        },
+        isExpiringSoon: {
+          $cond: [
+            {
+              $and: [
+                {
+                  $lte: [
+                    { $ifNull: ['$batches.expiryDate', '$expiryDate', now] },
+                    thirtyDaysFromNow,
+                  ],
+                },
+                {
+                  $gte: [{ $ifNull: ['$batches.expiryDate', '$expiryDate', now] }, now],
+                },
+              ],
+            },
+            true,
+            false,
+          ],
+        },
+      },
+    },
+    // Calculate days until expiry
+    {
+      $addFields: {
+        daysUntilExpiry: {
+          $cond: [
+            {
+              $lt: ['$expiryDate', now],
+            },
+            0,
+            {
+              $ceil: {
+                $divide: [
+                  { $subtract: ['$expiryDate', now] },
+                  86400000, // milliseconds in a day
+                ],
+              },
+            },
+          ],
+        },
+      },
+    },
+    // Sort: expired first, then expiring soon, then by expiry date
+    {
+      $sort: {
+        isExpired: -1,
+        isExpiringSoon: -1,
+        expiryDate: 1,
+      },
+    },
+  ];
 
-  // Flatten batches into lots array
-  const lots = [];
-  const now = new Date();
-  const thirtyDaysFromNow = new Date();
-  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+  try {
+    const lots = await measureTime(`getAllLots-${tenantId}`, () =>
+      InventoryItem.aggregate(pipeline),
+    );
 
-  for (const item of items) {
-    const hasBatches = item.batches && item.batches.length > 0;
+    // Audit list access
+    await AuditLogger.auditWrite(
+      'inventory_item',
+      'lots',
+      userId,
+      tenantId,
+      AuditAction.READ,
+      undefined,
+      { count: lots.length, filters },
+    );
 
-    if (hasBatches) {
-      for (const batch of item.batches) {
-        const expiryDate = new Date(batch.expiryDate);
-        const isExpired = expiryDate < now;
-        const isExpiringSoon = expiryDate <= thirtyDaysFromNow && expiryDate >= now;
-        const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-
-        lots.push({
-          _id: `${item._id}_${batch.batchNumber}`,
-          itemId: item._id.toString(),
-          itemName: item.name,
-          itemCode: item.code,
-          itemType: item.type,
-          batchNumber: batch.batchNumber,
-          expiryDate: expiryDate,
-          quantity: batch.quantity,
-          purchasePrice: batch.purchasePrice,
-          purchaseDate: batch.purchaseDate,
-          supplierId: batch.supplierId,
-          supplierName: item.primarySupplierId?.name || item.supplier || null,
-          isExpired,
-          isExpiringSoon,
-          daysUntilExpiry: isExpired ? 0 : daysUntilExpiry,
-          unit: item.unit,
-          location: item.location,
-        });
-      }
-    }
-
-    // Include top-level batch fields as a single lot when no batches array (edit form persistence)
-    if (!hasBatches && (item.batchNumber || item.expiryDate)) {
-      const expiryDate = item.expiryDate ? new Date(item.expiryDate) : null;
-      const isExpired = expiryDate ? expiryDate < now : false;
-      const isExpiringSoon = expiryDate && expiryDate <= thirtyDaysFromNow && expiryDate >= now;
-      const daysUntilExpiry =
-        expiryDate && !isExpired ? Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24)) : 0;
-
-      lots.push({
-        _id: `${item._id}_${item.batchNumber || 'default'}`,
-        itemId: item._id.toString(),
-        itemName: item.name,
-        itemCode: item.code,
-        itemType: item.type,
-        batchNumber: item.batchNumber || '—',
-        expiryDate: expiryDate || now,
-        quantity: item.totalQuantity || 0,
-        purchasePrice: item.costPrice,
-        purchaseDate: null,
-        supplierId: null,
-        supplierName: item.supplier || item.primarySupplierId?.name || null,
-        isExpired,
-        isExpiringSoon,
-        daysUntilExpiry,
-        unit: item.unit,
-        location: item.location,
-      });
-    }
+    return lots;
+  } catch (error) {
+    logger.error('Error fetching inventory lots:', {
+      error: error.message,
+      stack: error.stack,
+      tenantId,
+      userId,
+      filters,
+    });
+    throw error;
   }
-
-  // Sort by expiry date (expired first, then expiring soon, then by date)
-  lots.sort((a, b) => {
-    if (a.isExpired && !b.isExpired) return -1;
-    if (!a.isExpired && b.isExpired) return 1;
-    if (a.isExpiringSoon && !b.isExpiringSoon) return -1;
-    if (!a.isExpiringSoon && b.isExpiringSoon) return 1;
-    return new Date(a.expiryDate) - new Date(b.expiryDate);
-  });
-
-  return lots;
 }

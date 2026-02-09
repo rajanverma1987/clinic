@@ -155,8 +155,8 @@
     --size-3xl: 64px;
     --size-4xl: 80px;
 
-    --icon-outline-white: #ffffff;
-    --icon-outline-cream: #fefce8;
+    --icon-outline-white: var(--color-neutral-50);
+    --icon-outline-cream: var(--color-neutral-50);
     --icon-size-xs: 16px;
     --icon-size-sm: 20px;
     --icon-size-md: 24px;
@@ -205,13 +205,13 @@
     --dashboard-sidebar-icon-size: 24px;
     --dashboard-sidebar-gap: 8px;
     --dashboard-card-radius: var(--radius-xl);
-    --dashboard-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --dashboard-card-shadow: var(--shadow-md);
     --dashboard-cards-gap: 20px;
     --dashboard-primary: var(--color-primary-700);
     --dashboard-primary-hover: var(--color-primary-700);
-    --dashboard-primary-light: #e5ebf8;
-    --dashboard-sidebar-bg: #0a1929;
-    --dashboard-page-bg: #f8f9fa;
+    --dashboard-primary-light: var(--color-primary-100);
+    --dashboard-sidebar-bg: var(--color-neutral-900);
+    --dashboard-page-bg: var(--color-neutral-100);
     --dashboard-h1: 32px;
     --dashboard-h2: 24px;
     --dashboard-h3: 20px;
@@ -1683,8 +1683,11 @@ svg.icon.icon-2xl {
     animation: loader-spin 0.8s linear infinite;
   }
 
-  /* Loader component – GPU-friendly, single source of truth */
+  /* Loader component – Premium GPU-friendly animations */
   @keyframes loader-medical-spin {
+    from {
+      transform: rotate(0deg);
+    }
     to {
       transform: rotate(360deg);
     }
@@ -1696,31 +1699,22 @@ svg.icon.icon-2xl {
       opacity: 0.3;
     }
     50% {
-      transform: scale(1.1);
-      opacity: 0.6;
+      transform: scale(1.12);
+      opacity: 0.55;
     }
   }
   @keyframes loader-logo-pulse {
     0%,
     100% {
-      opacity: 0.9;
+      opacity: 0.96;
       transform: scale(1);
     }
     50% {
       opacity: 1;
-      transform: scale(1.05);
+      transform: scale(1.04);
     }
   }
   @keyframes loader-fade-pulse {
-    0%,
-    100% {
-      opacity: 0.8;
-    }
-    50% {
-      opacity: 1;
-    }
-  }
-  @keyframes loader-message-pulse {
     0%,
     100% {
       opacity: 0.85;
@@ -1729,45 +1723,100 @@ svg.icon.icon-2xl {
       opacity: 1;
     }
   }
+  @keyframes loader-message-pulse {
+    0%,
+    100% {
+      opacity: 0.88;
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-0.5px) scale(1.002);
+    }
+  }
   @keyframes loader-compact-spin {
+    from {
+      transform: rotate(0deg);
+    }
     to {
       transform: rotate(360deg);
     }
   }
+  @keyframes loader-glow-pulse {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.65;
+      transform: scale(1.08);
+    }
+  }
+  @keyframes loader-ring-inner-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(-360deg);
+    }
+  }
 
   .loader-ring {
-    animation: loader-medical-spin 1s linear infinite;
+    animation: loader-medical-spin 0.9s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    will-change: transform;
+  }
+  .loader-ring-inner {
+    animation: loader-ring-inner-spin 1.35s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    will-change: transform;
   }
   .loader-bg-pulse {
-    animation: loader-medical-pulse 2s ease-in-out infinite;
+    animation: loader-medical-pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: transform, opacity;
+  }
+  .loader-glow-ring {
+    animation: loader-glow-pulse 2.2s ease-in-out infinite;
+    will-change: transform, opacity;
   }
   .loader-logo {
-    animation: loader-logo-pulse 2s ease-in-out infinite;
+    animation: loader-logo-pulse 2.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: transform, opacity;
   }
   .loader-logo-wrap {
-    animation: loader-fade-pulse 2s ease-in-out infinite;
+    animation: loader-fade-pulse 2.1s ease-in-out infinite;
+    will-change: opacity;
+  }
+  .loader-logo-glow {
+    animation: loader-glow-pulse 2.2s ease-in-out infinite;
+    will-change: opacity, transform;
   }
   .loader-text-pulse {
-    animation: loader-message-pulse 1.8s ease-in-out infinite;
+    animation: loader-message-pulse 2.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: opacity, transform;
   }
   .loader-compact-ring {
-    animation: loader-compact-spin 0.8s linear infinite;
+    animation: loader-compact-spin 0.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    will-change: transform;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .loader-ring,
+    .loader-ring-inner,
     .loader-compact-ring {
       animation-duration: 2s;
     }
     .loader-bg-pulse,
+    .loader-glow-ring,
     .loader-logo,
-    .loader-logo-wrap {
+    .loader-logo-wrap,
+    .loader-logo-glow {
       animation: none;
       opacity: 0.9;
     }
     .loader-text-pulse {
       animation: none;
       opacity: 1;
+      transform: none;
     }
   }
 

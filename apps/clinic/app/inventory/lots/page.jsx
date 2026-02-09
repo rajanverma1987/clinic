@@ -3,8 +3,10 @@
 import { EyeIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Button } from '@/components/ui/Button';
+import { ActionsMenu } from '@/components/ui/ActionsMenu';
+import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Tabs } from '@/components/ui/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -76,7 +78,7 @@ export default function LotsPage() {
     if (lot.isExpiringSoon) {
       return (
         <span className='px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-700'>
-          Expiring Soon ({lot.daysUntilExpiry} days)
+          {t('inventory.expiringSoon')} ({lot.daysUntilExpiry} {t('common.days')})
         </span>
       );
     }
@@ -87,16 +89,35 @@ export default function LotsPage() {
     );
   };
 
+  // Keep Layout visible, show skeleton in content area
   if (authLoading) {
     return (
       <Layout>
-        <Loader type='page' text={t('common.loading')} />
+        <PageHeader title={t('inventory.lots')} subtitle={t('inventory.lotsManagement')} />
+        <div style={{ padding: '0 10px' }}>
+          <Card>
+            <TableSkeleton rows={10} cols={7} />
+          </Card>
+        </div>
       </Layout>
     );
   }
 
   if (!user) {
     return null;
+  }
+
+  if (loading) {
+    return (
+      <Layout>
+        <PageHeader title={t('inventory.lots')} subtitle={t('inventory.lotsManagement')} />
+        <div style={{ padding: '0 10px' }}>
+          <Card>
+            <TableSkeleton rows={10} cols={7} />
+          </Card>
+        </div>
+      </Layout>
+    );
   }
 
   const expiringSoonCount = lots.filter((l) => l.isExpiringSoon && !l.isExpired).length;
@@ -118,9 +139,13 @@ export default function LotsPage() {
             <Tabs
               variant='pills'
               tabs={[
-                { id: 'all', label: 'All Lots', count: lots.length },
-                { id: 'expiringSoon', label: 'Expiring Soon', count: expiringSoonCount },
-                { id: 'expired', label: 'Expired', count: expiredCount },
+                { id: 'all', label: t('inventory.allLots'), count: lots.length },
+                {
+                  id: 'expiringSoon',
+                  label: t('inventory.expiringSoon'),
+                  count: expiringSoonCount,
+                },
+                { id: 'expired', label: t('inventory.expired'), count: expiredCount },
               ]}
               activeTab={filter}
               onChange={setFilter}
@@ -180,16 +205,18 @@ export default function LotsPage() {
                         <td className='text-neutral-600'>{lot.supplierName || 'N/A'}</td>
                         <td>{getStatusBadge(lot)}</td>
                         <td>
-                          <Button
-                            variant='secondary'
-                            size='sm'
-                            onClick={() => router.push(`/inventory/items/${lot.itemId}`)}
-                            className='p-2 min-w-[2.25rem]'
-                            title={t('inventory.viewItem')}
-                            aria-label={t('inventory.viewItem')}
-                          >
-                            <EyeIcon className='icon icon-sm' ariaHidden />
-                          </Button>
+                          <ActionsMenu
+                            ariaLabel={t('common.actions') || 'Actions'}
+                            triggerSize='xs'
+                            items={[
+                              {
+                                key: 'view',
+                                label: t('inventory.viewItem') || 'View Item',
+                                icon: <EyeIcon className='icon icon-sm' />,
+                                onClick: () => router.push(`/inventory/items/${lot.itemId}`),
+                              },
+                            ]}
+                          />
                         </td>
                       </tr>
                     ))}

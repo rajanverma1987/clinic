@@ -38,7 +38,8 @@
     "check:buttons:json": "node scripts/check-button-consistency-enterprise.js --json",
     "check:buttons:html": "node scripts/check-button-consistency-enterprise.js --html",
     "check:buttons:ci": "CI=true node scripts/check-button-consistency-enterprise.js --json",
-    "generate:dashboard-json": "node scripts/generate-dashboard-structure-json.js"
+    "generate:dashboard-json": "node scripts/generate-dashboard-structure-json.js",
+    "fix:encryption": "node -r dotenv/config scripts/fix-encryption-warnings.js dotenv_config_path=.env.local"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^9.2.0",

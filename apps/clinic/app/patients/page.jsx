@@ -1,9 +1,10 @@
 'use client';
 
-import { CalendarIcon, FilterIcon } from '@/components/icons';
+import { CalendarIcon, EyeIcon, FilterIcon, PencilIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PatientCard } from '@/components/patients/PatientCard';
+import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -13,6 +14,7 @@ import { Modal } from '@/components/ui/Modal';
 import { PageSearchBar } from '@/components/ui/PageSearchBar';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Table } from '@/components/ui/Table';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -26,7 +28,7 @@ import { logger } from '@/lib/utils/logger';
 import { addRecentSearch, getRecentSearches } from '@/lib/utils/recent-search-cache';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 
 const ROUTE_KEY = 'route_patients';
 
@@ -281,20 +283,63 @@ export default function PatientsPage() {
     [user, router],
   );
 
-  const columns = [
-    { header: t('patients.patientId'), accessor: 'patientId' },
-    {
-      header: t('patients.name'),
-      accessor: (row) => `${row.firstName} ${row.lastName}`,
-    },
-    { header: t('patients.phone'), accessor: 'phone' },
-    { header: t('patients.email'), accessor: 'email' },
-    {
-      header: t('patients.dateOfBirth'),
-      accessor: (row) => new Date(row.dateOfBirth).toLocaleDateString(),
-    },
-    { header: t('patients.gender'), accessor: 'gender' },
-  ];
+  const columns = useMemo(
+    () => [
+      { header: t('patients.patientId'), accessor: 'patientId' },
+      {
+        header: t('patients.name'),
+        accessor: (row) => `${row.firstName} ${row.lastName}`,
+      },
+      { header: t('patients.phone'), accessor: 'phone' },
+      { header: t('patients.email'), accessor: 'email' },
+      {
+        header: t('patients.dateOfBirth'),
+        accessor: (row) => new Date(row.dateOfBirth).toLocaleDateString(),
+      },
+      { header: t('patients.gender'), accessor: 'gender' },
+      {
+        header: t('common.actions'),
+        accessor: (row) => {
+          const menuItems = [
+            {
+              key: 'view',
+              label: t('common.view') || 'View',
+              icon: <EyeIcon className='icon icon-sm' />,
+              onClick: () => {
+                const id = row?._id ?? row?.id;
+                if (id) {
+                  router.push(
+                    user.role === 'doctor' ? `/doctors/patients/${id}` : `/patients/${id}`,
+                  );
+                }
+              },
+            },
+            {
+              key: 'edit',
+              label: t('common.edit') || 'Edit',
+              icon: <PencilIcon className='icon icon-sm' />,
+              onClick: () => {
+                const id = row?._id ?? row?.id;
+                if (id) {
+                  router.push(`/patients/${id}/edit`);
+                }
+              },
+            },
+          ];
+          return (
+            <div onClick={(e) => e.stopPropagation()}>
+              <ActionsMenu
+                ariaLabel={t('common.actions') || 'Actions'}
+                triggerSize='xs'
+                items={menuItems}
+              />
+            </div>
+          );
+        },
+      },
+    ],
+    [t, router, user],
+  );
 
   // Redirect if not authenticated (non-blocking)
   useEffect(() => {
@@ -306,10 +351,6 @@ export default function PatientsPage() {
   // Show empty state while redirecting or loading initial data
   if (!user) {
     return null;
-  }
-
-  if (loading && !searchTerm) {
-    return <Loader type='page' text={t('common.loading')} />;
   }
 
   return (
@@ -441,12 +482,17 @@ export default function PatientsPage() {
           </div>
         </Modal>
 
-        <Card>
-          <div className='flex items-center justify-between gap-2 mb-3 text-body-sm text-neutral-600 flex-wrap'>
-            <span>
-              {totalCount} {t('patients.totalCount')},{' '}
-              {t('patients.showingCount').replace('{{n}}', String(patients.length))}
-            </span>
+        {loading && !searchTerm ? (
+          <Card>
+            <TableSkeleton rows={10} cols={7} />
+          </Card>
+        ) : (
+          <Card>
+            <div className='flex items-center justify-between gap-2 mb-3 text-body-sm text-neutral-600 flex-wrap'>
+              <span>
+                {totalCount} {t('patients.totalCount')},{' '}
+                {t('patients.showingCount').replace('{{n}}', String(patients.length))}
+              </span>
             <div className='flex gap-2'>
               <button
                 type='button'
@@ -519,7 +565,8 @@ export default function PatientsPage() {
               </Button>
             </div>
           )}
-        </Card>
+          </Card>
+        )}
 
         {showModal && (
           <div

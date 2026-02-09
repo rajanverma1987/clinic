@@ -232,29 +232,45 @@ export default function PatientDetailPage() {
   }, [tabs.length, visibleIds, activeTab]);
 
   if (!user) return null;
-  if (loading) return <Loader type='page' text={t('common.loading')} />;
-  if (!patient) {
-    return (
-      <Layout>
-        <div className='flex items-center justify-center h-64'>
-          <div className='text-center'>
-            <p className='text-status-error mb-4'>Patient not found</p>
-            <Button variant='primary' size='md' href='/patients'>
-              Back to Patients
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
+  
   return (
     <Layout>
-      <PageHeader
-        title={`${patient.firstName} ${patient.lastName}`}
-        subtitle={`Patient ID: ${patient.patientId}`}
-        notifications={[]}
-        unreadCount={0}
+      {loading ? (
+        <>
+          <PageHeader
+            title={t('patients.title')}
+            subtitle={t('common.loading')}
+            notifications={[]}
+            unreadCount={0}
+          />
+          <div className='flex items-center justify-center min-h-[400px]'>
+            <Loader type='section' text={t('common.loading')} />
+          </div>
+        </>
+      ) : !patient ? (
+        <>
+          <PageHeader
+            title={t('patients.title')}
+            subtitle={t('patients.patientDetail')}
+            notifications={[]}
+            unreadCount={0}
+          />
+          <div className='flex items-center justify-center min-h-[400px]'>
+            <div className='text-center'>
+              <p className='text-status-error mb-4'>{t('patients.patientNotFound')}</p>
+              <Button variant='primary' size='md' href='/patients'>
+                {t('patients.backToPatients')}
+              </Button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <PageHeader
+            title={`${patient.firstName} ${patient.lastName}`}
+            subtitle={`Patient ID: ${patient.patientId}`}
+            notifications={[]}
+            unreadCount={0}
         actionButtons={
           <>
             {!isEditing ? (
@@ -402,7 +418,7 @@ export default function PatientDetailPage() {
                           onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
                           className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                         >
-                          <option value=''>Not Specified</option>
+                          <option value=''>{t('patients.notSpecified')}</option>
                           <option value='A+'>A+</option>
                           <option value='A-'>A-</option>
                           <option value='B+'>B+</option>
@@ -413,7 +429,7 @@ export default function PatientDetailPage() {
                           <option value='O-'>O-</option>
                         </select>
                       ) : (
-                        <p className='text-neutral-900'>{patient.bloodGroup || 'Not Specified'}</p>
+                        <p className='text-neutral-900'>{patient.bloodGroup || t('patients.notSpecified')}</p>
                       )}
                     </div>
                   </div>
@@ -910,7 +926,9 @@ export default function PatientDetailPage() {
             </Card>
           )}
         </div>
-      </div>
+        </div>
+        </>
+      )}
     </Layout>
   );
 }

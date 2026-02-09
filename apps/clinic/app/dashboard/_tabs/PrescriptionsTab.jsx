@@ -16,31 +16,53 @@ import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const LIMIT = 10;
+const CACHE_TTL_MS = 30000; // 30 seconds cache
+
+// Simple in-memory cache per user
+const cache = new Map();
 
 export function PrescriptionsTab() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { prefetchPrescription } = usePrefetchDetail();
+  const hasFetchedRef = useRef(false);
 
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchPrescriptions = useCallback(async () => {
+  const fetchPrescriptions = useCallback(async (forceRefresh = false) => {
     if (!user || authLoading) return;
+    
+    const cacheKey = `prescriptions-tab-${user._id || user.id}`;
+    const cached = cache.get(cacheKey);
+    const now = Date.now();
+    
+    // Use cache if available and not expired
+    if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+      setPrescriptions(cached.data);
+      setLoading(false);
+      hasFetchedRef.current = true;
+      return;
+    }
+    
     setError(null);
     setLoading(true);
     try {
       const response = await apiClient.get('/prescriptions');
       if (response.success && response.data) {
         const list = extractArrayData(response);
-        setPrescriptions(Array.isArray(list) ? list.slice(0, LIMIT) : []);
+        const data = Array.isArray(list) ? list.slice(0, LIMIT) : [];
+        setPrescriptions(data);
+        // Update cache
+        cache.set(cacheKey, { data, timestamp: now });
       } else {
         setPrescriptions([]);
+        cache.set(cacheKey, { data: [], timestamp: now });
       }
     } catch (err) {
       logger.error('Failed to fetch prescriptions (tab)', err);
@@ -48,11 +70,14 @@ export function PrescriptionsTab() {
       setError(err?.message || t('common.error'));
     } finally {
       setLoading(false);
+      hasFetchedRef.current = true;
     }
   }, [user, authLoading, t]);
 
   useEffect(() => {
-    if (!authLoading && user) fetchPrescriptions();
+    if (!authLoading && user && !hasFetchedRef.current) {
+      fetchPrescriptions();
+    }
   }, [authLoading, user, fetchPrescriptions]);
 
   const getStatusLabel = (status) => {
@@ -99,10 +124,21 @@ export function PrescriptionsTab() {
     },
   ];
 
+  // Calculate quick stats
+  const stats = {
+    total: prescriptions.length,
+    draft: prescriptions.filter(p => p.status === 'draft').length,
+    active: prescriptions.filter(p => p.status === 'active').length,
+    dispensed: prescriptions.filter(p => p.status === 'dispensed').length,
+  };
+
   const cardContent = (
     <>
       <div className='section-header flex-wrap gap-3'>
-        <h2 className='section-title'>{t('prescriptions.title')}</h2>
+        <div className='flex items-center gap-3'>
+          <div className='accent-bar accent-bar-primary' />
+          <h2 className='section-title'>{t('prescriptions.title')}</h2>
+        </div>
         <div className='flex gap-2 ml-auto'>
           <Button variant='secondary' size='sm' href='/prescriptions'>
             {t('dashboard.seeAll')}
@@ -112,13 +148,36 @@ export function PrescriptionsTab() {
           </Button>
         </div>
       </div>
-      <Table
-        data={prescriptions}
-        columns={columns}
-        onRowClick={(row) => row?._id && router.push(`/prescriptions/${row._id}`)}
-        onRowMouseEnter={(row) => row?._id && prefetchPrescription(row._id)}
-        emptyMessage={t('common.noDataFound')}
-      />
+
+      {/* Quick Stats Bar */}
+      <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
+        <div className='text-center'>
+          <div className='text-2xl font-bold text-primary-600'>{stats.total}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('common.total')}</div>
+        </div>
+        <div className='text-center'>
+          <div className='text-2xl font-bold text-status-warning'>{stats.draft}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('prescriptions.draft')}</div>
+        </div>
+        <div className='text-center'>
+          <div className='text-2xl font-bold text-primary-600'>{stats.active}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('prescriptions.active')}</div>
+        </div>
+        <div className='text-center'>
+          <div className='text-2xl font-bold text-secondary-600'>{stats.dispensed}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('prescriptions.dispensed')}</div>
+        </div>
+      </div>
+
+      <div className='flex-1 overflow-auto'>
+        <Table
+          data={prescriptions}
+          columns={columns}
+          onRowClick={(row) => row?._id && router.push(`/prescriptions/${row._id}`)}
+          onRowMouseEnter={(row) => row?._id && prefetchPrescription(row._id)}
+          emptyMessage={t('common.noDataFound')}
+        />
+      </div>
     </>
   );
 
@@ -150,7 +209,7 @@ export function PrescriptionsTab() {
             </svg>
           </div>
           <p className='text-status-error text-body-md font-medium mb-4'>{error}</p>
-          <Button variant='primary' size='md' onClick={() => fetchPrescriptions()}>
+          <Button variant='primary' size='md' onClick={() => fetchPrescriptions(true)}>
             {t('common.retry')}
           </Button>
         </Card>

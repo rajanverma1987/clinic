@@ -181,3 +181,53 @@ export async function generatePatientId(tenantId) {
 
   return `PT${String(nextNumber).padStart(6, '0')}`;
 }
+
+/**
+ * Generate unique imaging study number (e.g., "IMG001234")
+ */
+export async function generateImagingStudyNumber(tenantId) {
+  await connectDB();
+  const { default: ImagingStudy } = await import('@/models/ImagingStudy');
+  
+  const lastStudy = await ImagingStudy.findOne(
+    { tenantId, studyNumber: { $exists: true, $ne: null } },
+    { studyNumber: 1 }
+  )
+    .sort({ studyNumber: -1 })
+    .lean();
+
+  let nextNumber = 1;
+  if (lastStudy?.studyNumber) {
+    const lastNum = parseInt(lastStudy.studyNumber.replace('IMG', ''), 10);
+    if (!isNaN(lastNum)) {
+      nextNumber = lastNum + 1;
+    }
+  }
+
+  return `IMG${String(nextNumber).padStart(6, '0')}`;
+}
+
+/**
+ * Generate unique referral number (e.g., "REF001234")
+ */
+export async function generateReferralNumber(tenantId) {
+  await connectDB();
+  const { default: Referral } = await import('@/models/Referral');
+  
+  const lastReferral = await Referral.findOne(
+    { tenantId, referralNumber: { $exists: true, $ne: null } },
+    { referralNumber: 1 }
+  )
+    .sort({ referralNumber: -1 })
+    .lean();
+
+  let nextNumber = 1;
+  if (lastReferral?.referralNumber) {
+    const lastNum = parseInt(lastReferral.referralNumber.replace('REF', ''), 10);
+    if (!isNaN(lastNum)) {
+      nextNumber = lastNum + 1;
+    }
+  }
+
+  return `REF${String(nextNumber).padStart(6, '0')}`;
+}

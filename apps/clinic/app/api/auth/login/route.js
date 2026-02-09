@@ -41,11 +41,17 @@ async function loginHandler(req) {
     // Set refresh token as HTTP-only cookie
     const response = NextResponse.json(successResponse(result), { status: 200 });
 
+    // Respect rememberMe flag for cookie expiry
+    const rememberMe = validationResult.data.rememberMe || false;
+    const cookieMaxAge = rememberMe
+      ? 60 * 60 * 24 * 30 // 30 days
+      : 60 * 60 * 24 * 7; // 7 days
+
     response.cookies.set('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: cookieMaxAge,
       path: '/',
     });
 

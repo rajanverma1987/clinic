@@ -3,16 +3,19 @@
 import {
   Building2Icon,
   CheckIcon,
+  EyeIcon,
   ListChecksIcon,
-  RefreshCwIcon,
+  PlayIcon,
   VideoIcon,
 } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { CompactLoader, Loader } from '@/components/ui/Loader';
+import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
@@ -301,114 +304,111 @@ export default function QueuePage() {
     },
     {
       header: t('common.actions'),
-      accessor: (row) => (
-        <div className='flex gap-2'>
-          {row.status === 'completed' ? (
+      accessor: (row) => {
+        if (row.status === 'completed') {
+          return (
             <span className='text-sm font-medium text-neutral-500'>{t('queue.completed')}</span>
-          ) : row.status === 'in_progress' ? (
-            <>
-              {row.appointmentId?.isTelemedicine && (
-                <>
-                  <Button
-                    size='sm'
-                    variant='primary'
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      await handleStartVideo(row.appointmentId);
-                    }}
-                  >
-                    <VideoIcon className='icon icon-sm' />
-                    {t('queue.startVideo')}
-                  </Button>
-                  <Button
-                    size='sm'
-                    variant='primary'
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      // Navigate to prescription page with patient pre-filled
-                      const patientId = row.patientId?._id || row.patientId;
-                      if (patientId) {
-                        router.push(`/prescriptions/new?patientId=${patientId}`);
-                      } else {
-                        router.push('/prescriptions/new');
-                      }
-                    }}
-                  >
-                    {t('appointments.startAppointment')}
-                  </Button>
-                </>
-              )}
-              <Button
-                size='sm'
-                variant='secondary'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openConfirm({
-                    title: t('queue.confirmComplete'),
-                    message:
-                      t('queue.confirmCompleteDescription') || t('common.confirmationDescription'),
-                    variant: 'danger',
-                    onConfirm: () => handleStatusChange(row._id, 'completed'),
-                  });
-                }}
-              >
-                <CheckIcon className='icon icon-sm' />
-                {t('queue.markComplete')}
-              </Button>
-            </>
-          ) : row.appointmentId?.isTelemedicine ? (
-            <>
-              <Button
-                size='sm'
-                variant='primary'
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  await handleStartVideo(row.appointmentId);
-                }}
-              >
-                <VideoIcon className='icon icon-sm' />
-                {t('queue.startVideo')}
-              </Button>
-              <Button
-                size='sm'
-                variant='primary'
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  await handleStatusChange(row._id, 'in_progress');
-                  // Navigate to prescription page with patient pre-filled
-                  const patientId = row.patientId?._id || row.patientId;
-                  if (patientId) {
-                    router.push(`/prescriptions/new?patientId=${patientId}`);
-                  } else {
-                    router.push('/prescriptions/new');
-                  }
-                }}
-              >
-                {t('appointments.startAppointment')}
-              </Button>
-            </>
-          ) : (
-            <Button
-              size='sm'
-              variant='primary'
-              onClick={async (e) => {
-                e.stopPropagation();
-                // Update queue status to in_progress
-                await handleStatusChange(row._id, 'in_progress');
-                // Navigate to prescription page with patient pre-filled
-                const patientId = row.patientId?._id || row.patientId;
+          );
+        }
+
+        const patientId = row.patientId?._id || row.patientId;
+        const menuItems = [];
+
+        // View appointment if available
+        if (row.appointmentId?._id) {
+          menuItems.push({
+            key: 'view',
+            label: t('common.view') || 'View',
+            icon: <EyeIcon className='icon icon-sm' />,
+            onClick: () => router.push(`/appointments/${row.appointmentId._id}`),
+          });
+        }
+
+        if (row.status === 'in_progress') {
+          // In progress: video call (if telemedicine), start appointment, mark complete
+          if (row.appointmentId?.isTelemedicine) {
+            menuItems.push({
+              key: 'startVideo',
+              label: t('queue.startVideo') || 'Start Video',
+              icon: <VideoIcon className='icon icon-sm' />,
+              onClick: async () => await handleStartVideo(row.appointmentId),
+            });
+            menuItems.push({
+              key: 'startAppointment',
+              label: t('appointments.startAppointment') || 'Start Appointment',
+              icon: <PlayIcon className='icon icon-sm' />,
+              onClick: () => {
                 if (patientId) {
                   router.push(`/prescriptions/new?patientId=${patientId}`);
                 } else {
                   router.push('/prescriptions/new');
                 }
-              }}
-            >
-              {t('appointments.startAppointment')}
-            </Button>
-          )}
-        </div>
-      ),
+              },
+            });
+          }
+          menuItems.push({
+            key: 'markComplete',
+            label: t('queue.markComplete') || 'Mark Complete',
+            icon: <CheckIcon className='icon icon-sm' />,
+            onClick: () => {
+              openConfirm({
+                title: t('queue.confirmComplete'),
+                message:
+                  t('queue.confirmCompleteDescription') || t('common.confirmationDescription'),
+                variant: 'danger',
+                onConfirm: () => handleStatusChange(row._id, 'completed'),
+              });
+            },
+          });
+        } else {
+          // Waiting: start video (if telemedicine) or start appointment
+          if (row.appointmentId?.isTelemedicine) {
+            menuItems.push({
+              key: 'startVideo',
+              label: t('queue.startVideo') || 'Start Video',
+              icon: <VideoIcon className='icon icon-sm' />,
+              onClick: async () => await handleStartVideo(row.appointmentId),
+            });
+            menuItems.push({
+              key: 'startAppointment',
+              label: t('appointments.startAppointment') || 'Start Appointment',
+              icon: <PlayIcon className='icon icon-sm' />,
+              onClick: async () => {
+                await handleStatusChange(row._id, 'in_progress');
+                if (patientId) {
+                  router.push(`/prescriptions/new?patientId=${patientId}`);
+                } else {
+                  router.push('/prescriptions/new');
+                }
+              },
+            });
+          } else {
+            menuItems.push({
+              key: 'startAppointment',
+              label: t('appointments.startAppointment') || 'Start Appointment',
+              icon: <PlayIcon className='icon icon-sm' />,
+              onClick: async () => {
+                await handleStatusChange(row._id, 'in_progress');
+                if (patientId) {
+                  router.push(`/prescriptions/new?patientId=${patientId}`);
+                } else {
+                  router.push('/prescriptions/new');
+                }
+              },
+            });
+          }
+        }
+
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <ActionsMenu
+              ariaLabel={t('common.actions') || 'Actions'}
+              triggerSize='xs'
+              items={menuItems}
+            />
+          </div>
+        );
+      },
     },
   ];
 
@@ -424,10 +424,6 @@ export default function QueuePage() {
     return null;
   }
 
-  if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
-  }
-
   return (
     <Layout>
       <PageHeader
@@ -435,6 +431,8 @@ export default function QueuePage() {
         subtitle={formatDateDisplay()}
         notifications={[]}
         unreadCount={0}
+        onRefresh={() => fetchQueue(true)}
+        refreshing={loading}
         actionButtons={[
           ...(isClinicAdmin && doctors.length > 0
             ? [
@@ -465,31 +463,22 @@ export default function QueuePage() {
             <ListChecksIcon className='icon icon-sm shrink-0' ariaHidden />
             {showCompleted ? t('queue.hideCompleted') : t('queue.showCompleted')}
           </Button>,
-          <Button
-            key='refresh'
-            onClick={() => fetchQueue(true)}
-            disabled={loading}
-            size='md'
-            className='p-2 min-w-[2.25rem]'
-            title={t('queue.refresh')}
-            aria-label={t('queue.refresh')}
-          >
-            {loading ? (
-              <CompactLoader size='sm' aria-label={t('common.loading')} />
-            ) : (
-              <RefreshCwIcon className='icon icon-sm' ariaHidden />
-            )}
-          </Button>,
         ]}
       />
       <div style={{ padding: '0 10px' }}>
-        <Card>
-          <Table
+        {loading ? (
+          <Card>
+            <TableSkeleton rows={10} cols={6} />
+          </Card>
+        ) : (
+          <Card>
+            <Table
             data={queueEntries.sort((a, b) => a.position - b.position)}
             columns={columns}
             emptyMessage={t('common.noDataFound')}
           />
-        </Card>
+          </Card>
+        )}
       </div>
     </Layout>
   );

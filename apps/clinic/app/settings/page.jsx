@@ -22,7 +22,7 @@ import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useTransition } from 'react';
 
 const SETTINGS_TAB_IDS = [
   'profile',
@@ -86,6 +86,7 @@ function SettingsPageContent() {
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(null);
   const [users, setUsers] = useState([]);
+  const [isPending, startTransition] = useTransition();
 
   // Form states
   const [clinicForm, setClinicForm] = useState({
@@ -213,8 +214,10 @@ function SettingsPageContent() {
   }, [activeTab, currentUser, canAccessAdminTabs, pathname, router]);
 
   const handleTabChange = (tabId) => {
+    // Update UI immediately for instant feedback
     setActiveTab(tabId);
-    queueMicrotask(() => {
+    // Update URL in a non-blocking transition
+    startTransition(() => {
       router.replace((pathname || '/settings') + '?tab=' + encodeURIComponent(tabId));
     });
   };
@@ -684,15 +687,14 @@ function SettingsPageContent() {
     return null;
   }
 
-  if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
-  }
-
   // Manager has no Settings access – show loader while redirect runs (redirect in useEffect above)
   if (!authLoading && currentUser && !canAccessSettings) {
     return (
       <Layout>
-        <Loader type='page' text={t('auth.redirectingToLogin')} />
+        <PageHeader title={t('settings.title')} subtitle={t('settings.settings')} />
+        <div className='flex items-center justify-center min-h-[400px]'>
+          <Loader type='section' text={t('auth.redirectingToLogin')} />
+        </div>
       </Layout>
     );
   }
@@ -782,16 +784,21 @@ function SettingsPageContent() {
         unreadCount={0}
         actionButton={tabActionButtons}
       />
-      <div className='data-tabs-container w-full'>
-        {/* Tabs bar below header – full width within container */}
-        <SettingsTabs
-          activeTab={activeTab}
-          setActiveTab={handleTabChange}
-          canAccessAdminTabs={canAccessAdminTabs}
-        />
+      {loading ? (
+        <div className='flex items-center justify-center min-h-[400px]'>
+          <Loader type='section' text={t('common.loading')} />
+        </div>
+      ) : (
+        <div className='data-tabs-container w-full'>
+          {/* Tabs bar below header – full width within container */}
+          <SettingsTabs
+            activeTab={activeTab}
+            setActiveTab={handleTabChange}
+            canAccessAdminTabs={canAccessAdminTabs}
+          />
 
-        {/* Tab content: panels stay mounted, visibility toggled (no remount on switch) */}
-        <div className='tab-content-standard-width mt-3 relative'>
+          {/* Tab content: panels stay mounted, visibility toggled (no remount on switch) */}
+          <div className='tab-content-standard-width mt-3 relative'>
           <TabPanels
             tabs={(canAccessAdminTabs
               ? SETTINGS_TAB_IDS
@@ -937,7 +944,8 @@ function SettingsPageContent() {
             }}
           </TabPanels>
         </div>
-      </div>
+        </div>
+      )}
     </Layout>
   );
 }

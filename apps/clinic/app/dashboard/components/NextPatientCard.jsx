@@ -23,7 +23,7 @@ export function NextPatientCard({
   const patientData = patient || appointment?.patientId;
   const firstName = patientData?.firstName || '';
   const lastName = patientData?.lastName || '';
-  const patientName = patientData?.name || `${firstName} ${lastName}`.trim() || 'Unknown Patient';
+  const patientName = patientData?.name || `${firstName} ${lastName}`.trim() || t('common.unknownPatient');
   const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
 
   const patientId = patientData?.patientId || patientData?._id?.slice(-12) || 'N/A';
@@ -42,7 +42,7 @@ export function NextPatientCard({
     ? new Date(appointment.lastAppointment).toLocaleDateString()
     : 'N/A';
 
-  const reason = appointment?.reason || appointment?.type || 'General Consultation';
+  const reason = appointment?.reason || appointment?.type || t('common.generalConsultation');
 
   // Mock medical history - in real app, this would come from patient data
   const medicalHistory = patientData?.medicalHistory || ['Asthma', 'Hypertension'];

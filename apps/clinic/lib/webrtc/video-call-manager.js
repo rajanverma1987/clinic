@@ -4,9 +4,9 @@
  * HIPAA-compliant with clear audio/video quality
  */
 
-import { WebRTCPeerWrapper } from './simple-peer-wrapper.js';
-import { ConnectionManager } from './connection-manager.js';
 import { logger } from '@/lib/utils/logger.js';
+import { ConnectionManager } from './connection-manager.js';
+import { WebRTCPeerWrapper } from './simple-peer-wrapper.js';
 
 /**
  * Video Call Manager
@@ -21,10 +21,10 @@ export class VideoCallManager {
     this.apiClient = options.apiClient; // Pass apiClient from component
 
     // Callbacks
-    this.onLocalStream = options.onLocalStream || (() => { });
-    this.onRemoteStream = options.onRemoteStream || (() => { });
-    this.onConnectionChange = options.onConnectionChange || (() => { });
-    this.onError = options.onError || (() => { });
+    this.onLocalStream = options.onLocalStream || (() => {});
+    this.onRemoteStream = options.onRemoteStream || (() => {});
+    this.onConnectionChange = options.onConnectionChange || (() => {});
+    this.onError = options.onError || (() => {});
 
     // State
     this.peerWrapper = null;
@@ -51,7 +51,7 @@ export class VideoCallManager {
       },
       onError: (error) => {
         this.handleError(error);
-      }
+      },
     });
   }
 
@@ -69,7 +69,7 @@ export class VideoCallManager {
         onStream: (stream) => this.handleRemoteStream(stream),
         onConnect: () => this.handleConnect(),
         onClose: () => this.handleClose(),
-        onError: (error) => this.handleError(error)
+        onError: (error) => this.handleError(error),
       });
 
       // Initialize peer (gets user media and creates peer connection)
@@ -95,7 +95,7 @@ export class VideoCallManager {
         this.connectionManager.startQualityMonitoring(
           this.peerWrapper.peer._pc,
           this.peerWrapper.localStream,
-          this.peerWrapper.remoteStream
+          this.peerWrapper.remoteStream,
         );
       }
 
@@ -107,7 +107,7 @@ export class VideoCallManager {
         sessionId: this.sessionId,
         userId: this.userId,
         remoteUserId: this.remoteUserId,
-        isInitiator: this.isInitiator
+        isInitiator: this.isInitiator,
       });
 
       return true;
@@ -132,7 +132,7 @@ export class VideoCallManager {
         from: this.userId,
         to: this.remoteUserId,
         signal: data,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       logger.info('[VideoCallManager] Sending signal:', {
@@ -140,12 +140,12 @@ export class VideoCallManager {
         from: this.userId,
         to: this.remoteUserId,
         signalType: data?.type || 'unknown',
-        isInitiator: this.isInitiator
+        isInitiator: this.isInitiator,
       });
 
       const response = await this.apiClient.post(
         `/telemedicine/signaling/${this.sessionId}`,
-        signalData
+        signalData,
       );
 
       if (!response.success) {
@@ -156,7 +156,7 @@ export class VideoCallManager {
         logger.info('[VideoCallManager] Signal details:', {
           signalId: response.data?.id,
           signalType: data?.type || 'unknown',
-          sent: response.data?.sent
+          sent: response.data?.sent,
         });
       }
     } catch (error) {
@@ -173,7 +173,12 @@ export class VideoCallManager {
       clearInterval(this.signalingInterval);
     }
 
-    logger.info('[VideoCallManager] Starting signaling poll for session:', this.sessionId, 'userId:', this.userId);
+    logger.info(
+      '[VideoCallManager] Starting signaling poll for session:',
+      this.sessionId,
+      'userId:',
+      this.userId,
+    );
 
     // Poll for signals
     this.signalingInterval = setInterval(async () => {
@@ -192,14 +197,18 @@ export class VideoCallManager {
           success: response.success,
           hasData: !!response.data,
           signalCount: response.data?.signals?.length || 0,
-          signals: response.data?.signals
+          signals: response.data?.signals,
         });
 
         if (response.success && response.data && response.data.signals) {
           const signals = response.data.signals;
 
           if (signals.length > 0) {
-            logger.info('[VideoCallManager] ✅ Received', signals.length, 'signal(s) from remote peer');
+            logger.info(
+              '[VideoCallManager] ✅ Received',
+              signals.length,
+              'signal(s) from remote peer',
+            );
           }
 
           // Process each signal
@@ -209,7 +218,7 @@ export class VideoCallManager {
               from: signal.from,
               signalType: signal.signal?.type || 'unknown',
               hasSdp: !!signal.signal?.sdp,
-              hasCandidate: !!signal.signal?.candidate
+              hasCandidate: !!signal.signal?.candidate,
             });
 
             if (this.peerWrapper) {
@@ -221,14 +230,17 @@ export class VideoCallManager {
                 logger.error('[VideoCallManager] ❌ Error processing signal:', error);
               }
             } else {
-              logger.error('[VideoCallManager] ❌ peerWrapper not available when processing signal');
+              logger.error(
+                '[VideoCallManager] ❌ peerWrapper not available when processing signal',
+              );
             }
           }
         } else {
           // No signals received - this is normal if the other peer hasn't connected yet
           if (this.isCallActive && !this.peerWrapper?.isConnected) {
             // Only log occasionally to avoid spam
-            if (Math.random() < 0.1) { // Log 10% of the time
+            if (Math.random() < 0.1) {
+              // Log 10% of the time
               logger.info('[VideoCallManager] Waiting for signals from remote peer...');
             }
           }
@@ -247,13 +259,22 @@ export class VideoCallManager {
 
       // Only log if state changed
       if (connectionState !== lastState) {
-        logger.info('[VideoCallManager] ICE connection state changed:', lastState, '→', connectionState);
+        logger.info(
+          '[VideoCallManager] ICE connection state changed:',
+          lastState,
+          '→',
+          connectionState,
+        );
         lastState = connectionState;
 
         if (connectionState === 'checking') {
-          logger.info('[VideoCallManager] 🔄 ICE checking connection (this is good - connection attempt in progress)');
+          logger.info(
+            '[VideoCallManager] 🔄 ICE checking connection (this is good - connection attempt in progress)',
+          );
         } else if (connectionState === 'new') {
-          logger.info('[VideoCallManager] ⏳ ICE state: new (waiting for signals from remote peer)');
+          logger.info(
+            '[VideoCallManager] ⏳ ICE state: new (waiting for signals from remote peer)',
+          );
         }
       }
 
@@ -298,7 +319,7 @@ export class VideoCallManager {
       this.connectionManager.startQualityMonitoring(
         this.peerWrapper.peer._pc,
         this.peerWrapper.localStream,
-        stream
+        stream,
       );
     }
 
@@ -324,9 +345,15 @@ export class VideoCallManager {
    */
   handleClose() {
     logger.info('[VideoCallManager] Peer connection closed');
-    this.connectionManager.updateConnectionState('disconnected', 'The other person has left the call');
+    this.connectionManager.updateConnectionState(
+      'disconnected',
+      'The other person has left the call',
+    );
     this.isCallActive = false;
-    this.onConnectionChange({ status: 'disconnected', reason: 'The other person has left the call' });
+    this.onConnectionChange({
+      status: 'disconnected',
+      reason: 'The other person has left the call',
+    });
   }
 
   /**
@@ -375,7 +402,9 @@ export class VideoCallManager {
    * Handle reconnection attempt
    */
   async handleReconnect(info) {
-    logger.info(`[VideoCallManager] 🔄 Reconnecting (attempt ${info.attempt}/${info.maxAttempts})...`);
+    logger.info(
+      `[VideoCallManager] 🔄 Reconnecting (attempt ${info.attempt}/${info.maxAttempts})...`,
+    );
 
     try {
       // Try to restart the call
@@ -394,7 +423,7 @@ export class VideoCallManager {
         onStream: (stream) => this.handleRemoteStream(stream),
         onConnect: () => this.handleConnect(),
         onClose: () => this.handleClose(),
-        onError: (error) => this.handleError(error)
+        onError: (error) => this.handleError(error),
       });
 
       await this.peerWrapper.initialize();
@@ -404,7 +433,7 @@ export class VideoCallManager {
         this.connectionManager.startQualityMonitoring(
           this.peerWrapper.peer._pc,
           this.peerWrapper.localStream,
-          this.peerWrapper.remoteStream
+          this.peerWrapper.remoteStream,
         );
       }
 
@@ -463,23 +492,21 @@ export class VideoCallManager {
           // High-quality screen share settings
           width: { ideal: 1920, min: 1280 },
           height: { ideal: 1080, min: 720 },
-          frameRate: { ideal: 30, min: 24 }
+          frameRate: { ideal: 30, min: 24 },
         },
-        audio: false
+        audio: false,
       });
 
       // Apply watermark to screen share
-      // TODO: Import and use watermark helper when available
-      // For now, use the stream as-is (watermarking can be added via canvas overlay in UI)
+      // Note: Watermarking is handled via canvas overlay in the UI (telemedicine page)
+      // The watermark-helper.js exists but canvas overlay approach is used for better performance
       let processedStream = screenStream;
 
       // Add screen track to peer connection
       if (this.peerWrapper && this.peerWrapper.peer && this.peerWrapper.peer._pc) {
         const videoTrack = processedStream.getVideoTracks()[0];
         const senders = this.peerWrapper.peer._pc.getSenders();
-        const videoSender = senders.find(s =>
-          s.track && s.track.kind === 'video'
-        );
+        const videoSender = senders.find((s) => s.track && s.track.kind === 'video');
 
         if (videoSender) {
           // Replace existing video track with screen share
@@ -487,7 +514,7 @@ export class VideoCallManager {
           logger.info('[VideoCallManager] ✅ Screen share track replaced');
         } else {
           // No video sender found, add track
-          processedStream.getTracks().forEach(track => {
+          processedStream.getTracks().forEach((track) => {
             this.peerWrapper.peer._pc.addTrack(track, this.peerWrapper.localStream);
           });
           logger.info('[VideoCallManager] ✅ Screen share track added');
@@ -500,7 +527,7 @@ export class VideoCallManager {
           logger.info('[VideoCallManager] Screen share settings:', {
             width: settings.width,
             height: settings.height,
-            frameRate: settings.frameRate
+            frameRate: settings.frameRate,
           });
         }
 
@@ -524,16 +551,19 @@ export class VideoCallManager {
    */
   async stopScreenShare() {
     if (this.screenShareStream) {
-      this.screenShareStream.getTracks().forEach(track => track.stop());
+      this.screenShareStream.getTracks().forEach((track) => track.stop());
       this.screenShareStream = null;
 
       // Restore camera video track
-      if (this.peerWrapper && this.peerWrapper.localStream && this.peerWrapper.peer && this.peerWrapper.peer._pc) {
+      if (
+        this.peerWrapper &&
+        this.peerWrapper.localStream &&
+        this.peerWrapper.peer &&
+        this.peerWrapper.peer._pc
+      ) {
         const videoTrack = this.peerWrapper.localStream.getVideoTracks()[0];
         const senders = this.peerWrapper.peer._pc.getSenders();
-        const videoSender = senders.find(s =>
-          s.track && s.track.kind === 'video'
-        );
+        const videoSender = senders.find((s) => s.track && s.track.kind === 'video');
 
         if (videoSender && videoTrack) {
           await videoSender.replaceTrack(videoTrack);

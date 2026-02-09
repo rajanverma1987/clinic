@@ -1,36 +1,6 @@
 /* Premium Modal Component Styles */
-/* Uses theme colors and design system tokens */
-
-/* CSS Variables – primary from globals.css :root; only overrides below */
-:root {
-  /* Secondary Colors */
-  --color-secondary-500: #8b5cf6;
-
-  /* Neutral Colors */
-  --color-neutral-50: #f9fafb;
-  --color-neutral-100: #f3f4f6;
-  --color-neutral-200: #e5e7eb;
-  --color-neutral-400: #9ca3af;
-  --color-neutral-900: #111827;
-
-  /* Status Colors */
-  --color-status-error: #ef4444;
-  --color-status-warning: #f59e0b;
-
-  /* Spacing */
-  --space-6: 1.5rem;
-
-  /* Gaps */
-  --gap-3: 0.75rem;
-
-  /* Radius */
-  --radius-xl: 0.75rem;
-  --radius-2xl: 1rem;
-
-  /* Z-index */
-  --z-modal-backdrop: 10050;
-  --z-modal: 10060;
-}
+/* Uses theme colors and design system tokens from globals.css */
+/* All tokens are defined in globals.css :root - no overrides needed here */
 
 .Modal-backdrop {
   position: fixed;
@@ -41,13 +11,13 @@
     linear-gradient(
       135deg,
       color-mix(in srgb, var(--color-primary-500) 8%, transparent) 0%,
-      color-mix(in srgb, var(--color-secondary-500) 8%, transparent) 50%,
+      color-mix(in srgb, var(--color-secondary-600) 8%, transparent) 50%,
       color-mix(in srgb, var(--color-status-warning) 5%, transparent) 100%
     ),
     color-mix(in srgb, var(--color-neutral-500) 35%, transparent);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  z-index: var(--z-modal-backdrop, 10050);
+  z-index: var(--z-modal-backdrop, 40);
   animation: Modal-fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto;
 }
@@ -80,7 +50,7 @@
     0 0 40px color-mix(in srgb, var(--color-primary-500) 10%, transparent);
   animation: Modal-slideUpScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow: hidden;
-  z-index: var(--z-modal, 10060);
+  z-index: var(--z-modal, 50);
 }
 
 /* Top gradient accent bar */
@@ -94,7 +64,7 @@
   background: linear-gradient(
     90deg,
     var(--color-primary-500) 0%,
-    var(--color-secondary-500) 50%,
+    var(--color-secondary-600) 50%,
     var(--color-status-warning) 100%
   );
   z-index: 1;

@@ -4,19 +4,22 @@
  * GET /api/admin/activity-logs?userId=&action=&resource=&resourceId=&page=&limit=
  */
 
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import AuditLog from '@/models/AuditLog';
-import { logger } from '@/lib/utils/logger.js';
+import { NextResponse } from 'next/server';
 
 async function getHandler(req, user) {
-  try {
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
-    }
-    await connectDB();
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
+  await connectDB();
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
     const action = searchParams.get('action');
@@ -64,15 +67,23 @@ async function getHandler(req, user) {
           pages: Math.ceil(total / limit) || 1,
           totalPages: Math.ceil(total / limit) || 1,
         },
-      })
+      }),
     );
-  } catch (err) {
-    logger.error('Admin activity-logs error:', err);
-    return NextResponse.json(
-      errorResponse(err instanceof Error ? err.message : 'Failed to fetch logs', 'FETCH_ERROR'),
-      { status: 500 }
-    );
-  }
 }
 
-export const GET = withAuth(getHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates AUDIT_LOG:READ permission
+ * 6. Handler - Executes business logic
+ */
+export const GET = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.AUDIT_LOG, ACTIONS.READ)(getHandler))),
+  ),
+);

@@ -53,12 +53,44 @@ async function getHandler(req, user) {
       ];
     }
 
-    const messages = await Message.find(query)
-      .populate('from', 'firstName lastName email profilePhoto')
-      .populate('to', 'firstName lastName email profilePhoto')
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
+    // Early return optimization: Quick check if any messages exist
+    const hasMessages = await Message.countDocuments(query);
+    let messages = [];
+    
+    if (hasMessages > 0) {
+      // Optimize: Use aggregation with $lookup instead of populate for better performance
+      const pipeline = [
+        { $match: query },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'from',
+            foreignField: '_id',
+            as: 'fromUser',
+            pipeline: [{ $project: { firstName: 1, lastName: 1, email: 1, profilePhoto: 1 } }],
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'to',
+            foreignField: '_id',
+            as: 'toUser',
+            pipeline: [{ $project: { firstName: 1, lastName: 1, email: 1, profilePhoto: 1 } }],
+          },
+        },
+        {
+          $addFields: {
+            from: { $arrayElemAt: ['$fromUser', 0] },
+            to: { $arrayElemAt: ['$toUser', 0] },
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $limit: limit },
+      ];
+
+      messages = await Message.aggregate(pipeline);
+    }
 
     // Format messages
     const formattedMessages = messages.map((msg) => ({

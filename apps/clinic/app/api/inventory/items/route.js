@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 import { withErrorHandler } from '@/middleware/error-handler';
+import { withRequestLogger } from '@/middleware/request-logger';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
 import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
@@ -105,19 +106,44 @@ async function postHandler(req, user) {
   }
 }
 
-// Apply middleware stack
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates INVENTORY:READ permission
+ * 6. Handler - Executes business logic
+ */
 export const GET = withErrorHandler(
-  apiRateLimit(
-    withAuth(
-      requirePermission(RESOURCES.INVENTORY, ACTIONS.READ)(getHandler)
+  withRequestLogger(
+    apiRateLimit(
+      withAuth(
+        requirePermission(RESOURCES.INVENTORY, ACTIONS.READ)(getHandler)
+      )
     )
   )
 );
 
+/**
+ * Apply enterprise middleware stack to POST endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates INVENTORY:CREATE permission
+ * 6. Handler - Executes business logic
+ */
 export const POST = withErrorHandler(
-  apiRateLimit(
-    withAuth(
-      requirePermission(RESOURCES.INVENTORY, ACTIONS.CREATE)(postHandler)
+  withRequestLogger(
+    apiRateLimit(
+      withAuth(
+        requirePermission(RESOURCES.INVENTORY, ACTIONS.CREATE)(postHandler)
+      )
     )
   )
 );

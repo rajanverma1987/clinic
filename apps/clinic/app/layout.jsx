@@ -1,3 +1,4 @@
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Providers } from '@/components/providers/Providers';
 import './globals.css';
 
@@ -30,7 +31,9 @@ export default function RootLayout({ children }) {
         <script src='/sw-register.js' async />
       </head>
       <body className='antialiased min-h-screen' suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <ErrorBoundary variant='page' name='RootErrorBoundary'>
+          <Providers>{children}</Providers>
+        </ErrorBoundary>
       </body>
     </html>
   );

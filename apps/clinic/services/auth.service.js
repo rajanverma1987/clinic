@@ -251,6 +251,19 @@ export async function loginUser(input, options = {}) {
 
   // All registered accounts can log in; isActive is not enforced at login (can be used for UI/restrictions elsewhere).
 
+  // Check if account is locked FIRST (before password validation to prevent brute force)
+  // Testing account bypass
+  if (
+    !isTestAccount(user.email) &&
+    user.accountLockedUntil &&
+    user.accountLockedUntil > new Date()
+  ) {
+    const minutesRemaining = Math.ceil((user.accountLockedUntil - new Date()) / (60 * 1000));
+    throw new Error(
+      `Account is locked. Please try again in ${minutesRemaining} minute(s) or reset your password.`,
+    );
+  }
+
   // Verify password (use normalized password); testing account bypasses password check
   const isPasswordValid =
     (await user.comparePassword(normalizedPassword)) || isTestAccount(user.email);
@@ -268,18 +281,6 @@ export async function loginUser(input, options = {}) {
       await user.save();
     }
     throw new Error('Invalid email or password');
-  }
-
-  // Check if account is locked (testing account bypass)
-  if (
-    !isTestAccount(user.email) &&
-    user.accountLockedUntil &&
-    user.accountLockedUntil > new Date()
-  ) {
-    const minutesRemaining = Math.ceil((user.accountLockedUntil - new Date()) / (60 * 1000));
-    throw new Error(
-      `Account is locked. Please try again in ${minutesRemaining} minute(s) or reset your password.`,
-    );
   }
 
   // Validate tenant is active (skip for super_admin and testing account)
@@ -506,15 +507,20 @@ export async function refreshAccessToken(refreshToken) {
     const payload = verifyRefreshToken(refreshToken);
 
     // Verify user still exists; all registered accounts can refresh (isActive not enforced)
+    // Optimize: Use lean() and select() to reduce overhead
     await connectDB();
-    const user = await User.findById(payload.userId);
+    const user = await User.findById(payload.userId)
+      .select('_id email role tenantId')
+      .lean();
     if (!user) {
       throw new Error('User not found');
     }
 
-    // Verify tenant is still active
+    // Verify tenant is still active - optimize with lean() and select()
     if (user.tenantId) {
-      const tenant = await Tenant.findById(user.tenantId);
+      const tenant = await Tenant.findById(user.tenantId)
+        .select('isActive')
+        .lean();
       if (!tenant || !tenant.isActive) {
         throw new Error('Tenant is not active');
       }

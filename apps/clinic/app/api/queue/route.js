@@ -16,37 +16,32 @@ import { successResponse, errorResponse, validationErrorResponse } from '@/lib/u
  * List queue entries with pagination and filters
  */
 async function getHandler(req, user) {
-  try {
-    const { searchParams } = new URL(req.url);
+  const { searchParams } = new URL(req.url);
 
-    const queryParams = {
-      page: searchParams.get('page') || undefined,
-      limit: searchParams.get('limit') || undefined,
-      doctorId: searchParams.get('doctorId') || undefined,
-      patientId: searchParams.get('patientId') || undefined,
-      status: searchParams.get('status') || undefined,
-      priority: searchParams.get('priority') || undefined,
-      type: searchParams.get('type') || undefined,
-      appointmentId: searchParams.get('appointmentId') || undefined,
-      date: searchParams.get('date') || undefined,
-      isActive: searchParams.get('isActive') || undefined,
-    };
+  const queryParams = {
+    page: searchParams.get('page') || undefined,
+    limit: searchParams.get('limit') || undefined,
+    doctorId: searchParams.get('doctorId') || undefined,
+    patientId: searchParams.get('patientId') || undefined,
+    status: searchParams.get('status') || undefined,
+    priority: searchParams.get('priority') || undefined,
+    type: searchParams.get('type') || undefined,
+    appointmentId: searchParams.get('appointmentId') || undefined,
+    date: searchParams.get('date') || undefined,
+    isActive: searchParams.get('isActive') || undefined,
+  };
 
-    const validationResult = queueQuerySchema.safeParse(queryParams);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        validationErrorResponse(validationResult.error.errors),
-        { status: 400 }
-      );
-    }
-
-    const result = await listQueueEntries(validationResult.data, user.tenantId, user.userId);
-
-    return NextResponse.json(successResponse(result));
-  } catch (error) {
-    // Error handling is done by withErrorHandler middleware
-    throw error;
+  const validationResult = queueQuerySchema.safeParse(queryParams);
+  if (!validationResult.success) {
+    return NextResponse.json(
+      validationErrorResponse(validationResult.error.errors),
+      { status: 400 }
+    );
   }
+
+  const result = await listQueueEntries(validationResult.data, user.tenantId, user.userId);
+
+  return NextResponse.json(successResponse(result));
 }
 
 /**
@@ -54,40 +49,35 @@ async function getHandler(req, user) {
  * Create a new queue entry (from appointment or walk-in)
  */
 async function postHandler(req, user) {
-  try {
-    const body = await req.json();
+  const body = await req.json();
 
-    const validationResult = createQueueEntrySchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        validationErrorResponse(validationResult.error.errors),
-        { status: 400 }
-      );
-    }
-
-    const queueEntry = await createQueueEntry(validationResult.data, user.tenantId, user.userId);
-
+  const validationResult = createQueueEntrySchema.safeParse(body);
+  if (!validationResult.success) {
     return NextResponse.json(
-      successResponse({
-        id: queueEntry._id.toString(),
-        queueNumber: queueEntry.queueNumber,
-        type: queueEntry.type,
-        patientId: queueEntry.patientId.toString(),
-        doctorId: queueEntry.doctorId.toString(),
-        appointmentId: queueEntry.appointmentId?.toString(),
-        position: queueEntry.position,
-        priority: queueEntry.priority,
-        status: queueEntry.status,
-        estimatedWaitTime: queueEntry.estimatedWaitTime,
-        joinedAt: queueEntry.joinedAt,
-        createdAt: queueEntry.createdAt,
-      }),
-      { status: 201 }
+      validationErrorResponse(validationResult.error.errors),
+      { status: 400 }
     );
-  } catch (error) {
-    // Error handling is done by withErrorHandler middleware
-    throw error;
   }
+
+  const queueEntry = await createQueueEntry(validationResult.data, user.tenantId, user.userId);
+
+  return NextResponse.json(
+    successResponse({
+      id: queueEntry._id.toString(),
+      queueNumber: queueEntry.queueNumber,
+      type: queueEntry.type,
+      patientId: queueEntry.patientId.toString(),
+      doctorId: queueEntry.doctorId.toString(),
+      appointmentId: queueEntry.appointmentId?.toString(),
+      position: queueEntry.position,
+      priority: queueEntry.priority,
+      status: queueEntry.status,
+      estimatedWaitTime: queueEntry.estimatedWaitTime,
+      joinedAt: queueEntry.joinedAt,
+      createdAt: queueEntry.createdAt,
+    }),
+    { status: 201 }
+  );
 }
 
 // Apply middleware stack

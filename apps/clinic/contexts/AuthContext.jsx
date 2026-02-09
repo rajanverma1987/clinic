@@ -68,7 +68,11 @@ export function AuthProvider({ children }) {
         } finally {
           apiClient.setToken('');
           if (typeof window !== 'undefined') {
+            // Clear all authentication-related localStorage items
+            localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('rememberedEmail');
             lastActivityRef.current = 0;
             dashboardCache.clear();
             clearAllCache();
@@ -579,7 +583,11 @@ export function AuthProvider({ children }) {
     } finally {
       apiClient.setToken('');
       if (typeof window !== 'undefined') {
+        // Clear all authentication-related localStorage items
+        localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('rememberedEmail');
         lastActivityRef.current = 0;
         dashboardCache.clear();
         clearAllCache();

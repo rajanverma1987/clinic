@@ -1,6 +1,11 @@
 import { isTestAccount } from '@/lib/constants/test-account.js';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import { getTenantFeatures, getTenantLimits } from '@/services/feature-access.service';
 import { getTenantSubscription } from '@/services/subscription.service';
 import { NextResponse } from 'next/server';
@@ -26,15 +31,14 @@ function getTestAccountPremiumPayload() {
  * Get current tenant's available features, limits, and subscription status
  */
 async function getHandler(req, user) {
-  try {
-    // Super admin = company account: full access, no plan gating
+  // Super admin = company account: full access, no plan gating
     if (user.role === 'super_admin') {
       return NextResponse.json(
         successResponse({
           features: ['*'],
           limits: {},
           subscription: null,
-        })
+        }),
       );
     }
 
@@ -78,19 +82,23 @@ async function getHandler(req, user) {
               paypalApprovalUrl: sub.paypalApprovalUrl,
             }
           : null,
-      })
+      }),
     );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const isServerError =
-      message.includes('MONGODB') ||
-      message.includes('connection') ||
-      message.includes('tenantId') ||
-      message.length > 100;
-    return NextResponse.json(errorResponse(message || 'Failed to fetch features', 'FETCH_ERROR'), {
-      status: isServerError ? 500 : 400,
-    });
-  }
 }
 
-export const GET = withAuth(getHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates SETTINGS:READ permission (features are part of settings)
+ * 6. Handler - Executes business logic
+ */
+export const GET = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.SETTINGS, ACTIONS.READ)(getHandler))),
+  ),
+);

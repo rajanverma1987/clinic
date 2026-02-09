@@ -1,26 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import User from '@/models/User';
-import Tenant from '@/models/Tenant';
-import { logger } from '@/lib/utils/logger.js';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/admin/users
  * List all users across all tenants (Super Admin only)
  */
 async function getHandler(req, user) {
-  try {
-    // Check if user is super admin
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(
-        errorResponse('Unauthorized', 'UNAUTHORIZED'),
-        { status: 403 }
-      );
-    }
+  // Check if user is super admin
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
 
-    await connectDB();
+  await connectDB();
     const { searchParams } = new URL(req.url);
     const role = searchParams.get('role');
     const tenantId = searchParams.get('tenantId');
@@ -30,15 +27,15 @@ async function getHandler(req, user) {
 
     // Build query - exclude super admins from tenant-specific queries
     const query = { role: { $ne: 'super_admin' } };
-    
+
     if (role) {
       query.role = role;
     }
-    
+
     if (tenantId) {
       query.tenantId = tenantId;
     }
-    
+
     if (isActive !== null && isActive !== undefined) {
       query.isActive = isActive === 'true';
     }
@@ -77,19 +74,18 @@ async function getHandler(req, user) {
           total,
           pages: Math.ceil(total / limit),
         },
-      })
+      }),
     );
-  } catch (error) {
-    logger.error('Admin users error:', error);
-    return NextResponse.json(
-      errorResponse(
-        (error instanceof Error ? error.message : String(error)) || 'Failed to fetch users',
-        'FETCH_ERROR'
-      ),
-      { status: 500 }
-    );
-  }
 }
 
-export const GET = withAuth(getHandler);
-
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Handler - Executes business logic (super_admin check inside handler)
+ */
+export const GET = withErrorHandler(withRequestLogger(apiRateLimit(withAuth(getHandler))));

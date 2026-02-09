@@ -23,21 +23,21 @@ const BASE =
 
 const VARIANTS = {
   primary:
-    'bg-[#15803d] text-white border-2 border-white shadow-[0_0_0_1px_#15803d] hover:bg-primary-500 hover:border-white active:bg-primary-600 focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900 transition-all duration-200',
+    'bg-[#15803d] text-white border-2 border-white shadow-[0_0_0_1px_#15803d] hover:bg-[#166534] hover:border-white active:bg-[#14532d] focus:ring-[#15803d] focus:ring-offset-0 dark:focus:ring-offset-neutral-900 transition-all duration-200',
   success:
-    'bg-[#15803d] text-white border-2 border-white shadow-[0_0_0_1px_#15803d] hover:bg-primary-500 hover:border-white active:bg-primary-600 focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900 transition-all duration-200',
+    'bg-[#15803d] text-white border-2 border-white shadow-[0_0_0_1px_#15803d] hover:bg-[#166534] hover:border-white active:bg-[#14532d] focus:ring-[#15803d] focus:ring-offset-0 dark:focus:ring-offset-neutral-900 transition-all duration-200',
   secondary:
     'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_var(--color-primary-500)] focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900',
   outline:
     'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_var(--color-primary-500)] focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900',
   danger:
-    'bg-status-error text-white border border-status-error hover:bg-red-600 hover:border-red-600 active:bg-red-700 focus:ring-status-error focus:ring-offset-0 dark:focus:ring-offset-neutral-900 shadow-sm',
+    'bg-status-error text-white border border-status-error hover:opacity-90 active:opacity-80 focus:ring-status-error focus:ring-offset-0 dark:focus:ring-offset-neutral-900 shadow-sm transition-opacity',
   destructive:
-    'bg-status-error text-white border border-status-error hover:bg-red-600 hover:border-red-600 active:bg-red-700 focus:ring-status-error focus:ring-offset-0 dark:focus:ring-offset-neutral-900 shadow-sm',
+    'bg-status-error text-white border border-status-error hover:opacity-90 active:opacity-80 focus:ring-status-error focus:ring-offset-0 dark:focus:ring-offset-neutral-900 shadow-sm transition-opacity',
   logout:
-    'bg-status-error text-white border border-status-error hover:bg-red-600 hover:border-red-600 active:bg-red-700 focus:ring-status-error focus:ring-offset-0 dark:focus:ring-offset-neutral-900 shadow-sm',
+    'bg-status-error text-white border border-status-error hover:opacity-90 active:opacity-80 focus:ring-status-error focus:ring-offset-0 dark:focus:ring-offset-neutral-900 shadow-sm transition-opacity',
   warning:
-    'bg-status-warning text-white border border-status-warning hover:bg-amber-500 hover:border-amber-500 active:bg-amber-600 focus:ring-status-warning focus:ring-offset-0 dark:focus:ring-offset-neutral-900 shadow-sm',
+    'bg-status-warning text-white border border-status-warning hover:opacity-90 active:opacity-80 focus:ring-status-warning focus:ring-offset-0 dark:focus:ring-offset-neutral-900 shadow-sm transition-opacity',
   ghost:
     'bg-transparent text-primary-600 dark:text-primary-400 border border-transparent hover:bg-primary-50 dark:hover:bg-neutral-800 hover:border-primary-100 dark:hover:border-neutral-700 active:bg-primary-100 dark:active:bg-neutral-700 focus:ring-primary-500',
   tertiary:

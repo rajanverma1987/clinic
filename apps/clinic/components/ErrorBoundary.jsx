@@ -1,43 +1,82 @@
 'use client';
 
 /**
- * Error boundary for dashboard and list sections.
- * Catches render errors and shows fallback; logs for debugging.
+ * Premium Error Boundary Component
+ * Catches React render errors and displays a polished error UI
+ * Supports custom fallbacks, retry logic, and error logging
  */
 
+import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
+import { logger } from '@/lib/utils/logger';
 import { Component } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 
 export class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
 
-  componentDidCatch(_error, _errorInfo) {
-    // Error captured; state updated for fallback UI
+  componentDidCatch(error, errorInfo) {
+    // Log error for debugging
+    logger.error('ErrorBoundary caught an error', error, {
+      componentStack: errorInfo.componentStack,
+      errorBoundary: this.props.name || 'Unknown',
+    });
+
+    this.setState({
+      errorInfo,
+    });
+
+    // Call optional error handler
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
   }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
+
+    // Call optional retry handler
+    if (this.props.onRetry) {
+      this.props.onRetry();
+    }
+  };
 
   render() {
     if (this.state.hasError) {
-      const { fallback, onRetry, children } = this.props;
-      if (fallback) return fallback;
+      const { fallback, variant = 'card', showRetry = true, title, message } = this.props;
+
+      // Custom fallback takes precedence
+      if (fallback) {
+        return typeof fallback === 'function'
+          ? fallback(this.state.error, this.state.errorInfo)
+          : fallback;
+      }
+
+      // Determine status code from error if available
+      const statusCode =
+        this.state.error?.statusCode ||
+        this.state.error?.response?.status ||
+        (this.state.error?.message?.includes('404') ? 404 : null) ||
+        (this.state.error?.message?.includes('500') ? 500 : null);
+
+      // Default error display with premium design
       return (
-        <Card className="p-6 border border-neutral-200">
-          <p className="text-neutral-700 mb-2">Something went wrong loading this section.</p>
-          {onRetry && (
-            <Button variant="secondary" size="sm" onClick={() => this.setState({ hasError: false, error: null })}>
-              Try again
-            </Button>
-          )}
-        </Card>
+        <ErrorDisplay
+          title={title}
+          message={message || this.state.error?.message}
+          statusCode={statusCode}
+          variant={variant}
+          showRetry={showRetry}
+          onRetry={this.handleRetry}
+        />
       );
     }
+
     return this.props.children;
   }
 }

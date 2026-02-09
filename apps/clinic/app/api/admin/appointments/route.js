@@ -5,19 +5,22 @@
  * Returns data, pagination, and stats (total, completed, cancelled, no_show) for current filter.
  */
 
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import Appointment from '@/models/Appointment';
-import { logger } from '@/lib/utils/logger.js';
+import { NextResponse } from 'next/server';
 
 async function getHandler(req, user) {
-  try {
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
-    }
-    await connectDB();
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
+  await connectDB();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const type = searchParams.get('type');
@@ -75,9 +78,13 @@ async function getHandler(req, user) {
       status: a.status,
       type: a.type,
       patientId: a.patientId?._id?.toString(),
-      patientName: a.patientId ? `${a.patientId.firstName || ''} ${a.patientId.lastName || ''}`.trim() : null,
+      patientName: a.patientId
+        ? `${a.patientId.firstName || ''} ${a.patientId.lastName || ''}`.trim()
+        : null,
       doctorId: a.doctorId?._id?.toString(),
-      doctorName: a.doctorId ? `${a.doctorId.firstName || ''} ${a.doctorId.lastName || ''}`.trim() : null,
+      doctorName: a.doctorId
+        ? `${a.doctorId.firstName || ''} ${a.doctorId.lastName || ''}`.trim()
+        : null,
       tenantId: a.tenantId?._id?.toString(),
       tenantName: a.tenantId?.name,
       isTelemedicine: a.isTelemedicine,
@@ -88,16 +95,30 @@ async function getHandler(req, user) {
       successResponse({
         data,
         stats,
-        pagination: { page, limit, total, pages: Math.ceil(total / limit) || 1, totalPages: Math.ceil(total / limit) || 1 },
-      })
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit) || 1,
+          totalPages: Math.ceil(total / limit) || 1,
+        },
+      }),
     );
-  } catch (err) {
-    logger.error('Admin appointments error:', err);
-    return NextResponse.json(
-      errorResponse(err instanceof Error ? err.message : 'Failed to fetch appointments', 'FETCH_ERROR'),
-      { status: 500 }
-    );
-  }
 }
 
-export const GET = withAuth(getHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates APPOINTMENT:READ permission
+ * 6. Handler - Executes business logic (super_admin check inside handler)
+ */
+export const GET = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.APPOINTMENT, ACTIONS.READ)(getHandler))),
+  ),
+);

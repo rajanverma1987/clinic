@@ -1,9 +1,9 @@
 /**
  * Queue Service
- * 
+ *
  * Enterprise-grade service for patient queue management with priority handling,
  * position tracking, and real-time updates.
- * 
+ *
  * Features:
  * - Queue entry creation and management
  * - Priority-based queue ordering
@@ -14,21 +14,21 @@
  * - Real-time queue updates via Socket.IO
  * - Multi-tenant isolation
  * - Audit logging
- * 
+ *
  * @module services/queue.service
  * @since 1.0.0
  */
 
+import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
-import Queue, { QueueStatus, QueuePriority, QueueType } from '@/models/Queue.js';
+import { withTenant } from '@/lib/db/tenant-helper.js';
+import { measureTime } from '@/lib/utils/enterprise-helpers.js';
+import { logger } from '@/lib/utils/logger.js';
+import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
 import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
 import Patient from '@/models/Patient.js';
+import Queue, { QueuePriority, QueueStatus, QueueType } from '@/models/Queue.js';
 import User from '@/models/User.js';
-import { withTenant } from '@/lib/db/tenant-helper.js';
-import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
-import { getPaginationParams, createPaginationResult } from '@/lib/utils/pagination.js';
-import { logger } from '@/lib/utils/logger.js';
-import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Generate next queue number for tenant
@@ -38,9 +38,7 @@ async function generateQueueNumber(tenantId) {
   await connectDB();
 
   // Get all queue numbers for this tenant to find the next available
-  const allQueues = await Queue.find(
-    withTenant(tenantId, { deletedAt: null })
-  )
+  const allQueues = await Queue.find(withTenant(tenantId, { deletedAt: null }))
     .select('queueNumber')
     .lean();
 
@@ -50,13 +48,13 @@ async function generateQueueNumber(tenantId) {
 
   // Extract all queue numbers and find the highest
   const queueNumbers = allQueues
-    .map(q => q.queueNumber)
-    .filter(qn => qn && qn.match(/Q-(\d+)/))
-    .map(qn => {
+    .map((q) => q.queueNumber)
+    .filter((qn) => qn && qn.match(/Q-(\d+)/))
+    .map((qn) => {
       const match = qn.match(/Q-(\d+)/);
       return match ? parseInt(match[1], 10) : 0;
     })
-    .filter(num => num > 0)
+    .filter((num) => num > 0)
     .sort((a, b) => b - a); // Sort descending
 
   // Find next available number (handle gaps)
@@ -90,7 +88,7 @@ async function calculateNextPosition(tenantId, doctorId, priority) {
       doctorId,
       status: QueueStatus.WAITING,
       deletedAt: null,
-    })
+    }),
   );
 
   // If high priority, insert at position 1 (will be reordered)
@@ -110,7 +108,7 @@ export async function recalculatePositions(tenantId, doctorId) {
       doctorId,
       status: QueueStatus.WAITING,
       deletedAt: null,
-    })
+    }),
   )
     .sort({ priority: -1, joinedAt: 1 }) // Higher priority first, then by join time
     .lean();
@@ -148,7 +146,7 @@ export async function createQueueEntry(input, tenantId, userId) {
     withTenant(tenantId, {
       _id: input.patientId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!patient) {
@@ -160,7 +158,7 @@ export async function createQueueEntry(input, tenantId, userId) {
     withTenant(tenantId, {
       _id: input.doctorId,
       isActive: true,
-    })
+    }),
   );
 
   if (!doctor) {
@@ -175,7 +173,7 @@ export async function createQueueEntry(input, tenantId, userId) {
         patientId: input.patientId,
         doctorId: input.doctorId,
         deletedAt: null,
-      })
+      }),
     );
 
     if (!appointment) {
@@ -188,7 +186,7 @@ export async function createQueueEntry(input, tenantId, userId) {
         appointmentId: input.appointmentId,
         status: { $in: [QueueStatus.WAITING, QueueStatus.CALLED, QueueStatus.IN_PROGRESS] },
         deletedAt: null,
-      })
+      }),
     );
 
     if (existingQueueEntry) {
@@ -197,9 +195,11 @@ export async function createQueueEntry(input, tenantId, userId) {
 
     // Update appointment status to IN_QUEUE only if it's not already ARRIVED or IN_PROGRESS
     const currentStatus = appointment.status;
-    if (currentStatus !== AppointmentStatus.ARRIVED &&
+    if (
+      currentStatus !== AppointmentStatus.ARRIVED &&
       currentStatus !== AppointmentStatus.IN_PROGRESS &&
-      currentStatus !== AppointmentStatus.COMPLETED) {
+      currentStatus !== AppointmentStatus.COMPLETED
+    ) {
       await Appointment.findByIdAndUpdate(input.appointmentId, {
         $set: { status: AppointmentStatus.IN_QUEUE },
       });
@@ -214,11 +214,7 @@ export async function createQueueEntry(input, tenantId, userId) {
   const position = await calculateNextPosition(tenantId, input.doctorId, priority);
 
   // Calculate estimated wait time
-  const estimatedWaitTime = await calculateEstimatedWaitTime(
-    tenantId,
-    input.doctorId,
-    position
-  );
+  const estimatedWaitTime = await calculateEstimatedWaitTime(tenantId, input.doctorId, position);
 
   // Get display name (use patient name or queue number)
   const displayName = input.displayName || `${patient.firstName} ${patient.lastName}`;
@@ -250,7 +246,7 @@ export async function createQueueEntry(input, tenantId, userId) {
     queueEntry._id.toString(),
     userId,
     tenantId,
-    AuditAction.CREATE
+    AuditAction.CREATE,
   );
 
   return queueEntry;
@@ -266,11 +262,14 @@ export async function getQueueEntryById(queueEntryId, tenantId, userId) {
     withTenant(tenantId, {
       _id: queueEntryId,
       deletedAt: null,
-    })
+    }),
   )
     .populate('patientId', 'firstName lastName patientId phone')
     .populate('doctorId', 'firstName lastName email')
-    .populate('appointmentId', 'appointmentDate startTime type isTelemedicine telemedicineSessionId endTime patientId doctorId')
+    .populate(
+      'appointmentId',
+      'appointmentDate startTime type isTelemedicine telemedicineSessionId endTime patientId doctorId',
+    )
     .populate('calledBy', 'firstName lastName')
     .lean();
 
@@ -336,36 +335,104 @@ export async function listQueueEntries(query, tenantId, userId) {
     filter.joinedAt = { $gte: startOfDay, $lte: endOfDay };
   }
 
+  // Early return optimization: Quick check if any queue entries exist
+  const hasEntries = await Queue.countDocuments(filter);
+  if (hasEntries === 0) {
+    // No entries exist - return empty result immediately
+    await AuditLogger.auditWrite('queue', 'list', userId, tenantId, AuditAction.READ, undefined, {
+      count: 0,
+      filters: query,
+      emptyCollection: true,
+    });
+    return createPaginationResult([], 0, page || 1, limit || 10);
+  }
+
   // Get total count
   const total = await Queue.countDocuments(filter);
 
   // Get paginated results
   // For active queues, sort by priority and position
-  const sortOptions = query.status === QueueStatus.WAITING
-    ? { priority: -1, position: 1, joinedAt: 1 }
-    : { joinedAt: -1 };
+  const sortOptions =
+    query.status === QueueStatus.WAITING
+      ? { priority: -1, position: 1, joinedAt: 1 }
+      : { joinedAt: -1 };
 
-  const queueEntries = await Queue.find(filter)
-    .populate('patientId', 'firstName lastName patientId phone')
-    .populate('doctorId', 'firstName lastName')
-    .populate('appointmentId', 'appointmentDate startTime endTime isTelemedicine telemedicineSessionId patientId doctorId')
-    .sort(sortOptions)
-    .skip(((page || 1) - 1) * (limit || 10))
-    .limit(limit || 10)
-    .lean();
+  // Optimize: Use aggregation with $lookup instead of populate to avoid N+1 queries
+  const pipeline = [
+    { $match: filter },
+    {
+      $lookup: {
+        from: 'patients',
+        localField: 'patientId',
+        foreignField: '_id',
+        as: 'patient',
+        pipeline: [{ $project: { firstName: 1, lastName: 1, patientId: 1, phone: 1 } }],
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'doctorId',
+        foreignField: '_id',
+        as: 'doctor',
+        pipeline: [{ $project: { firstName: 1, lastName: 1 } }],
+      },
+    },
+    {
+      $lookup: {
+        from: 'appointments',
+        localField: 'appointmentId',
+        foreignField: '_id',
+        as: 'appointment',
+        pipeline: [
+          {
+            $project: {
+              appointmentDate: 1,
+              startTime: 1,
+              endTime: 1,
+              isTelemedicine: 1,
+              telemedicineSessionId: 1,
+              patientId: 1,
+              doctorId: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        patientId: { $arrayElemAt: ['$patient', 0] },
+        doctorId: { $arrayElemAt: ['$doctor', 0] },
+        appointmentId: { $arrayElemAt: ['$appointment', 0] },
+      },
+    },
+    { $sort: sortOptions },
+    { $skip: ((page || 1) - 1) * (limit || 10) },
+    { $limit: limit || 10 },
+  ];
 
-  // Audit list access
-  await AuditLogger.auditWrite(
-    'queue',
-    'list',
-    userId,
-    tenantId,
-    AuditAction.READ,
-    undefined,
-    { count: queueEntries.length, filters: query }
-  );
+  try {
+    const queueEntries = await measureTime(`listQueueEntries-${tenantId}`, () =>
+      Queue.aggregate(pipeline),
+    );
 
-  return createPaginationResult(queueEntries, total, page || 1, limit || 10);
+    // Audit list access
+    await AuditLogger.auditWrite('queue', 'list', userId, tenantId, AuditAction.READ, undefined, {
+      count: queueEntries.length,
+      filters: query,
+    });
+
+    return createPaginationResult(queueEntries, total, page || 1, limit || 10);
+  } catch (error) {
+    logger.error('Error listing queue entries:', {
+      error: error.message,
+      stack: error.stack,
+      tenantId,
+      userId,
+      query,
+    });
+    throw error;
+  }
 }
 
 /**
@@ -379,10 +446,13 @@ export async function getDoctorQueue(doctorId, tenantId, userId) {
       doctorId,
       status: QueueStatus.WAITING,
       deletedAt: null,
-    })
+    }),
   )
     .populate('patientId', 'firstName lastName patientId phone')
-    .populate('appointmentId', 'appointmentDate startTime endTime isTelemedicine telemedicineSessionId patientId doctorId')
+    .populate(
+      'appointmentId',
+      'appointmentDate startTime endTime isTelemedicine telemedicineSessionId patientId doctorId',
+    )
     .sort({ priority: -1, position: 1, joinedAt: 1 })
     .lean();
 
@@ -401,7 +471,7 @@ export async function updateQueueEntry(queueEntryId, input, tenantId, userId) {
     withTenant(tenantId, {
       _id: queueEntryId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!existing) {
@@ -409,10 +479,7 @@ export async function updateQueueEntry(queueEntryId, input, tenantId, userId) {
   }
 
   // Don't allow updates to completed or cancelled entries
-  if (
-    existing.status === QueueStatus.COMPLETED ||
-    existing.status === QueueStatus.CANCELLED
-  ) {
+  if (existing.status === QueueStatus.COMPLETED || existing.status === QueueStatus.CANCELLED) {
     throw new Error('Cannot update completed or cancelled queue entry');
   }
 
@@ -432,7 +499,7 @@ export async function updateQueueEntry(queueEntryId, input, tenantId, userId) {
   const queueEntry = await Queue.findByIdAndUpdate(
     queueEntryId,
     { $set: updateData },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (queueEntry && (input.priority || input.position)) {
@@ -447,7 +514,7 @@ export async function updateQueueEntry(queueEntryId, input, tenantId, userId) {
       userId,
       tenantId,
       AuditAction.UPDATE,
-      { before, after: queueEntry.toObject() }
+      { before, after: queueEntry.toObject() },
     );
   }
 
@@ -464,7 +531,7 @@ export async function changeQueueStatus(queueEntryId, input, tenantId, userId) {
     withTenant(tenantId, {
       _id: queueEntryId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!queueEntry) {
@@ -528,13 +595,14 @@ export async function changeQueueStatus(queueEntryId, input, tenantId, userId) {
     updateData.notes = input.notes;
   }
 
-  const updated = await Queue.findByIdAndUpdate(
-    queueEntryId,
-    { $set: updateData },
-    { new: true }
-  );
+  const updated = await Queue.findByIdAndUpdate(queueEntryId, { $set: updateData }, { new: true });
 
-  if (updated && (input.status === QueueStatus.COMPLETED || input.status === QueueStatus.SKIPPED || input.status === QueueStatus.CANCELLED)) {
+  if (
+    updated &&
+    (input.status === QueueStatus.COMPLETED ||
+      input.status === QueueStatus.SKIPPED ||
+      input.status === QueueStatus.CANCELLED)
+  ) {
     // Recalculate positions after removing entry
     await recalculatePositions(tenantId, updated.doctorId.toString());
   }
@@ -547,7 +615,7 @@ export async function changeQueueStatus(queueEntryId, input, tenantId, userId) {
       tenantId,
       AuditAction.UPDATE,
       { before, after: updated.toObject() },
-      { statusChange: input.status }
+      { statusChange: input.status },
     );
   }
 
@@ -566,7 +634,7 @@ export async function reorderQueue(doctorId, input, tenantId, userId) {
       _id: { $in: input.queueEntryIds },
       doctorId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (entries.length !== input.queueEntryIds.length) {
@@ -577,7 +645,7 @@ export async function reorderQueue(doctorId, input, tenantId, userId) {
   const updatePromises = input.queueEntryIds.map((entryId, index) =>
     Queue.findByIdAndUpdate(entryId, {
       $set: { position: index + 1 },
-    })
+    }),
   );
 
   await Promise.all(updatePromises);
@@ -595,7 +663,7 @@ export async function reorderQueue(doctorId, input, tenantId, userId) {
     tenantId,
     AuditAction.UPDATE,
     undefined,
-    { action: 'reorder', entryIds: input.queueEntryIds }
+    { action: 'reorder', entryIds: input.queueEntryIds },
   );
 
   return updatedQueue;
@@ -611,7 +679,7 @@ export async function removeQueueEntry(queueEntryId, tenantId, userId) {
     withTenant(tenantId, {
       _id: queueEntryId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!queueEntry) {
@@ -639,77 +707,8 @@ export async function removeQueueEntry(queueEntryId, tenantId, userId) {
     queueEntry._id.toString(),
     userId,
     tenantId,
-    AuditAction.DELETE
+    AuditAction.DELETE,
   );
 
   return true;
 }
-
-/**
- * Get queue statistics for a doctor
- */
-export async function getQueueStatistics(doctorId, tenantId, userId) {
-  await connectDB();
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const [waiting, called, inProgress, completedToday] = await Promise.all([
-    Queue.countDocuments(
-      withTenant(tenantId, {
-        doctorId,
-        status: QueueStatus.WAITING,
-        deletedAt: null,
-      })
-    ),
-    Queue.countDocuments(
-      withTenant(tenantId, {
-        doctorId,
-        status: QueueStatus.CALLED,
-        deletedAt: null,
-      })
-    ),
-    Queue.countDocuments(
-      withTenant(tenantId, {
-        doctorId,
-        status: QueueStatus.IN_PROGRESS,
-        deletedAt: null,
-      })
-    ),
-    Queue.find(
-      withTenant(tenantId, {
-        doctorId,
-        status: QueueStatus.COMPLETED,
-        completedAt: { $gte: today },
-        deletedAt: null,
-        actualWaitTime: { $exists: true },
-      })
-    ).select('actualWaitTime').lean(),
-  ]);
-
-  // Calculate average wait time from completed entries today
-  const averageWaitTime =
-    completedToday.length > 0
-      ? completedToday.reduce((sum, entry) => sum + (entry.actualWaitTime || 0), 0) /
-      completedToday.length
-      : 0;
-
-  const totalToday = await Queue.countDocuments(
-    withTenant(tenantId, {
-      doctorId,
-      joinedAt: { $gte: today },
-      deletedAt: null,
-    })
-  );
-
-  await AuditLogger.auditRead('queue', `stats-${doctorId}`, userId, tenantId);
-
-  return {
-    waiting,
-    called,
-    inProgress,
-    averageWaitTime: Math.round(averageWaitTime),
-    totalToday,
-  };
-}
-

@@ -7,6 +7,8 @@
 import { FEATURE_FLAGS } from '@/lib/constants/route-security';
 import connectDB from '@/lib/db/connection.js';
 import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
+// Import SubscriptionPlan to ensure model is registered for populate operations
+import '@/models/SubscriptionPlan.js';
 
 const ENV = process.env.NODE_ENV || 'development';
 const FLAGS = FEATURE_FLAGS[ENV] ?? FEATURE_FLAGS.development;

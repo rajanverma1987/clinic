@@ -99,10 +99,7 @@ export default function AdminAnalyticsPage() {
   const peakHours = data?.peakHours ?? [];
 
   return (
-    <Layout
-      title='Platform Analytics'
-      subtitle='User growth, revenue trend, appointment stats, specialty distribution, peak hours'
-    >
+    <Layout title={t('admin.platformAnalytics')} subtitle={t('admin.platformAnalyticsSubtitle')}>
       <div className='admin-page-content'>
         {/* Filter Bar */}
         <Card className='mb-6'>
@@ -212,13 +209,13 @@ export default function AdminAnalyticsPage() {
         {/* Charts */}
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
           <ChartCard
-            title='User Growth'
+            title={t('admin.userGrowth')}
             data={data?.userGrowth ?? []}
             colorScheme='primary'
             loading={loading}
           />
           <ChartCard
-            title='Revenue Trend'
+            title={t('admin.revenueTrend')}
             data={data?.revenueTrends ?? []}
             colorScheme='primary'
             loading={loading}

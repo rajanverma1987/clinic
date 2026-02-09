@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
 import { Table } from '@/components/ui/Table';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -24,16 +25,6 @@ import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
-const PAYMENT_METHODS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'card', label: 'Card' },
-  { value: 'upi', label: 'UPI' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'cheque', label: 'Cheque' },
-  { value: 'insurance', label: 'Insurance' },
-  { value: 'other', label: 'Other' },
-];
-
 const ROUTE_KEY = 'route_invoices';
 
 export default function InvoicesPage() {
@@ -41,6 +32,16 @@ export default function InvoicesPage() {
   const { user, loading: authLoading } = useAuth();
   const { open: openConfirm } = useConfirmation();
   const { t } = useI18n();
+
+  const PAYMENT_METHODS = [
+    { value: 'cash', label: t('invoices.cash') },
+    { value: 'card', label: t('invoices.card') },
+    { value: 'upi', label: t('invoices.upi') },
+    { value: 'bank_transfer', label: t('invoices.bankTransfer') },
+    { value: 'cheque', label: t('invoices.cheque') },
+    { value: 'insurance', label: t('invoices.insurance') },
+    { value: 'other', label: t('common.other') },
+  ];
   const { currency, locale } = useSettings();
   const tenantId = user?.tenantId ?? null;
 
@@ -313,7 +314,11 @@ export default function InvoicesPage() {
         ];
         return (
           <div onClick={(e) => e.stopPropagation()}>
-            <ActionsMenu items={menuItems} ariaLabel={t('common.actions')} />
+            <ActionsMenu
+              items={menuItems}
+              ariaLabel={t('common.actions') || 'Actions'}
+              triggerSize='xs'
+            />
           </div>
         );
       },
@@ -332,10 +337,6 @@ export default function InvoicesPage() {
     return null;
   }
 
-  if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
-  }
-
   return (
     <Layout>
       <PageHeader
@@ -350,8 +351,14 @@ export default function InvoicesPage() {
         }
       />
       <div style={{ padding: '0 10px' }}>
-        <Card className='mb-4 p-4'>
-          <div className='filter-row'>
+        {loading ? (
+          <Card>
+            <TableSkeleton rows={10} cols={6} />
+          </Card>
+        ) : (
+          <>
+            <Card className='mb-4 p-4'>
+              <div className='filter-row'>
             <span className='text-sm font-medium text-neutral-700 dark:text-neutral-300'>
               {t('invoices.filterByStatus')}
             </span>
@@ -402,7 +409,7 @@ export default function InvoicesPage() {
           />
         </Card>
 
-        <InvoicePrintPreview
+            <InvoicePrintPreview
           invoiceId={printInvoiceId}
           isOpen={showPrintPreview}
           onClose={() => {
@@ -496,6 +503,8 @@ export default function InvoicesPage() {
             </div>
           )}
         </Modal>
+          </>
+        )}
       </div>
     </Layout>
   );

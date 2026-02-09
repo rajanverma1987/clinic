@@ -8,6 +8,7 @@ import {
 import { createInvoiceSchema, invoiceQuerySchema } from '@/lib/validations/billing';
 import { withAuth } from '@/middleware/auth';
 import { withErrorHandler } from '@/middleware/error-handler';
+import { withRequestLogger } from '@/middleware/request-logger';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
 import { createInvoice, listInvoices } from '@/services/billing.service';
@@ -56,13 +57,8 @@ async function getHandler(req, user) {
 
     return NextResponse.json(successResponse(result));
   } catch (error) {
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
-
-    return NextResponse.json(errorResponse('Failed to fetch invoices', 'INTERNAL_ERROR'), {
-      status: 500,
-    });
+    // Error handling is done by withErrorHandler middleware
+    throw error;
   }
 }
 
@@ -102,11 +98,36 @@ async function postHandler(req, user) {
   }
 }
 
-// Apply middleware stack
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates INVOICE:READ permission
+ * 6. Handler - Executes business logic
+ */
 export const GET = withErrorHandler(
-  apiRateLimit(withAuth(requirePermission(RESOURCES.INVOICE, ACTIONS.READ)(getHandler)))
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.INVOICE, ACTIONS.READ)(getHandler)))
+  )
 );
 
+/**
+ * Apply enterprise middleware stack to POST endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates INVOICE:CREATE permission
+ * 6. Handler - Executes business logic
+ */
 export const POST = withErrorHandler(
-  apiRateLimit(withAuth(requirePermission(RESOURCES.INVOICE, ACTIONS.CREATE)(postHandler)))
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.INVOICE, ACTIONS.CREATE)(postHandler)))
+  )
 );

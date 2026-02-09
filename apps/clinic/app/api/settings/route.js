@@ -1,7 +1,12 @@
 import connectDB from '@/lib/db/connection';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { canEditClinicSettings } from '@/lib/permissions/cursor-md-matrix';
-import { errorResponse, handleMongoError, successResponse } from '@/lib/utils/api-response';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import Tenant from '@/models/Tenant';
 import { NextResponse } from 'next/server';
 
@@ -10,8 +15,7 @@ import { NextResponse } from 'next/server';
  * Get tenant settings
  */
 async function getHandler(req, user) {
-  try {
-    if (!user.tenantId && user.role !== 'super_admin') {
+  if (!user.tenantId && user.role !== 'super_admin') {
       return NextResponse.json(errorResponse('Tenant context required', 'MISSING_TENANT'), {
         status: 400,
       });
@@ -46,19 +50,6 @@ async function getHandler(req, user) {
         isActive: tenantObj.isActive,
       }),
     );
-  } catch (error) {
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
-
-    const message =
-      process.env.NODE_ENV === 'development' && error instanceof Error
-        ? error.message
-        : 'Failed to fetch settings';
-    return NextResponse.json(errorResponse(message, 'INTERNAL_ERROR'), {
-      status: 500,
-    });
-  }
 }
 
 /**
@@ -66,16 +57,15 @@ async function getHandler(req, user) {
  * Update tenant settings (CursorMD/New: only Doctor and Super Admin can modify clinic profile / billing)
  */
 async function putHandler(req, user) {
-  try {
-    if (!canEditClinicSettings(user.role)) {
-      return NextResponse.json(
-        errorResponse('Only Doctor or Super Admin can modify clinic settings', 'FORBIDDEN'),
-        { status: 403 },
-      );
-    }
+  if (!canEditClinicSettings(user.role)) {
+    return NextResponse.json(
+      errorResponse('Only Doctor or Super Admin can modify clinic settings', 'FORBIDDEN'),
+      { status: 403 },
+    );
+  }
 
-    await connectDB();
-    const body = await req.json();
+  await connectDB();
+  const body = await req.json();
 
     const tenant = await Tenant.findById(user.tenantId);
     if (!tenant) {
@@ -159,20 +149,38 @@ async function putHandler(req, user) {
         updatedAt: tenant.updatedAt,
       }),
     );
-  } catch (error) {
-    if (error.name === 'MongoError' || error.name === 'ValidationError') {
-      return NextResponse.json(handleMongoError(error), { status: 400 });
-    }
-
-    return NextResponse.json(
-      errorResponse(
-        (error instanceof Error ? error.message : String(error)) || 'Failed to update settings',
-        'UPDATE_ERROR',
-      ),
-      { status: 400 },
-    );
-  }
 }
 
-export const GET = withAuth(getHandler);
-export const PUT = withAuth(putHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates SETTINGS:READ permission
+ * 6. Handler - Executes business logic
+ */
+export const GET = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.SETTINGS, ACTIONS.READ)(getHandler))),
+  ),
+);
+
+/**
+ * Apply enterprise middleware stack to PUT endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates SETTINGS:UPDATE permission
+ * 6. Handler - Executes business logic
+ */
+export const PUT = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.SETTINGS, ACTIONS.UPDATE)(putHandler))),
+  ),
+);

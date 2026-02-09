@@ -220,7 +220,7 @@ export default function DoctorPatientRecordsPage() {
                     <p className='text-neutral-600'>
                       {patient.dateOfBirth
                         ? `${new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear()} years old`
-                        : 'Age not specified'}
+                        : t('patients.ageNotSpecified')}
                       {patient.gender && ` • ${patient.gender}`}
                     </p>
                     <p className='text-sm text-neutral-500 mt-1'>
@@ -249,7 +249,7 @@ export default function DoctorPatientRecordsPage() {
                 <div>
                   <p className='text-sm text-neutral-600'>Blood Group</p>
                   <p className='font-semibold text-neutral-900'>
-                    {patient.bloodGroup || 'Not specified'}
+                    {patient.bloodGroup || t('patients.notSpecified')}
                   </p>
                 </div>
                 <div>

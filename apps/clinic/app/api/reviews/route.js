@@ -3,13 +3,13 @@
  * Get public reviews/testimonials for homepage
  */
 
-import { NextResponse } from 'next/server';
+import connectDB from '@/lib/db/connection';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
+import { logger } from '@/lib/utils/logger.js';
 import { withErrorHandler } from '@/middleware/error-handler';
 import { apiRateLimit } from '@/middleware/rate-limit';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
-import connectDB from '@/lib/db/connection';
 import Review from '@/models/Review';
-import { logger } from '@/lib/utils/logger.js';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/reviews
@@ -55,12 +55,13 @@ async function getHandler(req) {
     const formattedReviews = reviews.map((review) => ({
       _id: review._id,
       patientName: review.patientId
-        ? `${review.patientId.firstName || ''} ${review.patientId.lastName || ''}`.trim() || 'Anonymous'
+        ? `${review.patientId.firstName || ''} ${review.patientId.lastName || ''}`.trim() ||
+          'Anonymous'
         : 'Anonymous',
       rating: review.rating,
       reviewText: review.reviewText || '',
-      treatmentType: review.doctorId?.specialization || 'General Consultation',
-      doctorName: review.doctorId?.name || 'Dr. Unknown',
+      treatmentType: review.doctorId?.specialization || 'General Consultation', // API route - no i18n needed
+      doctorName: review.doctorId?.name || 'Dr. Unknown', // API route - no i18n needed
       appointmentDate: review.appointmentId?.appointmentDate || review.createdAt,
       createdAt: review.createdAt,
       isVerified: review.isVerified || false,
@@ -70,7 +71,7 @@ async function getHandler(req) {
       successResponse({
         reviews: formattedReviews,
         total: formattedReviews.length,
-      })
+      }),
     );
   } catch (err) {
     logger.error('Failed to fetch reviews:', err);

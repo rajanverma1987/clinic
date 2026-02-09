@@ -6,8 +6,10 @@
 
 import connectDB from '@/lib/db/connection';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
-import { logger } from '@/lib/utils/logger.js';
 import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import Doctor from '@/models/Doctor';
 import Invoice from '@/models/Invoice';
 import User from '@/models/User';
@@ -34,11 +36,10 @@ function getMonthKeys(lastN = 12, startDate, endDate) {
 }
 
 async function getHandler(req, user) {
-  try {
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
-    }
-    await connectDB();
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
+  await connectDB();
     const { searchParams } = new URL(req.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -176,16 +177,16 @@ async function getHandler(req, user) {
         geographicDistribution: [],
       }),
     );
-  } catch (error) {
-    logger.error('Admin analytics error:', error);
-    return NextResponse.json(
-      errorResponse(
-        (error instanceof Error ? error.message : String(error)) || 'Failed to fetch analytics',
-        'FETCH_ERROR',
-      ),
-      { status: 500 },
-    );
-  }
 }
 
-export const GET = withAuth(getHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Handler - Executes business logic (super_admin check inside handler)
+ */
+export const GET = withErrorHandler(withRequestLogger(apiRateLimit(withAuth(getHandler))));

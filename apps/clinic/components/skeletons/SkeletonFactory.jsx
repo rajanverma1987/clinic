@@ -375,39 +375,71 @@ export function ReportTabSkeleton() {
 const DEFAULT_LIST_PAGE_SIZE = 10;
 
 /**
- * Appointments list skeleton – matches dashboard AppointmentsTab layout (Card p-6, header + table).
+ * Appointments list skeleton – matches dashboard AppointmentsTab layout (Card p-6, header + stats + table).
  * Row count matches AppointmentsTab LIMIT for minimal CLS.
  */
 export function AppointmentsListSkeleton() {
   return (
     <Card className={`p-6 ${pulse}`} aria-busy='true'>
-      <div className='flex items-center justify-between gap-4 mb-4'>
+      {/* Section Header with Accent Bar */}
+      <div className='flex items-center gap-3 mb-4'>
+        <div className={`w-1 h-4 ${bg3} rounded-full`} />
         <div className={`h-6 ${bg3} rounded w-32`} />
-        <div className='flex gap-2'>
+        <div className='flex gap-2 ml-auto'>
           <div className={`h-10 w-24 ${bg2} rounded`} />
           <div className={`h-10 w-36 ${bg2} rounded`} />
         </div>
       </div>
-      <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
+
+      {/* Stats Bar */}
+      <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className='text-center'>
+            <div className={`h-8 ${bg3} rounded w-16 mx-auto mb-2`} />
+            <div className={`h-3 ${bg2} rounded w-20 mx-auto`} />
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className='flex-1 overflow-auto'>
+        <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
+      </div>
     </Card>
   );
 }
 
 /**
- * Prescriptions list skeleton – matches dashboard PrescriptionsTab layout (Card p-6, header + table).
+ * Prescriptions list skeleton – matches dashboard PrescriptionsTab layout (Card p-6, header + stats + table).
  * Row count matches PrescriptionsTab limit for minimal CLS.
  */
 export function PrescriptionsListSkeleton() {
   return (
     <Card className={`p-6 ${pulse}`} aria-busy='true'>
-      <div className='flex items-center justify-between gap-4 mb-4'>
+      {/* Section Header with Accent Bar */}
+      <div className='flex items-center gap-3 mb-4'>
+        <div className={`w-1 h-4 ${bg3} rounded-full`} />
         <div className={`h-6 ${bg3} rounded w-32`} />
-        <div className='flex gap-2'>
+        <div className='flex gap-2 ml-auto'>
           <div className={`h-10 w-24 ${bg2} rounded`} />
           <div className={`h-10 w-36 ${bg2} rounded`} />
         </div>
       </div>
-      <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
+
+      {/* Stats Bar */}
+      <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className='text-center'>
+            <div className={`h-8 ${bg3} rounded w-16 mx-auto mb-2`} />
+            <div className={`h-3 ${bg2} rounded w-20 mx-auto`} />
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className='flex-1 overflow-auto'>
+        <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
+      </div>
     </Card>
   );
 }

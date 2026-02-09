@@ -256,6 +256,8 @@ AppointmentSchema.index({ tenantId: 1, doctorId: 1, appointmentDate: 1 });
 AppointmentSchema.index({ tenantId: 1, patientId: 1, appointmentDate: -1 });
 AppointmentSchema.index({ tenantId: 1, status: 1, appointmentDate: 1 });
 AppointmentSchema.index({ tenantId: 1, deletedAt: 1 });
+AppointmentSchema.index({ tenantId: 1, deletedAt: 1, appointmentDate: 1, startTime: 1 }); // For date range queries with $or
+AppointmentSchema.index({ tenantId: 1, deletedAt: 1, startTime: 1, appointmentDate: 1 }); // Alternative for $or queries
 AppointmentSchema.index({ reminderScheduledAt: 1, reminderSent: 1 }); // For reminder queries
 
 // Index for finding appointments needing reminders

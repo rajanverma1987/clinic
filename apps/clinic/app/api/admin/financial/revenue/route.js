@@ -4,16 +4,18 @@
  * Returns: overview (total, collected, pending, refunded), breakdown by type, revenueTrend, topDoctors
  */
 
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection';
-import Invoice from '@/models/Invoice';
-import Payment from '@/models/Payment';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
+import { withAuth } from '@/middleware/auth';
+import { withErrorHandler } from '@/middleware/error-handler';
+import { requirePermission } from '@/middleware/permission-check';
+import { apiRateLimit } from '@/middleware/rate-limit';
+import { withRequestLogger } from '@/middleware/request-logger';
 import Appointment from '@/models/Appointment';
 import Doctor from '@/models/Doctor';
-import User from '@/models/User';
-import { logger } from '@/lib/utils/logger.js';
+import Invoice from '@/models/Invoice';
+import { NextResponse } from 'next/server';
 
 function getMonthKeys(lastN = 12) {
   const keys = [];
@@ -31,11 +33,10 @@ function getMonthKeys(lastN = 12) {
 }
 
 async function getHandler(req, user) {
-  try {
-    if (user.role !== 'super_admin') {
-      return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
-    }
-    await connectDB();
+  if (user.role !== 'super_admin') {
+    return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
+  }
+  await connectDB();
     const { searchParams } = new URL(req.url);
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');
@@ -80,11 +81,13 @@ async function getHandler(req, user) {
         }).lean();
         const value = list.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
         return { label: m.label, value: Math.round(value * 100) / 100, key: m.key };
-      })
+      }),
     );
 
     // Top earning doctors (via appointments linked to invoices)
-    const appointmentIds = [...new Set(invoices.map((i) => i.appointmentId?.toString()).filter(Boolean))];
+    const appointmentIds = [
+      ...new Set(invoices.map((i) => i.appointmentId?.toString()).filter(Boolean)),
+    ];
     const appointments = await Appointment.find({ _id: { $in: appointmentIds } })
       .select('doctorId')
       .lean();
@@ -108,7 +111,8 @@ async function getHandler(req, user) {
         return {
           doctorId: id,
           doctorName: doc?.userId
-            ? `${doc.userId.firstName || ''} ${doc.userId.lastName || ''}`.trim() || doc.userId.email
+            ? `${doc.userId.firstName || ''} ${doc.userId.lastName || ''}`.trim() ||
+              doc.userId.email
             : id,
           amount: Math.round(amount * 100) / 100,
         };
@@ -122,15 +126,23 @@ async function getHandler(req, user) {
         breakdown,
         revenueTrend,
         topDoctors,
-      })
+      }),
     );
-  } catch (err) {
-    logger.error('Admin financial revenue error:', err);
-    return NextResponse.json(
-      errorResponse(err instanceof Error ? err.message : 'Failed to fetch revenue', 'FETCH_ERROR'),
-      { status: 500 }
-    );
-  }
 }
 
-export const GET = withAuth(getHandler);
+/**
+ * Apply enterprise middleware stack to GET endpoint.
+ *
+ * Middleware order (bottom to top):
+ * 1. Error handler - Catches and formats all errors
+ * 2. Request logger - Logs request/response with correlation ID
+ * 3. Rate limiter - Prevents abuse (60 req/min)
+ * 4. Authentication - Validates JWT token
+ * 5. Permission check - Validates REPORT:READ permission
+ * 6. Handler - Executes business logic (super_admin check inside handler)
+ */
+export const GET = withErrorHandler(
+  withRequestLogger(
+    apiRateLimit(withAuth(requirePermission(RESOURCES.REPORT, ACTIONS.READ)(getHandler))),
+  ),
+);
