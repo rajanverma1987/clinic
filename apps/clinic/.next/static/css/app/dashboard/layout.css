@@ -1,0 +1,1547 @@
+/*!****************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../../node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./app/dashboard/styles/dashboard.css ***!
+  \****************************************************************************************************************************************************************************************************************************************************************************************/
+/* Dashboard-specific styles following theme system - Professional Clinic Design */
+
+/* Alignment tokens – use everywhere for perfect alignment across all sections/tabs */
+:root {
+  --dashboard-content-padding: 16px;
+  --dashboard-element-gap: 16px;
+  --dashboard-grid-gap: 16px;
+  --dashboard-card-height: 420px;
+  --dashboard-section-header-gap: 12px;
+  --dashboard-section-header-mb: 16px;
+}
+
+/* Dashboard Container – full width, consistent horizontal padding for alignment */
+.dashboard-container {
+  width: 100%;
+  max-width: 100%;
+  padding-left: var(--dashboard-content-padding);
+  padding-right: var(--dashboard-content-padding);
+  padding-top: 0;
+  padding-bottom: 0;
+  box-sizing: border-box;
+}
+
+.dashboard-section {
+  width: 100%;
+  margin-bottom: var(--dashboard-element-gap);
+  box-sizing: border-box;
+}
+
+/* All dashboard grids use same gap for alignment */
+.dashboard-grid {
+  gap: var(--dashboard-grid-gap);
+}
+
+/* Grid cell for 3-per-row cards – even size (same height as Patients Summary) */
+.dashboard-card-cell {
+  min-height: var(--dashboard-card-height);
+  height: var(--dashboard-card-height);
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-card-cell > * {
+  flex: 1;
+  min-height: 0;
+}
+
+.dashboard-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Tab bar – same design and theme as other dashboard sections */
+.dashboard-tab-bar {
+  background: var(--color-neutral-50);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-neutral-200);
+}
+
+.dark .dashboard-tab-bar {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+
+.dashboard-tab-bar [role='tablist'] {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  gap: 8px;
+}
+
+/* Card Backgrounds - solid surfaces */
+.dashboard-card-gradient {
+  background: var(--color-neutral-50);
+}
+.dark .dashboard-card-gradient {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+
+/* Accent Bars - Vertical gradient bars for section headers */
+.accent-bar {
+  width: 3px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.accent-bar-primary {
+  background: var(--color-primary-500);
+}
+
+.accent-bar-secondary {
+  background: var(--color-primary-500);
+}
+
+.accent-bar-warning {
+  background: var(--color-status-warning);
+}
+
+/* Doctor Pending Tasks card – use theme variables (no Tailwind warning-* scale) */
+.dashboard-pending-tasks-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--color-status-warning);
+  flex-shrink: 0;
+}
+
+.dashboard-pending-task-item {
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.dashboard-pending-task-warning {
+  background: color-mix(in srgb, var(--color-status-warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-status-warning) 40%, transparent);
+  color: var(--color-neutral-900);
+}
+
+.dashboard-pending-task-warning:hover {
+  background: color-mix(in srgb, var(--color-status-warning) 20%, transparent);
+}
+
+.dashboard-pending-task-warning .dashboard-pending-task-arrow {
+  color: var(--color-status-warning);
+  font-weight: 600;
+}
+
+.dashboard-pending-task-primary {
+  background: var(--color-primary-100);
+  border: 1px solid var(--color-primary-300);
+  color: var(--color-neutral-900);
+}
+
+.dashboard-pending-task-primary:hover {
+  background: color-mix(in srgb, var(--color-primary-300) 25%, transparent);
+}
+
+.dashboard-pending-task-primary .dashboard-pending-task-arrow {
+  color: var(--color-primary-500);
+  font-weight: 600;
+}
+
+.accent-bar-error {
+  background: var(--color-status-error);
+}
+
+.accent-bar-success {
+  background: var(--color-secondary-500);
+}
+
+/* Radial gradient orbs - decorative backgrounds */
+.radial-orb {
+  display: none;
+}
+
+/* Stats Cards - Refined design with left accent and clearer hierarchy */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  cursor: pointer;
+  min-height: 128px;
+  border-radius: 12px;
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-left-width: 4px;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-neutral-900) 6%, transparent);
+}
+.dark .stat-card {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+.dark .stat-card-primary,
+.dark .stat-card-secondary,
+.dark .stat-card-warning,
+.dark .stat-card-error,
+.dark .stat-card-success {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+
+.stat-card-primary {
+  border-left-color: var(--color-primary-500);
+  background: var(--color-neutral-50);
+}
+
+.stat-card-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 22%, transparent);
+}
+
+.stat-card-secondary {
+  border-left-color: var(--color-primary-500);
+  background: var(--color-neutral-50);
+}
+
+.stat-card-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 22%, transparent);
+}
+
+.stat-card-warning {
+  border-left-color: var(--color-status-warning);
+  background: var(--color-neutral-50);
+}
+
+.stat-card-warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-status-warning) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-warning) 22%, transparent);
+}
+
+.stat-card-error {
+  border-left-color: var(--color-status-error);
+  background: var(--color-neutral-50);
+}
+
+.stat-card-error:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-status-error) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-error) 22%, transparent);
+}
+
+.stat-card-success {
+  border-left-color: var(--color-secondary-500);
+  background: var(--color-neutral-50);
+}
+
+.stat-card-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-secondary-500) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-secondary-500) 22%, transparent);
+}
+
+/* Stat Card Layout Variants – different layout/design per card */
+.stat-card-layout-default {
+  /* default: accent bar + label, value + trend, icon bottom-right */
+}
+.stat-card-layout-compact {
+  min-height: 96px;
+}
+.stat-card-layout-compact .stat-card-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.stat-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+.stat-card-layout-compact .stat-icon-wrap {
+  flex-shrink: 0;
+}
+.stat-card-layout-compact .stat-label {
+  margin-bottom: 2px;
+}
+.stat-card-layout-compact .stat-value {
+  font-size: 20px;
+}
+.stat-card-layout-compact .trend-indicator {
+  margin-left: 8px;
+}
+
+.stat-card-layout-stacked {
+  padding: 16px;
+}
+.stat-card-layout-stacked .stat-card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.stat-card-layout-stacked .stat-value {
+  font-size: 26px;
+  order: 0;
+  margin-bottom: 4px;
+}
+.stat-card-layout-stacked .stat-label {
+  order: 1;
+  margin-bottom: 8px;
+}
+.stat-card-layout-stacked .stat-icon-wrap {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  z-index: 2;
+}
+
+.stat-card-layout-minimal {
+  padding: 12px 14px;
+  min-height: 88px;
+}
+.stat-card-layout-minimal .stat-card-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.stat-card-layout-minimal .stat-label {
+  font-size: 10px;
+  margin-bottom: 0;
+}
+.stat-card-layout-minimal .stat-value {
+  font-size: 18px;
+}
+.stat-card-layout-minimal .stat-icon-wrap {
+  flex-shrink: 0;
+}
+.stat-card-layout-minimal .stat-icon {
+  width: 36px;
+  height: 36px;
+}
+.stat-card-layout-minimal .value-trend-row {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Stat Card Label – refined uppercase with letter-spacing */
+.stat-label {
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-600);
+  margin-bottom: 0;
+  font-family: var(--font-family);
+}
+.dark .stat-label {
+  color: var(--color-text-secondary);
+}
+.dark .stat-value {
+  color: var(--color-text-primary);
+}
+
+/* Stat Card Value – stronger hierarchy */
+.stat-value {
+  font-size: 22px;
+  line-height: 1.25;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-neutral-900);
+  font-family: var(--font-family);
+}
+
+/* Stat Card Icon – outline only (no fill bg); color on icon stroke only */
+.stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  background: transparent;
+}
+
+.stat-icon-primary {
+  color: var(--color-primary-500);
+}
+
+.stat-icon-secondary {
+  color: var(--color-primary-500);
+}
+
+.stat-icon-warning {
+  color: var(--color-status-warning);
+}
+
+.stat-icon-error {
+  color: var(--color-status-error);
+}
+
+.stat-icon-success {
+  color: var(--color-secondary-500);
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.05);
+}
+
+/* List Cards - Professional Clinic Design - Consistent Height */
+.dashboard-list-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  box-shadow: var(--shadow-sm);
+  min-height: var(--dashboard-card-height);
+  height: var(--dashboard-card-height);
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-list-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-neutral-300);
+}
+
+.dashboard-list-card-primary {
+  border-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  background: var(--color-neutral-50);
+}
+
+.dashboard-list-card-secondary {
+  border-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  background: var(--color-neutral-50);
+}
+
+.dashboard-list-card-warning {
+  border-color: color-mix(in srgb, var(--color-status-warning) 20%, transparent);
+  background: var(--color-neutral-50);
+}
+
+.dashboard-list-card-error {
+  border-color: color-mix(in srgb, var(--color-status-error) 20%, transparent);
+  background: var(--color-neutral-50);
+}
+.dark .dashboard-list-card,
+.dark .dashboard-list-card-primary,
+.dark .dashboard-list-card-secondary,
+.dark .dashboard-list-card-warning,
+.dark .dashboard-list-card-error {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+
+/* List Items - Compact Premium Design */
+.dashboard-list-item {
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background: var(--color-neutral-50);
+  margin-bottom: 4px;
+}
+
+.dashboard-list-item:last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-list-item-primary {
+  background: color-mix(in srgb, var(--color-primary-500) 3%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+}
+
+.dashboard-list-item-primary:hover {
+  background: color-mix(in srgb, var(--color-primary-500) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  transform: translateX(4px);
+}
+
+.dashboard-list-item-secondary {
+  background: color-mix(in srgb, var(--color-primary-500) 3%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+}
+
+.dashboard-list-item-secondary:hover {
+  background: color-mix(in srgb, var(--color-primary-500) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  transform: translateX(4px);
+}
+
+.dashboard-list-item-warning {
+  background: color-mix(in srgb, var(--color-status-warning) 3%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-warning) 15%, transparent);
+}
+
+.dashboard-list-item-warning:hover {
+  background: color-mix(in srgb, var(--color-status-warning) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-warning) 30%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-warning) 12%, transparent);
+  transform: translateX(4px);
+}
+
+.dashboard-list-item-error {
+  background: color-mix(in srgb, var(--color-status-error) 3%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-error) 15%, transparent);
+}
+
+.dashboard-list-item-error:hover {
+  background: color-mix(in srgb, var(--color-status-error) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-error) 30%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-error) 12%, transparent);
+  transform: translateX(4px);
+}
+
+/* Alert Cards - Compact Design */
+.alert-card {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--color-neutral-50);
+}
+
+.alert-card-error {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-error) 6%, transparent) 0%,
+    color-mix(in srgb, var(--color-status-error) 2%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-status-error) 25%, transparent);
+}
+
+.alert-card-error:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-error) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-status-error) 4%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-status-error) 35%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-error) 15%, transparent);
+  transform: translateY(-1px);
+}
+
+.alert-card-warning {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-warning) 6%, transparent) 0%,
+    color-mix(in srgb, var(--color-status-warning) 2%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-status-warning) 25%, transparent);
+}
+
+.alert-card-warning:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-warning) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-status-warning) 4%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-status-warning) 35%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-warning) 15%, transparent);
+  transform: translateY(-1px);
+}
+
+.alert-card-info {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 6%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 2%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+}
+
+.alert-card-info:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 4%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-primary-500) 35%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  transform: translateY(-1px);
+}
+
+/* Alert Badge */
+.alert-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-badge-error {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-error) 15%, transparent),
+    color-mix(in srgb, var(--color-status-error) 8%, transparent)
+  );
+}
+
+.alert-badge-warning {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-status-warning) 15%, transparent),
+    color-mix(in srgb, var(--color-status-warning) 8%, transparent)
+  );
+}
+
+.alert-badge-info {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent),
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent)
+  );
+}
+
+/* Alert Action Button */
+.alert-action-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.alert-action-btn-error {
+  background: linear-gradient(
+    135deg,
+    var(--color-status-error) 0%,
+    color-mix(in srgb, var(--color-status-error) 85%, black) 100%
+  );
+  color: var(--color-neutral-50);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-status-error) 20%, transparent);
+}
+
+.alert-action-btn-error:hover {
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-error) 30%, transparent);
+  transform: scale(1.05);
+}
+
+.alert-action-btn-warning {
+  background: linear-gradient(
+    135deg,
+    var(--color-status-warning) 0%,
+    color-mix(in srgb, var(--color-status-warning) 85%, black) 100%
+  );
+  color: var(--color-neutral-50);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-status-warning) 20%, transparent);
+}
+
+.alert-action-btn-warning:hover {
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-status-warning) 30%, transparent);
+  transform: scale(1.05);
+}
+
+.alert-action-btn-info {
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  color: var(--color-neutral-50);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+}
+
+.alert-action-btn-info:hover {
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  transform: scale(1.05);
+}
+
+/* Quick Action Buttons - Button Style Design */
+.quick-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-2);
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-primary-300);
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  color: var(--color-neutral-50);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.quick-action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 10%, transparent) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.quick-action-btn:hover {
+  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
+  border-color: var(--color-primary-400);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 16px color-mix(in srgb, var(--color-primary-500) 30%, transparent),
+    0 2px 4px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+}
+
+.quick-action-btn:hover::before {
+  opacity: 1;
+}
+
+.quick-action-btn:active {
+  transform: translateY(0);
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    0 1px 3px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+}
+
+.quick-action-btn svg,
+.quick-action-btn .icon {
+  width: var(--icon-size-sm, 20px);
+  height: var(--icon-size-sm, 20px);
+  stroke: var(--color-neutral-50);
+  fill: var(--color-neutral-50);
+  color: var(--color-neutral-50);
+  filter: none !important;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.quick-action-btn:hover svg {
+  transform: scale(1.1);
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: var(--icon-size-empty, 64px);
+  height: var(--icon-size-empty, 64px);
+  margin-bottom: 16px;
+  opacity: 0.3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-state-icon svg,
+.empty-state-icon .icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* Trend Indicator - Pill badge with clear up/down styling */
+.trend-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.trend-up {
+  color: var(--color-secondary-600);
+  background: color-mix(in srgb, var(--color-status-success) 14%, transparent);
+  border: none;
+}
+
+.trend-down {
+  color: var(--color-status-error);
+  background: color-mix(in srgb, var(--color-status-error) 12%, transparent);
+  border: none;
+}
+
+/* Loading Skeleton – design tokens and layout-matched shapes; dark mode + reduced-motion */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-100) 0%,
+    var(--color-neutral-200) 50%,
+    var(--color-neutral-100) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-800) 0%,
+    var(--color-neutral-700) 50%,
+    var(--color-neutral-800) 100%
+  );
+  background-size: 200% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: var(--color-neutral-200);
+  }
+  .dark .skeleton {
+    background: var(--color-neutral-700);
+  }
+}
+
+.accent-bar-placeholder {
+  width: 3px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.calendar-skeleton {
+  background: var(--color-neutral-100);
+}
+
+.dark .calendar-skeleton {
+  background: var(--color-neutral-800);
+}
+
+.skeleton-text {
+  height: var(--text-body-xs-line-height, 16px);
+  margin-bottom: 0;
+  min-width: 48px;
+}
+
+.skeleton-text-lg {
+  height: var(--text-body-md-line-height, 24px);
+  margin-bottom: 0;
+  min-width: 64px;
+}
+
+/* Stat card icon placeholder – matches .stat-icon (40px) */
+.skeleton-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+/* List item placeholder – matches dashboard list item height */
+.skeleton-list-item {
+  height: 72px;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-list-item-sm {
+  height: 48px;
+  border-radius: var(--radius-md);
+}
+
+/* Chart/card body – fills remaining space when in flex container */
+.skeleton-chart {
+  flex: 1;
+  min-height: 160px;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-card {
+  height: 160px;
+  border-radius: var(--radius-lg);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Chart Styles - Professional Clinic Design */
+.chart-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--color-neutral-900) 6%, transparent),
+    0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent);
+  min-height: var(--dashboard-card-height);
+  height: var(--dashboard-card-height);
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card-primary {
+  border-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  background: linear-gradient(
+    135deg,
+    var(--color-neutral-50) 0%,
+    color-mix(in srgb, var(--color-primary-500) 2%, transparent) 100%
+  );
+}
+
+.chart-card-primary:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--color-primary-500) 15%, transparent),
+    0 4px 8px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.chart-card-secondary {
+  border-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  background: linear-gradient(
+    135deg,
+    var(--color-neutral-50) 0%,
+    color-mix(in srgb, var(--color-primary-500) 2%, transparent) 100%
+  );
+}
+
+.chart-card-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 24px color-mix(in srgb, var(--color-primary-500) 12%, transparent),
+    0 4px 8px color-mix(in srgb, var(--color-primary-500) 8%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.chart-card-warning {
+  border-color: color-mix(in srgb, var(--color-status-warning) 20%, transparent);
+  background: linear-gradient(
+    135deg,
+    var(--color-neutral-50) 0%,
+    color-mix(in srgb, var(--color-status-warning) 2%, transparent) 100%
+  );
+}
+
+.chart-card-warning:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 24px color-mix(in srgb, var(--color-status-warning) 12%, transparent),
+    0 4px 8px color-mix(in srgb, var(--color-status-warning) 8%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-status-warning) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-warning) 30%, transparent);
+}
+
+/* Section Header – aligned across all dashboard cards/tabs */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dashboard-section-header-gap, 12px);
+  margin-bottom: var(--dashboard-section-header-mb, 16px);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-neutral-900);
+  font-family: var(--font-family);
+  margin: 0;
+}
+.dark .section-title {
+  color: var(--color-text-primary);
+}
+
+/* Empty State - Compact Design */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: var(--icon-size-empty, 64px);
+  height: var(--icon-size-empty, 64px);
+  margin-bottom: 16px;
+  opacity: 0.4;
+  color: var(--color-neutral-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dark .empty-state-icon {
+  color: var(--color-text-secondary);
+}
+.empty-state-icon svg,
+.empty-state-icon .icon {
+  width: 100%;
+  height: 100%;
+}
+
+.empty-state p {
+  color: var(--color-neutral-500);
+  font-size: 14px;
+  line-height: 20px;
+}
+.dark .empty-state p {
+  color: var(--color-text-secondary);
+}
+
+/* Appointment List Item - Professional Clinic Design */
+.dashboard-appointment-item {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-neutral-50);
+  margin-bottom: 8px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+.dark .dashboard-appointment-item {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+
+.dashboard-appointment-item:hover {
+  background: color-mix(in srgb, var(--color-primary-500) 5%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  transform: translateX(4px);
+}
+
+.dashboard-appointment-item:last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-appointment-item-current {
+  border-color: var(--color-primary-500);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, var(--color-neutral-50));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+}
+
+/* Time Badge - Professional Design */
+.time-badge {
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-500);
+  color: var(--color-neutral-50);
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+}
+
+.time-badge-ongoing {
+  background: var(--color-secondary-500);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-secondary-500) 20%, transparent);
+}
+
+/* Next Patient Card - Professional Design */
+.dashboard-next-patient-card {
+  border: 1px solid var(--color-neutral-200);
+  box-shadow:
+    0 2px 4px color-mix(in srgb, var(--color-neutral-900) 6%, transparent),
+    0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--color-neutral-50);
+  min-height: var(--dashboard-card-height);
+  height: var(--dashboard-card-height);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Patient History Badge - Quick Action Button Style */
+.patient-history-badge {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  border: 1px solid var(--color-primary-200);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.patient-history-badge:hover {
+  background: var(--color-primary-200);
+  border-color: var(--color-primary-300);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+}
+
+.patient-history-badge-active {
+  background: var(--color-primary-500);
+  color: var(--color-neutral-50);
+  border-color: var(--color-primary-600);
+}
+
+.patient-history-badge-active:hover {
+  background: var(--color-primary-600);
+  border-color: var(--color-primary-700);
+}
+
+/* Patient Action Buttons - Professional Design */
+.patient-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-700);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.patient-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+}
+
+.patient-action-btn-phone {
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  color: var(--color-neutral-50);
+  border-color: var(--color-primary-600);
+  flex: 1;
+}
+
+.patient-action-btn-phone:hover {
+  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.patient-action-btn-document {
+  background: var(--color-neutral-50);
+  color: var(--color-primary-600);
+  border-color: var(--color-primary-200);
+}
+
+.patient-action-btn-document:hover {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+}
+
+.patient-action-btn-chat {
+  background: var(--color-neutral-50);
+  color: var(--color-primary-600);
+  border-color: var(--color-primary-200);
+}
+
+.patient-action-btn-chat:hover {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+}
+
+/* Responsive utilities - Compact Design */
+@media (max-width: 640px) {
+  .stat-value {
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .stat-card {
+    min-height: 100px;
+  }
+
+  .quick-action-btn {
+    min-height: 80px;
+    padding: 12px 10px;
+  }
+
+  /* Allow tall cards to shrink on very small screens */
+  .chart-card,
+  .dashboard-list-card,
+  .dashboard-next-patient-card {
+    height: auto;
+    min-height: 320px;
+  }
+
+  .section-header {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+  }
+
+  .section-title {
+    font-size: 14px;
+    line-height: 18px;
+  }
+
+  .dashboard-list-item {
+    padding: 10px;
+  }
+
+  .dashboard-appointment-item {
+    padding: 10px;
+  }
+
+  .time-badge {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Calendar Widget – fill card height, no empty bottom */
+.calendar-widget-card {
+  display: flex;
+  flex-direction: column;
+}
+.calendar-widget-card > div {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 !important; /* inner .calendar-widget-inner controls padding */
+}
+.calendar-widget-inner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+@media (min-width: 640px) {
+  .calendar-widget-inner {
+    padding: 14px 18px;
+  }
+}
+
+.calendar-widget-header {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-2);
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  flex-shrink: 0;
+}
+.calendar-widget-title {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+.calendar-widget-month-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-left: auto;
+}
+.calendar-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-neutral-600);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.calendar-nav-btn:hover {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+}
+.calendar-nav-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 4px var(--color-primary-500);
+}
+
+.calendar-widget {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.calendar-week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+.calendar-week-day {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-neutral-500);
+  padding: 4px 0;
+}
+.calendar-days-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 4px;
+}
+.calendar-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-700);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 0;
+  min-height: 0;
+}
+.calendar-day:hover:not(:disabled) {
+  background: var(--color-primary-50);
+  border-color: var(--color-primary-200);
+  color: var(--color-primary-700);
+}
+.calendar-day-other-month {
+  color: var(--color-neutral-400);
+  background: transparent;
+  cursor: not-allowed;
+}
+.calendar-day-today {
+  background: var(--color-primary-500);
+  color: white;
+  border-color: var(--color-primary-600);
+  font-weight: 600;
+}
+.calendar-day-selected {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+  color: var(--color-primary-700);
+  font-weight: 600;
+}
+.calendar-day:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.calendar-day:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 4px var(--color-primary-500);
+}
+
+/* Zero-flicker: highlight updated rows for 2s (event-driven cache updates) */
+.data-row-updated {
+  animation: data-row-highlight 2s ease-out;
+}
+@keyframes data-row-highlight {
+  0% {
+    background-color: var(--color-primary-100);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Tab Content Enhancements */
+.dashboard-tab-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tab Stats Bar - Quick summary at top of tab content */
+.tab-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 3%, transparent) 0%,
+    transparent 100%
+  );
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+}
+
+.dark .tab-stats-bar {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 0%,
+    transparent 100%
+  );
+  border-color: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+}
+
+.tab-stat-item {
+  text-align: center;
+  padding: 8px;
+}
+
+.tab-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-primary-600);
+  font-family: var(--font-mono);
+  margin-bottom: 4px;
+}
+
+.tab-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-neutral-600);
+}
+
+.dark .tab-stat-label {
+  color: var(--color-text-secondary);
+}
+
+/* Enhanced Table Container in Tabs */
+.dashboard-tab-table-container {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* Section Divider - Visual separation between major sections */
+.dashboard-section-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-neutral-300) 50%, transparent) 20%,
+    color-mix(in srgb, var(--color-neutral-300) 50%, transparent) 80%,
+    transparent 100%
+  );
+  margin: 24px 0;
+}
+
+.dark .dashboard-section-divider {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-neutral-600) 50%, transparent) 20%,
+    color-mix(in srgb, var(--color-neutral-600) 50%, transparent) 80%,
+    transparent 100%
+  );
+}
+
+/* Section Title Group - Title with accent for better visual hierarchy */
+.dashboard-section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-neutral-200);
+}
+
+.dark .dashboard-section-title-group {
+  border-bottom-color: var(--color-neutral-700);
+}
+
+/* Enhanced Dashboard Grid with better gaps */
+.dashboard-grid-enhanced {
+  gap: 20px;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid-enhanced {
+    gap: 24px;
+  }
+}
+
+/* Responsive Tab Improvements */
+@media (max-width: 640px) {
+  .dashboard-tab-bar {
+    padding: 4px;
+  }
+
+  .tab-stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .tab-stat-value {
+    font-size: 20px;
+  }
+
+  .tab-stat-label {
+    font-size: 10px;
+  }
+
+  .dashboard-section-divider {
+    margin: 16px 0;
+  }
+
+  .dashboard-section-title-group {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+  }
+}
+

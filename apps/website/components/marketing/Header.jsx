@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button.jsx';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
+import { CLINIC_APP_URL } from '@/lib/config';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -36,6 +37,10 @@ export function Header() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [mounted]);
+
+  const clinicAppUrl = useMemo(() => CLINIC_APP_URL.replace(/\/$/, ''), []);
+  const loginUrl = `${clinicAppUrl}/login`;
+  const registerUrl = `${clinicAppUrl}/register`;
 
   const navigationLinks = useMemo(
     () => [
@@ -187,7 +192,9 @@ export function Header() {
                 <Button
                   variant='primary'
                   size='sm'
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => {
+                    window.location.href = `${clinicAppUrl}/dashboard`;
+                  }}
                   className='whitespace-nowrap px-5 py-2.5'
                 >
                   <svg
@@ -213,7 +220,9 @@ export function Header() {
                 <Button
                   variant='secondary'
                   size='sm'
-                  onClick={() => router.push('/login')}
+                  onClick={() => {
+                    window.location.href = loginUrl;
+                  }}
                   className='whitespace-nowrap hidden sm:flex px-5 py-2.5'
                 >
                   {t('auth.login')}
@@ -221,7 +230,9 @@ export function Header() {
                 <Button
                   variant='primary'
                   size='sm'
-                  onClick={() => router.push('/register')}
+                  onClick={() => {
+                    window.location.href = registerUrl;
+                  }}
                   className='whitespace-nowrap px-5 py-2.5'
                 >
                   <svg
@@ -398,8 +409,8 @@ export function Header() {
                       variant='primary'
                       size='md'
                       onClick={() => {
-                        router.push('/dashboard');
                         setMobileMenuOpen(false);
+                        window.location.href = `${clinicAppUrl}/dashboard`;
                       }}
                       className='w-full'
                     >
@@ -420,8 +431,8 @@ export function Header() {
                       variant='secondary'
                       size='md'
                       onClick={() => {
-                        router.push('/login');
                         setMobileMenuOpen(false);
+                        window.location.href = loginUrl;
                       }}
                       className='w-full'
                     >
@@ -431,8 +442,8 @@ export function Header() {
                       variant='primary'
                       size='md'
                       onClick={() => {
-                        router.push('/register');
                         setMobileMenuOpen(false);
+                        window.location.href = registerUrl;
                       }}
                       className='w-full'
                     >

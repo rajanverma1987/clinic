@@ -9,9 +9,17 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <div className='min-h-screen flex flex-col'>
+    <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1 pb-16 px-4 sm:px-6 lg:px-8' style={{ paddingTop: '120px' }}>
+      <main
+        className='flex-1'
+        style={{
+          paddingTop: '120px',
+          paddingBottom: '64px',
+          paddingLeft: '32px',
+          paddingRight: '32px',
+        }}
+      >
         <div className='max-w-4xl mx-auto'>
           <div className='mb-8'>
             <Link href='/' className='text-primary-600 hover:text-primary-700 font-medium'>
@@ -19,7 +27,7 @@ export default function TermsPage() {
             </Link>
           </div>
 
-          <h1 
+          <h1
             className='text-neutral-900 mb-4'
             style={{
               fontSize: '32px',
@@ -30,7 +38,7 @@ export default function TermsPage() {
           >
             Terms of Service
           </h1>
-          <p 
+          <p
             className='text-neutral-600 mb-8'
             style={{
               fontSize: '16px',
@@ -48,7 +56,7 @@ export default function TermsPage() {
 
           <div className='prose prose-lg max-w-none'>
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -58,7 +66,7 @@ export default function TermsPage() {
               >
                 1. Agreement to Terms
               </h2>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -66,11 +74,11 @@ export default function TermsPage() {
                   fontWeight: '400',
                 }}
               >
-                By accessing or using Doctor&apos;s Clinic (&quot;Service&quot;), you agree to be bound
-                by these Terms of Service (&quot;Terms&quot;). If you disagree with any part of
-                these terms, you may not access the Service.
+                By accessing or using Doctor&apos;s Clinic (&quot;Service&quot;), you agree to be
+                bound by these Terms of Service (&quot;Terms&quot;). If you disagree with any part
+                of these terms, you may not access the Service.
               </p>
-              <p 
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -84,7 +92,7 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -94,7 +102,7 @@ export default function TermsPage() {
               >
                 2. Description of Service
               </h2>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -104,7 +112,7 @@ export default function TermsPage() {
               >
                 Doctor&apos;s Clinic is a cloud-based clinic management system that provides:
               </p>
-              <ul 
+              <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{
                   fontSize: '16px',
@@ -120,7 +128,7 @@ export default function TermsPage() {
                 <li>Inventory management</li>
                 <li>Reporting and analytics</li>
               </ul>
-              <p 
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -134,7 +142,7 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -144,7 +152,7 @@ export default function TermsPage() {
               >
                 3. Account Registration
               </h2>
-              <h3 
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
@@ -154,7 +162,7 @@ export default function TermsPage() {
               >
                 3.1 Account Requirements
               </h3>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -164,7 +172,7 @@ export default function TermsPage() {
               >
                 To use the Service, you must:
               </p>
-              <ul 
+              <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{
                   fontSize: '16px',
@@ -179,7 +187,7 @@ export default function TermsPage() {
                 <li>Accept responsibility for all activities under your account</li>
               </ul>
 
-              <h3 
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
@@ -189,7 +197,7 @@ export default function TermsPage() {
               >
                 3.2 Account Security
               </h3>
-              <p 
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -204,23 +212,27 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
                   lineHeight: '32px',
                   fontWeight: '600',
                 }}
-              >4. Acceptable Use</h2>
-              <p 
+              >
+                4. Acceptable Use
+              </h2>
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
                   lineHeight: '24px',
                   fontWeight: '400',
                 }}
-              >You agree not to:</p>
-              <ul 
+              >
+                You agree not to:
+              </p>
+              <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{
                   fontSize: '16px',
@@ -243,7 +255,7 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -253,15 +265,17 @@ export default function TermsPage() {
               >
                 5. Healthcare Compliance
               </h2>
-              <h3 
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
                   lineHeight: '28px',
                   fontWeight: '600',
                 }}
-              >5.1 HIPAA Compliance</h3>
-              <p 
+              >
+                5.1 HIPAA Compliance
+              </h3>
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -271,7 +285,7 @@ export default function TermsPage() {
               >
                 As a healthcare provider using Doctor&apos;s Clinic, you are responsible for:
               </p>
-              <ul 
+              <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{
                   fontSize: '16px',
@@ -286,15 +300,17 @@ export default function TermsPage() {
                 <li>Executing a Business Associate Agreement with us</li>
               </ul>
 
-              <h3 
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
                   lineHeight: '28px',
                   fontWeight: '600',
                 }}
-              >5.2 GDPR Compliance</h3>
-              <p 
+              >
+                5.2 GDPR Compliance
+              </h3>
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -309,7 +325,7 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -319,7 +335,7 @@ export default function TermsPage() {
               >
                 6. Intellectual Property
               </h2>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -328,10 +344,10 @@ export default function TermsPage() {
                 }}
               >
                 The Service and its original content, features, and functionality are owned by
-                Doctor&apos;s Clinic and are protected by international copyright, trademark, patent,
-                trade secret, and other intellectual property laws.
+                Doctor&apos;s Clinic and are protected by international copyright, trademark,
+                patent, trade secret, and other intellectual property laws.
               </p>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -343,7 +359,7 @@ export default function TermsPage() {
                 Service, you grant us a license to use, store, and process your data solely for the
                 purpose of providing the Service.
               </p>
-              <p 
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -357,23 +373,27 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
                   lineHeight: '32px',
                   fontWeight: '600',
                 }}
-              >7. Payment Terms</h2>
-              <h3 
+              >
+                7. Payment Terms
+              </h2>
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
                   lineHeight: '28px',
                   fontWeight: '600',
                 }}
-              >7.1 Subscription Fees</h3>
-              <p 
+              >
+                7.1 Subscription Fees
+              </h3>
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -385,7 +405,7 @@ export default function TermsPage() {
                 advance on a monthly or annual basis, as selected during registration.
               </p>
 
-              <h3 
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
@@ -395,7 +415,7 @@ export default function TermsPage() {
               >
                 7.2 Payment Processing
               </h3>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -407,15 +427,17 @@ export default function TermsPage() {
                 provide current, complete, and accurate payment information.
               </p>
 
-              <h3 
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
                   lineHeight: '28px',
                   fontWeight: '600',
                 }}
-              >7.3 Refunds</h3>
-              <p 
+              >
+                7.3 Refunds
+              </h3>
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -430,7 +452,7 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -440,7 +462,7 @@ export default function TermsPage() {
               >
                 8. Service Availability
               </h2>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -452,7 +474,7 @@ export default function TermsPage() {
                 uninterrupted or error-free operation. The Service may be temporarily unavailable
                 due to:
               </p>
-              <ul 
+              <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{
                   fontSize: '16px',
@@ -465,7 +487,7 @@ export default function TermsPage() {
                 <li>Technical issues or failures</li>
                 <li>Force majeure events</li>
               </ul>
-              <p 
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -479,7 +501,7 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -489,7 +511,7 @@ export default function TermsPage() {
               >
                 9. Data Backup and Recovery
               </h2>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -500,7 +522,7 @@ export default function TermsPage() {
                 We implement regular data backups and disaster recovery procedures. However, you are
                 responsible for:
               </p>
-              <ul 
+              <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{
                   fontSize: '16px',
@@ -512,7 +534,7 @@ export default function TermsPage() {
                 <li>Ensuring data accuracy and completeness</li>
                 <li>Implementing appropriate data retention policies</li>
               </ul>
-              <p 
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -526,7 +548,7 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -536,7 +558,7 @@ export default function TermsPage() {
               >
                 10. Limitation of Liability
               </h2>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -548,7 +570,7 @@ export default function TermsPage() {
                 INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT
                 LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.
               </p>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -559,7 +581,7 @@ export default function TermsPage() {
                 Our total liability for any claims arising from or related to the Service shall not
                 exceed the amount you paid us in the twelve (12) months preceding the claim.
               </p>
-              <p 
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -573,15 +595,17 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
                   lineHeight: '32px',
                   fontWeight: '600',
                 }}
-              >11. Indemnification</h2>
-              <p 
+              >
+                11. Indemnification
+              </h2>
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -589,24 +613,26 @@ export default function TermsPage() {
                   fontWeight: '400',
                 }}
               >
-                You agree to indemnify, defend, and hold harmless Doctor&apos;s Clinic and its officers,
-                directors, employees, and agents from and against any claims, liabilities, damages,
-                losses, and expenses, including reasonable attorneys&apos; fees, arising out of or
-                in any way connected with your use of the Service, violation of these Terms, or
-                violation of any applicable laws or regulations.
+                You agree to indemnify, defend, and hold harmless Doctor&apos;s Clinic and its
+                officers, directors, employees, and agents from and against any claims, liabilities,
+                damages, losses, and expenses, including reasonable attorneys&apos; fees, arising
+                out of or in any way connected with your use of the Service, violation of these
+                Terms, or violation of any applicable laws or regulations.
               </p>
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
                   lineHeight: '32px',
                   fontWeight: '600',
                 }}
-              >12. Termination</h2>
-              <h3 
+              >
+                12. Termination
+              </h2>
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
@@ -616,7 +642,7 @@ export default function TermsPage() {
               >
                 12.1 Termination by You
               </h3>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -628,7 +654,7 @@ export default function TermsPage() {
                 termination feature in the Service.
               </p>
 
-              <h3 
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
@@ -638,7 +664,7 @@ export default function TermsPage() {
               >
                 12.2 Termination by Us
               </h3>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -648,7 +674,7 @@ export default function TermsPage() {
               >
                 We may terminate or suspend your account immediately, without prior notice, if you:
               </p>
-              <ul 
+              <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{
                   fontSize: '16px',
@@ -662,7 +688,7 @@ export default function TermsPage() {
                 <li>Violate healthcare regulations or privacy laws</li>
               </ul>
 
-              <h3 
+              <h3
                 className='text-neutral-900 mb-3'
                 style={{
                   fontSize: '20px',
@@ -672,7 +698,7 @@ export default function TermsPage() {
               >
                 12.3 Effect of Termination
               </h3>
-              <p 
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -687,7 +713,7 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -697,7 +723,7 @@ export default function TermsPage() {
               >
                 13. Dispute Resolution
               </h2>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -709,7 +735,7 @@ export default function TermsPage() {
                 resolved through binding arbitration in accordance with the rules of the American
                 Arbitration Association, except where prohibited by law.
               </p>
-              <p 
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -723,15 +749,17 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
                   lineHeight: '32px',
                   fontWeight: '600',
                 }}
-              >14. Changes to Terms</h2>
-              <p 
+              >
+                14. Changes to Terms
+              </h2>
+              <p
                 className='text-neutral-700'
                 style={{
                   fontSize: '16px',
@@ -747,7 +775,7 @@ export default function TermsPage() {
             </section>
 
             <section className='mb-8'>
-              <h2 
+              <h2
                 className='text-neutral-900 mb-4'
                 style={{
                   fontSize: '24px',
@@ -757,7 +785,7 @@ export default function TermsPage() {
               >
                 15. Contact Information
               </h2>
-              <p 
+              <p
                 className='text-neutral-700 mb-4'
                 style={{
                   fontSize: '16px',
@@ -774,14 +802,14 @@ export default function TermsPage() {
                     legal@clinichub.com
                   </a>
                 </p>
-                <p 
-                className='text-neutral-700'
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '24px',
-                  fontWeight: '400',
-                }}
-              >
+                <p
+                  className='text-neutral-700'
+                  style={{
+                    fontSize: '16px',
+                    lineHeight: '24px',
+                    fontWeight: '400',
+                  }}
+                >
                   <strong>Support:</strong>{' '}
                   <Link href='/support/contact' className='text-primary-600 hover:underline'>
                     Contact Support

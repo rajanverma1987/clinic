@@ -102,18 +102,20 @@ export default function BlogPage() {
   const { t } = useI18n();
 
   return (
-    <div className='min-h-screen flex flex-col'>
+    <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
       <main className='flex-1'>
         {/* Hero Section */}
         <section 
-          className='px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-100 via-white to-primary-100'
+          className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
           style={{
-            paddingTop: '140px',
+            paddingTop: '120px',
             paddingBottom: '64px',
+            paddingLeft: '32px',
+            paddingRight: '32px',
           }}
         >
-          <div className='max-w-7xl mx-auto'>
+          <div className='max-w-7xl mx-auto relative z-10'>
             <div className='text-center mb-16'>
               <h1
                 className='text-neutral-900'
@@ -143,7 +145,15 @@ export default function BlogPage() {
         </section>
 
         {/* Blog Posts Grid */}
-        <section className='py-16 px-4 sm:px-6 lg:px-8 bg-white'>
+        <section 
+          className='bg-white'
+          style={{
+            paddingTop: '64px',
+            paddingBottom: '64px',
+            paddingLeft: '32px',
+            paddingRight: '32px',
+          }}
+        >
           <div className='max-w-7xl mx-auto'>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
               {blogPosts.map((post) => (

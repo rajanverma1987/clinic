@@ -31,7 +31,15 @@ function logCacheUnavailableOnce(error) {
 
 class ApiClient {
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+    // Website app connects to clinic app's API
+    const clinicApiUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      (process.env.NODE_ENV === 'development'
+        ? 'http://localhost:5053/api'
+        : process.env.NEXT_PUBLIC_CLINIC_APP_URL
+          ? `${process.env.NEXT_PUBLIC_CLINIC_APP_URL}/api`
+          : 'https://accounts.doctorsclinic.services/api');
+    this.baseUrl = clinicApiUrl;
     /** Single-flight refresh: only one refresh in progress, others wait for the same promise. */
     this._refreshPromise = null;
   }

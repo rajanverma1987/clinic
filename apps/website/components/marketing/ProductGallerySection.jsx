@@ -1,11 +1,13 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { CLINIC_APP_URL } from '@/lib/config';
 import Link from 'next/link';
 import { useState } from 'react';
 
 export function ProductGallerySection() {
   const [activeTab, setActiveTab] = useState(0);
+  const clinicAppUrl = CLINIC_APP_URL.replace(/\/$/, '');
 
   const features = [
     {
@@ -167,7 +169,15 @@ export function ProductGallerySection() {
   ];
 
   return (
-    <section className='relative py-32 px-4 sm:px-6 lg:px-8 bg-white'>
+    <section
+      className='relative bg-white'
+      style={{
+        paddingTop: '80px',
+        paddingBottom: '80px',
+        paddingLeft: '32px',
+        paddingRight: '32px',
+      }}
+    >
       <div className='max-w-7xl mx-auto'>
         <div className='text-center mb-16'>
           <div className='inline-flex items-center bg-primary-50 border border-primary-200 rounded-full px-4 py-1.5 mb-6'>
@@ -257,7 +267,15 @@ export function ProductGallerySection() {
             </div>
 
             {/* Right Side - Active Feature Details */}
-            <div className='p-6 lg:p-8'>
+            <div
+              className='p-6 lg:p-8'
+              style={{
+                paddingLeft: '48px',
+                paddingRight: '48px',
+                paddingTop: '48px',
+                paddingBottom: '48px',
+              }}
+            >
               <div className='h-full flex flex-col justify-center'>
                 <div className='mb-6'>
                   <div
@@ -290,7 +308,7 @@ export function ProductGallerySection() {
 
                 <div className='space-y-3'>
                   {features[activeTab].highlights.map((highlight, index) => (
-                    <div key={index} className='flex items-start gap-3'>
+                    <div key={index} className='flex items-start' style={{ gap: '12px' }}>
                       <div className='flex-shrink-0 mt-1'>
                         <svg
                           className='icon icon-sm text-primary-600'
@@ -320,27 +338,30 @@ export function ProductGallerySection() {
                 </div>
 
                 <div className='mt-8 pt-6 border-t border-neutral-200'>
-                  <Link
-                    href={
-                      features[activeTab].title === 'Dashboard'
-                        ? '/dashboard'
-                        : features[activeTab].title === 'Calendar'
-                          ? '/appointments'
-                          : features[activeTab].title === 'Patients'
-                            ? '/patients'
-                            : features[activeTab].title === 'Billing'
-                              ? '/invoices'
-                              : features[activeTab].title === 'Reports'
-                                ? '/reports'
-                                : features[activeTab].title === 'Prescriptions'
-                                  ? '/prescriptions'
-                                  : '/register'
-                    }
+                  <Button 
+                    variant='primary' 
+                    size='lg'
+                    onClick={() => {
+                      const feature = features[activeTab].title;
+                      let url = `${clinicAppUrl}/register`;
+                      if (feature === 'Dashboard') {
+                        url = `${clinicAppUrl}/dashboard`;
+                      } else if (feature === 'Calendar') {
+                        url = `${clinicAppUrl}/appointments`;
+                      } else if (feature === 'Patients') {
+                        url = `${clinicAppUrl}/patients`;
+                      } else if (feature === 'Billing') {
+                        url = `${clinicAppUrl}/invoices`;
+                      } else if (feature === 'Reports') {
+                        url = `${clinicAppUrl}/reports`;
+                      } else if (feature === 'Prescriptions') {
+                        url = `${clinicAppUrl}/prescriptions`;
+                      }
+                      window.location.href = url;
+                    }}
                   >
-                    <Button variant='primary' size='lg'>
-                      Explore {features[activeTab].title}
-                    </Button>
-                  </Link>
+                    Explore {features[activeTab].title}
+                  </Button>
                 </div>
               </div>
             </div>

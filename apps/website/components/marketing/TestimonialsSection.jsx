@@ -58,8 +58,12 @@ export function TestimonialsSection({
 
   return (
     <section
-      className='py-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden'
+      className='relative overflow-hidden'
       style={{
+        paddingTop: '80px',
+        paddingBottom: '80px',
+        paddingLeft: '32px',
+        paddingRight: '32px',
         background: 'linear-gradient(135deg, #ffffff 0%, #f7fafc 50%, #e6f7fe 100%)',
       }}
     >
@@ -129,18 +133,27 @@ export function TestimonialsSection({
             <div
               className='flex'
               style={{
-                marginLeft: `-${currentTestimonialIndex * (100 / 3)}%`,
+                marginLeft: `-${currentTestimonialIndex * (100 / cardsPerView)}%`,
                 transition: 'margin-left 0.5s ease-in-out',
               }}
             >
               {testimonials.map((testimonial, index) => (
                 <div
                   key={index}
-                  className='flex-shrink-0 px-4'
-                  style={{ width: `${100 / cardsPerView}%` }}
+                  className='flex-shrink-0'
+                  style={{
+                    width: `${100 / cardsPerView}%`,
+                    paddingLeft: '16px',
+                    paddingRight: '16px',
+                  }}
                 >
-                  <div className='p-8 rounded-xl border border-neutral-200 bg-white hover:shadow-lg h-full'>
-                    <div className='flex items-center mb-4'>
+                  <div
+                    className='rounded-xl border border-neutral-200 bg-white hover:shadow-lg h-full'
+                    style={{
+                      padding: '32px',
+                    }}
+                  >
+                    <div className='flex items-center mb-4' style={{ gap: '4px' }}>
                       {[...Array(5)].map((_, i) => (
                         <svg
                           key={i}
@@ -164,9 +177,9 @@ export function TestimonialsSection({
                     >
                       &ldquo;{testimonial.text}&rdquo;
                     </p>
-                    <div className='flex items-center'>
+                    <div className='flex items-center' style={{ gap: '16px' }}>
                       <div
-                        className={`${testimonial.bgColor} rounded-full flex items-center justify-center text-white font-semibold mr-4`}
+                        className={`${testimonial.bgColor} rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0`}
                         style={{ width: '48px', height: '48px', fontSize: '16px' }}
                       >
                         {testimonial.initials}
@@ -205,7 +218,11 @@ export function TestimonialsSection({
             onClick={() =>
               setCurrentTestimonialIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))
             }
-            className='absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-3 shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10'
+            className='absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10 transition-all duration-200'
+            style={{
+              padding: '12px',
+              transform: 'translateY(-50%) translateX(-50%)',
+            }}
             aria-label='Previous testimonial'
           >
             <svg
@@ -227,7 +244,11 @@ export function TestimonialsSection({
             onClick={() =>
               setCurrentTestimonialIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))
             }
-            className='absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-3 shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10'
+            className='absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10 transition-all duration-200'
+            style={{
+              padding: '12px',
+              transform: 'translateY(-50%) translateX(50%)',
+            }}
             aria-label='Next testimonial'
           >
             <svg
@@ -241,16 +262,23 @@ export function TestimonialsSection({
             </svg>
           </button>
 
-          <div className='flex justify-center items-center gap-2 mt-8'>
+          <div
+            className='flex justify-center items-center'
+            style={{ gap: '8px', marginTop: '32px' }}
+          >
             {[...Array(totalSlides)].map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentTestimonialIndex(index)}
-                className={`rounded-full ${
+                className={`rounded-full transition-all duration-200 ${
                   currentTestimonialIndex === index
-                    ? 'bg-primary-500 w-8 h-3'
-                    : 'bg-neutral-300 w-3 h-3 hover:bg-neutral-400'
+                    ? 'bg-primary-500'
+                    : 'bg-neutral-300 hover:bg-neutral-400'
                 }`}
+                style={{
+                  width: currentTestimonialIndex === index ? '32px' : '12px',
+                  height: '12px',
+                }}
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}

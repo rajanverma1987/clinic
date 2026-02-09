@@ -1,7 +1,7 @@
 'use client';
 
-import { Header } from '@/components/Header';
 import { Footer } from '@/components/marketing/Footer';
+import { Header } from '@/components/marketing/Header';
 import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 
@@ -10,8 +10,11 @@ export default function AboutPage() {
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1 pb-24 pt-32 px-4 sm:px-6 lg:px-8'>
-        <div className='max-w-4xl mx-auto'>
+      <main className='flex-1' style={{ paddingTop: '120px' }}>
+        <div
+          className='max-w-4xl mx-auto'
+          style={{ paddingLeft: '32px', paddingRight: '32px', paddingBottom: '64px' }}
+        >
           {/* Back Link */}
           <div className='mb-8'>
             <Link
@@ -37,7 +40,15 @@ export default function AboutPage() {
 
           {/* Header Section */}
           <div className='mb-12'>
-            <h1 className='text-neutral-900 mb-4 text-3xl font-bold tracking-tight'>
+            <h1
+              className='text-neutral-900 mb-4'
+              style={{
+                fontSize: '32px',
+                lineHeight: '40px',
+                letterSpacing: '-0.02em',
+                fontWeight: '700',
+              }}
+            >
               {t('about.title') || 'About'}
             </h1>
             <div className='flex items-center gap-3 flex-wrap'>
@@ -70,7 +81,17 @@ export default function AboutPage() {
             </p>
 
             <div className='mt-8 pt-8 border-t border-neutral-200'>
-              <h2 className='text-neutral-900 mb-4 text-2xl font-semibold'>Our Mission</h2>
+              <h2
+                className='text-neutral-900 mb-4'
+                style={{
+                  fontSize: '24px',
+                  lineHeight: '32px',
+                  letterSpacing: '-0.01em',
+                  fontWeight: '600',
+                }}
+              >
+                Our Mission
+              </h2>
               <p className='text-neutral-700 mb-4 text-base leading-relaxed'>
                 We are dedicated to providing healthcare professionals with powerful, secure, and
                 intuitive tools to manage their clinics efficiently. Our platform helps you focus on
@@ -79,7 +100,17 @@ export default function AboutPage() {
             </div>
 
             <div className='mt-8 pt-8 border-t border-neutral-200'>
-              <h2 className='text-neutral-900 mb-4 text-2xl font-semibold'>Why Choose Us</h2>
+              <h2
+                className='text-neutral-900 mb-4'
+                style={{
+                  fontSize: '24px',
+                  lineHeight: '32px',
+                  letterSpacing: '-0.01em',
+                  fontWeight: '600',
+                }}
+              >
+                Why Choose Us
+              </h2>
               <ul className='list-disc pl-6 text-neutral-700 space-y-2 text-base'>
                 <li>Enterprise-grade security with HIPAA and GDPR compliance</li>
                 <li>Comprehensive clinic management in one unified platform</li>

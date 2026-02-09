@@ -10,6 +10,7 @@ import { HeroSection } from '@/components/marketing/HeroSection';
 import { ProductGallerySection } from '@/components/marketing/ProductGallerySection';
 import { TestimonialsSection } from '@/components/marketing/TestimonialsSection';
 import { useAuth } from '@/contexts/AuthContext';
+import { CLINIC_APP_URL } from '@/lib/config';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -39,12 +40,13 @@ function HomePage() {
     setMounted(true);
   }, []);
 
-  // Redirect authenticated users to dashboard
+  // Redirect authenticated users to clinic app dashboard
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/dashboard');
+      const clinicAppUrl = CLINIC_APP_URL.replace(/\/$/, '');
+      window.location.href = `${clinicAppUrl}/dashboard`;
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user]);
 
   useEffect(() => {
     // Only run on client side after mount and when not authenticated
@@ -103,7 +105,7 @@ function HomePage() {
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50 relative'>
       <Header />
-      <main className='flex-1 min-h-[calc(100vh-200px)]' style={{ paddingTop: '80px' }}>
+      <main className='flex-1 min-h-[calc(100vh-200px)]'>
         <HeroSection onContactClick={handleContactClick} />
         <FeaturesSection
           showAllFeatures={showAllFeatures}

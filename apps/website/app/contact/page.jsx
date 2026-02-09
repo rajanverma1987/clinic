@@ -1,7 +1,7 @@
 'use client';
 
-import { Header } from '@/components/Header';
 import { Footer } from '@/components/marketing/Footer';
+import { Header } from '@/components/marketing/Header';
 import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 
@@ -12,8 +12,11 @@ export default function ContactPage() {
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1 pb-24 pt-32 px-4 sm:px-6 lg:px-8'>
-        <div className='max-w-4xl mx-auto'>
+      <main className='flex-1' style={{ paddingTop: '120px' }}>
+        <div
+          className='max-w-4xl mx-auto'
+          style={{ paddingLeft: '32px', paddingRight: '32px', paddingBottom: '64px' }}
+        >
           {/* Back Link */}
           <div className='mb-8'>
             <Link
@@ -39,7 +42,15 @@ export default function ContactPage() {
 
           {/* Header Section */}
           <div className='mb-12'>
-            <h1 className='text-neutral-900 mb-4 text-3xl font-bold tracking-tight'>
+            <h1
+              className='text-neutral-900 mb-4'
+              style={{
+                fontSize: '32px',
+                lineHeight: '40px',
+                letterSpacing: '-0.02em',
+                fontWeight: '700',
+              }}
+            >
               {t('contact.title') || 'Contact'}
             </h1>
             <p className='text-neutral-600 mb-6 text-base'>
@@ -62,7 +73,17 @@ export default function ContactPage() {
             </p>
 
             <div className='mt-8 pt-8 border-t border-neutral-200'>
-              <h2 className='text-neutral-900 mb-4 text-2xl font-semibold'>Need More Help?</h2>
+              <h2
+                className='text-neutral-900 mb-4'
+                style={{
+                  fontSize: '24px',
+                  lineHeight: '32px',
+                  letterSpacing: '-0.01em',
+                  fontWeight: '600',
+                }}
+              >
+                Need More Help?
+              </h2>
               <p className='text-neutral-700 mb-6 text-base leading-relaxed'>
                 For detailed inquiries, technical support, or to submit a contact form, visit our
                 support center.
@@ -86,7 +107,17 @@ export default function ContactPage() {
 
           {/* Contact Information Card */}
           <div className='bg-primary-50 rounded-xl border border-primary-200 p-8'>
-            <h2 className='text-neutral-900 mb-4 text-2xl font-semibold'>Contact Information</h2>
+            <h2
+              className='text-neutral-900 mb-4'
+              style={{
+                fontSize: '24px',
+                lineHeight: '32px',
+                letterSpacing: '-0.01em',
+                fontWeight: '600',
+              }}
+            >
+              Contact Information
+            </h2>
             <div className='space-y-4'>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>
                 <h3 className='text-neutral-900 font-semibold mb-2'>Support Email</h3>

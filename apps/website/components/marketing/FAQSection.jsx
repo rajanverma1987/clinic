@@ -37,7 +37,15 @@ export function FAQSection({ openFaqIndex, onFaqToggle }) {
   ];
 
   return (
-    <section className='py-32 px-4 sm:px-6 lg:px-8 bg-white'>
+    <section
+      className='bg-white'
+      style={{
+        paddingTop: '80px',
+        paddingBottom: '80px',
+        paddingLeft: '32px',
+        paddingRight: '32px',
+      }}
+    >
       <div className='max-w-4xl mx-auto'>
         <div className='text-center mb-16'>
           <h2

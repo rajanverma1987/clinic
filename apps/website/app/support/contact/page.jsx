@@ -52,7 +52,7 @@ export default function ContactPage() {
         <section
           className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
           style={{
-            paddingTop: '140px',
+            paddingTop: '120px',
             paddingBottom: '80px',
             paddingLeft: '32px',
             paddingRight: '32px',

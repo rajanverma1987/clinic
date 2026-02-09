@@ -133,7 +133,7 @@ export default function SupportPage() {
         <section
           className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
           style={{
-            paddingTop: '140px',
+            paddingTop: '120px',
             paddingBottom: '80px',
             paddingLeft: '32px',
             paddingRight: '32px',
@@ -212,8 +212,8 @@ export default function SupportPage() {
         <section
           className='bg-white'
           style={{
-            paddingTop: '64px',
-            paddingBottom: '64px',
+            paddingTop: '80px',
+            paddingBottom: '80px',
             paddingLeft: '32px',
             paddingRight: '32px',
           }}
@@ -493,9 +493,7 @@ export default function SupportPage() {
                                 }}
                               >
                                 <svg
-                                  className={`text-primary-600 ${
-                                    isOpen ? 'rotate-180' : ''
-                                  }`}
+                                  className={`text-primary-600 ${isOpen ? 'rotate-180' : ''}`}
                                   fill='none'
                                   stroke='currentColor'
                                   viewBox='0 0 24 24'

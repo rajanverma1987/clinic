@@ -1,10 +1,10 @@
 'use client';
 
+import { ChatIcon, DocumentIcon, MailIcon, PhoneIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MailIcon, PhoneIcon, ChatIcon, DocumentIcon } from '@/components/icons';
 
 export function CTASection({ user }) {
   const { t } = useI18n();
@@ -12,9 +12,13 @@ export function CTASection({ user }) {
 
   return (
     <section
-      className='relative py-32 px-4 sm:px-6 lg:px-8 overflow-hidden'
+      className='relative overflow-hidden'
       style={{
         background: 'linear-gradient(135deg, #ffffff 0%, #f7fafc 50%, #e6f7fe 100%)',
+        paddingTop: '80px',
+        paddingBottom: '80px',
+        paddingLeft: '32px',
+        paddingRight: '32px',
       }}
     >
       {/* Animated gradient orbs - theme colors */}

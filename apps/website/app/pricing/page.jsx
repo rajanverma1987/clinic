@@ -7,6 +7,7 @@ import { Loader } from '@/components/ui/Loader';
 import { SubscriptionCard } from '@/components/ui/SubscriptionCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { CLINIC_APP_URL } from '@/lib/config';
 import { apiClient } from '@/lib/api/client';
 import { CARD_FEATURES_BY_PLAN } from '@/lib/constants/plan-features';
 import { YEARLY_SAVE } from '@/lib/constants/subscription-spec';
@@ -73,7 +74,8 @@ export default function PricingPage() {
     setSelectingMethod(typeof paymentMethod === 'string' ? paymentMethod : null);
 
     if (!user) {
-      router.push(`/register?planId=${planId}`);
+      const clinicAppUrl = CLINIC_APP_URL.replace(/\/$/, '');
+      window.location.href = `${clinicAppUrl}/register?planId=${planId}`;
       return;
     }
 
@@ -200,7 +202,7 @@ export default function PricingPage() {
         <section
           className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
           style={{
-            paddingTop: '140px',
+            paddingTop: '120px',
             paddingBottom: '80px',
             paddingLeft: '32px',
             paddingRight: '32px',

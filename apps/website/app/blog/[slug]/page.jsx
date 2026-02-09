@@ -2,6 +2,7 @@ import { BlogImage } from '@/components/blog/BlogImage';
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Card } from '@/components/ui/Card';
+import { CLINIC_APP_URL } from '@/lib/config';
 import { getAllBlogPosts, getBlogPostBySlug, getRelatedPosts } from '@/lib/blog/blog-data';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -52,6 +53,7 @@ export async function generateMetadata({ params }) {
 export default function BlogPostPage({ params }) {
   const post = getBlogPostBySlug(params.slug);
   const relatedPosts = getRelatedPosts(params.slug);
+  const clinicAppUrl = CLINIC_APP_URL.replace(/\/$/, '');
 
   if (!post) {
     notFound();
@@ -86,17 +88,25 @@ export default function BlogPostPage({ params }) {
   };
 
   return (
-    <div className='min-h-screen flex flex-col'>
+    <div className='min-h-screen flex flex-col bg-neutral-50'>
       {/* Structured Data for SEO */}
       <script
         type='application/ld+json'
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Header />
-      <main className='flex-1' style={{ paddingTop: '80px' }}>
+      <main className='flex-1' style={{ paddingTop: '120px' }}>
         {/* Hero Section */}
-        <article className='pt-8 pb-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-100 via-white to-primary-100'>
-          <div className='max-w-4xl mx-auto'>
+        <article
+          className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
+          style={{
+            paddingTop: '32px',
+            paddingBottom: '48px',
+            paddingLeft: '32px',
+            paddingRight: '32px',
+          }}
+        >
+          <div className='max-w-4xl mx-auto relative z-10'>
             {/* Breadcrumb */}
             <nav className='mb-8 text-sm text-neutral-600'>
               <Link href='/' className='hover:text-primary-600'>
@@ -134,18 +144,54 @@ export default function BlogPostPage({ params }) {
 
             {/* Meta Information */}
             <div className='flex items-center justify-between mb-8 pb-8 border-b border-neutral-200'>
-              <div className='flex items-center space-x-4'>
-                <div className='w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center'>
-                  <span className='text-primary-600 font-semibold'>
+              <div className='flex items-center' style={{ gap: '16px' }}>
+                <div
+                  className='bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0'
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                  }}
+                >
+                  <span
+                    className='text-primary-600 font-semibold'
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '1',
+                    }}
+                  >
                     {post.author.name
                       .split(' ')
+                      .filter(
+                        (n) => !['Dr.', 'Mr.', 'Mrs.', 'Ms.', 'Miss', 'Prof.', 'Dr'].includes(n),
+                      )
                       .map((n) => n[0])
-                      .join('')}
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2)}
                   </span>
                 </div>
                 <div>
-                  <p className='font-semibold text-neutral-900'>{post.author.name}</p>
-                  <p className='text-sm text-neutral-600'>{post.author.role}</p>
+                  <p
+                    className='font-semibold text-neutral-900'
+                    style={{
+                      fontSize: '18px',
+                      lineHeight: '28px',
+                      fontWeight: '600',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    {post.author.name}
+                  </p>
+                  <p
+                    className='text-neutral-600'
+                    style={{
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      fontWeight: '400',
+                    }}
+                  >
+                    {post.author.role}
+                  </p>
                 </div>
               </div>
               <div className='text-right'>
@@ -186,7 +232,15 @@ export default function BlogPostPage({ params }) {
         </article>
 
         {/* Content Section */}
-        <section className='py-12 px-4 sm:px-6 lg:px-8 bg-white'>
+        <section
+          className='bg-white'
+          style={{
+            paddingTop: '48px',
+            paddingBottom: '48px',
+            paddingLeft: '32px',
+            paddingRight: '32px',
+          }}
+        >
           <div className='max-w-4xl mx-auto'>
             {/* Introduction */}
             <div className='prose prose-lg max-w-none mb-12'>
@@ -271,19 +325,27 @@ export default function BlogPostPage({ params }) {
                 Start your free trial today and see how Doctor&apos;s Clinic can streamline your
                 operations.
               </p>
-              <Link
-                href='/register'
+              <a
+                href={`${clinicAppUrl}/register`}
                 className='inline-block bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-primary-100'
               >
                 Start Free Trial
-              </Link>
+              </a>
             </div>
           </div>
         </section>
 
         {/* Related Posts */}
         {relatedPosts.length > 0 && (
-          <section className='py-12 px-4 sm:px-6 lg:px-8 bg-neutral-100'>
+          <section
+            className='bg-neutral-100'
+            style={{
+              paddingTop: '48px',
+              paddingBottom: '48px',
+              paddingLeft: '32px',
+              paddingRight: '32px',
+            }}
+          >
             <div className='max-w-7xl mx-auto'>
               <h2 className='text-3xl font-bold text-neutral-900 mb-8'>Related Articles</h2>
               <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
@@ -323,7 +385,15 @@ export default function BlogPostPage({ params }) {
         )}
 
         {/* Back to Blog */}
-        <section className='py-8 px-4 sm:px-6 lg:px-8 bg-white'>
+        <section
+          className='bg-white'
+          style={{
+            paddingTop: '32px',
+            paddingBottom: '32px',
+            paddingLeft: '32px',
+            paddingRight: '32px',
+          }}
+        >
           <div className='max-w-4xl mx-auto text-center'>
             <Link
               href='/blog'

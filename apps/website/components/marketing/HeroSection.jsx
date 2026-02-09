@@ -1,14 +1,11 @@
 'use client';
 
-import { Button } from '@/components/ui/Button';
+import { CalendarIcon, CheckIcon, XIcon } from '@/components/icons';
 import { useI18n } from '@/contexts/I18nContext';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { CheckIcon, ZapIcon, UserIcon, PlayIcon, CalendarIcon, XIcon } from '@/components/icons';
 
 export function HeroSection({ onContactClick }) {
   const { t } = useI18n();
-  const router = useRouter();
 
   return (
     <section
@@ -125,7 +122,7 @@ export function HeroSection({ onContactClick }) {
             <p
               className='text-neutral-700 max-w-2xl mx-auto lg:mx-0'
               style={{
-                marginBottom: '56px',
+                marginBottom: '64px',
                 fontSize: '18px',
                 lineHeight: '28px',
                 fontWeight: '400',
@@ -133,43 +130,6 @@ export function HeroSection({ onContactClick }) {
             >
               {t('homepage.heroDescription')}
             </p>
-
-            {/* CTA Buttons */}
-            <div
-              className='flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start items-center'
-              style={{ gap: '20px', marginBottom: '64px' }}
-            >
-              <Button
-                variant='primary'
-                size='md'
-                className='w-full sm:w-auto whitespace-nowrap animate-button-pulse'
-                onClick={() => router.push('/register')}
-                style={{
-                  boxShadow: '0 8px 24px -6px rgba(45, 156, 219, 0.4)',
-                }}
-              >
-                <ZapIcon className='mr-2' style={{ width: 18, height: 18 }} />
-                {t('homepage.startFreeTrial')}
-              </Button>
-              <Button
-                variant='secondary'
-                size='md'
-                className='w-full sm:w-auto whitespace-nowrap animate-button-pulse'
-                onClick={() => router.push('/doctors/register')}
-              >
-                <UserIcon className='mr-2' style={{ width: 18, height: 18 }} />
-                {t('homepage.forDoctors')}
-              </Button>
-              <Button
-                variant='secondary'
-                size='md'
-                className='w-full sm:w-auto whitespace-nowrap animate-button-pulse'
-                onClick={onContactClick}
-              >
-                <PlayIcon className='mr-2' style={{ width: 18, height: 18 }} />
-                {t('homepage.scheduleDemo')}
-              </Button>
-            </div>
 
             {/* Trust Badges */}
             <div
@@ -184,7 +144,10 @@ export function HeroSection({ onContactClick }) {
                   fontWeight: '500',
                 }}
               >
-                <CheckIcon style={{ width: 18, height: 18, marginRight: '8px' }} className='text-secondary-500' />
+                <CheckIcon
+                  style={{ width: 18, height: 18, marginRight: '8px' }}
+                  className='text-secondary-500'
+                />
                 <span>{t('homepage.noCreditCardRequired')}</span>
               </div>
               <div
@@ -195,7 +158,10 @@ export function HeroSection({ onContactClick }) {
                   fontWeight: '500',
                 }}
               >
-                <CalendarIcon style={{ width: 18, height: 18, marginRight: '8px' }} className='text-primary-500' />
+                <CalendarIcon
+                  style={{ width: 18, height: 18, marginRight: '8px' }}
+                  className='text-primary-500'
+                />
                 <span>{t('homepage.freeTrial')}</span>
               </div>
               <div
@@ -206,7 +172,10 @@ export function HeroSection({ onContactClick }) {
                   fontWeight: '500',
                 }}
               >
-                <XIcon style={{ width: 18, height: 18, marginRight: '8px' }} className='text-neutral-500' />
+                <XIcon
+                  style={{ width: 18, height: 18, marginRight: '8px' }}
+                  className='text-neutral-500'
+                />
                 <span>{t('homepage.cancelAnytime')}</span>
               </div>
             </div>

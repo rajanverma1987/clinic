@@ -1,6 +1,7 @@
 'use client';
 
 import { useI18n } from '@/contexts/I18nContext';
+import { CLINIC_APP_URL } from '@/lib/config';
 import Image from 'next/image';
 import Link from 'next/link';
 import { memo, useMemo } from 'react';
@@ -8,6 +9,7 @@ import { memo, useMemo } from 'react';
 function FooterComponent() {
   const { t } = useI18n();
   const currentYear = useMemo(() => new Date().getFullYear(), []);
+  const clinicAppUrl = useMemo(() => CLINIC_APP_URL.replace(/\/$/, ''), []);
 
   return (
     <footer
@@ -75,18 +77,28 @@ function FooterComponent() {
                   }}
                 >
                   {[
-                    { href: '/#features', label: t('footer.features') || 'Features' },
-                    { href: '/pricing', label: t('navigation.pricing') || 'Pricing' },
-                    { href: '/register', label: t('footer.getStarted') || 'Get Started' },
+                    { href: '/#features', label: t('footer.features') || 'Features', external: false },
+                    { href: '/pricing', label: t('navigation.pricing') || 'Pricing', external: false },
+                    { href: `${clinicAppUrl}/register`, label: t('footer.getStarted') || 'Get Started', external: true },
                   ].map((link) => (
                     <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        className='text-neutral-600 hover:text-primary-600'
-                        style={{ fontSize: '14px', lineHeight: '20px' }}
-                      >
-                        {link.label}
-                      </Link>
+                      {link.external ? (
+                        <a
+                          href={link.href}
+                          className='text-neutral-600 hover:text-primary-600'
+                          style={{ fontSize: '14px', lineHeight: '20px' }}
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className='text-neutral-600 hover:text-primary-600'
+                          style={{ fontSize: '14px', lineHeight: '20px' }}
+                        >
+                          {link.label}
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>
