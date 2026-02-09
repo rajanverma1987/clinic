@@ -37,6 +37,15 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [mounted]);
 
+  const { loginUrl, registerUrl } = useMemo(() => {
+    const base = (process.env.NEXT_PUBLIC_ACCOUNTS_URL || 'https://accounts.doctorsclinic.services').replace(/\/$/, '');
+    const accountId = process.env.NEXT_PUBLIC_ACCOUNTS_ACCOUNT_ID || 'doctorsclinic';
+    return {
+      loginUrl: `${base}/${encodeURIComponent(accountId)}`,
+      registerUrl: `${base}?role=doctor`,
+    };
+  }, []);
+
   const navigationLinks = useMemo(
     () => [
       { href: '/#features', label: t('navigation.features') },
@@ -45,7 +54,7 @@ export function Header() {
       { href: '/support', label: t('navigation.support') },
       { href: '/support/contact', label: t('navigation.contact') },
     ],
-    [t]
+    [t],
   );
 
   return (
@@ -174,12 +183,12 @@ export function Header() {
                         {user.role === 'super_admin'
                           ? 'Super Admin'
                           : user.role === 'clinic_admin'
-                          ? 'Clinic Admin'
-                          : user.role === 'doctor'
-                          ? 'Doctor'
-                          : user.role === 'staff'
-                          ? 'Staff'
-                          : user.role || 'User'}
+                            ? 'Clinic Admin'
+                            : user.role === 'doctor'
+                              ? 'Doctor'
+                              : user.role === 'staff'
+                                ? 'Staff'
+                                : user.role || 'User'}
                       </p>
                     </div>
                   </div>
@@ -208,12 +217,14 @@ export function Header() {
                 </Button>
               </>
             ) : (
-              // Not logged in – clinic-only: Login + Get Started (no separate "For Doctors" – single registration CTA)
+              // Not logged in: Login (in-app) + Register (external accounts)
               <>
                 <Button
                   variant='secondary'
                   size='sm'
-                  onClick={() => router.push('/login')}
+                  onClick={() => {
+                    window.location.href = loginUrl;
+                  }}
                   className='whitespace-nowrap hidden sm:flex px-5 py-2.5'
                 >
                   {t('auth.login')}
@@ -221,7 +232,9 @@ export function Header() {
                 <Button
                   variant='primary'
                   size='sm'
-                  onClick={() => router.push('/register')}
+                  onClick={() => {
+                    window.location.href = registerUrl;
+                  }}
                   className='whitespace-nowrap px-5 py-2.5'
                 >
                   <svg
@@ -238,7 +251,7 @@ export function Header() {
                       d='M13 10V3L4 14h7v7l9-11h-7z'
                     />
                   </svg>
-                  {t('navigation.getStarted')}
+                  {t('auth.register')}
                 </Button>
               </>
             )}
@@ -384,12 +397,12 @@ export function Header() {
                             {user.role === 'super_admin'
                               ? 'Super Admin'
                               : user.role === 'clinic_admin'
-                              ? 'Clinic Admin'
-                              : user.role === 'doctor'
-                              ? 'Doctor'
-                              : user.role === 'staff'
-                              ? 'Staff'
-                              : user.role || 'User'}
+                                ? 'Clinic Admin'
+                                : user.role === 'doctor'
+                                  ? 'Doctor'
+                                  : user.role === 'staff'
+                                    ? 'Staff'
+                                    : user.role || 'User'}
                           </p>
                         </div>
                       </div>
@@ -420,8 +433,8 @@ export function Header() {
                       variant='secondary'
                       size='md'
                       onClick={() => {
-                        router.push('/login');
                         setMobileMenuOpen(false);
+                        window.location.href = loginUrl;
                       }}
                       className='w-full'
                     >
@@ -431,12 +444,12 @@ export function Header() {
                       variant='primary'
                       size='md'
                       onClick={() => {
-                        router.push('/register');
                         setMobileMenuOpen(false);
+                        window.location.href = registerUrl;
                       }}
                       className='w-full'
                     >
-                      {t('navigation.getStarted')}
+                      {t('auth.register')}
                     </Button>
                   </div>
                 )}

@@ -12,7 +12,7 @@ import { errorResponse } from '@/lib/utils/api-response.js';
  * Check if user has access to a specific feature
  */
 export async function requireFeature(req, user, featureName) {
-  // Super admin has access to all features
+  // Super admin = company account: full access
   if (user.role === 'super_admin') {
     return { allowed: true };
   }
@@ -45,7 +45,7 @@ export async function requireFeature(req, user, featureName) {
  * Check if user has access to any of the provided features
  */
 export async function requireAnyFeature(req, user, featureNames) {
-  // Super admin has access to all features
+  // Super admin = company account: full access
   if (user.role === 'super_admin') {
     return { allowed: true };
   }

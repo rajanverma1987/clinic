@@ -69,7 +69,7 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
         ${
           appointment.type === 'video'
             ? `
-          <p><strong>Video Call Link:</strong> <a href="${process.env.NEXT_PUBLIC_APP_URL}/telemedicine/${appointment._id}">Join Video Call</a></p>
+          <p><strong>Video Call Link:</strong> <a href="${(process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '')}/telemedicine/${appointment._id}">Join Video Call</a></p>
         `
             : ''
         }
@@ -91,7 +91,7 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
       - Time: ${formattedTime}
       - Type: ${appointment.type === 'video' ? 'Video Consultation' : 'In-Clinic'}
       
-      ${appointment.type === 'video' ? `Video Call Link: ${process.env.NEXT_PUBLIC_APP_URL}/telemedicine/${appointment._id}` : ''}
+      ${appointment.type === 'video' ? `Video Call Link: ${(process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '')}/telemedicine/${appointment._id}` : ''}
       
       Please arrive 10 minutes before your appointment time.
       Thank you for choosing ${tenant.name || 'our clinic'}.

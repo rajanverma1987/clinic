@@ -3,7 +3,6 @@
 import { CalendarIcon, CheckIcon, PlayIcon, UserIcon, VideoIcon, XIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -12,11 +11,13 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
 import { apiClient } from '@/lib/api/client';
-import { logger } from '@/lib/utils/logger';
+import { appointmentKey, DASHBOARD_LISTS_KEY } from '@/lib/swr/dashboard-keys';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import useSWR, { useSWRConfig } from 'swr';
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
 
@@ -29,9 +30,28 @@ export default function AppointmentDetailsPage({ params }) {
   const { t } = useI18n();
   const { user } = useAuth();
   const { open: openConfirm } = useConfirmation();
+  const { invalidateLists, invalidateStats } = useInvalidateDashboard();
+  const { mutate } = useSWRConfig();
   const isDoctor = user?.role === 'doctor';
-  const [appointment, setAppointment] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const appointmentKeyVal = params?.id ? appointmentKey(params.id) : null;
+  const fetcher = () =>
+    apiClient.get(`/appointments/${params.id}`).then((r) => {
+      if (r.success && r.data) return r.data;
+      const err = new Error(r.error?.message || 'Not found');
+      err.info = r.error;
+      throw err;
+    });
+  const {
+    data: swrData,
+    error: swrError,
+    isLoading: swrLoading,
+    mutate: mutateAppointment,
+  } = useSWR(appointmentKeyVal, () => fetcher(params.id), {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+  });
+  const appointment = swrData ?? null;
+  const loading = swrLoading;
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [showConsultationNotes, setShowConsultationNotes] = useState(false);
@@ -40,35 +60,25 @@ export default function AppointmentDetailsPage({ params }) {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const statusFromUrlApplied = useRef(false);
+  const dashboardListsRollbackRef = useRef(null);
 
   useEffect(() => {
-    const fetchAppointment = async () => {
-      try {
-        const response = await apiClient.get(`/appointments/${params.id}`);
-        if (response.success && response.data) {
-          setAppointment(response.data);
-          // Load consultation notes if available
-          if (response.data.clinicalNote) {
-            setConsultationNotes(response.data.clinicalNote.notes || '');
-            setDiagnosis(response.data.clinicalNote.diagnosis || '');
-          }
-        } else {
-          throw new Error(response.error?.message || t('appointments.notFound'));
-        }
-      } catch (err) {
-        logger.error('Failed to fetch appointment details:', err);
-        const message = err?.message?.includes('not found')
+    if (swrError) {
+      const message =
+        swrError?.message?.includes('not found') || swrError?.info?.message?.includes('not found')
           ? t('appointments.notFound')
           : t('appointments.loadFailed');
-        setError(message);
-        showError(message);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setError(message);
+      showError(message);
+    }
+  }, [swrError, t]);
 
-    fetchAppointment();
-  }, [params.id, t]);
+  useEffect(() => {
+    if (appointment?.clinicalNote) {
+      setConsultationNotes(appointment.clinicalNote.notes || '');
+      setDiagnosis(appointment.clinicalNote.diagnosis || '');
+    }
+  }, [appointment?.clinicalNote]);
 
   // Apply status from URL (e.g. from /appointments/[id]/edit?status=confirmed redirect)
   useEffect(() => {
@@ -86,28 +96,62 @@ export default function AppointmentDetailsPage({ params }) {
     const applyStatus = async () => {
       try {
         setSaving(true);
+        mutate(
+          DASHBOARD_LISTS_KEY,
+          (current) => {
+            dashboardListsRollbackRef.current = current;
+            if (!current || !Array.isArray(current.todayAppointments)) return current;
+            return {
+              ...current,
+              todayAppointments: current.todayAppointments.map((apt) =>
+                apt._id === params.id ? { ...apt, status: statusParam } : apt,
+              ),
+            };
+          },
+          { revalidate: false },
+        );
         const response = await apiClient.put(`/appointments/${params.id}/status`, {
           status: statusParam,
         });
         if (response.success) {
-          setAppointment((prev) => (prev ? { ...prev, status: statusParam } : prev));
+          mutateAppointment((prev) => (prev ? { ...prev, status: statusParam } : prev), {
+            revalidate: false,
+          });
           showSuccess(t('appointments.statusUpdated') || 'Appointment status updated');
+          invalidateLists();
+          invalidateStats();
           router.replace(`/appointments/${params.id}`);
         } else {
+          if (dashboardListsRollbackRef.current != null) {
+            mutate(DASHBOARD_LISTS_KEY, dashboardListsRollbackRef.current, { revalidate: false });
+          }
           showError(
             response.error?.message ||
               t('appointments.statusUpdateFailed') ||
-              'Failed to update status'
+              'Failed to update status',
           );
         }
       } catch (err) {
+        if (dashboardListsRollbackRef.current != null) {
+          mutate(DASHBOARD_LISTS_KEY, dashboardListsRollbackRef.current, { revalidate: false });
+        }
         showError(t('appointments.statusUpdateFailed') || 'Failed to update appointment status');
       } finally {
         setSaving(false);
       }
     };
     applyStatus();
-  }, [appointment, loading, params.id, searchParams, router, t]);
+  }, [
+    appointment,
+    loading,
+    params.id,
+    searchParams,
+    router,
+    t,
+    invalidateLists,
+    invalidateStats,
+    mutate,
+  ]);
 
   const patientFullName = useMemo(
     () =>
@@ -116,7 +160,7 @@ export default function AppointmentDetailsPage({ params }) {
             appointment.patientId?.lastName || ''
           }`.trim()
         : '',
-    [appointment]
+    [appointment],
   );
 
   const doctorFullName = useMemo(
@@ -124,22 +168,43 @@ export default function AppointmentDetailsPage({ params }) {
       appointment
         ? `${appointment.doctorId?.firstName || ''} ${appointment.doctorId?.lastName || ''}`.trim()
         : '',
-    [appointment]
+    [appointment],
   );
 
   const handleStatusChange = async (status) => {
     try {
       setSaving(true);
+      mutate(
+        DASHBOARD_LISTS_KEY,
+        (current) => {
+          dashboardListsRollbackRef.current = current;
+          if (!current || !Array.isArray(current.todayAppointments)) return current;
+          return {
+            ...current,
+            todayAppointments: current.todayAppointments.map((apt) =>
+              apt._id === params.id ? { ...apt, status } : apt,
+            ),
+          };
+        },
+        { revalidate: false },
+      );
       const response = await apiClient.put(`/appointments/${params.id}/status`, { status });
       if (response.success) {
         showSuccess(t('appointments.statusUpdated'));
-        setAppointment({ ...appointment, status });
+        mutateAppointment({ ...appointment, status }, { revalidate: false });
         setShowStatusModal(false);
-        fetchAppointment();
+        invalidateLists();
+        invalidateStats();
       } else {
+        if (dashboardListsRollbackRef.current != null) {
+          mutate(DASHBOARD_LISTS_KEY, dashboardListsRollbackRef.current, { revalidate: false });
+        }
         showError(response.error?.message || t('errors.failedToUpdateAppointmentStatus'));
       }
     } catch (err) {
+      if (dashboardListsRollbackRef.current != null) {
+        mutate(DASHBOARD_LISTS_KEY, dashboardListsRollbackRef.current, { revalidate: false });
+      }
       showError(t('errors.failedToUpdateAppointmentStatus'));
     } finally {
       setSaving(false);
@@ -158,7 +223,8 @@ export default function AppointmentDetailsPage({ params }) {
       if (response.success) {
         showSuccess(t('appointments.consultationNotesSaved'));
         setShowConsultationNotes(false);
-        fetchAppointment();
+        invalidateLists();
+        mutateAppointment();
       } else {
         showError(response.error?.message || t('appointments.failedToSaveConsultationNotes'));
       }
@@ -166,21 +232,6 @@ export default function AppointmentDetailsPage({ params }) {
       showError(t('appointments.failedToSaveConsultationNotes'));
     } finally {
       setSaving(false);
-    }
-  };
-
-  const fetchAppointment = async () => {
-    try {
-      const response = await apiClient.get(`/appointments/${params.id}`);
-      if (response.success && response.data) {
-        setAppointment(response.data);
-        if (response.data.clinicalNote) {
-          setConsultationNotes(response.data.clinicalNote.notes || '');
-          setDiagnosis(response.data.clinicalNote.diagnosis || '');
-        }
-      }
-    } catch (err) {
-      logger.error('Failed to fetch appointment:', err);
     }
   };
 
@@ -198,7 +249,7 @@ export default function AppointmentDetailsPage({ params }) {
                 {t('appointments.unavailable')}
               </p>
               <p className='text-neutral-600 mb-6'>{error || t('appointments.notFoundMessage')}</p>
-              <Button variant='secondary' size='md' onClick={() => router.push('/appointments')}>
+              <Button variant='secondary' size='md' href='/appointments'>
                 {t('appointments.backToAppointments')}
               </Button>
             </div>
@@ -217,7 +268,6 @@ export default function AppointmentDetailsPage({ params }) {
         unreadCount={0}
         actionButtons={
           <>
-            <BackButton />
             {isDoctor && (
               <select
                 className='px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm'
@@ -272,7 +322,7 @@ export default function AppointmentDetailsPage({ params }) {
                       variant='primary'
                       onClick={() =>
                         router.push(
-                          `/telemedicine/${appointment.telemedicineSessionId || appointment._id}`
+                          `/telemedicine/${appointment.telemedicineSessionId || appointment._id}`,
                         )
                       }
                     >
@@ -305,7 +355,9 @@ export default function AppointmentDetailsPage({ params }) {
                     onClick={() => {
                       openConfirm({
                         title: t('common.areYouSure'),
-                        message: t('appointments.confirmCancel') || 'Are you sure you want to cancel this appointment?',
+                        message:
+                          t('appointments.confirmCancel') ||
+                          'Are you sure you want to cancel this appointment?',
                         variant: 'danger',
                         onConfirm: () => handleStatusChange('cancelled'),
                       });
@@ -322,7 +374,9 @@ export default function AppointmentDetailsPage({ params }) {
                   onClick={() => {
                     openConfirm({
                       title: t('common.areYouSure'),
-                      message: t('appointments.confirmMarkCompleted') || 'Mark this appointment as completed?',
+                      message:
+                        t('appointments.confirmMarkCompleted') ||
+                        'Mark this appointment as completed?',
                       variant: 'info',
                       onConfirm: () => handleStatusChange('completed'),
                     });
@@ -336,7 +390,7 @@ export default function AppointmentDetailsPage({ params }) {
           </Card>
         )}
 
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
+        <div className='content-grid-2 content-grid-gap-6 mb-6'>
           <Card>
             <div className='flex items-center justify-between mb-4'>
               <h2 className='text-lg font-semibold text-neutral-900'>Patient Information</h2>
@@ -376,7 +430,7 @@ export default function AppointmentDetailsPage({ params }) {
           </Card>
         </div>
 
-        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6'>
+        <div className='content-grid-3 content-grid-gap-6 mb-6'>
           <Card>
             <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
               Date
@@ -401,7 +455,7 @@ export default function AppointmentDetailsPage({ params }) {
           </Card>
         </div>
 
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
+        <div className='content-grid-2 content-grid-gap-6 mb-6'>
           <Card>
             <h3 className='text-lg font-semibold text-neutral-900 mb-3'>Reason</h3>
             <p className='text-neutral-700'>{appointment.reason || 'Not provided'}</p>

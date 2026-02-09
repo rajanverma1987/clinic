@@ -9,6 +9,7 @@ import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useI18n } from '@/contexts/I18nContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useBreadcrumbs } from '@/hooks/useBreadcrumbs';
 import { Fragment, useEffect, useState } from 'react';
 
 /** Normalize actionButtons to an array so we always render the same way (array or single node). */
@@ -36,6 +37,7 @@ export function PageHeader({
   onMarkAsRead,
   onMarkAllAsRead,
   onRefresh,
+  refreshing = false,
   showNotifications = true,
   showLanguageSwitcher = true,
   showSearch = true,
@@ -45,6 +47,13 @@ export function PageHeader({
   const { isDark } = useTheme();
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const autoBreadcrumbs = useBreadcrumbs({ currentPageLabel: title });
+  const breadcrumbItems =
+    breadcrumbs && breadcrumbs.length > 0
+      ? breadcrumbs.map((c) => ({ label: c.label, href: c.href, onClick: c.onClick }))
+      : autoBreadcrumbs.length > 0
+        ? autoBreadcrumbs.map((item) => ({ label: item.label, href: item.href }))
+        : [];
 
   const actionsList = toActionsList(actionButtons);
   const hasQuickActions =
@@ -117,10 +126,15 @@ export function PageHeader({
                   variant='ghost'
                   size='sm'
                   onClick={onRefresh}
-                  title={t('common.refresh')}
-                  aria-label={t('common.refresh')}
+                  disabled={refreshing}
+                  title={refreshing ? t('common.updating') : t('common.refresh')}
+                  aria-label={refreshing ? t('common.updating') : t('common.refresh')}
+                  aria-busy={refreshing}
                 >
-                  <RefreshCwIcon className='icon icon-sm' ariaHidden />
+                  <RefreshCwIcon
+                    className={`icon icon-sm ${refreshing ? 'animate-spin' : ''}`}
+                    ariaHidden
+                  />
                 </Button>
               </div>
             )}
@@ -174,15 +188,7 @@ export function PageHeader({
           )}
         </div>
       </div>
-      {breadcrumbs && breadcrumbs.length > 0 && (
-        <Breadcrumb
-          items={breadcrumbs.map((c) => ({
-            label: c.label,
-            href: c.href,
-            onClick: c.onClick,
-          }))}
-        />
-      )}
+      {breadcrumbItems.length > 0 && <Breadcrumb items={breadcrumbItems} />}
       <GlobalSearch isOpen={showSearchModal} onClose={() => setShowSearchModal(false)} />
     </header>
   );

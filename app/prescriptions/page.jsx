@@ -10,9 +10,10 @@ import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { isManagerPathReadOnly } from '@/lib/constants/route-security';
+import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
+import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -27,6 +28,7 @@ export default function PrescriptionsPage() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { open: openConfirm } = useConfirmation();
+  const { prefetchPrescription } = usePrefetchDetail();
   const tenantId = user?.tenantId ?? null;
   const managerReadOnly = isManagerPathReadOnly(pathname);
 
@@ -217,7 +219,7 @@ export default function PrescriptionsPage() {
         actionButton={
           managerReadOnly ? null : (
             <Button
-              onClick={() => router.push('/prescriptions/new')}
+              href='/prescriptions/new'
               variant='primary'
               size='md'
               className='whitespace-nowrap'
@@ -233,6 +235,7 @@ export default function PrescriptionsPage() {
             data={prescriptions}
             columns={columns}
             onRowClick={(row) => router.push(`/prescriptions/${row._id}`)}
+            onRowMouseEnter={(row) => row?._id && prefetchPrescription(row._id)}
             emptyMessage={t('common.noDataFound')}
           />
         </Card>

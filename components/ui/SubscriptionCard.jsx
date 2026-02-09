@@ -27,6 +27,7 @@ export function SubscriptionCard({
   yearlySaveAmount,
   trialDays,
   onSelect,
+  onSubscribe,
   onPayWithCard,
   onPayWithPayPal,
   ctaText: ctaTextProp,
@@ -188,27 +189,26 @@ export function SubscriptionCard({
           )}
         </ul>
 
-        {showPaymentMethods && onPayWithCard && onPayWithPayPal && isPaid ? (
+        {showPaymentMethods && onSubscribe && isPaid ? (
           <div className='sub-plan-card__cta-group'>
-            <p className='sub-plan-card__secure-note' role='status'>
-              {t('subscription.securePaymentNote')}
-            </p>
             <Button
-              variant='primary'
+              variant={isPopular ? 'primary' : 'secondary'}
               size='md'
               className='sub-plan-card__cta'
-              onClick={onPayWithCard}
-              disabled={ctaDisabled || loadingPayPal}
-              isLoading={loadingCard}
+              onClick={onSubscribe}
+              disabled={ctaDisabled}
             >
-              {t('subscription.payWithCard')}
+              {t('subscription.subscribe')}
             </Button>
+          </div>
+        ) : showPaymentMethods && onPayWithPayPal && isPaid ? (
+          <div className='sub-plan-card__cta-group'>
             <Button
-              variant='secondary'
+              variant={isPopular ? 'primary' : 'secondary'}
               size='md'
-              className='sub-plan-card__cta sub-plan-card__cta--secondary'
+              className='sub-plan-card__cta'
               onClick={onPayWithPayPal}
-              disabled={ctaDisabled || loadingCard}
+              disabled={ctaDisabled}
               isLoading={loadingPayPal}
             >
               {t('subscription.payWithPayPal')}

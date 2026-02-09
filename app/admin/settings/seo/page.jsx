@@ -15,8 +15,23 @@ export default function AdminSettingsSeoPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='SEO Settings' subtitle='Meta tags, sitemap, robots, analytics' actionButton={<Button variant='primary' onClick={() => router.push('/admin/settings')}>Back to Settings</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>SEO (meta tags, sitemap, robots.txt, Google Analytics) — configure in next.config or layout.</p></Card></div>
+    <Layout
+      title='SEO Settings'
+      subtitle='Meta tags, sitemap, robots, analytics'
+      actionButton={
+        <Button variant='primary' href='/admin/settings'>
+          Back to Settings
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            SEO (meta tags, sitemap, robots.txt, Google Analytics) — configure in next.config or
+            layout.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

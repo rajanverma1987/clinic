@@ -15,9 +15,22 @@ export default function AdminContentBlogPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Blog / Articles' subtitle='Create health articles, rich text editor, SEO, publish/draft' actionButton={<Button variant='primary' onClick={() => router.push('/admin/content')}>Back to Content</Button>}>
+    <Layout
+      title='Blog / Articles'
+      subtitle='Create health articles, rich text editor, SEO, publish/draft'
+      actionButton={
+        <Button variant='primary' href='/admin/content'>
+          Back to Content
+        </Button>
+      }
+    >
       <div style={{ padding: '0 10px' }}>
-        <Card className='p-6'><p className='text-neutral-600'>Blog and articles management (rich text, images/videos, SEO, categories) is planned. Use Specialty Management for now.</p></Card>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Blog and articles management (rich text, images/videos, SEO, categories) is planned. Use
+            Specialty Management for now.
+          </p>
+        </Card>
       </div>
     </Layout>
   );

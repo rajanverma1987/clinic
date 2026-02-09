@@ -129,7 +129,7 @@ export default function AdminFinancialDisputesPage() {
       title={t('admin.financialPaymentDisputes')}
       subtitle={t('admin.financialPaymentDisputesDesc')}
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin/financial')}>
+        <Button variant='primary' href='/admin/financial'>
           {t('admin.backToFinancial')}
         </Button>
       }
@@ -175,9 +175,7 @@ export default function AdminFinancialDisputesPage() {
         ) : disputes.length === 0 ? (
           <Card className='p-12 text-center'>
             <p className='text-neutral-500'>{t('admin.disputeNoDisputesFound')}</p>
-            <p className='text-sm text-neutral-400 mt-2'>
-              Disputes can be created from the API or patient portal.
-            </p>
+            <p className='text-sm text-neutral-400 mt-2'>Disputes can be created from the API.</p>
           </Card>
         ) : (
           <div className='space-y-4'>

@@ -3,17 +3,16 @@
 import { LOADER_PRESETS } from '@/lib/constants/loader-usage';
 
 /**
- * Global Loader Component – uses clinic logo (/images/logoclinic.png)
- * Use this loader across the entire platform - no custom loaders allowed.
+ * Global Loader – clinic logo + spinning ring. Uses global CSS animations (GPU-friendly, respects prefers-reduced-motion).
  *
- * Enterprise types (use type prop for consistent UX):
- * - page: full-screen, initial route / auth (message below logo)
- * - section: inline in tab content or data block (message below logo)
- * - inline: small block in card/widget (optional message)
- * - button: use CompactLoader inside buttons
+ * Types: page | section | inline | button
+ * - page: full-screen, initial route / auth
+ * - section: inline in tab/content block
+ * - inline: small block in card/widget
+ * - button: CompactLoader inside buttons
  *
- * @param {string} [type] - 'page' | 'section' | 'inline' | 'button' – applies preset (fullScreen, inline, size)
- * @param {string} [text] - Message below logo (recommended for page/section). Used for aria-label when present.
+ * @param {string} [type] - Preset: fullScreen, inline, size
+ * @param {string} [text] - Message below logo; used for aria-label when present
  */
 export function Loader({
   type,
@@ -30,6 +29,7 @@ export function Loader({
   const effectiveFullScreen = preset ? preset.fullScreen : fullScreen;
   const effectiveInline = preset ? preset.inline : inline;
   const effectiveSize = preset ? preset.size : size;
+
   if (preset?.useCompact) {
     return (
       <CompactLoader
@@ -40,6 +40,7 @@ export function Loader({
       />
     );
   }
+
   const message = text ?? null;
   const a11yProps = {
     role: 'status',
@@ -47,139 +48,93 @@ export function Loader({
     'aria-live': 'polite',
     'aria-label': ariaLabel ?? message ?? undefined,
   };
-  const sizeClasses = {
-    xs: {
-      spinner: 28,
-      pulse: '44px',
-      border: '2px',
-    },
-    sm: {
-      spinner: 36,
-      pulse: '56px',
-      border: '2px',
-    },
-    md: {
-      spinner: 44,
-      pulse: '68px',
-      border: '3px',
-    },
-    lg: {
-      spinner: 56,
-      pulse: '84px',
-      border: '3px',
-    },
-    xl: {
-      spinner: 68,
-      pulse: '100px',
-      border: '4px',
-    },
+
+  const sizeConfig = {
+    xs: { spinner: 28, pulse: 44, border: 2 },
+    sm: { spinner: 36, pulse: 56, border: 2 },
+    md: { spinner: 44, pulse: 68, border: 3 },
+    lg: { spinner: 56, pulse: 84, border: 3 },
+    xl: { spinner: 68, pulse: 100, border: 4 },
   };
 
-  const variantColors = {
+  const variantConfig = {
     primary: {
       main: 'var(--color-primary-500)',
-      light: 'rgba(45, 156, 219, 0.2)',
       pulse: 'rgba(45, 156, 219, 0.15)',
     },
     secondary: {
       main: '#27AE60',
-      light: 'rgba(39, 174, 96, 0.2)',
       pulse: 'rgba(39, 174, 96, 0.15)',
     },
     neutral: {
       main: '#828282',
-      light: 'rgba(130, 130, 130, 0.2)',
       pulse: 'rgba(130, 130, 130, 0.15)',
     },
   };
 
-  const currentSize = sizeClasses[effectiveSize] || sizeClasses.md;
-  const colors = variantColors[variant] || variantColors.primary;
+  const cfg = sizeConfig[effectiveSize] ?? sizeConfig.md;
+  const colors = variantConfig[variant] ?? variantConfig.primary;
+  const pulsePx = `${cfg.pulse}px`;
+  const ringOffset = 4;
 
   const spinner = (
     <div
-      className='relative flex-shrink-0 flex items-center justify-center'
-      style={{
-        width: currentSize.pulse,
-        height: currentSize.pulse,
-      }}
-      aria-hidden='true'
+      className="loader-root relative flex shrink-0 items-center justify-center"
+      style={{ width: pulsePx, height: pulsePx }}
+      aria-hidden="true"
     >
-      {/* Pulsing background for medical feel */}
       <div
-        className='absolute inset-0 rounded-full'
+        className="loader-bg-pulse absolute inset-0 rounded-full"
+        style={{ background: colors.pulse }}
+      />
+      <div className="loader-logo-wrap absolute inset-0 flex items-center justify-center">
+        <img
+          src="/images/logoclinic.png"
+          alt=""
+          width={cfg.spinner}
+          height={cfg.spinner}
+          className="loader-logo object-contain"
+          style={{
+            width: cfg.spinner,
+            height: 'auto',
+            maxHeight: cfg.spinner,
+            objectFit: 'contain',
+          }}
+        />
+      </div>
+      <div
+        className="loader-ring absolute rounded-full"
         style={{
-          background: colors.pulse,
-          animation: 'medical-pulse 2s ease-in-out infinite',
+          top: -ringOffset,
+          left: -ringOffset,
+          right: -ringOffset,
+          bottom: -ringOffset,
+          width: `calc(${pulsePx} + ${ringOffset * 2}px)`,
+          height: `calc(${pulsePx} + ${ringOffset * 2}px)`,
+          zIndex: 1,
+          borderWidth: `${cfg.border}px`,
+          borderStyle: 'solid',
+          borderColor: 'transparent',
+          borderTopColor: colors.main,
+          borderRightColor: 'transparent',
+          borderBottomColor: 'transparent',
+          borderLeftColor: 'transparent',
         }}
       />
-
-      {/* Clinic logo (real branding) */}
-      <div
-        className='absolute inset-0 flex items-center justify-center'
-        style={{
-          animation: 'fade-pulse 2s ease-in-out infinite',
-        }}
-      >
-        <img
-          src='/images/logoclinic.png'
-          alt=''
-          width={currentSize.spinner}
-          height={currentSize.spinner}
-          className='object-contain'
-          style={{
-            width: currentSize.spinner,
-            height: 'auto',
-            maxHeight: currentSize.spinner,
-            objectFit: 'contain',
-            animation: 'logo-pulse 2s ease-in-out infinite',
-          }}
-        />
-      </div>
-
-      {/* Blue spinning ring outside */}
-      <div
-        className='absolute'
-        style={{
-          top: '-4px',
-          left: '-4px',
-          right: '-4px',
-          bottom: '-4px',
-          width: `calc(${currentSize.pulse} + 8px)`,
-          height: `calc(${currentSize.pulse} + 8px)`,
-          zIndex: 1,
-        }}
-      >
-        <div
-          className='w-full h-full rounded-full'
-          style={{
-            borderWidth: currentSize.border,
-            borderStyle: 'solid',
-            borderTopColor: colors.main,
-            borderRightColor: 'transparent',
-            borderBottomColor: 'transparent',
-            borderLeftColor: 'transparent',
-            animation: 'medical-spin 1s linear infinite',
-          }}
-        />
-      </div>
     </div>
   );
 
   if (effectiveInline) {
-    const wrapperProps = {
-      ...a11yProps,
-      className: `flex flex-col items-center gap-6 ${className}`,
-    };
+    const wrapperClass = `flex flex-col items-center gap-6 ${className}`.trim();
     return message ? (
-      <div {...wrapperProps}>
+      <div {...a11yProps} className={wrapperClass}>
         {spinner}
-        <span className='text-body-sm font-medium tracking-wide text-neutral-700 whitespace-nowrap'>
+        <span className="text-body-sm font-medium tracking-wide text-neutral-700 whitespace-nowrap">
           {message}
         </span>
       </div>
     ) : (
-      <div className={className} {...a11yProps}>
+      <div className={className || undefined} {...a11yProps}>
         {spinner}
       </div>
     );
@@ -187,14 +142,12 @@ export function Loader({
 
   const content = message ? (
     <div
-      className='flex flex-col items-center'
-      style={{
-        gap: effectiveFullScreen ? '2.5rem' : '1.5rem',
-      }}
+      className="flex flex-col items-center"
+      style={{ gap: effectiveFullScreen ? '2.5rem' : '1.5rem' }}
     >
       {spinner}
       <span
-        className='loader-message-text font-medium tracking-wide text-neutral-700 text-center max-w-xs'
+        className="loader-text-pulse loader-message font-medium tracking-wide text-neutral-700 text-center max-w-xs"
         style={{
           fontSize: effectiveFullScreen ? '1rem' : 'var(--text-body-sm, 14px)',
           lineHeight: effectiveFullScreen ? '1.5rem' : 'var(--text-body-sm-line-height, 20px)',
@@ -212,152 +165,35 @@ export function Loader({
   if (effectiveFullScreen) {
     return (
       <div
-        className={`fixed inset-0 flex items-center justify-center ${className}`}
+        className={`fixed inset-0 flex items-center justify-center ${className}`.trim()}
         style={{
           zIndex: 'var(--z-loader, 10070)',
           background:
             'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.98) 100%)',
           backdropFilter: 'blur(12px)',
         }}
-        role='status'
-        aria-busy='true'
-        aria-live='polite'
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
         aria-label={ariaLabel ?? message ?? undefined}
       >
         {content}
-
-        <style jsx>{`
-          @keyframes medical-spin {
-            0% {
-              transform: rotate(0deg);
-            }
-            100% {
-              transform: rotate(360deg);
-            }
-          }
-
-          @keyframes medical-pulse {
-            0%,
-            100% {
-              transform: scale(1);
-              opacity: 0.3;
-            }
-            50% {
-              transform: scale(1.1);
-              opacity: 0.6;
-            }
-          }
-
-          @keyframes logo-pulse {
-            0%,
-            100% {
-              opacity: 0.9;
-              transform: scale(1);
-            }
-            50% {
-              opacity: 1;
-              transform: scale(1.05);
-            }
-          }
-
-          @keyframes fade-pulse {
-            0%,
-            100% {
-              opacity: 0.8;
-            }
-            50% {
-              opacity: 1;
-            }
-          }
-
-          .loader-message-text {
-            animation: loader-message-pulse 1.8s ease-in-out infinite;
-          }
-
-          @keyframes loader-message-pulse {
-            0%,
-            100% {
-              opacity: 0.85;
-            }
-            50% {
-              opacity: 1;
-            }
-          }
-        `}</style>
       </div>
     );
   }
 
   return (
-    <div className={`flex items-center justify-center ${className}`} {...a11yProps}>
+    <div
+      className={`flex items-center justify-center ${className}`.trim()}
+      {...a11yProps}
+    >
       {content}
-
-      <style jsx>{`
-        @keyframes medical-spin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-
-        @keyframes medical-pulse {
-          0%,
-          100% {
-            transform: scale(1);
-            opacity: 0.3;
-          }
-          50% {
-            transform: scale(1.1);
-            opacity: 0.6;
-          }
-        }
-
-        @keyframes logo-pulse {
-          0%,
-          100% {
-            opacity: 0.9;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.05);
-          }
-        }
-
-        @keyframes fade-pulse {
-          0%,
-          100% {
-            opacity: 0.8;
-          }
-          50% {
-            opacity: 1;
-          }
-        }
-
-        .loader-message-text {
-          animation: loader-message-pulse 1.8s ease-in-out infinite;
-        }
-
-        @keyframes loader-message-pulse {
-          0%,
-          100% {
-            opacity: 0.85;
-          }
-          50% {
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 }
 
 /**
- * Compact inline loader for buttons and small spaces
- * Use this for inline loading states (buttons, small components)
- * @param {string} [ariaLabel] - Accessible label (e.g. t('common.loading')). Default "Loading".
+ * Compact spinner for buttons and small spaces. CSS-only animation, respects reduced motion.
  */
 export function CompactLoader({
   size = 'sm',
@@ -365,59 +201,36 @@ export function CompactLoader({
   variant = 'primary',
   'aria-label': ariaLabel = 'Loading',
 }) {
-  const sizeMap = {
-    xs: '16px',
-    sm: '20px',
-    md: '24px',
-    lg: '32px',
-  };
-
+  const sizeMap = { xs: 16, sm: 20, md: 24, lg: 32 };
   const variantColors = {
     primary: 'var(--color-primary-500)',
     secondary: '#27AE60',
     neutral: '#828282',
     white: '#ffffff',
   };
-
-  const spinnerColor = variantColors[variant] || variantColors.primary;
+  const px = sizeMap[size] ?? sizeMap.sm;
+  const color = variantColors[variant] ?? variantColors.primary;
 
   return (
-    <div
-      className={`inline-flex items-center justify-center ${className}`}
-      style={{
-        width: sizeMap[size] || sizeMap.sm,
-        height: sizeMap[size] || sizeMap.sm,
-      }}
-      role='status'
+    <span
+      className={`loader-compact inline-flex items-center justify-center ${className}`.trim()}
+      style={{ width: px, height: px }}
+      role="status"
       aria-label={ariaLabel}
-      aria-busy='true'
+      aria-busy="true"
     >
-      <div
-        className='rounded-full'
-        aria-hidden='true'
+      <span
+        className="loader-compact-ring block rounded-full border-2 border-solid border-transparent"
         style={{
           width: '100%',
           height: '100%',
-          borderWidth: '2px',
-          borderStyle: 'solid',
-          borderTopColor: spinnerColor,
-          borderRightColor: spinnerColor,
+          borderTopColor: color,
+          borderRightColor: color,
           borderBottomColor: 'transparent',
           borderLeftColor: 'transparent',
-          animation: 'compact-spin 0.8s linear infinite',
         }}
+        aria-hidden="true"
       />
-
-      <style jsx>{`
-        @keyframes compact-spin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
-    </div>
+    </span>
   );
 }

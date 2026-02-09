@@ -80,7 +80,7 @@ export default function AdminSettingsGeneralPage() {
       title='General Settings'
       subtitle='Platform name, support contact, business hours, timezone, date and currency format'
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin/settings')}>
+        <Button variant='primary' href='/admin/settings'>
           Back to Settings
         </Button>
       }
@@ -168,7 +168,7 @@ export default function AdminSettingsGeneralPage() {
               <Button
                 type='button'
                 variant='secondary'
-                onClick={() => router.push('/admin/settings')}
+                href='/admin/settings'
               >
                 Cancel
               </Button>

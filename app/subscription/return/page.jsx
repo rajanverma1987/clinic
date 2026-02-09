@@ -28,7 +28,8 @@ function SubscriptionReturnContent() {
 
     const method = searchParams.get('method');
     const sessionId = searchParams.get('session_id');
-    const subscriptionId = searchParams.get('subscription_id');
+    // PayPal redirects with token= or subscription_id= (subscription ID from PayPal)
+    const subscriptionId = searchParams.get('subscription_id') || searchParams.get('token');
 
     if (method === 'stripe' && sessionId) {
       hasActivated.current = true;
@@ -110,7 +111,9 @@ function SubscriptionReturnContent() {
                 />
               </svg>
             </div>
-            <h2 className='text-2xl font-bold text-neutral-900 mb-2'>{t('subscription.success')}</h2>
+            <h2 className='text-2xl font-bold text-neutral-900 mb-2'>
+              {t('subscription.success')}
+            </h2>
             <p className='text-neutral-600 mb-6'>{message}</p>
             <p className='text-sm text-neutral-500'>{t('subscription.redirecting')}</p>
           </div>
@@ -135,7 +138,7 @@ function SubscriptionReturnContent() {
             </div>
             <h2 className='text-2xl font-bold text-neutral-900 mb-2'>{t('subscription.error')}</h2>
             <p className='text-neutral-600 mb-6'>{message}</p>
-            <Button onClick={() => router.push('/subscription')}>{t('subscription.goToSubscription')}</Button>
+            <Button href='/subscription'>{t('subscription.goToSubscription')}</Button>
           </div>
         )}
       </Card>
@@ -151,7 +154,7 @@ export default function SubscriptionReturnPage() {
           <div className='flex items-center justify-center min-h-[60vh]'>
             <Card className='max-w-md w-full text-center'>
               <div className='py-12'>
-                <Loader type='page' text={t('common.loading')} />
+                <Loader type='page' text='Loading...' />
               </div>
             </Card>
           </div>

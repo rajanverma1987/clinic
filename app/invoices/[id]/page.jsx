@@ -3,7 +3,6 @@
 import { InvoicePrintPreview } from '@/components/invoices/InvoicePrintPreview';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
@@ -110,13 +109,12 @@ export default function InvoiceDetailPage() {
         unreadCount={0}
         actionButtons={
           <>
-            <BackButton />
             <Button onClick={() => setShowPrintPreview(true)}>Print Invoice</Button>
           </>
         }
       />
       <div style={{ padding: '0 10px' }}>
-        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+        <div className='content-grid-3 content-grid-gap-6'>
           <div className='lg:col-span-2 space-y-6'>
             {/* Invoice Information */}
             <Card>

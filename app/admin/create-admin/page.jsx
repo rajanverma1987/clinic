@@ -124,7 +124,7 @@ export default function CreateAdminPage() {
       title={t('admin.createAdmin')}
       subtitle={t('admin.allUsersDescription')}
       actionButton={
-        <Button variant='secondary' onClick={() => router.push('/admin')}>
+        <Button variant='secondary' href='/admin'>
           {t('common.backToDashboard')}
         </Button>
       }
@@ -235,7 +235,7 @@ export default function CreateAdminPage() {
                 <Button type='submit' variant='primary' disabled={isLoading}>
                   {isLoading ? t('common.creating') : 'Create Admin Account'}
                 </Button>
-                <Button type='button' variant='secondary' onClick={() => router.push('/admin')}>
+                <Button type='button' variant='secondary' href='/admin'>
                   Cancel
                 </Button>
               </div>

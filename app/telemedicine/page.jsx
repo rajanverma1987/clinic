@@ -116,7 +116,7 @@ export default function TelemedicinePage() {
         notifications={[]}
         unreadCount={0}
         actionButton={
-          <Button onClick={() => router.push('/appointments/new')} variant='primary' size='md'>
+          <Button href='/appointments/new' variant='primary' size='md'>
             {t('telemedicine.bookAppointment')}
           </Button>
         }
@@ -272,10 +272,8 @@ export default function TelemedicinePage() {
                 video calls.
               </p>
               <div className='flex gap-4 justify-center'>
-                <Button onClick={() => router.push('/appointments/new')}>
-                  {t('telemedicine.bookVideoConsultation')}
-                </Button>
-                <Button variant='secondary' size='md' onClick={() => router.push('/appointments')}>
+                <Button href='/appointments/new'>{t('telemedicine.bookVideoConsultation')}</Button>
+                <Button variant='secondary' size='md' href='/appointments'>
                   {t('telemedicine.viewAppointments')}
                 </Button>
               </div>

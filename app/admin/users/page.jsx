@@ -12,6 +12,7 @@ import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -22,6 +23,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [roleFilter, setRoleFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
   const [tenantFilter, setTenantFilter] = useState('');
@@ -97,8 +99,8 @@ export default function AdminUsersPage() {
   };
 
   const filteredUsers = users.filter((u) => {
-    if (!searchTerm) return true;
-    const search = searchTerm.toLowerCase();
+    if (!debouncedSearchTerm) return true;
+    const search = debouncedSearchTerm.toLowerCase();
     return (
       u.email?.toLowerCase().includes(search) ||
       u.firstName?.toLowerCase().includes(search) ||
@@ -194,10 +196,10 @@ export default function AdminUsersPage() {
       subtitle={t('admin.allUsersDescription')}
       actionButton={
         <div className='flex gap-2'>
-          <Button variant='secondary' onClick={() => router.push('/admin/activity-logs')}>
+          <Button variant='secondary' href='/admin/activity-logs'>
             {t('admin.activityLogs')}
           </Button>
-          <Button variant='primary' onClick={() => router.push('/admin')}>
+          <Button variant='primary' href='/admin'>
             {t('common.backToDashboard')}
           </Button>
         </div>

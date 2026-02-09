@@ -2,10 +2,30 @@
 
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
+import { memo, useMemo } from 'react';
 
-export function ChartCard({ title, data, colorScheme = 'primary', loading = false }) {
+const CHART_HEIGHT = 160;
+
+/** Resolve display date from item: supports period, date (reports), or key "YYYY-MM" (admin). */
+function getItemDate(item) {
+  if (item.period) return new Date(item.period);
+  if (item.date) return new Date(item.date);
+  if (item.key && /^\d{4}-\d{2}$/.test(String(item.key))) return new Date(String(item.key) + '-01');
+  return new Date(0);
+}
+
+const COLOR_CLASSES = {
+  primary:
+    'bg-gradient-to-t from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600',
+  secondary:
+    'bg-gradient-to-t from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600',
+  warning:
+    'bg-gradient-to-t from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600',
+};
+
+function ChartCardInner({ title, data, colorScheme = 'primary', loading = false }) {
   const { t } = useI18n();
-  // Show skeleton only while loading or before data has been fetched (null/undefined)
+
   if (loading || data === null || data === undefined) {
     return (
       <Card
@@ -22,30 +42,13 @@ export function ChartCard({ title, data, colorScheme = 'primary', loading = fals
     );
   }
 
-  // Use empty array if none, so we render chart with empty state instead of skeleton
-  const chartData = Array.isArray(data) ? data.slice(-14) : [];
+  const chartData = useMemo(() => (Array.isArray(data) ? data.slice(-14) : []), [data]);
   const hasData = chartData.length > 0;
-  const maxBarValue = Math.max(...chartData.map((d) => d.value || d.total || d.count || 0), 1);
-  const chartHeight = 160;
-
-  /** Resolve display date from item: supports period, date (reports), or key "YYYY-MM" (admin). */
-  const getItemDate = (item) => {
-    if (item.period) return new Date(item.period);
-    if (item.date) return new Date(item.date);
-    if (item.key && /^\d{4}-\d{2}$/.test(String(item.key)))
-      return new Date(String(item.key) + '-01');
-    return new Date(0);
-  };
-
-  const colorClasses = {
-    primary:
-      'bg-gradient-to-t from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600',
-    secondary:
-      'bg-gradient-to-t from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600',
-    warning:
-      'bg-gradient-to-t from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600',
-  };
-
+  const maxBarValue = useMemo(
+    () => Math.max(...chartData.map((d) => d.value || d.total || d.count || 0), 1),
+    [chartData],
+  );
+  const colorClasses = COLOR_CLASSES;
   return (
     <Card
       elevated={true}
@@ -103,7 +106,7 @@ export function ChartCard({ title, data, colorScheme = 'primary', loading = fals
                 {chartData.map((item, index) => {
                   const value = item.value || item.total || item.count || 0;
                   const percentage = (value / maxBarValue) * 100;
-                  const barHeight = (percentage / 100) * chartHeight;
+                  const barHeight = (percentage / 100) * CHART_HEIGHT;
 
                   return (
                     <div key={index} className='flex-1 flex flex-col items-center group relative'>
@@ -148,3 +151,12 @@ export function ChartCard({ title, data, colorScheme = 'primary', loading = fals
     </Card>
   );
 }
+
+export const ChartCard = memo(ChartCardInner, (prev, next) => {
+  return (
+    prev.data === next.data &&
+    prev.title === next.title &&
+    prev.colorScheme === next.colorScheme &&
+    prev.loading === next.loading
+  );
+});

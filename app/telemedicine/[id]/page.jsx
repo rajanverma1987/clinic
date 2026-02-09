@@ -156,12 +156,12 @@ function VideoConsultationRoomContent() {
           setHasCameraPermission(false);
           setHasMicrophonePermission(false);
           setConnectionError(
-            'Camera and microphone permissions are required. Please allow access and refresh the page.'
+            'Camera and microphone permissions are required. Please allow access and refresh the page.',
           );
         } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
           // No devices found
           setConnectionError(
-            'No camera or microphone detected. Please connect a device and refresh the page.'
+            'No camera or microphone detected. Please connect a device and refresh the page.',
           );
         } else {
           // Other error
@@ -184,7 +184,7 @@ function VideoConsultationRoomContent() {
         const sessionResponse = await apiClient.get(
           `/telemedicine/sessions/${sessionId}/public`,
           undefined,
-          true
+          true,
         );
         if (sessionResponse.success && sessionResponse.data) {
           const session = sessionResponse.data;
@@ -268,12 +268,12 @@ function VideoConsultationRoomContent() {
           const response = await apiClient.get(
             `/telemedicine/sessions/${sessionId}/waiting-room`,
             undefined,
-            true
+            true,
           );
           if (response.success && response.data) {
             const currentUserId = user?.userId || user?._id;
             const participant = response.data.participants?.find(
-              (p) => p.userId?.toString() === currentUserId?.toString()
+              (p) => p.userId?.toString() === currentUserId?.toString(),
             );
 
             if (participant && participant.status === 'admitted') {
@@ -316,7 +316,7 @@ function VideoConsultationRoomContent() {
               }
             }
             return msg; // Already decrypted or not encrypted
-          })
+          }),
         );
         // Only update if we actually decrypted something
         const hasEncrypted = decryptedMessages.some((msg) => msg.encrypted && !msg.decrypted);
@@ -337,7 +337,9 @@ function VideoConsultationRoomContent() {
     const socketUrl =
       typeof window !== 'undefined'
         ? process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
-        : 'http://localhost:5053';
+        : process.env.NEXT_PUBLIC_APP_URL ||
+          process.env.NEXT_PUBLIC_SOCKET_URL ||
+          'http://localhost:5053';
     logger.debug('[Chat] Connecting to Socket.IO server:', socketUrl);
 
     const socket = io(socketUrl, {
@@ -405,7 +407,7 @@ function VideoConsultationRoomContent() {
             const mTime = m.timestamp ? new Date(m.timestamp).getTime() : 0;
             const mMsg = m.message || '';
             return `${mTime}-${m.senderId || 'unknown'}-${mMsg.substring(0, 20)}`;
-          })
+          }),
         );
 
         if (existingIds.has(msgId)) {
@@ -534,7 +536,7 @@ function VideoConsultationRoomContent() {
       // On mobile, if we have RTCPeerConnection, we likely have WebRTC support
       // The getUserMedia check might fail due to permissions, but that's handled later
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
+        navigator.userAgent,
       );
 
       // Log for debugging
@@ -596,14 +598,14 @@ function VideoConsultationRoomContent() {
           // Block if both permissions are denied
           if (cameraPermission.state === 'denied' && microphonePermission.state === 'denied') {
             throw new Error(
-              'Please allow camera and microphone access in your browser settings:\n\n1. Click the lock/camera icon in your browser\'s address bar\n2. Set Camera and Microphone to "Allow"\n3. Refresh this page and try again'
+              'Please allow camera and microphone access in your browser settings:\n\n1. Click the lock/camera icon in your browser\'s address bar\n2. Set Camera and Microphone to "Allow"\n3. Refresh this page and try again',
             );
           }
         } catch (permError) {
           // Permission API might not be fully supported or query failed, continue anyway
           logger.warn(
             '[VideoCall] Permission check failed, will request on getUserMedia:',
-            permError
+            permError,
           );
         }
       }
@@ -615,7 +617,7 @@ function VideoConsultationRoomContent() {
         let sessionResponse = await apiClient.get(
           `/telemedicine/sessions/${sessionId}/public`,
           undefined,
-          true
+          true,
         );
         if (!sessionResponse.success || !sessionResponse.data) {
           if (user) {
@@ -652,7 +654,7 @@ function VideoConsultationRoomContent() {
           // Verify this ID matches either doctor or patient in session
           if (currentUserId !== sessionDoctorIdStr && currentUserId !== sessionPatientIdStr) {
             logger.warn(
-              '[VideoCall] User ID does not match session doctorId or patientId. Using session doctorId as fallback.'
+              '[VideoCall] User ID does not match session doctorId or patientId. Using session doctorId as fallback.',
             );
             // If authenticated user, assume they're the doctor
             currentUserId = sessionDoctorIdStr || `doctor-${sessionId}`;
@@ -740,14 +742,14 @@ function VideoConsultationRoomContent() {
         isInitiator = true;
         detectedRole = 'doctor';
         logger.debug(
-          "[VideoCall] ⚠️ User is authenticated but IDs don't match session - assuming DOCTOR (initiator)"
+          "[VideoCall] ⚠️ User is authenticated but IDs don't match session - assuming DOCTOR (initiator)",
         );
       } else {
         // Not authenticated and IDs don't match - assume patient (anonymous users are usually patients)
         isInitiator = false;
         detectedRole = 'patient';
         logger.warn(
-          '[VideoCall] ⚠️ Could not determine role from session data - defaulting to PATIENT (receiver)'
+          '[VideoCall] ⚠️ Could not determine role from session data - defaulting to PATIENT (receiver)',
         );
         logger.warn('[VideoCall] Session IDs:', {
           doctorId: sessionDoctorIdStr,
@@ -773,7 +775,7 @@ function VideoConsultationRoomContent() {
               role: 'patient',
             },
             {},
-            true
+            true,
           );
         } catch (error) {
           logger.warn('Failed to add to waiting room:', error);
@@ -808,7 +810,7 @@ function VideoConsultationRoomContent() {
         logger.error('[VideoCall] ❌ remoteUserId is invalid:', remoteUserId);
         setIsConnecting(false);
         setConnectionError(
-          'Unable to identify the other person. Please refresh the page and try again.'
+          'Unable to identify the other person. Please refresh the page and try again.',
         );
         return;
       }
@@ -977,7 +979,7 @@ function VideoConsultationRoomContent() {
             user.tenantId,
             'ACCESS',
             { action: 'join_call', role: detectedRole },
-            { timestamp: new Date().toISOString() }
+            { timestamp: new Date().toISOString() },
           );
         } catch (error) {
           logger.warn('Failed to log audit:', error);
@@ -1027,7 +1029,8 @@ function VideoConsultationRoomContent() {
   const handleEndCall = async () => {
     openConfirm({
       title: t('telemedicine.confirmEndConsultation') || 'End consultation?',
-      message: t('common.confirmationDescription') || 'Are you sure you want to end this consultation?',
+      message:
+        t('common.confirmationDescription') || 'Are you sure you want to end this consultation?',
       variant: 'danger',
       onConfirm: async () => {
         if (user) {
@@ -1039,58 +1042,58 @@ function VideoConsultationRoomContent() {
               user.tenantId,
               'ACCESS',
               { action: 'leave_call', duration: sessionDuration },
-              { timestamp: new Date().toISOString() }
+              { timestamp: new Date().toISOString() },
             );
           } catch (error) {
             logger.warn('Failed to log audit:', error);
           }
         }
 
-      // End the call
-      if (callManagerRef.current) {
-        await callManagerRef.current.endCall();
-        callManagerRef.current = null;
-      }
-
-      // Cleanup intervals
-      if (window.screenShareWatermarkInterval) {
-        clearInterval(window.screenShareWatermarkInterval);
-        window.screenShareWatermarkInterval = null;
-      }
-
-      if (window.qualityInterval) {
-        clearInterval(window.qualityInterval);
-        window.qualityInterval = null;
-      }
-
-      // Remove watermark overlay
-      const watermark = document.querySelector('.screen-share-watermark');
-      if (watermark) {
-        watermark.remove();
-      }
-
-      setIsConnected(false);
-      setIsConnecting(false);
-      setSessionDuration(0);
-      setIsScreenSharing(false);
-      setConnectionQuality('UNKNOWN');
-      setReconnectAttempts(0);
-
-      // Mark session as ended (only if user is authenticated)
-      if (user) {
-        try {
-          await apiClient.put(`/telemedicine/sessions/${sessionId}?action=end`, {});
-        } catch (error) {
-          logger.warn('Failed to mark session as ended:', error);
+        // End the call
+        if (callManagerRef.current) {
+          await callManagerRef.current.endCall();
+          callManagerRef.current = null;
         }
-        router.push(`/telemedicine/${sessionId}/summary`);
-      } else {
-        if (window.history.length > 1) {
-          window.history.back();
+
+        // Cleanup intervals
+        if (window.screenShareWatermarkInterval) {
+          clearInterval(window.screenShareWatermarkInterval);
+          window.screenShareWatermarkInterval = null;
+        }
+
+        if (window.qualityInterval) {
+          clearInterval(window.qualityInterval);
+          window.qualityInterval = null;
+        }
+
+        // Remove watermark overlay
+        const watermark = document.querySelector('.screen-share-watermark');
+        if (watermark) {
+          watermark.remove();
+        }
+
+        setIsConnected(false);
+        setIsConnecting(false);
+        setSessionDuration(0);
+        setIsScreenSharing(false);
+        setConnectionQuality('UNKNOWN');
+        setReconnectAttempts(0);
+
+        // Mark session as ended (only if user is authenticated)
+        if (user) {
+          try {
+            await apiClient.put(`/telemedicine/sessions/${sessionId}?action=end`, {});
+          } catch (error) {
+            logger.warn('Failed to mark session as ended:', error);
+          }
+          router.push(`/telemedicine/${sessionId}/summary`);
         } else {
-          window.close();
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            window.close();
+          }
         }
-      }
       },
     });
   };
@@ -1110,7 +1113,7 @@ function VideoConsultationRoomContent() {
           user.tenantId,
           'UPDATE',
           { muted: newMutedState },
-          { action: 'toggle_mute' }
+          { action: 'toggle_mute' },
         ).catch((err) => logger.error('Error', err));
       }
     }
@@ -1131,7 +1134,7 @@ function VideoConsultationRoomContent() {
           user.tenantId,
           'UPDATE',
           { videoEnabled: newVideoState },
-          { action: 'toggle_video' }
+          { action: 'toggle_video' },
         ).catch((err) => logger.error('Error', err));
       }
     }
@@ -1155,7 +1158,7 @@ function VideoConsultationRoomContent() {
             user.tenantId,
             'UPDATE',
             { screenShare: false },
-            { action: 'stop_screen_share' }
+            { action: 'stop_screen_share' },
           ).catch((err) => logger.error('Error', err));
         }
       } else {
@@ -1210,7 +1213,7 @@ function VideoConsultationRoomContent() {
             user.tenantId,
             'UPDATE',
             { screenShare: true },
-            { action: 'start_screen_share' }
+            { action: 'start_screen_share' },
           ).catch((err) => logger.error('Error', err));
         }
       }
@@ -1259,7 +1262,7 @@ function VideoConsultationRoomContent() {
           chatMessage.senderId || 'unknown'
         }`;
         const existingIds = new Set(
-          prev.map((m) => `${m.timestamp?.toString() || Date.now()}-${m.senderId || 'unknown'}`)
+          prev.map((m) => `${m.timestamp?.toString() || Date.now()}-${m.senderId || 'unknown'}`),
         );
 
         if (existingIds.has(msgId)) {
@@ -1305,7 +1308,7 @@ function VideoConsultationRoomContent() {
             encrypted: chatMessage.encrypted,
           },
           {},
-          true
+          true,
         );
         logger.debug('[Chat] ✅ Message saved to backend');
       } catch (error) {
@@ -1322,7 +1325,7 @@ function VideoConsultationRoomContent() {
           user.tenantId,
           'CREATE',
           { messageSent: true, encrypted: chatMessage.encrypted },
-          { action: 'send_chat_message' }
+          { action: 'send_chat_message' },
         ).catch((err) => logger.error('Error', err));
       }
     } catch (error) {
@@ -1336,12 +1339,12 @@ function VideoConsultationRoomContent() {
         `/telemedicine/sessions/${sessionId}/admit`,
         { participantId },
         {},
-        true
+        true,
       );
 
       if (response.success) {
         setWaitingRoomParticipants((prev) =>
-          prev.map((p) => (p.userId === participantId ? { ...p, status: 'admitted' } : p))
+          prev.map((p) => (p.userId === participantId ? { ...p, status: 'admitted' } : p)),
         );
       }
     } catch (error) {
@@ -1357,7 +1360,7 @@ function VideoConsultationRoomContent() {
         user.tenantId,
         'UPDATE',
         { participantAdmitted: participantId },
-        { action: 'admit_participant' }
+        { action: 'admit_participant' },
       ).catch((err) => logger.error('Error', err));
     }
   };
@@ -1368,7 +1371,7 @@ function VideoConsultationRoomContent() {
         `/telemedicine/sessions/${sessionId}/reject`,
         { participantId },
         {},
-        true
+        true,
       );
 
       if (response.success) {
@@ -1387,7 +1390,7 @@ function VideoConsultationRoomContent() {
         user.tenantId,
         'UPDATE',
         { participantRejected: participantId },
-        { action: 'reject_participant' }
+        { action: 'reject_participant' },
       ).catch((err) => logger.error('Error', err));
     }
   };
@@ -1414,7 +1417,7 @@ function VideoConsultationRoomContent() {
         user.tenantId,
         'UPDATE',
         { recordingConsent: consented },
-        { action: 'recording_consent' }
+        { action: 'recording_consent' },
       ).catch((err) => logger.error('Error', err));
     }
   };
@@ -1454,7 +1457,7 @@ function VideoConsultationRoomContent() {
           uploadedAt: fileData.uploadedAt,
         },
         {},
-        true
+        true,
       );
 
       if (response.success) {
@@ -1473,7 +1476,7 @@ function VideoConsultationRoomContent() {
               fileSize: fileData.fileSize,
               encrypted: !!encryptionKey,
             },
-            { action: 'upload_file' }
+            { action: 'upload_file' },
           ).catch((err) => logger.error('Error', err));
         }
       }
@@ -1489,7 +1492,7 @@ function VideoConsultationRoomContent() {
       const response = await apiClient.get(
         `/telemedicine/sessions/${sessionId}/files/${file._id || file.id}`,
         undefined,
-        true
+        true,
       );
 
       if (response.success) {
@@ -1501,7 +1504,7 @@ function VideoConsultationRoomContent() {
             decryptedData = await decryptFile(
               response.data.encryptedData,
               response.data.iv,
-              encryptionKey
+              encryptionKey,
             );
             logger.debug('[E2EE] ✅ File decrypted successfully');
           } catch (error) {
@@ -1542,7 +1545,7 @@ function VideoConsultationRoomContent() {
             user.tenantId,
             'ACCESS',
             { fileName: file.fileName, encrypted: file.encrypted },
-            { action: 'download_file' }
+            { action: 'download_file' },
           ).catch((err) => logger.error('Error', err));
         }
       }
@@ -1557,7 +1560,10 @@ function VideoConsultationRoomContent() {
 
     try {
       await navigator.clipboard.writeText(patientLink);
-      showSuccess(t('telemedicine.linkCopied') || 'Video call link copied! You can now share it with the patient.');
+      showSuccess(
+        t('telemedicine.linkCopied') ||
+          'Video call link copied! You can now share it with the patient.',
+      );
     } catch (error) {
       setShowShareModal(true);
     }
@@ -1565,7 +1571,10 @@ function VideoConsultationRoomContent() {
 
   const handleSendEmail = async () => {
     if (!sessionData?.patientId?.email) {
-      showError(t('telemedicine.noPatientEmail') || 'Patient email address is not available. Please copy the link and share it manually.');
+      showError(
+        t('telemedicine.noPatientEmail') ||
+          'Patient email address is not available. Please copy the link and share it manually.',
+      );
       return;
     }
 
@@ -1579,11 +1588,13 @@ function VideoConsultationRoomContent() {
           videoLink: patientLink,
         },
         {},
-        true
+        true,
       );
 
       if (response.success) {
-        showSuccess(t('telemedicine.linkSentByEmail') || 'Video call link sent to patient via email!');
+        showSuccess(
+          t('telemedicine.linkSentByEmail') || 'Video call link sent to patient via email!',
+        );
         setShowShareModal(false);
       } else {
         const errorMsg = response.error?.message || 'Failed to send email';
@@ -1591,7 +1602,10 @@ function VideoConsultationRoomContent() {
       }
     } catch (error) {
       logger.error('Failed to send email:', error);
-      showError(t('telemedicine.unableToSendEmail') || 'Unable to send email. Please copy the link and share it manually.');
+      showError(
+        t('telemedicine.unableToSendEmail') ||
+          'Unable to send email. Please copy the link and share it manually.',
+      );
     }
   };
 
@@ -1685,8 +1699,12 @@ function VideoConsultationRoomContent() {
                     <p className='text-neutral-900 text-lg font-semibold mb-2 mt-4'>
                       {t('telemedicine.connecting')}
                     </p>
-                    <p className='text-neutral-600 text-sm'>{t('telemedicine.establishingConnection')}</p>
-                    <p className='text-neutral-500 text-xs mt-2'>{t('telemedicine.mayTakeFewSeconds')}</p>
+                    <p className='text-neutral-600 text-sm'>
+                      {t('telemedicine.establishingConnection')}
+                    </p>
+                    <p className='text-neutral-500 text-xs mt-2'>
+                      {t('telemedicine.mayTakeFewSeconds')}
+                    </p>
                     {connectionError && (
                       <div className='mt-4 p-3 bg-status-error/20 border border-status-error/50 rounded text-status-error/80 text-xs'>
                         {connectionError}
@@ -1896,10 +1914,10 @@ function VideoConsultationRoomContent() {
             <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm z-50 flex items-center justify-center'>
               <div className='bg-white border border-neutral-300 rounded-lg p-8 max-w-md w-full mx-4 shadow-xl text-center'>
                 <Loader type='section' variant='primary' text={t('telemedicine.pleaseWait')} />
-                <h3 className='text-neutral-900 text-xl font-semibold mb-2'>{t('telemedicine.waitingRoom')}</h3>
-                <p className='text-neutral-600 mb-4'>
-                  {t('telemedicine.waitingRoomDescription')}
-                </p>
+                <h3 className='text-neutral-900 text-xl font-semibold mb-2'>
+                  {t('telemedicine.waitingRoom')}
+                </h3>
+                <p className='text-neutral-600 mb-4'>{t('telemedicine.waitingRoomDescription')}</p>
                 <p className='text-neutral-500 text-sm'>{t('telemedicine.pleaseWait')}</p>
               </div>
             </div>
@@ -1949,10 +1967,14 @@ function VideoConsultationRoomContent() {
                         window.open(response.data.paymentUrl, '_blank');
                         setShowPaymentModal(false);
                       } else {
-                        showError(t('telemedicine.failedToInitiatePayment') || 'Failed to initiate payment');
+                        showError(
+                          t('telemedicine.failedToInitiatePayment') || 'Failed to initiate payment',
+                        );
                       }
                     } catch (err) {
-                      showError(t('telemedicine.failedToCollectPayment') || 'Failed to collect payment');
+                      showError(
+                        t('telemedicine.failedToCollectPayment') || 'Failed to collect payment',
+                      );
                     }
                   }}
                 >

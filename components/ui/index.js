@@ -1,4 +1,5 @@
 // UI Components Export
+export { ActionsMenu } from './ActionsMenu.jsx';
 export { Breadcrumb } from './Breadcrumb.jsx';
 export { Button } from './Button.jsx';
 export { Card } from './Card.jsx';
@@ -15,6 +16,7 @@ export { PhoneInput } from './PhoneInput.jsx';
 export { SearchBar } from './SearchBar.jsx';
 export { Select } from './Select.jsx';
 export { Table } from './Table.jsx';
+export { TabPanels } from './TabPanels.jsx';
 export { Tabs } from './Tabs.jsx';
 export { Tag } from './Tag.jsx';
 export { Textarea } from './Textarea.jsx';

@@ -15,6 +15,7 @@ import { getRolePermissions } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -45,6 +46,7 @@ export default function StaffPage() {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [roleFilter, setRoleFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -98,8 +100,8 @@ export default function StaffPage() {
   }, [authLoading, user, router, fetchStaff]);
 
   const filteredStaff = staff.filter((s) => {
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const q = debouncedSearchTerm.toLowerCase();
       if (
         !(s.firstName || '').toLowerCase().includes(q) &&
         !(s.lastName || '').toLowerCase().includes(q) &&

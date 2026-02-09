@@ -27,11 +27,11 @@ function getTestAccountPremiumPayload() {
  */
 async function getHandler(req, user) {
   try {
-    // Super admin has access to all features
+    // Super admin = company account: full access, no plan gating
     if (user.role === 'super_admin') {
       return NextResponse.json(
         successResponse({
-          features: ['*'], // All features
+          features: ['*'],
           limits: {},
           subscription: null,
         })

@@ -1,8 +1,8 @@
 'use client';
 
+import { CalendarIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -349,25 +349,25 @@ function NewAppointmentPageContent() {
         subtitle={t('appointments.appointmentList')}
         notifications={[]}
         unreadCount={0}
-        actionButton={<BackButton />}
       />
-      <div style={{ padding: '0 10px' }}>
-        <Card>
-          <form onSubmit={handleSubmit} className='space-y-6' noValidate>
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-              <div className='md:col-span-2'>
+      <div className='w-full min-w-0 px-4 sm:px-6'>
+        <Card className='p-5 sm:p-6 shadow-sm'>
+          <form onSubmit={handleSubmit} className='space-y-4' noValidate>
+            <div className='border-b border-neutral-200 dark:border-neutral-600 pb-4 mb-4'>
+              <h2 className='text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3'>
+                {t('appointments.appointmentDetails') || 'Appointment details'}
+              </h2>
+              <div className='space-y-4'>
                 <PatientSelector
                   patients={patients}
                   selectedPatientId={formData.patientId}
                   onSelect={(patientId) => {
-                    // Find the selected patient to get their email
                     const selectedPatient = patients.find(
                       (p) => p._id === patientId || p.id === patientId,
                     );
                     setFormData((prev) => ({
                       ...prev,
                       patientId,
-                      // Auto-populate email if Video Consultation is enabled
                       patientEmail:
                         formData.isTelemedicine && selectedPatient?.email
                           ? selectedPatient.email
@@ -379,217 +379,157 @@ function NewAppointmentPageContent() {
                   required
                   placeholder={t('appointments.searchPlaceholder')}
                 />
-              </div>
-
-              <div>
-                <Select
-                  label={t('appointments.doctor')}
-                  value={formData.doctorId}
-                  onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
-                  required
-                  placeholder={`${t('common.select')} ${t('appointments.doctor').toLowerCase()}`}
-                  options={[
-                    {
-                      value: '',
-                      label: `${t('common.select')} ${t('appointments.doctor').toLowerCase()}`,
-                      disabled: true,
-                    },
-                    ...doctors.map((doctor) => ({
-                      value: doctor.id, // Use 'id' field from API
-                      label: `Dr. ${doctor.firstName} ${doctor.lastName}`,
-                    })),
-                  ]}
-                />
-                {doctors.length === 0 && (
-                  <p className='text-sm text-neutral-500 mt-1'>
-                    {t('appointments.noDoctorsAvailableAddInSettings')}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <DatePicker
-                  label={t('appointments.selectDate') + ' *'}
-                  required
-                  value={formData.appointmentDate}
-                  onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor='startTime'
-                  className='block text-sm font-medium text-neutral-700 mb-2'
-                >
-                  {t('appointments.time')} *
-                </label>
-                <Input
-                  id='startTime'
-                  type='time'
-                  required
-                  value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                />
-              </div>
-
-              <Select
-                label={`${t('appointments.duration')} (${t('appointments.minutes')})`}
-                value={formData.duration}
-                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                required
-                options={[
-                  { value: '15', label: `15 ${t('appointments.minutes')}` },
-                  { value: '30', label: `30 ${t('appointments.minutes')}` },
-                  { value: '45', label: `45 ${t('appointments.minutes')}` },
-                  { value: '60', label: `60 ${t('appointments.minutes')}` },
-                  { value: '90', label: `90 ${t('appointments.minutes')}` },
-                  { value: '120', label: `120 ${t('appointments.minutes')}` },
-                ]}
-              />
-
-              <Select
-                label={t('appointments.appointmentType')}
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                required
-                options={[
-                  { value: 'consultation', label: 'Consultation' },
-                  { value: 'follow_up', label: 'Follow-up' },
-                  { value: 'checkup', label: 'Checkup' },
-                  { value: 'emergency', label: 'Emergency' },
-                  { value: 'procedure', label: 'Procedure' },
-                  { value: 'lab_test', label: 'Lab Test' },
-                ]}
-              />
-            </div>
-
-            {/* Recurring Appointment Option */}
-            <div className='md:col-span-2'>
-              <Card className='border-2 border-primary-100 bg-primary-50/30'>
-                <div className='flex items-start gap-4'>
-                  <label className='flex items-center cursor-pointer flex-1 gap-3'>
-                    <Checkbox
-                      checked={formData.isRecurring}
-                      onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
-                      size='md'
+                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'>
+                  <div className='sm:col-span-2 lg:col-span-2'>
+                    <Select
+                      label={t('appointments.doctor')}
+                      value={formData.doctorId}
+                      onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
+                      required
+                      placeholder={t('common.select')}
+                      options={[
+                        { value: '', label: t('common.select'), disabled: true },
+                        ...doctors.map((d) => ({
+                          value: d.id,
+                          label: `Dr. ${d.firstName} ${d.lastName}`,
+                        })),
+                      ]}
                     />
-                    <div className='flex-1'>
-                      <div className='flex items-center gap-2'>
-                        <svg
-                          className='icon icon-sm text-primary-600'
-                          fill='none'
-                          stroke='currentColor'
-                          viewBox='0 0 24 24'
-                        >
-                          <path
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
-                            strokeWidth={2}
-                            d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                          />
-                        </svg>
-                        <span className='text-sm font-semibold text-neutral-900'>
-                          Recurring Appointment
-                        </span>
-                      </div>
-                      <p className='text-xs text-neutral-600 mt-1'>
-                        Schedule multiple appointments automatically (useful for follow-ups)
+                    {doctors.length === 0 && (
+                      <p className='text-xs text-neutral-500 mt-1'>
+                        {t('appointments.noDoctorsAvailableAddInSettings')}
                       </p>
-                    </div>
-                  </label>
-                </div>
-
-                {formData.isRecurring && (
-                  <div className='mt-4 pt-4 border-t border-primary-200 space-y-4'>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                      <div>
-                        <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                          Repeat Frequency
-                        </label>
-                        <Select
-                          value={formData.recurringFrequency}
-                          onChange={(e) =>
-                            setFormData({ ...formData, recurringFrequency: e.target.value })
-                          }
-                          options={[
-                            { value: 'daily', label: 'Daily' },
-                            { value: 'weekly', label: 'Weekly' },
-                            { value: 'biweekly', label: 'Bi-weekly (Every 2 weeks)' },
-                            { value: 'monthly', label: 'Monthly' },
-                          ]}
-                        />
-                      </div>
-                      <div>
-                        <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                          End Date (Optional)
-                        </label>
-                        <DatePicker
-                          value={formData.recurringEndDate}
-                          onChange={(e) =>
-                            setFormData({ ...formData, recurringEndDate: e.target.value })
-                          }
-                          min={formData.appointmentDate || new Date().toISOString().split('T')[0]}
-                        />
-                        <p className='text-xs text-neutral-500 mt-1'>
-                          Leave empty to use number of occurrences
-                        </p>
-                      </div>
-                    </div>
-                    {!formData.recurringEndDate && (
-                      <div>
-                        <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                          Number of Appointments
-                        </label>
-                        <Input
-                          type='number'
-                          min='2'
-                          max='52'
-                          value={formData.recurringOccurrences}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              recurringOccurrences: parseInt(e.target.value) || 4,
-                            })
-                          }
-                          placeholder={t('appointments.durationPlaceholder')}
-                        />
-                        <p className='text-xs text-neutral-500 mt-1'>
-                          Total number of appointments to create (2-52)
-                        </p>
-                      </div>
                     )}
-                    <div className='bg-primary-100 border border-primary-200 rounded-lg p-3'>
-                      <p className='text-xs text-primary-700'>
-                        <strong>{t('common.note') || 'Note'}:</strong>{' '}
-                        {t('appointments.noteRecurring', {
-                          count: formData.recurringOccurrences || 4,
-                        })}{' '}
-                        {t('appointments.recurringWillBeCreated')}{' '}
-                        {formData.recurringFrequency === 'daily'
-                          ? t('appointments.recurringDaily')
-                          : formData.recurringFrequency === 'weekly'
-                            ? t('appointments.recurringWeekly')
-                            : formData.recurringFrequency === 'biweekly'
-                              ? t('appointments.recurringBiweekly')
-                              : t('appointments.recurringMonthly')}{' '}
-                        {t('appointments.recurringStartingFrom')} {formData.appointmentDate || t('appointments.recurringSelectedDate')}
-                        {formData.recurringEndDate
-                          ? ` ${t('appointments.recurringUntil')} ${formData.recurringEndDate}`
-                          : ` (${formData.recurringOccurrences || 4} ${t('appointments.recurringTotal')})`}
-                        .
-                      </p>
-                    </div>
                   </div>
-                )}
-              </Card>
+                  <div>
+                    <DatePicker
+                      label={t('appointments.selectDate')}
+                      required
+                      value={formData.appointmentDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, appointmentDate: e.target.value })
+                      }
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor='startTime'
+                      className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'
+                    >
+                      {t('appointments.time')} *
+                    </label>
+                    <Input
+                      id='startTime'
+                      type='time'
+                      required
+                      value={formData.startTime}
+                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Select
+                      label={t('appointments.duration')}
+                      value={formData.duration}
+                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      required
+                      options={[
+                        { value: '15', label: '15 min' },
+                        { value: '30', label: '30 min' },
+                        { value: '45', label: '45 min' },
+                        { value: '60', label: '60 min' },
+                        { value: '90', label: '90 min' },
+                        { value: '120', label: '120 min' },
+                      ]}
+                    />
+                  </div>
+                  <div>
+                    <Select
+                      label={t('appointments.appointmentType')}
+                      value={formData.type}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                      required
+                      options={[
+                        { value: 'consultation', label: 'Consultation' },
+                        { value: 'follow_up', label: 'Follow-up' },
+                        { value: 'checkup', label: 'Checkup' },
+                        { value: 'emergency', label: 'Emergency' },
+                        { value: 'procedure', label: 'Procedure' },
+                        { value: 'lab_test', label: 'Lab Test' },
+                      ]}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Consultation Type - Video or In-Person */}
-            <div className='md:col-span-2'>
-              <label className='block text-sm font-medium text-neutral-700 mb-3'>
-                Consultation Method *
-              </label>
+            {/* Recurring */}
+            <div className='border-b border-neutral-200 dark:border-neutral-600 pb-4 mb-4'>
+              <div className='flex flex-wrap items-center gap-3'>
+                <label className='flex items-center gap-2 cursor-pointer'>
+                  <Checkbox
+                    checked={formData.isRecurring}
+                    onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                    size='md'
+                  />
+                  <span className='text-sm font-medium text-neutral-800 dark:text-neutral-200'>
+                    {t('appointments.recurring') || 'Recurring'}
+                  </span>
+                </label>
+                {formData.isRecurring && (
+                  <>
+                    <Select
+                      value={formData.recurringFrequency}
+                      onChange={(e) =>
+                        setFormData({ ...formData, recurringFrequency: e.target.value })
+                      }
+                      options={[
+                        { value: 'daily', label: 'Daily' },
+                        { value: 'weekly', label: 'Weekly' },
+                        { value: 'biweekly', label: 'Bi-weekly' },
+                        { value: 'monthly', label: 'Monthly' },
+                      ]}
+                      className='w-36'
+                    />
+                    <DatePicker
+                      value={formData.recurringEndDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, recurringEndDate: e.target.value })
+                      }
+                      min={formData.appointmentDate || new Date().toISOString().split('T')[0]}
+                      placeholder={t('appointments.endDateOptional') || 'End date (optional)'}
+                    />
+                    {!formData.recurringEndDate && (
+                      <Input
+                        type='number'
+                        min={2}
+                        max={52}
+                        value={formData.recurringOccurrences}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            recurringOccurrences: parseInt(e.target.value) || 4,
+                          })
+                        }
+                        className='w-20'
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+              {formData.isRecurring && (
+                <p className='text-xs text-neutral-500 mt-2'>
+                  {t('appointments.noteRecurring', { count: formData.recurringOccurrences || 4 })}{' '}
+                  {formData.appointmentDate || t('appointments.recurringSelectedDate')}.
+                </p>
+              )}
+            </div>
+
+            {/* Consultation method */}
+            <div className='border-b border-neutral-200 dark:border-neutral-600 pb-4 mb-4'>
+              <h2 className='text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3'>
+                {t('appointments.consultationMethod') || 'Consultation method'}
+              </h2>
 
               {/* If Telemedicine not available, show only In-Person (disabled) */}
               {!hasTelemedicine ? (
@@ -612,8 +552,12 @@ function NewAppointmentPageContent() {
                         </svg>
                       </div>
                       <div className='text-left flex-1'>
-                        <div className='font-semibold text-neutral-900'>{t('appointments.inPersonVisit')}</div>
-                        <div className='text-sm text-neutral-600'>{t('appointments.inPersonVisitDesc')}</div>
+                        <div className='font-semibold text-neutral-900'>
+                          {t('appointments.inPersonVisit')}
+                        </div>
+                        <div className='text-sm text-neutral-600'>
+                          {t('appointments.inPersonVisitDesc')}
+                        </div>
                       </div>
                       <div className='flex items-center gap-2 px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-full'>
                         ✓ {t('common.selected')}
@@ -649,7 +593,7 @@ function NewAppointmentPageContent() {
                         </p>
                         <button
                           type='button'
-                          onClick={() => router.push('/subscription')}
+                          href='/subscription'
                           className='inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg'
                         >
                           <svg
@@ -673,7 +617,7 @@ function NewAppointmentPageContent() {
                 </div>
               ) : (
                 /* Show both options if Telemedicine is available */
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                   <button
                     type='button'
                     onClick={() =>
@@ -712,8 +656,12 @@ function NewAppointmentPageContent() {
                         </svg>
                       </div>
                       <div className='text-left'>
-                        <div className='font-semibold text-neutral-900'>{t('appointments.inPersonVisit')}</div>
-                        <div className='text-sm text-neutral-600'>{t('appointments.inPersonVisitDesc')}</div>
+                        <div className='font-semibold text-neutral-900'>
+                          {t('appointments.inPersonVisit')}
+                        </div>
+                        <div className='text-sm text-neutral-600'>
+                          {t('appointments.inPersonVisitDesc')}
+                        </div>
                       </div>
                     </div>
                   </button>
@@ -761,8 +709,12 @@ function NewAppointmentPageContent() {
                         </svg>
                       </div>
                       <div className='text-left'>
-                        <div className='font-semibold text-neutral-900'>{t('appointments.videoConsultation')}</div>
-                        <div className='text-sm text-neutral-600'>{t('appointments.videoConsultationDesc')}</div>
+                        <div className='font-semibold text-neutral-900'>
+                          {t('appointments.videoConsultation')}
+                        </div>
+                        <div className='text-sm text-neutral-600'>
+                          {t('appointments.videoConsultationDesc')}
+                        </div>
                       </div>
                     </div>
                   </button>
@@ -770,104 +722,87 @@ function NewAppointmentPageContent() {
               )}
             </div>
 
-            {/* Telemedicine Email & Consent - HIPAA/GDPR Compliance */}
+            {/* Video details */}
             {formData.isTelemedicine && (
-              <div className='md:col-span-2 space-y-4'>
-                {/* Email Address for Video Link */}
-                <div>
+              <div className='border-b border-neutral-200 dark:border-neutral-600 pb-4 mb-4'>
+                <h2 className='text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3'>
+                  {t('appointments.videoDetails') || 'Video details'}
+                </h2>
+                <div className='space-y-3'>
                   <Input
-                    label='Patient Email Address *'
+                    label={t('appointments.patientEmailForVideo') || 'Patient email'}
                     type='email'
                     value={formData.patientEmail}
                     onChange={(e) => setFormData({ ...formData, patientEmail: e.target.value })}
                     required
                     placeholder={t('appointments.patientEmailPlaceholder')}
                   />
-                  <p className='text-sm text-neutral-600 mt-1'>
-                    📧 An email with the secure video consultation link will be sent to this address
-                  </p>
-                </div>
-
-                {/* Compliance Notice */}
-                <div className='bg-primary-100 border-l-4 border-primary-400 p-4 rounded'>
-                  <div className='flex items-start'>
-                    <div className='flex-shrink-0'>
-                      <svg
-                        className='h-5 w-5 text-primary-400'
-                        viewBox='0 0 20 20'
-                        fill='currentColor'
-                      >
-                        <path
-                          fillRule='evenodd'
-                          d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z'
-                          clipRule='evenodd'
-                        />
-                      </svg>
-                    </div>
-                    <div className='ml-3 flex-1'>
-                      <h4 className='text-sm font-semibold text-primary-900 mb-2'>
-                        Video Consultation - Privacy & Compliance
-                      </h4>
-                      <ul className='text-sm text-primary-700 space-y-1 mb-3'>
-                        <li>• Video calls are encrypted end-to-end</li>
-                        <li>• Sessions are HIPAA and GDPR compliant</li>
-                        <li>• Data is stored securely on our servers</li>
-                        <li>• Patient consent is required and recorded</li>
-                        <li>• All sessions are logged for compliance</li>
-                        <li>• Automated email will be sent with session details</li>
-                      </ul>
-
-                      <label className='flex items-center gap-3'>
-                        <Checkbox
-                          checked={formData.telemedicineConsent}
-                          onChange={(e) =>
-                            setFormData({ ...formData, telemedicineConsent: e.target.checked })
-                          }
-                          size='sm'
-                          required={formData.isTelemedicine}
-                        />
-                        <span className='text-sm font-medium text-primary-900 cursor-pointer'>
-                          Patient consents to video consultation and understands their rights under
-                          HIPAA/GDPR *
-                        </span>
-                      </label>
-                    </div>
+                  <div className='rounded-lg border border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-900/10 p-3'>
+                    <label className='flex items-start gap-3 cursor-pointer'>
+                      <Checkbox
+                        checked={formData.telemedicineConsent}
+                        onChange={(e) =>
+                          setFormData({ ...formData, telemedicineConsent: e.target.checked })
+                        }
+                        size='sm'
+                        required={formData.isTelemedicine}
+                        className='mt-0.5'
+                      />
+                      <span className='text-sm text-neutral-700 dark:text-neutral-300'>
+                        {t('appointments.videoConsentNotice') ||
+                          'Patient consents to video consultation and understands HIPAA/GDPR rights.'}{' '}
+                        *
+                      </span>
+                    </label>
                   </div>
                 </div>
               </div>
             )}
 
-            <div>
-              <label htmlFor='reason' className='block text-sm font-medium text-neutral-700 mb-2'>
-                {t('appointments.reason')}
-              </label>
-              <Input
-                id='reason'
-                value={formData.reason}
-                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                placeholder={t('appointments.reasonPlaceholder')}
-              />
+            {/* Optional details */}
+            <div className='border-b border-neutral-200 dark:border-neutral-600 pb-4 mb-4 last:border-0'>
+              <h2 className='text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3'>
+                {t('appointments.optionalDetails') || 'Optional details'}
+              </h2>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                <Input
+                  label={t('appointments.reason')}
+                  id='reason'
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  placeholder={t('appointments.reasonPlaceholder')}
+                />
+                <div>
+                  <Textarea
+                    label={t('appointments.notes')}
+                    rows={2}
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder={t('appointments.notesPlaceholder')}
+                  />
+                </div>
+              </div>
             </div>
 
-            <div>
-              <Textarea
-                label={t('appointments.notes')}
-                rows={4}
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder={t('appointments.notesPlaceholder')}
-              />
-            </div>
-
-            <div className='flex gap-4'>
-              <Button type='submit' isLoading={submitting} disabled={submitting}>
+            <div className='flex flex-wrap gap-3 pt-2'>
+              <Button
+                type='submit'
+                variant='primary'
+                size='lg'
+                isLoading={submitting}
+                disabled={submitting}
+                className='rounded-xl px-6'
+              >
+                <CalendarIcon className='icon icon-sm' ariaHidden />
                 {t('appointments.bookAppointment')}
               </Button>
               <Button
                 type='button'
-                variant='secondary'
-                onClick={() => router.back()}
+                variant='primary'
+                size='lg'
                 disabled={submitting}
+                className='rounded-xl px-6'
+                onClick={() => router.back()}
               >
                 {t('common.cancel')}
               </Button>

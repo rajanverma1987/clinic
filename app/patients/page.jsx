@@ -14,6 +14,8 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
@@ -22,7 +24,6 @@ import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
 import { logger } from '@/lib/utils/logger';
 import { addRecentSearch, getRecentSearches } from '@/lib/utils/recent-search-cache';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
@@ -33,6 +34,7 @@ export default function PatientsPage() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { locale } = useSettings();
+  const { prefetchPatient } = usePrefetchDetail();
   const tenantId = user?.tenantId ?? null;
 
   const [patients, setPatients] = useState([]);
@@ -92,7 +94,12 @@ export default function PatientsPage() {
         fetchPatients(false);
         return;
       }
-      if (!debouncedSearchTerm && currentPage === 1 && statusFilter === 'all' && sortBy === 'createdAt') {
+      if (
+        !debouncedSearchTerm &&
+        currentPage === 1 &&
+        statusFilter === 'all' &&
+        sortBy === 'createdAt'
+      ) {
         fetchPatients(false);
       } else {
         fetchPatients(!!debouncedSearchTerm);
@@ -313,7 +320,7 @@ export default function PatientsPage() {
               variant='secondary'
               size='md'
               className='whitespace-nowrap'
-              onClick={() => router.push('/appointments/new')}
+              href='/appointments/new'
             >
               <CalendarIcon className='icon icon-sm shrink-0' ariaHidden />
               {t('appointments.bookAppointment')}
@@ -341,9 +348,9 @@ export default function PatientsPage() {
         }
       />
       <div style={{ padding: '0 10px' }}>
-        <Card className='mb-6'>
-          <div className='flex flex-col sm:flex-row gap-3 flex-wrap'>
-            <div className='flex-1 min-w-[200px] relative'>
+        <Card className='mb-6 p-4'>
+          <div className='filter-row filter-row-items-end flex-col sm:flex-row gap-3'>
+            <div className='flex-1 min-w-[200px] relative w-full sm:max-w-md'>
               <SearchBar
                 placeholder={t('patients.searchPlaceholder')}
                 value={searchTerm}
@@ -391,7 +398,7 @@ export default function PatientsPage() {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className='px-3 py-2 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-900 text-body-sm focus:outline-none focus:border-primary-500'
+              className='filter-select'
               aria-label={t('common.filter')}
             >
               <option value='all'>{t('patients.filterAll')}</option>
@@ -408,7 +415,7 @@ export default function PatientsPage() {
                 setSortOrder(o || 'desc');
                 setCurrentPage(1);
               }}
-              className='px-3 py-2 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-900 text-body-sm focus:outline-none focus:border-primary-500'
+              className='filter-select'
               aria-label={t('patients.sortBy')}
             >
               <option value='createdAt-desc'>{t('patients.sortDateAdded')}</option>
@@ -472,6 +479,7 @@ export default function PatientsPage() {
               data={patients}
               columns={columns}
               onRowClick={handleRowClick}
+              onRowMouseEnter={(row) => row?._id && prefetchPatient(row._id)}
               emptyMessage={t('patients.noPatientsFound')}
             />
           ) : (

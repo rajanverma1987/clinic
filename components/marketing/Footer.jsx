@@ -51,7 +51,7 @@ function FooterComponent() {
           }}
         >
           <div className='max-w-7xl mx-auto'>
-            <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'>
+            <div className='content-grid-4 content-grid-gap-6'>
               {/* Product */}
               <div dir='ltr'>
                 <h4
@@ -77,7 +77,7 @@ function FooterComponent() {
                   {[
                     { href: '/#features', label: t('footer.features') || 'Features' },
                     { href: '/pricing', label: t('navigation.pricing') || 'Pricing' },
-                    { href: '/register', label: t('footer.getStarted') || 'Get Started' },
+                    { href: '/pricing', label: t('footer.getStarted') || 'Get Started' },
                   ].map((link) => (
                     <li key={link.href}>
                       <Link

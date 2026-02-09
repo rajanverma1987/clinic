@@ -10,12 +10,13 @@ import { Loader } from '@/components/ui/Loader';
 import { Tabs, getTabPanelId, getTabPanelLabelledBy } from '@/components/ui/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
 import { apiClient } from '@/lib/api/client';
 import { ERROR_HANDLING, PATIENT_DETAIL_TABS } from '@/lib/constants/route-security';
 import { hasPermission } from '@/lib/permissions/constants';
 import { logger } from '@/lib/utils/logger';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const PATIENT_TAB_IDS = PATIENT_DETAIL_TABS.tabs.map((tab) => tab.id);
 
@@ -38,16 +39,16 @@ export default function PatientDetailPage() {
       ? tabFromUrl
       : PATIENT_DETAIL_TABS.defaultTab,
   );
+  const { invalidateLists } = useInvalidateDashboard();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
   useEffect(() => {
-    if (!authLoading && user && params.id) {
+    if (!authLoading && user && params?.id) {
       fetchAllData();
     }
-  }, [authLoading, user, params.id]);
+  }, [authLoading, user, params?.id]);
 
   useEffect(() => {
     const t = searchParams.get('tab');
@@ -62,68 +63,59 @@ export default function PatientDetailPage() {
     });
   };
 
-  const deferredTab = useDeferredValue(activeTab);
-  const isTabPending = activeTab !== deferredTab;
-
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      // Fetch patient
-      const patientResponse = await apiClient.get(`/patients/${params.id}`);
-      if (patientResponse.success && patientResponse.data) {
-        setPatient(patientResponse.data);
-        setFormData(patientResponse.data);
+      const patientId = params.id;
+
+      // Prefetch all tab data in parallel (total time ≈ slowest request)
+      const [patientRes, aptRes, presRes, invRes] = await Promise.all([
+        apiClient.get(`/patients/${patientId}`),
+        apiClient.get(`/appointments?patientId=${patientId}&limit=100`),
+        apiClient.get(`/prescriptions?patientId=${patientId}&limit=100`),
+        apiClient.get(`/invoices?patientId=${patientId}&limit=100`),
+      ]);
+
+      if (patientRes.success && patientRes.data) {
+        setPatient(patientRes.data);
+        setFormData(patientRes.data);
       }
 
-      // Fetch appointments
-      try {
-        const aptResponse = await apiClient.get(`/appointments?patientId=${params.id}&limit=100`);
-        if (aptResponse.success && aptResponse.data) {
-          const aptData = Array.isArray(aptResponse.data)
-            ? aptResponse.data
-            : aptResponse.data.data || [];
-          setAppointments(aptData);
-        }
-      } catch (err) {
-        logger.error('Failed to fetch appointments:', err);
+      if (aptRes.success && aptRes.data) {
+        const aptData = Array.isArray(aptRes.data) ? aptRes.data : aptRes.data?.data || [];
+        setAppointments(aptData);
+      } else {
+        logger.error('Failed to fetch appointments', aptRes.error);
       }
 
-      // Fetch prescriptions
-      try {
-        const presResponse = await apiClient.get(`/prescriptions?patientId=${params.id}&limit=100`);
-        if (presResponse.success && presResponse.data) {
-          const presData = Array.isArray(presResponse.data)
-            ? presResponse.data
-            : presResponse.data.data || [];
-          setPrescriptions(presData);
-        }
-      } catch (err) {
-        logger.error('Failed to fetch prescriptions:', err);
+      let prescriptionsData = [];
+      if (presRes.success && presRes.data) {
+        prescriptionsData = Array.isArray(presRes.data) ? presRes.data : presRes.data?.data || [];
+        setPrescriptions(prescriptionsData);
+      } else {
+        logger.error('Failed to fetch prescriptions', presRes.error);
       }
 
-      // Fetch invoices
-      try {
-        const invResponse = await apiClient.get(`/invoices?patientId=${params.id}&limit=100`);
-        if (invResponse.success && invResponse.data) {
-          const invData = Array.isArray(invResponse.data)
-            ? invResponse.data
-            : invResponse.data.data || [];
-          setInvoices(invData);
-        }
-      } catch (err) {
-        logger.error('Failed to fetch invoices:', err);
+      if (invRes.success && invRes.data) {
+        const invData = Array.isArray(invRes.data) ? invRes.data : invRes.data?.data || [];
+        setInvoices(invData);
+      } else {
+        logger.error('Failed to fetch invoices', invRes.error);
       }
 
-      // Fetch lab tests (from prescriptions with lab items)
-      const labItems = prescriptions
-        .flatMap((p) => p.items.filter((i) => i.itemType === 'lab'))
-        .map((item) => ({
-          _id: item.labTestName || '',
-          testName: item.labTestName || '',
-          testCode: '',
-          createdAt: new Date().toISOString(),
-          status: 'pending',
-        }));
+      // Lab tests derived from prescriptions (use response, not state)
+      const labItems = (prescriptionsData || []).flatMap((p) =>
+        (p.items || [])
+          .filter((i) => i.itemType === 'lab')
+          .map((item) => ({
+            _id: item.labTestName || '',
+            testName: item.labTestName || '',
+            testCode: '',
+            createdAt:
+              (p.createdAt && new Date(p.createdAt).toISOString()) || new Date().toISOString(),
+            status: 'pending',
+          })),
+      );
       setLabTests(labItems);
     } catch (error) {
       logger.error('Failed to fetch data:', error);
@@ -188,6 +180,7 @@ export default function PatientDetailPage() {
       const response = await apiClient.put(`/patients/${params.id}`, updateData);
       if (response.success) {
         setIsEditing(false);
+        invalidateLists();
         fetchAllData();
       } else {
         setError(response.error?.message || 'Failed to update patient');
@@ -207,36 +200,16 @@ export default function PatientDetailPage() {
     }
   }, [authLoading, user, router]);
 
-  // Show empty state while redirecting
-  if (!user) {
-    return null;
-  }
-
-  if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
-  }
-
-  if (!patient) {
-    return (
-      <Layout>
-        <div className='flex items-center justify-center h-64'>
-          <div className='text-center'>
-            <p className='text-status-error mb-4'>Patient not found</p>
-            <Button variant='primary' size='md' onClick={() => router.push('/patients')}>
-              Back to Patients
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
   const visibleTabs = useMemo(() => {
     return PATIENT_DETAIL_TABS.tabs
       .filter(
         (tab) =>
           user &&
-          hasPermission(user.role, tab.requiredPermission.resource, tab.requiredPermission.action) &&
+          hasPermission(
+            user.role,
+            tab.requiredPermission.resource,
+            tab.requiredPermission.action,
+          ) &&
           (!tab.doctorOnly || user.role === 'doctor'),
       )
       .map((tab) => {
@@ -258,6 +231,23 @@ export default function PatientDetailPage() {
     }
   }, [tabs.length, visibleIds, activeTab]);
 
+  if (!user) return null;
+  if (loading) return <Loader type='page' text={t('common.loading')} />;
+  if (!patient) {
+    return (
+      <Layout>
+        <div className='flex items-center justify-center h-64'>
+          <div className='text-center'>
+            <p className='text-status-error mb-4'>Patient not found</p>
+            <Button variant='primary' size='md' href='/patients'>
+              Back to Patients
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <PageHeader
@@ -267,9 +257,6 @@ export default function PatientDetailPage() {
         unreadCount={0}
         actionButtons={
           <>
-            <Button variant='secondary' size='md' onClick={() => router.push('/patients')}>
-              ← {t('patients.backToPatients')}
-            </Button>
             {!isEditing ? (
               <>
                 <Button variant='primary' size='md' onClick={() => setIsEditing(true)}>
@@ -278,7 +265,7 @@ export default function PatientDetailPage() {
                 <Button
                   variant='secondary'
                   size='md'
-                  onClick={() => router.push(`/appointments/new?patientId=${params.id}`)}
+                  href={`/appointments/new?patientId=${params.id}`}
                 >
                   + {t('dashboard.newAppointment')}
                 </Button>
@@ -293,19 +280,22 @@ export default function PatientDetailPage() {
                     setError('');
                   }}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button variant='primary' onClick={handleSave} isLoading={saving}>
-                  Save Changes
+                  {t('patients.saveChanges')}
                 </Button>
               </>
             )}
           </>
         }
       />
-      <div className='data-tabs-container w-full'>
+      <div
+        className='data-tabs-container w-full'
+        style={{ marginBottom: 'var(--dashboard-element-gap, 16px)' }}
+      >
         {error && (
-          <div className='mb-6 p-4 bg-status-error/10 border border-status-error/30 text-status-error rounded-lg'>
+          <div className='mb-4 p-4 bg-status-error/10 dark:bg-status-error/20 border border-status-error/30 text-status-error rounded-xl'>
             {error}
           </div>
         )}
@@ -319,19 +309,13 @@ export default function PatientDetailPage() {
         />
 
         <div
-          className='data-tabs-content tab-content-standard-width'
+          className='data-tabs-content tab-content-standard-width-left'
           role='tabpanel'
           id={getTabPanelId('patient-detail-tabs', activeTab)}
           aria-labelledby={getTabPanelLabelledBy('patient-detail-tabs', activeTab)}
-          aria-busy={isTabPending}
         >
-          {isTabPending && (
-            <div className='flex min-h-[200px] items-center justify-center py-8'>
-              <Loader type='section' text={t('common.loading')} />
-            </div>
-          )}
-          {!isTabPending && deferredTab === 'overview' && (
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+          {activeTab === 'overview' && (
+            <div className='content-grid-2 content-grid-gap-6'>
               <Card>
                 <h2 className='text-xl font-semibold mb-4'>Personal Information</h2>
                 <div className='space-y-4'>
@@ -434,8 +418,8 @@ export default function PatientDetailPage() {
                     </div>
                   </div>
                   <div>
-                    <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                      Phone
+                    <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+                      {t('patients.phone')}
                     </label>
                     {isEditing ? (
                       <Input
@@ -443,12 +427,12 @@ export default function PatientDetailPage() {
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       />
                     ) : (
-                      <p className='text-neutral-900'>{patient.phone}</p>
+                      <p className='text-neutral-900 dark:text-neutral-100'>{patient.phone}</p>
                     )}
                   </div>
                   <div>
-                    <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                      Alternate Phone
+                    <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+                      {t('patients.alternatePhone')}
                     </label>
                     {isEditing ? (
                       <Input
@@ -458,12 +442,14 @@ export default function PatientDetailPage() {
                         }
                       />
                     ) : (
-                      <p className='text-neutral-900'>{patient.alternatePhone || 'Not Provided'}</p>
+                      <p className='text-neutral-900 dark:text-neutral-100'>
+                        {patient.alternatePhone || t('patients.notProvided')}
+                      </p>
                     )}
                   </div>
                   <div>
-                    <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                      Email
+                    <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+                      {t('patients.email')}
                     </label>
                     {isEditing ? (
                       <Input
@@ -472,12 +458,14 @@ export default function PatientDetailPage() {
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       />
                     ) : (
-                      <p className='text-neutral-900'>{patient.email || 'Not Provided'}</p>
+                      <p className='text-neutral-900 dark:text-neutral-100'>
+                        {patient.email || t('patients.notProvided')}
+                      </p>
                     )}
                   </div>
                   <div>
-                    <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                      Address
+                    <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+                      {t('patients.address')}
                     </label>
                     {isEditing ? (
                       <div className='space-y-2'>
@@ -525,7 +513,7 @@ export default function PatientDetailPage() {
                         />
                       </div>
                     ) : (
-                      <p className='text-neutral-900'>
+                      <p className='text-neutral-900 dark:text-neutral-100'>
                         {patient.address
                           ? [
                               patient.address.street,
@@ -534,20 +522,19 @@ export default function PatientDetailPage() {
                               patient.address.zipCode,
                             ]
                               .filter(Boolean)
-                              .join(', ') || 'Not Provided'
-                          : 'Not Provided'}
+                              .join(', ') || t('patients.notProvided')
+                          : t('patients.notProvided')}
                       </p>
                     )}
                   </div>
                 </div>
               </Card>
 
-              <Card>
-                <h2 className='text-xl font-semibold mb-4'>Medical Information</h2>
+              <Card title={t('patients.medicalInformation')}>
                 <div className='space-y-4'>
                   <div>
-                    <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                      Medical History
+                    <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+                      {t('patients.medicalHistory')}
                     </label>
                     {isEditing ? (
                       <textarea
@@ -555,18 +542,18 @@ export default function PatientDetailPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, medicalHistory: e.target.value })
                         }
-                        className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                        className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500'
                         rows={4}
                       />
                     ) : (
-                      <p className='text-neutral-900 whitespace-pre-wrap'>
-                        {patient.medicalHistory || 'Not Provided'}
+                      <p className='text-neutral-900 dark:text-neutral-100 whitespace-pre-wrap'>
+                        {patient.medicalHistory || t('patients.notProvided')}
                       </p>
                     )}
                   </div>
                   <div>
-                    <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                      Allergies
+                    <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+                      {t('patients.allergies')}
                     </label>
                     {isEditing ? (
                       <Input
@@ -574,12 +561,14 @@ export default function PatientDetailPage() {
                         onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
                       />
                     ) : (
-                      <p className='text-neutral-900'>{patient.allergies || 'None Known'}</p>
+                      <p className='text-neutral-900 dark:text-neutral-100'>
+                        {patient.allergies || t('patients.noneKnown')}
+                      </p>
                     )}
                   </div>
                   <div>
-                    <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                      Current Medications
+                    <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+                      {t('patients.currentMedications')}
                     </label>
                     {isEditing ? (
                       <textarea
@@ -587,73 +576,86 @@ export default function PatientDetailPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, currentMedications: e.target.value })
                         }
-                        className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                        className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500'
                         rows={3}
                       />
                     ) : (
-                      <p className='text-neutral-900 whitespace-pre-wrap'>
-                        {patient.currentMedications || 'None'}
+                      <p className='text-neutral-900 dark:text-neutral-100 whitespace-pre-wrap'>
+                        {patient.currentMedications || t('common.none')}
                       </p>
                     )}
                   </div>
                   <div>
-                    <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                      Notes
+                    <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+                      {t('patients.notes')}
                     </label>
                     {isEditing ? (
                       <textarea
                         value={formData.notes || ''}
                         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                        className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500'
                         rows={3}
                       />
                     ) : (
-                      <p className='text-neutral-900 whitespace-pre-wrap'>
-                        {patient.notes || 'No Notes'}
+                      <p className='text-neutral-900 dark:text-neutral-100 whitespace-pre-wrap'>
+                        {patient.notes || t('patients.noNotes')}
                       </p>
                     )}
                   </div>
                 </div>
               </Card>
 
-              <Card className='md:col-span-2'>
-                <h2 className='text-xl font-semibold mb-4'>Quick Stats</h2>
-                <div className='grid grid-cols-4 gap-4'>
-                  <div className='text-center p-4 bg-primary-100 rounded-lg'>
-                    <div className='text-2xl font-bold text-primary-600'>{appointments.length}</div>
-                    <div className='text-sm text-neutral-600'>Total Visits</div>
+              <Card title={t('dashboard.quickStats')} className='md:col-span-2'>
+                <div className='content-grid-4'>
+                  <div className='text-center p-4 bg-primary-100 dark:bg-primary-900/30 rounded-xl border border-primary-200 dark:border-primary-800'>
+                    <div className='text-2xl font-bold text-primary-600 dark:text-primary-400'>
+                      {appointments.length}
+                    </div>
+                    <div className='text-sm text-neutral-600 dark:text-neutral-400'>
+                      {t('patients.totalVisits')}
+                    </div>
                   </div>
-                  <div className='text-center p-4 bg-primary-100 rounded-lg'>
-                    <div className='text-2xl font-bold text-primary-700'>
+                  <div className='text-center p-4 bg-primary-100 dark:bg-primary-900/30 rounded-xl border border-primary-200 dark:border-primary-800'>
+                    <div className='text-2xl font-bold text-primary-700 dark:text-primary-400'>
                       {prescriptions.length}
                     </div>
-                    <div className='text-sm text-neutral-600'>Prescriptions</div>
+                    <div className='text-sm text-neutral-600 dark:text-neutral-400'>
+                      {t('prescriptions.title')}
+                    </div>
                   </div>
-                  <div className='text-center p-4 bg-purple-50 rounded-lg'>
-                    <div className='text-2xl font-bold text-purple-600'>{invoices.length}</div>
-                    <div className='text-sm text-neutral-600'>Invoices</div>
+                  <div className='text-center p-4 bg-neutral-100 dark:bg-neutral-700/50 rounded-xl border border-neutral-200 dark:border-neutral-600'>
+                    <div className='text-2xl font-bold text-neutral-700 dark:text-neutral-300'>
+                      {invoices.length}
+                    </div>
+                    <div className='text-sm text-neutral-600 dark:text-neutral-400'>
+                      {t('invoices.title')}
+                    </div>
                   </div>
-                  <div className='text-center p-4 bg-orange-50 rounded-lg'>
-                    <div className='text-2xl font-bold text-orange-600'>{labTests.length}</div>
-                    <div className='text-sm text-neutral-600'>Lab Tests</div>
+                  <div className='text-center p-4 bg-neutral-100 dark:bg-neutral-700/50 rounded-xl border border-neutral-200 dark:border-neutral-600'>
+                    <div className='text-2xl font-bold text-neutral-700 dark:text-neutral-300'>
+                      {labTests.length}
+                    </div>
+                    <div className='text-sm text-neutral-600 dark:text-neutral-400'>
+                      {t('lab.labTests')}
+                    </div>
                   </div>
                 </div>
               </Card>
             </div>
           )}
 
-          {!isTabPending && deferredTab === 'visits' && (
-            <Card>
+          {activeTab === 'visits' && (
+            <Card title={t('appointments.appointmentList')}>
               <div className='clinic-table-wrap'>
                 <table className='clinic-table'>
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>Type</th>
-                      <th>Doctor</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th>{t('appointments.date')}</th>
+                      <th>{t('appointments.time')}</th>
+                      <th>{t('appointments.type')}</th>
+                      <th>{t('appointments.doctor')}</th>
+                      <th>{t('appointments.status')}</th>
+                      <th>{t('common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -673,12 +675,12 @@ export default function PatientDetailPage() {
                           <span
                             className={`px-2 py-1 text-xs rounded-full ${
                               apt.status === 'completed'
-                                ? 'bg-primary-100 text-primary-700'
+                                ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
                                 : apt.status === 'in_progress'
-                                  ? 'bg-primary-100 text-primary-700'
+                                  ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
                                   : apt.status === 'cancelled'
-                                    ? 'bg-status-error/10 text-status-error'
-                                    : 'bg-neutral-100 text-neutral-700'
+                                    ? 'bg-status-error/10 dark:bg-status-error/20 text-status-error'
+                                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
                             }`}
                           >
                             {apt.status}
@@ -709,18 +711,18 @@ export default function PatientDetailPage() {
             </Card>
           )}
 
-          {!isTabPending && deferredTab === 'prescriptions' && (
-            <Card>
+          {activeTab === 'prescriptions' && (
+            <Card title={t('prescriptions.title')}>
               <div className='clinic-table-wrap'>
                 <table className='clinic-table'>
                   <thead>
                     <tr>
-                      <th>Rx #</th>
-                      <th>Date</th>
-                      <th>Diagnosis</th>
-                      <th>Items</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th>{t('prescriptions.rxNumber') || 'Rx #'}</th>
+                      <th>{t('appointments.date')}</th>
+                      <th>{t('prescriptions.diagnosis')}</th>
+                      <th>{t('common.items') || 'Items'}</th>
+                      <th>{t('appointments.status')}</th>
+                      <th>{t('common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -738,10 +740,10 @@ export default function PatientDetailPage() {
                           <span
                             className={`px-2 py-1 text-xs rounded-full ${
                               pres.status === 'active'
-                                ? 'bg-secondary-100 text-secondary-700'
+                                ? 'bg-secondary-100 dark:bg-secondary-900/40 text-secondary-700 dark:text-secondary-300'
                                 : pres.status === 'dispensed'
-                                  ? 'bg-primary-100 text-primary-700'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                  ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
+                                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
                             }`}
                           >
                             {pres.status}
@@ -777,7 +779,7 @@ export default function PatientDetailPage() {
                     ))}
                     {prescriptions.length === 0 && (
                       <tr data-empty>
-                        <td colSpan={6}>No prescriptions found</td>
+                        <td colSpan={6}>{t('common.noDataFound')}</td>
                       </tr>
                     )}
                   </tbody>
@@ -786,18 +788,18 @@ export default function PatientDetailPage() {
             </Card>
           )}
 
-          {!isTabPending && deferredTab === 'invoices' && (
-            <Card>
+          {activeTab === 'invoices' && (
+            <Card title={t('invoices.title')}>
               <div className='clinic-table-wrap'>
                 <table className='clinic-table'>
                   <thead>
                     <tr>
-                      <th>Invoice #</th>
-                      <th>Date</th>
-                      <th>Items</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th>{t('invoices.invoiceNumber') || 'Invoice #'}</th>
+                      <th>{t('appointments.date')}</th>
+                      <th>{t('common.items') || 'Items'}</th>
+                      <th>{t('invoices.amount') || 'Amount'}</th>
+                      <th>{t('appointments.status')}</th>
+                      <th>{t('common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -808,7 +810,8 @@ export default function PatientDetailPage() {
                           {new Date(inv.createdAt).toLocaleDateString()}
                         </td>
                         <td>
-                          {inv.items.length} item{inv.items.length !== 1 ? 's' : ''}
+                          {inv.items.length}{' '}
+                          {inv.items.length !== 1 ? t('common.items') : t('common.item') || 'item'}
                         </td>
                         <td className='whitespace-nowrap font-medium'>
                           ${inv.totalAmount.toFixed(2)}
@@ -817,10 +820,10 @@ export default function PatientDetailPage() {
                           <span
                             className={`px-2 py-1 text-xs rounded-full ${
                               inv.status === 'paid'
-                                ? 'bg-primary-100 text-primary-700'
+                                ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
                                 : inv.status === 'pending'
-                                  ? 'bg-status-warning/10 text-status-warning'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                  ? 'bg-status-warning/10 dark:bg-status-warning/20 text-status-warning'
+                                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
                             }`}
                           >
                             {inv.status}
@@ -842,7 +845,7 @@ export default function PatientDetailPage() {
                     ))}
                     {invoices.length === 0 && (
                       <tr data-empty>
-                        <td colSpan={6}>No invoices found</td>
+                        <td colSpan={6}>{t('common.noDataFound')}</td>
                       </tr>
                     )}
                   </tbody>
@@ -851,17 +854,17 @@ export default function PatientDetailPage() {
             </Card>
           )}
 
-          {!isTabPending && deferredTab === 'lab-tests' && (
-            <Card>
+          {activeTab === 'lab-tests' && (
+            <Card title={t('lab.labTests') || 'Lab Tests'}>
               <div className='clinic-table-wrap'>
                 <table className='clinic-table'>
                   <thead>
                     <tr>
-                      <th>Test Name</th>
-                      <th>Test Code</th>
-                      <th>Date</th>
-                      <th>Status</th>
-                      <th>Results</th>
+                      <th>{t('lab.testName') || 'Test Name'}</th>
+                      <th>{t('lab.testCode') || 'Test Code'}</th>
+                      <th>{t('appointments.date')}</th>
+                      <th>{t('appointments.status')}</th>
+                      <th>{t('lab.results') || 'Results'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -876,10 +879,10 @@ export default function PatientDetailPage() {
                           <span
                             className={`px-2 py-1 text-xs rounded-full ${
                               test.status === 'completed'
-                                ? 'bg-primary-100 text-primary-700'
+                                ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
                                 : test.status === 'pending'
-                                  ? 'bg-status-warning/10 text-status-warning'
-                                  : 'bg-neutral-100 text-neutral-700'
+                                  ? 'bg-status-warning/10 dark:bg-status-warning/20 text-status-warning'
+                                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
                             }`}
                           >
                             {test.status}
@@ -890,7 +893,7 @@ export default function PatientDetailPage() {
                     ))}
                     {labTests.length === 0 && (
                       <tr data-empty>
-                        <td colSpan={5}>No lab tests found</td>
+                        <td colSpan={5}>{t('common.noDataFound')}</td>
                       </tr>
                     )}
                   </tbody>
@@ -899,10 +902,11 @@ export default function PatientDetailPage() {
             </Card>
           )}
 
-          {!isTabPending && deferredTab === 'notes' && (
-            <Card>
-              <h2 className='text-lg font-semibold mb-4'>{t('doctors.notes')}</h2>
-              <p className='text-neutral-700 whitespace-pre-wrap'>{patient.notes || t('patients.noNotes')}</p>
+          {activeTab === 'notes' && (
+            <Card title={t('patients.notes')}>
+              <p className='text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap'>
+                {patient.notes || t('patients.noNotes')}
+              </p>
             </Card>
           )}
         </div>

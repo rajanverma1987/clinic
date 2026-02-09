@@ -41,7 +41,7 @@ export default function PaymentHistoryPage() {
         // Get payments for this subscription
         if (subResponse.data._id) {
           const paymentsResponse = await apiClient.get(
-            `/subscriptions/${subResponse.data._id}?type=payments`
+            `/subscriptions/${subResponse.data._id}?type=payments`,
           );
           if (paymentsResponse.success && paymentsResponse.data) {
             setPayments(paymentsResponse.data);
@@ -162,7 +162,7 @@ export default function PaymentHistoryPage() {
                   {subscription.planId.billingCycle === 'MONTHLY' ? 'month' : 'year'}
                 </p>
               </div>
-              <Button variant='secondary' onClick={() => router.push('/subscription')}>
+              <Button variant='secondary' href='/subscription'>
                 {t('subscription.viewDetails')}
               </Button>
             </div>

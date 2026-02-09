@@ -179,7 +179,19 @@ export default function GlobalSearch({ isOpen, onClose }) {
   return (
     <div className='fixed inset-0 z-50 flex items-start justify-center pt-20 px-4'>
       {/* Backdrop */}
-      <div className='fixed inset-0 bg-neutral-600/25 dark:bg-black/40' onClick={onClose} />
+      <div
+        className='fixed inset-0 bg-neutral-600/25 dark:bg-black/40'
+        onClick={onClose}
+        role='button'
+        tabIndex={0}
+        aria-label={t('common.close')}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+      />
 
       {/* Search Modal */}
       <Card className='relative z-10 w-full max-w-2xl shadow-2xl'>

@@ -13,7 +13,7 @@ import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const tabKeys = ['overview', 'appointments', 'payments'];
 
@@ -146,9 +146,6 @@ export default function AdminPatientDetailPage() {
     });
   };
 
-  const deferredTab = useDeferredValue(activeTab);
-  const isTabPending = activeTab !== deferredTab;
-
   const formatDate = (v) => (v ? new Date(v).toLocaleDateString() : '—');
   const formatDateTime = (v) => (v ? new Date(v).toLocaleString() : '—');
   const formatCurrency = (n) =>
@@ -170,7 +167,7 @@ export default function AdminPatientDetailPage() {
       subtitle={`${patient.firstName} ${patient.lastName}`}
       actionButton={
         <div className='flex gap-2'>
-          <Button variant='secondary' onClick={() => router.push('/admin/patients')}>
+          <Button variant='secondary' href='/admin/patients'>
             Back to list
           </Button>
           <Button variant='primary' onClick={handleExport} disabled={exporting}>
@@ -198,14 +195,8 @@ export default function AdminPatientDetailPage() {
           role='tabpanel'
           id={getTabPanelId('admin-patient-tabs', activeTab)}
           aria-labelledby={getTabPanelLabelledBy('admin-patient-tabs', activeTab)}
-          aria-busy={isTabPending}
         >
-          {isTabPending && (
-            <div className='flex min-h-[200px] items-center justify-center py-8'>
-              <Loader type='section' text={t('common.loading')} />
-            </div>
-          )}
-          {!isTabPending && deferredTab === 'overview' && (
+          {activeTab === 'overview' && (
             <Card className='mb-6'>
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
@@ -220,7 +211,7 @@ export default function AdminPatientDetailPage() {
                     {patient.status || 'active'}
                   </Tag>
                 </div>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='content-grid-2'>
                   <div>
                     <p className='text-sm text-neutral-500'>Patient ID</p>
                     <p className='font-medium text-neutral-900'>{patient.patientId || '—'}</p>
@@ -284,7 +275,7 @@ export default function AdminPatientDetailPage() {
             </Card>
           )}
 
-          {!isTabPending && deferredTab === 'appointments' && (
+          {activeTab === 'appointments' && (
             <Card className='mb-6'>
               <div className='p-6'>
                 <h2 className='text-lg font-semibold text-neutral-900 mb-4'>Appointment history</h2>
@@ -324,7 +315,7 @@ export default function AdminPatientDetailPage() {
             </Card>
           )}
 
-          {!isTabPending && deferredTab === 'payments' && (
+          {activeTab === 'payments' && (
             <Card className='mb-6'>
               <div className='p-6'>
                 <h2 className='text-lg font-semibold text-neutral-900 mb-4'>Payment history</h2>

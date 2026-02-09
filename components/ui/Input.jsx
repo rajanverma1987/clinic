@@ -2,7 +2,17 @@
 
 import { useEffect, useRef } from 'react';
 
-export function Input({ label, error, helperText, className = '', disabled, required, ...props }) {
+/** size: sm 32px, md 40px (default), lg 48px – matches globals.css --input-height-* */
+export function Input({
+  label,
+  error,
+  helperText,
+  size = 'md',
+  className = '',
+  disabled,
+  required,
+  ...props
+}) {
   const inputRef = useRef(null);
 
   // Prevent browser default validation popup
@@ -27,8 +37,9 @@ export function Input({ label, error, helperText, className = '', disabled, requ
     }
   }, [required, props.type, props.name, props.id, label]);
 
-  // Base classes with theme specs; height matches select/date/time via --input-height
-  const baseClasses = `w-full form-control-height px-4 py-0 text-body-md border rounded-[10px]`;
+  const sizeClass =
+    size === 'sm' ? 'form-control-sm' : size === 'lg' ? 'form-control-lg' : 'form-control-md';
+  const baseClasses = `w-full form-control-height ${sizeClass} px-4 py-0 text-body-md border rounded-[10px]`;
 
   // States following clinic theme
   // Default: bg-white, border: neutral-300, text: neutral-900, placeholder: neutral-500
@@ -45,7 +56,9 @@ export function Input({ label, error, helperText, className = '', disabled, requ
       {label && (
         <label
           className={`block text-body-sm font-medium mb-0.5 ${
-            disabled ? 'text-neutral-500 dark:text-neutral-400' : 'text-neutral-900 dark:text-neutral-100'
+            disabled
+              ? 'text-neutral-500 dark:text-neutral-400'
+              : 'text-neutral-900 dark:text-neutral-100'
           }`}
           htmlFor={props.id}
         >

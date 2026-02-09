@@ -1,8 +1,10 @@
 'use client';
 
+import { EyeIcon, PencilIcon, PrinterIcon, TrashIcon } from '@/components/icons';
 import { InvoicePrintPreview } from '@/components/invoices/InvoicePrintPreview';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -251,120 +253,70 @@ export default function InvoicesPage() {
     },
     {
       header: t('common.actions'),
-      accessor: (row) => (
-        <div className='flex gap-2'>
-          {row.status === 'draft' && (
-            <>
-              <Button
-                variant='secondary'
-                size='md'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(`/invoices/${row._id}/edit`);
-                }}
-                title={t('invoices.editTitle')}
-                className='whitespace-nowrap'
-              >
-                <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
-                  />
-                </svg>
-                Edit
-              </Button>
-              <Button
-                variant='secondary'
-                size='md'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(row._id, row.invoiceNumber);
-                }}
-                isLoading={deletingInvoiceId === row._id}
-                disabled={deletingInvoiceId === row._id}
-                className='whitespace-nowrap text-status-error border-status-error/30 hover:bg-status-error/10'
-                title={t('invoices.deleteTitle')}
-              >
-                <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
-                  />
-                </svg>
-                Delete
-              </Button>
-            </>
-          )}
-          {row.status !== 'paid' && (
-            <>
-              <Button
-                variant='secondary'
-                size='md'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setRecordPaymentInvoice(row);
-                  setPaymentAmount(
-                    String(row.balanceAmount ?? row.totalAmount - (row.paidAmount || 0) ?? 0),
-                  );
-                  setPaymentMethod('cash');
-                  setPaymentNotes('');
-                }}
-                className='whitespace-nowrap'
-                title={t('invoices.recordPayment')}
-              >
-                {t('invoices.recordPayment')}
-              </Button>
-              <Button
-                variant='secondary'
-                size='md'
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMarkPaid(row._id, row.invoiceNumber);
-                }}
-                isLoading={markingPaidId === row._id}
-                disabled={markingPaidId === row._id}
-                className='whitespace-nowrap'
-                title={t('invoices.markPaidTitle')}
-              >
-                <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-                  />
-                </svg>
-                {t('invoices.markPaid')}
-              </Button>
-            </>
-          )}
-          <Button
-            variant='secondary'
-            size='md'
-            onClick={(e) => {
-              e.stopPropagation();
+      accessor: (row) => {
+        const menuItems = [
+          {
+            key: 'view',
+            label: t('common.view') || 'View',
+            icon: <EyeIcon className='icon' />,
+            onClick: () => router.push(`/invoices/${row._id}`),
+          },
+          ...(row.status === 'draft'
+            ? [
+                {
+                  key: 'edit',
+                  label: t('common.edit'),
+                  icon: <PencilIcon className='icon' />,
+                  onClick: () => router.push(`/invoices/${row._id}/edit`),
+                },
+                {
+                  key: 'delete',
+                  label: t('common.delete'),
+                  icon: <TrashIcon className='icon' />,
+                  danger: true,
+                  onClick: () => handleDelete(row._id, row.invoiceNumber),
+                  disabled: deletingInvoiceId === row._id,
+                },
+              ]
+            : []),
+          ...(row.status !== 'paid'
+            ? [
+                {
+                  key: 'recordPayment',
+                  label: t('invoices.recordPayment'),
+                  onClick: () => {
+                    setRecordPaymentInvoice(row);
+                    setPaymentAmount(
+                      String(row.balanceAmount ?? row.totalAmount - (row.paidAmount || 0) ?? 0),
+                    );
+                    setPaymentMethod('cash');
+                    setPaymentNotes('');
+                  },
+                },
+                {
+                  key: 'markPaid',
+                  label: t('invoices.markPaid'),
+                  onClick: () => handleMarkPaid(row._id, row.invoiceNumber),
+                  disabled: markingPaidId === row._id,
+                },
+              ]
+            : []),
+          {
+            key: 'print',
+            label: t('invoices.print') || 'Print',
+            icon: <PrinterIcon className='icon' />,
+            onClick: () => {
               setPrintInvoiceId(row._id);
               setShowPrintPreview(true);
-            }}
-            title={t('invoices.printTitle')}
-            className='whitespace-nowrap'
-          >
-            <svg className='w-4 h-4 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z'
-              />
-            </svg>
-            Print
-          </Button>
-        </div>
-      ),
+            },
+          },
+        ];
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <ActionsMenu items={menuItems} ariaLabel={t('common.actions')} />
+          </div>
+        );
+      },
     },
   ];
 
@@ -392,26 +344,21 @@ export default function InvoicesPage() {
         notifications={[]}
         unreadCount={0}
         actionButton={
-          <Button
-            onClick={() => router.push('/invoices/new')}
-            variant='primary'
-            size='md'
-            className='whitespace-nowrap'
-          >
+          <Button href='/invoices/new' variant='primary' size='md' className='whitespace-nowrap'>
             + {t('invoices.createInvoice')}
           </Button>
         }
       />
       <div style={{ padding: '0 10px' }}>
         <Card className='mb-4 p-4'>
-          <div className='flex flex-wrap items-center gap-3'>
-            <span className='text-sm font-medium text-neutral-700'>
+          <div className='filter-row'>
+            <span className='text-sm font-medium text-neutral-700 dark:text-neutral-300'>
               {t('invoices.filterByStatus')}
             </span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className='px-3 py-2 border border-neutral-300 rounded-lg text-sm'
+              className='filter-select'
             >
               <option value='all'>{t('invoices.filterAll')}</option>
               <option value='paid'>{t('invoices.paid')}</option>
@@ -419,20 +366,28 @@ export default function InvoicesPage() {
               <option value='overdue'>{t('invoices.overdue')}</option>
               <option value='draft'>{t('invoices.draft')}</option>
             </select>
-            <span className='text-sm text-neutral-500'>{t('invoices.filterDateRange')}</span>
-            <Input
-              type='date'
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className='w-40'
-            />
-            <Input
-              type='date'
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className='w-40'
-            />
-            <Button variant='secondary' size='sm' onClick={() => fetchInvoices()}>
+            <span className='text-sm text-neutral-500 dark:text-neutral-400'>
+              {t('invoices.filterDateRange')}
+            </span>
+            <div className='shrink-0 w-[10.5rem]'>
+              <Input
+                type='date'
+                size='md'
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className='filter-input-date'
+              />
+            </div>
+            <div className='shrink-0 w-[10.5rem]'>
+              <Input
+                type='date'
+                size='md'
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className='filter-input-date'
+              />
+            </div>
+            <Button variant='secondary' size='md' onClick={() => fetchInvoices()}>
               {t('common.filter')}
             </Button>
           </div>

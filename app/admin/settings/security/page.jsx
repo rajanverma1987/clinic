@@ -96,7 +96,7 @@ export default function AdminSettingsSecurityPage() {
       title='Security Settings'
       subtitle='Session timeout, password policy, 2FA, failed login lockout, IP whitelist, audit log retention'
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin/settings')}>
+        <Button variant='primary' href='/admin/settings'>
           Back to Settings
         </Button>
       }
@@ -214,7 +214,7 @@ export default function AdminSettingsSecurityPage() {
               <Button
                 type='button'
                 variant='secondary'
-                onClick={() => router.push('/admin/settings')}
+                href='/admin/settings'
               >
                 Cancel
               </Button>

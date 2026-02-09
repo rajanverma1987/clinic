@@ -1,8 +1,8 @@
-import mongoose, { Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import mongoose, { Schema } from 'mongoose';
 
 // CursorMD/New database-schema.mermaid: role enum "superadmin|doctor|admin|manager"
-// clinic_admin = Admin in spec (kept for backward compat); patient for portal
+// clinic_admin = Admin in spec (kept for backward compat). Clinic staff only; no patient role.
 export const UserRole = {
   SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
@@ -14,7 +14,6 @@ export const UserRole = {
   ACCOUNTANT: 'accountant',
   PHARMACIST: 'pharmacist',
   LAB_TECH: 'lab_tech',
-  PATIENT: 'patient',
 };
 
 const UserSchema = new Schema(
@@ -22,7 +21,7 @@ const UserSchema = new Schema(
     tenantId: {
       type: Schema.Types.ObjectId,
       ref: 'Tenant',
-      required: function() {
+      required: function () {
         // tenantId is not required for super_admin users
         return this.role !== UserRole.SUPER_ADMIN;
       },
@@ -99,16 +98,25 @@ const UserSchema = new Schema(
     accountLockedUntil: {
       type: Date,
     },
+    /** Manager only: selected access keys from MANAGER_ACCESS_OPTIONS (e.g. ['patients', 'appointments']). Empty or absent = use default manager restrictions. */
+    managerAccess: {
+      type: [String],
+      default: undefined,
+      select: true,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Compound index for tenant + email uniqueness (sparse index to allow null tenantId for super_admin)
 UserSchema.index({ tenantId: 1, email: 1 }, { unique: true, sparse: true });
 // Unique index for super_admin users (email only, no tenantId)
-UserSchema.index({ email: 1 }, { unique: true, partialFilterExpression: { role: UserRole.SUPER_ADMIN } });
+UserSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { role: UserRole.SUPER_ADMIN } },
+);
 
 // Index for role-based queries
 UserSchema.index({ tenantId: 1, role: 1 });
@@ -138,7 +146,11 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
     return false;
   }
 
-  if (!this.password.startsWith('$2a$') && !this.password.startsWith('$2b$') && !this.password.startsWith('$2y$')) {
+  if (
+    !this.password.startsWith('$2a$') &&
+    !this.password.startsWith('$2b$') &&
+    !this.password.startsWith('$2y$')
+  ) {
     return false;
   }
 
@@ -157,4 +169,3 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);
-

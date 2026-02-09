@@ -181,7 +181,7 @@ export default function AdminDoctorsPage() {
       title={t('admin.doctors')}
       subtitle={t('admin.doctorsManagementSubtitle')}
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin')}>
+        <Button variant='primary' href='/admin'>
           {t('common.backToDashboard')}
         </Button>
       }

@@ -9,26 +9,12 @@ import { apiClient } from '@/lib/api/client.js';
 import { setCurrentTenantId } from '@/lib/cache/current-tenant.js';
 import * as dashboardCache from '@/lib/cache/dashboard-cache.js';
 import { clearIndexedDBCache, clearOfflineMutations } from '@/lib/cache/indexed-db-cache.js';
-import { clearAllCache } from '@/lib/utils/api-cache.js';
+import { clearTestAccountRoleOverride } from '@/lib/constants/test-account.js';
 import { disconnectRealtimeClient } from '@/lib/realtime/realtime-client.js';
-import {
-  clearTestAccountRoleOverride,
-  getTestAccountRoleOverride,
-  isTestAccount,
-  setTestAccountRoleOverride,
-} from '@/lib/constants/test-account.js';
+import { clearAllCache } from '@/lib/utils/api-cache.js';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 
 const AuthContext = createContext(undefined);
-
-/** TEMPORARY: Apply test account role override for 706359@gmail.com. REMOVE before production. */
-function applyTestAccountOverride(userInfo) {
-  if (!userInfo || !userInfo.email) return userInfo;
-  if (!isTestAccount(userInfo.email)) return userInfo;
-  const override = getTestAccountRoleOverride();
-  if (!override) return userInfo;
-  return { ...userInfo, role: override };
-}
 
 // Idle timeout: 2 hours (120 minutes)
 const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
@@ -134,7 +120,7 @@ export function AuthProvider({ children }) {
           // Token check failed; continue silently
         }
       },
-      5 * 60 * 1000
+      5 * 60 * 1000,
     ); // Check every 5 minutes
   }, [user, updateLastActivity]);
 
@@ -169,7 +155,7 @@ export function AuthProvider({ children }) {
           try {
             const userData = JSON.parse(storedUser);
             // Set user temporarily while we try to validate
-            setUser(applyTestAccountOverride(userData));
+            setUser(userData);
             // Try one more time to get user info
             const response = await apiClient.get('/auth/me', undefined, true);
             if (response.success && response.data) {
@@ -187,7 +173,7 @@ export function AuthProvider({ children }) {
                 subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
               };
-              setUser(applyTestAccountOverride(userInfo));
+              setUser(userInfo);
               if (typeof window !== 'undefined') {
                 localStorage.setItem('userInfo', JSON.stringify(userInfo));
                 lastActivityRef.current = Date.now();
@@ -231,7 +217,7 @@ export function AuthProvider({ children }) {
       if (storedUser && (token || refreshToken)) {
         try {
           const userData = JSON.parse(storedUser);
-          setUser(applyTestAccountOverride(userData));
+          setUser(userData);
         } catch (_e) {
           // Parse failed
         }
@@ -269,7 +255,7 @@ export function AuthProvider({ children }) {
           subscriptionPlan: userData.subscriptionPlan || null,
           isActive: userData.isActive !== undefined ? userData.isActive : true,
         };
-        setUser(applyTestAccountOverride(userInfo));
+        setUser(userInfo);
         setCurrentTenantId(userInfo.tenantId || null);
         // Store user info for persistence
         if (typeof window !== 'undefined') {
@@ -288,7 +274,7 @@ export function AuthProvider({ children }) {
           if (storedUser && currentRefreshToken) {
             try {
               const userData = JSON.parse(storedUser);
-              setUser(applyTestAccountOverride(userData));
+              setUser(userData);
               clearTimeout(timeoutId);
               setLoading(false);
               return;
@@ -320,7 +306,7 @@ export function AuthProvider({ children }) {
                 subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
               };
-              setUser(applyTestAccountOverride(userInfo));
+              setUser(userInfo);
               if (typeof window !== 'undefined') {
                 localStorage.setItem('userInfo', JSON.stringify(userInfo));
                 lastActivityRef.current = Date.now();
@@ -337,7 +323,7 @@ export function AuthProvider({ children }) {
           // Keep user logged in with stored info if refresh token exists
           try {
             const userData = JSON.parse(storedUser);
-            setUser(applyTestAccountOverride(userData));
+            setUser(userData);
             clearTimeout(timeoutId);
             setLoading(false);
             return;
@@ -362,7 +348,7 @@ export function AuthProvider({ children }) {
           if (storedUser) {
             try {
               const userData = JSON.parse(storedUser);
-              setUser(applyTestAccountOverride(userData));
+              setUser(userData);
             } catch (_e) {
               // Parse failed
             }
@@ -393,7 +379,7 @@ export function AuthProvider({ children }) {
                 subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
               };
-              setUser(applyTestAccountOverride(userInfo));
+              setUser(userInfo);
               if (typeof window !== 'undefined') {
                 localStorage.setItem('userInfo', JSON.stringify(userInfo));
                 lastActivityRef.current = Date.now();
@@ -412,7 +398,7 @@ export function AuthProvider({ children }) {
       if (storedUser && refreshToken) {
         try {
           const userData = JSON.parse(storedUser);
-          setUser(applyTestAccountOverride(userData));
+          setUser(userData);
           clearTimeout(timeoutId);
           setLoading(false);
           return;
@@ -431,7 +417,7 @@ export function AuthProvider({ children }) {
       } else if (storedUser) {
         try {
           const userData = JSON.parse(storedUser);
-          setUser(applyTestAccountOverride(userData));
+          setUser(userData);
         } catch (_e) {
           // Parse failed
         }
@@ -476,7 +462,7 @@ export function AuthProvider({ children }) {
           apiClient.setToken(response.data.accessToken);
         }
         // Set user state after tokens are stored (synchronously)
-        setUser(applyTestAccountOverride(response.data.user));
+        setUser(response.data.user);
         return {
           success: true,
           user: response.data.user,
@@ -520,7 +506,7 @@ export function AuthProvider({ children }) {
           apiClient.setToken(response.data.accessToken);
         }
         // Set user state after tokens are stored (synchronously)
-        setUser(applyTestAccountOverride(response.data.user));
+        setUser(response.data.user);
         return {
           success: true,
           user: response.data.user,
@@ -558,7 +544,7 @@ export function AuthProvider({ children }) {
           localStorage.setItem('userInfo', JSON.stringify(response.data.user));
           lastActivityRef.current = Date.now(); // Initialize activity tracking
         }
-        setUser(applyTestAccountOverride(response.data.user));
+        setUser(response.data.user);
         return { success: true };
       }
 
@@ -607,12 +593,6 @@ export function AuthProvider({ children }) {
         window.location.href = '/login';
       }
     }
-  };
-
-  /** TEMPORARY: Set test account role override (706359@gmail.com). REMOVE before production. */
-  const setTestAccountRoleOverrideToContext = (role) => {
-    setTestAccountRoleOverride(role);
-    setUser((prev) => (prev ? applyTestAccountOverride({ ...prev, role }) : null));
   };
 
   const refreshUser = async () => {
@@ -703,7 +683,7 @@ export function AuthProvider({ children }) {
     if ((token || refreshToken) && storedUser) {
       try {
         const userData = JSON.parse(storedUser);
-        setUser(applyTestAccountOverride(userData));
+        setUser(userData);
         setLoading(false);
       } catch (e) {
         // Invalid JSON – ignore, checkAuth will run
@@ -726,7 +706,6 @@ export function AuthProvider({ children }) {
         logout,
         register,
         refreshUser,
-        setTestAccountRoleOverride: setTestAccountRoleOverrideToContext,
       }}
     >
       {children}

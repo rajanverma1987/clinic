@@ -15,8 +15,23 @@ export default function AdminReviewsDashboardPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Reviews Dashboard' subtitle='All reviews, filter by rating/date/doctor' actionButton={<Button variant='primary' onClick={() => router.push('/admin/reviews')}>Back to Reviews</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>Reviews list (filter by rating, date, doctor, flagged) — use Doctor Reviews and Reports for data.</p></Card></div>
+    <Layout
+      title='Reviews Dashboard'
+      subtitle='All reviews, filter by rating/date/doctor'
+      actionButton={
+        <Button variant='primary' href='/admin/reviews'>
+          Back to Reviews
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Reviews list (filter by rating, date, doctor, flagged) — use Doctor Reviews and Reports
+            for data.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

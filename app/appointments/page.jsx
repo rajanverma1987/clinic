@@ -10,22 +10,28 @@ import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
+import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 
 const ROUTE_KEY = 'route_appointments';
 
 export default function AppointmentsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const dateFromUrl = searchParams.get('date') || '';
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { locale } = useSettings();
+  const { invalidateLists, invalidateStats } = useInvalidateDashboard();
+  const { prefetchAppointment } = usePrefetchDetail();
   const tenantId = user?.tenantId ?? null;
 
   const [appointments, setAppointments] = useState([]);
@@ -137,7 +143,7 @@ export default function AppointmentsPage() {
         return date.toLocaleDateString();
       }
     },
-    [settings]
+    [settings],
   );
 
   const formatDateForApi = useCallback(
@@ -153,7 +159,7 @@ export default function AppointmentsPage() {
         return date.toISOString().split('T')[0];
       }
     },
-    [settings]
+    [settings],
   );
 
   const fetchStats = useCallback(async () => {
@@ -195,10 +201,10 @@ export default function AppointmentsPage() {
       const tomorrowList = extractArrayData(tomorrowResponse);
 
       const todayTotal = todayList.filter(
-        (apt) => !apt.isTelemedicine && apt.status !== 'arrived'
+        (apt) => !apt.isTelemedicine && apt.status !== 'arrived',
       ).length;
       const tomorrowTotal = tomorrowList.filter(
-        (apt) => !apt.isTelemedicine && apt.status !== 'arrived'
+        (apt) => !apt.isTelemedicine && apt.status !== 'arrived',
       ).length;
 
       setTodayCount(todayTotal);
@@ -211,7 +217,8 @@ export default function AppointmentsPage() {
   }, [settings]);
 
   const fetchAppointments = useCallback(async () => {
-    const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
+    const hasDateFilter = dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl);
+    const hasCache = tenantId && !hasDateFilter && routeCache.getData(ROUTE_KEY, tenantId);
     if (!hasCache) setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -220,18 +227,19 @@ export default function AppointmentsPage() {
       });
       if (selectedDoctorId) params.append('doctorId', selectedDoctorId);
       if (selectedStatus) params.append('status', selectedStatus);
+      if (hasDateFilter) params.append('date', dateFromUrl);
 
       const response = await apiClient.get(`/appointments?${params}`);
       if (response.success && response.data) {
         const appointmentsList = extractArrayData(response);
         const filteredAppointments = appointmentsList.filter(
-          (apt) => !apt.isTelemedicine && apt.status !== 'arrived'
+          (apt) => !apt.isTelemedicine && apt.status !== 'arrived',
         );
         const list = Array.isArray(filteredAppointments) ? filteredAppointments : [];
         const pages = response.data.pagination?.totalPages || 1;
         setAppointments(list);
         setTotalPages(pages);
-        if (tenantId)
+        if (tenantId && !hasDateFilter)
           routeCache.set(ROUTE_KEY, tenantId, {
             appointments: list,
             currentPage,
@@ -243,7 +251,7 @@ export default function AppointmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, selectedDoctorId, selectedStatus, tenantId]);
+  }, [currentPage, selectedDoctorId, selectedStatus, tenantId, dateFromUrl]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -271,6 +279,8 @@ export default function AppointmentsPage() {
         status: newStatus,
       });
       if (response.success) {
+        invalidateLists();
+        invalidateStats();
         // Show success message based on status
         if (newStatus === 'arrived') {
           showSuccess(t('appointments.markedArrivedQueue', { name: patientName || 'Patient' }));
@@ -367,7 +377,7 @@ export default function AppointmentsPage() {
       header: t('appointments.time'),
       accessor: (row) =>
         `${new Date(row.startTime).toLocaleTimeString()} - ${new Date(
-          row.endTime
+          row.endTime,
         ).toLocaleTimeString()}`,
     },
     { header: t('appointments.type'), accessor: 'type' },
@@ -500,7 +510,7 @@ export default function AppointmentsPage() {
         unreadCount={0}
         actionButton={
           <Button
-            onClick={() => router.push('/appointments/new')}
+            href='/appointments/new'
             variant='primary'
             size='md'
             className='whitespace-nowrap'
@@ -512,20 +522,20 @@ export default function AppointmentsPage() {
       <div style={{ padding: '0 10px' }}>
         {/* Filters Section */}
         <Card className='mb-6 p-4'>
-          <div className='flex flex-wrap items-end gap-4'>
+          <div className='filter-row filter-row-items-end'>
             {/* Doctor Filter - Only for clinic_admin */}
             {(user?.role === 'clinic_admin' || user?.role === 'super_admin') && (
-              <div className='flex-1 min-w-[200px]'>
-                <label className='block text-body-sm font-medium text-neutral-900 mb-1'>
+              <div className='w-auto min-w-0'>
+                <label className='block text-body-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1'>
                   {t('appointments.filterByDoctor') || 'Filter by Doctor'}
                 </label>
                 <select
                   value={selectedDoctorId}
                   onChange={(e) => {
                     setSelectedDoctorId(e.target.value);
-                    setCurrentPage(1); // Reset to first page when filter changes
+                    setCurrentPage(1);
                   }}
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  className='filter-select'
                 >
                   <option value=''>{t('appointments.allDoctors') || 'All Doctors'}</option>
                   {doctors && Array.isArray(doctors) && doctors.length > 0 ? (
@@ -554,17 +564,17 @@ export default function AppointmentsPage() {
             )}
 
             {/* Status Filter - For all roles */}
-            <div className='flex-1 min-w-[200px]'>
-              <label className='block text-body-sm font-medium text-neutral-900 mb-1'>
+            <div className='w-auto min-w-0'>
+              <label className='block text-body-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1'>
                 {t('appointments.filterByStatus') || 'Filter by Status'}
               </label>
               <select
                 value={selectedStatus}
                 onChange={(e) => {
                   setSelectedStatus(e.target.value);
-                  setCurrentPage(1); // Reset to first page when filter changes
+                  setCurrentPage(1);
                 }}
-                className='w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
+                className='filter-select'
               >
                 <option value=''>{t('appointments.allStatuses') || 'All Statuses'}</option>
                 <option value='scheduled'>{t('appointments.scheduled')}</option>
@@ -594,7 +604,7 @@ export default function AppointmentsPage() {
           </div>
         </Card>
 
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
+        <div className='content-grid-2 mb-6'>
           <Card className='bg-primary-100 border border-primary-300'>
             <p className='text-body-sm font-medium text-primary-700 mb-2'>
               Today&apos;s Appointments
@@ -643,7 +653,11 @@ export default function AppointmentsPage() {
             <div className='mb-6'>
               <AppointmentCalendar
                 selectedDoctorId={selectedDoctorId || (user?.role === 'doctor' ? user.userId : '')}
-                selectedDate={new Date()}
+                selectedDate={
+                  dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)
+                    ? new Date(dateFromUrl + 'T12:00:00')
+                    : new Date()
+                }
                 onSlotSelect={(slot) => {
                   // Navigate to new appointment page with pre-filled data
                   const dateStr = slot.date.toISOString().split('T')[0];
@@ -666,11 +680,34 @@ export default function AppointmentsPage() {
             </div>
           )}
 
+        {dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl) && (
+          <div className='mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm'>
+            <span className='text-primary-800'>
+              {t('appointments.showingForDate').replace(
+                '{{date}}',
+                formatDateDisplay(new Date(dateFromUrl + 'T12:00:00'), {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                }),
+              )}
+            </span>
+            <button
+              type='button'
+              href='/appointments'
+              className='font-medium text-primary-700 underline hover:text-primary-900'
+            >
+              {t('appointments.showAllAppointments')}
+            </button>
+          </div>
+        )}
+
         <Card>
           <Table
             data={appointments}
             columns={columns}
             onRowClick={(row) => router.push(`/appointments/${row._id}`)}
+            onRowMouseEnter={(row) => row?._id && prefetchAppointment(row._id)}
             emptyMessage={t('common.noDataFound')}
           />
 

@@ -8,6 +8,7 @@ import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
@@ -80,6 +81,7 @@ function AdminDoctorVerificationContent() {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [showRequestMoreInfo, setShowRequestMoreInfo] = useState(false);
   const [requestMoreInfoItems, setRequestMoreInfoItems] = useState([]);
   const [requestMoreInfoMessage, setRequestMoreInfoMessage] = useState('');
@@ -92,7 +94,7 @@ function AdminDoctorVerificationContent() {
       setLoading(true);
       const params = new URLSearchParams();
       if (statusFilter) params.set('verificationStatus', statusFilter);
-      if (searchTerm) params.set('search', searchTerm);
+      if (debouncedSearchTerm) params.set('search', debouncedSearchTerm);
       params.set('sortBy', sortBy);
       params.set('sortOrder', sortOrder);
       params.set('limit', '100');
@@ -109,7 +111,7 @@ function AdminDoctorVerificationContent() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, searchTerm, sortBy, sortOrder]);
+  }, [statusFilter, debouncedSearchTerm, sortBy, sortOrder]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -265,7 +267,7 @@ function AdminDoctorVerificationContent() {
       title='Doctor Verification'
       subtitle='Review and verify doctor applications'
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin/doctors')}>
+        <Button variant='primary' href='/admin/doctors'>
           Back to Doctors
         </Button>
       }
@@ -312,13 +314,14 @@ function AdminDoctorVerificationContent() {
               <div className='flex-1 min-w-[200px]'>
                 <Input
                   type='text'
+                  size='md'
                   placeholder={t('admin.verifySearchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && fetchDoctors()}
                 />
               </div>
-              <Button variant='secondary' size='sm' onClick={fetchDoctors}>
+              <Button variant='secondary' size='md' onClick={fetchDoctors}>
                 {t('common.search')}
               </Button>
             </div>
@@ -709,7 +712,7 @@ function AdminDoctorVerificationContent() {
                   <p className='text-neutral-500 mb-4'>
                     Select a doctor from the list to review their application
                   </p>
-                  <Button variant='secondary' onClick={() => router.push('/admin/doctors')}>
+                  <Button variant='secondary' href='/admin/doctors'>
                     View All Doctors
                   </Button>
                 </div>

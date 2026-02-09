@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import TodayAppointments from '@/components/dashboard/TodayAppointments';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import React from 'react';
 
 function DashboardListCardInner({
   title,
@@ -18,6 +19,10 @@ function DashboardListCardInner({
   seeAllLink,
   onSeeAll,
   compact = false,
+  /** When set, lists with data.length >= this value use a virtualized list (e.g. 15) */
+  virtualizeAbove = null,
+  /** Height of virtualized list area in px (used when virtualizeAbove is set) */
+  virtualListHeight = 400,
 }) {
   const { t } = useI18n();
   if (loading) {
@@ -32,11 +37,14 @@ function DashboardListCardInner({
           transition={{ duration: 0.2 }}
         >
           <div className='section-header'>
-            <div className='skeleton w-1 h-4 rounded-full shrink-0' style={{ width: '3px', height: '16px' }} />
+            <div
+              className='skeleton w-1 h-4 rounded-full shrink-0'
+              style={{ width: '3px', height: '16px' }}
+            />
             <div className='skeleton skeleton-text w-40' />
           </div>
           <div className='space-y-2 flex-1 min-h-0'>
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className='skeleton skeleton-list-item' />
             ))}
           </div>
@@ -62,68 +70,79 @@ function DashboardListCardInner({
       />
 
       {/* Content – skeleton morphs into real content (AnimatePresence) */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode='wait'>
         <motion.div
-          key="content"
+          key='content'
           className='relative z-10 p-4 flex-1 flex flex-col'
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.25 }}
         >
-        {/* Header – alignment from dashboard.css .section-header */}
-        <div className='section-header'>
-          <div className={`accent-bar accent-bar-${colorScheme}`} />
-          <h2 className='section-title'>{title}</h2>
-        </div>
+          {/* Header – alignment from dashboard.css .section-header */}
+          <div className='section-header'>
+            <div className={`accent-bar accent-bar-${colorScheme}`} />
+            <h2 className='section-title'>{title}</h2>
+          </div>
 
-        {/* List – layout animation for reordering (Framer Motion) */}
-        <div
-          className={`flex-1 overflow-y-auto ${compact ? 'dashboard-list-card__list--compact' : ''}`}
-        >
-          {data && data.length > 0 ? (
-            <motion.div
-              className='space-y-2'
-              layout
-              transition={{ type: 'layout', duration: 0.2 }}
-            >
-              {data.map((item, index) => (
-                <motion.div
-                  key={item._id || item.id || index}
-                  layout
-                  transition={{ type: 'layout', duration: 0.2 }}
-                  className={item._updated ? 'data-row-updated rounded' : ''}
-                >
-                  {renderItem(item, index)}
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : (
-            <div className='empty-state'>
-              {EmptyIcon && <div className='empty-state-icon'>{EmptyIcon}</div>}
-              <p className='text-neutral-500 text-body-sm'>{emptyMessage}</p>
+          {/* List – virtualized when long (virtualizeAbove), otherwise layout animation */}
+          <div className={`flex-1 min-h-0 ${compact ? 'dashboard-list-card__list--compact' : ''}`}>
+            {data && data.length > 0 ? (
+              virtualizeAbove != null && data.length >= virtualizeAbove ? (
+                <TodayAppointments
+                  appointments={data}
+                  renderItem={(item, index) => renderItem(item, index)}
+                  listHeight={virtualListHeight}
+                  estimateSize={80}
+                  overscan={5}
+                  className='rounded'
+                />
+              ) : (
+                <div className='overflow-y-auto'>
+                  <motion.div
+                    className='space-y-2'
+                    layout
+                    transition={{ type: 'layout', duration: 0.2 }}
+                  >
+                    {data.map((item, index) => (
+                      <motion.div
+                        key={item._id || item.id || index}
+                        layout
+                        transition={{ type: 'layout', duration: 0.2 }}
+                        className={item._updated ? 'data-row-updated rounded' : ''}
+                      >
+                        {renderItem(item, index)}
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </div>
+              )
+            ) : (
+              <div className='empty-state'>
+                {EmptyIcon && <div className='empty-state-icon'>{EmptyIcon}</div>}
+                <p className='text-neutral-500 text-body-sm'>{emptyMessage}</p>
+              </div>
+            )}
+          </div>
+
+          {/* See All Link */}
+          {showSeeAll && data && data.length > 0 && (
+            <div className='pt-3 border-t border-neutral-200 mt-3'>
+              <Button
+                variant='link'
+                size='sm'
+                className='w-full justify-center'
+                onClick={() => {
+                  if (onSeeAll) {
+                    onSeeAll();
+                  } else if (seeAllLink) {
+                    window.location.href = seeAllLink;
+                  }
+                }}
+              >
+                {t('dashboard.seeAll')}
+              </Button>
             </div>
           )}
-        </div>
-
-        {/* See All Link */}
-        {showSeeAll && data && data.length > 0 && (
-          <div className='pt-3 border-t border-neutral-200 mt-3'>
-            <Button
-              variant='link'
-              size='sm'
-              className='w-full justify-center'
-              onClick={() => {
-                if (onSeeAll) {
-                  onSeeAll();
-                } else if (seeAllLink) {
-                  window.location.href = seeAllLink;
-                }
-              }}
-            >
-              {t('dashboard.seeAll')}
-            </Button>
-          </div>
-        )}
         </motion.div>
       </AnimatePresence>
     </Card>

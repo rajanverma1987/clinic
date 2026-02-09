@@ -9,6 +9,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -49,6 +50,7 @@ export default function DoctorReviewsPage() {
   const [ratingDistribution, setRatingDistribution] = useState({});
   const [filterRating, setFilterRating] = useState('all'); // all, 5, 4, 3, 2, 1
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
   const [respondingTo, setRespondingTo] = useState(null);
   const [responseText, setResponseText] = useState('');
 
@@ -82,7 +84,7 @@ export default function DoctorReviewsPage() {
 
   useEffect(() => {
     filterReviews();
-  }, [reviews, filterRating, searchQuery]);
+  }, [reviews, filterRating, debouncedSearchQuery]);
 
   const fetchDoctorId = async () => {
     if (!userId || userId === 'undefined') return;
@@ -145,9 +147,9 @@ export default function DoctorReviewsPage() {
       filtered = filtered.filter((review) => Math.round(review.rating) === ratingNum);
     }
 
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // Filter by search query (debounced)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter(
         (review) =>
           review.patientName.toLowerCase().includes(query) ||

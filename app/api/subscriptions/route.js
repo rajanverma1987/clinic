@@ -32,13 +32,12 @@ async function getHandler(req, user) {
 
 /**
  * POST /api/subscriptions
- * Create subscription for tenant. Enterprise payment flow: card (Stripe) or paypal.
+ * Create subscription for tenant. Payment: PayPal only.
  */
 async function postHandler(req, user) {
     try {
         const body = await req.json();
-        const rawMethod = (body.paymentMethod || 'paypal').toLowerCase();
-        const paymentMethod = rawMethod === 'card' ? 'card' : rawMethod === 'paypal' ? 'paypal' : 'paypal';
+        const paymentMethod = 'paypal';
         if (!body.planId) {
             return NextResponse.json(
                 errorResponse('Plan ID is required', 'VALIDATION_ERROR'),

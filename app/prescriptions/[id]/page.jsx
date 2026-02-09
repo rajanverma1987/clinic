@@ -4,7 +4,6 @@ import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
 import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
-import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
@@ -94,7 +93,7 @@ export default function PrescriptionDetailPage() {
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
             <div className='text-status-error mb-4'>{error || 'Prescription not found'}</div>
-            <Button variant='primary' size='md' onClick={() => router.push('/prescriptions')}>
+            <Button variant='primary' size='md' href='/prescriptions'>
               Back to Prescriptions
             </Button>
           </div>
@@ -114,12 +113,7 @@ export default function PrescriptionDetailPage() {
         unreadCount={0}
         actionButtons={
           <>
-            <BackButton />
-            <Button
-              variant='primary'
-              size='md'
-              onClick={() => router.push(`/prescriptions/${prescriptionId}/edit`)}
-            >
+            <Button variant='primary' size='md' href={`/prescriptions/${prescriptionId}/edit`}>
               Edit
             </Button>
             <Button
@@ -211,7 +205,7 @@ export default function PrescriptionDetailPage() {
         }
       />
       <div style={{ padding: '0 10px' }}>
-        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+        <div className='content-grid-3 content-grid-gap-6'>
           <div className='lg:col-span-2 space-y-6'>
             {/* Prescription Info */}
             <Card>

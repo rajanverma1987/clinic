@@ -1,14 +1,11 @@
-/* Primary UI: Inter – cross-platform, excellent readability at small sizes (data-heavy dashboards). */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-/* Monospaced: JetBrains Mono – numbers align in tables/charts (vitals, lab values, times). */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Equal height for form controls – use class .form-control-height on input/select/date/time.
-   Inside padding uses tokens so text sits consistently; small padding-block improves vertical alignment. */
+/* Form controls: .form-control-height for consistent input/select height */
 @layer components {
   .form-control-height,
   input.form-control-height,
@@ -24,7 +21,6 @@
     box-sizing: border-box !important;
     line-height: calc(var(--input-height) - 2px - 2 * var(--form-control-padding-block)) !important;
   }
-  /* Compact form controls (e.g. invoice items table): smaller height and inside padding so content fits narrow columns */
   .input-compact.form-control-height,
   input.input-compact.form-control-height,
   select.input-compact.form-control-height {
@@ -47,16 +43,36 @@
     padding-top: 0.5rem !important;
     padding-bottom: 0.5rem !important;
   }
+  /* Size overrides: use with form-control-height for sm/md/lg (32/40/48px) */
+  .form-control-sm.form-control-height,
+  .form-control-sm input.form-control-height,
+  .form-control-sm select.form-control-height {
+    --input-height: var(--input-height-sm) !important;
+    min-height: var(--input-height-sm) !important;
+    height: var(--input-height-sm) !important;
+  }
+  .form-control-md.form-control-height,
+  .form-control-md input.form-control-height,
+  .form-control-md select.form-control-height {
+    --input-height: var(--input-height-md) !important;
+    min-height: var(--input-height-md) !important;
+    height: var(--input-height-md) !important;
+  }
+  .form-control-lg.form-control-height,
+  .form-control-lg input.form-control-height,
+  .form-control-lg select.form-control-height {
+    --input-height: var(--input-height-lg) !important;
+    min-height: var(--input-height-lg) !important;
+    height: var(--input-height-lg) !important;
+  }
 }
 
 /* Design Tokens - CSS Custom Properties */
 @layer base {
   html {
-    /* ThemeProvider sets color-scheme via JS (light/dark) */
   }
 
   :root {
-    /* Primary Colors – logo blue; main primary = 700 */
     --color-primary-900: #123992;
     --color-primary-700: #2553aee5;
     --color-primary-500: #1e4fb5;
@@ -65,24 +81,20 @@
     --color-primary-100: #e5ebf8;
     --color-primary-50: #f2f5fc;
     --color-primary-600: #1a48ab;
-    /* Main primary for buttons, links, focus – use 700 */
     --color-primary: var(--color-primary-700);
 
-    /* Secondary Colors - Green variants for success/active states */
     --color-secondary-700: #1e874f;
     --color-secondary-600: #27ae60;
     --color-secondary-500: #27ae60;
     --color-secondary-300: #52c48f;
     --color-secondary-100: #e8f8ef;
 
-    /* Success Colors (alias for secondary) */
     --color-success-700: #1e874f;
     --color-success-600: #27ae60;
     --color-success-500: #27ae60;
     --color-success-300: #52c48f;
     --color-success-100: #e8f8ef;
 
-    /* Neutral Colors */
     --color-neutral-900: #1a1a1a;
     --color-neutral-800: #2d2d2d;
     --color-neutral-700: #4f4f4f;
@@ -93,7 +105,6 @@
     --color-neutral-100: #f7fafc;
     --color-neutral-50: #ffffff;
 
-    /* Surface tokens for layout (light default) */
     --color-surface: #ffffff;
     --color-surface-elevated: #f7fafc;
     --color-surface-overlay: rgba(255, 255, 255, 0.95);
@@ -101,19 +112,16 @@
     --color-text-secondary: #4f4f4f;
     --color-border: #e6e9ee;
 
-    /* Status Colors */
     --color-status-success: #27ae60; /* Green for success/active states */
     --color-status-warning: #f2c94c;
     --color-status-error: #eb5757;
     --color-status-info: var(--color-primary-700);
 
-    /* Typography – Inter primary; JetBrains Mono for numeric/tabular data */
     --font-family:
       'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial,
       sans-serif;
     --font-mono: 'JetBrains Mono', 'Roboto Mono', ui-monospace, 'Cascadia Mono', monospace;
 
-    /* Spacing Scale */
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -126,7 +134,6 @@
     --space-14: 56px;
     --space-16: 64px;
 
-    /* Gap Scale (for flex/grid gaps) */
     --gap-1: 4px;
     --gap-2: 8px;
     --gap-3: 12px;
@@ -139,7 +146,6 @@
     --gap-14: 56px;
     --gap-16: 64px;
 
-    /* Component Sizes */
     --size-xs: 16px;
     --size-sm: 20px;
     --size-md: 24px;
@@ -149,10 +155,8 @@
     --size-3xl: 64px;
     --size-4xl: 80px;
 
-    /* Icon outline colors – use for icons on colored/dark backgrounds (outline only, no fill) */
     --icon-outline-white: #ffffff;
     --icon-outline-cream: #fefce8;
-    /* Icon sizes – use for nav, cards, buttons, lists */
     --icon-size-xs: 16px;
     --icon-size-sm: 20px;
     --icon-size-md: 24px;
@@ -160,14 +164,15 @@
     --icon-size-xl: 40px;
     --icon-size-2xl: 48px;
     --icon-size-empty: 64px;
-    /* Gap between icon and text in buttons (single source for Button component) */
     --icon-text-gap: 10px;
 
-    /* Form control height – same for input, select, date, time */
-    --input-height: 2.5rem;
+    /* Input heights: sm 32px, md 40px, lg 48px (Phase 5 – PROBLEMS.md) */
+    --input-height-sm: 32px;
+    --input-height-md: 40px;
+    --input-height-lg: 48px;
+    --input-height: var(--input-height-md);
     --input-height-compact: 1.75rem;
 
-    /* Border Radius – single scale; Tailwind (tailwind.config.js borderRadius) matches these */
     --radius-sm: 4px;
     --radius-md: 6px;
     --radius-lg: 8px;
@@ -175,24 +180,19 @@
     --radius-2xl: 16px;
     --radius-full: 9999px;
 
-    /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 
-    /* Layout defaults */
     --layout-max-width: 100%;
     --layout-padding: clamp(16px, 2vw, 24px);
 
-    /* Tabbed pages: same container and padding; standard widths for form vs data content */
     --tab-container-padding-x: 24px;
-    --tab-content-standard-width: 56rem; /* form/settings: readable line length (≈ max-w-4xl) */
-    --tab-content-wide-width: 80rem; /* data/tables: comfortable width (≈ max-w-7xl) */
-    /* Page shell: horizontal padding (small so content feels full width) */
+    --tab-content-standard-width: 56rem;
+    --tab-content-wide-width: 80rem;
     --page-shell-padding-x: 12px;
-    /* Doctor_Dashboard.md spec tokens */
     --dashboard-page-padding: 24px;
     --dashboard-card-padding: 20px;
     --dashboard-section-margin: 32px;
@@ -207,13 +207,11 @@
     --dashboard-card-radius: var(--radius-xl);
     --dashboard-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     --dashboard-cards-gap: 20px;
-    /* Doctor_Dashboard.md colors (optional overrides) – logo blue */
     --dashboard-primary: var(--color-primary-700);
     --dashboard-primary-hover: var(--color-primary-700);
     --dashboard-primary-light: #e5ebf8;
     --dashboard-sidebar-bg: #0a1929;
     --dashboard-page-bg: #f8f9fa;
-    /* Doctor_Dashboard.md typography */
     --dashboard-h1: 32px;
     --dashboard-h2: 24px;
     --dashboard-h3: 20px;
@@ -221,7 +219,6 @@
     --dashboard-body-sm: 13px;
     --dashboard-caption: 12px;
 
-    /* Typography Sizes with Line Heights */
     --text-body-xs: 12px;
     --text-body-xs-line-height: 16px;
     --text-body-sm: 14px;
@@ -231,22 +228,7 @@
     --text-body-lg: 18px;
     --text-body-lg-line-height: 28px;
 
-    /* Z-Index Scale - Proper layering hierarchy
-     * Hierarchy (lowest to highest):
-     * 0-9: Base content
-     * 10-19: Dropdowns (simple)
-     * 20-29: Sticky elements
-     * 30-39: Fixed elements (sidebars, panels)
-     * 40-49: Modal backdrops
-     * 50-59: Modals
-     * 60-69: Popovers
-     * 70-79: Tooltips
-     * 1000: Sidebar
-     * 9999: Marketing Header
-     * 10050-10059: Dropdown menus (LanguageSwitcher, etc.)
-     * 10060-10069: Toast notifications
-     * 99999: Maximum
-     */
+    /* Z-Index: base 0, dropdowns 10–19, sticky 20–29, fixed 30–39, modal 40–59, popover 60, tooltip 70, sidebar 1000, header 9999, toast 10060 */
     --z-base: 0;
     --z-content: 1;
     --z-dropdown: 10;
@@ -267,7 +249,6 @@
     --z-maximum: 99999;
   }
 
-  /* Dark theme – dashboard and app surfaces; shadows visible on dark bg */
   .dark {
     --color-surface: #1a1a1a;
     --color-surface-elevated: #2d2d2d;
@@ -284,7 +265,6 @@
     --dashboard-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   }
 
-  /* Inter at 14–16px body; line-height 1.5–1.6 for readability (see text-body-*). */
   body {
     font-family: var(--font-family);
     font-size: 16px;
@@ -304,7 +284,6 @@
     color: var(--color-text-primary);
   }
 
-  /* Premium typography base */
   h1,
   h2,
   h3,
@@ -321,7 +300,6 @@
   }
 }
 
-/* Primary: green default, 1px white border + 0.5px green ring; hover/selected → blue */
 @layer components {
   .btn-primary-green {
     background-color: #15803d !important;
@@ -338,7 +316,6 @@
     box-shadow: 0 0 0 0.5px var(--color-primary) !important;
   }
 
-  /* Secondary: blue default, 1px white border + 0.5px blue ring; hover = green fill + green ring */
   .btn-secondary-blue {
     background-color: var(--color-primary) !important;
     border: 1px solid white !important;
@@ -353,7 +330,6 @@
   }
 }
 
-/* Quick Actions dropdown list – guaranteed list design */
 .quick-actions-dropdown {
   min-width: 220px;
   padding: 6px 6px;
@@ -421,7 +397,6 @@
   color: var(--color-primary-300);
 }
 
-/* Layout: no gap so header bar sits nearest to sidebar */
 .layout-root {
   display: flex;
   min-height: 100vh;
@@ -432,7 +407,6 @@
   background-color: var(--color-surface);
 }
 
-/* Perfect sticky header – bar at top of scroll area */
 .sticky-header-bar {
   position: sticky;
   top: 0;
@@ -450,7 +424,6 @@
   border-bottom-color: var(--color-border);
 }
 
-/* Compact breadcrumb row – directly below header, tab section top */
 .breadcrumb-bar {
   width: 100%;
   padding: 2px var(--dashboard-header-padding-x, 24px) 6px;
@@ -597,7 +570,6 @@
   margin: 0 var(--space-2, 8px);
 }
 
-/* Shared box for search, language, notifications – same border, radius, shadow */
 .sticky-header-bar .header-control-box {
   display: inline-flex;
   align-items: center;
@@ -619,7 +591,6 @@
   border-color: var(--color-neutral-300);
 }
 
-/* Language switcher inside header: single clean border, no double-line */
 .sticky-header-bar .header-control-box:has(.LanguageSwitcher) {
   box-shadow: none;
 }
@@ -656,7 +627,6 @@
   box-shadow: none !important;
 }
 
-/* Search trigger – icon-only, primary color to match theme (not black) */
 .sticky-header-bar .header-search-trigger {
   display: inline-flex !important;
   align-items: center !important;
@@ -685,7 +655,6 @@
   min-width: 36px;
   min-height: 36px;
 }
-/* Search + refresh icon group: SVG color icon default – primary blue (not black) */
 .sticky-header-bar__right-group:first-of-type .header-control-box--icon .icon,
 .sticky-header-bar__right-group:first-of-type .header-control-box--icon [class*='icon'],
 .sticky-header-bar__right-group:first-of-type .header-control-box--icon svg.icon {
@@ -702,7 +671,6 @@
   color: var(--color-primary-700) !important;
 }
 
-/* Notification trigger – same look as search/language (box from .header-control-box) */
 .sticky-header-bar .header-control-box .NotificationDropdown {
   display: inline-flex;
   align-items: center;
@@ -781,7 +749,6 @@
   .NotificationDropdown-button--sm::before {
   display: none !important;
 }
-/* Notification badge – keep visible but compact in header */
 .sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-badge {
   min-width: 18px;
   height: 18px;
@@ -790,7 +757,6 @@
   right: -4px;
 }
 
-/* Shared layout shell – full width; minimal horizontal padding so tab/content areas use full width */
 .page-shell {
   width: 100%;
   max-width: var(--layout-max-width);
@@ -812,7 +778,6 @@
   color: inherit;
 }
 
-/* Shared page content wrapper (dashboard, subscription, etc.) */
 .dashboard-container {
   width: 100%;
   max-width: 100%;
@@ -828,7 +793,6 @@
   margin-bottom: 0;
 }
 
-/* Full-width tab container: same width and padding for all tabbed pages */
 .data-tabs-container {
   width: 100%;
   max-width: 100%;
@@ -839,11 +803,150 @@
 .data-tabs-content {
   width: 100%;
   max-width: 100%;
-  margin-top: var(--space-4);
+  margin-top: var(--space-3, 12px);
   box-sizing: border-box;
 }
 
-/* Standard content width for form-heavy tab content (settings, profile, etc.) */
+.filter-select {
+  width: auto;
+  min-width: 8.5rem;
+  max-width: 16rem;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--text-body-sm, 14px);
+  line-height: var(--text-body-sm-line-height, 20px);
+  border: 1px solid var(--color-neutral-300, #d1d5db);
+  border-radius: var(--radius-lg, 8px);
+  background-color: var(--color-surface, #fff);
+  color: var(--color-text-primary, #111827);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23828282' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-size: 1.25em 1.25em;
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+.filter-select:focus {
+  border-color: var(--color-primary-500, #6366f1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+.filter-select:hover:not(:disabled) {
+  border-color: var(--color-neutral-400, #9ca3af);
+}
+.dark .filter-select {
+  border-color: var(--color-neutral-600, #4b5563);
+  background-color: var(--color-neutral-800, #1f2937);
+  color: var(--color-text-primary);
+}
+.dark .filter-select:focus {
+  border-color: var(--color-primary-500);
+}
+
+.filter-input-date {
+  width: auto;
+  min-width: 10rem;
+  max-width: 12rem;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--text-body-sm, 14px);
+  border: 1px solid var(--color-neutral-300, #d1d5db);
+  border-radius: var(--radius-lg, 8px);
+  background-color: var(--color-surface, #fff);
+  color: var(--color-text-primary, #111827);
+  outline: none;
+}
+.filter-input-date:focus {
+  border-color: var(--color-primary-500, #6366f1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+.dark .filter-input-date {
+  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-800);
+  color: var(--color-text-primary);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.filter-row-items-end {
+  align-items: flex-end;
+}
+
+.content-grid-2,
+.content-grid-3,
+.content-grid-4,
+.content-grid-5,
+.content-grid-6 {
+  display: grid;
+  gap: var(--content-grid-gap, var(--space-4));
+  width: 100%;
+  box-sizing: border-box;
+}
+.content-grid-2 {
+  grid-template-columns: 1fr;
+}
+.content-grid-3 {
+  grid-template-columns: 1fr;
+}
+.content-grid-4 {
+  grid-template-columns: 1fr;
+}
+.content-grid-5 {
+  grid-template-columns: 1fr;
+}
+.content-grid-6 {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .content-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .content-grid-4,
+  .content-grid-5,
+  .content-grid-6 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .content-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .content-grid-5,
+  .content-grid-6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .content-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .content-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .content-grid-5 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .content-grid-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+@media (min-width: 1280px) {
+  .content-grid-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+.content-grid-gap-2 {
+  --content-grid-gap: var(--space-2);
+}
+.content-grid-gap-3 {
+  --content-grid-gap: var(--space-3);
+}
+.content-grid-gap-6 {
+  --content-grid-gap: var(--space-6);
+}
+
 .tab-content-standard-width {
   width: 100%;
   max-width: var(--tab-content-standard-width, 56rem);
@@ -851,7 +954,13 @@
   margin-right: auto;
   box-sizing: border-box;
 }
-/* Wide content width for data/tables (reports, lists) – prevents ultra-wide stretch */
+.tab-content-standard-width-left {
+  width: 100%;
+  max-width: var(--tab-content-standard-width, 56rem);
+  margin-left: 0;
+  margin-right: auto;
+  box-sizing: border-box;
+}
 .tab-content-wide-width {
   width: 100%;
   max-width: var(--tab-content-wide-width, 80rem);
@@ -860,7 +969,6 @@
   box-sizing: border-box;
 }
 
-/* Standard: when tab content is loading, show inline loader in content area (not full-screen) */
 .tab-content-loading {
   display: flex;
   align-items: center;
@@ -870,7 +978,6 @@
   width: 100%;
 }
 
-/* Clinic table – single design for all data tables (use on <table> or via Table component wrapper) */
 .clinic-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--color-neutral-200);
@@ -956,35 +1063,57 @@
   color: var(--color-neutral-400);
 }
 
-/* Doctor_Dashboard.md: cards - radius 12px, padding 20px, shadow */
 .dashboard-card {
   border-radius: var(--dashboard-card-radius);
   padding: var(--dashboard-card-padding);
   box-shadow: var(--dashboard-card-shadow);
 }
 
-/* Icon size and color utilities – use on svg or wrapper for consistent sizing.
-   SVG color icons as default: stroke/fill follow currentColor so icons inherit text color. */
+/* Icons: stroke only, no fill. Sizes .icon-xs → .icon-2xl via --icon-size-* */
 .icon {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: var(--icon-size-sm);
   height: var(--icon-size-sm);
   color: currentColor;
-}
-/* When .icon is on the SVG (e.g. Lucide): outline only, no fill. Stroke inherits parent color. */
-svg.icon {
-  color: inherit;
-  stroke: currentColor;
-  fill: none !important;
+  box-sizing: border-box;
 }
 .icon svg {
   width: 100%;
   height: 100%;
+  flex-shrink: 0;
   stroke: currentColor;
+  color: inherit;
   fill: none !important;
 }
-/* Optional: cream/white outline for icons in headers or dark buttons */
+.icon svg path,
+.icon svg circle,
+.icon svg rect,
+.icon svg polygon,
+.icon svg polyline {
+  fill: none !important;
+  stroke: inherit;
+  stroke-width: inherit;
+}
+svg.icon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  flex-shrink: 0;
+  stroke: currentColor;
+  color: inherit;
+  fill: none !important;
+}
+svg.icon path,
+svg.icon circle,
+svg.icon rect,
+svg.icon polygon,
+svg.icon polyline {
+  fill: none !important;
+  stroke: inherit;
+  stroke-width: inherit;
+}
 .icon-outline-cream svg,
 .icon-outline-cream.icon,
 svg.icon-outline-cream {
@@ -997,32 +1126,49 @@ svg.icon-outline-white {
   stroke: var(--icon-outline-white);
   fill: none !important;
 }
-.icon-xs {
+.icon-xs,
+svg.icon.icon-xs {
   width: var(--icon-size-xs);
   height: var(--icon-size-xs);
+  min-width: var(--icon-size-xs);
+  min-height: var(--icon-size-xs);
 }
-.icon-sm {
+.icon-sm,
+svg.icon.icon-sm {
   width: var(--icon-size-sm);
   height: var(--icon-size-sm);
+  min-width: var(--icon-size-sm);
+  min-height: var(--icon-size-sm);
 }
-.icon-md {
+.icon-md,
+svg.icon.icon-md {
   width: var(--icon-size-md);
   height: var(--icon-size-md);
+  min-width: var(--icon-size-md);
+  min-height: var(--icon-size-md);
 }
-.icon-lg {
+.icon-lg,
+svg.icon.icon-lg {
   width: var(--icon-size-lg);
   height: var(--icon-size-lg);
+  min-width: var(--icon-size-lg);
+  min-height: var(--icon-size-lg);
 }
-.icon-xl {
+.icon-xl,
+svg.icon.icon-xl {
   width: var(--icon-size-xl);
   height: var(--icon-size-xl);
+  min-width: var(--icon-size-xl);
+  min-height: var(--icon-size-xl);
 }
-.icon-2xl {
+.icon-2xl,
+svg.icon.icon-2xl {
   width: var(--icon-size-2xl);
   height: var(--icon-size-2xl);
+  min-width: var(--icon-size-2xl);
+  min-height: var(--icon-size-2xl);
 }
 
-/* Sidebar nav icons – 24px, inherit link text color */
 .sidebar-nav-icon {
   display: inline-flex;
   align-items: center;
@@ -1039,7 +1185,6 @@ svg.icon-outline-white {
   fill: none;
 }
 
-/* Sidebar profile header – solid background so it never looks transparent */
 .sidebar-profile-header {
   background: var(--color-neutral-50) !important;
 }
@@ -1047,19 +1192,16 @@ svg.icon-outline-white {
   background: var(--color-surface-elevated) !important;
 }
 
-/* Sidebar collapse toggle – distinct control (not nav-style); icon-in-box, "Collapse menu" label when expanded */
 .sidebar-collapse-toggle:focus-visible {
   outline: 1px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-/* Collapsed sidebar: tooltip is rendered via portal (SidebarTooltip.jsx), no CSS ::after */
 .dark .sidebar-tooltip-portal {
   background: var(--color-neutral-700) !important;
   color: var(--color-neutral-100) !important;
 }
 
-/* Collapsed sidebar nav: inline padding and rounded active left border */
 [data-collapsed='true'] nav a.rounded-xl {
   border-top-left-radius: var(--radius-xl);
   border-bottom-left-radius: var(--radius-xl);
@@ -1068,7 +1210,6 @@ svg.icon-outline-white {
   border-left-width: 3px;
 }
 
-/* Profile dropdown wrapper – opens below trigger */
 .profile-menu {
   position: relative;
   width: 100%;
@@ -1194,7 +1335,6 @@ svg.icon-outline-white {
 }
 
 @layer utilities {
-  /* Animation keyframes */
   @keyframes fade-in {
     from {
       opacity: 0;
@@ -1323,7 +1463,6 @@ svg.icon-outline-white {
     }
   }
 
-  /* Animation classes */
   .animate-fade-in {
     animation: fade-in 0.6s ease-out;
   }
@@ -1332,7 +1471,6 @@ svg.icon-outline-white {
     animation: slide-up 0.6s ease-out;
   }
 
-  /* Modal-specific faster animations */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -1401,23 +1539,19 @@ svg.icon-outline-white {
     animation-delay: 1.5s;
   }
 
-  /* Smooth scrolling for all routes */
   html {
     scroll-behavior: smooth;
   }
 
-  /* Prevent layout shift */
   body {
     overflow-x: hidden;
   }
 
-  /* Ensure smooth rendering */
   * {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Essential loader animation - functional requirement */
   @keyframes loader-spin {
     from {
       transform: rotate(0deg);
@@ -1429,6 +1563,94 @@ svg.icon-outline-white {
 
   .loader-spinner {
     animation: loader-spin 0.8s linear infinite;
+  }
+
+  /* Loader component – GPU-friendly, single source of truth */
+  @keyframes loader-medical-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes loader-medical-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.3;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.6;
+    }
+  }
+  @keyframes loader-logo-pulse {
+    0%,
+    100% {
+      opacity: 0.9;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+  }
+  @keyframes loader-fade-pulse {
+    0%,
+    100% {
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  @keyframes loader-message-pulse {
+    0%,
+    100% {
+      opacity: 0.85;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  @keyframes loader-compact-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loader-ring {
+    animation: loader-medical-spin 1s linear infinite;
+  }
+  .loader-bg-pulse {
+    animation: loader-medical-pulse 2s ease-in-out infinite;
+  }
+  .loader-logo {
+    animation: loader-logo-pulse 2s ease-in-out infinite;
+  }
+  .loader-logo-wrap {
+    animation: loader-fade-pulse 2s ease-in-out infinite;
+  }
+  .loader-text-pulse {
+    animation: loader-message-pulse 1.8s ease-in-out infinite;
+  }
+  .loader-compact-ring {
+    animation: loader-compact-spin 0.8s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loader-ring,
+    .loader-compact-ring {
+      animation-duration: 2s;
+    }
+    .loader-bg-pulse,
+    .loader-logo,
+    .loader-logo-wrap {
+      animation: none;
+      opacity: 0.9;
+    }
+    .loader-text-pulse {
+      animation: none;
+      opacity: 1;
+    }
   }
 
   .animation-delay-3000 {
@@ -1533,7 +1755,6 @@ svg.icon-outline-white {
     }
   }
 
-  /* Minimal pulse animation for marketing buttons */
   @keyframes button-pulse {
     0%,
     100% {
@@ -1594,7 +1815,6 @@ svg.icon-outline-white {
     animation: gradient-shift 3s ease infinite;
   }
 
-  /* Hover effects */
   .hover-lift {
     transition:
       transform 0.3s ease,
@@ -1606,7 +1826,6 @@ svg.icon-outline-white {
     box-shadow: 0 10px 25px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
   }
 
-  /* Prevent SVG changes in primary buttons */
   button.bg-primary-500 [class*='svg'],
   button.bg-primary-500 svg {
     transition: none !important;
@@ -1623,7 +1842,6 @@ svg.icon-outline-white {
     stroke: currentColor !important;
   }
 
-  /* Gradient text */
   .gradient-text {
     background: linear-gradient(135deg, #667eea 0%, #216462 100%);
     -webkit-background-clip: text;
@@ -1638,7 +1856,6 @@ svg.icon-outline-white {
     background-clip: text;
   }
 
-  /* Hero Section Animations */
   @keyframes hero-float {
     0%,
     100% {
@@ -1671,7 +1888,6 @@ svg.icon-outline-white {
   }
 }
 
-/* Prevent sidebar expansion animations when collapsed */
 [data-collapsed='true'] {
   transition: none !important;
   width: 4rem !important;
@@ -1685,12 +1901,10 @@ svg.icon-outline-white {
   transition: none !important;
 }
 
-/* Ensure sidebar cannot expand when collapsed */
 [data-collapsed='true'] {
   pointer-events: auto;
 }
 
-/* Scrollbar hide utility for tabs */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -1700,13 +1914,8 @@ svg.icon-outline-white {
   display: none;
 }
 
-/* Design hierarchy – use these for consistent font size & spacing
- * Typography: text-h1 (page title) → text-h2 (section) → text-h3 (card) → text-h4 (subsection) → text-body-lg/md/sm/xs
- * Spacing: .space-section (between sections), .space-card (card inner), .space-item (list/item gap)
- * Buttons: Use <Button variant="primary|secondary|ghost" size="sm|md|lg" /> – avoid raw <button>
- */
+/* Typography & spacing utilities: text-h1..h4, text-body-*, space-section, space-card, space-item */
 @layer utilities {
-  /* Section / layout spacing */
   .space-section {
     margin-bottom: var(--space-6);
   }
@@ -1723,7 +1932,6 @@ svg.icon-outline-white {
     gap: var(--gap-3);
   }
 
-  /* Headings */
   .text-h1 {
     font-size: 32px;
     line-height: 40px;
@@ -1752,7 +1960,6 @@ svg.icon-outline-white {
     font-family: var(--font-family);
   }
 
-  /* Body Text */
   .text-body-lg {
     font-size: 18px;
     line-height: 28px; /* ~1.56 */
@@ -1781,7 +1988,6 @@ svg.icon-outline-white {
     font-family: var(--font-family);
   }
 
-  /* Button Label – default for <Button> */
   .text-button {
     font-size: 16px;
     line-height: 20px;
@@ -1789,7 +1995,6 @@ svg.icon-outline-white {
     font-family: var(--font-family);
   }
 
-  /* Card/section title – same weight as h4, used for list/dashboard cards */
   .text-card-title {
     font-size: 18px;
     line-height: 24px;
@@ -1807,7 +2012,6 @@ svg.icon-outline-white {
     color: var(--color-text-secondary);
   }
 
-  /* Dashboard metrics – 18–24px, semibold/medium for quick scanning */
   .text-metric-lg {
     font-size: 24px;
     line-height: 1.25;
@@ -1827,21 +2031,18 @@ svg.icon-outline-white {
     font-family: var(--font-family);
   }
 
-  /* Numeric/tabular data – monospaced, aligned (vitals, lab values, times) */
   .font-tabular,
   .text-numeric {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
 
-  /* Icon hover tint effects */
   .icon-tint-hover {
     transition:
       filter 0.3s ease,
       transform 0.3s ease;
   }
 
-  /* When parent is hovered, tint the icon */
   .group:hover .icon-tint-hover,
   .group-hover .icon-tint-hover,
   *:hover > .icon-tint-hover {
@@ -1850,7 +2051,6 @@ svg.icon-outline-white {
     transform: scale(1.05);
   }
 
-  /* Primary color tint */
   .icon-tint-primary {
     transition:
       filter 0.3s ease,
@@ -1865,7 +2065,6 @@ svg.icon-outline-white {
     transform: scale(1.05);
   }
 
-  /* Secondary color tint */
   .icon-tint-secondary {
     transition:
       filter 0.3s ease,
@@ -1880,25 +2079,21 @@ svg.icon-outline-white {
     transform: scale(1.05);
   }
 
-  /* Prevent SVG color inheritance on hover */
   svg[stroke='currentColor'] {
     color: inherit;
   }
 
-  /* Prevent unwanted color changes on SVG hover */
   .group:hover svg[stroke='currentColor'],
   *:hover svg[stroke='currentColor'] {
     color: inherit !important;
   }
 
-  /* Generic icon hover - applies primary tint by default */
   svg {
     transition:
       filter 0.3s ease,
       transform 0.3s ease;
   }
 
-  /* Apply tint to SVG icons in hoverable containers */
   .group:hover svg:not(.no-tint),
   .group-hover svg:not(.no-tint),
   a:hover svg:not(.no-tint),
@@ -1907,32 +2102,32 @@ svg.icon-outline-white {
       brightness(98%) contrast(96%);
   }
 
-  /* Buttons: keep icon color on hover (white for primary/danger, no blue tint) */
   button svg,
   button:hover svg,
   button:focus-visible svg {
     filter: none !important;
   }
 
-  /* Explicitly prevent filter on quick action icons - must come after generic rule */
   .quick-action-icon svg,
   .quick-action-btn .quick-action-icon svg,
   .quick-action-btn:hover .quick-action-icon svg {
     filter: none !important;
   }
 
-  /* Sidebar nav: icon follows link text color on hover (no separate filter tint) */
   nav a:hover .sidebar-nav-icon svg {
     filter: none !important;
   }
 
-  /* Keep original color for specific cases */
   svg.no-tint {
     filter: none !important;
   }
 }
 
 /* ========== Subscription page – design tokens, fresh layout ========== */
+
+.sub-half-half {
+  align-items: start;
+}
 
 .sub-page-wrap {
   max-width: 1400px;
@@ -2158,12 +2353,6 @@ svg.icon-outline-white {
   width: 100%;
   margin-top: auto;
 }
-.sub-plan-card__secure-note {
-  font-size: var(--text-body-xs);
-  color: var(--color-neutral-500);
-  margin: 0 0 var(--space-1);
-  line-height: 1.4;
-}
 .sub-plan-card__cta-group .sub-plan-card__cta {
   width: 100%;
 }
@@ -2268,32 +2457,69 @@ svg.icon-outline-white {
 .sub-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  padding-top: var(--space-4);
-  margin-top: var(--space-4);
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
   border-top: 1px solid var(--color-neutral-200);
+  font-size: var(--text-body-sm);
 }
 .dark .sub-actions {
   border-top-color: var(--color-border);
 }
+.sub-actions-sep {
+  color: var(--color-neutral-400);
+  user-select: none;
+  padding: 0 var(--space-1);
+}
+.dark .sub-actions-sep {
+  color: var(--color-neutral-500);
+}
+.sub-action-link {
+  text-decoration: none;
+}
+.sub-actions .sub-action-link:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.sub-actions button[class*='bg-transparent'] {
+  min-height: 0;
+  padding: 0;
+  font-size: inherit;
+}
 
 /* ----- Plans grid ----- */
-.sub-plans-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-6);
+.sub-payment-security-note {
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-500);
+  margin: 0 0 var(--space-4);
+  line-height: 1.45;
+  max-width: 42rem;
 }
-@media (min-width: 640px) {
-  .sub-plans-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.dark .sub-payment-security-note {
+  color: var(--color-neutral-400);
 }
-@media (min-width: 1024px) {
-  .sub-plans-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.sub-payment-modal-content {
+  padding: var(--space-2) 0;
 }
-
+.sub-payment-modal-note {
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-500);
+  margin: 0 0 var(--space-4);
+  line-height: 1.45;
+}
+.dark .sub-payment-modal-note {
+  color: var(--color-neutral-400);
+}
+.sub-payment-modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.sub-payment-modal-btn {
+  width: 100%;
+}
 /* ----- Comparison (collapsible) ----- */
 .sub-comparison-toggle {
   width: 100%;
@@ -2374,27 +2600,13 @@ svg.icon-outline-white {
   text-align: center;
 }
 
-/* ----- Add-ons ----- */
-.sub-addons-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-4);
-}
-@media (min-width: 768px) {
-  .sub-addons-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (min-width: 1024px) {
-  .sub-addons-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
+/* ----- Add-ons (compact cards, + icon top-right) ----- */
 .sub-addon-card {
+  position: relative;
   background: var(--color-neutral-50);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-neutral-200);
-  padding: var(--space-5);
+  padding: var(--space-3);
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -2410,13 +2622,53 @@ svg.icon-outline-white {
 .dark .sub-addon-card:hover {
   border-color: var(--color-primary);
 }
+.sub-addon-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
 .sub-addon-card .sub-addon-title {
   font-weight: 600;
+  font-size: var(--text-body-md);
   color: var(--color-neutral-900);
-  margin: 0 0 var(--space-1);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
 }
 .dark .sub-addon-card .sub-addon-title {
   color: var(--color-text-primary);
+}
+.sub-addon-add-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-primary-500);
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.sub-addon-add-icon:hover:not(:disabled) {
+  background: var(--color-primary-600);
+}
+.sub-addon-add-icon:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.sub-addon-add-icon-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
 }
 .sub-addon-card .sub-addon-price {
   font-size: var(--text-body-sm);
@@ -2429,16 +2681,14 @@ svg.icon-outline-white {
   color: var(--color-neutral-500);
   margin: 0;
 }
-.sub-addon-card .sub-addon-add-btn {
-  margin-top: var(--space-3);
-  width: 100%;
-}
 .sub-addon-card .sub-addon-badge {
-  display: inline-block;
-  margin-top: var(--space-3);
+  flex-shrink: 0;
   font-size: var(--text-body-xs);
   font-weight: 600;
   color: var(--color-secondary-600);
+}
+.dark .sub-addon-card .sub-addon-badge {
+  color: var(--color-primary-300);
 }
 
 /* Your add-ons list */
@@ -2463,17 +2713,7 @@ svg.icon-outline-white {
   color: var(--color-neutral-800);
 }
 
-/* ----- Which plan ----- */
-.sub-which-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-6);
-}
-@media (min-width: 768px) {
-  .sub-which-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+/* ----- Which plan (use content-grid-2 content-grid-gap-6) ----- */
 .sub-which-card {
   background: var(--color-neutral-50);
   border-radius: var(--radius-xl);

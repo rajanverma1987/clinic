@@ -15,8 +15,23 @@ export default function AdminSettingsBookingPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Booking Settings' subtitle='Advance booking, cancellation, no-show, buffer' actionButton={<Button variant='primary' onClick={() => router.push('/admin/settings')}>Back to Settings</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>Booking settings (min/max advance, cancellation/reschedule/no-show policy, buffer time) are planned.</p></Card></div>
+    <Layout
+      title='Booking Settings'
+      subtitle='Advance booking, cancellation, no-show, buffer'
+      actionButton={
+        <Button variant='primary' href='/admin/settings'>
+          Back to Settings
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Booking settings (min/max advance, cancellation/reschedule/no-show policy, buffer time)
+            are planned.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

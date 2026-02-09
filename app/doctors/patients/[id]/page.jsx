@@ -183,7 +183,7 @@ export default function DoctorPatientRecordsPage() {
       <Layout>
         <Card className='p-8 text-center'>
           <p className='text-neutral-500 mb-4'>Patient not found</p>
-          <Button variant='primary' onClick={() => router.push('/patients')}>
+          <Button variant='primary' href='/patients'>
             Back to Patients
           </Button>
         </Card>

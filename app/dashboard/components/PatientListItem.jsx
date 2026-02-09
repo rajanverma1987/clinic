@@ -16,24 +16,27 @@ function PatientListItemInner({ patient, onClick }) {
   const gender = patient.gender || '';
 
   return (
-    <div className="dashboard-list-item dashboard-list-item-primary group" onClick={onClick}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
+    <button
+      type='button'
+      className='dashboard-list-item dashboard-list-item-primary group w-full text-left cursor-pointer border-0 bg-transparent p-0'
+      onClick={onClick}
+      aria-label={patientName}
+    >
+      <div className='flex items-start justify-between gap-3'>
+        <div className='flex items-start gap-3 flex-1 min-w-0'>
           {/* Patient Avatar */}
-          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 border-2 border-primary-200">
-            <span className="text-primary-600 font-semibold text-xs">
-              {initials}
-            </span>
+          <div className='w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 border-2 border-primary-200'>
+            <span className='text-primary-600 font-semibold text-xs'>{initials}</span>
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-w-0">
-            <h4 className="text-body-sm font-semibold text-neutral-900 mb-1 truncate">
+          <div className='flex-1 min-w-0'>
+            <h4 className='text-body-sm font-semibold text-neutral-900 mb-1 truncate'>
               {patientName}
             </h4>
-            <p className="text-body-xs text-neutral-600 mb-1.5 truncate">{contactInfo}</p>
+            <p className='text-body-xs text-neutral-600 mb-1.5 truncate'>{contactInfo}</p>
             {(age || gender) && (
-              <div className="flex items-center gap-2 text-body-xs text-neutral-500">
+              <div className='flex items-center gap-2 text-body-xs text-neutral-500'>
                 {age && <span>{age} years</span>}
                 {age && gender && <span>•</span>}
                 {gender && <span>{gender}</span>}
@@ -43,9 +46,9 @@ function PatientListItemInner({ patient, onClick }) {
         </div>
 
         {/* Arrow */}
-        <ChevronRightIcon className="icon icon-sm text-neutral-400 group-hover:text-primary-500 transition-colors flex-shrink-0" />
+        <ChevronRightIcon className='icon icon-sm text-neutral-400 group-hover:text-primary-500 transition-colors flex-shrink-0' />
       </div>
-    </div>
+    </button>
   );
 }
 

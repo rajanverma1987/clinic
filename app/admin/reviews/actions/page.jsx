@@ -15,8 +15,23 @@ export default function AdminReviewsActionsPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Review Actions' subtitle='Approve, reject, mark inappropriate, respond' actionButton={<Button variant='primary' onClick={() => router.push('/admin/reviews')}>Back to Reviews</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>Review moderation (approve/reject, mark inappropriate, respond, delete fake, feature) is planned.</p></Card></div>
+    <Layout
+      title='Review Actions'
+      subtitle='Approve, reject, mark inappropriate, respond'
+      actionButton={
+        <Button variant='primary' href='/admin/reviews'>
+          Back to Reviews
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Review moderation (approve/reject, mark inappropriate, respond, delete fake, feature) is
+            planned.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

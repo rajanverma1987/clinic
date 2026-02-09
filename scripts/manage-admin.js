@@ -14,7 +14,11 @@
  *   node scripts/manage-admin.js reset <email> <new-password>
  *   node scripts/manage-admin.js verify <email>
  *   node scripts/manage-admin.js health
+ *   node scripts/manage-admin.js ensure-test-super-admin   (706359@gmail.com / Rtv@@123# for testing)
  */
+
+const TEST_SUPER_ADMIN_EMAIL = '706359@gmail.com';
+const TEST_SUPER_ADMIN_PASSWORD = 'Rtv@@123#';
 
 import connectDB from '../lib/db/connection.js';
 import User, { UserRole } from '../models/User.js';
@@ -321,6 +325,57 @@ async function healthCheck() {
   }
 }
 
+/**
+ * Ensure test super admin exists: 706359@gmail.com with password Rtv@@123# (for testing).
+ * Creates or updates the user to role super_admin.
+ */
+async function ensureTestSuperAdmin() {
+  try {
+    await connectDB();
+    console.log('🔐 Ensuring test super admin account...\n');
+
+    const email = TEST_SUPER_ADMIN_EMAIL.toLowerCase();
+    let user = await User.findOne({ email }).select('+password');
+
+    if (user) {
+      user.role = UserRole.SUPER_ADMIN;
+      user.tenantId = null;
+      user.isActive = true;
+      user.password = TEST_SUPER_ADMIN_PASSWORD;
+      user.firstName = user.firstName || 'Test';
+      user.lastName = user.lastName || 'Super Admin';
+      await user.save();
+      console.log(`✅ Updated existing user to super admin: ${email}\n`);
+    } else {
+      user = await User.create({
+        email,
+        password: TEST_SUPER_ADMIN_PASSWORD,
+        firstName: 'Test',
+        lastName: 'Super Admin',
+        role: UserRole.SUPER_ADMIN,
+        tenantId: null,
+        isActive: true,
+      });
+      console.log(`✅ Created test super admin: ${email}\n`);
+    }
+
+    const verify = await User.findOne({ _id: user._id }).select('+password');
+    const ok = await verify.comparePassword(TEST_SUPER_ADMIN_PASSWORD);
+    if (!ok) {
+      console.error('❌ Password verification failed after save.\n');
+      await mongoose.connection.close();
+      process.exit(1);
+    }
+
+    console.log('   Email:    ' + email);
+    console.log('   Password: Rtv@@123# (for testing only)\n');
+    await mongoose.connection.close();
+  } catch (error) {
+    console.error('❌ Error:', error.message);
+    process.exit(1);
+  }
+}
+
 // Main command router
 switch (command) {
   case 'list':
@@ -338,6 +393,9 @@ switch (command) {
   case 'health':
     await healthCheck();
     break;
+  case 'ensure-test-super-admin':
+    await ensureTestSuperAdmin();
+    break;
   default:
     console.log('\n📖 Super Admin Management\n');
     console.log('Usage:');
@@ -345,7 +403,8 @@ switch (command) {
     console.log('  npm run admin:create        - Create a new super admin');
     console.log('  npm run admin:reset         - Reset super admin password');
     console.log('  npm run admin:verify        - Verify admin account health');
-    console.log('  npm run admin:health        - System health check\n');
+    console.log('  npm run admin:health        - System health check');
+    console.log('  npm run admin:ensure-test   - Ensure 706359@gmail.com super admin (Rtv@@123#)\n');
     process.exit(1);
 }
 

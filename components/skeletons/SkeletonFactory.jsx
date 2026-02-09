@@ -5,6 +5,7 @@
  * Renders route-appropriate loading placeholders; uses neutral/dark classes for theme consistency.
  */
 
+import { Card } from '@/components/ui/Card';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { SKELETON_TYPES } from '@/lib/loading/loading-states';
 
@@ -13,27 +14,34 @@ const bg2 = 'bg-neutral-200 dark:bg-neutral-600';
 const bg3 = 'bg-neutral-300 dark:bg-neutral-500';
 const bg1 = 'bg-neutral-100 dark:bg-neutral-700';
 
+/** One row of stat cards – for dynamic() loading fallback (e.g. dashboard stats). */
+export function StatsCardsSkeleton() {
+  return (
+    <div className={`content-grid-4 ${pulse}`}>
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className='bg-white dark:bg-neutral-800 rounded-lg p-6 shadow'>
+          <div className={`h-4 ${bg2} rounded w-1/2 mb-3`} />
+          <div className={`h-8 ${bg3} rounded w-3/4 mb-2`} />
+          <div className={`h-3 ${bg2} rounded w-1/3`} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DashboardSkeleton() {
   return (
     <div className={`space-y-6 ${pulse}`}>
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className='bg-white dark:bg-neutral-800 rounded-lg p-6 shadow'>
-            <div className={`h-4 ${bg2} rounded w-1/2 mb-3`} />
-            <div className={`h-8 ${bg3} rounded w-3/4 mb-2`} />
-            <div className={`h-3 ${bg2} rounded w-1/3`} />
-          </div>
-        ))}
-      </div>
+      <StatsCardsSkeleton />
       <div className='bg-white dark:bg-neutral-800 rounded-lg p-6 shadow'>
         <div className={`h-6 ${bg3} rounded w-1/4 mb-4`} />
-        <div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
+        <div className='content-grid-4 content-grid-gap-3'>
           {[...Array(4)].map((_, i) => (
             <div key={i} className={`h-20 ${bg2} rounded`} />
           ))}
         </div>
       </div>
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+      <div className='content-grid-3 content-grid-gap-6'>
         <div className='lg:col-span-2 bg-white dark:bg-neutral-800 rounded-lg p-6 shadow'>
           <div className={`h-6 ${bg3} rounded w-1/3 mb-4`} />
           {[...Array(5)].map((_, i) => (
@@ -115,7 +123,7 @@ function DetailSkeleton() {
         </div>
         <div className='p-6 space-y-6'>
           {[...Array(3)].map((_, i) => (
-            <div key={i} className='grid grid-cols-2 gap-6'>
+            <div key={i} className='content-grid-2 content-grid-gap-6'>
               <div>
                 <div className={`h-4 ${bg3} rounded w-1/3 mb-2`} />
                 <div className={`h-6 ${bg2} rounded w-2/3`} />
@@ -132,7 +140,7 @@ function DetailSkeleton() {
   );
 }
 
-function ChartSkeleton({ variant = 'line' }) {
+export function ChartSkeleton({ variant = 'line' }) {
   return (
     <div className={`bg-white dark:bg-neutral-800 rounded-lg p-6 shadow ${pulse}`}>
       <div className={`h-6 ${bg3} rounded w-1/3 mb-6`} />
@@ -166,9 +174,9 @@ function ChartSkeleton({ variant = 'line' }) {
   );
 }
 
-function CardSkeleton({ count = 3 }) {
+export function CardSkeleton({ count = 3 }) {
   return (
-    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+    <div className='content-grid-3'>
       {[...Array(count)].map((_, i) => (
         <div key={i} className={`bg-white dark:bg-neutral-800 rounded-lg p-6 shadow ${pulse}`}>
           <div className='flex items-center justify-between mb-4'>
@@ -183,7 +191,7 @@ function CardSkeleton({ count = 3 }) {
   );
 }
 
-function ListSkeleton({ items = 8 }) {
+export function ListSkeleton({ items = 8 }) {
   return (
     <div
       className={`bg-white dark:bg-neutral-800 rounded-lg shadow divide-y divide-neutral-200 dark:divide-neutral-600 ${pulse}`}
@@ -202,9 +210,14 @@ function ListSkeleton({ items = 8 }) {
   );
 }
 
+/** Queue / waiting list placeholder for dynamic() loading. */
+export function QueueSkeleton() {
+  return <ListSkeleton items={5} />;
+}
+
 function GridSkeleton({ items = 9 }) {
   return (
-    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+    <div className='content-grid-3 content-grid-gap-6'>
       {[...Array(items)].map((_, i) => (
         <div
           key={i}
@@ -226,7 +239,7 @@ function GridSkeleton({ items = 9 }) {
   );
 }
 
-function CalendarSkeleton() {
+export function CalendarSkeleton() {
   return (
     <div className={`bg-white dark:bg-neutral-800 rounded-lg shadow p-6 ${pulse}`}>
       <div className='flex items-center justify-between mb-6'>
@@ -313,6 +326,126 @@ function GenericSkeleton() {
       <div className={`h-32 ${bg2} rounded w-full`} />
       <div className={`h-4 ${bg2} rounded w-2/3`} />
       <div className={`h-4 ${bg2} rounded w-1/2`} />
+    </div>
+  );
+}
+
+/**
+ * Report tab content skeleton – summary cards, chart block, table block. Use when loading any report tab (revenue, patients, appointments, inventory).
+ */
+export function ReportTabSkeleton() {
+  return (
+    <div className={`space-y-6 ${pulse}`} aria-busy='true' aria-label='Loading report'>
+      <div className='content-grid-4'>
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className='bg-white dark:bg-neutral-800 rounded-lg p-6 shadow'>
+            <div className={`h-4 ${bg2} rounded w-1/2 mb-3`} />
+            <div className={`h-8 ${bg3} rounded w-3/4 mb-2`} />
+            <div className={`h-3 ${bg2} rounded w-1/3`} />
+          </div>
+        ))}
+      </div>
+      <div className={`bg-white dark:bg-neutral-800 rounded-lg p-6 shadow`}>
+        <div className='flex items-center justify-between mb-4'>
+          <div className={`h-6 ${bg3} rounded w-1/4`} />
+          <div className={`h-9 ${bg2} rounded w-28`} />
+        </div>
+        <div className={`h-64 ${bg2} rounded`} />
+      </div>
+      <div className={`bg-white dark:bg-neutral-800 rounded-lg shadow overflow-hidden`}>
+        <div className='px-6 py-4 border-b border-neutral-200 dark:border-neutral-600'>
+          <div className={`h-6 ${bg3} rounded w-1/3`} />
+        </div>
+        <div className='divide-y divide-neutral-200 dark:divide-neutral-600'>
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className='px-6 py-4 flex items-center gap-4'>
+              <div className={`h-4 ${bg2} rounded flex-1 max-w-[120px]`} />
+              <div className={`h-4 ${bg2} rounded flex-1 max-w-[80px]`} />
+              <div className={`h-4 ${bg2} rounded flex-1 max-w-[100px]`} />
+              <div className={`h-8 w-16 ${bg2} rounded`} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Default list page size; keep in sync with dashboard tab limits for consistent skeleton row count. */
+const DEFAULT_LIST_PAGE_SIZE = 10;
+
+/**
+ * Appointments list skeleton – matches dashboard AppointmentsTab layout (Card p-6, header + table).
+ * Row count matches AppointmentsTab LIMIT for minimal CLS.
+ */
+export function AppointmentsListSkeleton() {
+  return (
+    <Card className={`p-6 ${pulse}`} aria-busy='true'>
+      <div className='flex items-center justify-between gap-4 mb-4'>
+        <div className={`h-6 ${bg3} rounded w-32`} />
+        <div className='flex gap-2'>
+          <div className={`h-10 w-24 ${bg2} rounded`} />
+          <div className={`h-10 w-36 ${bg2} rounded`} />
+        </div>
+      </div>
+      <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
+    </Card>
+  );
+}
+
+/**
+ * Prescriptions list skeleton – matches dashboard PrescriptionsTab layout (Card p-6, header + table).
+ * Row count matches PrescriptionsTab limit for minimal CLS.
+ */
+export function PrescriptionsListSkeleton() {
+  return (
+    <Card className={`p-6 ${pulse}`} aria-busy='true'>
+      <div className='flex items-center justify-between gap-4 mb-4'>
+        <div className={`h-6 ${bg3} rounded w-32`} />
+        <div className='flex gap-2'>
+          <div className={`h-10 w-24 ${bg2} rounded`} />
+          <div className={`h-10 w-36 ${bg2} rounded`} />
+        </div>
+      </div>
+      <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
+    </Card>
+  );
+}
+
+/**
+ * Patients list skeleton – list of items (avatar + lines). Use for patients list views.
+ */
+export function PatientsListSkeleton({ items = 10 }) {
+  return <ListSkeleton items={items} />;
+}
+
+/**
+ * Tab panel content skeleton – for patient detail, settings, or any tabbed detail view while tab is pending.
+ */
+export function TabContentSkeleton() {
+  return (
+    <div className={`space-y-6 ${pulse}`} aria-busy='true'>
+      <div className='content-grid-2 content-grid-gap-6'>
+        <div className={`bg-white dark:bg-neutral-800 rounded-lg p-6 shadow`}>
+          <div className={`h-6 ${bg3} rounded w-1/3 mb-4`} />
+          <div className='space-y-4'>
+            {[...Array(4)].map((_, i) => (
+              <div key={i}>
+                <div className={`h-4 ${bg2} rounded w-1/4 mb-2`} />
+                <div className={`h-5 ${bg2} rounded w-2/3`} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className={`bg-white dark:bg-neutral-800 rounded-lg p-6 shadow`}>
+          <div className={`h-6 ${bg3} rounded w-1/3 mb-4`} />
+          <div className='space-y-3'>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className={`h-10 ${bg2} rounded`} />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

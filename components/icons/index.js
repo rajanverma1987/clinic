@@ -31,6 +31,7 @@ export { ListChecksIcon } from './ListChecksIcon';
 export { LogOutIcon } from './LogOutIcon';
 export { MailIcon } from './MailIcon';
 export { MapPinIcon } from './MapPinIcon';
+export { MoreVerticalIcon } from './MoreVerticalIcon';
 export { PaletteIcon } from './PaletteIcon';
 export { PencilIcon } from './PencilIcon';
 export { PhoneIcon } from './PhoneIcon';

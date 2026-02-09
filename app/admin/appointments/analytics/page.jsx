@@ -59,10 +59,10 @@ export default function AdminAppointmentAnalyticsPage() {
       subtitle='Completion, cancellation, no-show rates and peak hours'
       actionButton={
         <div className='flex gap-2'>
-          <Button variant='secondary' onClick={() => router.push('/admin/appointments')}>
+          <Button variant='secondary' href='/admin/appointments'>
             Back to Appointments
           </Button>
-          <Button variant='primary' onClick={() => router.push('/admin')}>
+          <Button variant='primary' href='/admin'>
             Dashboard
           </Button>
         </div>

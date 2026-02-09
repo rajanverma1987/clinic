@@ -47,7 +47,7 @@ export default function AdminContentPage() {
       title={t('admin.contentManagement')}
       subtitle={t('admin.contentManagementSubtitle')}
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin')}>
+        <Button variant='primary' href='/admin'>
           {t('common.backToDashboard')}
         </Button>
       }
@@ -57,7 +57,7 @@ export default function AdminContentPage() {
           <Card key={href} className='p-6'>
             <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{t(labelKey)}</h3>
             <p className='text-sm text-neutral-600 mb-4'>{t(descKey)}</p>
-            <Button variant='secondary' onClick={() => router.push(href)}>
+            <Button variant='secondary' href={href}>
               {t('common.manage')}
             </Button>
           </Card>

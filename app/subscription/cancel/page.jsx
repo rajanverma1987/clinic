@@ -68,10 +68,14 @@ function SubscriptionCancelContent() {
           </div>
 
           {/* Title */}
-          <h1 className='text-3xl font-bold text-neutral-900 mb-3'>{t('subscription.paymentCancelled')}</h1>
+          <h1 className='text-3xl font-bold text-neutral-900 mb-3'>
+            {t('subscription.paymentCancelled')}
+          </h1>
 
           {/* Description */}
-          <p className='text-neutral-600 mb-2 text-lg'>{t('subscription.subscriptionPaymentCancelled')}</p>
+          <p className='text-neutral-600 mb-2 text-lg'>
+            {t('subscription.subscriptionPaymentCancelled')}
+          </p>
           <p className='text-neutral-500 mb-8'>{t('subscription.noChargesMade')}</p>
 
           {/* Details */}
@@ -94,7 +98,9 @@ function SubscriptionCancelContent() {
 
           {/* What Happened */}
           <div className='bg-primary-100 border-l-4 border-primary-400 p-4 mb-8 text-left'>
-            <h3 className='text-sm font-semibold text-primary-900 mb-2'>{t('subscription.whatHappened')}</h3>
+            <h3 className='text-sm font-semibold text-primary-900 mb-2'>
+              {t('subscription.whatHappened')}
+            </h3>
             <ul className='text-sm text-primary-700 space-y-2'>
               <li className='flex items-start'>
                 <span className='mr-2'>•</span>
@@ -117,31 +123,21 @@ function SubscriptionCancelContent() {
 
           {/* Action Buttons */}
           <div className='flex flex-col sm:flex-row gap-4 justify-center mb-6'>
-            <Button onClick={() => router.push('/subscription')} className='flex-1 sm:flex-none'>
+            <Button href='/subscription' className='flex-1 sm:flex-none'>
               {t('subscription.tryAgain')}
             </Button>
-            <Button
-              variant='secondary'
-              onClick={() => router.push('/pricing')}
-              className='flex-1 sm:flex-none'
-            >
+            <Button variant='secondary' href='/pricing' className='flex-1 sm:flex-none'>
               {t('subscription.viewAllPlans')}
             </Button>
-            <Button
-              variant='secondary'
-              onClick={() => router.push('/dashboard')}
-              className='flex-1 sm:flex-none'
-            >
+            <Button variant='secondary' href='/dashboard' className='flex-1 sm:flex-none'>
               {t('subscription.goToDashboard')}
             </Button>
           </div>
 
           {/* Support Section */}
           <div className='pt-6 border-t border-neutral-200'>
-            <p className='text-sm text-neutral-600 mb-3'>
-              {t('subscription.needHelp')}
-            </p>
-            <Button variant='secondary' size='sm' onClick={() => router.push('/support/contact')}>
+            <p className='text-sm text-neutral-600 mb-3'>{t('subscription.needHelp')}</p>
+            <Button variant='secondary' size='sm' href='/support/contact'>
               {t('subscription.contactSupport')}
             </Button>
           </div>

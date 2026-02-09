@@ -1,10 +1,12 @@
 'use client';
 
+import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
+import { Tabs } from '@/components/ui/Tabs';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -403,50 +405,50 @@ export default function DoctorAppointmentsPage() {
       <div style={{ padding: '0 10px' }} className='space-y-6'>
         <PageHeader title='Appointments Calendar' subtitle='View and manage your appointments' />
 
-        {/* View Controls */}
+        {/* View Controls – tab design for view mode, icons for date navigation */}
         <Card>
           <div className='p-4'>
-            <div className='flex items-center justify-between'>
-              <div className='flex gap-2'>
-                <Button
-                  type='button'
-                  variant={viewMode === 'day' ? 'primary' : 'secondary'}
-                  size='sm'
-                  onClick={() => setViewMode('day')}
-                >
-                  Day
-                </Button>
-                <Button
-                  type='button'
-                  variant={viewMode === 'week' ? 'primary' : 'secondary'}
-                  size='sm'
-                  onClick={() => setViewMode('week')}
-                >
-                  Week
-                </Button>
-                <Button
-                  type='button'
-                  variant={viewMode === 'month' ? 'primary' : 'secondary'}
-                  size='sm'
-                  onClick={() => setViewMode('month')}
-                >
-                  Month
-                </Button>
+            <div className='flex items-center justify-between flex-wrap gap-4'>
+              <div className='w-fit flex-shrink-0'>
+                <Tabs
+                  tabs={[
+                    { id: 'day', label: 'Day' },
+                    { id: 'week', label: 'Week' },
+                    { id: 'month', label: 'Month' },
+                  ]}
+                  activeTab={viewMode}
+                  onChange={(id) => setViewMode(id)}
+                  idPrefix='calendar-view'
+                  ariaLabel='Calendar view'
+                />
               </div>
 
-              <div className='flex items-center gap-4'>
-                <div className='flex items-center gap-2'>
-                  <Button variant='secondary' size='sm' onClick={() => navigateDate(-1)}>
-                    ← Prev
-                  </Button>
-                  <Button variant='secondary' size='sm' onClick={goToToday}>
-                    Today
-                  </Button>
-                  <Button variant='secondary' size='sm' onClick={() => navigateDate(1)}>
-                    Next →
-                  </Button>
-                </div>
-                <div className='text-lg font-semibold text-neutral-900'>
+              <div className='flex items-center gap-2'>
+                <button
+                  type='button'
+                  onClick={() => navigateDate(-1)}
+                  aria-label='Previous'
+                  className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
+                >
+                  <ChevronLeftIcon className='icon icon-md' aria-hidden />
+                </button>
+                <button
+                  type='button'
+                  onClick={goToToday}
+                  aria-label='Go to today'
+                  className='inline-flex items-center justify-center min-w-[4rem] h-10 px-3 rounded-lg border border-neutral-200 bg-white text-neutral-700 text-body-sm font-medium hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
+                >
+                  Today
+                </button>
+                <button
+                  type='button'
+                  onClick={() => navigateDate(1)}
+                  aria-label='Next'
+                  className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
+                >
+                  <ChevronRightIcon className='icon icon-md' aria-hidden />
+                </button>
+                <span className='text-lg font-semibold text-neutral-900 ml-2'>
                   {viewMode === 'day'
                     ? formatDate(currentDate)
                     : viewMode === 'week'
@@ -455,7 +457,7 @@ export default function DoctorAppointmentsPage() {
                           month: 'long',
                           year: 'numeric',
                         })}
-                </div>
+                </span>
               </div>
             </div>
           </div>
@@ -472,10 +474,10 @@ export default function DoctorAppointmentsPage() {
 
         {/* Quick Actions */}
         <div className='flex gap-2'>
-          <Button variant='primary' onClick={() => router.push('/appointments/new')}>
+          <Button variant='primary' href='/appointments/new'>
             {t('dashboard.newAppointment')}
           </Button>
-          <Button variant='secondary' onClick={() => router.push('/appointments')}>
+          <Button variant='secondary' href='/appointments'>
             {t('appointments.listView')}
           </Button>
         </div>

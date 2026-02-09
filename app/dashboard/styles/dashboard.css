@@ -772,7 +772,7 @@
   border: none;
 }
 
-/* Loading Skeleton – design tokens and layout-matched shapes */
+/* Loading Skeleton – design tokens and layout-matched shapes; dark mode + reduced-motion */
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -784,6 +784,41 @@
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: var(--radius-md);
   flex-shrink: 0;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-800) 0%,
+    var(--color-neutral-700) 50%,
+    var(--color-neutral-800) 100%
+  );
+  background-size: 200% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: var(--color-neutral-200);
+  }
+  .dark .skeleton {
+    background: var(--color-neutral-700);
+  }
+}
+
+.accent-bar-placeholder {
+  width: 3px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.calendar-skeleton {
+  background: var(--color-neutral-100);
+}
+
+.dark .calendar-skeleton {
+  background: var(--color-neutral-800);
 }
 
 .skeleton-text {

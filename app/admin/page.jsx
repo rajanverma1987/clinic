@@ -217,11 +217,7 @@ export default function AdminDashboardPage() {
         <div className='mb-8'>
           <div className='flex items-center justify-between mb-4'>
             <h2 className='text-xl font-semibold text-neutral-900'>{t('admin.pendingActions')}</h2>
-            <Button
-              variant='secondary'
-              size='sm'
-              onClick={() => router.push('/admin/doctors/verify')}
-            >
+            <Button variant='secondary' size='sm' href='/admin/doctors/verify'>
               {t('admin.viewAll')}
             </Button>
           </div>

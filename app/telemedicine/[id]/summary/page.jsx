@@ -110,7 +110,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
         <Card>
           <div className='p-8 text-center'>
             <p className='text-neutral-600'>Session not found</p>
-            <Button onClick={() => router.push('/telemedicine')} className='mt-4'>
+            <Button href='/telemedicine' className='mt-4'>
               Back to Sessions
             </Button>
           </div>
@@ -126,7 +126,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
           <Button
             variant='secondary'
             size='md'
-            onClick={() => router.push('/telemedicine')}
+            href='/telemedicine'
             className='mb-4'
           >
             ← Back to Sessions

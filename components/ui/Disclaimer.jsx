@@ -54,9 +54,7 @@ export function Disclaimer({ type = 'general', className = '' }) {
     <div className={`bg-primary-100 border-l-4 border-primary-500 p-3 rounded-lg ${className}`}>
       <div className='flex items-start gap-3'>
         <svg
-          width='20px'
-          height='20px'
-          className='text-primary-500 mt-0.5 flex-shrink-0'
+          className='icon icon-sm text-primary-500 mt-0.5 flex-shrink-0'
           fill='none'
           stroke='currentColor'
           viewBox='0 0 24 24'

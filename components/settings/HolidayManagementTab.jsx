@@ -143,7 +143,7 @@ export function HolidayManagementTab({
             <h2 className='text-base font-bold text-neutral-900 mb-3'>
               {t('settings.addNewHoliday')}
             </h2>
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+            <div className='content-grid-2 content-grid-gap-3'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
                   Holiday Name <span className='text-red-500'>*</span>

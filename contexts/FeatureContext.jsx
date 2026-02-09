@@ -32,7 +32,7 @@ export function FeatureProvider({ children }) {
 
   const fetchFeatures = async () => {
     if (!user || user.role === 'super_admin') {
-      // Super Admin: full access (no subscription)
+      // Super admin = company account: full access, no subscription/plan gating
       setFeatures(['*']);
       setLimits({});
       setSubscription(null);
@@ -52,7 +52,7 @@ export function FeatureProvider({ children }) {
 
     try {
       setLoading(true);
-      // Doctor and clinic users: access as per subscription (tenant plan features)
+      // Doctor and all clinic roles: plan-wise access (tenant subscription features)
       const response = await apiClient.get('/features');
 
       if (response.success && response.data) {

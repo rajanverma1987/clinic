@@ -43,7 +43,19 @@ export function Modal({ isOpen, onClose, title, children, size = 'lg' }) {
       onClick={onClose}
       style={{ zIndex: 'var(--z-modal, 10050)' }}
     >
-      <div className='Modal-backdrop' onClick={onClose} />
+      <div
+        className='Modal-backdrop'
+        onClick={onClose}
+        role='button'
+        tabIndex={0}
+        aria-label={t('common.closeModal')}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+      />
       <div
         className='fixed inset-0 flex items-center justify-center p-4'
         style={{ zIndex: 'var(--z-modal-content, 10051)', pointerEvents: 'none' }}

@@ -54,7 +54,10 @@ export function TestimonialsSection({
     },
   ];
 
-  const totalSlides = Math.ceil(testimonials.length / cardsPerView);
+  const totalSlides = Math.max(
+    1,
+    Math.ceil(testimonials.length / (Number(cardsPerView) > 0 ? cardsPerView : 1)),
+  );
 
   return (
     <section
@@ -242,7 +245,7 @@ export function TestimonialsSection({
           </button>
 
           <div className='flex justify-center items-center gap-2 mt-8'>
-            {[...Array(totalSlides)].map((_, index) => (
+            {Array.from({ length: totalSlides }, (_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentTestimonialIndex(index)}

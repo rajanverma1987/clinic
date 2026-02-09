@@ -7,11 +7,6 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
-import {
-  isTestAccount,
-  setTestAccountRoleOverride,
-  TEST_ACCOUNT_ALLOWED_ROLES,
-} from '@/lib/constants/test-account';
 import { validateForm } from '@/lib/utils/form-validation';
 import { showError } from '@/lib/utils/toast';
 import Image from 'next/image';
@@ -23,13 +18,7 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reasonClinicOnly = searchParams.get('reason') === 'clinic_only';
-  const {
-    login,
-    verify2FA,
-    user,
-    loading,
-    setTestAccountRoleOverride: setTestRoleInContext,
-  } = useAuth();
+  const { login, verify2FA, user, loading } = useAuth();
   const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,7 +29,6 @@ function LoginPageContent() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
-  const [showTestRolePicker, setShowTestRolePicker] = useState(false);
   const formRef = useRef(null);
 
   // Load remembered email on mount
@@ -54,20 +42,12 @@ function LoginPageContent() {
     }
   }, []);
 
-  // Redirect if already logged in (skip for test account until they pick a role)
+  // Redirect if already logged in
   useEffect(() => {
-    if (!loading && user && !showTestRolePicker) {
-      if (isTestAccount(user.email) && !sessionStorage.getItem('TEST_ACCOUNT_ROLE_OVERRIDE')) {
-        setShowTestRolePicker(true);
-        return;
-      }
-      const path =
-        isTestAccount(user.email) && typeof window !== 'undefined'
-          ? getRoleHomePage(sessionStorage.getItem('TEST_ACCOUNT_ROLE_OVERRIDE') || user.role)
-          : getRoleHomePage(user.role);
-      router.push(path);
+    if (!loading && user) {
+      router.push(getRoleHomePage(user.role));
     }
-  }, [user, loading, router, showTestRolePicker]);
+  }, [user, loading, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -183,11 +163,8 @@ function LoginPageContent() {
       // Check if password change is required
       if (result.forcePasswordChange) {
         router.push('/change-password?firstLogin=true');
-      } else if (isTestAccount(result.user?.email)) {
-        setShowTestRolePicker(true);
       } else {
-        const redirectPath = getRoleHomePage(result.user?.role || '');
-        router.push(redirectPath);
+        router.push(getRoleHomePage(result.user?.role || ''));
       }
     } else {
       setError(result.error || 'Invalid verification code');
@@ -207,57 +184,19 @@ function LoginPageContent() {
       receptionist: '/appointments',
       pharmacist: '/inventory',
       lab_tech: '/inventory',
-      patient: '/login', // Clinic-only: no patient portal; patient role sends to login
     };
-    return roleRoutes[role] || '/dashboard';
+    // Legacy or unknown roles (e.g. patient) → login; clinic staff only
+    if (!roleRoutes[role]) return '/login';
+    return roleRoutes[role];
   };
 
-  const handleTestAccountRoleChoose = (role) => {
-    setTestAccountRoleOverride(role);
-    setTestRoleInContext(role);
-    setShowTestRolePicker(false);
-    router.push(getRoleHomePage(role));
-  };
-
-  // Show nothing while checking auth or redirecting (except when test account role picker is shown)
-  if (loading || (user && !showTestRolePicker)) {
+  // Show nothing while checking auth or redirecting
+  if (loading || user) {
     return null;
   }
 
   return (
     <div className='h-screen flex bg-neutral-50 overflow-hidden'>
-      {/* TEMPORARY: Test account role picker – REMOVE before production */}
-      {showTestRolePicker && user && (
-        <div
-          className='fixed inset-0 z-[100] flex items-center justify-center bg-neutral-500/30 backdrop-blur-sm p-4'
-          role='dialog'
-          aria-modal='true'
-          aria-labelledby='test-role-picker-title'
-        >
-          <div className='bg-white rounded-2xl shadow-xl border border-neutral-200 max-w-md w-full p-6'>
-            <h2 id='test-role-picker-title' className='text-lg font-bold text-neutral-900 mb-1'>
-              TMP: Choose account type
-            </h2>
-            <p className='text-sm text-neutral-600 mb-4'>
-              Testing account – select which dashboard to open. Remove before production.
-            </p>
-            <div className='grid grid-cols-1 gap-2'>
-              {TEST_ACCOUNT_ALLOWED_ROLES.map((r) => (
-                <Button
-                  key={r.value}
-                  variant='secondary'
-                  size='md'
-                  className='w-full justify-center'
-                  onClick={() => handleTestAccountRoleChoose(r.value)}
-                >
-                  {r.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Left Side - Background Image Only */}
       <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 h-full'>
         {/* Background Image */}
@@ -350,13 +289,15 @@ function LoginPageContent() {
                   <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm animate-fade-in slide-in-right'>
                     <svg
                       className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
-                      fill='currentColor'
-                      viewBox='0 0 20 20'
+                      fill='none'
+                      stroke='currentColor'
+                      strokeWidth={2}
+                      viewBox='0 0 24 24'
                     >
                       <path
-                        fillRule='evenodd'
-                        d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-                        clipRule='evenodd'
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
                       />
                     </svg>
                     <span className='text-sm font-medium'>{error}</span>
@@ -370,32 +311,35 @@ function LoginPageContent() {
                   >
                     {t('auth.email')}
                   </label>
-                  <div className='relative'>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                  <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='icon icon-sm text-neutral-900'
+                        className='w-5 h-5 text-neutral-600'
                         fill='none'
                         stroke='currentColor'
+                        strokeWidth={2}
                         viewBox='0 0 24 24'
+                        aria-hidden
                       >
                         <path
                           strokeLinecap='round'
                           strokeLinejoin='round'
-                          strokeWidth={2}
                           d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
                         />
                       </svg>
                     </div>
-                    <Input
-                      id='email'
-                      type='email'
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      placeholder={t('auth.emailPlaceholder')}
-                      autoComplete='email'
-                      className='pl-10'
-                    />
+                    <div className='flex-1 min-w-0'>
+                      <Input
+                        id='email'
+                        type='email'
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        placeholder={t('auth.emailPlaceholder')}
+                        autoComplete='email'
+                        className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0'
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -406,40 +350,44 @@ function LoginPageContent() {
                   >
                     {t('auth.password')}
                   </label>
-                  <div className='relative'>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                  <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='icon icon-sm text-neutral-900'
+                        className='w-5 h-5 text-neutral-600'
                         fill='none'
                         stroke='currentColor'
+                        strokeWidth={2}
                         viewBox='0 0 24 24'
+                        aria-hidden
                       >
                         <path
                           strokeLinecap='round'
                           strokeLinejoin='round'
-                          strokeWidth={2}
                           d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
                         />
                       </svg>
                     </div>
-                    <Input
-                      id='password'
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      placeholder={t('auth.passwordPlaceholder')}
-                      autoComplete='current-password'
-                      className='pl-10 pr-10'
-                    />
+                    <div className='flex-1 min-w-0'>
+                      <Input
+                        id='password'
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder={t('auth.passwordPlaceholder')}
+                        autoComplete='current-password'
+                        className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0 pr-2'
+                      />
+                    </div>
                     <button
                       type='button'
                       onClick={() => setShowPassword(!showPassword)}
-                      className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
+                      className='w-12 shrink-0 flex items-center justify-center text-neutral-500 hover:text-primary-600 transition-colors'
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? (
                         <svg
-                          className='icon icon-sm'
+                          className='w-5 h-5'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -453,7 +401,7 @@ function LoginPageContent() {
                         </svg>
                       ) : (
                         <svg
-                          className='icon icon-sm'
+                          className='w-5 h-5'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -579,13 +527,15 @@ function LoginPageContent() {
                   <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm'>
                     <svg
                       className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
-                      fill='currentColor'
-                      viewBox='0 0 20 20'
+                      fill='none'
+                      stroke='currentColor'
+                      strokeWidth={2}
+                      viewBox='0 0 24 24'
                     >
                       <path
-                        fillRule='evenodd'
-                        d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-                        clipRule='evenodd'
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
                       />
                     </svg>
                     <span className='text-sm font-medium'>{error}</span>
@@ -700,10 +650,16 @@ function LoginPageContent() {
                     <Button type='button' variant='secondary' size='sm' className='w-full'>
                       <svg
                         className='icon icon-sm group-hover:scale-110 transition-transform'
-                        fill='currentColor'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth={2}
                         viewBox='0 0 24 24'
                       >
-                        <path d='M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z' />
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5'
+                        />
                       </svg>
                       <span className='ml-2'>GitHub</span>
                     </Button>
@@ -712,13 +668,15 @@ function LoginPageContent() {
 
                 <div className='mt-8 text-center'>
                   <p className='text-sm text-neutral-700'>
-                    {t('auth.dontHaveAccount')}{' '}
+                    {t('auth.noPublicSignup') ||
+                      'Clinics are provisioned by admin. Contact your administrator or '}
                     <Link
-                      href='/register'
+                      href='/pricing'
                       className='text-primary-600 hover:text-primary-700 font-bold transition-colors'
                     >
-                      {t('auth.createAccount')}
+                      {t('auth.contactSales') || 'contact sales'}
                     </Link>
+                    .
                   </p>
                   <p
                     className='text-neutral-500 mt-2'

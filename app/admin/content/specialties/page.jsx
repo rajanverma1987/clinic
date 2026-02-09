@@ -133,7 +133,7 @@ export default function AdminSpecialtiesPage() {
       subtitle={t('admin.specialtyManagementSubtitle')}
       actionButton={
         <div className='flex gap-2'>
-          <Button variant='secondary' size='md' onClick={() => router.push('/admin/content')}>
+          <Button variant='secondary' size='md' href='/admin/content'>
             {t('admin.backToContent')}
           </Button>
           <Button variant='primary' onClick={openCreate}>

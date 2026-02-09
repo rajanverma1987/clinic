@@ -15,8 +15,23 @@ export default function AdminReportsExportPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Export Options' subtitle='PDF, Excel, CSV, date range, custom builder' actionButton={<Button variant='primary' onClick={() => router.push('/admin/reports')}>Back to Reports</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>Export (PDF, Excel, CSV, date range) is planned. Patient/doctor exports are available from their list pages.</p></Card></div>
+    <Layout
+      title='Export Options'
+      subtitle='PDF, Excel, CSV, date range, custom builder'
+      actionButton={
+        <Button variant='primary' href='/admin/reports'>
+          Back to Reports
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Export (PDF, Excel, CSV, date range) is planned. Patient/doctor exports are available
+            from their list pages.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

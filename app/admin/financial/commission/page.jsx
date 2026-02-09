@@ -15,9 +15,19 @@ export default function AdminFinancialCommissionPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Commission Settings' subtitle='Platform %, doctor/specialty rates, payment cycle' actionButton={<Button variant='primary' onClick={() => router.push('/admin/financial')}>Back to Financial</Button>}>
+    <Layout
+      title='Commission Settings'
+      subtitle='Platform %, doctor/specialty rates, payment cycle'
+      actionButton={
+        <Button variant='primary' href='/admin/financial'>
+          Back to Financial
+        </Button>
+      }
+    >
       <div style={{ padding: '0 10px' }}>
-        <Card className='p-6'><p className='text-neutral-600'>Commission settings are planned.</p></Card>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>Commission settings are planned.</p>
+        </Card>
       </div>
     </Layout>
   );

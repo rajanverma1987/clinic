@@ -19,7 +19,7 @@ export function WelcomeNotification() {
 
   useEffect(() => {
     mountedRef.current = true;
-    
+
     // Check if welcome was already shown in this session
     if (typeof window !== 'undefined') {
       const welcomeShown = sessionStorage.getItem('welcomeShown');
@@ -34,7 +34,7 @@ export function WelcomeNotification() {
     if (!mountedRef.current || loading) return;
 
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-    const isAuthPage = currentPath === '/login' || currentPath === '/register' || currentPath === '/forgot-password';
+    const isAuthPage = currentPath === '/login' || currentPath === '/forgot-password';
 
     // Don't show on auth pages
     if (isAuthPage) {
@@ -61,7 +61,7 @@ export function WelcomeNotification() {
           showWelcome(userName, 6000);
           hasShownWelcomeRef.current = true;
           sessionWelcomeShownRef.current = true;
-          
+
           // Mark as shown in session storage
           if (typeof window !== 'undefined') {
             sessionStorage.setItem('welcomeShown', 'true');

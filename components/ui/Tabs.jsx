@@ -55,8 +55,8 @@ export function Tabs({
 
   const tabListClass =
     variant === 'pills'
-      ? 'w-full flex gap-2 overflow-x-auto scrollbar-hide py-2'
-      : 'w-full flex flex-wrap items-center gap-x-6 gap-y-1 overflow-x-auto scrollbar-hide py-2';
+      ? 'w-full flex gap-x-4 gap-y-1 overflow-x-auto scrollbar-hide py-1.5 border-b border-neutral-200 dark:border-neutral-600'
+      : 'w-full flex flex-wrap items-center gap-x-4 gap-y-1 overflow-x-auto scrollbar-hide py-1.5';
 
   const nav = (
     <nav
@@ -79,27 +79,17 @@ export function Tabs({
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(tab.id)}
             className={
-              variant === 'pills'
-                ? `px-4 py-2 rounded-full font-medium text-body-sm whitespace-nowrap ${
-                    isActive
-                      ? 'bg-primary-500 text-white shadow-md'
-                      : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
-                  }`
-                : `py-2 px-1 border-b-2 font-medium text-body-sm whitespace-nowrap ${
-                    isActive
-                      ? 'border-primary-500 text-primary-500 dark:text-primary-300'
-                      : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-500'
-                  }`
+              isActive
+                ? 'py-1.5 px-1 border-b-2 border-primary-500 text-primary-500 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap'
+                : 'py-1.5 px-1 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-500'
             }
           >
             {tab.label}
             {tab.count !== undefined && (
               <span
-                className={`${variant === 'pills' ? 'ml-1.5' : 'ml-2'} px-2 py-0.5 rounded-full text-body-xs ${
+                className={`ml-2 px-2 py-0.5 rounded-full text-body-xs ${
                   isActive
-                    ? variant === 'pills'
-                      ? 'bg-primary-700'
-                      : 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300'
+                    ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300'
                     : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
                 }`}
               >

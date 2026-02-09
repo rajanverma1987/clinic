@@ -96,7 +96,7 @@ export default function AdminAnalyticsPage() {
       subtitle='User growth, revenue trend, appointment stats, specialty distribution, peak hours'
       actionButton={
         <div className='flex gap-2'>
-          <Button variant='secondary' onClick={() => router.push('/admin')}>
+          <Button variant='secondary' href='/admin'>
             Back to Dashboard
           </Button>
           <Button variant='primary' onClick={handleExport} disabled={exporting}>

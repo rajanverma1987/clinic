@@ -1,0 +1,19 @@
+---
+description: Never patch; implement in the proper way only
+alwaysApply: true
+---
+
+# No Patching – Proper Implementation Only
+
+**Never patch things. Always implement in the proper way.**
+
+- **Do not**: Override with extra classes, inline styles, or one-off fixes to force behavior.
+- **Do**: Add proper classes, utilities, or APIs in the right place (e.g. design system, globals, component) and use them.
+
+Examples:
+
+- **Layout/alignment**: Add a dedicated class (e.g. `tab-content-standard-width-left`) in the design system and use it; do not add `ml-0 mr-auto` on top of a centered class.
+- **Styling**: Extend tokens or components properly; do not layer overrides in the page.
+- **Logic**: Implement in the correct layer (service, hook, component); do not work around with conditionals or hacks at the call site.
+
+When in doubt: implement the right abstraction once, then use it.

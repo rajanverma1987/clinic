@@ -6,25 +6,12 @@ import GlobalSearch from '@/components/search/GlobalSearch';
 import { Loader } from '@/components/ui/Loader';
 import { SubscriptionExpiredBanner } from '@/components/ui/SubscriptionExpiredBanner.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useFeatures } from '@/contexts/FeatureContext.jsx';
-import {
-  getTestAccountRoleOverride,
-  isTestAccount,
-  TEST_ACCOUNT_ALLOWED_ROLES,
-} from '@/lib/constants/test-account.js';
+import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PageHeader } from './PageHeader';
 import { Sidebar } from './Sidebar.jsx';
-
-const ROLE_HOME = {
-  super_admin: '/admin',
-  clinic_admin: '/dashboard',
-  admin: '/dashboard',
-  manager: '/dashboard',
-  doctor: '/doctors/profile',
-};
 
 /**
  * Layout wraps sidebar + main content. Optional title/subtitle/actionButton (or actionButtons)
@@ -34,20 +21,13 @@ const ROLE_HOME = {
 export function Layout({ children, title, subtitle, actionButton, actionButtons }) {
   const router = useRouter();
   const { t } = useI18n();
-  const { user, loading: authLoading, setTestAccountRoleOverride } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { subscription } = useFeatures();
   const [showSubscriptionBanner, setShowSubscriptionBanner] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
-  const [testRoleDropdownOpen, setTestRoleDropdownOpen] = useState(false);
-  const isTestUser = user && isTestAccount(user.email);
-  const testRoleOverride = isTestUser ? getTestAccountRoleOverride() || user.role : null;
-  const testRoleLabel =
-    TEST_ACCOUNT_ALLOWED_ROLES.find((r) => r.value === (testRoleOverride || user?.role))?.label ||
-    testRoleOverride ||
-    '—';
 
   // Show subscription banner after 2 seconds (only for non-super-admin users)
   useEffect(() => {
@@ -141,48 +121,6 @@ export function Layout({ children, title, subtitle, actionButton, actionButtons 
             }`}
           >
             <SubscriptionExpiredBanner subscriptionStatus={null} />
-          </div>
-        )}
-        {/* TEMPORARY: Test account banner – REMOVE before production */}
-        {isTestUser && (
-          <div className='bg-amber-100 dark:bg-amber-900/30 border-b border-amber-300 dark:border-amber-700 px-4 py-2 flex items-center justify-between gap-2 flex-wrap'>
-            <span className='text-amber-900 dark:text-amber-200 text-sm font-medium'>
-              TMP: Testing as <strong>{testRoleLabel}</strong>
-            </span>
-            <div className='relative'>
-              <button
-                type='button'
-                onClick={() => setTestRoleDropdownOpen((o) => !o)}
-                className='text-amber-900 dark:text-amber-200 text-sm font-medium underline hover:no-underline'
-              >
-                Switch role
-              </button>
-              {testRoleDropdownOpen && (
-                <>
-                  <div
-                    className='fixed inset-0 z-40 bg-transparent'
-                    aria-hidden
-                    onClick={() => setTestRoleDropdownOpen(false)}
-                  />
-                  <div className='absolute right-0 top-full mt-1 z-50 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-lg shadow-lg py-1 min-w-[140px]'>
-                    {TEST_ACCOUNT_ALLOWED_ROLES.map((r) => (
-                      <button
-                        key={r.value}
-                        type='button'
-                        onClick={() => {
-                          setTestAccountRoleOverride(r.value);
-                          setTestRoleDropdownOpen(false);
-                          router.push(ROLE_HOME[r.value] || '/dashboard');
-                        }}
-                        className='w-full text-left px-4 py-2 text-sm text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         )}
         {/* Welcome Notification - shows after login */}

@@ -2,29 +2,29 @@
 
 /**
  * Enhanced Calendar View Component
- * 
+ *
  * Full-featured calendar with day/week/month views and drag-drop rescheduling
- * 
+ *
  * Features:
  * - Day/Week/Month view toggle
  * - Drag and drop appointments to reschedule
  * - Color-coded status indicators
  * - Doctor/Department filters
  * - Quick actions on appointments
- * 
+ *
  * @module components/appointments/EnhancedCalendarView
  * @since 1.0.0
  */
 
+import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
-import { Tag } from '@/components/ui/Tag';
+import { Tabs } from '@/components/ui/Tabs';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger.js';
-import { useState, useEffect, useCallback } from 'react';
-import { showSuccess, showError } from '@/lib/utils/toast';
+import { showError, showSuccess } from '@/lib/utils/toast';
+import { useCallback, useState } from 'react';
 
 const VIEW_MODES = {
   DAY: 'day',
@@ -106,16 +106,16 @@ export default function EnhancedCalendarView({
   // Handle drop - reschedule appointment
   const handleDrop = async (e, targetDate, targetTime) => {
     e.preventDefault();
-    
+
     if (!draggedAppointment) return;
 
     try {
       setUpdating(true);
-      
+
       const newStartTime = new Date(targetDate);
       const [hours, minutes] = targetTime.split(':').map(Number);
       newStartTime.setHours(hours, minutes, 0, 0);
-      
+
       const duration = draggedAppointment.duration || 30;
       const newEndTime = new Date(newStartTime);
       newEndTime.setMinutes(newEndTime.getMinutes() + duration);
@@ -279,10 +279,7 @@ export default function EnhancedCalendarView({
                   });
 
                   return (
-                    <div
-                      key={hour}
-                      className='h-16 border-b border-neutral-200 p-1 relative'
-                    >
+                    <div key={hour} className='h-16 border-b border-neutral-200 p-1 relative'>
                       {hourAppointments.map((apt) => (
                         <div
                           key={apt._id}
@@ -293,7 +290,7 @@ export default function EnhancedCalendarView({
                             STATUS_COLORS[apt.status] || STATUS_COLORS.scheduled
                           }`}
                           style={{
-                            top: `${((new Date(apt.startTime).getMinutes() / 60) * 100)}%`,
+                            top: `${(new Date(apt.startTime).getMinutes() / 60) * 100}%`,
                             height: `${((apt.duration || 30) / 60) * 100}%`,
                           }}
                         >
@@ -349,7 +346,12 @@ export default function EnhancedCalendarView({
         {/* Calendar days */}
         {days.map((day, index) => {
           if (!day) {
-            return <div key={`empty-${index}`} className='min-h-[100px] border border-neutral-200 rounded'></div>;
+            return (
+              <div
+                key={`empty-${index}`}
+                className='min-h-[100px] border border-neutral-200 rounded'
+              ></div>
+            );
           }
 
           const dayAppointments = filteredAppointments.filter((apt) => {
@@ -392,9 +394,7 @@ export default function EnhancedCalendarView({
                   </div>
                 ))}
                 {dayAppointments.length > 3 && (
-                  <div className='text-xs text-neutral-500'>
-                    +{dayAppointments.length - 3} more
-                  </div>
+                  <div className='text-xs text-neutral-500'>+{dayAppointments.length - 3} more</div>
                 )}
               </div>
             </div>
@@ -406,54 +406,72 @@ export default function EnhancedCalendarView({
 
   return (
     <Card className='p-6'>
-      {/* Controls */}
-      <div className='flex items-center justify-between mb-6'>
+      {/* Controls – tab design for view mode, icons for date navigation */}
+      <div className='flex items-center justify-between flex-wrap gap-4 mb-6'>
+        <div className='w-fit flex-shrink-0'>
+          <Tabs
+            tabs={[
+              { id: VIEW_MODES.DAY, label: 'Day' },
+              { id: VIEW_MODES.WEEK, label: 'Week' },
+              { id: VIEW_MODES.MONTH, label: 'Month' },
+            ]}
+            activeTab={viewMode}
+            onChange={(id) => setViewMode(id)}
+            idPrefix='enhanced-calendar-view'
+            ariaLabel='Calendar view'
+          />
+        </div>
+
         <div className='flex items-center gap-2'>
-          <Button variant='secondary' size='sm' onClick={goToPrevious}>
-            ←
-          </Button>
-          <Button variant='secondary' size='sm' onClick={goToToday}>
+          <button
+            type='button'
+            onClick={goToPrevious}
+            aria-label='Previous'
+            className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
+          >
+            <ChevronLeftIcon className='icon icon-md' />
+          </button>
+          <button
+            type='button'
+            onClick={goToToday}
+            aria-label='Go to today'
+            className='inline-flex items-center justify-center min-w-[4rem] h-10 px-3 rounded-lg border border-neutral-200 bg-white text-neutral-700 text-body-sm font-medium hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
+          >
             Today
-          </Button>
-          <Button variant='secondary' size='sm' onClick={goToNext}>
-            →
-          </Button>
-          <div className='ml-4 font-semibold text-lg'>
+          </button>
+          <button
+            type='button'
+            onClick={goToNext}
+            aria-label='Next'
+            className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
+          >
+            <ChevronRightIcon className='icon icon-md' />
+          </button>
+          <span className='text-lg font-semibold text-neutral-900 ml-2'>
             {viewMode === VIEW_MODES.DAY &&
-              currentDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              currentDate.toLocaleDateString(undefined, {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
             {viewMode === VIEW_MODES.WEEK && (
               <>
-                {getViewRange().start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} -{' '}
-                {getViewRange().end.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                {getViewRange().start.toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                })}{' '}
+                -{' '}
+                {getViewRange().end.toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
               </>
             )}
             {viewMode === VIEW_MODES.MONTH &&
               currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-          </div>
-        </div>
-
-        <div className='flex items-center gap-2'>
-          <Button
-            variant={viewMode === VIEW_MODES.DAY ? 'primary' : 'secondary'}
-            size='sm'
-            onClick={() => setViewMode(VIEW_MODES.DAY)}
-          >
-            Day
-          </Button>
-          <Button
-            variant={viewMode === VIEW_MODES.WEEK ? 'primary' : 'secondary'}
-            size='sm'
-            onClick={() => setViewMode(VIEW_MODES.WEEK)}
-          >
-            Week
-          </Button>
-          <Button
-            variant={viewMode === VIEW_MODES.MONTH ? 'primary' : 'secondary'}
-            size='sm'
-            onClick={() => setViewMode(VIEW_MODES.MONTH)}
-          >
-            Month
-          </Button>
+          </span>
         </div>
       </div>
 

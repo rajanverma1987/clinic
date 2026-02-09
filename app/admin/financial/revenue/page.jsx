@@ -69,7 +69,7 @@ export default function AdminFinancialRevenuePage() {
       title={t('admin.revenueDashboard')}
       subtitle={t('admin.revenueDashboardSubtitle')}
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin/financial')}>
+        <Button variant='primary' href='/admin/financial'>
           {t('admin.backToFinancial')}
         </Button>
       }

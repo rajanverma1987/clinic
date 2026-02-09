@@ -40,12 +40,13 @@ import { isManagerPathForbidden } from '@/lib/constants/route-security.js';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants.js';
 import { logger } from '@/lib/utils/logger.js';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ProfileMenu } from './ProfileMenu.jsx';
 
 export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
   const prefetchOnHover = useCallback((href) => () => router.prefetch(href), [router]);
@@ -115,7 +116,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   const menuItemsWithFeatures = [
     { href: '/dashboard', labelKey: 'dashboard.title', icon: IconDashboard, requiredFeature: null },
     {
-      href: '/appointments',
+      href: '/dashboard?tab=appointments',
       labelKey: 'appointments.title',
       icon: IconAppointments,
       requiredFeature: 'Appointment Scheduling',
@@ -140,7 +141,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       requiredRoles: ['doctor', 'clinic_admin'],
     },
     {
-      href: '/prescriptions',
+      href: '/dashboard?tab=prescriptions',
       labelKey: 'prescriptions.title',
       icon: IconPrescriptions,
       requiredFeature: 'Prescriptions Management',
@@ -230,12 +231,6 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             requiredFeature: null,
           },
           {
-            href: '/doctors/appointments',
-            labelKey: 'doctors.appointmentsCalendar',
-            icon: IconAppointments,
-            requiredFeature: null,
-          },
-          {
             href: '/doctors/earnings',
             labelKey: 'doctors.earnings',
             icon: IconEarnings,
@@ -250,14 +245,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         ]
       : [];
 
-  // Doctor can give Admin/Manager only what the subscription allows: nav items with requiredFeature
-  // are shown only if hasFeature(requiredFeature) (same plan as Doctor).
-  const doctorAlwaysFeatures = [
-    'Patient Management',
-    'Appointment Scheduling',
-    'Prescriptions Management',
-    'Queue Management',
-  ];
+  // Super admin = company account (full access, no sidebar here). Doctor and all clinic roles = plan-wise access.
   const canShowItem = (item) => {
     if (item.requiredRoles && !item.requiredRoles.includes(user?.role)) return false;
     if (
@@ -265,13 +253,15 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       !hasPermission(user?.role, item.requiredPermission.resource, item.requiredPermission.action)
     )
       return false;
-    // Manager: hide nav items that are in MANAGER_RESTRICTIONS.cannotAccess (CLAUDE-AI §2)
-    if (user?.role === 'manager' && item.href && isManagerPathForbidden(item.href)) return false;
-    // Subscription gate: Admin and Manager see feature-gated items only if plan includes them (same as Doctor)
-    const subscriptionAllows =
-      item.requiredFeature === null ||
-      hasFeature(item.requiredFeature) ||
-      (user?.role === 'doctor' && doctorAlwaysFeatures.includes(item.requiredFeature));
+    // Manager: hide nav items not in their selected access (or default restrictions if no managerAccess)
+    if (
+      user?.role === 'manager' &&
+      item.href &&
+      isManagerPathForbidden(item.href, user.managerAccess)
+    )
+      return false;
+    // Plan-wise: clinic users (doctor, admin, etc.) see feature-gated items only if tenant plan includes them
+    const subscriptionAllows = item.requiredFeature === null || hasFeature(item.requiredFeature);
     return subscriptionAllows;
   };
 
@@ -864,12 +854,37 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             /* Regular menu items for non-admin users */
             <>
               {menuItems.map((item) => {
-                const itemMatches = pathname === item.href || pathname?.startsWith(item.href + '/');
-                const longerMatchExists = menuItems.some(
-                  (other) =>
-                    other.href.length > item.href.length &&
-                    (pathname === other.href || pathname?.startsWith(other.href + '/')),
-                );
+                const hrefPath = item.href.split('?')[0];
+                const tab = item.href.includes('?tab=')
+                  ? item.href.split('?tab=')[1]?.split('&')[0]
+                  : null;
+                let itemMatches;
+                if (tab === 'appointments') {
+                  itemMatches =
+                    (pathname === '/dashboard' && searchParams?.get('tab') === 'appointments') ||
+                    pathname === '/appointments' ||
+                    pathname?.startsWith('/appointments/');
+                } else if (tab === 'prescriptions') {
+                  itemMatches =
+                    (pathname === '/dashboard' && searchParams?.get('tab') === 'prescriptions') ||
+                    pathname === '/prescriptions' ||
+                    pathname?.startsWith('/prescriptions/');
+                } else {
+                  itemMatches = pathname === hrefPath || pathname?.startsWith(hrefPath + '/');
+                }
+                const longerMatchExists = menuItems.some((other) => {
+                  const otherPath = other.href.split('?')[0];
+                  const otherTab = other.href.includes('?tab=')
+                    ? other.href.split('?tab=')[1]?.split('&')[0]
+                    : null;
+                  const otherMatches =
+                    otherTab === 'appointments'
+                      ? pathname === '/appointments' || pathname?.startsWith('/appointments/')
+                      : otherTab === 'prescriptions'
+                        ? pathname === '/prescriptions' || pathname?.startsWith('/prescriptions/')
+                        : pathname === otherPath || pathname?.startsWith(otherPath + '/');
+                  return otherPath.length > hrefPath.length && otherMatches;
+                });
                 const isActive = itemMatches && !longerMatchExists;
                 const displayLabel = item.labelKey ? t(item.labelKey) : item.label;
                 return (

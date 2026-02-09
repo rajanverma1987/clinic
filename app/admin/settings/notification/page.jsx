@@ -15,8 +15,22 @@ export default function AdminSettingsNotificationPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Notification Settings' subtitle='Email/SMS templates, push, triggers' actionButton={<Button variant='primary' onClick={() => router.push('/admin/settings')}>Back to Settings</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>Notification templates and triggers — use Notification Templates in app.</p></Card></div>
+    <Layout
+      title='Notification Settings'
+      subtitle='Email/SMS templates, push, triggers'
+      actionButton={
+        <Button variant='primary' href='/admin/settings'>
+          Back to Settings
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Notification templates and triggers — use Notification Templates in app.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

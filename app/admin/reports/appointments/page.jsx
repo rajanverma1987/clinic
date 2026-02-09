@@ -15,8 +15,22 @@ export default function AdminReportsAppointmentsPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Appointment Reports' subtitle='Booking trends, cancellation, utilization' actionButton={<Button variant='primary' onClick={() => router.push('/admin/reports')}>Back to Reports</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>Appointment reports — use Admin Appointments and Appointment Analytics for data.</p></Card></div>
+    <Layout
+      title='Appointment Reports'
+      subtitle='Booking trends, cancellation, utilization'
+      actionButton={
+        <Button variant='primary' href='/admin/reports'>
+          Back to Reports
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Appointment reports — use Admin Appointments and Appointment Analytics for data.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

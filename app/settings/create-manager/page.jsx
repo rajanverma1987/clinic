@@ -3,11 +3,14 @@
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatures } from '@/contexts/FeatureContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { MANAGER_ACCESS_OPTIONS } from '@/lib/constants/manager-access';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -16,6 +19,7 @@ export default function CreateManagerPage() {
   const router = useRouter();
   const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
+  const { hasFeature } = useFeatures();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -23,6 +27,7 @@ export default function CreateManagerPage() {
     firstName: '',
     lastName: '',
   });
+  const [selectedAccess, setSelectedAccess] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -74,18 +79,17 @@ export default function CreateManagerPage() {
     setIsLoading(true);
 
     try {
-      // Create manager account with limited access
       const response = await apiClient.post('/users', {
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        role: 'manager', // Manager role with limited access
+        role: 'manager',
+        managerAccess: selectedAccess.length > 0 ? selectedAccess : undefined,
       });
 
       if (response.success) {
         showSuccess(t('errors.managerAccountCreatedSuccess'));
-        // Reset form
         setFormData({
           email: '',
           password: '',
@@ -93,6 +97,7 @@ export default function CreateManagerPage() {
           firstName: '',
           lastName: '',
         });
+        setSelectedAccess([]);
       } else {
         setError(response.error?.message || 'Failed to create manager account');
         showError(response.error?.message || 'Failed to create manager account');
@@ -127,7 +132,7 @@ export default function CreateManagerPage() {
       title={t('admin.createManager')}
       subtitle={t('admin.allUsersDescription')}
       actionButton={
-        <Button variant='secondary' onClick={() => router.push('/settings')}>
+        <Button variant='secondary' href='/settings'>
           {t('common.backToSettings')}
         </Button>
       }
@@ -136,15 +141,10 @@ export default function CreateManagerPage() {
         <Card>
           <div className='p-6'>
             <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
-              <h3 className='font-semibold text-blue-900 mb-2'>Manager Account Features</h3>
-              <ul className='text-sm text-blue-800 space-y-1 list-disc list-inside'>
-                <li>Limited access to clinic operations</li>
-                <li>Can view appointments and queue (read-only)</li>
-                <li>Can view basic patient information (no PHI)</li>
-                <li>Cannot access financial data</li>
-                <li>Cannot modify critical settings</li>
-                <li>Cannot create or delete users</li>
-              </ul>
+              <h3 className='font-semibold text-blue-900 mb-2'>
+                {t('settings.managerAccessTitle')}
+              </h3>
+              <p className='text-sm text-blue-800'>{t('settings.managerAccessDescription')}</p>
             </div>
 
             <form onSubmit={handleSubmit} className='space-y-6'>
@@ -177,6 +177,32 @@ export default function CreateManagerPage() {
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     required
                   />
+                </div>
+              </div>
+
+              <div className='border border-neutral-200 rounded-lg p-4 bg-neutral-50/50'>
+                <h4 className='text-sm font-medium text-neutral-800 mb-3'>
+                  {t('settings.managerAccessTitle')}
+                </h4>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                  {MANAGER_ACCESS_OPTIONS.filter(
+                    (opt) => opt.requiredFeature === null || hasFeature(opt.requiredFeature),
+                  ).map((opt) => (
+                    <label key={opt.id} className='flex items-center gap-2 cursor-pointer'>
+                      <Checkbox
+                        checked={selectedAccess.includes(opt.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedAccess((prev) => [...prev, opt.id]);
+                          } else {
+                            setSelectedAccess((prev) => prev.filter((id) => id !== opt.id));
+                          }
+                        }}
+                        aria-label={t(opt.labelKey)}
+                      />
+                      <span className='text-sm text-neutral-700'>{t(opt.labelKey)}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
@@ -229,7 +255,7 @@ export default function CreateManagerPage() {
                 <Button type='submit' variant='primary' disabled={isLoading}>
                   {isLoading ? t('common.creating') : 'Create Manager Account'}
                 </Button>
-                <Button type='button' variant='secondary' onClick={() => router.push('/settings')}>
+                <Button type='button' variant='secondary' href='/settings'>
                   Cancel
                 </Button>
               </div>

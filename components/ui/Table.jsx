@@ -72,6 +72,7 @@ export function Table({
   columns,
   emptyMessage = 'No data available',
   onRowClick,
+  onRowMouseEnter,
   loading,
   ...rest
 }) {
@@ -106,6 +107,7 @@ export function Table({
                 <TableRow
                   key={row._id || row.id || rowIndex}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  onMouseEnter={onRowMouseEnter ? () => onRowMouseEnter(row) : undefined}
                 >
                   {columns.map((column, colIndex) => (
                     <TableCell key={colIndex} className={column.cellClassName}>

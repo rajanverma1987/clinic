@@ -12,6 +12,7 @@ import { Loader } from '@/components/ui/Loader';
 import { SimpleTextEditor } from '@/components/ui/SimpleTextEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
@@ -24,6 +25,7 @@ export default function EditPrescriptionPage() {
   const prescriptionId = params?.id;
   const { user: currentUser, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const { invalidateLists } = useInvalidateDashboard();
   const [patients, setPatients] = useState([]);
   const [drugs, setDrugs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function EditPrescriptionPage() {
         description: 'Cancel (Esc)',
       },
     ],
-    [router]
+    [router],
   );
 
   useKeyboardShortcuts(keyboardShortcuts);
@@ -299,7 +301,7 @@ export default function EditPrescriptionPage() {
         logger.debug('Fetched drugs list:', drugsList.length, 'drugs');
         logger.debug(
           'Sample drug IDs:',
-          drugsList.slice(0, 3).map((d) => ({ id: d._id, name: d.name }))
+          drugsList.slice(0, 3).map((d) => ({ id: d._id, name: d.name })),
         );
         setDrugs(drugsList);
       }
@@ -451,6 +453,7 @@ export default function EditPrescriptionPage() {
 
       const response = await apiClient.put(`/prescriptions/${prescriptionId}`, prescriptionData);
       if (response.success) {
+        invalidateLists();
         router.push('/prescriptions');
       } else {
         setError(response.error?.message || 'Failed to update prescription');

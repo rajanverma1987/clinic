@@ -15,9 +15,19 @@ export default function AdminFinancialSettlementsPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Doctor Settlements' subtitle='Pending settlements, mark as paid, reports' actionButton={<Button variant='primary' onClick={() => router.push('/admin/financial')}>Back to Financial</Button>}>
+    <Layout
+      title='Doctor Settlements'
+      subtitle='Pending settlements, mark as paid, reports'
+      actionButton={
+        <Button variant='primary' href='/admin/financial'>
+          Back to Financial
+        </Button>
+      }
+    >
       <div style={{ padding: '0 10px' }}>
-        <Card className='p-6'><p className='text-neutral-600'>Settlements management is planned.</p></Card>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>Settlements management is planned.</p>
+        </Card>
       </div>
     </Layout>
   );

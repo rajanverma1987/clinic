@@ -1,3 +1,4 @@
+import { MANAGER_ACCESS_IDS } from '@/lib/constants/manager-access.js';
 import { isTestAccount } from '@/lib/constants/test-account.js';
 import connectDB from '@/lib/db/connection';
 import { canAssignAdminManager } from '@/lib/permissions/cursor-md-matrix';
@@ -69,7 +70,7 @@ async function getHandler(req, user) {
             : null,
           tenantName: u.tenantId && typeof u.tenantId === 'object' ? u.tenantId.name : null,
         })),
-      })
+      }),
     );
   } catch (error) {
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
@@ -98,12 +99,12 @@ async function postHandler(req, user) {
 
     // CursorMD/New: only Doctor and Super Admin can assign Admin or Manager roles
     const assignAdminOrManager = [UserRole.CLINIC_ADMIN, UserRole.ADMIN, UserRole.MANAGER].includes(
-      targetRole
+      targetRole,
     );
     if (assignAdminOrManager && !canAssignAdminManager(user.role)) {
       return NextResponse.json(
         errorResponse('Only Doctor or Super Admin can assign Admin or Manager roles', 'FORBIDDEN'),
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -132,15 +133,15 @@ async function postHandler(req, user) {
           return NextResponse.json(
             errorResponse(
               `You don't have permission to create ${targetRole} accounts`,
-              'FORBIDDEN'
+              'FORBIDDEN',
             ),
-            { status: 403 }
+            { status: 403 },
           );
         }
       } else if (!allowedRoles.includes(targetRole)) {
         return NextResponse.json(
           errorResponse(`You don't have permission to create ${targetRole} accounts`, 'FORBIDDEN'),
-          { status: 403 }
+          { status: 403 },
         );
       }
     } else {
@@ -153,9 +154,9 @@ async function postHandler(req, user) {
         return NextResponse.json(
           errorResponse(
             'Super admin must specify a tenant to create clinic users',
-            'INVALID_REQUEST'
+            'INVALID_REQUEST',
           ),
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -184,7 +185,7 @@ async function postHandler(req, user) {
           // For now, require tenantId
           return NextResponse.json(
             errorResponse('Tenant ID is required when creating clinic admin', 'INVALID_REQUEST'),
-            { status: 400 }
+            { status: 400 },
           );
         }
       } else {
@@ -231,7 +232,7 @@ async function postHandler(req, user) {
     if (existingUser) {
       return NextResponse.json(
         errorResponse('User with this email already exists', 'DUPLICATE_EMAIL'),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -246,20 +247,31 @@ async function postHandler(req, user) {
       if (!limitCheck.hasAccess) {
         return NextResponse.json(
           errorResponse(limitCheck.reason || 'User limit reached', 'SUBSCRIPTION_LIMIT'),
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
 
+    // Manager: validate and attach selected access (subscription account chooses from all account access)
+    let managerAccess = undefined;
+    if (targetRole === UserRole.MANAGER && Array.isArray(body.managerAccess)) {
+      const valid = body.managerAccess.filter(
+        (id) => typeof id === 'string' && MANAGER_ACCESS_IDS.includes(id),
+      );
+      if (valid.length > 0) managerAccess = valid;
+    }
+
     // Create user
-    const newUser = await User.create({
+    const createPayload = {
       email: body.email.toLowerCase(),
       password: body.password,
       firstName: body.firstName,
       lastName: body.lastName,
       role: targetRole,
       tenantId: targetTenantId,
-    });
+    };
+    if (managerAccess) createPayload.managerAccess = managerAccess;
+    const newUser = await User.create(createPayload);
 
     return NextResponse.json(
       successResponse({
@@ -271,7 +283,7 @@ async function postHandler(req, user) {
         isActive: newUser.isActive,
         tenantId: newUser.tenantId ? newUser.tenantId.toString() : null,
       }),
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
@@ -281,9 +293,9 @@ async function postHandler(req, user) {
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to create user',
-        'CREATE_ERROR'
+        'CREATE_ERROR',
       ),
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

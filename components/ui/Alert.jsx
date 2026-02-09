@@ -60,7 +60,19 @@ export function Alert({
   };
 
   return (
-    <div className='Alert-backdrop' onClick={onClose}>
+    <div
+      className='Alert-backdrop'
+      onClick={onClose}
+      role='button'
+      tabIndex={0}
+      aria-label={t('common.close')}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClose();
+        }
+      }}
+    >
       <div
         className={`Alert-container Alert-container--${size} Alert-container--${type}`}
         onClick={(e) => e.stopPropagation()}

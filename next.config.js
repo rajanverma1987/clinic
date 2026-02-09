@@ -1,4 +1,10 @@
 /** @type {import('next').NextConfig} */
+const {
+  DOCUMENT_CACHE_CONTROL,
+  PRAGMA,
+  STATIC_IMMUTABLE_CACHE_CONTROL,
+} = require('./lib/cache/http-cache-strategy.js');
+
 const nextConfig = {
   reactStrictMode: true,
   // Explicitly disable Babel to use SWC
@@ -82,7 +88,7 @@ const nextConfig = {
     config.externals = config.externals || [];
     if (isServer) {
       config.externals.push({
-        'twilio': 'commonjs twilio',
+        twilio: 'commonjs twilio',
         '@sentry/nextjs': 'commonjs @sentry/nextjs',
       });
     }
@@ -139,56 +145,35 @@ const nextConfig = {
       "connect-src 'self'",
       "frame-ancestors 'none'",
     ].join('; ');
+    // Enterprise cache strategy: lib/cache/http-cache-strategy.js. Last matching source wins per header key.
     return [
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: csp,
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
+          { key: 'Content-Security-Policy', value: csp },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Pragma', value: PRAGMA },
           {
             key: 'Access-Control-Allow-Origin',
             value:
-              'http://localhost:5053, http://192.168.1.16:5053, http://localhost:8000, http://192.168.1.16:8000, https://localhost:8443, https://192.168.1.16:8443',
+              process.env.CORS_ORIGINS ||
+              (process.env.NODE_ENV === 'production'
+                ? process.env.NEXT_PUBLIC_APP_URL || 'https://localhost'
+                : 'http://localhost:5053, http://localhost:3000, http://127.0.0.1:5053, http://127.0.0.1:3000'),
           },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization',
-          },
-          {
-            key: 'Access-Control-Allow-Credentials',
-            value: 'true',
-          },
-          // Do NOT set long cache here – it was causing HTML/CSS to require two hard refreshes.
-          // Long cache only on true static assets (/_next/static, /images) below.
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Cache-Control', value: DOCUMENT_CACHE_CONTROL },
         ],
       },
       {
         source: '/images/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
+        headers: [{ key: 'Cache-Control', value: STATIC_IMMUTABLE_CACHE_CONTROL }],
       },
       {
         source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
+        headers: [{ key: 'Cache-Control', value: STATIC_IMMUTABLE_CACHE_CONTROL }],
       },
     ];
   },

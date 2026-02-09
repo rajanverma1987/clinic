@@ -15,8 +15,22 @@ export default function AdminSettingsEmailSmsPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Email/SMS Configuration' subtitle='SMTP, SMS gateway, sender ID, templates' actionButton={<Button variant='primary' onClick={() => router.push('/admin/settings')}>Back to Settings</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>SMTP and SMS gateway configuration — use env vars or Tenant settings.</p></Card></div>
+    <Layout
+      title='Email/SMS Configuration'
+      subtitle='SMTP, SMS gateway, sender ID, templates'
+      actionButton={
+        <Button variant='primary' href='/admin/settings'>
+          Back to Settings
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            SMTP and SMS gateway configuration — use env vars or Tenant settings.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

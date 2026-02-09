@@ -5,6 +5,7 @@
 
 import { AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
+import { getDashboardStatsForDate } from '@/lib/db/queries/dashboard-stats.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { logger } from '@/lib/utils/logger.js';
 import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
@@ -719,92 +720,38 @@ export async function getDashboardStats(tenantId, userId) {
     yesterday.setHours(0, 0, 0, 0);
     const endOfYesterday = new Date(yesterday);
     endOfYesterday.setHours(23, 59, 59, 999);
-    // Build filters once; run all independent queries in parallel (single round-trip)
-    const todayFilter = withTenant(tenantId, {
-      $or: [
-        { startTime: { $gte: today, $lte: endOfToday } },
-        { appointmentDate: { $gte: today, $lte: endOfToday } },
-        { 'schedule.date': { $gte: today, $lte: endOfToday } },
-      ],
-      status: { $ne: AppointmentStatus.ARRIVED },
-      deletedAt: null,
-    });
-    const yesterdayFilter = withTenant(tenantId, {
-      $or: [
-        { startTime: { $gte: yesterday, $lte: endOfYesterday } },
-        { appointmentDate: { $gte: yesterday, $lte: endOfYesterday } },
-        { 'schedule.date': { $gte: yesterday, $lte: endOfYesterday } },
-      ],
-      status: { $ne: AppointmentStatus.ARRIVED },
-      deletedAt: null,
-    });
-    const completedTodayFilter = withTenant(tenantId, {
-      $or: [
-        { startTime: { $gte: today, $lte: endOfToday } },
-        { appointmentDate: { $gte: today, $lte: endOfToday } },
-        { 'schedule.date': { $gte: today, $lte: endOfToday } },
-      ],
-      status: AppointmentStatus.COMPLETED,
-      deletedAt: null,
-    });
-    const completedYesterdayFilter = withTenant(tenantId, {
-      $or: [
-        { startTime: { $gte: yesterday, $lte: endOfYesterday } },
-        { appointmentDate: { $gte: yesterday, $lte: endOfYesterday } },
-        { 'schedule.date': { $gte: yesterday, $lte: endOfYesterday } },
-      ],
-      status: AppointmentStatus.COMPLETED,
-      deletedAt: null,
-    });
+
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
     const [
-      todayAppointments,
-      yesterdayAppointments,
-      todayInvoicesRaw,
-      yesterdayInvoicesRaw,
+      todayStats,
+      yesterdayStats,
       monthInvoicesRaw,
       activePatients,
       newPatientsThisMonth,
       newPatientsLastMonth,
-      completedToday,
-      completedYesterday,
       pendingInvoices,
       pendingInvoicesYesterday,
     ] = await Promise.all([
-      Appointment.countDocuments(todayFilter).catch((err) => {
-        logger.error('Error counting today appointments:', err);
-        return 0;
+      getDashboardStatsForDate(tenantId, todayStr).catch((err) => {
+        logger.error('Error fetching today dashboard stats:', err);
+        return {
+          totalAppointments: 0,
+          completedAppointments: 0,
+          cancelledAppointments: 0,
+          revenue: 0,
+        };
       }),
-      Appointment.countDocuments(yesterdayFilter).catch((err) => {
-        logger.error('Error counting yesterday appointments:', err);
-        return 0;
+      getDashboardStatsForDate(tenantId, yesterdayStr).catch((err) => {
+        logger.error('Error fetching yesterday dashboard stats:', err);
+        return {
+          totalAppointments: 0,
+          completedAppointments: 0,
+          cancelledAppointments: 0,
+          revenue: 0,
+        };
       }),
-      Invoice.find(
-        withTenant(tenantId, {
-          invoiceDate: { $gte: today, $lte: endOfToday },
-          status: { $ne: InvoiceStatus.CANCELLED },
-          deletedAt: null,
-        }),
-      )
-        .select('totalAmount')
-        .lean()
-        .catch((err) => {
-          logger.error('Error fetching today invoices:', err);
-          return [];
-        }),
-      Invoice.find(
-        withTenant(tenantId, {
-          invoiceDate: { $gte: yesterday, $lte: endOfYesterday },
-          status: { $ne: InvoiceStatus.CANCELLED },
-          deletedAt: null,
-        }),
-      )
-        .select('totalAmount')
-        .lean()
-        .catch((err) => {
-          logger.error('Error fetching yesterday invoices:', err);
-          return [];
-        }),
       Invoice.find(
         withTenant(tenantId, {
           invoiceDate: { $gte: thisMonth },
@@ -840,14 +787,6 @@ export async function getDashboardStats(tenantId, userId) {
         logger.error('Error counting new patients last month:', err);
         return 0;
       }),
-      Appointment.countDocuments(completedTodayFilter).catch((err) => {
-        logger.error('Error counting completed today:', err);
-        return 0;
-      }),
-      Appointment.countDocuments(completedYesterdayFilter).catch((err) => {
-        logger.error('Error counting completed yesterday:', err);
-        return 0;
-      }),
       Invoice.countDocuments(
         withTenant(tenantId, {
           status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
@@ -869,13 +808,13 @@ export async function getDashboardStats(tenantId, userId) {
       }),
     ]);
 
-    const todayRevenue = (Array.isArray(todayInvoicesRaw) ? todayInvoicesRaw : []).reduce(
-      (sum, inv) => sum + (inv.totalAmount || 0),
-      0,
-    );
-    const yesterdayRevenue = (
-      Array.isArray(yesterdayInvoicesRaw) ? yesterdayInvoicesRaw : []
-    ).reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+    const todayAppointments = todayStats.totalAppointments;
+    const yesterdayAppointments = yesterdayStats.totalAppointments;
+    const completedToday = todayStats.completedAppointments;
+    const completedYesterday = yesterdayStats.completedAppointments;
+    const todayRevenue = todayStats.revenue;
+    const yesterdayRevenue = yesterdayStats.revenue;
+
     const monthRevenue = (Array.isArray(monthInvoicesRaw) ? monthInvoicesRaw : []).reduce(
       (sum, inv) => sum + (inv.totalAmount || 0),
       0,

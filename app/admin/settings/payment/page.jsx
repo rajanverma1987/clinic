@@ -15,8 +15,23 @@ export default function AdminSettingsPaymentPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Payment Settings' subtitle='Gateways, methods, refund, fees, currency' actionButton={<Button variant='primary' onClick={() => router.push('/admin/settings')}>Back to Settings</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>Payment settings (gateways, methods, refund, fees, currency) — configure via env / Stripe / PayPal.</p></Card></div>
+    <Layout
+      title='Payment Settings'
+      subtitle='Gateways, methods, refund, fees, currency'
+      actionButton={
+        <Button variant='primary' href='/admin/settings'>
+          Back to Settings
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Payment settings (gateways, methods, refund, fees, currency) — configure via env /
+            Stripe / PayPal.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

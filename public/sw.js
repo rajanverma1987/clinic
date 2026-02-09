@@ -1,13 +1,13 @@
 /**
- * Service Worker
- * Provides offline support and caching
- * Based on NEW-PLANS.md requirements
+ * Service Worker – cache strategy aligned with lib/cache/http-cache-strategy.js and next.config.js.
+ * Document: never cached (network-first). Static (hashed): long cache. API: by-route strategy.
+ * Bump CACHE_VERSION on deploy to invalidate all SW caches (activate deletes other versions).
  */
-
-const CACHE_NAME = 'clinic-app-v2';
-const STATIC_CACHE = 'clinic-static-v2';
-const API_CACHE = 'clinic-api-v1';
-const API_CACHE_V2 = 'dashboard-api-v1';
+const CACHE_VERSION = '3';
+const CACHE_NAME = 'clinic-app-v' + CACHE_VERSION;
+const STATIC_CACHE = 'clinic-static-v' + CACHE_VERSION;
+const API_CACHE = 'clinic-api-v' + CACHE_VERSION;
+const API_CACHE_V2 = 'dashboard-api-v' + CACHE_VERSION;
 
 // Per-route API cache strategies: exact (pathname ===), prefix (pathname.startsWith), pattern (regex)
 const API_CACHE_STRATEGIES = {
@@ -22,14 +22,13 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate: delete caches from other versions (bump CACHE_VERSION on deploy to clear all)
 self.addEventListener('activate', (event) => {
+  const keep = [STATIC_CACHE, API_CACHE, API_CACHE_V2];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames
-          .filter((name) => name !== STATIC_CACHE && name !== API_CACHE && name !== API_CACHE_V2)
-          .map((name) => caches.delete(name)),
+        cacheNames.filter((name) => !keep.includes(name)).map((name) => caches.delete(name)),
       );
     }),
   );

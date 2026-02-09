@@ -14,10 +14,7 @@ import {
   createPayPalPlan,
   createPayPalSubscription,
 } from './paypal.service.js';
-import {
-  cancelStripeSubscription,
-  createStripeCheckoutSession,
-} from './stripe-subscription.service.js';
+import { cancelStripeSubscription } from './stripe-subscription.service.js';
 
 /**
  * Create subscription plan (Admin only)
@@ -38,10 +35,10 @@ export async function createSubscriptionPlan(input) {
         input.price / 100, // Convert from cents to dollars
         input.currency,
         input.billingCycle,
-        trialDays
+        trialDays,
       );
       logger.info(
-        `✅ Auto-created PayPal plan: ${paypalPlanId}${trialDays ? ` (${trialDays}-day trial)` : ''}`
+        `✅ Auto-created PayPal plan: ${paypalPlanId}${trialDays ? ` (${trialDays}-day trial)` : ''}`,
       );
     } catch (error) {
       logger.error('Failed to create PayPal plan:', error);
@@ -118,8 +115,8 @@ export async function getSubscriptionPlanById(planId) {
 }
 
 /**
- * Create subscription for tenant
- * @param {string} [paymentMethod] - 'paypal' | 'card'. If 'card', returns { checkoutUrl } and no subscription record until Stripe checkout completes.
+ * Create subscription for tenant. Only PayPal is supported.
+ * @param {string} [paymentMethod] - 'paypal' only (card/Stripe removed).
  */
 export async function createSubscription(
   tenantId,
@@ -127,7 +124,7 @@ export async function createSubscription(
   userId,
   customerEmail,
   customerName,
-  paymentMethod = 'paypal'
+  paymentMethod = 'paypal',
 ) {
   await connectDB();
 
@@ -141,6 +138,10 @@ export async function createSubscription(
     throw new Error('Subscription plan is not active');
   }
 
+  if (plan.price > 0 && paymentMethod !== 'paypal') {
+    throw new Error('Only PayPal is accepted. Please use Pay with PayPal.');
+  }
+
   // Check if tenant already has an active subscription
   const existingSubscription = await Subscription.findOne({
     tenantId,
@@ -150,7 +151,7 @@ export async function createSubscription(
   // If upgrading to a paid plan from any existing subscription, cancel the old one first
   if (existingSubscription && plan.price > 0) {
     logger.info(
-      `Cancelling existing subscription ${existingSubscription._id} before creating new paid subscription`
+      `Cancelling existing subscription ${existingSubscription._id} before creating new paid subscription`,
     );
     existingSubscription.status = SubscriptionStatus.CANCELLED;
     existingSubscription.cancelledAt = new Date();
@@ -160,7 +161,7 @@ export async function createSubscription(
       try {
         await cancelPayPalSubscription(
           existingSubscription.paypalSubscriptionId,
-          'Upgrading to new plan'
+          'Upgrading to new plan',
         );
       } catch (error) {
         logger.error('Failed to cancel PayPal subscription:', error);
@@ -170,27 +171,9 @@ export async function createSubscription(
     throw new Error('Tenant already has an active subscription. Use update endpoint instead.');
   }
 
-  // Card payment: Stripe Checkout – return checkout URL; subscription created on completion
-  if (paymentMethod === 'card' && plan.price > 0) {
-    try {
-      const { checkoutUrl } = await createStripeCheckoutSession(
-        tenantId,
-        planId,
-        customerEmail,
-        customerName
-      );
-      return { checkoutUrl };
-    } catch (error) {
-      logger.error('Failed to create Stripe checkout:', error);
-      throw new Error(error.message || 'Failed to create card payment session');
-    }
-  }
-
-  // PayPal: paid plans require PayPal plan ID when user chose PayPal
-  if (paymentMethod === 'paypal' && plan.price > 0 && !plan.paypalPlanId) {
-    throw new Error(
-      'PayPal is not available for this plan. Please use Pay with card to continue.'
-    );
+  // Paid plans require PayPal plan ID
+  if (plan.price > 0 && !plan.paypalPlanId) {
+    throw new Error('PayPal is not available for this plan. Please contact support.');
   }
 
   // Calculate period dates
@@ -214,15 +197,19 @@ export async function createSubscription(
 
   if (plan.paypalPlanId) {
     try {
-      const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/subscription/return`;
-      const cancelUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/subscription/cancel`;
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000');
+      const root = baseUrl || 'http://localhost:3000';
+      const returnUrl = `${root}/subscription/return`;
+      const cancelUrl = `${root}/subscription/cancel`;
 
       const paypalResult = await createPayPalSubscription(
         plan.paypalPlanId,
         returnUrl,
         cancelUrl,
         customerEmail,
-        customerName
+        customerName,
       );
 
       paypalSubscriptionId = paypalResult.subscriptionId;
@@ -262,15 +249,23 @@ export async function getTenantSubscription(tenantId) {
 }
 
 /**
- * Activate subscription (called after PayPal approval)
+ * Activate subscription (called after PayPal approval).
+ * subscriptionId can be our DB _id or PayPal's subscription ID (token from return URL).
  */
 export async function activateSubscription(subscriptionId, tenantId) {
   await connectDB();
 
-  const subscription = await Subscription.findOne({
-    _id: subscriptionId,
-    tenantId,
-  });
+  const isMongoId =
+    typeof subscriptionId === 'string' &&
+    subscriptionId.length === 24 &&
+    /^[a-fA-F0-9]{24}$/.test(subscriptionId);
+
+  const subscription = isMongoId
+    ? await Subscription.findOne({ _id: subscriptionId, tenantId })
+    : await Subscription.findOne({
+        paypalSubscriptionId: subscriptionId,
+        tenantId,
+      });
 
   if (!subscription) {
     throw new Error('Subscription not found');
@@ -349,7 +344,7 @@ export async function createPayment(
   paymentMethod,
   paypalTransactionId,
   paypalOrderId,
-  metadata
+  metadata,
 ) {
   await connectDB();
 
@@ -443,7 +438,7 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
       try {
         await cancelPayPalSubscription(
           existingSubscription.paypalSubscriptionId,
-          'Admin changed subscription plan'
+          'Admin changed subscription plan',
         );
       } catch (error) {
         logger.error('Failed to cancel PayPal subscription:', error);
@@ -474,20 +469,24 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
     if (!newPlan.paypalPlanId) {
       throw new Error(
         'This plan requires payment but PayPal integration is not configured. ' +
-          'Please run: npm run setup:paypal-plans to configure PayPal billing plans.'
+          'Please run: npm run setup:paypal-plans to configure PayPal billing plans.',
       );
     }
 
     try {
-      const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5053'}/subscription/return`;
-      const cancelUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5053'}/subscription/cancel`;
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000');
+      const root = baseUrl || 'http://localhost:3000';
+      const returnUrl = `${root}/subscription/return`;
+      const cancelUrl = `${root}/subscription/cancel`;
 
       const paypalResult = await createPayPalSubscription(
         newPlan.paypalPlanId,
         returnUrl,
         cancelUrl,
         customerEmail || tenant.name, // Use tenant name if no email
-        customerName || tenant.name
+        customerName || tenant.name,
       );
 
       paypalSubscriptionId = paypalResult.subscriptionId;

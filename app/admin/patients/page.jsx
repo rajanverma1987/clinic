@@ -1,6 +1,8 @@
 'use client';
 
+import { EyeIcon, HistoryIcon, TrashIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
+import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -270,7 +272,7 @@ export default function AdminPatientsPage() {
       title={t('admin.patientsManagement')}
       subtitle={t('admin.patientsManagementSubtitle')}
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin')}>
+        <Button variant='primary' href='/admin'>
           {t('common.back')} to Dashboard
         </Button>
       }
@@ -296,7 +298,7 @@ export default function AdminPatientsPage() {
                   {t('admin.patientsStatus')}
                 </label>
                 <select
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  className='filter-select'
                   value={statusFilter}
                   onChange={(e) => {
                     setStatusFilter(e.target.value);
@@ -339,7 +341,7 @@ export default function AdminPatientsPage() {
                   {t('admin.patientsDoctor')}
                 </label>
                 <select
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  className='filter-select'
                   value={doctorFilter}
                   onChange={(e) => {
                     setDoctorFilter(e.target.value);
@@ -362,7 +364,7 @@ export default function AdminPatientsPage() {
                   {t('admin.patientsHasAppointments')}
                 </label>
                 <select
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  className='filter-select'
                   value={hasAppointments}
                   onChange={(e) => {
                     setHasAppointments(e.target.value);
@@ -380,7 +382,7 @@ export default function AdminPatientsPage() {
                 </label>
                 <div className='flex gap-1'>
                   <select
-                    className='flex-1 px-2 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                    className='filter-select'
                     value={sortBy}
                     onChange={(e) => {
                       setSortBy(e.target.value);
@@ -391,7 +393,7 @@ export default function AdminPatientsPage() {
                     <option value='name'>{t('admin.patientsSortName')}</option>
                   </select>
                   <select
-                    className='w-24 px-2 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                    className='filter-select min-w-[5rem]'
                     value={sortOrder}
                     onChange={(e) => {
                       setSortOrder(e.target.value);
@@ -467,7 +469,7 @@ export default function AdminPatientsPage() {
                 >
                   {exporting ? '…' : t('admin.patientsExportCsv')}
                 </Button>
-                <Button variant='secondary' size='sm' onClick={() => router.push('/admin/reports')}>
+                <Button variant='secondary' size='sm' href='/admin/reports'>
                   {t('admin.patientsGenerateReport')}
                 </Button>
               </div>
@@ -566,75 +568,51 @@ export default function AdminPatientsPage() {
                           )}
                         </td>
                         <td onClick={(e) => e.stopPropagation()}>
-                          <div className='flex gap-2 flex-wrap'>
-                            <Button
-                              variant='secondary'
-                              size='sm'
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/admin/patients/${p._id}`);
-                              }}
-                            >
-                              {t('admin.patientsView')}
-                            </Button>
-                            <Button
-                              variant='secondary'
-                              size='sm'
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(
-                                  `/admin/activity-logs?resource=patient&resourceId=${p._id}`,
-                                );
-                              }}
-                            >
-                              {t('admin.patientsActivityLog')}
-                            </Button>
-                            {p.flagged ? (
-                              <Button
-                                variant='secondary'
-                                size='sm'
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUnflag(p._id);
-                                }}
-                              >
-                                {t('admin.patientsUnflag')}
-                              </Button>
-                            ) : (
-                              <Button
-                                variant='secondary'
-                                size='sm'
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setFlagModal({ open: true, patient: p, reason: '' });
-                                }}
-                              >
-                                {t('admin.patientsFlag')}
-                              </Button>
-                            )}
-                            <Button
-                              variant='secondary'
-                              size='sm'
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSuspend(p._id, p.status !== 'inactive');
-                              }}
-                            >
-                              {p.status === 'inactive'
-                                ? t('admin.patientsActivate')
-                                : t('admin.patientsDeactivate')}
-                            </Button>
-                            <Button
-                              variant='danger'
-                              size='sm'
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(p._id);
-                              }}
-                            >
-                              {t('admin.patientsDelete')}
-                            </Button>
-                          </div>
+                          <ActionsMenu
+                            ariaLabel={t('common.actions')}
+                            items={[
+                              {
+                                key: 'view',
+                                label: t('admin.patientsView'),
+                                icon: <EyeIcon className='icon' />,
+                                onClick: () => router.push(`/admin/patients/${p._id}`),
+                              },
+                              {
+                                key: 'activityLog',
+                                label: t('admin.patientsActivityLog'),
+                                icon: <HistoryIcon className='icon' />,
+                                onClick: () =>
+                                  router.push(
+                                    `/admin/activity-logs?resource=patient&resourceId=${p._id}`,
+                                  ),
+                              },
+                              {
+                                key: 'flag',
+                                label: p.flagged
+                                  ? t('admin.patientsUnflag')
+                                  : t('admin.patientsFlag'),
+                                onClick: () =>
+                                  p.flagged
+                                    ? handleUnflag(p._id)
+                                    : setFlagModal({ open: true, patient: p, reason: '' }),
+                              },
+                              {
+                                key: 'suspend',
+                                label:
+                                  p.status === 'inactive'
+                                    ? t('admin.patientsActivate')
+                                    : t('admin.patientsDeactivate'),
+                                onClick: () => handleSuspend(p._id, p.status !== 'inactive'),
+                              },
+                              {
+                                key: 'delete',
+                                label: t('admin.patientsDelete'),
+                                icon: <TrashIcon className='icon' />,
+                                danger: true,
+                                onClick: () => handleDelete(p._id),
+                              },
+                            ]}
+                          />
                         </td>
                       </tr>
                     ))}

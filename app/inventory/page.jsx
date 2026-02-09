@@ -9,9 +9,9 @@ import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
+import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { usePathname, useRouter } from 'next/navigation';
@@ -84,9 +84,7 @@ export default function InventoryPage() {
         const threshold = row.lowStockThreshold ?? 0;
         const isLow = available <= threshold;
         return (
-          <span
-            className={isLow ? 'text-status-error font-medium' : 'text-neutral-900'}
-          >
+          <span className={isLow ? 'text-status-error font-medium' : 'text-neutral-900'}>
             {row.totalQuantity} / {row.availableQuantity} available
           </span>
         );
@@ -128,7 +126,7 @@ export default function InventoryPage() {
         actionButton={
           managerReadOnly ? null : (
             <Button
-              onClick={() => router.push('/inventory/items/new')}
+              href='/inventory/items/new'
               variant='primary'
               size='md'
               className='whitespace-nowrap'

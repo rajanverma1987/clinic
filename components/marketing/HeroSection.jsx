@@ -143,7 +143,7 @@ export function HeroSection({ onContactClick }) {
                 variant='primary'
                 size='md'
                 className='w-full sm:w-auto whitespace-nowrap animate-button-pulse'
-                onClick={() => router.push('/register')}
+                onClick={() => router.push('/pricing')}
                 style={{
                   boxShadow: '0 8px 24px -6px rgba(45, 156, 219, 0.4)',
                 }}

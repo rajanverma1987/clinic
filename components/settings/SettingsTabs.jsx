@@ -117,7 +117,7 @@ export function SettingsTabs({ activeTab, setActiveTab, canAccessAdminTabs, acti
   );
 
   return (
-    <div className='mb-3 flex w-full flex-wrap items-center justify-between gap-2 py-2 text-left'>
+    <div className='mb-2 flex w-full flex-wrap items-center justify-between gap-2 py-1.5 text-left'>
       <nav
         ref={tabListRef}
         role='tablist'
@@ -137,7 +137,7 @@ export function SettingsTabs({ activeTab, setActiveTab, canAccessAdminTabs, acti
               aria-selected={isActive}
               tabIndex={isActive ? 0 : -1}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 isActive
                   ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
                   : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'

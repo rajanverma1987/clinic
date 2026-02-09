@@ -29,9 +29,7 @@ export function TopNavbar() {
         apiClient.get('/notifications/unread-count'),
       ]);
       if (listRes?.success && listRes?.data?.notifications) {
-        setNotifications(
-          (listRes.data.notifications || []).map(normalizeNotification)
-        );
+        setNotifications((listRes.data.notifications || []).map(normalizeNotification));
       }
       if (countRes?.success && typeof countRes?.data?.count === 'number') {
         setUnreadCount(countRes.data.count);
@@ -67,7 +65,7 @@ export function TopNavbar() {
 
   const handleMarkAsRead = async (notificationId) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, unread: false } : n))
+      prev.map((n) => (n.id === notificationId ? { ...n, unread: false } : n)),
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
     try {
@@ -88,7 +86,7 @@ export function TopNavbar() {
   };
 
   // Don't show navbar on login/register/forgot-password pages
-  const hideNavbarPages = ['/login', '/register', '/forgot-password'];
+  const hideNavbarPages = ['/login', '/forgot-password'];
   const shouldHide = hideNavbarPages.some((page) => pathname?.startsWith(page));
 
   if (authLoading || !user || shouldHide) {

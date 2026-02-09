@@ -15,8 +15,23 @@ export default function AdminReviewsAnalyticsPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Rating Analytics' subtitle='Average rating, doctor/specialty-wise, trends' actionButton={<Button variant='primary' onClick={() => router.push('/admin/reviews')}>Back to Reviews</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>Rating analytics (platform avg, doctor/specialty-wise, trends, sentiment) — use Admin Dashboard for overall metrics.</p></Card></div>
+    <Layout
+      title='Rating Analytics'
+      subtitle='Average rating, doctor/specialty-wise, trends'
+      actionButton={
+        <Button variant='primary' href='/admin/reviews'>
+          Back to Reviews
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Rating analytics (platform avg, doctor/specialty-wise, trends, sentiment) — use Admin
+            Dashboard for overall metrics.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }

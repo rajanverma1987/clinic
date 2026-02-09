@@ -55,7 +55,7 @@ export default function AdminSettingsPage() {
       title={t('admin.settingsConfiguration')}
       subtitle={t('admin.settingsConfigurationSubtitle')}
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin')}>
+        <Button variant='primary' href='/admin'>
           {t('common.backToDashboard')}
         </Button>
       }
@@ -65,7 +65,7 @@ export default function AdminSettingsPage() {
           <Card key={href} className='p-6'>
             <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{t(labelKey)}</h3>
             <p className='text-sm text-neutral-600 mb-4'>{t(descKey)}</p>
-            <Button variant='secondary' onClick={() => router.push(href)}>
+            <Button variant='secondary' href={href}>
               {t('admin.configure')}
             </Button>
           </Card>

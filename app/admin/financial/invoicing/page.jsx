@@ -15,9 +15,19 @@ export default function AdminFinancialInvoicingPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Invoicing' subtitle='Generate invoices, tax, templates, email' actionButton={<Button variant='primary' onClick={() => router.push('/admin/financial')}>Back to Financial</Button>}>
+    <Layout
+      title='Invoicing'
+      subtitle='Generate invoices, tax, templates, email'
+      actionButton={
+        <Button variant='primary' href='/admin/financial'>
+          Back to Financial
+        </Button>
+      }
+    >
       <div style={{ padding: '0 10px' }}>
-        <Card className='p-6'><p className='text-neutral-600'>Invoicing (templates, tax, email) is planned.</p></Card>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>Invoicing (templates, tax, email) is planned.</p>
+        </Card>
       </div>
     </Layout>
   );

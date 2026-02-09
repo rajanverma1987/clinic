@@ -37,14 +37,18 @@ export default function ForgotPasswordPage() {
     try {
       const payload = { email }; // Clinic/staff/doctor only – email reset
       const endpoint = '/auth/forgot-password';
-      
+
       const response = await apiClient.post(endpoint, payload);
       if (response.success) {
-        setSuccess(response.data?.message || t('auth.passwordResetCodeSent') || 'Reset code sent successfully');
+        setSuccess(
+          response.data?.message ||
+            t('auth.passwordResetCodeSent') ||
+            'Reset code sent successfully',
+        );
         // In development, show the code if returned
         if (response.data?.secretCode) {
           setSuccess(
-            `Code sent! Your secret code is: ${response.data.secretCode} (development only)`
+            `Code sent! Your secret code is: ${response.data.secretCode} (development only)`,
           );
         }
         if (response.data?.otp) {
@@ -81,7 +85,7 @@ export default function ForgotPasswordPage() {
     try {
       const payload = { email, secretCode, newPassword }; // Clinic/staff/doctor only – email reset
       const endpoint = '/auth/reset-password';
-      
+
       const response = await apiClient.post(endpoint, payload);
 
       if (response.success) {
@@ -215,30 +219,31 @@ export default function ForgotPasswordPage() {
                 )}
 
                 {/* Clinic/staff/doctor only – email reset (no patient portal) */}
-                {
-                  <div>
-                    <label
-                      htmlFor='email'
-                      className='block text-sm font-semibold text-neutral-800 mb-2'
-                    >
-                      {t('auth.emailAddress')}
-                    </label>
-                    <div className='relative'>
-                      <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
-                        <svg
-                          className='h-5 w-5 text-primary-500'
-                          fill='none'
-                          stroke='currentColor'
-                          viewBox='0 0 24 24'
-                        >
-                          <path
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
-                            strokeWidth={2}
-                            d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
-                          />
-                        </svg>
-                      </div>
+                <div>
+                  <label
+                    htmlFor='email'
+                    className='block text-sm font-semibold text-neutral-800 mb-2'
+                  >
+                    {t('auth.emailAddress')}
+                  </label>
+                  <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                      <svg
+                        className='w-5 h-5 text-neutral-600'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth={2}
+                        viewBox='0 0 24 24'
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
+                        />
+                      </svg>
+                    </div>
+                    <div className='flex-1 min-w-0'>
                       <Input
                         id='email'
                         type='email'
@@ -247,11 +252,11 @@ export default function ForgotPasswordPage() {
                         required
                         placeholder={t('auth.emailPlaceholder') || 'Enter your email'}
                         autoComplete='email'
-                        className='pl-10'
+                        className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0'
                       />
                     </div>
                   </div>
-                }
+                </div>
 
                 <Button
                   type='submit'
@@ -282,7 +287,12 @@ export default function ForgotPasswordPage() {
                     href='/login'
                     className='text-sm text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1'
                   >
-                    <svg className='icon icon-xs' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg
+                      className='icon icon-xs'
+                      fill='none'
+                      stroke='currentColor'
+                      viewBox='0 0 24 24'
+                    >
                       <path
                         strokeLinecap='round'
                         strokeLinejoin='round'
@@ -348,39 +358,43 @@ export default function ForgotPasswordPage() {
                   >
                     {t('auth.newPassword')}
                   </label>
-                  <div className='relative'>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                  <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='h-5 w-5 text-primary-500'
+                        className='w-5 h-5 text-neutral-600'
                         fill='none'
                         stroke='currentColor'
+                        strokeWidth={2}
                         viewBox='0 0 24 24'
+                        aria-hidden
                       >
                         <path
                           strokeLinecap='round'
                           strokeLinejoin='round'
-                          strokeWidth={2}
                           d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
                         />
                       </svg>
                     </div>
-                    <Input
-                      id='newPassword'
-                      type={showPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      required
-                      placeholder={t('auth.passwordPlaceholder')}
-                      className='pl-10 pr-10'
-                    />
+                    <div className='flex-1 min-w-0'>
+                      <Input
+                        id='newPassword'
+                        type={showPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        placeholder={t('auth.passwordPlaceholder')}
+                        className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0 pr-2'
+                      />
+                    </div>
                     <button
                       type='button'
                       onClick={() => setShowPassword(!showPassword)}
-                      className='absolute right-0 top-0 bottom-0 pr-3 flex items-center justify-center text-neutral-400 hover:text-neutral-600 z-10'
+                      className='w-12 shrink-0 flex items-center justify-center text-neutral-500 hover:text-primary-600 transition-colors'
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? (
                         <svg
-                          className='h-5 w-5'
+                          className='w-5 h-5'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -394,7 +408,7 @@ export default function ForgotPasswordPage() {
                         </svg>
                       ) : (
                         <svg
-                          className='h-5 w-5'
+                          className='w-5 h-5'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -424,39 +438,43 @@ export default function ForgotPasswordPage() {
                   >
                     {t('auth.confirmNewPassword')}
                   </label>
-                  <div className='relative'>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                  <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='h-5 w-5 text-primary-500'
+                        className='w-5 h-5 text-neutral-600'
                         fill='none'
                         stroke='currentColor'
+                        strokeWidth={2}
                         viewBox='0 0 24 24'
+                        aria-hidden
                       >
                         <path
                           strokeLinecap='round'
                           strokeLinejoin='round'
-                          strokeWidth={2}
                           d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
                         />
                       </svg>
                     </div>
-                    <Input
-                      id='confirmPassword'
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      placeholder={t('auth.passwordPlaceholder')}
-                      className='pl-10 pr-10'
-                    />
+                    <div className='flex-1 min-w-0'>
+                      <Input
+                        id='confirmPassword'
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        placeholder={t('auth.passwordPlaceholder')}
+                        className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0 pr-2'
+                      />
+                    </div>
                     <button
                       type='button'
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className='absolute right-0 top-0 bottom-0 pr-3 flex items-center justify-center text-neutral-400 hover:text-neutral-600 z-10'
+                      className='w-12 shrink-0 flex items-center justify-center text-neutral-500 hover:text-primary-600 transition-colors'
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                     >
                       {showConfirmPassword ? (
                         <svg
-                          className='h-5 w-5'
+                          className='w-5 h-5'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -470,7 +488,7 @@ export default function ForgotPasswordPage() {
                         </svg>
                       ) : (
                         <svg
-                          className='h-5 w-5'
+                          className='w-5 h-5'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -532,7 +550,12 @@ export default function ForgotPasswordPage() {
                     }}
                     className='text-sm text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1'
                   >
-                    <svg className='icon icon-xs' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg
+                      className='icon icon-xs'
+                      fill='none'
+                      stroke='currentColor'
+                      viewBox='0 0 24 24'
+                    >
                       <path
                         strokeLinecap='round'
                         strokeLinejoin='round'

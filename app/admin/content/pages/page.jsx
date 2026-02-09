@@ -15,9 +15,21 @@ export default function AdminContentPagesPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Static Pages' subtitle='Edit About, Contact, Terms, Privacy, footer links' actionButton={<Button variant='primary' onClick={() => router.push('/admin/content')}>Back to Content</Button>}>
+    <Layout
+      title='Static Pages'
+      subtitle='Edit About, Contact, Terms, Privacy, footer links'
+      actionButton={
+        <Button variant='primary' href='/admin/content'>
+          Back to Content
+        </Button>
+      }
+    >
       <div style={{ padding: '0 10px' }}>
-        <Card className='p-6'><p className='text-neutral-600'>Static pages editor (About, Contact, Terms, Privacy, content blocks) is planned.</p></Card>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Static pages editor (About, Contact, Terms, Privacy, content blocks) is planned.
+          </p>
+        </Card>
       </div>
     </Layout>
   );

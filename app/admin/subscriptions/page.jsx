@@ -132,7 +132,9 @@ export default function AdminSubscriptionsPage() {
 
     const price = parseFloat(formData.price);
     if (price <= 0) {
-      showError(t('admin.priceMustBePositive') || 'Price must be greater than 0 to create PayPal plan');
+      showError(
+        t('admin.priceMustBePositive') || 'Price must be greater than 0 to create PayPal plan',
+      );
       return;
     }
 
@@ -149,11 +151,15 @@ export default function AdminSubscriptionsPage() {
       if (response.success && response.data) {
         const paypalPlanId = response.data?.paypalPlanId;
         setFormData({ ...formData, paypalPlanId });
-        showSuccess(t('admin.paypalPlanCreated') + (paypalPlanId ? ` Plan ID: ${paypalPlanId}` : ''));
+        showSuccess(
+          t('admin.paypalPlanCreated') + (paypalPlanId ? ` Plan ID: ${paypalPlanId}` : ''),
+        );
       }
     } catch (error) {
       logger.error('Failed to create PayPal plan', error);
-      showError(error.message || t('admin.paypalPlanCreateFailed') || 'Failed to create PayPal plan.');
+      showError(
+        error.message || t('admin.paypalPlanCreateFailed') || 'Failed to create PayPal plan.',
+      );
     } finally {
       setCreatingPayPalPlan(false);
     }
@@ -213,7 +219,11 @@ export default function AdminSubscriptionsPage() {
       }
     } catch (error) {
       logger.error('Failed to save plan', error);
-      showError(error.message || (editingPlanId ? t('admin.planUpdateFailed') : t('admin.planCreateFailed')) || 'Failed to save plan');
+      showError(
+        error.message ||
+          (editingPlanId ? t('admin.planUpdateFailed') : t('admin.planCreateFailed')) ||
+          'Failed to save plan',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -315,7 +325,7 @@ export default function AdminSubscriptionsPage() {
           <div className='text-center'>
             <h2 className='text-xl font-semibold text-status-error mb-2'>Access Denied</h2>
             <p className='text-neutral-500 mb-4'>Please log in to access this page.</p>
-            <Button onClick={() => router.push('/login')}>Go to Login</Button>
+            <Button href='/login'>Go to Login</Button>
           </div>
         </div>
       </Layout>
@@ -331,7 +341,7 @@ export default function AdminSubscriptionsPage() {
             <p className='text-neutral-500 mb-4'>
               You need super admin privileges to access this page.
             </p>
-            <Button onClick={() => router.push('/dashboard')}>Go to Dashboard</Button>
+            <Button href='/dashboard'>Go to Dashboard</Button>
           </div>
         </div>
       </Layout>

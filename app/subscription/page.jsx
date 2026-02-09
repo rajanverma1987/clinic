@@ -1,11 +1,13 @@
 'use client';
 
+import { PlusIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Loader } from '@/components/ui/Loader';
+import { Modal } from '@/components/ui/Modal';
 import { SubscriptionCard } from '@/components/ui/SubscriptionCard';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +24,7 @@ import {
 } from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -40,6 +43,7 @@ export default function SubscriptionPage() {
   const [faqOpen, setFaqOpen] = useState(null);
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [paymentModalPlan, setPaymentModalPlan] = useState(null);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -86,6 +90,44 @@ export default function SubscriptionPage() {
     }
   };
 
+  /** Run subscription API and redirect (used from payment method modal, no confirm dialog). */
+  const handlePaymentWithMethod = async (planId, paymentMethod) => {
+    if (!user) return;
+    const plan = availablePlans.find((p) => p._id === planId);
+    if (!plan) {
+      showError(t('subscription.updateFailed'));
+      return;
+    }
+    setUpgrading(true);
+    setUpgradingMethod(paymentMethod);
+    try {
+      const response = await apiClient.post('/subscriptions', {
+        planId,
+        customerEmail: user.email,
+        customerName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+        paymentMethod,
+      });
+      if (response.success && response.data) {
+        if (response.data.approvalUrl) {
+          setPaymentModalPlan(null);
+          window.location.href = response.data.approvalUrl;
+          return;
+        }
+        showSuccess(t('subscription.subscriptionUpdated'));
+        setPaymentModalPlan(null);
+        fetchSubscription();
+      } else {
+        showError(response.error?.message || t('subscription.updateFailed'));
+      }
+    } catch (error) {
+      logger.error('Failed to create subscription', error);
+      showError(error.message || t('subscription.updateFailed'));
+    } finally {
+      setUpgrading(false);
+      setUpgradingMethod(null);
+    }
+  };
+
   const handleUpgrade = async (planId, paymentMethod = 'paypal') => {
     if (!user) return;
     const plan = availablePlans.find((p) => p._id === planId);
@@ -111,7 +153,7 @@ export default function SubscriptionPage() {
       cancelLabel: t('common.cancel'),
       variant: 'info',
       onConfirm: async () => {
-        const method = isPaidPlan ? (paymentMethod === 'card' ? 'card' : 'paypal') : null;
+        const method = isPaidPlan ? 'paypal' : null;
         setUpgrading(true);
         setUpgradingMethod(method);
         try {
@@ -123,9 +165,7 @@ export default function SubscriptionPage() {
               paymentMethod: method || 'paypal',
             });
             if (response.success && response.data) {
-              if (response.data.checkoutUrl) {
-                window.location.href = response.data.checkoutUrl;
-              } else if (response.data.approvalUrl) {
+              if (response.data.approvalUrl) {
                 window.location.href = response.data.approvalUrl;
               } else {
                 showSuccess(t('subscription.subscriptionUpdated'));
@@ -387,194 +427,313 @@ export default function SubscriptionPage() {
             </div>
           </div>
         )}
-        {/* Current Plan – right-side details only (no plan card) */}
-        {subscription && subscription.planId && typeof subscription.planId === 'object' && (
-          <div className='dashboard-section'>
-            <h2 className='sub-section-title'>
-              <span className='sub-accent' />
-              {t('subscription.currentPlan')}
-            </h2>
-            <Card title={t('subscription.subscriptionDetails')} className='sub-details-card-inner'>
-              <div className='sub-detail-row'>
-                <span className='sub-detail-label'>{t('subscription.status')}</span>
-                <Tag variant={getStatusColor(subscription.status)}>{subscription.status}</Tag>
-              </div>
-              {subscription.currentPeriodStart && subscription.currentPeriodEnd && (
-                <div className='sub-detail-row'>
-                  <span className='sub-detail-label'>{t('subscription.currentPeriod')}</span>
-                  <span className='sub-detail-value'>
-                    {formatDate(subscription.currentPeriodStart)} –{' '}
-                    {formatDate(subscription.currentPeriodEnd)}
-                  </span>
-                </div>
-              )}
-              {subscription.nextBillingDate && (
-                <div className='sub-detail-row'>
-                  <span className='sub-detail-label'>{t('subscription.nextBillingDate')}</span>
-                  <span className='sub-detail-value'>
-                    {formatDate(subscription.nextBillingDate)}
-                  </span>
-                </div>
-              )}
-              {subscription.planId && (
-                <div className='sub-detail-row'>
-                  <span className='sub-detail-label'>{t('subscription.monthlyCost')}</span>
-                  <span className='sub-detail-value'>
-                    {formatCurrency(
-                      subscription.planId?.price || 0,
-                      subscription.planId?.currency || 'USD',
-                    )}{' '}
-                    /{' '}
-                    {subscription.planId?.billingCycle === 'YEARLY'
-                      ? t('pricing.perYear')
-                      : t('pricing.perMonth')}
-                  </span>
-                </div>
-              )}
-              {subscription.trialEnd && new Date(subscription.trialEnd) > new Date() && (
-                <div className='sub-trial-notice'>
-                  <p className='sub-detail-value'>
-                    {t('subscription.trialEndsOn').replace(
-                      '{{date}}',
-                      formatDate(subscription.trialEnd),
-                    )}
-                    .{' '}
-                    {t('subscription.afterTrialPlanContinues')
-                      .replace('{{planName}}', subscription.planId?.name || '')
-                      .replace(
-                        '{{amount}}',
-                        subscription.planId
-                          ? formatCurrency(
-                              subscription.planId.price || 0,
-                              subscription.planId.currency || 'USD',
-                            )
-                          : '',
-                      )}
-                  </p>
-                </div>
-              )}
-              {subscription.cancelAtPeriodEnd && (
-                <div className='sub-alert'>
-                  <span className='text-amber-600' aria-hidden>
-                    ⚠
-                  </span>
-                  <p>
-                    {t('subscription.cancelWarning').replace(
-                      '{{date}}',
-                      formatDate(subscription.currentPeriodEnd),
-                    )}
-                  </p>
-                </div>
-              )}
-              <div className='sub-actions'>
-                <Button
-                  variant={subscription.cancelAtPeriodEnd ? 'primary' : 'secondary'}
-                  onClick={handleCancel}
-                  isLoading={cancelling}
-                >
-                  {subscription.cancelAtPeriodEnd
-                    ? t('subscription.reactivateSubscription')
-                    : t('subscription.cancelSubscription')}
-                </Button>
-                <Button variant='secondary' onClick={() => router.push('/payment-history')}>
-                  {t('subscription.viewPaymentHistory')}
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* Your add-ons (when user has subscription with add-ons) */}
-        {subscription &&
-          subscription._id &&
-          Array.isArray(subscription.addons) &&
-          subscription.addons.length > 0 && (
-            <div className='dashboard-section sub-section-compact'>
+        {/* Space management: half = Current Plan, half = Add-ons (side by side when subscription exists) */}
+        {subscription && subscription.planId && typeof subscription.planId === 'object' ? (
+          <div className='content-grid-2 content-grid-gap-6 sub-half-half'>
+            <div className='dashboard-section'>
               <h2 className='sub-section-title'>
                 <span className='sub-accent' />
-                {t('subscription.yourAddons')}
+                {t('subscription.currentPlan')}
               </h2>
-              <Card>
+              <Card
+                title={t('subscription.subscriptionDetails')}
+                className='sub-details-card-inner'
+              >
+                <div className='sub-detail-row'>
+                  <span className='sub-detail-label'>{t('subscription.status')}</span>
+                  <Tag variant={getStatusColor(subscription.status)}>{subscription.status}</Tag>
+                </div>
+                {subscription.currentPeriodStart && subscription.currentPeriodEnd && (
+                  <div className='sub-detail-row'>
+                    <span className='sub-detail-label'>{t('subscription.currentPeriod')}</span>
+                    <span className='sub-detail-value'>
+                      {formatDate(subscription.currentPeriodStart)} –{' '}
+                      {formatDate(subscription.currentPeriodEnd)}
+                    </span>
+                  </div>
+                )}
+                {subscription.nextBillingDate && (
+                  <div className='sub-detail-row'>
+                    <span className='sub-detail-label'>{t('subscription.nextBillingDate')}</span>
+                    <span className='sub-detail-value'>
+                      {formatDate(subscription.nextBillingDate)}
+                    </span>
+                  </div>
+                )}
+                {subscription.planId && (
+                  <div className='sub-detail-row'>
+                    <span className='sub-detail-label'>{t('subscription.monthlyCost')}</span>
+                    <span className='sub-detail-value'>
+                      {formatCurrency(
+                        subscription.planId?.price || 0,
+                        subscription.planId?.currency || 'USD',
+                      )}{' '}
+                      /{' '}
+                      {subscription.planId?.billingCycle === 'YEARLY'
+                        ? t('pricing.perYear')
+                        : t('pricing.perMonth')}
+                    </span>
+                  </div>
+                )}
+                {subscription.trialEnd && new Date(subscription.trialEnd) > new Date() && (
+                  <div className='sub-trial-notice'>
+                    <p className='sub-detail-value'>
+                      {t('subscription.trialEndsOn').replace(
+                        '{{date}}',
+                        formatDate(subscription.trialEnd),
+                      )}
+                      .{' '}
+                      {t('subscription.afterTrialPlanContinues')
+                        .replace('{{planName}}', subscription.planId?.name || '')
+                        .replace(
+                          '{{amount}}',
+                          subscription.planId
+                            ? formatCurrency(
+                                subscription.planId.price || 0,
+                                subscription.planId.currency || 'USD',
+                              )
+                            : '',
+                        )}
+                    </p>
+                  </div>
+                )}
+                {subscription.cancelAtPeriodEnd && (
+                  <div className='sub-alert'>
+                    <span className='text-amber-600' aria-hidden>
+                      ⚠
+                    </span>
+                    <p>
+                      {t('subscription.cancelWarning').replace(
+                        '{{date}}',
+                        formatDate(subscription.currentPeriodEnd),
+                      )}
+                    </p>
+                  </div>
+                )}
+                <div className='sub-actions'>
+                  <Button
+                    variant='link'
+                    size='xs'
+                    onClick={handleCancel}
+                    isLoading={cancelling}
+                    className={
+                      subscription.cancelAtPeriodEnd
+                        ? 'text-primary-600 dark:text-primary-400'
+                        : '!text-status-error hover:!text-red-700 dark:hover:!text-red-400'
+                    }
+                  >
+                    {subscription.cancelAtPeriodEnd
+                      ? t('subscription.reactivateSubscription')
+                      : t('subscription.cancelSubscription')}
+                  </Button>
+                  <span className='sub-actions-sep' aria-hidden>
+                    ·
+                  </span>
+                  <Link
+                    href='/payment-history'
+                    className='sub-action-link text-body-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:underline underline-offset-2'
+                  >
+                    {t('subscription.viewPaymentHistory')}
+                  </Link>
+                </div>
+              </Card>
+            </div>
+
+            <div className='dashboard-section sub-section-compact'>
+              {subscription._id &&
+                Array.isArray(subscription.addons) &&
+                subscription.addons.length > 0 && (
+                  <>
+                    <h2 className='sub-section-title'>
+                      <span className='sub-accent' />
+                      {t('subscription.yourAddons')}
+                    </h2>
+                    <Card className='mb-4'>
+                      <p
+                        className='sub-section-desc'
+                        style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}
+                      >
+                        {t('subscription.yourAddonsDescription')}
+                      </p>
+                      <ul className='sub-your-addons-list'>
+                        {subscription.addons.map((item) => {
+                          const spec = ADDONS.find((a) => a.key === item.addonKey);
+                          const label = spec ? t(spec.labelKey) : item.addonKey;
+                          return (
+                            <li key={item.addonKey} className='sub-your-addon-item'>
+                              <span className='sub-your-addon-label'>
+                                {label}
+                                {item.option ? ` (${item.option})` : ''}
+                                {item.quantity > 1 ? ` × ${item.quantity}` : ''}
+                              </span>
+                              <Button
+                                variant='secondary'
+                                size='sm'
+                                onClick={() =>
+                                  handleRemoveAddon(item.addonKey, spec?.labelKey || item.addonKey)
+                                }
+                                isLoading={addonLoading === item.addonKey}
+                                disabled={!!addonLoading}
+                              >
+                                {t('subscription.removeAddon')}
+                              </Button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </Card>
+                  </>
+                )}
+              <Card title={t('subscriptionSpec.addOns')}>
                 <p
                   className='sub-section-desc'
                   style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}
                 >
-                  {t('subscription.yourAddonsDescription')}
+                  {t('subscriptionSpec.addOnsSubtitle')}
                 </p>
-                <ul className='sub-your-addons-list'>
-                  {subscription.addons.map((item) => {
-                    const spec = ADDONS.find((a) => a.key === item.addonKey);
-                    const label = spec ? t(spec.labelKey) : item.addonKey;
+                <div className='content-grid-3 content-grid-gap-3'>
+                  {ADDONS.map((addon) => {
+                    const hasSubscription = subscription && subscription._id;
+                    const alreadyAdded =
+                      Array.isArray(subscription?.addons) &&
+                      subscription.addons.some((a) => a.addonKey === addon.key);
+                    const canAdd = hasSubscription && !alreadyAdded;
                     return (
-                      <li key={item.addonKey} className='sub-your-addon-item'>
-                        <span className='sub-your-addon-label'>
-                          {label}
-                          {item.option ? ` (${item.option})` : ''}
-                          {item.quantity > 1 ? ` × ${item.quantity}` : ''}
-                        </span>
-                        <Button
-                          variant='secondary'
-                          size='sm'
-                          onClick={() =>
-                            handleRemoveAddon(item.addonKey, spec?.labelKey || item.addonKey)
-                          }
-                          isLoading={addonLoading === item.addonKey}
-                          disabled={!!addonLoading}
-                        >
-                          {t('subscription.removeAddon')}
-                        </Button>
-                      </li>
+                      <div key={addon.key} className='sub-addon-card'>
+                        <div className='sub-addon-card-header'>
+                          <div className='sub-addon-title'>{t(addon.labelKey)}</div>
+                          {canAdd && (
+                            <button
+                              type='button'
+                              className='sub-addon-add-icon'
+                              onClick={() => handleAddAddon(addon)}
+                              disabled={!!addonLoading}
+                              aria-label={t('subscription.addAddon')}
+                              title={t('subscription.addAddon')}
+                            >
+                              {addonLoading === addon.key ? (
+                                <span className='sub-addon-add-icon-spinner' aria-hidden />
+                              ) : (
+                                <PlusIcon className='icon icon-sm' ariaHidden />
+                              )}
+                            </button>
+                          )}
+                          {alreadyAdded && (
+                            <span className='sub-addon-badge' aria-hidden>
+                              ✓ {t('subscription.added')}
+                            </span>
+                          )}
+                        </div>
+                        <div className='sub-addon-price'>{addon.price}</div>
+                        <p className='sub-addon-note'>{t(addon.noteKey)}</p>
+                      </div>
                     );
                   })}
-                </ul>
+                </div>
               </Card>
             </div>
-          )}
+          </div>
+        ) : (
+          <>
+            {/* No subscription: Your add-ons (only if somehow we have addons) */}
+            {subscription &&
+              subscription._id &&
+              Array.isArray(subscription.addons) &&
+              subscription.addons.length > 0 && (
+                <div className='dashboard-section sub-section-compact'>
+                  <h2 className='sub-section-title'>
+                    <span className='sub-accent' />
+                    {t('subscription.yourAddons')}
+                  </h2>
+                  <Card>
+                    <p
+                      className='sub-section-desc'
+                      style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}
+                    >
+                      {t('subscription.yourAddonsDescription')}
+                    </p>
+                    <ul className='sub-your-addons-list'>
+                      {subscription.addons.map((item) => {
+                        const spec = ADDONS.find((a) => a.key === item.addonKey);
+                        const label = spec ? t(spec.labelKey) : item.addonKey;
+                        return (
+                          <li key={item.addonKey} className='sub-your-addon-item'>
+                            <span className='sub-your-addon-label'>
+                              {label}
+                              {item.option ? ` (${item.option})` : ''}
+                              {item.quantity > 1 ? ` × ${item.quantity}` : ''}
+                            </span>
+                            <Button
+                              variant='secondary'
+                              size='sm'
+                              onClick={() =>
+                                handleRemoveAddon(item.addonKey, spec?.labelKey || item.addonKey)
+                              }
+                              isLoading={addonLoading === item.addonKey}
+                              disabled={!!addonLoading}
+                            >
+                              {t('subscription.removeAddon')}
+                            </Button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </Card>
+                </div>
+              )}
 
-        {/* Add-ons catalog */}
-        <div className='dashboard-section sub-section-compact'>
-          <Card title={t('subscriptionSpec.addOns')}>
-            <p
-              className='sub-section-desc'
-              style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}
-            >
-              {t('subscriptionSpec.addOnsSubtitle')}
-            </p>
-            <div className='sub-addons-grid'>
-              {ADDONS.map((addon) => {
-                const hasSubscription = subscription && subscription._id;
-                const alreadyAdded =
-                  Array.isArray(subscription?.addons) &&
-                  subscription.addons.some((a) => a.addonKey === addon.key);
-                const canAdd = hasSubscription && !alreadyAdded;
-                return (
-                  <div key={addon.key} className='sub-addon-card'>
-                    <div className='sub-addon-title'>{t(addon.labelKey)}</div>
-                    <div className='sub-addon-price'>{addon.price}</div>
-                    <p className='sub-addon-note'>{t(addon.noteKey)}</p>
-                    {canAdd && (
-                      <Button
-                        variant='primary'
-                        size='sm'
-                        className='sub-addon-add-btn'
-                        onClick={() => handleAddAddon(addon)}
-                        isLoading={addonLoading === addon.key}
-                        disabled={!!addonLoading}
-                      >
-                        {t('subscription.addAddon')}
-                      </Button>
-                    )}
-                    {alreadyAdded && (
-                      <span className='sub-addon-badge' aria-hidden>
-                        ✓ {t('subscription.added')}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+            {/* Add-ons catalog – full width when no current plan */}
+            <div className='dashboard-section sub-section-compact'>
+              <Card title={t('subscriptionSpec.addOns')}>
+                <p
+                  className='sub-section-desc'
+                  style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}
+                >
+                  {t('subscriptionSpec.addOnsSubtitle')}
+                </p>
+                <div className='content-grid-3 content-grid-gap-3'>
+                  {ADDONS.map((addon) => {
+                    const hasSubscription = subscription && subscription._id;
+                    const alreadyAdded =
+                      Array.isArray(subscription?.addons) &&
+                      subscription.addons.some((a) => a.addonKey === addon.key);
+                    const canAdd = hasSubscription && !alreadyAdded;
+                    return (
+                      <div key={addon.key} className='sub-addon-card'>
+                        <div className='sub-addon-card-header'>
+                          <div className='sub-addon-title'>{t(addon.labelKey)}</div>
+                          {canAdd && (
+                            <button
+                              type='button'
+                              className='sub-addon-add-icon'
+                              onClick={() => handleAddAddon(addon)}
+                              disabled={!!addonLoading}
+                              aria-label={t('subscription.addAddon')}
+                              title={t('subscription.addAddon')}
+                            >
+                              {addonLoading === addon.key ? (
+                                <span className='sub-addon-add-icon-spinner' aria-hidden />
+                              ) : (
+                                <PlusIcon className='icon icon-sm' ariaHidden />
+                              )}
+                            </button>
+                          )}
+                          {alreadyAdded && (
+                            <span className='sub-addon-badge' aria-hidden>
+                              ✓ {t('subscription.added')}
+                            </span>
+                          )}
+                        </div>
+                        <div className='sub-addon-price'>{addon.price}</div>
+                        <p className='sub-addon-note'>{t(addon.noteKey)}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
             </div>
-          </Card>
-        </div>
+          </>
+        )}
 
         {/* Other plans (excludes current plan) */}
         {displayPlans.length > 0 && (
@@ -591,7 +750,12 @@ export default function SubscriptionPage() {
             <p className='sub-section-desc sub-section-desc--trial'>
               {t('subscription.allPlansIncludeTrial')}
             </p>
-            <div className='sub-plans-grid'>
+            {displayPlans.some((p) => (Number(p.price) || 0) > 0) && (
+              <p className='sub-payment-security-note' role='status'>
+                {t('subscription.securePaymentNote')}
+              </p>
+            )}
+            <div className='content-grid-3 content-grid-gap-6'>
               {displayPlans.map((plan) => {
                 const isPaid = (Number(plan.price) || 0) > 0;
                 return (
@@ -610,19 +774,47 @@ export default function SubscriptionPage() {
                     yearlySaveAmount={YEARLY_SAVE[plan.name]}
                     trialDays={plan.trialDays ?? 14}
                     showPaymentMethods={isPaid}
-                    onPayWithCard={isPaid ? () => handleUpgrade(plan._id, 'card') : undefined}
-                    onPayWithPayPal={isPaid ? () => handleUpgrade(plan._id, 'paypal') : undefined}
+                    onSubscribe={isPaid ? () => setPaymentModalPlan(plan) : undefined}
                     onSelect={!isPaid ? () => handleUpgrade(plan._id) : undefined}
                     ctaText={
                       subscription ? t('subscription.switchToPlan') : t('subscription.getStarted')
                     }
                     ctaDisabled={upgrading}
-                    loadingCard={upgradingMethod === 'card'}
-                    loadingPayPal={upgradingMethod === 'paypal'}
                   />
                 );
               })}
             </div>
+
+            <Modal
+              isOpen={!!paymentModalPlan}
+              onClose={() => !upgrading && setPaymentModalPlan(null)}
+              title={
+                paymentModalPlan
+                  ? `${t('subscription.subscribe')} – ${paymentModalPlan.name}`
+                  : t('subscription.payWithPayPal')
+              }
+              size='sm'
+            >
+              {paymentModalPlan && (
+                <div className='sub-payment-modal-content'>
+                  <p className='sub-payment-modal-note' role='status'>
+                    {t('subscription.securePaymentNote')}
+                  </p>
+                  <div className='sub-payment-modal-buttons'>
+                    <Button
+                      variant='primary'
+                      size='md'
+                      className='sub-payment-modal-btn'
+                      onClick={() => handlePaymentWithMethod(paymentModalPlan._id, 'paypal')}
+                      disabled={upgrading}
+                      isLoading={upgradingMethod === 'paypal'}
+                    >
+                      {t('subscription.payWithPayPal')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Modal>
           </div>
         )}
 
@@ -690,21 +882,23 @@ export default function SubscriptionPage() {
         <div className='dashboard-section sub-footer-line'>
           <p className='sub-terms-one-line'>
             {t('subscription.termsOneLine')}{' '}
-            <button
-              type='button'
-              className='sub-link-button'
-              onClick={() => router.push('/pricing')}
+            <Button
+              variant='link'
+              size='xs'
+              className='sub-link-button !p-0 !min-h-0'
+              href='/pricing'
             >
               {t('subscription.comparePlans')}
-            </button>
+            </Button>
             {' · '}
-            <button
-              type='button'
-              className='sub-link-button'
-              onClick={() => router.push('/support')}
+            <Button
+              variant='link'
+              size='xs'
+              className='sub-link-button !p-0 !min-h-0'
+              href='/support'
             >
               {t('subscriptionSpec.contactSupport')}
-            </button>
+            </Button>
           </p>
         </div>
       </div>

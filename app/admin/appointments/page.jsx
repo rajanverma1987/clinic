@@ -165,10 +165,10 @@ export default function AdminAppointmentsPage() {
       subtitle={t('admin.appointmentsSubtitleAll')}
       actionButton={
         <div className='flex gap-2'>
-          <Button variant='secondary' onClick={() => router.push('/admin/appointments/analytics')}>
+          <Button variant='secondary' href='/admin/appointments/analytics'>
             {t('admin.analytics')}
           </Button>
-          <Button variant='primary' onClick={() => router.push('/admin')}>
+          <Button variant='primary' href='/admin'>
             {t('common.backToDashboard')}
           </Button>
         </div>

@@ -5,15 +5,14 @@
 
 import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '@/lib/auth/jwt.js';
+import { isTestAccount } from '@/lib/constants/test-account.js';
 import connectDB from '@/lib/db/connection.js';
+import { logger } from '@/lib/utils/logger.js';
 import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
 import SubscriptionPlan, { PlanStatus } from '@/models/SubscriptionPlan.js';
 import Tenant from '@/models/Tenant.js';
 import User, { UserRole } from '@/models/User.js';
 import speakeasy from 'speakeasy';
-import { isTestAccount } from '@/lib/constants/test-account.js';
-import { logger } from '@/lib/utils/logger.js';
-import { measureTime, retryWithBackoff } from '@/lib/utils/enterprise-helpers.js';
 
 /**
  * Register a new user
@@ -105,7 +104,8 @@ export async function registerUser(input) {
     });
     tenantId = tenant._id;
 
-    // Auto-assign Free Trial subscription to new clinic
+    // Auto-assign Free Trial subscription to new clinic (trialDays from try-for-free flow, default 15)
+    const trialDays = input.trialDays && input.trialDays > 0 ? input.trialDays : 15;
     try {
       const freeTrialPlan = await SubscriptionPlan.findOne({
         name: 'Free Trial',
@@ -113,10 +113,9 @@ export async function registerUser(input) {
       });
 
       if (freeTrialPlan) {
-        // Calculate 15-day trial period
         const periodStart = new Date();
         const periodEnd = new Date(periodStart);
-        periodEnd.setDate(periodEnd.getDate() + 15); // 15 days from now
+        periodEnd.setDate(periodEnd.getDate() + trialDays);
 
         // Create subscription
         await Subscription.create({
@@ -191,7 +190,7 @@ export async function registerUser(input) {
     user._id.toString(),
     user._id.toString(),
     user.tenantId?.toString() || 'system',
-    AuditAction.CREATE
+    AuditAction.CREATE,
   );
 
   // Generate tokens
@@ -250,15 +249,11 @@ export async function loginUser(input, options = {}) {
     }
   }
 
-  // Check if user is active (testing account is always allowed)
-  if (!isTestAccount(user.email) && !user.isActive) {
-    throw new Error(
-      'Account is deactivated. Please contact your administrator to reactivate your account.'
-    );
-  }
+  // All registered accounts can log in; isActive is not enforced at login (can be used for UI/restrictions elsewhere).
 
   // Verify password (use normalized password); testing account bypasses password check
-  const isPasswordValid = await user.comparePassword(normalizedPassword) || isTestAccount(user.email);
+  const isPasswordValid =
+    (await user.comparePassword(normalizedPassword)) || isTestAccount(user.email);
 
   if (!isPasswordValid) {
     if (!isTestAccount(user.email)) {
@@ -266,7 +261,9 @@ export async function loginUser(input, options = {}) {
       if (user.failedLoginAttempts >= 5) {
         user.accountLockedUntil = new Date(Date.now() + 30 * 60 * 1000); // Lock for 30 minutes
         await user.save();
-        throw new Error('Account locked due to too many failed login attempts. Please try again in 30 minutes or reset your password.');
+        throw new Error(
+          'Account locked due to too many failed login attempts. Please try again in 30 minutes or reset your password.',
+        );
       }
       await user.save();
     }
@@ -274,9 +271,15 @@ export async function loginUser(input, options = {}) {
   }
 
   // Check if account is locked (testing account bypass)
-  if (!isTestAccount(user.email) && user.accountLockedUntil && user.accountLockedUntil > new Date()) {
+  if (
+    !isTestAccount(user.email) &&
+    user.accountLockedUntil &&
+    user.accountLockedUntil > new Date()
+  ) {
     const minutesRemaining = Math.ceil((user.accountLockedUntil - new Date()) / (60 * 1000));
-    throw new Error(`Account is locked. Please try again in ${minutesRemaining} minute(s) or reset your password.`);
+    throw new Error(
+      `Account is locked. Please try again in ${minutesRemaining} minute(s) or reset your password.`,
+    );
   }
 
   // Validate tenant is active (skip for super_admin and testing account)
@@ -304,7 +307,7 @@ export async function loginUser(input, options = {}) {
     user.tenantId?.toString() || 'system',
     AuditAction.ACCESS,
     undefined,
-    { action: 'login', ip: clientIP }
+    { action: 'login', ip: clientIP },
   );
 
   // Generate tokens
@@ -387,12 +390,7 @@ export async function verify2FA(input, options = {}) {
     }
   }
 
-  // Check if user is active (testing account is always allowed)
-  if (!isTestAccount(user.email) && !user.isActive) {
-    throw new Error(
-      'Account is deactivated. Please contact your administrator to reactivate your account.'
-    );
-  }
+  // All registered accounts can log in; isActive is not enforced at session validation.
 
   // Validate tenant is active (skip for super_admin and testing account)
   if (!isTestAccount(user.email) && user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
@@ -415,7 +413,7 @@ export async function verify2FA(input, options = {}) {
     user.tenantId?.toString() || 'system',
     AuditAction.ACCESS,
     undefined,
-    { action: 'login_2fa', ip: clientIP }
+    { action: 'login_2fa', ip: clientIP },
   );
 
   // Generate tokens
@@ -494,7 +492,7 @@ export async function changePassword(userId, currentPassword, newPassword, tenan
     tenantId || 'system',
     AuditAction.UPDATE,
     undefined,
-    { action: 'password_change' }
+    { action: 'password_change' },
   );
 
   return { success: true };
@@ -507,11 +505,11 @@ export async function refreshAccessToken(refreshToken) {
   try {
     const payload = verifyRefreshToken(refreshToken);
 
-    // Verify user still exists and is active (testing account is always allowed)
+    // Verify user still exists; all registered accounts can refresh (isActive not enforced)
     await connectDB();
     const user = await User.findById(payload.userId);
-    if (!user || (!isTestAccount(user?.email) && !user.isActive)) {
-      throw new Error('User not found or inactive');
+    if (!user) {
+      throw new Error('User not found');
     }
 
     // Verify tenant is still active

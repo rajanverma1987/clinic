@@ -15,31 +15,39 @@ export async function POST(request) {
     if (endpoints.length === 0 || endpoints.length > 20) {
       return NextResponse.json(
         { success: false, error: { message: 'endpoints array required (max 20)' } },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const auth = request.headers.get('authorization') || '';
     const origin = request.nextUrl?.origin || request.headers.get('origin') || '';
-    const base = BASE && BASE.startsWith('http') ? BASE : (origin || 'http://localhost:5053');
+    const base =
+      BASE && BASE.startsWith('http')
+        ? BASE
+        : origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5053';
     const results = await Promise.all(
       endpoints.map(async (path) => {
-        const url = path.startsWith('http') ? path : `${base.replace(/\/$/, '')}${path.startsWith('/') ? path : '/' + path}`;
+        const url = path.startsWith('http')
+          ? path
+          : `${base.replace(/\/$/, '')}${path.startsWith('/') ? path : '/' + path}`;
         try {
           const res = await fetch(url, {
-            headers: { ...(auth ? { Authorization: auth } : {}), 'Content-Type': 'application/json' },
+            headers: {
+              ...(auth ? { Authorization: auth } : {}),
+              'Content-Type': 'application/json',
+            },
           });
           const data = await res.json();
           return { success: res.ok, data, status: res.status };
         } catch (e) {
           return { success: false, error: e.message, status: 500 };
         }
-      })
+      }),
     );
     return NextResponse.json({ success: true, data: results });
   } catch (e) {
     return NextResponse.json(
       { success: false, error: { message: e?.message || 'Batch request failed' } },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

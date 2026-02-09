@@ -1,0 +1,639 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design Tokens – match clinic tool 100%
+ * Scope: Website design must stay within these tokens only.
+ * Do not introduce new colors, fonts, or visual language; use primary, neutral, success/cta, section-bg, typography and icon utilities below.
+ */
+@layer base {
+  :root {
+    --color-primary-900: #123992;
+    --color-primary-700: #2553aee5;
+    --color-primary-500: #1e4fb5;
+    --color-primary-300: #5b82d4;
+    --color-primary-200: #9bb0e3;
+    --color-primary-100: #e5ebf8;
+    --color-primary-50: #f2f5fc;
+    --color-primary-600: #1a48ab;
+    --color-primary: var(--color-primary-700);
+
+    --color-secondary-700: #1e874f;
+    --color-secondary-600: #27ae60;
+    --color-secondary-500: #27ae60;
+    --color-secondary-300: #52c48f;
+    --color-secondary-100: #e8f8ef;
+
+    --color-success-700: #1e874f;
+    --color-success-600: #27ae60;
+    --color-success-500: #27ae60;
+    --color-success-300: #52c48f;
+    --color-success-100: #e8f8ef;
+
+    --color-neutral-900: #1a1a1a;
+    --color-neutral-800: #2d2d2d;
+    --color-neutral-700: #4f4f4f;
+    --color-neutral-600: #6b7280;
+    --color-neutral-500: #828282;
+    --color-neutral-300: #d1d1d1;
+    --color-neutral-200: #e6e9ee;
+    --color-neutral-100: #f7fafc;
+    --color-neutral-50: #ffffff;
+
+    --color-surface: #ffffff;
+    --color-surface-elevated: #f7fafc;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #4f4f4f;
+    --color-border: #e6e9ee;
+
+    --color-status-success: #27ae60;
+    --color-status-warning: #f2c94c;
+    --color-status-error: #eb5757;
+    --color-status-info: var(--color-primary-700);
+
+    --font-family:
+      'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial,
+      sans-serif;
+    --font-mono: 'JetBrains Mono', 'Roboto Mono', ui-monospace, 'Cascadia Mono', monospace;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-14: 56px;
+    --space-16: 64px;
+
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+    --radius-2xl: 16px;
+    --radius-full: 9999px;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    --text-body-xs: 12px;
+    --text-body-xs-line-height: 16px;
+    --text-body-sm: 14px;
+    --text-body-sm-line-height: 20px;
+    --text-body-md: 16px;
+    --text-body-md-line-height: 24px;
+    --text-body-lg: 18px;
+    --text-body-lg-line-height: 28px;
+    --text-section-title: 48px;
+    --text-section-title-line: 56px;
+    --icon-text-gap: 10px;
+
+    --icon-outline-white: #ffffff;
+    --icon-outline-cream: #fefce8;
+    --icon-size-xs: 16px;
+    --icon-size-sm: 20px;
+    --icon-size-md: 24px;
+    --icon-size-lg: 32px;
+    --icon-size-xl: 40px;
+    --icon-size-2xl: 48px;
+    --icon-size-empty: 64px;
+
+    /* Marketing section/hero – single source for gradients and orbs */
+    --color-cta-primary: #15803d;
+    --color-cta-primary-hover: #166534;
+    --section-bg-gradient: linear-gradient(
+      135deg,
+      #ffffff 0%,
+      var(--color-neutral-100) 50%,
+      #e6f7fe 100%
+    );
+    --section-orb-primary: radial-gradient(
+      circle,
+      rgba(45, 156, 219, 0.12) 0%,
+      rgba(45, 156, 219, 0.04) 40%,
+      transparent 70%
+    );
+    --section-orb-secondary: radial-gradient(
+      circle,
+      rgba(39, 174, 96, 0.12) 0%,
+      rgba(39, 174, 96, 0.04) 40%,
+      transparent 70%
+    );
+    --hero-cta-shadow: 0 8px 24px -6px rgba(45, 156, 219, 0.4);
+    --hero-image-glow: linear-gradient(135deg, rgba(45, 156, 219, 0.15), rgba(39, 174, 96, 0.15));
+    --hero-shine-overlay: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%
+    );
+    --text-shadow-on-dark: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  body {
+    font-family: var(--font-family);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background-color: var(--color-neutral-50);
+    color: var(--color-neutral-900);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  p {
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  .btn-primary-green {
+    background-color: var(--color-cta-primary) !important;
+    border: 1px solid white !important;
+    box-shadow: 0 0 0 0.5px var(--color-cta-primary) !important;
+  }
+  .btn-primary-green:hover:not(:disabled),
+  .btn-primary-green:focus-visible:not(:disabled) {
+    background-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 0.5px var(--color-primary) !important;
+  }
+  .btn-primary-green:active:not(:disabled) {
+    background-color: var(--color-primary-700) !important;
+    box-shadow: 0 0 0 0.5px var(--color-primary) !important;
+  }
+
+  .btn-secondary-blue {
+    background-color: var(--color-primary) !important;
+    border: 1px solid white !important;
+    box-shadow: 0 0 0 0.5px var(--color-primary) !important;
+  }
+  .btn-secondary-blue:hover:not(:disabled),
+  .btn-secondary-blue:focus-visible:not(:disabled) {
+    box-shadow: 0 0 0 0.5px var(--color-cta-primary) !important;
+  }
+  .btn-secondary-blue:active:not(:disabled) {
+    box-shadow: 0 0 0 0.5px var(--color-cta-primary) !important;
+  }
+
+  /* Section background – use theme gradient */
+  .section-bg {
+    background: var(--section-bg-gradient);
+  }
+
+  /* Section container – consistent max-width and centering (theme scope). Sections add their own padding. */
+  .section-container {
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Section title – theme typography for section headings */
+  .section-title {
+    font-size: var(--text-section-title);
+    line-height: var(--text-section-title-line);
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    color: var(--color-neutral-900);
+  }
+}
+
+.content-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+@media (min-width: 768px) {
+  .content-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .content-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.content-grid-gap-6 {
+  gap: 1.5rem;
+}
+
+/* Hero + CTA animations (match clinic marketing) */
+@keyframes button-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+.animate-button-pulse {
+  animation: button-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+@keyframes hero-shine {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.hero-orb-1 {
+  animation: hero-float 20s ease-in-out infinite;
+}
+.hero-orb-2 {
+  animation: hero-float 25s ease-in-out infinite reverse;
+}
+.hero-shine {
+  animation: hero-shine 1.5s ease-in-out;
+}
+
+/* Hero trust badges – icon + text pills */
+.hero-trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--color-neutral-100);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-full);
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--color-neutral-700);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+.hero-trust-badge:hover {
+  background: var(--color-neutral-50);
+  border-color: var(--color-neutral-300);
+}
+.hero-trust-badge__icon {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  color: var(--color-neutral-700);
+  stroke: currentColor;
+  fill: none;
+}
+.hero-trust-badge__text {
+  white-space: nowrap;
+}
+
+/* Typography utilities – match clinic */
+@layer utilities {
+  .text-h1 {
+    font-size: 32px;
+    line-height: 40px;
+    font-weight: 700;
+    font-family: var(--font-family);
+  }
+  .text-h2 {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 600;
+    font-family: var(--font-family);
+  }
+  .text-h3 {
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 600;
+    font-family: var(--font-family);
+  }
+  .text-h4 {
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 600;
+    font-family: var(--font-family);
+  }
+  .text-body-lg {
+    font-size: 18px;
+    line-height: 28px;
+    font-weight: 400;
+    font-family: var(--font-family);
+  }
+  .text-body-md {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+    font-family: var(--font-family);
+  }
+  .text-body-sm {
+    font-size: 14px;
+    line-height: 21px;
+    font-weight: 400;
+    font-family: var(--font-family);
+  }
+  .text-body-xs {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    font-family: var(--font-family);
+  }
+  .text-button {
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 600;
+    font-family: var(--font-family);
+  }
+  .text-caption {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    color: var(--color-neutral-500);
+    font-family: var(--font-family);
+  }
+}
+
+/* Icons & SVG – match clinic: stroke only, sizes .icon-xs → .icon-2xl */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  color: currentColor;
+  box-sizing: border-box;
+}
+.icon svg {
+  width: 100%;
+  height: 100%;
+  flex-shrink: 0;
+  stroke: currentColor;
+  color: inherit;
+  fill: none !important;
+}
+.icon svg path,
+.icon svg circle,
+.icon svg rect,
+.icon svg polygon,
+.icon svg polyline {
+  fill: none !important;
+  stroke: inherit;
+  stroke-width: inherit;
+}
+svg.icon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  flex-shrink: 0;
+  stroke: currentColor;
+  color: inherit;
+  fill: none !important;
+}
+svg.icon path,
+svg.icon circle,
+svg.icon rect,
+svg.icon polygon,
+svg.icon polyline {
+  fill: none !important;
+  stroke: inherit;
+  stroke-width: inherit;
+}
+.icon-outline-cream svg,
+.icon-outline-cream.icon,
+svg.icon-outline-cream {
+  stroke: var(--icon-outline-cream);
+  fill: none !important;
+}
+.icon-outline-white svg,
+.icon-outline-white.icon,
+svg.icon-outline-white {
+  stroke: var(--icon-outline-white);
+  fill: none !important;
+}
+.icon-xs,
+svg.icon.icon-xs {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+  min-width: var(--icon-size-xs);
+  min-height: var(--icon-size-xs);
+}
+.icon-sm,
+svg.icon.icon-sm {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  min-width: var(--icon-size-sm);
+  min-height: var(--icon-size-sm);
+}
+.icon-md,
+svg.icon.icon-md {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  min-width: var(--icon-size-md);
+  min-height: var(--icon-size-md);
+}
+.icon-lg,
+svg.icon.icon-lg {
+  width: var(--icon-size-lg);
+  height: var(--icon-size-lg);
+  min-width: var(--icon-size-lg);
+  min-height: var(--icon-size-lg);
+}
+.icon-xl,
+svg.icon.icon-xl {
+  width: var(--icon-size-xl);
+  height: var(--icon-size-xl);
+  min-width: var(--icon-size-xl);
+  min-height: var(--icon-size-xl);
+}
+.icon-2xl,
+svg.icon.icon-2xl {
+  width: var(--icon-size-2xl);
+  height: var(--icon-size-2xl);
+  min-width: var(--icon-size-2xl);
+  min-height: var(--icon-size-2xl);
+}
+
+/* Plan cards (SubscriptionCard) – match clinic pricing */
+.sub-plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 420px;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.sub-plan-card:hover {
+  border-color: var(--color-primary-300);
+  box-shadow: var(--shadow-lg);
+}
+.sub-plan-card--popular {
+  border-color: var(--color-primary);
+  background: linear-gradient(180deg, var(--color-primary-100) 0%, var(--color-neutral-50) 40%);
+  box-shadow: var(--shadow-md);
+}
+.sub-plan-card--popular:hover {
+  box-shadow: var(--shadow-xl);
+}
+.sub-plan-card__badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-full);
+  font-size: var(--text-body-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sub-plan-card__badge--popular {
+  background: var(--color-primary-700);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+.sub-plan-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: var(--space-8);
+}
+.sub-plan-card__header {
+  margin-bottom: var(--space-5);
+}
+.sub-plan-card__name {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-neutral-900);
+  margin: 0 0 var(--space-2);
+  letter-spacing: -0.02em;
+}
+.sub-plan-card__desc {
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-600);
+  line-height: 1.5;
+  margin: 0;
+}
+.sub-plan-card__price {
+  margin-bottom: var(--space-6);
+}
+.sub-plan-card__price-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-neutral-900);
+}
+.sub-plan-card__price-period {
+  font-size: var(--text-body-md);
+  color: var(--color-neutral-600);
+  margin-left: var(--space-1);
+}
+.sub-plan-card__price-original {
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-500);
+  text-decoration: line-through;
+  margin-bottom: var(--space-1);
+}
+.sub-plan-card__save {
+  font-size: var(--text-body-sm);
+  color: var(--color-primary-700);
+  font-weight: 600;
+  margin: var(--space-2) 0 0;
+}
+.sub-plan-card__save-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-body-xs);
+  font-weight: 700;
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+}
+.sub-plan-card__trial {
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  background: var(--color-primary-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-primary-100);
+}
+.sub-plan-card__trial-line {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-primary-700);
+  margin: 0 0 var(--space-1);
+}
+.sub-plan-card__trial-billing {
+  font-size: var(--text-body-xs);
+  color: var(--color-neutral-600);
+  margin: 0;
+}
+.sub-plan-card__features {
+  list-style: none;
+  margin: 0 0 var(--space-6);
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+}
+.sub-plan-card__feature {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-700);
+  line-height: 1.5;
+  margin-bottom: var(--space-3);
+}
+.sub-plan-card__feature:last-child {
+  margin-bottom: 0;
+}
+.sub-plan-card__feature-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231642a3' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+  background-size: 12px 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.sub-plan-card__cta-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: auto;
+}
+.sub-plan-card__cta {
+  width: 100%;
+  margin-top: auto;
+}

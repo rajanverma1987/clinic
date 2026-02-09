@@ -15,9 +15,21 @@ export default function AdminContentBannersPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Banner Management' subtitle='Homepage sliders, promotional banners, schedule' actionButton={<Button variant='primary' onClick={() => router.push('/admin/content')}>Back to Content</Button>}>
+    <Layout
+      title='Banner Management'
+      subtitle='Homepage sliders, promotional banners, schedule'
+      actionButton={
+        <Button variant='primary' href='/admin/content'>
+          Back to Content
+        </Button>
+      }
+    >
       <div style={{ padding: '0 10px' }}>
-        <Card className='p-6'><p className='text-neutral-600'>Banner management (homepage sliders, schedule) is planned.</p></Card>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Banner management (homepage sliders, schedule) is planned.
+          </p>
+        </Card>
       </div>
     </Layout>
   );

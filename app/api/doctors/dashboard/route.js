@@ -116,7 +116,7 @@ async function getHandler(req, user) {
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
 
-    // Parallel queries for better performance
+    // Parallel queries for better performance (single round-trip; total time ≈ slowest query)
     const [
       todayAppointments,
       yesterdayAppointments,
@@ -134,6 +134,7 @@ async function getHandler(req, user) {
       labReportsToReview,
       newMessages,
       prescriptionsToApprove,
+      auditLogsResult,
     ] = await Promise.all([
       // Today's appointments count
       Appointment.countDocuments({
@@ -314,7 +315,31 @@ async function getHandler(req, user) {
         doctorId: user.userId,
         status: 'draft',
       }),
+
+      // Recent activity (parallel; no extra round-trip)
+      getAuditLogs({
+        userId: user.userId,
+        tenantId,
+        limit: 5,
+        skip: 0,
+      })
+        .then(({ logs }) =>
+          (logs || []).map((l) => ({
+            _id: l._id?.toString(),
+            action: l.action,
+            resource: l.resource,
+            resourceId: l.resourceId?.toString(),
+            timestamp: l.timestamp,
+            label: formatActivityLabel(l.action, l.resource, l.details),
+          }))
+        )
+        .catch((activityErr) => {
+          logger.warn('Doctor dashboard: recent activity fetch failed', activityErr);
+          return [];
+        }),
     ]);
+
+    const recentActivity = Array.isArray(auditLogsResult) ? auditLogsResult : [];
 
     // Calculate trends
     const revenueTrend =
@@ -323,27 +348,6 @@ async function getHandler(req, user) {
       yesterdayAppointments > 0
         ? ((todayAppointments - yesterdayAppointments) / yesterdayAppointments) * 100
         : 0;
-
-    // Recent activity (last 5 actions) – non-blocking; return [] on error
-    let recentActivity = [];
-    try {
-      const { logs } = await getAuditLogs({
-        userId: user.userId,
-        tenantId,
-        limit: 5,
-        skip: 0,
-      });
-      recentActivity = (logs || []).map((l) => ({
-        _id: l._id?.toString(),
-        action: l.action,
-        resource: l.resource,
-        resourceId: l.resourceId?.toString(),
-        timestamp: l.timestamp,
-        label: formatActivityLabel(l.action, l.resource, l.details),
-      }));
-    } catch (activityErr) {
-      logger.warn('Doctor dashboard: recent activity fetch failed', activityErr);
-    }
 
     return NextResponse.json(
       successResponse({

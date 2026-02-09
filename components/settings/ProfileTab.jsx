@@ -178,7 +178,7 @@ export function ProfileTab({
       </Card>
 
       {/* Two Column Layout for Information Cards */}
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+      <div className='content-grid-2'>
         {/* Account Information */}
         <Card>
           <div className='p-4'>

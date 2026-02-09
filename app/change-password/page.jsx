@@ -219,17 +219,13 @@ function ChangePasswordContent() {
               {error && (
                 <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-start space-x-2 shadow-sm'>
                   <svg
-                    width='20px'
-                    height='20px'
-                    className='text-status-error mt-0.5 flex-shrink-0'
-                    fill='currentColor'
-                    viewBox='0 0 20 20'
+                    className='icon icon-sm text-status-error mt-0.5 flex-shrink-0'
+                    fill='none'
+                    stroke='currentColor'
+                    strokeWidth={2}
+                    viewBox='0 0 24 24'
                   >
-                    <path
-                      fillRule='evenodd'
-                      d='M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'
-                      clipRule='evenodd'
-                    />
+                    <path strokeLinecap='round' strokeLinejoin='round' d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
                   </svg>
                   <span className='text-sm font-medium'>{error}</span>
                 </div>
@@ -252,9 +248,7 @@ function ChangePasswordContent() {
                   <div className='relative'>
                     <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
                       <svg
-                        width='20px'
-                        height='20px'
-                        className='text-neutral-900'
+                        className='icon icon-sm text-neutral-900'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -284,8 +278,7 @@ function ChangePasswordContent() {
                     >
                       {showCurrentPassword ? (
                         <svg
-                          width='20px'
-                          height='20px'
+                          className='icon icon-sm'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -299,8 +292,7 @@ function ChangePasswordContent() {
                         </svg>
                       ) : (
                         <svg
-                          width='20px'
-                          height='20px'
+                          className='icon icon-sm'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -334,9 +326,7 @@ function ChangePasswordContent() {
                 <div className='relative'>
                   <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
                     <svg
-                      width='20px'
-                      height='20px'
-                      className='text-neutral-900'
+                      className='icon icon-sm text-neutral-900'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -366,8 +356,7 @@ function ChangePasswordContent() {
                   >
                     {showNewPassword ? (
                       <svg
-                        width='20px'
-                        height='20px'
+                        className='icon icon-sm'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -381,8 +370,7 @@ function ChangePasswordContent() {
                       </svg>
                     ) : (
                       <svg
-                        width='20px'
-                        height='20px'
+                        className='icon icon-sm'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -418,9 +406,7 @@ function ChangePasswordContent() {
                 <div className='relative'>
                   <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
                     <svg
-                      width='20px'
-                      height='20px'
-                      className='text-neutral-900'
+                      className='icon icon-sm text-neutral-900'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -450,8 +436,7 @@ function ChangePasswordContent() {
                   >
                     {showConfirmPassword ? (
                       <svg
-                        width='20px'
-                        height='20px'
+                        className='icon icon-sm'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -465,8 +450,7 @@ function ChangePasswordContent() {
                       </svg>
                     ) : (
                       <svg
-                        width='20px'
-                        height='20px'
+                        className='icon icon-sm'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -498,9 +482,7 @@ function ChangePasswordContent() {
                 size='lg'
               >
                 <svg
-                  width='20px'
-                  height='20px'
-                  className='mr-2'
+                  className='icon icon-sm mr-2'
                   fill='none'
                   stroke='currentColor'
                   viewBox='0 0 24 24'
@@ -521,7 +503,7 @@ function ChangePasswordContent() {
                     href='/settings'
                     className='text-sm text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1'
                   >
-                    <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <svg className='icon icon-xs' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path
                         strokeLinecap='round'
                         strokeLinejoin='round'

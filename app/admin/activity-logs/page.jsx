@@ -76,7 +76,7 @@ export default function AdminActivityLogsPage() {
       title={t('admin.activityLogs')}
       subtitle={t('admin.activityLogsSubtitle')}
       actionButton={
-        <Button variant='primary' onClick={() => router.push('/admin/users')}>
+        <Button variant='primary' href='/admin/users'>
           {t('admin.backToUsers')}
         </Button>
       }

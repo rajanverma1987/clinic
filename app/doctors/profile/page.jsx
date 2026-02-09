@@ -299,7 +299,7 @@ export default function DoctorProfilePage() {
           subtitle={t('doctors.profileManagementSubtitle')}
         />
 
-        <div className='mt-4'>
+        <div className='mt-3'>
           <Tabs
             tabs={[
               { id: 'profile', label: t('doctors.tabProfile') },
@@ -315,7 +315,7 @@ export default function DoctorProfilePage() {
         </div>
 
         <div
-          className='tab-content-standard-width mt-4'
+          className='tab-content-standard-width mt-3'
           role='tabpanel'
           id={getTabPanelId('doctor-profile-tabs', activeTab)}
           aria-labelledby={getTabPanelLabelledBy('doctor-profile-tabs', activeTab)}
@@ -1187,7 +1187,7 @@ export default function DoctorProfilePage() {
                   <h2 className='text-lg font-bold text-neutral-900'>
                     {t('doctors.scheduleManagement')}
                   </h2>
-                  <Button variant='secondary' onClick={() => router.push('/doctors/schedule')}>
+                  <Button variant='secondary' href='/doctors/schedule'>
                     {t('doctors.manageSchedule')}
                   </Button>
                 </div>

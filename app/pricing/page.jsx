@@ -69,9 +69,9 @@ export default function PricingPage() {
     }).format(price / 100);
   };
 
-  const handleSelectPlan = async (planId, planName, paymentMethod = 'paypal') => {
+  const handleSelectPlan = async (planId, planName) => {
     setSelectingPlanId(planId);
-    setSelectingMethod(typeof paymentMethod === 'string' ? paymentMethod : null);
+    setSelectingMethod('paypal');
 
     if (!user) {
       router.push(`/register?planId=${planId}`);
@@ -83,13 +83,11 @@ export default function PricingPage() {
         planId,
         customerEmail: user.email,
         customerName: `${user.firstName} ${user.lastName}`.trim() || user.email,
-        paymentMethod: paymentMethod === 'card' ? 'card' : 'paypal',
+        paymentMethod: 'paypal',
       });
 
       if (response.success && response.data) {
-        if (response.data.checkoutUrl) {
-          window.location.href = response.data.checkoutUrl;
-        } else if (response.data.approvalUrl) {
+        if (response.data.approvalUrl) {
           window.location.href = response.data.approvalUrl;
         } else {
           showSuccess(t('subscription.subscriptionUpdated'));
@@ -111,7 +109,7 @@ export default function PricingPage() {
   // Show SOLO, CLINIC, ENTERPRISE only (no free plan; all plans have 14-day free trial)
   const DISPLAY_PLAN_SLUGS = ['SOLO', 'CLINIC', 'ENTERPRISE'];
   const allowedPlans = plans.filter(
-    (plan) => plan && plan.name && DISPLAY_PLAN_SLUGS.includes(plan.name)
+    (plan) => plan && plan.name && DISPLAY_PLAN_SLUGS.includes(plan.name),
   );
   const monthlyPlans = allowedPlans.filter((p) => p.billingCycle === 'MONTHLY');
   const yearlyPlans = allowedPlans.filter((p) => p.billingCycle === 'YEARLY');
@@ -120,7 +118,7 @@ export default function PricingPage() {
       ? monthlyPlans
       : allowedPlans.filter((p) => p.billingCycle === billingCycle);
   const filteredPlans = basePlans.sort(
-    (a, b) => DISPLAY_PLAN_SLUGS.indexOf(a.name) - DISPLAY_PLAN_SLUGS.indexOf(b.name)
+    (a, b) => DISPLAY_PLAN_SLUGS.indexOf(a.name) - DISPLAY_PLAN_SLUGS.indexOf(b.name),
   );
 
   // Annual 5% off: when showing yearly, use monthly price * 12 * 0.95 (or existing yearly price)
@@ -347,20 +345,14 @@ export default function PricingPage() {
                       yearlySaveAmount={YEARLY_SAVE[plan.name]}
                       trialDays={plan.trialDays ?? 14}
                       showPaymentMethods={user && (Number(plan.price) || 0) > 0}
-                      onPayWithCard={
-                        user && (Number(plan.price) || 0) > 0
-                          ? () => handleSelectPlan(plan._id, plan.name, 'card')
-                          : undefined
-                      }
                       onPayWithPayPal={
                         user && (Number(plan.price) || 0) > 0
-                          ? () => handleSelectPlan(plan._id, plan.name, 'paypal')
+                          ? () => handleSelectPlan(plan._id, plan.name)
                           : undefined
                       }
                       onSelect={!user ? () => handleSelectPlan(plan._id, plan.name) : undefined}
                       ctaText={user ? t('pricing.subscribeNow') : t('pricing.getStarted')}
                       ctaDisabled={!!selectingPlanId}
-                      loadingCard={selectingMethod === 'card'}
                       loadingPayPal={selectingMethod === 'paypal'}
                     />
                   ))}
@@ -410,7 +402,7 @@ export default function PricingPage() {
                     variant='primary'
                     size='md'
                     className='whitespace-nowrap'
-                    onClick={() => router.push('/support/contact')}
+                    href='/support/contact'
                   >
                     Contact Us
                   </Button>

@@ -15,8 +15,22 @@ export default function AdminReportsPerformancePage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout title='Performance Reports' subtitle='Doctor ratings, satisfaction, wait time' actionButton={<Button variant='primary' onClick={() => router.push('/admin/reports')}>Back to Reports</Button>}>
-      <div style={{ padding: '0 10px' }}><Card className='p-6'><p className='text-neutral-600'>Performance reports — use Admin Reviews and Dashboard for ratings and metrics.</p></Card></div>
+    <Layout
+      title='Performance Reports'
+      subtitle='Doctor ratings, satisfaction, wait time'
+      actionButton={
+        <Button variant='primary' href='/admin/reports'>
+          Back to Reports
+        </Button>
+      }
+    >
+      <div style={{ padding: '0 10px' }}>
+        <Card className='p-6'>
+          <p className='text-neutral-600'>
+            Performance reports — use Admin Reviews and Dashboard for ratings and metrics.
+          </p>
+        </Card>
+      </div>
     </Layout>
   );
 }
