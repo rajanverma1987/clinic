@@ -1,0 +1,668 @@
+/* NotificationDropdown Premium Design Styles */
+
+.NotificationDropdown {
+  position: relative;
+  display: inline-block;
+  overflow: visible;
+}
+
+/* Button - Ultra Premium */
+.NotificationDropdown-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 90%, transparent) 100%
+  );
+  border: 2px solid color-mix(in srgb, var(--color-neutral-200) 90%, transparent);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in srgb, var(--color-neutral-50) 50%, transparent) inset;
+  outline: none;
+  overflow: hidden;
+}
+
+.NotificationDropdown-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary-500) 5%, transparent) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.NotificationDropdown-button:hover {
+  border-color: color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 12%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 6%, transparent) 100%
+  );
+  box-shadow:
+    0 6px 20px color-mix(in srgb, var(--color-primary-500) 25%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 20%, transparent) inset,
+    0 0 20px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  transform: scale(1.05) translateY(-1px);
+}
+
+.NotificationDropdown-button:hover::before {
+  opacity: 1;
+}
+
+.NotificationDropdown-button:active,
+.NotificationDropdown-button:focus {
+  outline: none;
+  border: none;
+}
+
+.NotificationDropdown-button.is-open {
+  border-color: color-mix(in srgb, var(--color-primary-500) 50%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 100%
+  );
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--color-primary-500) 30%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 30%, transparent) inset,
+    0 0 24px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+}
+
+.NotificationDropdown-button--sm {
+  width: 44px;
+  height: 44px;
+}
+
+.NotificationDropdown-button--md {
+  width: 48px;
+  height: 48px;
+}
+
+.NotificationDropdown-icon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  color: var(--color-neutral-600);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.NotificationDropdown-button:hover .NotificationDropdown-icon {
+  color: var(--color-primary-500);
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--color-primary-500) 30%, transparent));
+}
+
+/* Badge - Ultra Premium */
+.NotificationDropdown-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(
+    135deg,
+    var(--color-status-error) 0%,
+    color-mix(in srgb, var(--color-status-error) 85%, black) 100%
+  );
+  color: var(--color-neutral-50);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 var(--space-2);
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-status-error) 50%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--color-neutral-50) 90%, transparent),
+    0 0 16px color-mix(in srgb, var(--color-status-error) 40%, transparent);
+  animation: pulsePremium 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  border: 1px solid color-mix(in srgb, var(--color-neutral-50) 30%, transparent);
+  position: relative;
+  z-index: 10;
+}
+
+.NotificationDropdown-badge::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--color-status-error) 30%, transparent);
+  animation: rippleBadge 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  z-index: -1;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes pulsePremium {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow:
+      0 4px 12px color-mix(in srgb, var(--color-status-error) 50%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--color-neutral-50) 90%, transparent),
+      0 0 16px color-mix(in srgb, var(--color-status-error) 40%, transparent);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+    box-shadow:
+      0 6px 20px color-mix(in srgb, var(--color-status-error) 60%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--color-neutral-50) 90%, transparent),
+      0 0 24px color-mix(in srgb, var(--color-status-error) 50%, transparent);
+  }
+}
+
+@keyframes rippleBadge {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* Backdrop - Premium */
+.NotificationDropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 3%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary-500) 3%, transparent) 100%
+  ), color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  z-index: var(--z-dropdown-backdrop-high, 10051);
+  animation: fadeInPremium 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInPremium {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(8px) saturate(150%);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+  }
+}
+
+/* Dropdown - Ultra Premium */
+.NotificationDropdown-dropdown {
+  position: fixed;
+  min-width: 380px;
+  max-width: calc(100vw - var(--space-8));
+  max-height: 520px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 99%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 100%
+  );
+  border: 2px solid color-mix(in srgb, var(--color-neutral-200) 90%, transparent);
+  border-radius: var(--radius-2xl);
+  z-index: var(--z-dropdown-menu-high, 10050);
+  overflow: hidden;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    0 32px 64px -12px color-mix(in srgb, var(--color-neutral-900) 30%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 15%, transparent),
+    0 0 40px color-mix(in srgb, var(--color-primary-500) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+  animation: slideDownPremium 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Premium gradient accent bar at top */
+.NotificationDropdown-dropdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-500) 0%,
+    var(--color-secondary-500) 50%,
+    var(--color-status-warning) 100%
+  );
+  z-index: 1;
+}
+
+/* Subtle pattern overlay */
+.NotificationDropdown-dropdown::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232D9CDB' fill-opacity='0.015' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes slideDownPremium {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+  }
+  50% {
+    transform: scale(1.02) translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Header - Premium */
+.NotificationDropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-6);
+  border-bottom: 2px solid color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 50%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 30%, transparent) 100%
+  );
+  position: relative;
+  z-index: 2;
+}
+
+.NotificationDropdown-title {
+  font-size: var(--dashboard-h3, 20px);
+  font-weight: 800;
+  color: var(--color-neutral-900);
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-2);
+}
+
+.NotificationDropdown-title::before {
+  content: '';
+  width: 4px;
+  height: var(--size-6);
+  background: linear-gradient(180deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.NotificationDropdown-mark-all {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-primary-500);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+}
+
+.NotificationDropdown-mark-all:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 100%
+  );
+  color: var(--color-primary-500);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+}
+
+/* List */
+.NotificationDropdown-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.NotificationDropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.NotificationDropdown-list::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--color-neutral-100) 50%, transparent);
+}
+
+.NotificationDropdown-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-neutral-500) 50%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.NotificationDropdown-list::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-neutral-600) 70%, transparent);
+}
+
+/* Empty State - Premium */
+.NotificationDropdown-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.NotificationDropdown-empty-icon {
+  width: 72px;
+  height: 72px;
+  color: var(--color-neutral-500);
+  margin-bottom: var(--space-5);
+  opacity: 0.4;
+  filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+  transition: all 0.3s;
+}
+
+.NotificationDropdown-empty:hover .NotificationDropdown-empty-icon {
+  opacity: 0.6;
+  transform: scale(1.05);
+}
+
+.NotificationDropdown-empty-text {
+  font-size: var(--text-body-lg);
+  font-weight: 700;
+  color: var(--color-neutral-600);
+  margin: 0 0 var(--space-2) 0;
+  letter-spacing: -0.01em;
+}
+
+.NotificationDropdown-empty-subtext {
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-500);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Notification Item - Premium */
+.NotificationDropdown-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-neutral-200) 40%, transparent);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  position: relative;
+  z-index: 2;
+}
+
+.NotificationDropdown-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 0%,
+    transparent 100%
+  );
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.NotificationDropdown-item:hover {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 3%, transparent) 100%
+  );
+  padding-left: var(--space-8);
+  transform: translateX(2px);
+}
+
+.NotificationDropdown-item:hover::before {
+  width: 4px;
+}
+
+.NotificationDropdown-item.is-unread {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-primary-500) 6%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 2%, transparent) 100%
+  );
+  border-left: 3px solid color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+}
+
+.NotificationDropdown-item.is-unread:hover {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-primary-500) 12%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 6%, transparent) 100%
+  );
+  border-left-color: color-mix(in srgb, var(--color-primary-500) 60%, transparent);
+}
+
+.NotificationDropdown-item-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 100%
+  );
+  border-radius: var(--radius-xl);
+  color: var(--color-primary-500);
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.NotificationDropdown-item-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 20%, transparent) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.NotificationDropdown-item:hover .NotificationDropdown-item-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.NotificationDropdown-item:hover .NotificationDropdown-item-icon::before {
+  opacity: 1;
+}
+
+.NotificationDropdown-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.NotificationDropdown-item-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  margin-bottom: var(--space-1);
+  line-height: 1.4;
+}
+
+.NotificationDropdown-item-message {
+  font-size: 13px;
+  color: var(--color-neutral-600);
+  line-height: 1.5;
+  margin-bottom: var(--space-1);
+}
+
+.NotificationDropdown-item-time {
+  font-size: var(--text-body-xs);
+  color: var(--color-neutral-500);
+  font-weight: 500;
+}
+
+.NotificationDropdown-item-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-500) 0%,
+    var(--color-secondary-500) 100%
+  );
+  border-radius: var(--radius-full);
+  margin-top: var(--space-1);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    0 0 12px color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+  animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  position: relative;
+}
+
+.NotificationDropdown-item-dot::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  animation: ripple 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Footer - Premium */
+.NotificationDropdown-footer {
+  padding: var(--space-5) var(--space-6);
+  border-top: 2px solid color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-100) 80%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 60%, transparent) 100%
+  );
+  position: relative;
+  z-index: 2;
+}
+
+.NotificationDropdown-view-all {
+  width: 100%;
+  padding: var(--space-3);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 12%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 100%
+  );
+  border: 2px solid color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+  border-radius: var(--radius-xl);
+  color: var(--color-primary-500);
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+
+.NotificationDropdown-view-all::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary-500) 10%, transparent) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.NotificationDropdown-view-all:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 18%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 12%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.NotificationDropdown-view-all:hover::before {
+  opacity: 1;
+}
+
+.NotificationDropdown-view-all:active {
+  transform: translateY(0);
+}

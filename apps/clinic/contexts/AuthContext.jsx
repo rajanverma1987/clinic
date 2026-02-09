@@ -1,0 +1,728 @@
+'use client';
+
+/**
+ * Authentication Context
+ * Manages user authentication state
+ */
+
+import { apiClient } from '@/lib/api/client.js';
+import { setCurrentTenantId } from '@/lib/cache/current-tenant.js';
+import * as dashboardCache from '@/lib/cache/dashboard-cache.js';
+import { clearIndexedDBCache, clearOfflineMutations } from '@/lib/cache/indexed-db-cache.js';
+import { clearTestAccountRoleOverride } from '@/lib/constants/test-account.js';
+import { disconnectRealtimeClient } from '@/lib/realtime/realtime-client.js';
+import { clearAllCache } from '@/lib/utils/api-cache.js';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
+
+const AuthContext = createContext(undefined);
+
+// Idle timeout: 2 hours (120 minutes)
+const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+// Token refresh threshold: refresh if token expires within next 30 minutes
+const TOKEN_REFRESH_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const lastActivityRef = React.useRef(Date.now());
+  const idleTimeoutRef = React.useRef(null);
+  const tokenRefreshIntervalRef = React.useRef(null);
+
+  // Update last activity timestamp
+  const updateLastActivity = React.useCallback(() => {
+    if (user) {
+      lastActivityRef.current = Date.now();
+      // Reset idle timeout
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+      }
+      setupIdleTimeout();
+    }
+  }, [user]);
+
+  // Setup idle timeout - logs out user if inactive for 2 hours
+  const setupIdleTimeout = React.useCallback(async () => {
+    if (!user) return;
+
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+    }
+
+    idleTimeoutRef.current = setTimeout(async () => {
+      const idleTime = Date.now() - lastActivityRef.current;
+      if (idleTime >= IDLE_TIMEOUT_MS) {
+        // Clear all timeouts and intervals
+        if (idleTimeoutRef.current) {
+          clearTimeout(idleTimeoutRef.current);
+          idleTimeoutRef.current = null;
+        }
+        if (tokenRefreshIntervalRef.current) {
+          clearInterval(tokenRefreshIntervalRef.current);
+          tokenRefreshIntervalRef.current = null;
+        }
+
+        try {
+          await apiClient.post('/auth/logout');
+        } catch (error) {
+          // Continue with logout even if API call fails
+        } finally {
+          apiClient.setToken('');
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('refreshToken');
+            lastActivityRef.current = 0;
+            dashboardCache.clear();
+            clearAllCache();
+            disconnectRealtimeClient();
+            clearIndexedDBCache().catch(() => {});
+            clearOfflineMutations().catch(() => {});
+          }
+          setUser(null);
+          setCurrentTenantId(null);
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+        }
+      }
+    }, IDLE_TIMEOUT_MS);
+  }, [user]);
+
+  // Setup automatic token refresh on activity
+  const setupTokenRefresh = React.useCallback(() => {
+    if (!user) return;
+
+    // Clear existing interval
+    if (tokenRefreshIntervalRef.current) {
+      clearInterval(tokenRefreshIntervalRef.current);
+    }
+
+    // Check token expiration periodically and refresh if needed
+    tokenRefreshIntervalRef.current = setInterval(
+      async () => {
+        if (!user) return;
+
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (!token) return;
+
+        try {
+          // Decode token to check expiration (without verification)
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const expirationTime = payload.exp * 1000; // Convert to milliseconds
+          const timeUntilExpiry = expirationTime - Date.now();
+
+          // Refresh token if it expires within the next 30 minutes
+          if (timeUntilExpiry < TOKEN_REFRESH_THRESHOLD_MS && timeUntilExpiry > 0) {
+            const refreshed = await apiClient.refreshToken();
+            if (refreshed) {
+              updateLastActivity(); // Update activity on successful refresh
+            }
+          }
+        } catch (_error) {
+          // Token check failed; continue silently
+        }
+      },
+      5 * 60 * 1000,
+    ); // Check every 5 minutes
+  }, [user, updateLastActivity]);
+
+  const checkAuth = async () => {
+    // Fast exit if no token - don't block rendering
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    const refreshToken =
+      typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+
+    // If no access token but we have refresh token, try to refresh first
+    if (!token && refreshToken) {
+      const refreshed = await apiClient.refreshToken();
+      if (refreshed) {
+        // Token refreshed, continue with auth check
+        const newToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        if (newToken) {
+          apiClient.setToken(newToken);
+        } else {
+          // Refresh succeeded but no token stored, clear everything
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+          }
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+      } else {
+        // Refresh failed, try to restore from stored user info as fallback
+        const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            // Set user temporarily while we try to validate
+            setUser(userData);
+            // Try one more time to get user info
+            const response = await apiClient.get('/auth/me', undefined, true);
+            if (response.success && response.data) {
+              // Success, update user info
+              const userData = response.data;
+              const userId = userData.id || userData.userId || '';
+              const userInfo = {
+                userId: userId,
+                id: userId,
+                email: userData.email || '',
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                role: userData.role || '',
+                tenantId: userData.tenantId || '',
+                subscriptionPlan: userData.subscriptionPlan || null,
+                isActive: userData.isActive !== undefined ? userData.isActive : true,
+              };
+              setUser(userInfo);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+                lastActivityRef.current = Date.now();
+              }
+              setLoading(false);
+              return;
+            }
+          } catch (_e) {
+            // Restore failed; continue
+          }
+        }
+        // All attempts failed, clear everything
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
+        }
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+    } else if (!token && !refreshToken) {
+      // No tokens at all, clear user
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('userInfo');
+      }
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    // Ensure token is set in apiClient
+    if (token) {
+      apiClient.setToken(token);
+    }
+
+    // Set a shorter timeout for API calls to prevent long blocking
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+      // If we have stored user info and tokens, keep user logged in
+      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
+      if (storedUser && (token || refreshToken)) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+        } catch (_e) {
+          // Parse failed
+        }
+      }
+    }, 5000); // 5 second timeout - increased for better reliability
+
+    try {
+      // Try to get user info - skip redirect during auth check
+      let response = await apiClient.get('/auth/me', undefined, true);
+
+      // If failed with 401/403, try to refresh token
+      if (
+        !response.success &&
+        (response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN')
+      ) {
+        const refreshed = await apiClient.refreshToken();
+        if (refreshed) {
+          // Retry after refresh - skip redirect during auth check
+          response = await apiClient.get('/auth/me', undefined, true);
+        }
+      }
+
+      if (response.success && response.data) {
+        // Map the response to match User interface
+        const userData = response.data;
+        const userId = userData.id || userData.userId || '';
+        const userInfo = {
+          userId: userId,
+          id: userId, // Add id for compatibility
+          email: userData.email || '',
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
+          role: userData.role || '',
+          tenantId: userData.tenantId || '',
+          subscriptionPlan: userData.subscriptionPlan || null,
+          isActive: userData.isActive !== undefined ? userData.isActive : true,
+        };
+        setUser(userInfo);
+        setCurrentTenantId(userInfo.tenantId || null);
+        // Store user info for persistence
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('userInfo', JSON.stringify(userInfo));
+          lastActivityRef.current = Date.now();
+        }
+      } else {
+        // Check if it's a network error or server error (not auth error)
+        const isNetworkError = response.error?.code === 'NETWORK_ERROR';
+        const isServerError = response.error?.code === 'INTERNAL_ERROR';
+
+        // For network/server errors, keep user logged in with stored info
+        if ((isNetworkError || isServerError) && typeof window !== 'undefined') {
+          const storedUser = localStorage.getItem('userInfo');
+          const currentRefreshToken = localStorage.getItem('refreshToken');
+          if (storedUser && currentRefreshToken) {
+            try {
+              const userData = JSON.parse(storedUser);
+              setUser(userData);
+              clearTimeout(timeoutId);
+              setLoading(false);
+              return;
+            } catch (_e) {
+              // Parse failed
+            }
+          }
+        }
+
+        // Try one more refresh attempt before giving up
+        const currentRefreshToken =
+          typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+        if (currentRefreshToken) {
+          const refreshed = await apiClient.refreshToken();
+          if (refreshed) {
+            // Retry auth check after refresh
+            const retryResponse = await apiClient.get('/auth/me', undefined, true);
+            if (retryResponse.success && retryResponse.data) {
+              const userData = retryResponse.data;
+              const userId = userData.id || userData.userId || '';
+              const userInfo = {
+                userId: userId,
+                id: userId,
+                email: userData.email || '',
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                role: userData.role || '',
+                tenantId: userData.tenantId || '',
+                subscriptionPlan: userData.subscriptionPlan || null,
+                isActive: userData.isActive !== undefined ? userData.isActive : true,
+              };
+              setUser(userInfo);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+                lastActivityRef.current = Date.now();
+              }
+              clearTimeout(timeoutId);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+        // All attempts failed - but keep user if we have stored info and refresh token
+        const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
+        if (storedUser && currentRefreshToken) {
+          // Keep user logged in with stored info if refresh token exists
+          try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            clearTimeout(timeoutId);
+            setLoading(false);
+            return;
+          } catch (_e) {
+            // Parse failed
+          }
+        }
+
+        // Only clear user if it's a real auth error (401/403) and no refresh token
+        const isAuthError =
+          response.error?.code === 'UNAUTHORIZED' || response.error?.code === 'FORBIDDEN';
+        if (isAuthError && !currentRefreshToken) {
+          setUser(null);
+          // No refresh token available, clear everything
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+          }
+        } else if (!isAuthError) {
+          // For non-auth errors, keep user if we have stored info
+          if (storedUser) {
+            try {
+              const userData = JSON.parse(storedUser);
+              setUser(userData);
+            } catch (_e) {
+              // Parse failed
+            }
+          }
+        }
+      }
+    } catch (_error) {
+      // Try refresh token as last resort
+      const refreshToken =
+        typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+      if (refreshToken) {
+        try {
+          const refreshed = await apiClient.refreshToken();
+          if (refreshed) {
+            // Retry auth check after refresh
+            const retryResponse = await apiClient.get('/auth/me', undefined, true);
+            if (retryResponse.success && retryResponse.data) {
+              const userData = retryResponse.data;
+              const userId = userData.id || userData.userId || '';
+              const userInfo = {
+                userId: userId,
+                id: userId,
+                email: userData.email || '',
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                role: userData.role || '',
+                tenantId: userData.tenantId || '',
+                subscriptionPlan: userData.subscriptionPlan || null,
+                isActive: userData.isActive !== undefined ? userData.isActive : true,
+              };
+              setUser(userInfo);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+                lastActivityRef.current = Date.now();
+              }
+              clearTimeout(timeoutId);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (_refreshError) {
+          // Refresh failed
+        }
+      }
+      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userInfo') : null;
+
+      if (storedUser && refreshToken) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          clearTimeout(timeoutId);
+          setLoading(false);
+          return;
+        } catch (_e) {
+          // Parse failed
+        }
+      }
+
+      if (!storedUser && !refreshToken) {
+        setUser(null);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userInfo');
+        }
+      } else if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+        } catch (_e) {
+          // Parse failed
+        }
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      // Always set loading to false, even if there's an error
+      setLoading(false);
+    }
+  };
+
+  const login = async (email, password, rememberMe = false) => {
+    try {
+      const response = await apiClient.post('/auth/login', {
+        email,
+        password,
+        rememberMe,
+      });
+
+      if (response.success && response.data) {
+        // Check if 2FA is required
+        if (response.data.require2FA) {
+          return {
+            success: true,
+            require2FA: true,
+            email: email, // Return email for 2FA verification
+          };
+        }
+
+        // Store tokens immediately - ensure both are stored before setting user
+        if (typeof window !== 'undefined' && response.data.accessToken) {
+          // Store tokens synchronously - localStorage.setItem is synchronous
+          localStorage.setItem('accessToken', response.data.accessToken);
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+          }
+          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
+          lastActivityRef.current = Date.now();
+        }
+        // Set token in API client after localStorage is set
+        if (response.data.accessToken) {
+          apiClient.setToken(response.data.accessToken);
+        }
+        // Set user state after tokens are stored (synchronously)
+        setUser(response.data.user);
+        return {
+          success: true,
+          user: response.data.user,
+          forcePasswordChange: response.data.forcePasswordChange || false,
+        };
+      }
+
+      return {
+        success: false,
+        error: response.error?.message || 'Login failed',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Login failed',
+      };
+    }
+  };
+
+  const verify2FA = async (email, otp, rememberMe = false) => {
+    try {
+      const response = await apiClient.post('/auth/verify-2fa', {
+        email,
+        otp,
+        rememberMe,
+      });
+
+      if (response.success && response.data) {
+        // Store tokens immediately - ensure both are stored before setting user
+        if (typeof window !== 'undefined' && response.data.accessToken) {
+          // Store tokens synchronously - localStorage.setItem is synchronous
+          localStorage.setItem('accessToken', response.data.accessToken);
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+          }
+          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
+          lastActivityRef.current = Date.now();
+        }
+        // Set token in API client after localStorage is set
+        if (response.data.accessToken) {
+          apiClient.setToken(response.data.accessToken);
+        }
+        // Set user state after tokens are stored (synchronously)
+        setUser(response.data.user);
+        return {
+          success: true,
+          user: response.data.user,
+          forcePasswordChange: response.data.forcePasswordChange || false,
+        };
+      }
+
+      return {
+        success: false,
+        error: response.error?.message || '2FA verification failed',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '2FA verification failed',
+      };
+    }
+  };
+
+  const register = async (data) => {
+    try {
+      // Ensure clinic_admin role for public registration (they create the clinic)
+      const registrationData = {
+        ...data,
+        role: 'clinic_admin', // Only clinic admins can register (they create the clinic)
+      };
+
+      const response = await apiClient.post('/auth/register', registrationData);
+
+      if (response.success && response.data) {
+        apiClient.setToken(response.data.accessToken);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('refreshToken', response.data.refreshToken);
+          localStorage.setItem('accessToken', response.data.accessToken);
+          localStorage.setItem('userInfo', JSON.stringify(response.data.user));
+          lastActivityRef.current = Date.now(); // Initialize activity tracking
+        }
+        setUser(response.data.user);
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: response.error?.message || 'Registration failed',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Registration failed',
+      };
+    }
+  };
+
+  const logout = async () => {
+    if (typeof window !== 'undefined') clearTestAccountRoleOverride();
+    // Clear all timeouts and intervals
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+      idleTimeoutRef.current = null;
+    }
+    if (tokenRefreshIntervalRef.current) {
+      clearInterval(tokenRefreshIntervalRef.current);
+      tokenRefreshIntervalRef.current = null;
+    }
+
+    try {
+      await apiClient.post('/auth/logout');
+    } catch (error) {
+      // Continue with logout even if API call fails
+    } finally {
+      apiClient.setToken('');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('refreshToken');
+        lastActivityRef.current = 0;
+        dashboardCache.clear();
+        clearAllCache();
+        disconnectRealtimeClient();
+        clearIndexedDBCache().catch(() => {});
+        clearOfflineMutations().catch(() => {});
+      }
+      setUser(null);
+      setCurrentTenantId(null);
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
+  };
+
+  const refreshUser = async () => {
+    await checkAuth();
+  };
+
+  // Sync current tenant for IndexedDB/SWR fetchers (no React in fetchers)
+  useEffect(() => {
+    setCurrentTenantId(user?.tenantId ?? null);
+  }, [user?.tenantId]);
+
+  // Setup activity listeners when user is logged in
+  useEffect(() => {
+    if (!user) {
+      // Clear timeouts and intervals when user logs out
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+        idleTimeoutRef.current = null;
+      }
+      if (tokenRefreshIntervalRef.current) {
+        clearInterval(tokenRefreshIntervalRef.current);
+        tokenRefreshIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Events that indicate user activity
+    const activityEvents = [
+      'mousedown',
+      'mousemove',
+      'keypress',
+      'scroll',
+      'touchstart',
+      'click',
+      'focus',
+    ];
+
+    const handleActivity = () => {
+      updateLastActivity();
+      // Also refresh token on activity if it's close to expiring
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const expirationTime = payload.exp * 1000;
+          const timeUntilExpiry = expirationTime - Date.now();
+
+          // Refresh on activity if token expires within 30 minutes
+          if (timeUntilExpiry < TOKEN_REFRESH_THRESHOLD_MS && timeUntilExpiry > 0) {
+            apiClient.refreshToken().catch(() => {});
+          }
+        } catch (error) {
+          // Ignore token parsing errors
+        }
+      }
+    };
+
+    // Add event listeners
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // Setup idle timeout and token refresh
+    setupIdleTimeout();
+    setupTokenRefresh();
+
+    // Cleanup
+    return () => {
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, handleActivity);
+      });
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+      }
+      if (tokenRefreshIntervalRef.current) {
+        clearInterval(tokenRefreshIntervalRef.current);
+      }
+    };
+  }, [user, updateLastActivity, setupIdleTimeout, setupTokenRefresh]);
+
+  // Hydrate user from localStorage before paint so hard refresh doesn't flash "logged out".
+  // When we have tokens, do NOT set loading=false: let checkAuth() run (refresh + /auth/me)
+  // and then set loading=false. That way useSettings and protected pages don't call APIs
+  // until after refresh, avoiding 401s on /api/auth/me, /api/settings, /api/admin/stats.
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    const storedUser = localStorage.getItem('userInfo');
+    if ((token || refreshToken) && storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        if (token) apiClient.setToken(token);
+        // Keep loading true so checkAuth runs and completes (refresh if needed) before any
+        // child fetches (useSettings, admin/stats, etc.). Only checkAuth sets loading=false.
+      } catch (e) {
+        // Invalid JSON – ignore, checkAuth will run
+      }
+    } else if (!token && !refreshToken) {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Revalidate session (may update user or clear if tokens invalid)
+    checkAuth();
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        verify2FA,
+        logout,
+        register,
+        refreshUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

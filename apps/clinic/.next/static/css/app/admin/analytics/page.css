@@ -1,0 +1,1764 @@
+/*!*****************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../../node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./components/notifications/NotificationCenter.css ***!
+  \*****************************************************************************************************************************************************************************************************************************************************************************************************/
+/* Notification Center – portaled to document.body so it is never clipped by layout/overflow.
+   Uses high z-index so the panel always appears above header, sidebar, and other UI. */
+
+@keyframes NotificationCenter-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes NotificationCenter-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.NotificationCenter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast, 10060);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-top: 4rem;
+  padding-right: 1rem;
+  padding-bottom: 1rem;
+  padding-left: 1rem;
+  pointer-events: auto;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: NotificationCenter-overlay-in 0.2s ease-out forwards;
+}
+
+.NotificationCenter-backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-neutral-900) 25%, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: opacity 0.2s ease-out;
+}
+
+.NotificationCenter-panel {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  min-height: 12rem;
+  pointer-events: auto;
+  animation: NotificationCenter-panel-in 0.25s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .NotificationCenter-overlay {
+    animation: none;
+  }
+  .NotificationCenter-panel {
+    animation: none;
+  }
+}
+
+/*!****************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../../node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./components/ui/LanguageSwitcher.css ***!
+  \****************************************************************************************************************************************************************************************************************************************************************************************/
+/* LanguageSwitcher Premium Design Styles */
+
+.LanguageSwitcher {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  overflow: visible;
+  pointer-events: auto;
+}
+
+/* Backdrop overlay - no blur to avoid full-page blur on landing */
+.LanguageSwitcher-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-neutral-900) 5%, transparent);
+  z-index: 10051;
+  animation: fadeIn 0.2s ease-out;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Premium Button Styles */
+.LanguageSwitcher-button {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-2xl);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  overflow: visible;
+  min-width: auto;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+.LanguageSwitcher-button:active,
+.LanguageSwitcher-button:focus {
+  outline: none;
+  border: none;
+}
+
+.LanguageSwitcher-button-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Light variant - Glassmorphism */
+.LanguageSwitcher-button--light {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 90%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 70%, transparent) 100%
+  );
+  border: none;
+  color: var(--color-neutral-800);
+  box-shadow:
+    var(--shadow-md),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+.LanguageSwitcher-button--light:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 85%, transparent) 100%
+  );
+  border: none;
+  color: var(--color-neutral-800);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 var(--color-neutral-50);
+  transform: scale(1.02);
+}
+
+.LanguageSwitcher-button--light.is-open {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 85%, transparent) 100%
+  );
+  border: none;
+  color: var(--color-neutral-800);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+/* Button shows flag + chevron only (no code text) for space */
+.LanguageSwitcher-button--light .LanguageSwitcher-code {
+  display: none;
+}
+
+/* Dark variant - Light theme: contrast style (no dark UI) */
+.LanguageSwitcher-button--dark {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-200) 98%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 100%
+  );
+  border: 1.5px solid var(--color-neutral-300);
+  color: var(--color-neutral-800);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+.LanguageSwitcher-button--dark:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-100) 30%, transparent) 100%
+  );
+  border-color: var(--color-neutral-400);
+  color: var(--color-primary-700);
+  box-shadow:
+    0 8px 30px color-mix(in srgb, var(--color-primary-500) 15%, transparent),
+    var(--shadow-lg),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+  transform: scale(1.02);
+}
+
+.LanguageSwitcher-button--dark.is-open {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-100) 50%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 100%
+  );
+  border-color: var(--color-primary-300);
+  color: var(--color-primary-700);
+  box-shadow:
+    0 8px 30px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    var(--shadow-lg),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+.LanguageSwitcher-button--dark .LanguageSwitcher-code {
+  display: none;
+}
+
+/* Size variants – flag + chevron only */
+.LanguageSwitcher-button--sm {
+  padding: var(--space-2) var(--space-2);
+  min-width: auto;
+  gap: var(--gap-1);
+}
+
+.LanguageSwitcher-button--md {
+  padding: var(--space-2) var(--space-3);
+  min-width: auto;
+  gap: var(--gap-2);
+}
+
+/* Flag wrapper with premium styling */
+.LanguageSwitcher-flag-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-8);
+  height: var(--size-8);
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 5%, transparent) 100%
+  );
+  backdrop-filter: blur(10px);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 30%, transparent);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.LanguageSwitcher-button:hover .LanguageSwitcher-flag-wrapper {
+  transform: scale(1.1);
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 40%, transparent);
+}
+
+.LanguageSwitcher-button--dark .LanguageSwitcher-flag-wrapper {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 90%, transparent) 100%
+  );
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 80%, transparent);
+}
+
+.LanguageSwitcher-button--dark:hover .LanguageSwitcher-flag-wrapper {
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 25%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 80%, transparent);
+}
+
+.LanguageSwitcher-flag {
+  display: block;
+  line-height: 1;
+  font-size: 22px;
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.LanguageSwitcher-button:hover .LanguageSwitcher-flag {
+  transform: scale(1.05);
+}
+
+.LanguageSwitcher-flag--sm {
+  font-size: 18px;
+}
+
+.LanguageSwitcher-button--sm .LanguageSwitcher-flag-wrapper {
+  width: 28px;
+  height: 28px;
+}
+
+.LanguageSwitcher-flag--md {
+  font-size: 22px;
+}
+
+/* Icon wrapper */
+.LanguageSwitcher-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.LanguageSwitcher-icon {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+}
+
+.LanguageSwitcher-icon.is-open {
+  transform: rotate(180deg);
+}
+
+/* Ripple effect */
+.LanguageSwitcher-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  margin-top: -50%;
+  margin-left: -50%;
+  pointer-events: none;
+  transition:
+    width 0.6s ease,
+    height 0.6s ease,
+    opacity 0.6s ease;
+  opacity: 0;
+}
+
+.LanguageSwitcher-button:active .LanguageSwitcher-ripple {
+  width: 200px;
+  height: 200px;
+  opacity: 1;
+  transition:
+    width 0.3s ease,
+    height 0.3s ease,
+    opacity 0.3s ease;
+}
+
+/* Premium Dropdown */
+.LanguageSwitcher-dropdown {
+  position: fixed;
+  min-width: 220px;
+  max-width: calc(100vw - var(--space-8));
+  border-radius: var(--radius-2xl);
+  z-index: var(--z-dropdown-menu-high, 10050);
+  overflow: visible;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Adjust dropdown position - now using fixed positioning, handled by JS */
+.LanguageSwitcher-dropdown.is-left-aligned {
+  /* Position handled by JavaScript */
+}
+
+.LanguageSwitcher-dropdown.is-top-aligned {
+  /* Position handled by JavaScript */
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Light dropdown */
+.LanguageSwitcher-dropdown--light {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 90%, transparent) 100%
+  );
+  border: 1.5px solid color-mix(in srgb, var(--color-neutral-50) 80%, transparent);
+  box-shadow:
+    var(--shadow-2xl),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+/* Dark dropdown - Light theme: contrast style */
+.LanguageSwitcher-dropdown--dark {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 98%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 100%
+  );
+  border: 1.5px solid var(--color-neutral-300);
+  box-shadow:
+    var(--shadow-2xl),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+.LanguageSwitcher-menu {
+  padding: var(--space-2);
+}
+
+/* Premium Menu Items */
+.LanguageSwitcher-item {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-3);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--space-1);
+  overflow: hidden;
+}
+
+.LanguageSwitcher-item:last-child {
+  margin-bottom: 0;
+}
+
+.LanguageSwitcher-item--sm {
+  font-size: var(--text-body-xs);
+  line-height: var(--text-body-xs-line-height);
+  padding: var(--space-3) var(--space-4);
+}
+
+.LanguageSwitcher-item--md {
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-line-height);
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Light item styles */
+.LanguageSwitcher-item--light {
+  color: var(--color-neutral-700);
+  background: transparent;
+}
+
+.LanguageSwitcher-item--light:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 4%, transparent) 100%
+  );
+  color: var(--color-primary-700);
+  transform: scale(1.02);
+}
+
+.LanguageSwitcher-item--light.is-active {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 100%
+  );
+  color: var(--color-primary-700);
+  font-weight: 600;
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 50%, transparent);
+}
+
+/* Dark item styles - Light theme: contrast style */
+.LanguageSwitcher-item--dark {
+  color: var(--color-neutral-800);
+  background: transparent;
+}
+
+.LanguageSwitcher-item--dark:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-100) 90%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-100) 20%, transparent) 100%
+  );
+  color: var(--color-primary-700);
+  transform: scale(1.02);
+}
+
+.LanguageSwitcher-item--dark.is-active {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-100) 60%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 100%
+  );
+  color: var(--color-primary-700);
+  font-weight: 600;
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 80%, transparent);
+}
+
+/* Flag wrapper in items */
+.LanguageSwitcher-item-flag-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-8);
+  height: var(--size-8);
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 5%, transparent) 100%
+  );
+  backdrop-filter: blur(10px);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 30%, transparent);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.LanguageSwitcher-item:hover .LanguageSwitcher-item-flag-wrapper {
+  transform: scale(1.1);
+  box-shadow:
+    0 4px 10px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 40%, transparent);
+}
+
+.LanguageSwitcher-item--dark .LanguageSwitcher-item-flag-wrapper {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 5%, transparent) 100%
+  );
+  box-shadow:
+    var(--shadow-md),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 10%, transparent);
+}
+
+.LanguageSwitcher-item-flag {
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.LanguageSwitcher-item:hover .LanguageSwitcher-item-flag {
+  transform: scale(1.05);
+}
+
+.LanguageSwitcher-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.LanguageSwitcher-item-name {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+  transition: color 0.3s ease;
+}
+
+.LanguageSwitcher-item-code {
+  font-size: var(--text-body-xs);
+  line-height: var(--text-body-xs-line-height);
+  display: block;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: opacity 0.3s ease;
+}
+
+.LanguageSwitcher-item-code.is-active {
+  opacity: 0.9;
+}
+
+.LanguageSwitcher-item-code:not(.is-active) {
+  opacity: 0.7;
+}
+
+/* Check icon wrapper */
+.LanguageSwitcher-item-check-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-6);
+  height: var(--size-6);
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 100%
+  );
+  flex-shrink: 0;
+  animation: checkIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes checkIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.LanguageSwitcher-item-check {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+  flex-shrink: 0;
+  stroke-width: 3;
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+}
+
+/* Hover glow effect */
+.LanguageSwitcher-item-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.LanguageSwitcher-item:hover .LanguageSwitcher-item-glow {
+  opacity: 1;
+}
+
+/*!********************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../../node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./components/ui/NotificationDropdown.css ***!
+  \********************************************************************************************************************************************************************************************************************************************************************************************/
+/* NotificationDropdown Premium Design Styles */
+
+.NotificationDropdown {
+  position: relative;
+  display: inline-block;
+  overflow: visible;
+}
+
+/* Button - Ultra Premium */
+.NotificationDropdown-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 90%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--color-neutral-200) 90%, transparent);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 1px color-mix(in srgb, var(--color-neutral-50) 50%, transparent) inset;
+  outline: none;
+  overflow: hidden;
+}
+
+.NotificationDropdown-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary-500) 5%, transparent) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.NotificationDropdown-button:hover {
+  border-color: color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 12%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 6%, transparent) 100%
+  );
+  box-shadow:
+    0 6px 20px color-mix(in srgb, var(--color-primary-500) 25%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 20%, transparent) inset,
+    0 0 20px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  transform: scale(1.05) translateY(-1px);
+}
+
+.NotificationDropdown-button:hover::before {
+  opacity: 1;
+}
+
+.NotificationDropdown-button:active,
+.NotificationDropdown-button:focus {
+  outline: none;
+  border: none;
+}
+
+.NotificationDropdown-button.is-open {
+  border-color: color-mix(in srgb, var(--color-primary-500) 50%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 100%
+  );
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--color-primary-500) 30%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 30%, transparent) inset,
+    0 0 24px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+}
+
+.NotificationDropdown-button--sm {
+  width: 44px;
+  height: 44px;
+}
+
+.NotificationDropdown-button--md {
+  width: 48px;
+  height: 48px;
+}
+
+.NotificationDropdown-icon {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  color: var(--color-neutral-600);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.NotificationDropdown-button:hover .NotificationDropdown-icon {
+  color: var(--color-primary-500);
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--color-primary-500) 30%, transparent));
+}
+
+/* Badge - Ultra Premium */
+.NotificationDropdown-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(
+    135deg,
+    var(--color-status-error) 0%,
+    color-mix(in srgb, var(--color-status-error) 85%, black) 100%
+  );
+  color: var(--color-neutral-50);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 var(--space-2);
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-status-error) 50%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--color-neutral-50) 90%, transparent),
+    0 0 16px color-mix(in srgb, var(--color-status-error) 40%, transparent);
+  animation: pulsePremium 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  border: 1px solid color-mix(in srgb, var(--color-neutral-50) 30%, transparent);
+  position: relative;
+  z-index: 10;
+}
+
+.NotificationDropdown-badge::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--color-status-error) 30%, transparent);
+  animation: rippleBadge 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  z-index: -1;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes pulsePremium {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow:
+      0 4px 12px color-mix(in srgb, var(--color-status-error) 50%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--color-neutral-50) 90%, transparent),
+      0 0 16px color-mix(in srgb, var(--color-status-error) 40%, transparent);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+    box-shadow:
+      0 6px 20px color-mix(in srgb, var(--color-status-error) 60%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--color-neutral-50) 90%, transparent),
+      0 0 24px color-mix(in srgb, var(--color-status-error) 50%, transparent);
+  }
+}
+
+@keyframes rippleBadge {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* Backdrop - Premium */
+.NotificationDropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary-500) 3%, transparent) 0%,
+      color-mix(in srgb, var(--color-secondary-500) 3%, transparent) 100%
+    ),
+    color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+  z-index: var(--z-dropdown-backdrop-high, 10051);
+  animation: fadeInPremium 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInPremium {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Dropdown - Ultra Premium */
+.NotificationDropdown-dropdown {
+  position: fixed;
+  min-width: 380px;
+  max-width: calc(100vw - var(--space-8));
+  max-height: 520px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 99%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--color-neutral-200) 90%, transparent);
+  border-radius: var(--radius-2xl);
+  z-index: var(--z-dropdown-menu-high, 10050);
+  overflow: hidden;
+  box-shadow:
+    0 32px 64px -12px color-mix(in srgb, var(--color-neutral-900) 30%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 15%, transparent),
+    0 0 40px color-mix(in srgb, var(--color-primary-500) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+  animation: slideDownPremium 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Premium gradient accent bar at top */
+.NotificationDropdown-dropdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-500) 0%,
+    var(--color-secondary-500) 50%,
+    var(--color-status-warning) 100%
+  );
+  z-index: 1;
+}
+
+/* Subtle pattern overlay */
+.NotificationDropdown-dropdown::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%231e4fb5' fill-opacity='0.015' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes slideDownPremium {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+  }
+  50% {
+    transform: scale(1.02) translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Header - Premium */
+.NotificationDropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-6);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 50%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 30%, transparent) 100%
+  );
+  position: relative;
+  z-index: 2;
+}
+
+.NotificationDropdown-title {
+  font-size: var(--dashboard-h3, 20px);
+  font-weight: 800;
+  color: var(--color-neutral-900);
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-2);
+}
+
+.NotificationDropdown-title::before {
+  content: '';
+  width: 4px;
+  height: var(--size-6);
+  background: linear-gradient(180deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.NotificationDropdown-mark-all {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-primary-500);
+  background: color-mix(in srgb, var(--color-primary-500) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+}
+
+.NotificationDropdown-mark-all:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 100%
+  );
+  color: var(--color-primary-500);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+}
+
+/* List */
+.NotificationDropdown-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.NotificationDropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.NotificationDropdown-list::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--color-neutral-100) 50%, transparent);
+}
+
+.NotificationDropdown-list::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-neutral-500) 50%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.NotificationDropdown-list::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-neutral-600) 70%, transparent);
+}
+
+/* Empty State - Premium */
+.NotificationDropdown-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.NotificationDropdown-empty-icon {
+  width: 72px;
+  height: 72px;
+  color: var(--color-neutral-500);
+  margin-bottom: var(--space-5);
+  opacity: 0.4;
+  filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+  transition: all 0.3s;
+}
+
+.NotificationDropdown-empty:hover .NotificationDropdown-empty-icon {
+  opacity: 0.6;
+  transform: scale(1.05);
+}
+
+.NotificationDropdown-empty-text {
+  font-size: var(--text-body-lg);
+  font-weight: 700;
+  color: var(--color-neutral-600);
+  margin: 0 0 var(--space-2) 0;
+  letter-spacing: -0.01em;
+}
+
+.NotificationDropdown-empty-subtext {
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-500);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Notification Item - Premium */
+.NotificationDropdown-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-neutral-200) 40%, transparent);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  position: relative;
+  z-index: 2;
+}
+
+.NotificationDropdown-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 0%,
+    transparent 100%
+  );
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.NotificationDropdown-item:hover {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 3%, transparent) 100%
+  );
+  padding-left: var(--space-8);
+  transform: translateX(2px);
+}
+
+.NotificationDropdown-item:hover::before {
+  width: 4px;
+}
+
+.NotificationDropdown-item.is-unread {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-primary-500) 6%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 2%, transparent) 100%
+  );
+  border-left: 3px solid color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+}
+
+.NotificationDropdown-item.is-unread:hover {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-primary-500) 12%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 6%, transparent) 100%
+  );
+  border-left-color: color-mix(in srgb, var(--color-primary-500) 60%, transparent);
+}
+
+.NotificationDropdown-item-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 100%
+  );
+  border-radius: var(--radius-xl);
+  color: var(--color-primary-500);
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.NotificationDropdown-item-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 20%, transparent) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.NotificationDropdown-item:hover .NotificationDropdown-item-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.NotificationDropdown-item:hover .NotificationDropdown-item-icon::before {
+  opacity: 1;
+}
+
+.NotificationDropdown-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.NotificationDropdown-item-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  margin-bottom: var(--space-1);
+  line-height: 1.4;
+}
+
+.NotificationDropdown-item-message {
+  font-size: 13px;
+  color: var(--color-neutral-600);
+  line-height: 1.5;
+  margin-bottom: var(--space-1);
+}
+
+.NotificationDropdown-item-time {
+  font-size: var(--text-body-xs);
+  color: var(--color-neutral-500);
+  font-weight: 500;
+}
+
+.NotificationDropdown-item-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%);
+  border-radius: var(--radius-full);
+  margin-top: var(--space-1);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    0 0 12px color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+  animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  position: relative;
+}
+
+.NotificationDropdown-item-dot::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  animation: ripple 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Footer - Premium */
+.NotificationDropdown-footer {
+  padding: var(--space-5) var(--space-6);
+  border-top: 1px solid color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-100) 80%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 60%, transparent) 100%
+  );
+  position: relative;
+  z-index: 2;
+}
+
+.NotificationDropdown-view-all {
+  width: 100%;
+  padding: var(--space-3);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 12%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+  border-radius: var(--radius-xl);
+  color: var(--color-primary-500);
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+
+.NotificationDropdown-view-all::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-secondary-500) 10%, transparent) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.NotificationDropdown-view-all:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 18%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 12%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+}
+
+.NotificationDropdown-view-all:hover::before {
+  opacity: 1;
+}
+
+.NotificationDropdown-view-all:active {
+  transform: translateY(0);
+}
+
+/*!*****************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../../node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./components/ui/Modal.css ***!
+  \*****************************************************************************************************************************************************************************************************************************************************************************/
+/* Premium Modal Component Styles */
+/* Uses theme colors and design system tokens */
+
+/* CSS Variables – primary from globals.css :root; only overrides below */
+:root {
+  /* Secondary Colors */
+  --color-secondary-500: #8b5cf6;
+
+  /* Neutral Colors */
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-900: #111827;
+
+  /* Status Colors */
+  --color-status-error: #ef4444;
+  --color-status-warning: #f59e0b;
+
+  /* Spacing */
+  --space-6: 1.5rem;
+
+  /* Gaps */
+  --gap-3: 0.75rem;
+
+  /* Radius */
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+
+  /* Z-index */
+  --z-modal-backdrop: 10050;
+  --z-modal: 10060;
+}
+
+.Modal-backdrop {
+  position: fixed;
+  inset: 0;
+  /* Light theme: semi-transparent neutral overlay */
+  background: color-mix(in srgb, var(--color-neutral-500) 35%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary-500) 8%, transparent) 0%,
+      color-mix(in srgb, var(--color-secondary-500) 8%, transparent) 50%,
+      color-mix(in srgb, var(--color-status-warning) 5%, transparent) 100%
+    ),
+    color-mix(in srgb, var(--color-neutral-500) 35%, transparent);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  z-index: var(--z-modal-backdrop, 10050);
+  animation: Modal-fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+@keyframes Modal-fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.Modal-container {
+  position: relative;
+  /* Fallback for browsers without color-mix support */
+  background: var(--color-neutral-50);
+  /* Modern gradient with color-mix */
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 98%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 50%,
+    color-mix(in srgb, var(--color-neutral-50) 98%, transparent) 100%
+  );
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-2xl);
+  box-shadow:
+    0 32px 64px -12px color-mix(in srgb, var(--color-neutral-600) 25%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 15%, transparent),
+    0 0 40px color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+  animation: Modal-slideUpScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+  z-index: var(--z-modal, 10060);
+}
+
+/* Top gradient accent bar */
+.Modal-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-500) 0%,
+    var(--color-secondary-500) 50%,
+    var(--color-status-warning) 100%
+  );
+  z-index: 1;
+}
+
+/* Decorative pattern overlay */
+.Modal-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%233b82f6' fill-opacity='0.015' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.02;
+}
+
+@keyframes Modal-slideUpScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  50% {
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.Modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--color-neutral-100);
+  /* Fallback background */
+  background: var(--color-neutral-50);
+  /* Modern gradient with color-mix */
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 98%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 95%, transparent) 100%
+  );
+  position: relative;
+  z-index: 10;
+}
+
+.Modal-title {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-3);
+  font-size: 22px;
+  line-height: 30px;
+  font-weight: 800;
+  color: var(--color-neutral-900);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* Icon only – no background (per design: icon color only, no bg) */
+.Modal-title-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-primary-600);
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure no ::before/::after adds background to the title icon */
+.Modal-title-icon::before,
+.Modal-title-icon::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
+
+.Modal-close {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-neutral-400);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+  position: relative;
+  z-index: 10;
+}
+
+.Modal-close:hover {
+  color: var(--color-neutral-50);
+  background: var(--color-status-error);
+  transform: scale(1.05);
+}
+
+.Modal-close:active {
+  transform: scale(0.95);
+}
+
+.Modal-close::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-xl);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-status-error) 30%, transparent) 0%,
+    transparent 70%
+  );
+  filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.Modal-close:hover::before {
+  opacity: 1;
+}
+
+.Modal-content {
+  padding: var(--space-6);
+  position: relative;
+  z-index: 10;
+  max-height: calc(90vh - 200px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar styling for modal content */
+.Modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.Modal-content::-webkit-scrollbar-track {
+  background: var(--color-neutral-100);
+  border-radius: 4px;
+}
+
+.Modal-content::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-400);
+  border-radius: 4px;
+  -webkit-transition: background 0.2s;
+  transition: background 0.2s;
+}
+
+.Modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-500);
+}
+
+/* For modals without a header */
+.Modal-content-no-header {
+  padding: var(--space-6);
+  padding-top: calc(var(--space-6) + 3px); /* Account for top accent bar */
+  position: relative;
+  z-index: 10;
+  max-height: calc(90vh - 100px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Compact search / advanced filter modal – tight padding, aligned grid, small footer */
+.Modal-container:has(.Modal-content--compact) .Modal-header {
+  padding: 0.75rem 1.25rem;
+  border-bottom-width: 1px;
+}
+
+.Modal-container:has(.Modal-content--compact) .Modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.Modal-container:has(.Modal-content--compact) .Modal-title-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.Modal-content--compact {
+  padding: 1rem 1.25rem;
+  max-height: calc(90vh - 140px);
+}
+
+.Modal-content--compact .search-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 1rem;
+  align-items: start;
+}
+
+.Modal-content--compact .search-modal-grid .search-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.Modal-content--compact .search-modal-grid .search-modal-field label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-neutral-700);
+  line-height: 1.25;
+}
+
+.Modal-content--compact .search-modal-grid .search-modal-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.Modal-content--compact .search-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-neutral-200);
+}
+
+.dark .Modal-content--compact .search-modal-footer {
+  border-top-color: var(--color-border);
+}
+
+@media (max-width: 480px) {
+  .Modal-content--compact .search-modal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.Modal-content-no-header::-webkit-scrollbar {
+  width: 8px;
+}
+
+.Modal-content-no-header::-webkit-scrollbar-track {
+  background: var(--color-neutral-100);
+  border-radius: 4px;
+}
+
+.Modal-content-no-header::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-400);
+  border-radius: 4px;
+  -webkit-transition: background 0.2s;
+  transition: background 0.2s;
+}
+
+.Modal-content-no-header::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-500);
+}
+
+/* Footer section (optional) */
+.Modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gap-3);
+  padding: var(--space-6);
+  border-top: 1px solid var(--color-neutral-100);
+  background: var(--color-neutral-50);
+  position: relative;
+  z-index: 10;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .Modal-container {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+
+  .Modal-header {
+    padding: 1rem;
+  }
+
+  .Modal-content,
+  .Modal-content-no-header {
+    padding: 1rem;
+    max-height: calc(90vh - 150px);
+  }
+
+  .Modal-footer {
+    padding: 1rem;
+    flex-direction: column-reverse;
+  }
+
+  .Modal-footer > * {
+    width: 100%;
+  }
+
+  .Modal-title {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .Modal-title-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .Modal-close {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .Modal-backdrop {
+    animation: none;
+  }
+
+  .Modal-container {
+    animation: none;
+  }
+
+  .Modal-close {
+    transition: none;
+  }
+
+  .Modal-close::before {
+    transition: none;
+  }
+}
+
+/* Light theme only – dark mode disabled */
+

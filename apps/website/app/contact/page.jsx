@@ -1,0 +1,113 @@
+'use client';
+
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/marketing/Footer';
+import { useI18n } from '@/contexts/I18nContext';
+import Link from 'next/link';
+
+const SUPPORT_EMAIL = 'support@doctorsclinic.services';
+
+export default function ContactPage() {
+  const { t } = useI18n();
+  return (
+    <div className='min-h-screen flex flex-col bg-neutral-50'>
+      <Header />
+      <main className='flex-1 pb-24 pt-32 px-4 sm:px-6 lg:px-8'>
+        <div className='max-w-4xl mx-auto'>
+          {/* Back Link */}
+          <div className='mb-8'>
+            <Link
+              href='/'
+              className='inline-flex items-center text-primary-600 hover:text-primary-700 font-medium group text-base'
+            >
+              <svg
+                className='w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M15 19l-7-7 7-7'
+                />
+              </svg>
+              Back to Home
+            </Link>
+          </div>
+
+          {/* Header Section */}
+          <div className='mb-12'>
+            <h1 className='text-neutral-900 mb-4 text-3xl font-bold tracking-tight'>
+              {t('contact.title') || 'Contact'}
+            </h1>
+            <p className='text-neutral-600 mb-6 text-base'>
+              {t('contact.emailIntro') || 'For general inquiries or support, email us at'}{' '}
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className='text-primary-600 hover:text-primary-700 hover:underline'
+              >
+                {SUPPORT_EMAIL}
+              </a>
+              .
+            </p>
+          </div>
+
+          {/* Content */}
+          <div className='bg-white rounded-xl border border-neutral-200 shadow-sm p-8 md:p-12 mb-8'>
+            <p className='text-neutral-700 mb-6 text-base leading-relaxed'>
+              {t('contact.loginHint') ||
+                'Existing users: sign in to your account for in-app support and faster help.'}
+            </p>
+
+            <div className='mt-8 pt-8 border-t border-neutral-200'>
+              <h2 className='text-neutral-900 mb-4 text-2xl font-semibold'>Need More Help?</h2>
+              <p className='text-neutral-700 mb-6 text-base leading-relaxed'>
+                For detailed inquiries, technical support, or to submit a contact form, visit our
+                support center.
+              </p>
+              <Link
+                href='/support/contact'
+                className='inline-flex items-center text-primary-600 hover:text-primary-700 font-medium'
+              >
+                {t('contact.formPage') || 'Use the contact form'}
+                <svg className='w-4 h-4 ml-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M9 5l7 7-7 7'
+                  />
+                </svg>
+              </Link>
+            </div>
+          </div>
+
+          {/* Contact Information Card */}
+          <div className='bg-primary-50 rounded-xl border border-primary-200 p-8'>
+            <h2 className='text-neutral-900 mb-4 text-2xl font-semibold'>Contact Information</h2>
+            <div className='space-y-4'>
+              <div className='bg-white p-4 rounded-lg border border-neutral-200'>
+                <h3 className='text-neutral-900 font-semibold mb-2'>Support Email</h3>
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}`}
+                  className='text-primary-600 hover:text-primary-700 hover:underline text-sm'
+                >
+                  {SUPPORT_EMAIL}
+                </a>
+              </div>
+              <div className='bg-white p-4 rounded-lg border border-neutral-200'>
+                <h3 className='text-neutral-900 font-semibold mb-2'>Response Time</h3>
+                <p className='text-neutral-700 text-sm'>
+                  We typically respond within 24 hours during business days.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}

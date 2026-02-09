@@ -1,0 +1,7 @@
+{
+  "name": "@clinic-saas/ui",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.js",
+  "description": "Shared UI components for clinic-saas apps"
+}

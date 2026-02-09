@@ -1,0 +1,126 @@
+/* Custom Neumorphic Checkbox Styles - Using Theme Colors */
+
+/* Unselected: blue */
+.checkbox-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  --size: 24px;
+  width: var(--size);
+  display: block;
+  height: var(--size);
+  background-color: var(--color-primary-500);
+  border-radius: 100%;
+  padding: 3px;
+  color: var(--color-neutral-50);
+  box-shadow:
+    1.5px 1.5px 3px var(--color-primary-900),
+    -1.5px -1.5px 3px color-mix(in srgb, var(--color-primary-300) 25%, transparent),
+    inset 0px 0px 0px var(--color-primary-900),
+    inset 0px -0px 0px var(--color-primary-300);
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+  display: none;
+  color: white;
+}
+
+.checkbox-container .checkmark {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow:
+    1.5px 1.5px 3px var(--color-neutral-900),
+    -1.5px -1.5px 3px color-mix(in srgb, var(--color-neutral-700) 25%, transparent),
+    inset 0px 0px 0px var(--color-neutral-900),
+    inset 0px -0px 0px var(--color-neutral-300);
+  transition: all ease 0.3s;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox-container .checkmark svg {
+  opacity: 0;
+  transition: all ease 0.3s;
+}
+
+.checkbox-container .checkmark .checkmark-icon {
+  width: 120%;
+  height: 120%;
+  transform: scale(0.8);
+  transition: all ease 0.3s;
+}
+
+.checkbox-container:has(input:checked) .checkmark .checkmark-icon {
+  transform: scale(1);
+}
+
+/* Checked/selected state: green */
+.checkbox-container:has(input:checked) {
+  background-color: var(--color-secondary-700);
+  box-shadow:
+    1.5px 1.5px 3px color-mix(in srgb, var(--color-secondary-700) 30%, transparent),
+    -1.5px -1.5px 3px color-mix(in srgb, var(--color-secondary-300) 25%, transparent),
+    inset 0px 0px 0px color-mix(in srgb, var(--color-secondary-700) 20%, transparent),
+    inset 0px -0px 0px color-mix(in srgb, var(--color-secondary-300) 20%, transparent);
+}
+
+.checkbox-container:has(input:checked) .checkmark {
+  box-shadow:
+    0px 0px 0px var(--color-neutral-900),
+    0px 0px 0px color-mix(in srgb, var(--color-secondary-700) 25%, transparent),
+    inset 1.5px 1.5px 3px var(--color-neutral-900),
+    inset -1.5px -1.5px 3px var(--color-secondary-300);
+}
+
+.checkbox-container:has(input:checked) .checkmark svg {
+  opacity: 1;
+}
+
+/* Size variants */
+.checkbox-container.size-sm {
+  --size: 20px;
+  padding: 2px;
+}
+
+.checkbox-container.size-sm .checkmark {
+  padding: 3px;
+}
+
+.checkbox-container.size-md {
+  --size: 24px;
+  padding: 3px;
+}
+
+.checkbox-container.size-md .checkmark {
+  padding: 4px;
+}
+
+.checkbox-container.size-lg {
+  --size: 32px;
+  padding: 4px;
+}
+
+.checkbox-container.size-lg .checkmark {
+  padding: 6px;
+}
+
+/* Disabled state */
+.checkbox-container.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkbox-container.disabled .checkmark {
+  cursor: not-allowed;
+}

@@ -1,12 +1,17 @@
-# Clinic Management SaaS
+# Clinic SaaS Monorepo
 
 **Status:** ✅ Backend 100% Complete | Production Ready
 
 Global-ready, multi-tenant clinic management system with HIPAA/GDPR compliance.
 
+**Monorepo layout:**
+- **`apps/clinic/`** – Main clinic app (dashboard, admin, API, Socket.IO). Deploy at e.g. `account.doctorsclinic.services`.
+- **`apps/website/`** – Marketing site (home, pricing, blog, contact, legal). Deploy at e.g. `doctorsclinic.services`.
+- **`packages/`** – Shared UI and utils (`@clinic-saas/ui`, `@clinic-saas/utils`, `@clinic-saas/shared-config`).
+
 ## 🎉 Implementation Complete
 
-All backend features have been implemented:
+All backend features have been implemented (in `apps/clinic/`):
 - ✅ 25+ Database Models
 - ✅ 24+ Business Services
 - ✅ 100+ API Endpoints
@@ -14,28 +19,28 @@ All backend features have been implemented:
 - ✅ Performance Optimized
 - ✅ Comprehensive Documentation
 
-See `CursorMD/FINAL_IMPLEMENTATION_STATUS.md` for complete details.
+See `apps/clinic/CursorMD/` for details.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - MongoDB 6+
 - Redis (optional, for caching)
 
 ### Installation
 
-1. **Install dependencies:**
+1. **Install dependencies (from repo root):**
 ```bash
 npm install
 ```
 
-2. **Set up environment variables:**
+2. **Set up environment variables** (for clinic app):
 ```bash
-cp .env.local.example .env.local
+cp apps/clinic/.env.example apps/clinic/.env.local
 ```
 
-Edit `.env.local` with your configuration:
+Edit `apps/clinic/.env.local` with your configuration:
 ```env
 MONGODB_URI=mongodb://localhost:27017/clinic-tool
 JWT_SECRET=your-super-secret-jwt-key
@@ -56,10 +61,13 @@ This will prompt you to create:
 ```bash
 npm run dev
 ```
+(Runs the clinic app; default port **5053**.)
+
+To run the marketing website: `npm run dev:website` (port 5054).
 
 5. **Test the health endpoint:**
 ```bash
-curl http://localhost:3000/api/health
+curl http://localhost:5053/api/health
 ```
 
 6. **Test authentication:**

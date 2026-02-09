@@ -1,0 +1,165 @@
+'use client';
+
+/**
+ * Table Header Component
+ * Header row: bg-primary-100, text-primary-700, weight: 600, height: 48px
+ */
+export function TableHeader({ children, className = '', ...props }) {
+  return (
+    <thead className={className} {...props}>
+      {children}
+    </thead>
+  );
+}
+
+/**
+ * Table Header Row
+ */
+export function TableHeaderRow({ children, className = '', ...props }) {
+  return (
+    <tr className={`bg-primary-100 dark:bg-primary-900/50 ${className}`} {...props}>
+      {children}
+    </tr>
+  );
+}
+
+/**
+ * Table Header Cell
+ */
+export function TableHeaderCell({ children, className = '', ...props }) {
+  return (
+    <th
+      className={`px-4 py-3 text-body-sm font-semibold text-primary-700 dark:text-primary-300 text-left h-12 ${className}`}
+      {...props}
+    >
+      {children}
+    </th>
+  );
+}
+
+/**
+ * Table Body Component
+ */
+export function TableBody({ children, className = '', ...props }) {
+  return (
+    <tbody className={className} {...props}>
+      {children}
+    </tbody>
+  );
+}
+
+/**
+ * Table Row
+ * Height: 44-48px, border-bottom: neutral-200
+ * Hover: bg-neutral-100
+ * Selected: bg-primary-100, border-left: 3px solid primary-500
+ */
+export function TableRow({ children, className = '', selected = false, onClick, ...props }) {
+  const baseClasses = `h-11 border-b border-neutral-200`;
+  const hoverClasses = onClick ? 'hover:bg-neutral-100 cursor-pointer' : 'hover:bg-neutral-100';
+  // Selected: bg-primary-100, border-left: 3px solid primary-500 (per theme spec)
+  const selectedClasses = selected ? 'bg-primary-100 border-l-[3px] border-l-primary-500' : '';
+
+  return (
+    <tr
+      className={`${baseClasses} ${hoverClasses} ${selectedClasses} ${className}`}
+      onClick={onClick}
+      {...props}
+    >
+      {children}
+    </tr>
+  );
+}
+
+/**
+ * Table Cell
+ */
+export function TableCell({ children, className = '', ...props }) {
+  return (
+    <td
+      className={`px-4 py-3 text-body-md text-neutral-900 dark:text-neutral-100 ${className}`}
+      {...props}
+    >
+      {children}
+    </td>
+  );
+}
+
+/**
+ * Table Component - Clinic Theme
+ * Follows theme specifications for tables
+ *
+ * Supports two usage patterns:
+ * 1. Children-based: <Table><thead>...</thead></Table>
+ * 2. Data-driven: <Table data={[]} columns={[]} />
+ */
+export function Table({
+  children,
+  className = '',
+  data,
+  columns,
+  emptyMessage = 'No data available',
+  onRowClick,
+  loading,
+  ...rest
+}) {
+  // Don't pass loading to DOM (native <table> has no loading attribute); use data-loading and aria-busy only
+  const tableProps = {
+    ...rest,
+    'data-loading': loading ? 'true' : undefined,
+    'aria-busy': loading === true ? true : loading === false ? false : undefined,
+  };
+  if ('loading' in tableProps) delete tableProps.loading;
+  // Data-driven table rendering
+  if (data !== undefined && columns !== undefined) {
+    return (
+      <div className='overflow-x-auto'>
+        <table className={`w-full border-collapse ${className}`} {...tableProps}>
+          <TableHeader>
+            <TableHeaderRow>
+              {columns.map((column, index) => (
+                <TableHeaderCell key={index}>{column.header}</TableHeaderCell>
+              ))}
+            </TableHeaderRow>
+          </TableHeader>
+          <TableBody>
+            {data.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className='text-center py-8 text-neutral-500'>
+                  {emptyMessage}
+                </TableCell>
+              </TableRow>
+            ) : (
+              data.map((row, rowIndex) => (
+                <TableRow
+                  key={row._id || row.id || rowIndex}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
+                  {columns.map((column, colIndex) => (
+                    <TableCell key={colIndex}>
+                      {typeof column.accessor === 'function'
+                        ? column.accessor(row)
+                        : row[column.accessor] || ''}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </table>
+      </div>
+    );
+  }
+
+  // Children-based table rendering (backward compatibility)
+  return (
+    <div className='overflow-x-auto'>
+      <table className={`w-full border-collapse ${className}`} {...tableProps}>
+        {children}
+      </table>
+    </div>
+  );
+}
+
+// Export default Table component
+export default Table;

@@ -1,0 +1,237 @@
+'use client';
+
+import { Layout } from '@/components/layout/Layout';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Loader } from '@/components/ui/Loader';
+import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
+import { apiClient } from '@/lib/api/client';
+import { showError, showSuccess } from '@/lib/utils/toast';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+export default function CreateAdminPage() {
+  const router = useRouter();
+  const { t } = useI18n();
+  const { user, loading: authLoading } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
+    role: 'super_admin',
+  });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role !== 'super_admin') {
+        router.push('/dashboard');
+        return;
+      }
+    }
+  }, [authLoading, user, router]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    // Validation
+    if (!formData.firstName || !formData.firstName.trim()) {
+      showError(t('admin.firstNameRequired'));
+      return;
+    }
+    if (!formData.lastName || !formData.lastName.trim()) {
+      showError(t('admin.lastNameRequired'));
+      return;
+    }
+    if (!formData.email || !formData.email.trim()) {
+      showError(t('admin.emailRequired'));
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      showError(t('admin.invalidEmail'));
+      return;
+    }
+    if (!formData.password || !formData.password.trim()) {
+      showError(t('admin.passwordRequired'));
+      return;
+    }
+    if (formData.password.length < 8) {
+      showError(t('admin.passwordMinLength'));
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      showError(t('admin.passwordsDoNotMatch'));
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Use the admin create API or direct user creation
+      const response = await apiClient.post('/users', {
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: formData.role,
+      });
+
+      if (response.success) {
+        showSuccess(t('admin.adminAccountCreatedSuccess'));
+        // Reset form
+        setFormData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          firstName: '',
+          lastName: '',
+          role: 'super_admin',
+        });
+      } else {
+        setError(response.error?.message || t('admin.failedToCreateAdminAccount'));
+        showError(response.error?.message || t('admin.failedToCreateAdminAccount'));
+      }
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : t('admin.failedToCreateAdminAccount');
+      const errorMessage =
+        raw && (raw.includes('Unexpected token') || raw.includes('<!DOCTYPE'))
+          ? t('errors.invalidServerResponse')
+          : raw;
+      setError(errorMessage);
+      showError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (authLoading) {
+    return <Loader type='page' text={t('common.loading')} />;
+  }
+
+  if (user?.role !== 'super_admin') {
+    return null;
+  }
+
+  return (
+    <Layout title={t('admin.createAdmin')} subtitle={t('admin.allUsersDescription')}>
+      <div className='admin-page-content'>
+        <Card>
+          <div className='p-6'>
+            <form onSubmit={handleSubmit} className='space-y-6'>
+              {error && (
+                <div className='p-4 bg-red-50 border border-red-200 rounded-lg text-red-700'>
+                  {error}
+                </div>
+              )}
+
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    First Name *
+                  </label>
+                  <Input
+                    type='text'
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                    Last Name *
+                  </label>
+                  <Input
+                    type='text'
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>Email *</label>
+                <Input
+                  type='email'
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>Role *</label>
+                <select
+                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  required
+                >
+                  <option value='super_admin'>{t('admin.createAdminSuperAdmin')}</option>
+                  <option value='clinic_admin'>{t('admin.createAdminClinicAdmin')}</option>
+                </select>
+                <p className='text-sm text-neutral-500 mt-1'>
+                  Super Admin: Full system access. Clinic Admin: Manages a specific clinic.
+                </p>
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  Password *
+                </label>
+                <div className='relative'>
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type='button'
+                    onClick={() => setShowPassword(!showPassword)}
+                    className='absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-neutral-700'
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <p className='text-sm text-neutral-500 mt-1'>
+                  {t('admin.createAdminMinimumChars')}
+                </p>
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  Confirm Password *
+                </label>
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className='flex gap-4'>
+                <Button type='submit' variant='primary' disabled={isLoading}>
+                  {isLoading ? t('common.creating') : 'Create Admin Account'}
+                </Button>
+                <Button type='button' variant='secondary' href='/admin'>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </Card>
+      </div>
+    </Layout>
+  );
+}

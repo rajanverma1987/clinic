@@ -1,0 +1,66 @@
+/* Notification Center – portaled to document.body so it is never clipped by layout/overflow.
+   Uses high z-index so the panel always appears above header, sidebar, and other UI. */
+
+@keyframes NotificationCenter-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes NotificationCenter-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.NotificationCenter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast, 10060);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-top: 4rem;
+  padding-right: 1rem;
+  padding-bottom: 1rem;
+  padding-left: 1rem;
+  pointer-events: auto;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: NotificationCenter-overlay-in 0.2s ease-out forwards;
+}
+
+.NotificationCenter-backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-neutral-900) 25%, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: opacity 0.2s ease-out;
+}
+
+.NotificationCenter-panel {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  min-height: 12rem;
+  pointer-events: auto;
+  animation: NotificationCenter-panel-in 0.25s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .NotificationCenter-overlay {
+    animation: none;
+  }
+  .NotificationCenter-panel {
+    animation: none;
+  }
+}
