@@ -1,11 +1,18 @@
 'use client';
 
-import { CheckIcon, XIcon, ChatIcon } from '@/components/icons';
+import { ChatIcon, CheckIcon, ChevronRightIcon, XIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 
-export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onMessage, onSeeAll, loading = false }) {
+export function AppointmentRequestCard({
+  requests = [],
+  onAccept,
+  onDecline,
+  onMessage,
+  onSeeAll,
+  loading = false,
+}) {
   const { t } = useI18n();
 
   if (loading) {
@@ -43,12 +50,17 @@ export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onM
                 const patient = request.patientId || request;
                 const firstName = patient?.firstName || '';
                 const lastName = patient?.lastName || '';
-                const patientName = patient?.name || `${firstName} ${lastName}`.trim() || t('common.unknownPatient');
-                const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
+                const patientName =
+                  patient?.name || `${firstName} ${lastName}`.trim() || t('common.unknownPatient');
+                const initials =
+                  `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
                 const reason = request.reason || request.type || t('common.generalConsultation');
 
                 return (
-                  <div key={request._id || request.id || index} className='dashboard-appointment-item'>
+                  <div
+                    key={request._id || request.id || index}
+                    className='dashboard-appointment-item'
+                  >
                     <div className='flex items-center gap-3'>
                       {/* Patient Avatar */}
                       <div className='w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 border-2 border-primary-200'>
@@ -112,25 +124,31 @@ export function AppointmentRequestCard({ requests = [], onAccept, onDecline, onM
             </div>
           ) : (
             <div className='empty-state'>
-              <p className='text-neutral-500 text-body-sm'>{t('dashboard.noAppointmentRequests')}</p>
+              <p className='text-neutral-500 text-body-sm'>
+                {t('dashboard.noAppointmentRequests')}
+              </p>
             </div>
           )}
         </div>
 
-        {/* See All Link */}
+        {/* See All Link - positioned at bottom */}
         {requests && requests.length > 0 && (
-          <div className='pt-3 border-t border-neutral-200 mt-3'>
-            <Button
-              variant='link'
-              size='sm'
-              className='w-full justify-center'
+          <div className='pt-3 border-t border-neutral-200 dark:border-neutral-700 mt-auto'>
+            <button
+              type='button'
               onClick={() => {
                 if (onSeeAll) onSeeAll();
                 else window.location.href = '/appointments?status=pending';
               }}
+              className='w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium group'
+              aria-label={t('dashboard.seeAll')}
             >
-              {t('dashboard.seeAll')}
-            </Button>
+              <span>{t('dashboard.seeAll')}</span>
+              <ChevronRightIcon
+                className='icon icon-xs group-hover:translate-x-0.5 transition-transform'
+                ariaHidden
+              />
+            </button>
           </div>
         )}
       </div>

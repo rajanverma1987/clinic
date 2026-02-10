@@ -39,7 +39,7 @@ export function ProfileMenu({ isCollapsed }) {
       const translation = t(key);
       return translation !== key ? translation : fallback;
     },
-    [t]
+    [t],
   );
 
   // User display name
@@ -118,10 +118,14 @@ export function ProfileMenu({ isCollapsed }) {
     setShowLogoutConfirm(true);
   }, []);
 
-  const handleLogout = useCallback(() => {
-    setShowLogoutConfirm(false);
-    logout();
-  }, [logout]);
+  const handleLogout = useCallback(
+    (e) => {
+      e?.stopPropagation?.();
+      setShowLogoutConfirm(false);
+      logout();
+    },
+    [logout],
+  );
 
   const toggleUserMenu = useCallback(() => {
     setShowUserMenu((prev) => !prev);
@@ -254,7 +258,7 @@ export function ProfileMenu({ isCollapsed }) {
                   </button>
                 </div>
               </div>,
-              document.body
+              document.body,
             )
           : null}
       </div>
@@ -273,14 +277,14 @@ export function ProfileMenu({ isCollapsed }) {
           >
             {getTranslation(
               'auth.logoutConfirmMessage',
-              'Are you sure you want to sign out? You will need to sign in again to access your account.'
+              'Are you sure you want to sign out? You will need to sign in again to access your account.',
             )}
           </p>
           <div className='flex items-center justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-600'>
             <Button variant='secondary' size='md' onClick={() => setShowLogoutConfirm(false)}>
               {getTranslation('common.cancel', 'Cancel')}
             </Button>
-            <Button variant='logout' size='md' onClick={handleLogout}>
+            <Button variant='logout' size='md' onClick={handleLogout} type='button'>
               {getTranslation('auth.signOut', 'Sign Out')}
             </Button>
           </div>

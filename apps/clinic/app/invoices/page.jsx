@@ -23,7 +23,8 @@ import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 
 const ROUTE_KEY = 'route_invoices';
 
@@ -59,6 +60,8 @@ export default function InvoicesPage() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [recordingPayment, setRecordingPayment] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshIntervalRef = useRef(null);
 
   // Hydrate from localStorage before paint (no flash, no hydration mismatch)
   useLayoutEffect(() => {
@@ -70,9 +73,9 @@ export default function InvoicesPage() {
     }
   }, [tenantId]);
 
-  const fetchInvoices = useCallback(async () => {
+  const fetchInvoices = useCallback(async (silentRefresh = false) => {
     const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
-    if (!hasCache) setLoading(true);
+    if (!silentRefresh && !hasCache) setLoading(true);
     try {
       const params = new URLSearchParams();
       if (statusFilter && statusFilter !== 'all') {
@@ -103,7 +106,8 @@ export default function InvoicesPage() {
       logger.error('Failed to fetch invoices', error);
       setInvoices([]);
     } finally {
-      setLoading(false);
+      if (!silentRefresh) setLoading(false);
+      setRefreshing(false);
     }
   }, [tenantId, statusFilter, startDate, endDate]);
 
@@ -112,6 +116,36 @@ export default function InvoicesPage() {
       fetchInvoices();
     }
   }, [authLoading, user, fetchInvoices]);
+
+  // Setup automatic background refresh every 60 seconds
+  useEffect(() => {
+    if (!authLoading && user && statusFilter === 'all' && !startDate && !endDate) {
+      // Clear any existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+
+      // Set up auto-refresh interval
+      refreshIntervalRef.current = setInterval(() => {
+        // Silent background refresh - don't show loading, just update data
+        fetchInvoices(true);
+      }, DASHBOARD_AUTO_REFRESH_MS);
+
+      return () => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+        }
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, statusFilter, startDate, endDate, fetchInvoices]);
+
+  // Manual refresh handler
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchInvoices(false);
+  }, [fetchInvoices]);
 
   const formatCurrency = (amount) => {
     return formatCurrencyUtil(amount, currency, locale);
@@ -344,6 +378,8 @@ export default function InvoicesPage() {
         subtitle={t('invoices.invoiceList')}
         notifications={[]}
         unreadCount={0}
+        onRefresh={handleManualRefresh}
+        refreshing={refreshing}
         actionButton={
           <Button href='/invoices/new' variant='primary' size='md' className='whitespace-nowrap'>
             + {t('invoices.createInvoice')}

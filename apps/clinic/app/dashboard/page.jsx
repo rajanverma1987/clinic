@@ -1,6 +1,6 @@
 'use client';
 
-import { StarIcon } from '@/components/icons';
+import { CheckIcon, ChevronRightIcon, StarIcon, XIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProfilerWrapper } from '@/components/ProfilerWrapper';
@@ -17,6 +17,7 @@ import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { showError } from '@/lib/utils/toast';
 import nextDynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
@@ -67,20 +68,15 @@ import {
 } from '@/hooks/useSWRDashboard';
 import { TabBar } from './_components/TabBar';
 import { TabContent } from './_components/TabContent';
-import { TabSkeleton } from './_components/TabSkeleton';
+import { AppointmentsTab } from './_tabs/AppointmentsTab';
 import { OverviewTab } from './_tabs/OverviewTab';
+import { PrescriptionsTab } from './_tabs/PrescriptionsTab';
 import { useDoctorDashboardLists } from './hooks/useDoctorDashboardLists';
 import { useDoctorDashboardStats } from './hooks/useDoctorDashboardStats';
-
-const AppointmentsTab = nextDynamic(
-  () => import('./_tabs/AppointmentsTab').then((m) => ({ default: m.AppointmentsTab })),
-  { loading: () => <TabSkeleton />, ssr: false },
-);
-
-const PrescriptionsTab = nextDynamic(
-  () => import('./_tabs/PrescriptionsTab').then((m) => ({ default: m.PrescriptionsTab })),
-  { loading: () => <TabSkeleton />, ssr: false },
-);
+// Performance hooks as per ENTERPRISE_DASHBOARD_PERFORMANCE.md spec
+import { useIncrementalAppointments } from '@/hooks/useIncrementalAppointments';
+import { AppointmentsListWithHook } from './components/AppointmentsList';
+import { useDashboardStats } from './hooks/useDashboardStats';
 
 /* Dashboard styles loaded by app/dashboard/layout.jsx for reliable load on client nav */
 
@@ -95,11 +91,18 @@ export default function DashboardPage() {
   // Tab state: ?tab=overview|appointments|prescriptions; no redirect. TabBar + TabContent render in-page.
   // Use local state for instant switching, sync with URL
   const urlTab = searchParams?.get('tab') || 'overview';
-  const [activeTab, setActiveTab] = useState(urlTab === 'overview' || urlTab === 'appointments' || urlTab === 'prescriptions' ? urlTab : 'overview');
-  
+  const [activeTab, setActiveTab] = useState(
+    urlTab === 'overview' || urlTab === 'appointments' || urlTab === 'prescriptions'
+      ? urlTab
+      : 'overview',
+  );
+
   // Sync local state with URL changes (e.g., browser back/forward)
   useEffect(() => {
-    const normalizedUrlTab = urlTab === 'overview' || urlTab === 'appointments' || urlTab === 'prescriptions' ? urlTab : 'overview';
+    const normalizedUrlTab =
+      urlTab === 'overview' || urlTab === 'appointments' || urlTab === 'prescriptions'
+        ? urlTab
+        : 'overview';
     if (normalizedUrlTab !== activeTab) {
       setActiveTab(normalizedUrlTab);
     }
@@ -174,12 +177,42 @@ export default function DashboardPage() {
     [t],
   );
 
+  // Performance hooks as per ENTERPRISE_DASHBOARD_PERFORMANCE.md spec
+  // Disabled for doctors – they use useDoctorDashboardStats() instead.
+  // Passing `enabled` avoids an unnecessary /dashboard/stats request for the doctor role.
+  const performanceDashboardStats = useDashboardStats({ enabled: !isDoctor });
+
   // Clinic: SWR only when !isDoctor (pass clinicTenantId=null for doctors to avoid 13 extra requests)
   const clinicStatsSWR = useDashboardStatsSWR(clinicTenantId);
   const doctorStats = useDoctorDashboardStats();
-  const stats = isDoctor ? doctorStats.stats : clinicStatsSWR.stats;
-  const statsLoading = isDoctor ? doctorStats.loading : clinicStatsSWR.loading;
-  const fetchStats = isDoctor ? doctorStats.fetchStats : clinicStatsSWR.fetchStats;
+
+  // Use performance hooks for clinic, SWR/doctor hooks for doctors
+  // Map performance hook stats structure to match Dashboard expectations
+  const performanceStats = performanceDashboardStats.stats
+    ? {
+        ...performanceDashboardStats.stats,
+        // Map nested structure to flat structure expected by Dashboard
+        todayAppointments: performanceDashboardStats.stats.appointments?.todayTotal || 0,
+        todayRevenue: performanceDashboardStats.stats.revenue?.today?.paid || 0,
+        monthRevenue: performanceDashboardStats.stats.revenue?.thisMonth?.total || 0,
+        activePatients: performanceDashboardStats.stats.patients?.active || 0,
+        totalPatients: performanceDashboardStats.stats.patients?.total || 0,
+        newPatientsThisMonth: 0, // Not in performance stats, use 0
+        pendingInvoices: 0, // Not in performance stats, use 0
+        completedToday: performanceDashboardStats.stats.appointments?.today?.completed || 0,
+        queue: performanceDashboardStats.stats.queue || {},
+        lastUpdated: performanceDashboardStats.stats.lastUpdated,
+      }
+    : null;
+
+  const stats = isDoctor ? doctorStats.stats : performanceStats || clinicStatsSWR.stats;
+  const statsLoading = isDoctor
+    ? doctorStats.loading
+    : performanceDashboardStats.loading || clinicStatsSWR.loading;
+  const fetchStats = isDoctor
+    ? doctorStats.fetchStats
+    : performanceDashboardStats.refresh || clinicStatsSWR.fetchStats;
+  const forceRefresh = isDoctor ? doctorStats.fetchStats : performanceDashboardStats.forceRefresh;
 
   const clinicChartsSWR = useDashboardChartsSWR(clinicTenantId, { enabled: chartsEnabled });
   const chartData = isDoctor
@@ -222,10 +255,21 @@ export default function DashboardPage() {
     chartsEnabled,
   ]);
 
+  // Performance hook: useIncrementalAppointments for recent appointments (spec requirement).
+  // Pass primitives directly – the hook now accepts { limit, status } as named params so no
+  // object is created on every render, preventing unnecessary re-fetches.
+  const incrementalAppointmentsHook = useIncrementalAppointments({
+    limit: 10,
+    status: 'scheduled',
+  });
+
   // Use doctor-specific lists if doctor, otherwise general lists
+  // For clinic: prefer incremental appointments hook, fallback to SWR lists
   const todayAppointments = isDoctor
     ? doctorLists.todayAppointments
-    : generalLists.todayAppointments;
+    : incrementalAppointmentsHook.appointments.length > 0
+      ? incrementalAppointmentsHook.appointments
+      : generalLists.todayAppointments;
   const recentPatients = isDoctor ? doctorLists.recentPatients : generalLists.recentPatients;
   const overdueInvoices = isDoctor ? [] : generalLists.overdueInvoices;
   const lowStockList = isDoctor ? [] : generalLists.lowStockList;
@@ -462,8 +506,13 @@ export default function DashboardPage() {
             onNotificationClick={handleNotificationClick}
             onMarkAsRead={handleMarkAsRead}
             onMarkAllAsRead={handleMarkAllAsRead}
-            onRefresh={handleManualRefresh}
-            refreshing={!isDoctor && (clinicStatsSWR.isValidating || clinicListsSWR.isValidating)}
+            onRefresh={handleManualRefresh || forceRefresh}
+            refreshing={
+              !isDoctor &&
+              (performanceDashboardStats.loading ||
+                clinicStatsSWR.isValidating ||
+                clinicListsSWR.isValidating)
+            }
             actionButton={
               <div className='flex items-center gap-3 shrink-0'>
                 <QuickActions onNavigate={navigate} loading={false} />
@@ -471,298 +520,566 @@ export default function DashboardPage() {
             }
           />
 
-          {initialDashboardLoading ? (
-            <DashboardSkeleton isDoctor={isDoctor} />
-          ) : (
-            <>
-              <TabBar 
-                className='dashboard-section dashboard-tab-bar'
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-              />
+          {/* Skeleton shown during initial load; tabs are always mounted so their
+              data fetches start immediately (avoids cold-start latency on first switch) */}
+          {initialDashboardLoading && <DashboardSkeleton isDoctor={isDoctor} />}
 
-              <TabContent
-                activeTab={activeTab}
-                appointmentsContent={appointmentsContent}
-                prescriptionsContent={prescriptionsContent}
-              >
-                <OverviewTab>
-                  {/* Critical Alerts / Pending Tasks (Quick Actions moved to header bar) */}
-                  <div className='dashboard-section'>
-                    <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid'>
-                      {/* Critical Alerts - Only for non-doctors */}
-                      {!isDoctor && criticalAlerts && criticalAlerts.length > 0 && (
-                        <div className='lg:col-span-2'>
-                          <ErrorBoundary>
-                            <CriticalAlerts
-                              alerts={criticalAlerts}
-                              onViewAll={(alert) => {
-                                if (alert?.type === 'inventory') navigate('/inventory');
-                                else if (alert?.type === 'appointments') navigate('/appointments');
-                                else navigate('/reports');
-                              }}
-                            />
-                          </ErrorBoundary>
-                        </div>
-                      )}
-                      {/* Doctor-specific: Pending Tasks Card */}
-                      {isDoctor && (
-                        <div className='lg:col-span-2'>
-                          <Card className='p-6 h-full dashboard-pending-tasks-card'>
-                            <div className='flex items-center justify-between gap-3 mb-4 pb-3 border-b border-neutral-200'>
-                              <div className='flex items-center gap-3'>
-                                <div className='dashboard-pending-tasks-dot' />
-                                <h3 className='text-lg font-bold text-neutral-900'>
-                                  {t('dashboard.pendingTasks')}
-                                </h3>
-                              </div>
-                              <button
-                                type='button'
-                                onClick={() => navigate('/doctors/reviews')}
-                                className='text-sm font-medium text-primary-600 hover:text-primary-700'
-                              >
-                                {t('dashboard.seeAll')}
-                              </button>
-                            </div>
-                            <div className='space-y-3'>
-                              {stats?.pendingReviews > 0 && (
-                                <div
-                                  className='dashboard-pending-task-item dashboard-pending-task-warning'
-                                  onClick={() => navigate('/doctors/reviews')}
-                                >
-                                  <div className='flex items-center justify-between'>
-                                    <span className='text-sm font-medium'>
-                                      {stats.pendingReviews} {t('dashboard.reviewsPending')}
-                                    </span>
-                                    <span className='dashboard-pending-task-arrow'>→</span>
-                                  </div>
-                                </div>
-                              )}
-                              {stats?.patientsWaiting > 0 && (
-                                <div
-                                  className='dashboard-pending-task-item dashboard-pending-task-primary'
-                                  onClick={() => navigate('/appointments?status=in_queue,arrived')}
-                                >
-                                  <div className='flex items-center justify-between'>
-                                    <span className='text-sm font-medium'>
-                                      {stats.patientsWaiting} {t('dashboard.patientsWaiting')}
-                                    </span>
-                                    <span className='dashboard-pending-task-arrow'>→</span>
-                                  </div>
-                                </div>
-                              )}
-                              {(stats?.labReportsToReview ?? 0) > 0 && (
-                                <div
-                                  className='dashboard-pending-task-item dashboard-pending-task-primary'
-                                  onClick={() => navigate('/reports')}
-                                >
-                                  <div className='flex items-center justify-between'>
-                                    <span className='text-sm font-medium'>
-                                      {stats.labReportsToReview} {t('dashboard.labReportsToReview')}
-                                    </span>
-                                    <span className='dashboard-pending-task-arrow'>→</span>
-                                  </div>
-                                </div>
-                              )}
-                              {(stats?.newMessages ?? 0) > 0 && (
-                                <div
-                                  className='dashboard-pending-task-item dashboard-pending-task-primary'
-                                  onClick={() => navigate('/doctors/messages')}
-                                >
-                                  <div className='flex items-center justify-between'>
-                                    <span className='text-sm font-medium'>
-                                      {stats.newMessages} {t('dashboard.newMessages')}
-                                    </span>
-                                    <span className='dashboard-pending-task-arrow'>→</span>
-                                  </div>
-                                </div>
-                              )}
-                              {(stats?.prescriptionsToApprove ?? 0) > 0 && (
-                                <div
-                                  className='dashboard-pending-task-item dashboard-pending-task-primary'
-                                  onClick={() => navigate('/prescriptions?status=draft')}
-                                >
-                                  <div className='flex items-center justify-between'>
-                                    <span className='text-sm font-medium'>
-                                      {stats.prescriptionsToApprove}{' '}
-                                      {t('dashboard.prescriptionsToApprove')}
-                                    </span>
-                                    <span className='dashboard-pending-task-arrow'>→</span>
-                                  </div>
-                                </div>
-                              )}
-                              {(!stats?.pendingReviews || stats.pendingReviews === 0) &&
-                                (!stats?.patientsWaiting || stats.patientsWaiting === 0) &&
-                                (stats?.labReportsToReview ?? 0) === 0 &&
-                                (stats?.newMessages ?? 0) === 0 &&
-                                (stats?.prescriptionsToApprove ?? 0) === 0 && (
-                                  <p className='text-sm text-neutral-500 text-center py-4'>
-                                    {t('dashboard.noPendingTasks')}
-                                  </p>
-                                )}
-                            </div>
-                          </Card>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+          <div style={{ display: initialDashboardLoading ? 'none' : undefined }}>
+            <TabBar
+              className='dashboard-section dashboard-tab-bar'
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
+          </div>
 
-                  {/* Key Statistics Cards - Doctor: 8 KPIs; General: 4 */}
-                  <div className='dashboard-section'>
-                    {/* Section Header */}
-                    <div className='section-header mb-4'>
-                      <div className='accent-bar accent-bar-primary' />
-                      <h2 className='section-title'>{t('dashboard.keyMetrics')}</h2>
+          <TabContent
+            activeTab={activeTab}
+            appointmentsContent={appointmentsContent}
+            prescriptionsContent={prescriptionsContent}
+            hidden={initialDashboardLoading}
+          >
+            <OverviewTab>
+              {/* Critical Alerts / Pending Tasks (Quick Actions moved to header bar) */}
+              <div className='dashboard-section'>
+                <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid'>
+                  {/* Critical Alerts - Only for non-doctors */}
+                  {!isDoctor && criticalAlerts && criticalAlerts.length > 0 && (
+                    <div className='lg:col-span-2'>
+                      <ErrorBoundary>
+                        <CriticalAlerts
+                          alerts={criticalAlerts}
+                          onViewAll={(alert) => {
+                            if (alert?.type === 'inventory') navigate('/inventory');
+                            else if (alert?.type === 'appointments') navigate('/appointments');
+                            else navigate('/reports');
+                          }}
+                        />
+                      </ErrorBoundary>
                     </div>
-                    <div
-                      className={`grid grid-cols-1 sm:grid-cols-2 dashboard-grid ${isDoctor ? 'lg:grid-cols-4 xl:grid-cols-4' : 'lg:grid-cols-4'}`}
-                    >
-                      {isDoctor ? (
-                        <>
-                          <StatsCard
-                            title={t('dashboard.todayAppointmentsLabel')}
-                            value={stats?.todayAppointments || 0}
-                            trend={stats?.appointmentsTrend}
-                            icon='calendar'
-                            colorScheme='primary'
-                            onClick={() => navigate('/appointments')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.thisWeekAppointments')}
-                            value={stats?.thisWeekAppointments ?? 0}
-                            trend={null}
-                            icon='calendar'
-                            colorScheme='primary'
-                            onClick={() => navigate('/appointments')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.thisMonthAppointments')}
-                            value={stats?.thisMonthAppointments ?? 0}
-                            trend={null}
-                            icon='calendar'
-                            colorScheme='primary'
-                            onClick={() => navigate('/appointments')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.totalPatients')}
-                            value={stats?.totalPatients || 0}
-                            trend={stats?.patientsTrend}
-                            icon='patients'
-                            colorScheme='primary'
-                            onClick={() => navigate('/patients')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.queueCount')}
-                            value={stats?.patientsWaiting || 0}
-                            trend={null}
-                            icon='queue'
-                            colorScheme='warning'
-                            onClick={() => navigate('/appointments?status=in_queue,arrived')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.revenueThisMonth')}
-                            value={formatCurrency(stats?.revenue || 0)}
-                            trend={stats?.revenueTrend}
-                            icon='currency-dollar'
-                            colorScheme='primary'
-                            onClick={() => navigate('/doctors/earnings')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.videoCallsThisMonth')}
-                            value={stats?.videoCallsThisMonth ?? 0}
-                            trend={null}
-                            icon='video'
-                            colorScheme='primary'
-                            onClick={() => navigate('/telemedicine')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.averageRating')}
-                            value={
-                              stats?.averageRating != null
-                                ? Number(stats.averageRating).toFixed(1)
-                                : '—'
-                            }
-                            trend={null}
-                            icon='star'
-                            colorScheme='success'
+                  )}
+                  {/* Doctor-specific: Pending Tasks Card */}
+                  {isDoctor && (
+                    <div className='lg:col-span-2'>
+                      <Card className='p-6 h-full dashboard-pending-tasks-card'>
+                        <div className='flex items-center justify-between gap-3 mb-4 pb-3 border-b border-neutral-200'>
+                          <div className='flex items-center gap-3'>
+                            <div className='dashboard-pending-tasks-dot' />
+                            <h3 className='text-lg font-bold text-neutral-900'>
+                              {t('dashboard.pendingTasks')}
+                            </h3>
+                          </div>
+                          <button
+                            type='button'
                             onClick={() => navigate('/doctors/reviews')}
-                            loading={statsLoading}
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <StatsCard
-                            title={t('dashboard.totalPatients')}
-                            value={stats?.activePatients || 0}
-                            trend={stats?.patientsTrend}
-                            icon='patients'
-                            colorScheme='primary'
-                            layout='default'
-                            onClick={() => navigate('/patients')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.todayAppointmentsLabel')}
-                            value={stats?.todayAppointments || 0}
-                            trend={stats?.appointmentsTrend}
-                            icon='calendar'
-                            colorScheme='primary'
-                            layout='compact'
-                            onClick={() => navigate('/appointments')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.todayRevenue')}
-                            value={formatCurrency(stats?.todayRevenue || 0)}
-                            trend={stats?.revenueTrend}
-                            icon='currency-dollar'
-                            colorScheme='success'
-                            layout='stacked'
-                            onClick={() => navigate('/invoices')}
-                            loading={statsLoading}
-                          />
-                          <StatsCard
-                            title={t('dashboard.pendingInvoices')}
-                            value={stats?.pendingInvoices ?? 0}
-                            trend={stats?.invoicesTrend}
-                            icon='document-text'
-                            colorScheme='warning'
-                            layout='minimal'
-                            onClick={() => navigate('/invoices?status=pending')}
-                            loading={statsLoading}
-                          />
-                        </>
-                      )}
+                            className='text-sm font-medium text-primary-600 hover:text-primary-700'
+                          >
+                            {t('dashboard.seeAll')}
+                          </button>
+                        </div>
+                        <div className='space-y-3'>
+                          {stats?.pendingReviews > 0 && (
+                            <div
+                              className='dashboard-pending-task-item dashboard-pending-task-warning'
+                              onClick={() => navigate('/doctors/reviews')}
+                            >
+                              <div className='flex items-center justify-between'>
+                                <span className='text-sm font-medium'>
+                                  {stats.pendingReviews} {t('dashboard.reviewsPending')}
+                                </span>
+                                <span className='dashboard-pending-task-arrow'>→</span>
+                              </div>
+                            </div>
+                          )}
+                          {stats?.patientsWaiting > 0 && (
+                            <div
+                              className='dashboard-pending-task-item dashboard-pending-task-primary'
+                              onClick={() => navigate('/appointments?status=in_queue,arrived')}
+                            >
+                              <div className='flex items-center justify-between'>
+                                <span className='text-sm font-medium'>
+                                  {stats.patientsWaiting} {t('dashboard.patientsWaiting')}
+                                </span>
+                                <span className='dashboard-pending-task-arrow'>→</span>
+                              </div>
+                            </div>
+                          )}
+                          {(stats?.labReportsToReview ?? 0) > 0 && (
+                            <div
+                              className='dashboard-pending-task-item dashboard-pending-task-primary'
+                              onClick={() => navigate('/reports')}
+                            >
+                              <div className='flex items-center justify-between'>
+                                <span className='text-sm font-medium'>
+                                  {stats.labReportsToReview} {t('dashboard.labReportsToReview')}
+                                </span>
+                                <span className='dashboard-pending-task-arrow'>→</span>
+                              </div>
+                            </div>
+                          )}
+                          {(stats?.newMessages ?? 0) > 0 && (
+                            <div
+                              className='dashboard-pending-task-item dashboard-pending-task-primary'
+                              onClick={() => navigate('/doctors/messages')}
+                            >
+                              <div className='flex items-center justify-between'>
+                                <span className='text-sm font-medium'>
+                                  {stats.newMessages} {t('dashboard.newMessages')}
+                                </span>
+                                <span className='dashboard-pending-task-arrow'>→</span>
+                              </div>
+                            </div>
+                          )}
+                          {(stats?.prescriptionsToApprove ?? 0) > 0 && (
+                            <div
+                              className='dashboard-pending-task-item dashboard-pending-task-primary'
+                              onClick={() => navigate('/prescriptions?status=draft')}
+                            >
+                              <div className='flex items-center justify-between'>
+                                <span className='text-sm font-medium'>
+                                  {stats.prescriptionsToApprove}{' '}
+                                  {t('dashboard.prescriptionsToApprove')}
+                                </span>
+                                <span className='dashboard-pending-task-arrow'>→</span>
+                              </div>
+                            </div>
+                          )}
+                          {(!stats?.pendingReviews || stats.pendingReviews === 0) &&
+                            (!stats?.patientsWaiting || stats.patientsWaiting === 0) &&
+                            (stats?.labReportsToReview ?? 0) === 0 &&
+                            (stats?.newMessages ?? 0) === 0 &&
+                            (stats?.prescriptionsToApprove ?? 0) === 0 && (
+                              <p className='text-sm text-neutral-500 text-center py-4'>
+                                {t('dashboard.noPendingTasks')}
+                              </p>
+                            )}
+                        </div>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Key Statistics Cards - Doctor: 8 KPIs; General: 4 */}
+              <div className='dashboard-section'>
+                {/* Section Header */}
+                <div className='section-header mb-4'>
+                  <div className='accent-bar accent-bar-primary' />
+                  <h2 className='section-title'>{t('dashboard.keyMetrics')}</h2>
+                </div>
+                <div
+                  className={`grid grid-cols-1 sm:grid-cols-2 dashboard-grid ${isDoctor ? 'lg:grid-cols-4 xl:grid-cols-4' : 'lg:grid-cols-4'}`}
+                >
+                  {isDoctor ? (
+                    <>
+                      <StatsCard
+                        title={t('dashboard.todayAppointmentsLabel')}
+                        value={stats?.todayAppointments || 0}
+                        trend={stats?.appointmentsTrend}
+                        icon='calendar'
+                        colorScheme='primary'
+                        onClick={() => navigate('/appointments')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.thisWeekAppointments')}
+                        value={stats?.thisWeekAppointments ?? 0}
+                        trend={null}
+                        icon='calendar'
+                        colorScheme='primary'
+                        onClick={() => navigate('/appointments')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.thisMonthAppointments')}
+                        value={stats?.thisMonthAppointments ?? 0}
+                        trend={null}
+                        icon='calendar'
+                        colorScheme='primary'
+                        onClick={() => navigate('/appointments')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.totalPatients')}
+                        value={stats?.totalPatients || 0}
+                        trend={stats?.patientsTrend}
+                        icon='patients'
+                        colorScheme='primary'
+                        onClick={() => navigate('/patients')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.queueCount')}
+                        value={stats?.patientsWaiting || 0}
+                        trend={null}
+                        icon='queue'
+                        colorScheme='warning'
+                        onClick={() => navigate('/appointments?status=in_queue,arrived')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.revenueThisMonth')}
+                        value={formatCurrency(stats?.revenue || 0)}
+                        trend={stats?.revenueTrend}
+                        icon='currency-dollar'
+                        colorScheme='primary'
+                        onClick={() => navigate('/doctors/earnings')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.videoCallsThisMonth')}
+                        value={stats?.videoCallsThisMonth ?? 0}
+                        trend={null}
+                        icon='video'
+                        colorScheme='primary'
+                        onClick={() => navigate('/telemedicine')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.averageRating')}
+                        value={
+                          stats?.averageRating != null
+                            ? Number(stats.averageRating).toFixed(1)
+                            : '—'
+                        }
+                        trend={null}
+                        icon='star'
+                        colorScheme='success'
+                        onClick={() => navigate('/doctors/reviews')}
+                        loading={statsLoading}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <StatsCard
+                        title={t('dashboard.totalPatients')}
+                        value={stats?.activePatients || stats?.patients?.active || 0}
+                        trend={stats?.patientsTrend}
+                        icon='patients'
+                        colorScheme='primary'
+                        layout='default'
+                        onClick={() => navigate('/patients')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.todayAppointmentsLabel')}
+                        value={stats?.todayAppointments || stats?.appointments?.todayTotal || 0}
+                        subtitle={`${stats?.appointments?.upcoming || 0} ${t('dashboard.upcoming') || 'upcoming'}`}
+                        trend={stats?.appointmentsTrend}
+                        icon='calendar'
+                        colorScheme='primary'
+                        layout='compact'
+                        onClick={() => navigate('/appointments')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.todayRevenue')}
+                        value={formatCurrency(
+                          stats?.todayRevenue || stats?.revenue?.today?.paid || 0,
+                        )}
+                        subtitle={`${t('dashboard.total') || 'Total'}: ${formatCurrency(stats?.revenue?.today?.total || 0)}`}
+                        trend={stats?.revenueTrend}
+                        icon='currency-dollar'
+                        colorScheme='success'
+                        layout='stacked'
+                        onClick={() => navigate('/invoices')}
+                        loading={statsLoading}
+                      />
+                      <StatsCard
+                        title={t('dashboard.queueStatus') || 'Queue Status'}
+                        value={Object.values(stats?.queue || {}).reduce((a, b) => a + b, 0)}
+                        subtitle={t('dashboard.patientsInQueue') || 'patients in queue'}
+                        icon='queue'
+                        colorScheme='warning'
+                        layout='minimal'
+                        onClick={() => navigate('/queue')}
+                        loading={statsLoading}
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Main Content – Today's Appointments & Calendar side by side, then 3-col grid */}
+              {!isDoctor && (
+                <div className='dashboard-section'>
+                  {/* Section Header */}
+                  <div className='section-header mb-4'>
+                    <div className='accent-bar accent-bar-primary' />
+                    <h2 className='section-title'>{t('dashboard.todaySchedule')}</h2>
+                  </div>
+                  <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch'>
+                    <div className='dashboard-card-cell'>
+                      {/* Use AppointmentsListWithHook for incremental updates as per spec */}
+                      <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
+                        <div className='section-header mb-4'>
+                          <div className='flex items-center justify-between gap-3'>
+                            <div className='flex items-center gap-3'>
+                              <div className='accent-bar accent-bar-primary' />
+                              <h2 className='section-title'>{t('dashboard.todayAppointments')}</h2>
+                            </div>
+                            <Link
+                              href='/appointments'
+                              className='inline-flex items-center justify-center gap-1 px-2 py-1.5 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium shrink-0'
+                              aria-label={t('dashboard.seeAll')}
+                            >
+                              <span className='text-sm'>{t('dashboard.seeAll')}</span>
+                              <ChevronRightIcon className='icon icon-xs' ariaHidden />
+                            </Link>
+                          </div>
+                        </div>
+                        <AppointmentsListWithHook filters={{ status: 'scheduled' }} limit={10} />
+                      </Card>
+                    </div>
+                    <div className='dashboard-card-cell'>
+                      <ErrorBoundary>
+                        <CalendarWidget
+                          loading={listsLoading}
+                          onDateSelect={(date) => {
+                            const y = date.getFullYear();
+                            const m = String(date.getMonth() + 1).padStart(2, '0');
+                            const d = String(date.getDate()).padStart(2, '0');
+                            navigate(`/appointments?date=${y}-${m}-${d}`);
+                          }}
+                        />
+                      </ErrorBoundary>
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {/* Main Content – Today's Appointments & Calendar side by side, then 3-col grid */}
+              {/* Main Content – 3 cards per row: Summary, Next Patient, Patients Review */}
+              <div className='dashboard-section'>
+                {/* Section Header */}
+                <div className='section-header mb-4'>
+                  <div className='accent-bar accent-bar-secondary' />
+                  <h2 className='section-title'>{t('dashboard.overview')}</h2>
+                </div>
+                <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
                   {!isDoctor && (
-                    <div className='dashboard-section'>
-                      {/* Section Header */}
-                      <div className='section-header mb-4'>
-                        <div className='accent-bar accent-bar-primary' />
-                        <h2 className='section-title'>{t('dashboard.todaySchedule')}</h2>
+                    <>
+                      <div className='dashboard-card-cell'>
+                        <PatientsSummaryChart
+                          data={
+                            stats?.patientsSummary || {
+                              newPatients: stats?.newPatientsThisMonth || 0,
+                              oldPatients: Math.max(
+                                0,
+                                (stats?.activePatients || 0) - (stats?.newPatientsThisMonth || 0),
+                              ),
+                              totalPatients: stats?.activePatients || 0,
+                            }
+                          }
+                          loading={statsLoading}
+                        />
                       </div>
-                      <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch'>
+                      {todayAppointments && todayAppointments.length > 0 ? (
+                        <div className='dashboard-card-cell'>
+                          <NextPatientCard
+                            appointment={todayAppointments[0]}
+                            patient={todayAppointments[0]?.patientId}
+                            onCall={() => {
+                              const phone = todayAppointments[0]?.patientId?.phone;
+                              if (phone) window.location.href = `tel:${phone}`;
+                            }}
+                            onViewDetails={() => {
+                              if (todayAppointments[0]?.patientId?._id) {
+                                navigate(`/patients/${todayAppointments[0].patientId._id}`);
+                              }
+                            }}
+                            onChat={() => {
+                              if (todayAppointments[0]?._id) {
+                                navigate(`/telemedicine/${todayAppointments[0]._id}`);
+                              }
+                            }}
+                            onStartVideo={handleStartVideo}
+                          />
+                        </div>
+                      ) : null}
+                      <div className='dashboard-card-cell'>
+                        <PatientsReviewCard loading={statsLoading} />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Doctor: order by importance – Today’s Schedule, Next Patient, Earnings, Quick Stats, Upcoming, Pending Reviews, New Requests, Calendar, Recent Patients, Patient Feedback */}
+                  {isDoctor && (
+                    <>
+                      <div className='dashboard-card-cell'>
+                        <DashboardListCard
+                          title={t('dashboard.todayAppointments')}
+                          data={todayAppointments}
+                          loading={listsLoading}
+                          colorScheme='primary'
+                          emptyMessage={t('dashboard.emptyToday')}
+                          showSeeAll={true}
+                          onSeeAll={() => navigate('/appointments')}
+                          virtualizeAbove={15}
+                          virtualListHeight={400}
+                          renderItem={(appointment) => {
+                            const start = new Date(
+                              appointment.schedule?.startTime ||
+                                appointment.startTime ||
+                                appointment.appointmentDate,
+                            );
+                            const end = new Date(
+                              appointment.schedule?.endTime ||
+                                appointment.endTime ||
+                                appointment.appointmentDate,
+                            );
+                            const now = Date.now();
+                            const isCurrentSlot =
+                              appointment.status === 'in_progress' ||
+                              (now >= start.getTime() && now <= end.getTime());
+                            const patientId = appointment.patientId?._id || appointment.patientId;
+                            return (
+                              <AppointmentListItem
+                                key={appointment._id || appointment.id}
+                                appointment={appointment}
+                                isCurrent={isCurrentSlot}
+                                onClick={() =>
+                                  navigate(`/appointments/${appointment._id || appointment.id}`)
+                                }
+                                onViewHistory={
+                                  patientId
+                                    ? () => navigate(`/doctors/patients/${patientId}`)
+                                    : undefined
+                                }
+                                onStart={handleStartVideo}
+                                onReschedule={() =>
+                                  navigate(
+                                    `/appointments/${appointment._id || appointment.id}?reschedule=1`,
+                                  )
+                                }
+                                onCancel={() =>
+                                  navigate(
+                                    `/appointments/${appointment._id || appointment.id}?cancel=1`,
+                                  )
+                                }
+                              />
+                            );
+                          }}
+                        />
+                      </div>
+                      {todayAppointments && todayAppointments.length > 0 && (
+                        <div className='dashboard-card-cell'>
+                          <NextPatientCard
+                            appointment={todayAppointments[0]}
+                            patient={todayAppointments[0]?.patientId}
+                            onCall={() => {
+                              const phone = todayAppointments[0]?.patientId?.phone;
+                              if (phone) window.location.href = `tel:${phone}`;
+                            }}
+                            onViewDetails={() => {
+                              if (todayAppointments[0]?.patientId?._id) {
+                                navigate(`/patients/${todayAppointments[0].patientId._id}`);
+                              }
+                            }}
+                            onChat={() => {
+                              if (todayAppointments[0]?._id) {
+                                navigate(`/telemedicine/${todayAppointments[0]._id}`);
+                              }
+                            }}
+                            onStartVideo={handleStartVideo}
+                          />
+                        </div>
+                      )}
+                      <div className='dashboard-card-cell'>
+                        <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col justify-center'>
+                          <div className='text-center'>
+                            <h3 className='text-sm font-medium text-neutral-600 mb-2'>
+                              {t('doctors.earningsToday')}
+                            </h3>
+                            <p className='text-3xl font-bold text-primary-600 mb-1'>
+                              {formatCurrency(stats?.earningsToday || 0)}
+                            </p>
+                            <p className='text-xs text-neutral-500'>
+                              {stats?.completedConsultations || 0} {t('doctors.consultations')}
+                            </p>
+                          </div>
+                        </Card>
+                      </div>
+                      <div className='dashboard-card-cell'>
+                        <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
+                          <h3 className='text-sm font-medium text-neutral-600 mb-4'>
+                            {t('doctors.quickStats')}
+                          </h3>
+                          <div className='space-y-3'>
+                            <div className='flex justify-between items-center'>
+                              <span className='text-sm text-neutral-600'>
+                                {t('doctors.avgRating')}
+                              </span>
+                              <span className='text-lg font-bold text-neutral-900'>
+                                {stats?.averageRating || 'N/A'}
+                              </span>
+                            </div>
+                            <div className='flex justify-between items-center'>
+                              <span className='text-sm text-neutral-600'>
+                                {t('dashboard.totalReviews')}
+                              </span>
+                              <span className='text-lg font-bold text-neutral-900'>
+                                {stats?.totalReviews || 0}
+                              </span>
+                            </div>
+                            <div className='flex justify-between items-center'>
+                              <span className='text-sm text-neutral-600'>
+                                {t('doctors.responseRate')}
+                              </span>
+                              <span className='text-lg font-bold text-neutral-900'>
+                                {stats?.responseRate || 0}%
+                              </span>
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+
+                      <div className='dashboard-card-cell'>
+                        <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
+                          <h3 className='text-sm font-medium text-neutral-600 mb-4'>
+                            {t('dashboard.recentActivity')}
+                          </h3>
+                          {statsLoading ? (
+                            <div className='space-y-2'>
+                              {[1, 2, 3].map((i) => (
+                                <div key={i} className='skeleton skeleton-text w-full h-8' />
+                              ))}
+                            </div>
+                          ) : (stats?.recentActivity?.length ?? 0) > 0 ? (
+                            <ul className='space-y-2'>
+                              {stats.recentActivity.map((item) => (
+                                <li
+                                  key={item._id}
+                                  className='text-body-xs text-neutral-700 flex justify-between gap-2 border-b border-neutral-100 pb-2 last:border-0 last:pb-0'
+                                >
+                                  <span className='truncate'>{item.label}</span>
+                                  <span className='text-neutral-500 flex-shrink-0'>
+                                    {item.timestamp
+                                      ? new Date(item.timestamp).toLocaleTimeString(undefined, {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })
+                                      : '—'}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className='text-sm text-neutral-500 text-center py-4'>
+                              {t('dashboard.noRecentActivity')}
+                            </p>
+                          )}
+                        </Card>
+                      </div>
+
+                      {upcomingAppointments && upcomingAppointments.length > 0 && (
                         <div className='dashboard-card-cell'>
                           <DashboardListCard
-                            title={t('dashboard.todayAppointments')}
-                            data={todayAppointments}
+                            title={t('doctors.upcomingAppointments')}
+                            data={upcomingAppointments}
                             loading={listsLoading}
                             colorScheme='primary'
-                            emptyMessage={t('dashboard.emptyToday')}
+                            emptyMessage={t('doctors.noUpcomingAppointments')}
                             showSeeAll={true}
                             onSeeAll={() => navigate('/appointments')}
-                            virtualizeAbove={15}
-                            virtualListHeight={400}
                             renderItem={(appointment) => (
                               <AppointmentListItem
                                 key={appointment._id || appointment.id}
@@ -774,547 +1091,306 @@ export default function DashboardPage() {
                             )}
                           />
                         </div>
+                      )}
+
+                      {pendingReviews && pendingReviews.length > 0 && (
                         <div className='dashboard-card-cell'>
-                          <ErrorBoundary>
-                            <CalendarWidget
-                              loading={listsLoading}
-                              onDateSelect={(date) => {
-                                const y = date.getFullYear();
-                                const m = String(date.getMonth() + 1).padStart(2, '0');
-                                const d = String(date.getDate()).padStart(2, '0');
-                                navigate(`/appointments?date=${y}-${m}-${d}`);
-                              }}
-                            />
-                          </ErrorBoundary>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Main Content – 3 cards per row: Summary, Next Patient, Patients Review */}
-                  <div className='dashboard-section'>
-                    {/* Section Header */}
-                    <div className='section-header mb-4'>
-                      <div className='accent-bar accent-bar-secondary' />
-                      <h2 className='section-title'>{t('dashboard.overview')}</h2>
-                    </div>
-                    <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
-                      {!isDoctor && (
-                        <>
-                          <div className='dashboard-card-cell'>
-                            <PatientsSummaryChart
-                              data={
-                                stats?.patientsSummary || {
-                                  newPatients: stats?.newPatientsThisMonth || 0,
-                                  oldPatients: Math.max(
-                                    0,
-                                    (stats?.activePatients || 0) -
-                                      (stats?.newPatientsThisMonth || 0),
-                                  ),
-                                  totalPatients: stats?.activePatients || 0,
-                                }
-                              }
-                              loading={statsLoading}
-                            />
-                          </div>
-                          {todayAppointments && todayAppointments.length > 0 ? (
-                            <div className='dashboard-card-cell'>
-                              <NextPatientCard
-                                appointment={todayAppointments[0]}
-                                patient={todayAppointments[0]?.patientId}
-                                onCall={() => {
-                                  const phone = todayAppointments[0]?.patientId?.phone;
-                                  if (phone) window.location.href = `tel:${phone}`;
-                                }}
-                                onViewDetails={() => {
-                                  if (todayAppointments[0]?.patientId?._id) {
-                                    navigate(`/patients/${todayAppointments[0].patientId._id}`);
-                                  }
-                                }}
-                                onChat={() => {
-                                  if (todayAppointments[0]?._id) {
-                                    navigate(`/telemedicine/${todayAppointments[0]._id}`);
-                                  }
-                                }}
-                                onStartVideo={handleStartVideo}
-                              />
-                            </div>
-                          ) : null}
-                          <div className='dashboard-card-cell'>
-                            <PatientsReviewCard loading={statsLoading} />
-                          </div>
-                        </>
-                      )}
-
-                      {/* Doctor: order by importance – Today’s Schedule, Next Patient, Earnings, Quick Stats, Upcoming, Pending Reviews, New Requests, Calendar, Recent Patients, Patient Feedback */}
-                      {isDoctor && (
-                        <>
-                          <div className='dashboard-card-cell'>
-                            <DashboardListCard
-                              title={t('dashboard.todayAppointments')}
-                              data={todayAppointments}
-                              loading={listsLoading}
-                              colorScheme='primary'
-                              emptyMessage={t('dashboard.emptyToday')}
-                              showSeeAll={true}
-                              onSeeAll={() => navigate('/appointments')}
-                              virtualizeAbove={15}
-                              virtualListHeight={400}
-                              renderItem={(appointment) => {
-                                const start = new Date(
-                                  appointment.schedule?.startTime ||
-                                    appointment.startTime ||
-                                    appointment.appointmentDate,
-                                );
-                                const end = new Date(
-                                  appointment.schedule?.endTime ||
-                                    appointment.endTime ||
-                                    appointment.appointmentDate,
-                                );
-                                const now = Date.now();
-                                const isCurrentSlot =
-                                  appointment.status === 'in_progress' ||
-                                  (now >= start.getTime() && now <= end.getTime());
-                                const patientId =
-                                  appointment.patientId?._id || appointment.patientId;
-                                return (
-                                  <AppointmentListItem
-                                    key={appointment._id || appointment.id}
-                                    appointment={appointment}
-                                    isCurrent={isCurrentSlot}
-                                    onClick={() =>
-                                      navigate(`/appointments/${appointment._id || appointment.id}`)
-                                    }
-                                    onViewHistory={
-                                      patientId
-                                        ? () => navigate(`/doctors/patients/${patientId}`)
-                                        : undefined
-                                    }
-                                    onStart={handleStartVideo}
-                                    onReschedule={() =>
-                                      navigate(
-                                        `/appointments/${appointment._id || appointment.id}?reschedule=1`,
-                                      )
-                                    }
-                                    onCancel={() =>
-                                      navigate(
-                                        `/appointments/${appointment._id || appointment.id}?cancel=1`,
-                                      )
-                                    }
-                                  />
-                                );
-                              }}
-                            />
-                          </div>
-                          {todayAppointments && todayAppointments.length > 0 && (
-                            <div className='dashboard-card-cell'>
-                              <NextPatientCard
-                                appointment={todayAppointments[0]}
-                                patient={todayAppointments[0]?.patientId}
-                                onCall={() => {
-                                  const phone = todayAppointments[0]?.patientId?.phone;
-                                  if (phone) window.location.href = `tel:${phone}`;
-                                }}
-                                onViewDetails={() => {
-                                  if (todayAppointments[0]?.patientId?._id) {
-                                    navigate(`/patients/${todayAppointments[0].patientId._id}`);
-                                  }
-                                }}
-                                onChat={() => {
-                                  if (todayAppointments[0]?._id) {
-                                    navigate(`/telemedicine/${todayAppointments[0]._id}`);
-                                  }
-                                }}
-                                onStartVideo={handleStartVideo}
-                              />
-                            </div>
-                          )}
-                          <div className='dashboard-card-cell'>
-                            <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col justify-center'>
-                              <div className='text-center'>
-                                <h3 className='text-sm font-medium text-neutral-600 mb-2'>
-                                  {t('doctors.earningsToday')}
-                                </h3>
-                                <p className='text-3xl font-bold text-primary-600 mb-1'>
-                                  {formatCurrency(stats?.earningsToday || 0)}
-                                </p>
-                                <p className='text-xs text-neutral-500'>
-                                  {stats?.completedConsultations || 0} {t('doctors.consultations')}
-                                </p>
-                              </div>
-                            </Card>
-                          </div>
-                          <div className='dashboard-card-cell'>
-                            <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
-                              <h3 className='text-sm font-medium text-neutral-600 mb-4'>
-                                {t('doctors.quickStats')}
-                              </h3>
-                              <div className='space-y-3'>
-                                <div className='flex justify-between items-center'>
-                                  <span className='text-sm text-neutral-600'>
-                                    {t('doctors.avgRating')}
-                                  </span>
-                                  <span className='text-lg font-bold text-neutral-900'>
-                                    {stats?.averageRating || 'N/A'}
-                                  </span>
-                                </div>
-                                <div className='flex justify-between items-center'>
-                                  <span className='text-sm text-neutral-600'>
-                                    {t('dashboard.totalReviews')}
-                                  </span>
-                                  <span className='text-lg font-bold text-neutral-900'>
-                                    {stats?.totalReviews || 0}
-                                  </span>
-                                </div>
-                                <div className='flex justify-between items-center'>
-                                  <span className='text-sm text-neutral-600'>
-                                    {t('doctors.responseRate')}
-                                  </span>
-                                  <span className='text-lg font-bold text-neutral-900'>
-                                    {stats?.responseRate || 0}%
-                                  </span>
-                                </div>
-                              </div>
-                            </Card>
-                          </div>
-
-                          <div className='dashboard-card-cell'>
-                            <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
-                              <h3 className='text-sm font-medium text-neutral-600 mb-4'>
-                                {t('dashboard.recentActivity')}
-                              </h3>
-                              {statsLoading ? (
-                                <div className='space-y-2'>
-                                  {[1, 2, 3].map((i) => (
-                                    <div key={i} className='skeleton skeleton-text w-full h-8' />
-                                  ))}
-                                </div>
-                              ) : (stats?.recentActivity?.length ?? 0) > 0 ? (
-                                <ul className='space-y-2'>
-                                  {stats.recentActivity.map((item) => (
-                                    <li
-                                      key={item._id}
-                                      className='text-body-xs text-neutral-700 flex justify-between gap-2 border-b border-neutral-100 pb-2 last:border-0 last:pb-0'
-                                    >
-                                      <span className='truncate'>{item.label}</span>
-                                      <span className='text-neutral-500 flex-shrink-0'>
-                                        {item.timestamp
-                                          ? new Date(item.timestamp).toLocaleTimeString(undefined, {
-                                              hour: '2-digit',
-                                              minute: '2-digit',
-                                            })
-                                          : '—'}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <p className='text-sm text-neutral-500 text-center py-4'>
-                                  {t('dashboard.noRecentActivity')}
-                                </p>
-                              )}
-                            </Card>
-                          </div>
-
-                          {upcomingAppointments && upcomingAppointments.length > 0 && (
-                            <div className='dashboard-card-cell'>
-                              <DashboardListCard
-                                title={t('doctors.upcomingAppointments')}
-                                data={upcomingAppointments}
-                                loading={listsLoading}
-                                colorScheme='primary'
-                                emptyMessage={t('doctors.noUpcomingAppointments')}
-                                showSeeAll={true}
-                                onSeeAll={() => navigate('/appointments')}
-                                renderItem={(appointment) => (
-                                  <AppointmentListItem
-                                    key={appointment._id || appointment.id}
-                                    appointment={appointment}
-                                    onClick={() =>
-                                      navigate(`/appointments/${appointment._id || appointment.id}`)
-                                    }
-                                  />
-                                )}
-                              />
-                            </div>
-                          )}
-
-                          {pendingReviews && pendingReviews.length > 0 && (
-                            <div className='dashboard-card-cell'>
-                              <DashboardListCard
-                                title={t('dashboard.pendingReviews')}
-                                data={pendingReviews}
-                                loading={listsLoading}
-                                colorScheme='warning'
-                                emptyMessage={t('doctors.noPendingReviews')}
-                                showSeeAll={true}
-                                onSeeAll={() =>
-                                  navigate('/appointments?status=completed&hasClinicalNote=false')
-                                }
-                                renderItem={(appointment) => (
-                                  <AppointmentListItem
-                                    key={appointment._id || appointment.id}
-                                    appointment={appointment}
-                                    onClick={() =>
-                                      navigate(`/appointments/${appointment._id || appointment.id}`)
-                                    }
-                                  />
-                                )}
-                              />
-                            </div>
-                          )}
-
-                          {newPatientRequests && newPatientRequests.length > 0 && (
-                            <div className='dashboard-card-cell'>
-                              <DashboardListCard
-                                title={t('doctors.newPatientRequests')}
-                                data={newPatientRequests.slice(0, 5)}
-                                loading={listsLoading}
-                                colorScheme='primary'
-                                emptyMessage={t('doctors.noNewPatientRequests')}
-                                showSeeAll={true}
-                                onSeeAll={() => navigate('/appointments?status=pending')}
-                                renderItem={(request) => (
-                                  <div
-                                    key={request._id || request.id}
-                                    className='p-3 border-b border-neutral-100 dark:border-neutral-700 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 cursor-pointer transition-colors'
-                                    onClick={() =>
-                                      navigate(`/appointments/${request._id || request.id}`)
-                                    }
-                                  >
-                                    <div className='flex items-center justify-between'>
-                                      <div className='flex-1'>
-                                        <p className='font-semibold text-neutral-900 dark:text-neutral-100'>
-                                          {request.patientId?.firstName}{' '}
-                                          {request.patientId?.lastName}
-                                        </p>
-                                        <p className='text-sm text-neutral-600 dark:text-neutral-400'>
-                                          {new Date(
-                                            request.appointmentDate || request.startTime,
-                                          ).toLocaleDateString()}{' '}
-                                          at{' '}
-                                          {new Date(request.startTime).toLocaleTimeString(
-                                            undefined,
-                                            {
-                                              hour: '2-digit',
-                                              minute: '2-digit',
-                                            },
-                                          )}
-                                        </p>
-                                        {request.reason && (
-                                          <p className='text-xs text-neutral-500 mt-1'>
-                                            {request.reason}
-                                          </p>
-                                        )}
-                                      </div>
-                                      <div className='flex gap-2 ml-4'>
-                                        <Button
-                                          variant='primary'
-                                          size='sm'
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(
-                                              `/appointments/${request._id || request.id}/edit?status=confirmed`,
-                                            );
-                                          }}
-                                        >
-                                          {t('common.accept')}
-                                        </Button>
-                                        <Button
-                                          variant='secondary'
-                                          size='sm'
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(
-                                              `/appointments/${request._id || request.id}/edit?status=cancelled`,
-                                            );
-                                          }}
-                                        >
-                                          {t('common.decline')}
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              />
-                            </div>
-                          )}
-
-                          {recentPatients && recentPatients.length > 0 && (
-                            <div className='dashboard-card-cell'>
-                              <DashboardListCard
-                                title={t('dashboard.recentPatients')}
-                                data={recentPatients.slice(0, 5)}
-                                loading={listsLoading}
-                                colorScheme='primary'
-                                emptyMessage={t('dashboard.emptyRecent')}
-                                showSeeAll={true}
-                                onSeeAll={() => navigate('/patients')}
-                                renderItem={(patient) => (
-                                  <PatientListItem
-                                    key={patient._id || patient.id}
-                                    patient={patient}
-                                    onClick={() =>
-                                      navigate(`/patients/${patient._id || patient.id}`)
-                                    }
-                                  />
-                                )}
-                              />
-                            </div>
-                          )}
-
-                          <div className='dashboard-card-cell'>
-                            <ErrorBoundary>
-                              <CalendarWidget
-                                loading={listsLoading}
-                                onDateSelect={(date) => {
-                                  const y = date.getFullYear();
-                                  const m = String(date.getMonth() + 1).padStart(2, '0');
-                                  const d = String(date.getDate()).padStart(2, '0');
-                                  navigate(`/appointments?date=${y}-${m}-${d}`);
-                                }}
-                              />
-                            </ErrorBoundary>
-                          </div>
-
-                          {stats?.totalReviews > 0 && (
-                            <div className='dashboard-card-cell'>
-                              <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
-                                <div className='flex items-center justify-between mb-4'>
-                                  <h3 className='text-lg font-bold text-neutral-900'>
-                                    {t('dashboard.patientFeedback')}
-                                  </h3>
-                                  <Button
-                                    variant='secondary'
-                                    size='sm'
-                                    onClick={() => navigate('/doctors/reviews')}
-                                  >
-                                    {t('common.viewAll')}
-                                  </Button>
-                                </div>
-                                <div className='space-y-3'>
-                                  <div className='flex items-center justify-between'>
-                                    <span className='text-sm text-neutral-600'>
-                                      {t('dashboard.averageRating')}
-                                    </span>
-                                    <div className='flex items-center gap-2'>
-                                      <span className='text-2xl font-bold text-neutral-900'>
-                                        {stats.averageRating != null
-                                          ? Number(stats.averageRating).toFixed(1)
-                                          : '—'}
-                                      </span>
-                                      <div className='flex'>
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                          <StarIcon
-                                            key={star}
-                                            className={`icon icon-sm ${
-                                              star <= Math.round(stats.averageRating ?? 0)
-                                                ? 'text-yellow-400'
-                                                : 'text-neutral-300'
-                                            }`}
-                                            ariaHidden
-                                          />
-                                        ))}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className='flex items-center justify-between'>
-                                    <span className='text-sm text-neutral-600'>
-                                      {t('dashboard.totalReviews')}
-                                    </span>
-                                    <span className='font-semibold text-neutral-900'>
-                                      {stats.totalReviews}
-                                    </span>
-                                  </div>
-                                  {stats.pendingReviews > 0 && (
-                                    <div className='mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg'>
-                                      <p className='text-sm text-yellow-800'>
-                                        {stats.pendingReviews} appointment
-                                        {stats.pendingReviews > 1 ? 's' : ''}{' '}
-                                        {t('dashboard.needReview')}
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
-                              </Card>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Charts Section - Only for non-doctors */}
-                  {!isDoctor && (
-                    <div className='dashboard-section'>
-                      <ErrorBoundary>
-                        <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
-                          <ChartCard
-                            title={t('dashboard.revenueTrend14')}
-                            data={chartData.revenue}
-                            colorScheme='primary'
-                            loading={chartsLoading}
-                          />
-                          <ChartCard
-                            title={t('dashboard.appointmentTrend14')}
-                            data={chartData.appointments}
-                            colorScheme='primary'
-                            loading={chartsLoading}
-                          />
-                          <ChartCard
-                            title={t('dashboard.newPatients14')}
-                            data={chartData.patients}
+                          <DashboardListCard
+                            title={t('dashboard.pendingReviews')}
+                            data={pendingReviews}
+                            loading={listsLoading}
                             colorScheme='warning'
-                            loading={chartsLoading}
+                            emptyMessage={t('doctors.noPendingReviews')}
+                            showSeeAll={true}
+                            onSeeAll={() =>
+                              navigate('/appointments?status=completed&hasClinicalNote=false')
+                            }
+                            renderItem={(appointment) => (
+                              <AppointmentListItem
+                                key={appointment._id || appointment.id}
+                                appointment={appointment}
+                                onClick={() =>
+                                  navigate(`/appointments/${appointment._id || appointment.id}`)
+                                }
+                              />
+                            )}
                           />
                         </div>
-                      </ErrorBoundary>
-                    </div>
-                  )}
+                      )}
 
-                  {/* Critical Lists - 2 columns - Only for non-doctors */}
-                  {!isDoctor && (
-                    <div className='dashboard-section'>
-                      <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch'>
-                        {/* Overdue Invoices */}
-                        <DashboardListCard
-                          title={t('dashboard.overdueInvoices')}
-                          data={overdueInvoices}
-                          loading={listsLoading}
-                          colorScheme='warning'
-                          emptyMessage={t('dashboard.emptyOverdue')}
-                          renderItem={(invoice) => (
-                            <InvoiceListItem
-                              key={invoice._id || invoice.id}
-                              invoice={invoice}
-                              onClick={() => navigate(`/invoices/${invoice._id || invoice.id}`)}
-                              formatCurrency={formatCurrency}
-                            />
-                          )}
-                        />
+                      {newPatientRequests && newPatientRequests.length > 0 && (
+                        <div className='dashboard-card-cell'>
+                          <DashboardListCard
+                            title={t('doctors.newPatientRequests')}
+                            data={newPatientRequests.slice(0, 5)}
+                            loading={listsLoading}
+                            colorScheme='primary'
+                            emptyMessage={t('doctors.noNewPatientRequests')}
+                            showSeeAll={true}
+                            onSeeAll={() => navigate('/appointments?status=pending')}
+                            renderItem={(request) => (
+                              <div
+                                key={request._id || request.id}
+                                className='p-3 border-b border-neutral-100 dark:border-neutral-700 last:border-0 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 cursor-pointer transition-colors'
+                                onClick={() =>
+                                  navigate(`/appointments/${request._id || request.id}`)
+                                }
+                              >
+                                <div className='flex items-center justify-between'>
+                                  <div className='flex-1'>
+                                    <p className='font-semibold text-neutral-900 dark:text-neutral-100'>
+                                      {request.patientId?.firstName} {request.patientId?.lastName}
+                                    </p>
+                                    <p className='text-sm text-neutral-600 dark:text-neutral-400'>
+                                      {new Date(
+                                        request.appointmentDate || request.startTime,
+                                      ).toLocaleDateString()}{' '}
+                                      at{' '}
+                                      {new Date(request.startTime).toLocaleTimeString(undefined, {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </p>
+                                    {request.reason && (
+                                      <p className='text-xs text-neutral-500 mt-1'>
+                                        {request.reason}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className='flex items-center gap-1.5 ml-4 shrink-0'>
+                                    <Button
+                                      variant='success'
+                                      size='xs'
+                                      iconOnly
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(
+                                          `/appointments/${request._id || request.id}/edit?status=confirmed`,
+                                        );
+                                      }}
+                                      aria-label={t('common.accept')}
+                                      title={t('common.accept')}
+                                      className='hover:scale-105 transition-transform'
+                                    >
+                                      <CheckIcon className='icon icon-xs' />
+                                    </Button>
+                                    <Button
+                                      variant='danger'
+                                      size='xs'
+                                      iconOnly
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(
+                                          `/appointments/${request._id || request.id}/edit?status=cancelled`,
+                                        );
+                                      }}
+                                      aria-label={t('common.decline')}
+                                      title={t('common.decline')}
+                                      className='hover:scale-105 transition-transform'
+                                    >
+                                      <XIcon className='icon icon-xs' />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          />
+                        </div>
+                      )}
 
-                        {/* Low Stock Items */}
-                        <DashboardListCard
-                          title={t('dashboard.lowStockItems')}
-                          data={lowStockList}
-                          loading={listsLoading}
-                          colorScheme='error'
-                          emptyMessage={t('dashboard.emptyLowStock')}
-                          renderItem={(item) => (
-                            <InventoryListItem
-                              key={item._id || item.id}
-                              item={item}
-                              onClick={() => navigate(`/inventory/items/${item._id || item.id}`)}
-                            />
-                          )}
-                        />
+                      {recentPatients && recentPatients.length > 0 && (
+                        <div className='dashboard-card-cell'>
+                          <DashboardListCard
+                            title={t('dashboard.recentPatients')}
+                            data={recentPatients.slice(0, 5)}
+                            loading={listsLoading}
+                            colorScheme='primary'
+                            emptyMessage={t('dashboard.emptyRecent')}
+                            showSeeAll={true}
+                            onSeeAll={() => navigate('/patients')}
+                            renderItem={(patient) => (
+                              <PatientListItem
+                                key={patient._id || patient.id}
+                                patient={patient}
+                                onClick={() => navigate(`/patients/${patient._id || patient.id}`)}
+                              />
+                            )}
+                          />
+                        </div>
+                      )}
+
+                      <div className='dashboard-card-cell'>
+                        <ErrorBoundary>
+                          <CalendarWidget
+                            loading={listsLoading}
+                            onDateSelect={(date) => {
+                              const y = date.getFullYear();
+                              const m = String(date.getMonth() + 1).padStart(2, '0');
+                              const d = String(date.getDate()).padStart(2, '0');
+                              navigate(`/appointments?date=${y}-${m}-${d}`);
+                            }}
+                          />
+                        </ErrorBoundary>
                       </div>
+
+                      {stats?.totalReviews > 0 && (
+                        <div className='dashboard-card-cell'>
+                          <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
+                            <div className='flex items-center justify-between mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700'>
+                              <h3 className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
+                                {t('dashboard.patientFeedback')}
+                              </h3>
+                              <Link
+                                href='/doctors/reviews'
+                                className='inline-flex items-center justify-center gap-1 px-2 py-1.5 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium shrink-0'
+                                aria-label={t('common.viewAll')}
+                              >
+                                <span className='text-sm'>{t('common.viewAll')}</span>
+                                <ChevronRightIcon className='icon icon-xs' ariaHidden />
+                              </Link>
+                            </div>
+                            <div className='space-y-3'>
+                              <div className='flex items-center justify-between'>
+                                <span className='text-sm text-neutral-600'>
+                                  {t('dashboard.averageRating')}
+                                </span>
+                                <div className='flex items-center gap-2'>
+                                  <span className='text-2xl font-bold text-neutral-900'>
+                                    {stats.averageRating != null
+                                      ? Number(stats.averageRating).toFixed(1)
+                                      : '—'}
+                                  </span>
+                                  <div className='flex'>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <StarIcon
+                                        key={star}
+                                        className={`icon icon-sm ${
+                                          star <= Math.round(stats.averageRating ?? 0)
+                                            ? 'text-yellow-400'
+                                            : 'text-neutral-300'
+                                        }`}
+                                        ariaHidden
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className='flex items-center justify-between'>
+                                <span className='text-sm text-neutral-600'>
+                                  {t('dashboard.totalReviews')}
+                                </span>
+                                <span className='font-semibold text-neutral-900'>
+                                  {stats.totalReviews}
+                                </span>
+                              </div>
+                              {stats.pendingReviews > 0 && (
+                                <div className='mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg'>
+                                  <p className='text-sm text-yellow-800'>
+                                    {stats.pendingReviews} appointment
+                                    {stats.pendingReviews > 1 ? 's' : ''}{' '}
+                                    {t('dashboard.needReview')}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </Card>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Charts Section - Only for non-doctors */}
+              {!isDoctor && (
+                <div className='dashboard-section'>
+                  <ErrorBoundary>
+                    <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
+                      <ChartCard
+                        title={t('dashboard.revenueTrend14')}
+                        data={chartData.revenue}
+                        colorScheme='primary'
+                        loading={chartsLoading}
+                      />
+                      <ChartCard
+                        title={t('dashboard.appointmentTrend14')}
+                        data={chartData.appointments}
+                        colorScheme='primary'
+                        loading={chartsLoading}
+                      />
+                      <ChartCard
+                        title={t('dashboard.newPatients14')}
+                        data={chartData.patients}
+                        colorScheme='warning'
+                        loading={chartsLoading}
+                      />
+                    </div>
+                  </ErrorBoundary>
+                </div>
+              )}
+
+              {/* Recent Appointments Section - Using incremental hook as per spec */}
+              {!isDoctor && (
+                <div className='dashboard-section'>
+                  <div className='section-header mb-4'>
+                    <div className='accent-bar accent-bar-primary' />
+                    <h2 className='section-title'>
+                      {t('dashboard.recentAppointments') || 'Recent Appointments'}
+                    </h2>
+                  </div>
+                  <Card className='dashboard-list-card dashboard-list-card-primary p-6'>
+                    <AppointmentsListWithHook filters={{ limit: 10, status: 'scheduled' }} />
+                  </Card>
+                  {stats?.lastUpdated && (
+                    <div className='mt-4 text-center text-sm text-neutral-500'>
+                      {t('dashboard.lastUpdated') || 'Last updated'}:{' '}
+                      {new Date(stats.lastUpdated).toLocaleString()}
                     </div>
                   )}
-                </OverviewTab>
-              </TabContent>
-            </>
-          )}
+                </div>
+              )}
+
+              {/* Critical Lists - 2 columns - Only for non-doctors */}
+              {!isDoctor && (
+                <div className='dashboard-section'>
+                  <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch'>
+                    {/* Overdue Invoices */}
+                    <DashboardListCard
+                      title={t('dashboard.overdueInvoices')}
+                      data={overdueInvoices}
+                      loading={listsLoading}
+                      colorScheme='warning'
+                      emptyMessage={t('dashboard.emptyOverdue')}
+                      renderItem={(invoice) => (
+                        <InvoiceListItem
+                          key={invoice._id || invoice.id}
+                          invoice={invoice}
+                          onClick={() => navigate(`/invoices/${invoice._id || invoice.id}`)}
+                          formatCurrency={formatCurrency}
+                        />
+                      )}
+                    />
+
+                    {/* Low Stock Items */}
+                    <DashboardListCard
+                      title={t('dashboard.lowStockItems')}
+                      data={lowStockList}
+                      loading={listsLoading}
+                      colorScheme='error'
+                      emptyMessage={t('dashboard.emptyLowStock')}
+                      renderItem={(item) => (
+                        <InventoryListItem
+                          key={item._id || item.id}
+                          item={item}
+                          onClick={() => navigate(`/inventory/items/${item._id || item.id}`)}
+                        />
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
+            </OverviewTab>
+          </TabContent>
         </div>
       </ProfilerWrapper>
     </Layout>

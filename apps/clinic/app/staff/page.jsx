@@ -19,7 +19,8 @@ import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 
 const ROLE_OPTIONS = [
   { value: 'clinic_admin', labelKey: 'settings.admin' },
@@ -69,12 +70,14 @@ export default function StaffPage() {
     isActive: true,
   });
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshIntervalRef = useRef(null);
 
   const allowedRoles = ['doctor', 'clinic_admin'];
 
-  const fetchStaff = useCallback(async () => {
+  const fetchStaff = useCallback(async (silentRefresh = false) => {
     try {
-      setLoading(true);
+      if (!silentRefresh) setLoading(true);
       const res = await apiClient.get('/users');
       if (res?.success && res?.data) {
         const data = res.data?.data ?? res.data;
@@ -86,7 +89,8 @@ export default function StaffPage() {
       logger.error('Failed to fetch staff', err);
       setStaff([]);
     } finally {
-      setLoading(false);
+      if (!silentRefresh) setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -102,6 +106,36 @@ export default function StaffPage() {
     }
     fetchStaff();
   }, [authLoading, user, router, fetchStaff]);
+
+  // Setup automatic background refresh every 60 seconds
+  useEffect(() => {
+    if (!authLoading && user && allowedRoles.includes(user.role) && !debouncedSearchTerm && !roleFilter) {
+      // Clear any existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+
+      // Set up auto-refresh interval
+      refreshIntervalRef.current = setInterval(() => {
+        // Silent background refresh - don't show loading, just update data
+        fetchStaff(true);
+      }, DASHBOARD_AUTO_REFRESH_MS);
+
+      return () => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+        }
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, debouncedSearchTerm, roleFilter, fetchStaff]);
+
+  // Manual refresh handler
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchStaff(false);
+  }, [fetchStaff]);
 
   const filteredStaff = staff.filter((s) => {
     if (debouncedSearchTerm) {
@@ -352,6 +386,8 @@ export default function StaffPage() {
       <PageHeader
         title={t('staff.title')}
         subtitle={t('staff.subtitle')}
+        onRefresh={handleManualRefresh}
+        refreshing={refreshing}
         action={
           <Button variant='primary' onClick={() => setShowAddModal(true)}>
             {t('staff.addStaff')}

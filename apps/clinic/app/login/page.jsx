@@ -9,10 +9,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { validateForm } from '@/lib/utils/form-validation';
 import { showError } from '@/lib/utils/toast';
-import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
+
+const Image = dynamic(() => import('next/image'), { ssr: false });
 
 function LoginPageContent() {
   const router = useRouter();

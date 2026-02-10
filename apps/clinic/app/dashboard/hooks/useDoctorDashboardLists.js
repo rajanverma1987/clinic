@@ -41,11 +41,8 @@ export function useDoctorDashboardLists() {
   }, [userId]);
 
   const fetchDashboardLists = useCallback(async () => {
-    const role = (user?.role || '').toLowerCase();
-    if (!user || role !== 'doctor') {
-      setLoading(false);
-      return;
-    }
+    // Guard with primitives only – avoids dependency on the user object reference
+    // which changes whenever the auth context refreshes, causing cascading re-fetches.
     if (!userId || userId === 'undefined') {
       setLoading(false);
       return;
@@ -143,7 +140,7 @@ export function useDoctorDashboardLists() {
     } finally {
       setLoading(false);
     }
-  }, [user, userId, doctorId]);
+  }, [userId, doctorId]);
 
   // Trigger initial fetch when no cache (otherwise loading stays true forever)
   useEffect(() => {

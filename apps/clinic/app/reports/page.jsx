@@ -96,7 +96,7 @@ export default function ReportsPage() {
   }, [searchParams]);
 
   const [isPending, startTransition] = useTransition();
-  
+
   const handleTabChange = (tabId) => {
     // Update UI immediately for instant feedback
     setReportError(null);
@@ -496,7 +496,7 @@ export default function ReportsPage() {
             aria-labelledby={getTabPanelLabelledBy('reports-tabs', activeTab)}
             className='mt-3'
           >
-            {activeTab === 'revenue' && revenueReport && (
+            {activeTab === 'revenue' && revenueReport?.summary && (
               <div className='space-y-6'>
                 {/* Summary Cards */}
                 <div className='content-grid-4'>
@@ -504,7 +504,7 @@ export default function ReportsPage() {
                     <div className='p-4'>
                       <p className='text-sm text-neutral-600 mb-1'>{t('reports.totalRevenue')}</p>
                       <p className='text-3xl font-bold text-primary-600'>
-                        {formatCurrency(revenueReport.summary.totalRevenue)}
+                        {formatCurrency(revenueReport.summary.totalRevenue || 0)}
                       </p>
                       <p className='text-xs text-neutral-500 mt-1'>
                         {revenueReport.summary.invoiceCount || 0} {t('reports.invoices')}
@@ -515,7 +515,7 @@ export default function ReportsPage() {
                     <div className='p-4'>
                       <p className='text-sm text-neutral-600 mb-1'>{t('reports.totalPaid')}</p>
                       <p className='text-3xl font-bold text-secondary-600'>
-                        {formatCurrency(revenueReport.summary.totalPaid)}
+                        {formatCurrency(revenueReport.summary.totalPaid || 0)}
                       </p>
                       <p className='text-xs text-neutral-500 mt-1'>
                         {revenueReport.summary.paymentCount || 0} {t('reports.payments')}
@@ -526,7 +526,7 @@ export default function ReportsPage() {
                     <div className='p-4'>
                       <p className='text-sm text-neutral-600 mb-1'>{t('reports.totalPending')}</p>
                       <p className='text-3xl font-bold text-status-warning'>
-                        {formatCurrency(revenueReport.summary.totalPending)}
+                        {formatCurrency(revenueReport.summary.totalPending || 0)}
                       </p>
                       <p className='text-xs text-neutral-500 mt-1'>{t('reports.outstanding')}</p>
                     </div>
@@ -537,7 +537,7 @@ export default function ReportsPage() {
                       <p className='text-3xl font-bold text-primary-700'>
                         {formatCurrency(
                           revenueReport.summary.invoiceCount > 0
-                            ? revenueReport.summary.totalRevenue /
+                            ? (revenueReport.summary.totalRevenue || 0) /
                                 revenueReport.summary.invoiceCount
                             : 0,
                         )}
@@ -548,7 +548,7 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Revenue Trend Chart */}
-                {revenueReport.timeSeries && revenueReport.timeSeries.length > 0 && (
+                {revenueReport?.timeSeries && revenueReport.timeSeries.length > 0 && (
                   <Card>
                     <div className='flex items-center justify-between mb-4'>
                       <h2 className='text-xl font-semibold'>{t('reports.revenueTrend')}</h2>
@@ -566,7 +566,7 @@ export default function ReportsPage() {
                 )}
 
                 {/* Breakdown Charts */}
-                {revenueReport.breakdown && (
+                {revenueReport?.breakdown && (
                   <div className='content-grid-2 content-grid-gap-6'>
                     <Card>
                       <h3 className='text-lg font-semibold mb-4'>{t('reports.paymentMethods')}</h3>

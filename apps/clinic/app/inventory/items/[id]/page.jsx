@@ -150,10 +150,7 @@ export default function InventoryItemDetailPage() {
         <div style={{ padding: '0 10px' }}>
           <Card>
             <div className='text-center py-8'>
-              <p className='text-status-error mb-4'>{error}</p>
-              <Button variant='primary' size='md' href='/inventory'>
-                Back to Inventory
-              </Button>
+              <p className='text-status-error'>{error}</p>
             </div>
           </Card>
         </div>

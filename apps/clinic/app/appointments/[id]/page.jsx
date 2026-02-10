@@ -248,10 +248,7 @@ export default function AppointmentDetailsPage({ params }) {
               <p className='text-lg font-semibold text-neutral-900 mb-2'>
                 {t('appointments.unavailable')}
               </p>
-              <p className='text-neutral-600 mb-6'>{error || t('appointments.notFoundMessage')}</p>
-              <Button variant='secondary' size='md' href='/appointments'>
-                {t('appointments.backToAppointments')}
-              </Button>
+              <p className='text-neutral-600'>{error || t('appointments.notFoundMessage')}</p>
             </div>
           </Card>
         </div>

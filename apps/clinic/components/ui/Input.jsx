@@ -3,11 +3,13 @@
 import { useEffect, useRef } from 'react';
 
 /** size: sm 32px, md 40px (default), lg 48px – matches globals.css --input-height-* */
+/** variant: 'default' | 'borderless' - Use 'borderless' when input is inside a container with its own border */
 export function Input({
   label,
   error,
   helperText,
   size = 'md',
+  variant = 'default',
   className = '',
   disabled,
   required,
@@ -39,17 +41,31 @@ export function Input({
 
   const sizeClass =
     size === 'sm' ? 'form-control-sm' : size === 'lg' ? 'form-control-lg' : 'form-control-md';
-  const baseClasses = `w-full form-control-height ${sizeClass} px-4 py-0 text-body-md border rounded-[10px]`;
+
+  // Borderless variant: no border, no focus ring, transparent bg (for use inside containers)
+  const isBorderless = variant === 'borderless';
+  const borderClasses = isBorderless
+    ? 'border-0 outline-0 focus:outline-none focus:ring-0 bg-transparent'
+    : 'border rounded-[10px]';
+
+  const baseClasses = `w-full form-control-height ${sizeClass} px-4 py-0 text-body-md ${borderClasses}`;
 
   // States following clinic theme
   // Default: bg-white, border: neutral-300, text: neutral-900, placeholder: neutral-500
   // Focus: border primary-500, shadow: 0 0 0 3px rgba(45,156,219,0.20)
   // Error: border status-error, helper text: error red
+  // Borderless: no border styles, transparent background
   const disabledClasses = disabled
-    ? 'bg-neutral-100 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400 cursor-not-allowed opacity-60'
+    ? isBorderless
+      ? 'text-neutral-500 dark:text-neutral-400 cursor-not-allowed opacity-60'
+      : 'bg-neutral-100 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400 cursor-not-allowed opacity-60'
     : error
-      ? 'border-status-error bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-status-error focus:border-status-error'
-      : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 hover:border-primary-300 dark:hover:border-primary-500 focus:outline-none focus:border-primary-500 focus:shadow-focus focus:ring-2 focus:ring-primary-500/20';
+      ? isBorderless
+        ? 'text-neutral-900 dark:text-neutral-100'
+        : 'border-status-error bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-status-error focus:border-status-error'
+      : isBorderless
+        ? 'text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400'
+        : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 hover:border-primary-300 dark:hover:border-primary-500 focus:outline-none focus:border-primary-500 focus:shadow-focus focus:ring-2 focus:ring-primary-500/20';
 
   return (
     <div className='w-full' data-input-wrapper>

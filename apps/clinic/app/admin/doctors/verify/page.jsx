@@ -1,10 +1,23 @@
 'use client';
 
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  DocumentIcon,
+  EyeIcon,
+  FileDownIcon,
+  FilterIcon,
+  SearchIcon,
+  UserIcon,
+  XIcon,
+} from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
+import { Select } from '@/components/ui/Select';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -14,7 +27,7 @@ import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 const STATUS_OPTIONS = [
   { value: '', labelKey: 'admin.verifyFilterAll' },
@@ -78,6 +91,8 @@ function AdminDoctorVerificationContent() {
   const [requestDocumentType, setRequestDocumentType] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
+  const statusFilterWrapRef = useRef(null);
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,6 +142,22 @@ function AdminDoctorVerificationContent() {
     const status = searchParams?.get('status') ?? '';
     setStatusFilter(status);
   }, [searchParams?.get('status')]);
+
+  useEffect(() => {
+    if (!statusFilterOpen) return;
+    const handleOutside = (e) => {
+      if (statusFilterWrapRef.current && !statusFilterWrapRef.current.contains(e.target)) {
+        setStatusFilterOpen(false);
+      }
+    };
+    const t = setTimeout(() => {
+      document.addEventListener('mousedown', handleOutside, true);
+    }, 0);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('mousedown', handleOutside, true);
+    };
+  }, [statusFilterOpen]);
 
   useEffect(() => {
     const doctorId = searchParams?.get('doctorId');
@@ -263,71 +294,134 @@ function AdminDoctorVerificationContent() {
   }
 
   return (
-    <Layout title='Doctor Verification' subtitle='Review and verify doctor applications'>
+    <Layout>
+      <PageHeader
+        title={t('admin.verifyPageTitle')}
+        subtitle={t('admin.verifyPageSubtitle')}
+        notifications={[]}
+        unreadCount={0}
+        onRefresh={fetchDoctors}
+      />
       <div className='admin-page-content'>
-        {/* 5.5: Filters (Pending/Verified/Rejected), sort, search */}
-        <Card className='mb-6'>
-          <div className='p-4'>
-            <div className='flex flex-wrap items-center gap-4'>
-              <div className='flex gap-2'>
-                {STATUS_OPTIONS.map((opt) => (
-                  <Button
-                    key={opt.value || 'all'}
-                    variant={statusFilter === opt.value ? 'primary' : 'secondary'}
-                    size='sm'
-                    onClick={() => {
-                      setStatusFilter(opt.value);
-                      const q = opt.value ? `?status=${opt.value}` : '';
-                      router.push(`/admin/doctors/verify${q}`);
+        {/* Filters: status (segmented), sort, search */}
+        <section className='admin-section'>
+          <Card>
+            <div className='verify-filters-bar' ref={statusFilterWrapRef}>
+              <div className='verify-filters-bar__row'>
+                <div className='verify-filters-bar__status-wrap'>
+                  <button
+                    type='button'
+                    className='verify-filters-bar__status-trigger'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setStatusFilterOpen((open) => !open);
                     }}
+                    aria-expanded={statusFilterOpen}
+                    aria-haspopup='listbox'
+                    aria-label={t('admin.verifyFilters')}
+                    title={t('admin.verifyFilters')}
                   >
-                    {t(opt.labelKey)}
+                    <FilterIcon className='icon icon-sm shrink-0' aria-hidden />
+                    <span className='verify-filters-bar__status-trigger-label'>
+                      {statusFilter
+                        ? t(
+                            STATUS_OPTIONS.find((o) => o.value === statusFilter)?.labelKey ||
+                              'admin.verifyFilterAll',
+                          )
+                        : t('admin.verifyFilterAll')}
+                    </span>
+                    <ChevronDownIcon
+                      className={`icon icon-sm shrink-0 transition-transform ${statusFilterOpen ? 'rotate-180' : ''}`}
+                      aria-hidden
+                    />
+                  </button>
+                </div>
+                <div className='verify-filters-bar__sort'>
+                  <span className='verify-filters-bar__sort-label' id='verify-sort-label'>
+                    {t('admin.verifySort')}
+                  </span>
+                  <select
+                    id='verify-sort'
+                    className='verify-filters-bar__sort-select'
+                    value={`${sortBy}-${sortOrder}`}
+                    onChange={(e) => {
+                      const [s, o] = e.target.value.split('-');
+                      setSortBy(s);
+                      setSortOrder(o);
+                    }}
+                    aria-labelledby='verify-sort-label'
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={`${opt.value}-${opt.order}`}>
+                        {t(opt.labelKey)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className='verify-filters-bar__search'>
+                  <Input
+                    type='text'
+                    size='md'
+                    placeholder={t('admin.verifySearchPlaceholder')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && fetchDoctors()}
+                    className='flex-1 min-w-0'
+                    aria-label={t('admin.verifySearchPlaceholder')}
+                  />
+                  <Button
+                    variant='secondary'
+                    size='md'
+                    onClick={fetchDoctors}
+                    aria-label={t('common.search')}
+                  >
+                    <SearchIcon className='icon icon-sm' aria-hidden />
+                    {t('common.search')}
                   </Button>
-                ))}
+                </div>
               </div>
-              <div className='flex items-center gap-2'>
-                <label className='text-sm text-neutral-600'>{t('admin.verifySort')}</label>
-                <select
-                  className='px-3 py-2 border border-neutral-300 rounded-lg text-sm'
-                  value={`${sortBy}-${sortOrder}`}
-                  onChange={(e) => {
-                    const [s, o] = e.target.value.split('-');
-                    setSortBy(s);
-                    setSortOrder(o);
-                  }}
+              {statusFilterOpen && (
+                <div
+                  className='verify-filters-bar__status'
+                  role='listbox'
+                  aria-label={t('admin.verifyFilters')}
                 >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={`${opt.value}-${opt.order}`}>
+                  {STATUS_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value || 'all'}
+                      type='button'
+                      role='option'
+                      aria-selected={statusFilter === opt.value}
+                      className={`verify-filters-bar__status-btn ${statusFilter === opt.value ? 'verify-filters-bar__status-btn--active' : ''}`}
+                      onClick={() => {
+                        setStatusFilter(opt.value);
+                        const q = opt.value ? `?status=${opt.value}` : '';
+                        router.push(`/admin/doctors/verify${q}`);
+                        setStatusFilterOpen(false);
+                      }}
+                    >
                       {t(opt.labelKey)}
-                    </option>
+                    </button>
                   ))}
-                </select>
-              </div>
-              <div className='flex-1 min-w-[200px]'>
-                <Input
-                  type='text'
-                  size='md'
-                  placeholder={t('admin.verifySearchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && fetchDoctors()}
-                />
-              </div>
-              <Button variant='secondary' size='md' onClick={fetchDoctors}>
-                {t('common.search')}
-              </Button>
+                </div>
+              )}
             </div>
-          </div>
-        </Card>
+          </Card>
+        </section>
 
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           {/* Doctor list */}
           <div className='lg:col-span-1'>
             <Card>
-              <div className='p-6'>
-                <h2 className='text-lg font-bold text-neutral-900 mb-4'>
-                  {t('admin.verifyListTitle')} ({doctors.length})
-                </h2>
+              <div className='p-4 border-b border-neutral-100'>
+                <div className='admin-section__title' style={{ marginBottom: 0 }}>
+                  <span className='admin-section__accent' />
+                  <h2 className='admin-section__title-text'>
+                    {t('admin.verifyListTitle')} ({doctors.length})
+                  </h2>
+                </div>
+              </div>
+              <div className='p-4'>
                 <div className='space-y-3'>
                   {doctors.length === 0 ? (
                     <p className='text-neutral-500 text-center py-8'>
@@ -339,8 +433,8 @@ function AdminDoctorVerificationContent() {
                         key={doctor._id}
                         className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                           selectedDoctor?._id === doctor._id
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-neutral-200 hover:border-primary-300 hover:bg-neutral-50'
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-600'
+                            : 'border-neutral-200 hover:border-primary-300 hover:bg-neutral-50 dark:border-neutral-600 dark:hover:border-primary-600 dark:hover:bg-neutral-800'
                         }`}
                         onClick={() => {
                           router.push(`/admin/doctors/verify?doctorId=${doctor._id}`);
@@ -348,11 +442,11 @@ function AdminDoctorVerificationContent() {
                       >
                         <div className='flex items-start justify-between mb-2'>
                           <div className='flex-1'>
-                            <p className='font-semibold text-neutral-900'>
+                            <p className='font-semibold text-neutral-900 dark:text-neutral-100'>
                               {doctor.userId?.firstName || doctor.firstName}{' '}
                               {doctor.userId?.lastName || doctor.lastName}
                             </p>
-                            <p className='text-sm text-neutral-600'>
+                            <p className='text-sm text-neutral-600 dark:text-neutral-400'>
                               {doctor.userId?.email || doctor.email}
                             </p>
                           </div>
@@ -383,21 +477,33 @@ function AdminDoctorVerificationContent() {
           <div className='lg:col-span-2'>
             {selectedDoctor ? (
               <div className='space-y-6'>
-                {/* 5.6: Verification checklist (personal info, license, NPI, degree, background, bank) */}
+                {/* Verification checklist */}
                 <Card>
+                  <div className='p-4 border-b border-neutral-100'>
+                    <div className='admin-section__title' style={{ marginBottom: 0 }}>
+                      <span className='admin-section__accent' />
+                      <h2 className='admin-section__title-text'>{t('admin.verifyChecklist')}</h2>
+                    </div>
+                  </div>
                   <div className='p-6'>
-                    <h2 className='text-lg font-bold text-neutral-900 mb-4'>
-                      {t('admin.verifyChecklist')}
-                    </h2>
                     <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
                       {CHECKLIST_ITEMS.map((item) => {
                         const ok = getChecklistStatus(selectedDoctor, item.key);
                         return (
                           <div
                             key={item.key}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg ${ok ? 'bg-green-50 text-green-800' : 'bg-neutral-100 text-neutral-600'}`}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg ${ok ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'}`}
                           >
-                            <span className='text-lg'>{ok ? '✓' : '—'}</span>
+                            {ok ? (
+                              <CheckIcon className='icon icon-sm flex-shrink-0' aria-hidden />
+                            ) : (
+                              <span
+                                className='text-neutral-400 w-5 h-5 flex items-center justify-center'
+                                aria-hidden
+                              >
+                                —
+                              </span>
+                            )}
                             <span className='text-sm font-medium'>{t(item.labelKey)}</span>
                           </div>
                         );
@@ -414,10 +520,13 @@ function AdminDoctorVerificationContent() {
 
                 {/* Doctor Information */}
                 <Card>
+                  <div className='p-4 border-b border-neutral-100'>
+                    <div className='admin-section__title' style={{ marginBottom: 0 }}>
+                      <span className='admin-section__accent' />
+                      <h2 className='admin-section__title-text'>{t('admin.verifyDoctorInfo')}</h2>
+                    </div>
+                  </div>
                   <div className='p-6'>
-                    <h2 className='text-lg font-bold text-neutral-900 mb-4'>
-                      {t('admin.verifyDoctorInfo')}
-                    </h2>
                     <div className='grid grid-cols-2 gap-4'>
                       <div>
                         <p className='text-sm text-neutral-600'>Name</p>
@@ -462,12 +571,15 @@ function AdminDoctorVerificationContent() {
                   </div>
                 </Card>
 
-                {/* Uploaded Documents – [View] [Download] */}
+                {/* Uploaded Documents */}
                 <Card>
+                  <div className='p-4 border-b border-neutral-100'>
+                    <div className='admin-section__title' style={{ marginBottom: 0 }}>
+                      <span className='admin-section__accent' />
+                      <h2 className='admin-section__title-text'>{t('admin.verifyUploadedDocs')}</h2>
+                    </div>
+                  </div>
                   <div className='p-6'>
-                    <h2 className='text-lg font-bold text-neutral-900 mb-4'>
-                      {t('admin.verifyUploadedDocs')}
-                    </h2>
                     <div className='space-y-3'>
                       {documents.length === 0 ? (
                         <p className='text-neutral-500 text-center py-4'>
@@ -490,7 +602,9 @@ function AdminDoctorVerificationContent() {
                                 variant='secondary'
                                 size='sm'
                                 onClick={() => doc.url && window.open(doc.url, '_blank')}
+                                aria-label={t('admin.verifyView')}
                               >
+                                <EyeIcon className='icon icon-sm' aria-hidden />
                                 {t('admin.verifyView')}
                               </Button>
                               <Button
@@ -506,7 +620,9 @@ function AdminDoctorVerificationContent() {
                                     a.click();
                                   }
                                 }}
+                                aria-label={t('admin.verifyDownload')}
                               >
+                                <FileDownIcon className='icon icon-sm' aria-hidden />
                                 {t('admin.verifyDownload')}
                               </Button>
                             </div>
@@ -517,12 +633,15 @@ function AdminDoctorVerificationContent() {
                   </div>
                 </Card>
 
-                {/* 5.8: Approval flow – Admin notes; [Approve] [Reject] [Request More Info]; optional Full/Conditional, welcome email */}
+                {/* Verification actions */}
                 <Card>
+                  <div className='p-4 border-b border-neutral-100'>
+                    <div className='admin-section__title' style={{ marginBottom: 0 }}>
+                      <span className='admin-section__accent' />
+                      <h2 className='admin-section__title-text'>{t('admin.verifyActions')}</h2>
+                    </div>
+                  </div>
                   <div className='p-6'>
-                    <h2 className='text-lg font-bold text-neutral-900 mb-4'>
-                      {t('admin.verifyActions')}
-                    </h2>
                     <div className='space-y-4'>
                       <div>
                         <label className='block text-sm font-medium text-neutral-700 mb-2'>
@@ -566,17 +685,26 @@ function AdminDoctorVerificationContent() {
                           variant='primary'
                           onClick={() => handleApprove(selectedDoctor._id)}
                           disabled={submitting}
+                          aria-label={t('admin.verifyConfirmApprove')}
                         >
+                          <CheckIcon className='icon icon-sm' aria-hidden />
                           {submitting ? t('common.loading') : t('admin.verifyConfirmApprove')}
                         </Button>
                         <Button
                           variant='danger'
                           onClick={() => handleReject(selectedDoctor._id)}
                           disabled={submitting}
+                          aria-label={t('admin.verifyReject')}
                         >
+                          <XIcon className='icon icon-sm' aria-hidden />
                           {submitting ? t('common.loading') : t('admin.verifyReject')}
                         </Button>
-                        <Button variant='secondary' onClick={() => setShowRequestMoreInfo(true)}>
+                        <Button
+                          variant='secondary'
+                          onClick={() => setShowRequestMoreInfo(true)}
+                          aria-label={t('admin.verifyRequestMoreInfo')}
+                        >
+                          <DocumentIcon className='icon icon-sm' aria-hidden />
                           {t('admin.verifyRequestMoreInfo')}
                         </Button>
                       </div>
@@ -584,39 +712,38 @@ function AdminDoctorVerificationContent() {
                   </div>
                 </Card>
 
-                {/* Request Additional Documents (legacy single doc type) */}
+                {/* Request additional documents */}
                 <Card>
+                  <div className='p-4 border-b border-neutral-100'>
+                    <div className='admin-section__title' style={{ marginBottom: 0 }}>
+                      <span className='admin-section__accent' />
+                      <h2 className='admin-section__title-text'>{t('admin.verifyRequestDoc')}</h2>
+                    </div>
+                  </div>
                   <div className='p-6'>
-                    <h2 className='text-lg font-bold text-neutral-900 mb-4'>
-                      {t('admin.verifyRequestDoc')}
-                    </h2>
                     <div className='space-y-4'>
                       <div>
-                        <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                          {t('admin.verifyDocumentType')}
-                        </label>
-                        <select
-                          className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                        <Select
+                          label={t('admin.verifyDocumentType')}
                           value={requestDocumentType}
                           onChange={(e) => setRequestDocumentType(e.target.value)}
-                        >
-                          <option value=''>{t('admin.verifySelectDocType')}</option>
-                          <option value='medical_license'>
-                            {t('admin.verifyDocMedicalLicense')}
-                          </option>
-                          <option value='degree_certificate'>{t('admin.verifyDocDegree')}</option>
-                          <option value='id_proof'>{t('admin.verifyDocIdProof')}</option>
-                          <option value='clinic_registration'>
-                            {t('admin.verifyDocClinicReg')}
-                          </option>
-                          <option value='other'>{t('common.other')}</option>
-                        </select>
+                          options={[
+                            { value: '', label: t('admin.verifySelectDocType') },
+                            { value: 'medical_license', label: t('admin.verifyDocMedicalLicense') },
+                            { value: 'degree_certificate', label: t('admin.verifyDocDegree') },
+                            { value: 'id_proof', label: t('admin.verifyDocIdProof') },
+                            { value: 'clinic_registration', label: t('admin.verifyDocClinicReg') },
+                            { value: 'other', label: t('common.other') },
+                          ]}
+                        />
                       </div>
                       <Button
                         variant='secondary'
                         onClick={() => handleRequestDocuments(selectedDoctor._id)}
                         disabled={!requestDocumentType.trim()}
+                        aria-label={t('admin.verifyRequestDocument')}
                       >
+                        <DocumentIcon className='icon icon-sm' aria-hidden />
                         {t('admin.verifyRequestDocument')}
                       </Button>
                     </div>
@@ -701,11 +828,19 @@ function AdminDoctorVerificationContent() {
             ) : (
               <Card>
                 <div className='p-12 text-center'>
-                  <p className='text-neutral-500 mb-4'>
-                    Select a doctor from the list to review their application
+                  <UserIcon
+                    className='icon icon-2xl text-neutral-300 dark:text-neutral-600 mx-auto mb-4'
+                    aria-hidden
+                  />
+                  <p className='text-neutral-500 dark:text-neutral-400 mb-4'>
+                    {t('admin.verifySelectDoctorPrompt')}
                   </p>
-                  <Button variant='secondary' href='/admin/doctors'>
-                    View All Doctors
+                  <Button
+                    variant='secondary'
+                    href='/admin/doctors'
+                    aria-label={t('admin.verifyViewAllDoctors')}
+                  >
+                    {t('admin.verifyViewAllDoctors')}
                   </Button>
                 </div>
               </Card>

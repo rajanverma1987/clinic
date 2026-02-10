@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 const DASHBOARD_CACHE_TTL = 300; // 5 minutes - matches background job interval
 
 /**
- * GET /api/reports/dashboard
+ * GET /api/dashboard/stats
  * Dashboard statistics. Uses pre-computed cache from background job (every 5 min).
  * Falls back to real-time calculation if cache miss.
  */
@@ -42,42 +42,6 @@ async function getHandler(req, user) {
       {
         success: false,
         message: 'Failed to fetch dashboard statistics',
-        error: error.message,
-      },
-      { status: 500 },
-    );
-  }
-}
-
-/**
- * POST /api/reports/dashboard/refresh
- * Force refresh dashboard statistics (bypasses cache).
- * Calculates fresh stats and updates cache.
- */
-async function postRefreshHandler(req, user) {
-  try {
-    const tenantId = user.tenantId?.toString?.() || user.tenantId;
-
-    // Calculate fresh stats
-    const dashboardStatsModule = await import('@/jobs/dashboard-stats.js');
-    const calculateDashboardStats = dashboardStatsModule.calculateDashboardStats;
-    const stats = await calculateDashboardStats(tenantId);
-
-    // Update cache
-    if (stats) {
-      await CacheManager.set('dashboard', stats, DASHBOARD_CACHE_TTL, 'stats', tenantId);
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: stats,
-    });
-  } catch (error) {
-    logger.error('Dashboard stats refresh error:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to refresh dashboard statistics',
         error: error.message,
       },
       { status: 500 },

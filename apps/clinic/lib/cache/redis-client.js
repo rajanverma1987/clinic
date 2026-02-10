@@ -7,8 +7,8 @@
  */
 
 import { createClient } from 'redis';
-import { getRedisKeyPrefix } from '@/lib/constants/cache-limits';
-import { logger } from '@/lib/utils/logger.js';
+import { getRedisKeyPrefix } from '../constants/cache-limits.js';
+import { logger } from '../utils/logger.js';
 
 function prefixKey(key) {
   const p = getRedisKeyPrefix();

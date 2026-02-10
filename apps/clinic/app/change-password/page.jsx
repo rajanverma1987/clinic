@@ -499,30 +499,6 @@ function ChangePasswordContent() {
                 </svg>
                 {isFirstLogin ? 'Set Password' : 'Change Password'}
               </Button>
-
-              {!isFirstLogin && (
-                <div className='text-center'>
-                  <Link
-                    href='/settings'
-                    className='text-sm text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1'
-                  >
-                    <svg
-                      className='icon icon-xs'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M10 19l-7-7m0 0l7-7m-7 7h18'
-                      />
-                    </svg>
-                    Back to Settings
-                  </Link>
-                </div>
-              )}
             </form>
           </FormTransition>
         </div>

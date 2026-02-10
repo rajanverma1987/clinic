@@ -798,152 +798,152 @@ function SettingsPageContent() {
           />
 
           {/* Tab content: panels stay mounted, visibility toggled (no remount on switch) */}
-          <div className='tab-content-standard-width mt-3 relative'>
-          <TabPanels
-            tabs={(canAccessAdminTabs
-              ? SETTINGS_TAB_IDS
-              : SETTINGS_TAB_IDS.filter((id) => !ADMIN_ONLY_TABS.includes(id))
-            ).map((id) => ({ id }))}
-            activeTab={activeTab}
-            idPrefix='settings-tabs'
-            className='min-h-[200px]'
-          >
-            {(tabId) => {
-              if (tabId === 'profile') {
-                return (
-                  <div className='w-full'>
-                    <ProfileTab
-                      currentUser={currentUser}
-                      logout={logout}
-                      saving={saving}
-                      onToggleStatus={handleToggleMyStatus}
-                      availabilityForm={availabilityForm}
-                      setAvailabilityForm={setAvailabilityForm}
-                      onEditProfileClick={() => handleTabChange('profile')}
-                    />
-                    {(currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') && (
-                      <Card className='mt-4'>
-                        <div className='p-4'>
-                          <div className='flex items-center justify-between mb-3'>
-                            <div>
-                              <h3 className='text-lg font-semibold text-neutral-900'>
-                                {t('settings.managerAccounts')}
-                              </h3>
-                              <p className='text-sm text-neutral-600 mt-1'>
-                                {t('settings.managerAccountsDesc')}
+          <div className='tab-content-standard-width-left mt-3 relative'>
+            <TabPanels
+              tabs={(canAccessAdminTabs
+                ? SETTINGS_TAB_IDS
+                : SETTINGS_TAB_IDS.filter((id) => !ADMIN_ONLY_TABS.includes(id))
+              ).map((id) => ({ id }))}
+              activeTab={activeTab}
+              idPrefix='settings-tabs'
+              className='min-h-[200px]'
+            >
+              {(tabId) => {
+                if (tabId === 'profile') {
+                  return (
+                    <div className='w-full'>
+                      <ProfileTab
+                        currentUser={currentUser}
+                        logout={logout}
+                        saving={saving}
+                        onToggleStatus={handleToggleMyStatus}
+                        availabilityForm={availabilityForm}
+                        setAvailabilityForm={setAvailabilityForm}
+                        onEditProfileClick={() => handleTabChange('profile')}
+                      />
+                      {(currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') && (
+                        <Card className='mt-4'>
+                          <div className='p-4'>
+                            <div className='flex items-center justify-between mb-3'>
+                              <div>
+                                <h3 className='text-lg font-semibold text-neutral-900'>
+                                  {t('settings.managerAccounts')}
+                                </h3>
+                                <p className='text-sm text-neutral-600 mt-1'>
+                                  {t('settings.managerAccountsDesc')}
+                                </p>
+                              </div>
+                              <Button variant='primary' href='/settings/create-manager'>
+                                {t('settings.createManagerButton')}
+                              </Button>
+                            </div>
+                            <div className='p-4 bg-blue-50 border border-blue-200 rounded-lg'>
+                              <p className='text-sm text-blue-800'>
+                                {t('settings.managerAccountsNotice')}
                               </p>
                             </div>
-                            <Button variant='primary' href='/settings/create-manager'>
-                              {t('settings.createManagerButton')}
-                            </Button>
                           </div>
-                          <div className='p-4 bg-blue-50 border border-blue-200 rounded-lg'>
-                            <p className='text-sm text-blue-800'>
-                              {t('settings.managerAccountsNotice')}
-                            </p>
-                          </div>
-                        </div>
-                      </Card>
-                    )}
-                  </div>
-                );
-              }
-              if (tabId === 'general') {
-                return (
-                  <GeneralSettingsTab
-                    isClinicAdmin={isClinicAdmin}
-                    clinicForm={clinicForm}
-                    setClinicForm={setClinicForm}
-                    saving={saving}
-                    onSave={handleSaveGeneral}
-                  />
-                );
-              }
-              if (tabId === 'compliance') {
-                return (
-                  <ComplianceTab
-                    isClinicAdmin={isClinicAdmin}
-                    complianceForm={complianceForm}
-                    setComplianceForm={setComplianceForm}
-                    saving={saving}
-                    onSave={handleSaveCompliance}
-                  />
-                );
-              }
-              if (tabId === 'doctors') {
-                return (
-                  <DoctorsTab
-                    isClinicAdmin={isClinicAdmin}
-                    users={users}
-                    newUserForm={newUserForm}
-                    setNewUserForm={setNewUserForm}
-                    showNewUserForm={showNewUserForm}
-                    setShowNewUserForm={setShowNewUserForm}
-                    generatedPassword={generatedPassword}
-                    setGeneratedPassword={setGeneratedPassword}
-                    onGeneratePassword={generatePassword}
-                    onCreateUser={handleCreateUser}
-                    onToggleUserStatus={handleToggleUserStatus}
-                  />
-                );
-              }
-              if (tabId === 'hours') {
-                return (
-                  <ClinicHoursTab
-                    clinicHours={clinicHours}
-                    updateClinicHour={updateClinicHour}
-                    addTimeSlot={addTimeSlot}
-                    removeTimeSlot={removeTimeSlot}
-                    updateTimeSlot={updateTimeSlot}
-                    saving={saving}
-                    onSave={handleSaveHours}
-                  />
-                );
-              }
-              if (tabId === 'queue') {
-                return (
-                  <QueueSettingsTab
-                    queueForm={queueForm}
-                    setQueueForm={setQueueForm}
-                    saving={saving}
-                    onSave={handleSaveQueue}
-                  />
-                );
-              }
-              if (tabId === 'tax') {
-                return (
-                  <TaxSettingsTab
-                    taxForm={taxForm}
-                    setTaxForm={setTaxForm}
-                    saving={saving}
-                    onSave={handleSaveTax}
-                  />
-                );
-              }
-              if (tabId === 'smtp') {
-                return (
-                  <SMTPSettingsTab
-                    smtpForm={smtpForm}
-                    setSmtpForm={setSmtpForm}
-                    saving={saving}
-                    onSave={handleSaveSmtp}
-                  />
-                );
-              }
-              if (tabId === 'holidays') {
-                return (
-                  <HolidayManagementTab
-                    settings={settings}
-                    onUpdate={fetchSettings}
-                    showAddForm={showHolidayAddForm}
-                    setShowAddForm={setShowHolidayAddForm}
-                  />
-                );
-              }
-              return null;
-            }}
-          </TabPanels>
-        </div>
+                        </Card>
+                      )}
+                    </div>
+                  );
+                }
+                if (tabId === 'general') {
+                  return (
+                    <GeneralSettingsTab
+                      isClinicAdmin={isClinicAdmin}
+                      clinicForm={clinicForm}
+                      setClinicForm={setClinicForm}
+                      saving={saving}
+                      onSave={handleSaveGeneral}
+                    />
+                  );
+                }
+                if (tabId === 'compliance') {
+                  return (
+                    <ComplianceTab
+                      isClinicAdmin={isClinicAdmin}
+                      complianceForm={complianceForm}
+                      setComplianceForm={setComplianceForm}
+                      saving={saving}
+                      onSave={handleSaveCompliance}
+                    />
+                  );
+                }
+                if (tabId === 'doctors') {
+                  return (
+                    <DoctorsTab
+                      isClinicAdmin={isClinicAdmin}
+                      users={users}
+                      newUserForm={newUserForm}
+                      setNewUserForm={setNewUserForm}
+                      showNewUserForm={showNewUserForm}
+                      setShowNewUserForm={setShowNewUserForm}
+                      generatedPassword={generatedPassword}
+                      setGeneratedPassword={setGeneratedPassword}
+                      onGeneratePassword={generatePassword}
+                      onCreateUser={handleCreateUser}
+                      onToggleUserStatus={handleToggleUserStatus}
+                    />
+                  );
+                }
+                if (tabId === 'hours') {
+                  return (
+                    <ClinicHoursTab
+                      clinicHours={clinicHours}
+                      updateClinicHour={updateClinicHour}
+                      addTimeSlot={addTimeSlot}
+                      removeTimeSlot={removeTimeSlot}
+                      updateTimeSlot={updateTimeSlot}
+                      saving={saving}
+                      onSave={handleSaveHours}
+                    />
+                  );
+                }
+                if (tabId === 'queue') {
+                  return (
+                    <QueueSettingsTab
+                      queueForm={queueForm}
+                      setQueueForm={setQueueForm}
+                      saving={saving}
+                      onSave={handleSaveQueue}
+                    />
+                  );
+                }
+                if (tabId === 'tax') {
+                  return (
+                    <TaxSettingsTab
+                      taxForm={taxForm}
+                      setTaxForm={setTaxForm}
+                      saving={saving}
+                      onSave={handleSaveTax}
+                    />
+                  );
+                }
+                if (tabId === 'smtp') {
+                  return (
+                    <SMTPSettingsTab
+                      smtpForm={smtpForm}
+                      setSmtpForm={setSmtpForm}
+                      saving={saving}
+                      onSave={handleSaveSmtp}
+                    />
+                  );
+                }
+                if (tabId === 'holidays') {
+                  return (
+                    <HolidayManagementTab
+                      settings={settings}
+                      onUpdate={fetchSettings}
+                      showAddForm={showHolidayAddForm}
+                      setShowAddForm={setShowHolidayAddForm}
+                    />
+                  );
+                }
+                return null;
+              }}
+            </TabPanels>
+          </div>
         </div>
       )}
     </Layout>

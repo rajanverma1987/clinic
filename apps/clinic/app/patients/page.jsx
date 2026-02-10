@@ -1,6 +1,13 @@
 'use client';
 
-import { CalendarIcon, EyeIcon, FilterIcon, PencilIcon } from '@/components/icons';
+import {
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  EyeIcon,
+  FilterIcon,
+  PencilIcon,
+} from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PatientCard } from '@/components/patients/PatientCard';
@@ -9,7 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Input } from '@/components/ui/Input';
-import { CompactLoader, Loader } from '@/components/ui/Loader';
+import { CompactLoader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
 import { PageSearchBar } from '@/components/ui/PageSearchBar';
 import { PhoneInput } from '@/components/ui/PhoneInput';
@@ -22,13 +29,16 @@ import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
+import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
 import { logger } from '@/lib/utils/logger';
 import { addRecentSearch, getRecentSearches } from '@/lib/utils/recent-search-cache';
 import { showError, showSuccess } from '@/lib/utils/toast';
+import { Grid3x3 as GridIcon, Table as TableIcon } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const ROUTE_KEY = 'route_patients';
 
@@ -46,6 +56,7 @@ export default function PatientsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25); // Default: 25 patients per page
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -54,17 +65,34 @@ export default function PatientsPage() {
   const [viewMode, setViewMode] = useState('table');
 
   // Hydrate from localStorage before paint (no flash, no hydration mismatch)
+  // Show cached data immediately for fast loading
+  // Only use cache if it matches current pageSize and has reasonable data
   useLayoutEffect(() => {
     if (!tenantId) return;
     const cached = routeCache.getData(ROUTE_KEY, tenantId);
-    if (cached && cached.patients != null) {
-      setPatients(cached.patients ?? []);
-      setCurrentPage(cached.currentPage ?? 1);
-      setTotalPages(cached.totalPages ?? 1);
-      setTotalCount(cached.total ?? 0);
-      setLoading(false);
+    if (cached && cached.patients != null && Array.isArray(cached.patients)) {
+      const cachedPageSize = cached.pageSize ?? 25;
+      // Only use cache if:
+      // 1. Page size matches current pageSize (25 by default)
+      // 2. Don't use cache if it has 5 or fewer patients (likely from old dashboard widget)
+      // 3. For pageSize >= 25, cache must have at least pageSize records (or all records if total < pageSize)
+      const isValidCache =
+        cachedPageSize === pageSize &&
+        cached.patients.length > 5 &&
+        (cached.patients.length >= pageSize || cached.patients.length === cached.total);
+
+      if (isValidCache) {
+        setPatients(cached.patients ?? []);
+        setCurrentPage(cached.currentPage ?? 1);
+        setTotalPages(cached.totalPages ?? 1);
+        setTotalCount(cached.total ?? 0);
+        setLoading(false);
+      } else {
+        // Clear cache if pageSize mismatch or stale small dataset (<= 5 patients)
+        routeCache.clear(ROUTE_KEY, tenantId);
+      }
     }
-  }, [tenantId]);
+  }, [tenantId, pageSize]);
   const [showModal, setShowModal] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
@@ -82,6 +110,8 @@ export default function PatientsPage() {
   });
   const [countryCode, setCountryCode] = useState('+1');
   const [submitting, setSubmitting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshIntervalRef = useRef(null);
 
   const formatDateDisplay = () => {
     const date = new Date();
@@ -92,42 +122,6 @@ export default function PatientsPage() {
       year: 'numeric',
     });
   };
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchSettings();
-      const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
-      if (hasCache && !debouncedSearchTerm && statusFilter === 'all' && sortBy === 'createdAt') {
-        fetchPatients(false);
-        return;
-      }
-      if (
-        !debouncedSearchTerm &&
-        currentPage === 1 &&
-        statusFilter === 'all' &&
-        sortBy === 'createdAt'
-      ) {
-        fetchPatients(false);
-      } else {
-        fetchPatients(!!debouncedSearchTerm);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user, currentPage, debouncedSearchTerm, statusFilter, sortBy, sortOrder]);
-
-  // Handle ESC key to close modal
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape' && showModal) {
-        setShowModal(false);
-      }
-    };
-
-    if (showModal) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [showModal]);
 
   const fetchSettings = async () => {
     try {
@@ -145,17 +139,19 @@ export default function PatientsPage() {
   };
 
   const fetchPatients = useCallback(
-    async (isSearch = false) => {
-      const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
-      if (isSearch) {
-        setSearchLoading(true);
-      } else if (!hasCache) {
-        setLoading(true);
+    async (isSearch = false, silentRefresh = false) => {
+      // For silent refresh, don't show loading states
+      if (!silentRefresh) {
+        if (isSearch) {
+          setSearchLoading(true);
+        } else {
+          setLoading(true);
+        }
       }
       try {
         const params = new URLSearchParams({
           page: currentPage.toString(),
-          limit: '10',
+          limit: pageSize.toString(),
           sortBy: sortBy || 'createdAt',
           sortOrder: sortOrder || 'desc',
         });
@@ -181,21 +177,104 @@ export default function PatientsPage() {
               patients: patientsList,
               totalPages: pagination.totalPages,
               currentPage,
+              pageSize,
               total: pagination.total,
             });
         }
       } catch (error) {
         logger.error('Failed to fetch patients', error);
       } finally {
-        if (isSearch) {
-          setSearchLoading(false);
-        } else {
-          setLoading(false);
+        if (!silentRefresh) {
+          if (isSearch) {
+            setSearchLoading(false);
+          } else {
+            setLoading(false);
+          }
         }
+        setRefreshing(false);
       }
     },
-    [tenantId, currentPage, searchTerm, debouncedSearchTerm, statusFilter, sortBy, sortOrder],
+    [
+      tenantId,
+      currentPage,
+      pageSize,
+      searchTerm,
+      debouncedSearchTerm,
+      statusFilter,
+      sortBy,
+      sortOrder,
+    ],
   );
+
+  // Manual refresh handler
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchPatients(!!debouncedSearchTerm, false);
+  }, [fetchPatients, debouncedSearchTerm]);
+
+  // Initial fetch and setup auto-refresh
+  useEffect(() => {
+    if (!authLoading && user) {
+      fetchSettings();
+      // Clear cache if it has wrong pageSize to ensure fresh fetch
+      if (tenantId) {
+        const cached = routeCache.getData(ROUTE_KEY, tenantId);
+        if (cached && (cached.pageSize ?? 25) !== pageSize) {
+          routeCache.clear(ROUTE_KEY, tenantId);
+        }
+      }
+      // Fetch fresh data (will show cached data first, then update)
+      fetchPatients(!!debouncedSearchTerm);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    authLoading,
+    user,
+    currentPage,
+    pageSize,
+    debouncedSearchTerm,
+    statusFilter,
+    sortBy,
+    sortOrder,
+  ]);
+
+  // Setup automatic background refresh every 60 seconds
+  useEffect(() => {
+    if (!authLoading && user && !debouncedSearchTerm && statusFilter === 'all') {
+      // Clear any existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+
+      // Set up auto-refresh interval
+      refreshIntervalRef.current = setInterval(() => {
+        // Silent background refresh - don't show loading, just update data
+        fetchPatients(false, true);
+      }, DASHBOARD_AUTO_REFRESH_MS);
+
+      return () => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+        }
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, debouncedSearchTerm, statusFilter, fetchPatients]);
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showModal) {
+        setShowModal(false);
+      }
+    };
+
+    if (showModal) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [showModal]);
 
   // Memoize search handler to prevent SearchBar from re-rendering unnecessarily
   const handleSearchChange = useCallback((e) => {
@@ -251,8 +330,35 @@ export default function PatientsPage() {
           gender: 'male',
         });
         setCountryCode('+1');
-        setCurrentPage(1);
-        fetchPatients();
+
+        // Optimistically add new patient to the list immediately
+        if (response.data?.data) {
+          const newPatient = response.data.data;
+          setPatients((prev) => {
+            // Add to beginning of list (newest first since sortOrder is 'desc')
+            const updated = [newPatient, ...prev];
+            // Update total count
+            setTotalCount((prevTotal) => prevTotal + 1);
+            return updated;
+          });
+
+          // Update cache
+          if (tenantId) {
+            const cached = routeCache.getData(ROUTE_KEY, tenantId);
+            if (cached) {
+              routeCache.set(ROUTE_KEY, tenantId, {
+                patients: [newPatient, ...(cached.patients || [])],
+                totalPages: cached.totalPages,
+                currentPage: cached.currentPage || 1,
+                pageSize: cached.pageSize || pageSize,
+                total: (cached.total || 0) + 1,
+              });
+            }
+          }
+        }
+
+        // Refresh in background to sync with server (silent)
+        fetchPatients(false, true);
       } else {
         const msg =
           response.error?.message ||
@@ -360,19 +466,20 @@ export default function PatientsPage() {
         subtitle={formatDateDisplay()}
         notifications={[]}
         unreadCount={0}
+        onRefresh={handleManualRefresh}
+        refreshing={refreshing}
         actionButtons={
-          <>
-            <Button
-              variant='secondary'
-              size='md'
-              className='whitespace-nowrap'
+          <div className='flex items-center gap-2'>
+            <Link
               href='/appointments/new'
+              className='inline-flex items-center justify-center w-10 h-10 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500'
+              aria-label={t('appointments.bookAppointment')}
+              title={t('appointments.bookAppointment')}
             >
-              <CalendarIcon className='icon icon-sm shrink-0' ariaHidden />
-              {t('appointments.bookAppointment')}
-            </Button>
+              <CalendarIcon className='icon icon-sm' ariaHidden />
+            </Link>
             <Button
-              variant='secondary'
+              variant='primary'
               size='md'
               className='whitespace-nowrap'
               onClick={() => {
@@ -390,7 +497,7 @@ export default function PatientsPage() {
             >
               + {t('patients.addPatient')}
             </Button>
-          </>
+          </div>
         }
       />
       <div style={{ padding: '0 10px' }}>
@@ -401,17 +508,19 @@ export default function PatientsPage() {
           placeholder={t('patients.searchPlaceholder')}
         >
           <Button
-            variant='secondary'
+            variant='ghost'
             size='md'
+            iconOnly
             onClick={() => {
               setAdvancedStatus(statusFilter);
               setAdvancedSortBy(sortBy);
               setAdvancedSortOrder(sortOrder);
               setShowAdvancedSearch(true);
             }}
+            aria-label={t('patients.advancedSearch')}
+            className='rounded-lg border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
           >
             <FilterIcon className='icon icon-sm' aria-hidden />
-            {t('patients.advancedSearch')}
           </Button>
         </PageSearchBar>
         {searchLoading && (
@@ -488,83 +597,126 @@ export default function PatientsPage() {
           </Card>
         ) : (
           <Card>
-            <div className='flex items-center justify-between gap-2 mb-3 text-body-sm text-neutral-600 flex-wrap'>
-              <span>
-                {totalCount} {t('patients.totalCount')},{' '}
-                {t('patients.showingCount').replace('{{n}}', String(patients.length))}
-              </span>
-            <div className='flex gap-2'>
-              <button
-                type='button'
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1.5 rounded text-sm font-medium ${
-                  viewMode === 'table'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
-              >
-                {t('patients.viewTable')}
-              </button>
-              <button
-                type='button'
-                onClick={() => setViewMode('cards')}
-                className={`px-3 py-1.5 rounded text-sm font-medium ${
-                  viewMode === 'cards'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
-              >
-                {t('patients.viewCards')}
-              </button>
+            <div className='flex items-center justify-between gap-3 mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700'>
+              <div className='flex items-center gap-3 flex-1'>
+                <span className='text-body-sm text-neutral-600 dark:text-neutral-400'>
+                  {totalCount} {t('patients.totalCount')},{' '}
+                  {t('patients.showingCount').replace('{{n}}', String(patients.length))}
+                </span>
+              </div>
+              <div className='flex items-center gap-1'>
+                <Button
+                  variant={viewMode === 'table' ? 'primary' : 'ghost'}
+                  size='sm'
+                  iconOnly
+                  onClick={() => setViewMode('table')}
+                  aria-label={t('patients.viewTable')}
+                  className={
+                    viewMode === 'table'
+                      ? ''
+                      : 'border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
+                  }
+                >
+                  <TableIcon className='icon icon-sm' strokeWidth={2} />
+                </Button>
+                <Button
+                  variant={viewMode === 'cards' ? 'primary' : 'ghost'}
+                  size='sm'
+                  iconOnly
+                  onClick={() => setViewMode('cards')}
+                  aria-label={t('patients.viewCards')}
+                  className={
+                    viewMode === 'cards'
+                      ? ''
+                      : 'border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
+                  }
+                >
+                  <GridIcon className='icon icon-sm' strokeWidth={2} />
+                </Button>
+              </div>
             </div>
-          </div>
-          {viewMode === 'table' ? (
-            <Table
-              data={patients}
-              columns={columns}
-              onRowClick={handleRowClick}
-              onRowMouseEnter={(row) => row?._id && prefetchPatient(row._id)}
-              emptyMessage={t('patients.noPatientsFound')}
-            />
-          ) : (
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              {patients.length === 0 ? (
-                <p className='col-span-full text-center text-neutral-500 py-8'>
-                  {t('patients.noPatientsFound')}
-                </p>
-              ) : (
-                patients.map((row) => (
-                  <PatientCard key={row._id} patient={row} isDoctor={user?.role === 'doctor'} />
-                ))
-              )}
-            </div>
-          )}
+            {viewMode === 'table' ? (
+              <Table
+                data={patients}
+                columns={columns}
+                onRowClick={handleRowClick}
+                onRowMouseEnter={(row) => row?._id && prefetchPatient(row._id)}
+                emptyMessage={t('patients.noPatientsFound')}
+              />
+            ) : (
+              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+                {patients.length === 0 ? (
+                  <p className='col-span-full text-center text-neutral-500 py-8'>
+                    {t('patients.noPatientsFound')}
+                  </p>
+                ) : (
+                  patients.map((row) => (
+                    <PatientCard key={row._id} patient={row} isDoctor={user?.role === 'doctor'} />
+                  ))
+                )}
+              </div>
+            )}
 
-          {totalPages > 1 && (
-            <div className='mt-4 flex items-center justify-between'>
-              <Button
-                variant='secondary'
-                size='md'
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className='whitespace-nowrap'
-              >
-                {t('common.previous')}
-              </Button>
-              <span className='text-body-sm text-neutral-700'>
-                {t('common.page')} {currentPage} {t('common.of')} {totalPages}
-              </span>
-              <Button
-                variant='secondary'
-                size='md'
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className='whitespace-nowrap'
-              >
-                {t('common.next')}
-              </Button>
-            </div>
-          )}
+            {patients.length > 0 && (
+              <div className='mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-700 flex items-center justify-between gap-4 flex-wrap'>
+                <div className='flex items-center gap-2'>
+                  <label className='text-body-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap'>
+                    {t('common.show') || 'Show'}:
+                  </label>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      const newSize = parseInt(e.target.value, 10);
+                      // Clear cache when changing page size to force fresh fetch
+                      if (tenantId) {
+                        routeCache.clear(ROUTE_KEY, tenantId);
+                      }
+                      setPageSize(newSize);
+                      setCurrentPage(1); // Reset to first page when changing page size
+                    }}
+                    className='px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors'
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={75}>75</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                  </select>
+                  <span className='text-body-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap'>
+                    {t('common.perPage') || 'per page'}
+                  </span>
+                </div>
+                {totalPages > 1 && (
+                  <div className='flex items-center gap-2'>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      iconOnly
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      aria-label={t('common.previous')}
+                      className='border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all'
+                    >
+                      <ChevronLeftIcon className='icon icon-sm' />
+                    </Button>
+                    <span className='text-body-sm text-neutral-700 dark:text-neutral-300 whitespace-nowrap px-2'>
+                      {t('common.page')} {currentPage} {t('common.of')} {totalPages}
+                    </span>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      iconOnly
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      aria-label={t('common.next')}
+                      className='border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all'
+                    >
+                      <ChevronRightIcon className='icon icon-sm' />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
         )}
 

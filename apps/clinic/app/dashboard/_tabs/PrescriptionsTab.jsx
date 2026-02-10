@@ -16,7 +16,7 @@ import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const LIMIT = 10;
 const CACHE_TTL_MS = 30000; // 30 seconds cache
@@ -80,7 +80,7 @@ export function PrescriptionsTab() {
     }
   }, [authLoading, user, fetchPrescriptions]);
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = useCallback((status) => {
     const map = {
       draft: t('prescriptions.draft'),
       active: t('prescriptions.active'),
@@ -89,9 +89,9 @@ export function PrescriptionsTab() {
       expired: t('prescriptions.expired'),
     };
     return map[status] || status;
-  };
+  }, [t]);
 
-  const columns = [
+  const columns = useMemo(() => [
     { header: t('prescriptions.title') + ' #', accessor: 'prescriptionNumber' },
     {
       header: t('appointments.patient'),
@@ -122,15 +122,15 @@ export function PrescriptionsTab() {
       header: t('common.createdAt'),
       accessor: (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '—'),
     },
-  ];
+  ], [t, getStatusLabel]);
 
-  // Calculate quick stats
-  const stats = {
+  // Calculate quick stats – memoized so it only recomputes when prescriptions change
+  const stats = useMemo(() => ({
     total: prescriptions.length,
     draft: prescriptions.filter(p => p.status === 'draft').length,
     active: prescriptions.filter(p => p.status === 'active').length,
     dispensed: prescriptions.filter(p => p.status === 'dispensed').length,
-  };
+  }), [prescriptions]);
 
   const cardContent = (
     <>

@@ -16,7 +16,7 @@ import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const LIMIT = 10;
 const CACHE_TTL_MS = 30000; // 30 seconds cache
@@ -83,7 +83,7 @@ export function AppointmentsTab() {
     }
   }, [authLoading, user, fetchAppointments]);
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = useCallback((status) => {
     const map = {
       scheduled: t('appointments.scheduled'),
       confirmed: t('appointments.confirmed'),
@@ -93,9 +93,9 @@ export function AppointmentsTab() {
       in_progress: t('appointments.inProgress'),
     };
     return map[status] || status;
-  };
+  }, [t]);
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       header: t('appointments.patient'),
       accessor: (row) =>
@@ -131,15 +131,15 @@ export function AppointmentsTab() {
         );
       },
     },
-  ];
+  ], [t, getStatusLabel]);
 
-  // Calculate quick stats
-  const stats = {
+  // Calculate quick stats – memoized so it only recomputes when appointments change
+  const stats = useMemo(() => ({
     total: appointments.length,
     scheduled: appointments.filter(a => a.status === 'scheduled' || a.status === 'confirmed').length,
     inProgress: appointments.filter(a => a.status === 'in_progress' || a.status === 'arrived').length,
     completed: appointments.filter(a => a.status === 'completed').length,
-  };
+  }), [appointments]);
 
   const cardContent = (
     <>

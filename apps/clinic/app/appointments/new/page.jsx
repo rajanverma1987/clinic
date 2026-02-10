@@ -536,7 +536,7 @@ function NewAppointmentPageContent() {
                 <div>
                   <div className='p-4 border-2 border-primary-500 bg-primary-100 rounded-lg opacity-75 cursor-not-allowed'>
                     <div className='flex items-center space-x-3'>
-                      <div className='w-12 h-12 rounded-lg flex items-center justify-center bg-primary-600'>
+                      <div className='w-12 h-12 rounded-lg flex items-center justify-center bg-primary-600 ml-2'>
                         <svg
                           className='icon icon-md text-white'
                           fill='none'
@@ -635,7 +635,7 @@ function NewAppointmentPageContent() {
                   >
                     <div className='flex items-center space-x-3'>
                       <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                        className={`w-12 h-12 rounded-lg flex items-center justify-center ml-2 ${
                           !formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200'
                         }`}
                       >
@@ -688,7 +688,7 @@ function NewAppointmentPageContent() {
                   >
                     <div className='flex items-center space-x-3'>
                       <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                        className={`w-12 h-12 rounded-lg flex items-center justify-center ml-2 ${
                           formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200'
                         }`}
                       >

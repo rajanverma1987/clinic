@@ -46,7 +46,12 @@ const TYPE_ICONS = {
   [NOTIFICATION_TYPES.SYSTEM]: '🔔',
 };
 
-export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnreadCount, onUnreadCountChange }) {
+export function NotificationCenter({
+  isOpen,
+  onClose,
+  unreadCount: externalUnreadCount,
+  onUnreadCountChange,
+}) {
   const router = useRouter();
   const { t } = useI18n();
   const { user } = useAuth();
@@ -74,6 +79,10 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
     const socket = io(`${socketUrl}/realtime`, {
       transports: ['websocket', 'polling'],
+      autoConnect: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
     });
 
     socketRef.current = socket;
@@ -83,6 +92,10 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
       if (user.tenantId) {
         socket.emit('join-tenant', user.tenantId);
       }
+    });
+
+    socket.on('connect_error', (error) => {
+      logger.warn('[Notifications] Socket connection error', error);
     });
 
     // Listen for new notifications
@@ -97,17 +110,24 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
     // Listen for notification updates
     socket.on('notification.updated', (updatedNotification) => {
       setNotifications((prev) =>
-        prev.map((n) => (n._id === updatedNotification._id ? updatedNotification : n))
+        prev.map((n) => (n._id === updatedNotification._id ? updatedNotification : n)),
       );
     });
 
-    socket.on('disconnect', () => {
-      logger.info('[Notifications] Socket disconnected');
+    socket.on('disconnect', (reason) => {
+      logger.info('[Notifications] Socket disconnected', { reason });
     });
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.disconnect();
+        // Only disconnect if socket is actually connected
+        if (socketRef.current.connected) {
+          socketRef.current.disconnect();
+        } else {
+          // If not connected, just remove listeners to avoid errors
+          socketRef.current.removeAllListeners();
+        }
+        socketRef.current = null;
       }
     };
   }, [user?.tenantId, onUnreadCountChange]);
@@ -115,7 +135,9 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/notifications?limit=50&sortBy=createdAt&sortOrder=desc');
+      const response = await apiClient.get(
+        '/notifications?limit=50&sortBy=createdAt&sortOrder=desc',
+      );
       if (response.success) {
         const list = response.data || [];
         setNotifications(list);
@@ -139,8 +161,8 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
         prev.map((n) =>
           n._id === notificationId
             ? { ...n, channels: { ...n.channels, inApp: { ...n.channels?.inApp, read: true } } }
-            : n
-        )
+            : n,
+        ),
       );
       if (onUnreadCountChange) {
         onUnreadCountChange((prev) => Math.max(0, (prev || 0) - 1));
@@ -156,8 +178,8 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
       setNotifications((prev) =>
         prev.map((n) => ({
           ...n,
-          channels: { ...n.channels, inApp: { ...n.channels?.inApp, read: true } }
-        }))
+          channels: { ...n.channels, inApp: { ...n.channels?.inApp, read: true } },
+        })),
       );
       if (onUnreadCountChange) {
         onUnreadCountChange(0);
@@ -206,130 +228,135 @@ export function NotificationCenter({ isOpen, onClose, unreadCount: externalUnrea
       <div className='NotificationCenter-backdrop' aria-hidden />
       <div className='NotificationCenter-panel' onClick={(e) => e.stopPropagation()}>
         <Card className='w-full h-full shadow-2xl border border-neutral-200 dark:border-neutral-600'>
-        <div className='p-4 border-b border-neutral-200 dark:border-neutral-600 flex items-center justify-between'>
-          <h2 className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
-            Notifications {unreadCount > 0 && (
-              <span className='ml-2 px-2 py-1 bg-primary-600 text-white text-xs rounded-full'>
-                {unreadCount}
-              </span>
-            )}
-          </h2>
-          <div className='flex gap-2'>
-            {unreadCount > 0 && (
-              <Button variant='secondary' size='sm' onClick={handleMarkAllAsRead}>
-                Mark All Read
-              </Button>
-            )}
-            <Button
-              variant='ghost'
-              size='xs'
-              iconOnly
-              onClick={onClose}
-              className='text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 text-xl'
-            >
-              ✕
-            </Button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className='p-3 border-b border-neutral-200 dark:border-neutral-600 flex gap-2 overflow-x-auto'>
-          <button
-            className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
-              filter === 'all'
-                ? 'bg-primary-600 text-white'
-                : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
-            }`}
-            onClick={() => setFilter('all')}
-          >
-            All
-          </button>
-          <button
-            className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
-              filter === 'unread'
-                ? 'bg-primary-600 text-white'
-                : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
-            }`}
-            onClick={() => setFilter('unread')}
-          >
-            Unread ({unreadCount})
-          </button>
-          {Object.values(NOTIFICATION_TYPES).map((type) => {
-            const count = notifications.filter((n) => n.type === type).length;
-            if (count === 0) return null;
-            return (
-              <button
-                key={type}
-                className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
-                  filter === type
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
-                }`}
-                onClick={() => setFilter(type)}
+          <div className='p-4 border-b border-neutral-200 dark:border-neutral-600 flex items-center justify-between'>
+            <h2 className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
+              Notifications{' '}
+              {unreadCount > 0 && (
+                <span className='ml-2 px-2 py-1 bg-primary-600 text-white text-xs rounded-full'>
+                  {unreadCount}
+                </span>
+              )}
+            </h2>
+            <div className='flex gap-2'>
+              {unreadCount > 0 && (
+                <Button variant='secondary' size='sm' onClick={handleMarkAllAsRead}>
+                  Mark All Read
+                </Button>
+              )}
+              <Button
+                variant='ghost'
+                size='xs'
+                iconOnly
+                onClick={onClose}
+                className='text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 text-xl'
               >
-                {TYPE_ICONS[type]} {type.replace('_', ' ')} ({count})
-              </button>
-            );
-          })}
-        </div>
-
-        <div className='max-h-96 overflow-y-auto'>
-          {loading ? (
-            <div className='p-8 text-center'>
-              <Loader type='inline' text={t('common.loading')} />
+                ✕
+              </Button>
             </div>
-          ) : filteredNotifications.length > 0 ? (
-            <div className='divide-y divide-neutral-200 dark:divide-neutral-600'>
-              {filteredNotifications.map((notification) => (
-                <div
-                  key={notification._id}
-                  className={`p-4 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors ${
-                    !notification.channels?.inApp?.read ? 'bg-primary-50 dark:bg-primary-900/30' : ''
+          </div>
+
+          {/* Filters */}
+          <div className='p-3 border-b border-neutral-200 dark:border-neutral-600 flex gap-2 overflow-x-auto'>
+            <button
+              className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+                filter === 'all'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
+              }`}
+              onClick={() => setFilter('all')}
+            >
+              All
+            </button>
+            <button
+              className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+                filter === 'unread'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
+              }`}
+              onClick={() => setFilter('unread')}
+            >
+              Unread ({unreadCount})
+            </button>
+            {Object.values(NOTIFICATION_TYPES).map((type) => {
+              const count = notifications.filter((n) => n.type === type).length;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={type}
+                  className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+                    filter === type
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
                   }`}
-                  onClick={() => handleNotificationClick(notification)}
+                  onClick={() => setFilter(type)}
                 >
-                  <div className='flex items-start gap-3'>
-                    <div className='text-2xl'>{TYPE_ICONS[notification.type] || '🔔'}</div>
-                    <div className='flex-1 min-w-0'>
-                      <div className='flex items-start justify-between gap-2'>
-                        <p className='font-medium text-neutral-900 dark:text-neutral-100'>{notification.title}</p>
-                        {!notification.channels?.inApp?.read && (
-                          <div className='w-2 h-2 rounded-full bg-primary-600 flex-shrink-0 mt-1'></div>
-                        )}
-                      </div>
-                      <p className='text-sm text-neutral-600 dark:text-neutral-400 mt-1'>{notification.message}</p>
-                      <div className='flex items-center gap-2 mt-2'>
-                        <p className='text-xs text-neutral-500 dark:text-neutral-400'>
-                          {new Date(notification.createdAt).toLocaleString()}
+                  {TYPE_ICONS[type]} {type.replace('_', ' ')} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          <div className='max-h-96 overflow-y-auto'>
+            {loading ? (
+              <div className='p-8 text-center'>
+                <Loader type='inline' text={t('common.loading')} />
+              </div>
+            ) : filteredNotifications.length > 0 ? (
+              <div className='divide-y divide-neutral-200 dark:divide-neutral-600'>
+                {filteredNotifications.map((notification) => (
+                  <div
+                    key={notification._id}
+                    className={`p-4 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors ${
+                      !notification.channels?.inApp?.read
+                        ? 'bg-primary-50 dark:bg-primary-900/30'
+                        : ''
+                    }`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className='flex items-start gap-3'>
+                      <div className='text-2xl'>{TYPE_ICONS[notification.type] || '🔔'}</div>
+                      <div className='flex-1 min-w-0'>
+                        <div className='flex items-start justify-between gap-2'>
+                          <p className='font-medium text-neutral-900 dark:text-neutral-100'>
+                            {notification.title}
+                          </p>
+                          {!notification.channels?.inApp?.read && (
+                            <div className='w-2 h-2 rounded-full bg-primary-600 flex-shrink-0 mt-1'></div>
+                          )}
+                        </div>
+                        <p className='text-sm text-neutral-600 dark:text-neutral-400 mt-1'>
+                          {notification.message}
                         </p>
-                        {notification.priority && (
-                          <Tag
-                            className={
-                              notification.priority === 'urgent'
-                                ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200'
-                                : notification.priority === 'high'
-                                ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200'
-                                : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200'
-                            }
-                          >
-                            {notification.priority}
-                          </Tag>
-                        )}
+                        <div className='flex items-center gap-2 mt-2'>
+                          <p className='text-xs text-neutral-500 dark:text-neutral-400'>
+                            {new Date(notification.createdAt).toLocaleString()}
+                          </p>
+                          {notification.priority && (
+                            <Tag
+                              className={
+                                notification.priority === 'urgent'
+                                  ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200'
+                                  : notification.priority === 'high'
+                                    ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200'
+                                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200'
+                              }
+                            >
+                              {notification.priority}
+                            </Tag>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className='p-8 text-center text-neutral-500 dark:text-neutral-400'>
-              <p>No notifications</p>
-              {filter !== 'all' && (
-                <p className='text-xs mt-2'>Try changing the filter</p>
-              )}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : (
+              <div className='p-8 text-center text-neutral-500 dark:text-neutral-400'>
+                <p>No notifications</p>
+                {filter !== 'all' && <p className='text-xs mt-2'>Try changing the filter</p>}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
     </div>

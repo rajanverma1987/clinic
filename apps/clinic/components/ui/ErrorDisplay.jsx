@@ -1,17 +1,18 @@
 'use client';
 
 import { useI18n } from '@/contexts/I18nContext';
+import { safeTranslate } from '@/lib/utils/error-handler';
 import { AlertCircle, AlertTriangle, Home, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from './Button';
 import { Card } from './Card';
 
 /**
- * Premium Error Display Component
- * Consistent error UI across the application with proper design
+ * Error Display – standard, consistent error UI.
+ * Uses safeTranslate so missing i18n keys never cause runtime errors.
  *
  * @param {Object} props
- * @param {string} [props.title] - Error title (defaults to i18n key)
+ * @param {string} [props.title] - Error title
  * @param {string} [props.message] - Error message
  * @param {number} [props.statusCode] - HTTP status code (404, 500, etc.)
  * @param {boolean} [props.showRetry] - Show retry button
@@ -32,36 +33,36 @@ export function ErrorDisplay({
 }) {
   const { t } = useI18n();
   const router = useRouter();
+  const st = (key, fallback) => safeTranslate(t, key, fallback);
 
-  // Determine error type and default messages
   const getErrorInfo = () => {
     if (statusCode === 404) {
       return {
-        title: title || t('errors.notFoundTitle'),
-        message: message || t('errors.notFoundMessage'),
+        title: title || st('errors.notFoundTitle', 'Not found'),
+        message: message || st('errors.notFoundMessage', 'The page or resource was not found.'),
         icon: AlertCircle,
         iconColor: 'text-status-info',
       };
     }
     if (statusCode === 403 || statusCode === 401) {
       return {
-        title: title || t('errors.unauthorizedTitle'),
-        message: message || t('errors.unauthorizedMessage'),
+        title: title || st('errors.unauthorizedTitle', 'Access denied'),
+        message: message || st('errors.unauthorizedMessage', 'You do not have permission to view this.'),
         icon: AlertTriangle,
         iconColor: 'text-status-warning',
       };
     }
     if (statusCode === 500 || statusCode >= 500) {
       return {
-        title: title || t('errors.serverErrorTitle'),
-        message: message || t('errors.serverErrorMessage'),
+        title: title || st('errors.serverErrorTitle', 'Server error'),
+        message: message || st('errors.serverErrorMessage', 'Something went wrong on our end. Please try again.'),
         icon: AlertTriangle,
         iconColor: 'text-status-error',
       };
     }
     return {
-      title: title || t('errors.genericTitle'),
-      message: message || t('errors.genericMessage'),
+      title: title || st('errors.genericTitle', 'Something went wrong'),
+      message: message || st('errors.genericMessage', 'An unexpected error occurred. Please try again.'),
       icon: AlertTriangle,
       iconColor: 'text-status-error',
     };
@@ -115,7 +116,7 @@ export function ErrorDisplay({
                 </p>
                 {statusCode && (
                   <p className='text-body-sm text-neutral-500 dark:text-neutral-500 font-mono'>
-                    {t('errors.errorCode')}: {statusCode}
+                    {st('errors.errorCode', 'Error code')}: {statusCode}
                   </p>
                 )}
               </div>
@@ -130,7 +131,7 @@ export function ErrorDisplay({
                     className='flex items-center gap-2'
                   >
                     <RefreshCw className='icon icon-sm' />
-                    {t('errors.retry')}
+                    {st('errors.retry', 'Try again')}
                   </Button>
                 )}
                 {showHome && (
@@ -141,7 +142,7 @@ export function ErrorDisplay({
                     className='flex items-center gap-2'
                   >
                     <Home className='icon icon-sm' />
-                    {t('errors.goHome')}
+                    {st('errors.goHome', 'Go to dashboard')}
                   </Button>
                 )}
               </div>
@@ -178,7 +179,7 @@ export function ErrorDisplay({
               className='flex items-center gap-2'
             >
               <RefreshCw className='icon icon-sm' />
-              {t('errors.retry')}
+              {st('errors.retry', 'Try again')}
             </Button>
           )}
         </div>
@@ -206,7 +207,7 @@ export function ErrorDisplay({
               className='mt-3 flex items-center gap-2'
             >
               <RefreshCw className='icon icon-xs' />
-              {t('errors.retry')}
+              {st('errors.retry', 'Try again')}
             </Button>
           )}
         </div>
@@ -232,7 +233,7 @@ export function ErrorDisplay({
       </p>
       {statusCode && (
         <p className='text-body-sm text-neutral-500 dark:text-neutral-500 font-mono mb-6'>
-          {t('errors.errorCode')}: {statusCode}
+          {st('errors.errorCode', 'Error code')}: {statusCode}
         </p>
       )}
       <div className='flex items-center gap-3'>
@@ -244,7 +245,7 @@ export function ErrorDisplay({
             className='flex items-center gap-2'
           >
             <RefreshCw className='icon icon-sm' />
-            {t('errors.retry')}
+            {st('errors.retry', 'Try again')}
           </Button>
         )}
         {showHome && (
@@ -255,7 +256,7 @@ export function ErrorDisplay({
             className='flex items-center gap-2'
           >
             <Home className='icon icon-sm' />
-            {t('errors.goHome')}
+            {st('errors.goHome', 'Go to dashboard')}
           </Button>
         )}
       </div>

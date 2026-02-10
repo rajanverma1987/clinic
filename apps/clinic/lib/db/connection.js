@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { logger } from '@/lib/utils/logger.js';
+import { logger } from '../utils/logger.js';
 
 let cached = global.mongoose || { conn: null, promise: null };
 
@@ -22,14 +22,14 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      maxPoolSize: parseInt(process.env.MONGODB_MAX_POOL_SIZE || '20', 10),
-      minPoolSize: parseInt(process.env.MONGODB_MIN_POOL_SIZE || '5', 10),
+      maxPoolSize: parseInt(process.env.MONGODB_MAX_POOL_SIZE || '50', 10), // Increased from 20 to 50
+      minPoolSize: parseInt(process.env.MONGODB_MIN_POOL_SIZE || '10', 10), // Increased from 5 to 10
       maxIdleTimeMS: 30000,
       connectTimeoutMS: 10000,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000, // Increased from 5000
       socketTimeoutMS: 45000,
       heartbeatFrequencyMS: 10000,
-      waitQueueTimeoutMS: 5000, // Fail fast if pool is saturated
+      waitQueueTimeoutMS: 30000, // Increased from 5000ms to 30s to handle concurrent queries
       retryWrites: true,
       retryReads: true,
     };
@@ -51,4 +51,3 @@ async function connectDB() {
 }
 
 export default connectDB;
-

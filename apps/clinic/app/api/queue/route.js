@@ -10,10 +10,15 @@ import {
   listQueueEntries,
 } from '@/services/queue.service';
 import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
+import CacheManager from '@/lib/cache/cache-manager.js';
+
+/** Server-side cache TTL for queue entries (seconds). Cache only for common queries. */
+const QUEUE_CACHE_TTL = 30; // 30 seconds - queue data changes frequently
 
 /**
  * GET /api/queue
  * List queue entries with pagination and filters
+ * Cached for common queries (status=waiting, no date filter) to improve performance
  */
 async function getHandler(req, user) {
   const { searchParams } = new URL(req.url);
@@ -39,7 +44,31 @@ async function getHandler(req, user) {
     );
   }
 
+  // Cache key: only cache common queries (waiting status, no date filter, no patientId filter)
+  const isCacheable = 
+    validationResult.data.status === 'waiting' && 
+    !validationResult.data.date && 
+    !validationResult.data.patientId &&
+    !validationResult.data.appointmentId;
+
+  const cacheKey = isCacheable 
+    ? `queue-${user.tenantId}-${validationResult.data.status || 'all'}-${validationResult.data.doctorId || 'all'}-${validationResult.data.page || 1}-${validationResult.data.limit || 100}`
+    : null;
+
+  // Try cache first for cacheable queries
+  if (cacheKey) {
+    const cached = await CacheManager.get('queue', cacheKey);
+    if (cached) {
+      return NextResponse.json(successResponse(cached));
+    }
+  }
+
   const result = await listQueueEntries(validationResult.data, user.tenantId, user.userId);
+
+  // Cache result for cacheable queries
+  if (cacheKey) {
+    await CacheManager.set('queue', result, QUEUE_CACHE_TTL, cacheKey);
+  }
 
   return NextResponse.json(successResponse(result));
 }

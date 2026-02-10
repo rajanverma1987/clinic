@@ -128,16 +128,8 @@ export default function CreateManagerPage() {
   }
 
   return (
-    <Layout
-      title={t('admin.createManager')}
-      subtitle={t('admin.allUsersDescription')}
-      actionButton={
-        <Button variant='secondary' href='/settings'>
-          {t('common.backToSettings')}
-        </Button>
-      }
-    >
-      <div style={{ padding: '0 10px' }}>
+    <Layout title={t('admin.createManager')} subtitle={t('admin.allUsersDescription')}>
+      <div className='tab-content-standard-width-left mt-3'>
         <Card>
           <div className='p-6'>
             <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
@@ -254,9 +246,6 @@ export default function CreateManagerPage() {
               <div className='flex gap-4'>
                 <Button type='submit' variant='primary' disabled={isLoading}>
                   {isLoading ? t('common.creating') : 'Create Manager Account'}
-                </Button>
-                <Button type='button' variant='secondary' href='/settings'>
-                  Cancel
                 </Button>
               </div>
             </form>

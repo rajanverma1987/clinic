@@ -41,7 +41,8 @@ export function PageSearchBar({
               value={value}
               onChange={(e) => onChange?.(e)}
               onKeyPress={handleKeyPress}
-              className='border-0 focus:ring-0 bg-transparent min-w-0'
+              variant='borderless'
+              className='min-w-0'
               {...inputProps}
             />
           </div>

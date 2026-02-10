@@ -5,8 +5,12 @@
  * Runs once per tenant so navigation to dashboard is instant.
  */
 
-import { DASHBOARD_CHARTS_KEY, DASHBOARD_LISTS_KEY, DASHBOARD_STATS_KEY } from '@/lib/swr/dashboard-keys';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  DASHBOARD_CHARTS_KEY,
+  DASHBOARD_LISTS_KEY,
+  DASHBOARD_STATS_KEY,
+} from '@/lib/swr/dashboard-keys';
 import { useEffect, useRef } from 'react';
 import { useSWRConfig } from 'swr';
 

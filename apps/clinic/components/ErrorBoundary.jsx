@@ -1,12 +1,17 @@
 'use client';
 
 /**
- * Premium Error Boundary Component
- * Catches React render errors and displays a polished error UI
- * Supports custom fallbacks, retry logic, and error logging
+ * Error Boundary – standard React error boundary.
+ * Catches render/commit-phase errors and displays a consistent error UI.
+ * Uses centralized error-handler for classification and user-facing messages.
  */
 
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
+import {
+  classifyError,
+  getUserFriendlyMessage,
+  handleComponentError,
+} from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 import { Component } from 'react';
 
@@ -21,62 +26,66 @@ export class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error for debugging
-    logger.error('ErrorBoundary caught an error', error, {
-      componentStack: errorInfo.componentStack,
-      errorBoundary: this.props.name || 'Unknown',
-    });
+    const name = this.props.name || 'Unknown';
+    handleComponentError(error, errorInfo, name);
+    this.setState({ errorInfo });
 
-    this.setState({
-      errorInfo,
-    });
-
-    // Call optional error handler
     if (this.props.onError) {
-      this.props.onError(error, errorInfo);
+      try {
+        this.props.onError(error, errorInfo);
+      } catch (onErrorErr) {
+        logger.error('ErrorBoundary onError callback threw', onErrorErr, {
+          errorBoundary: name,
+        });
+      }
     }
   }
 
   handleRetry = () => {
     this.setState({ hasError: false, error: null, errorInfo: null });
-
-    // Call optional retry handler
     if (this.props.onRetry) {
-      this.props.onRetry();
+      try {
+        this.props.onRetry();
+      } catch (err) {
+        logger.error('ErrorBoundary onRetry callback threw', err);
+      }
     }
   };
 
   render() {
-    if (this.state.hasError) {
-      const { fallback, variant = 'card', showRetry = true, title, message } = this.props;
-
-      // Custom fallback takes precedence
-      if (fallback) {
-        return typeof fallback === 'function'
-          ? fallback(this.state.error, this.state.errorInfo)
-          : fallback;
-      }
-
-      // Determine status code from error if available
-      const statusCode =
-        this.state.error?.statusCode ||
-        this.state.error?.response?.status ||
-        (this.state.error?.message?.includes('404') ? 404 : null) ||
-        (this.state.error?.message?.includes('500') ? 500 : null);
-
-      // Default error display with premium design
-      return (
-        <ErrorDisplay
-          title={title}
-          message={message || this.state.error?.message}
-          statusCode={statusCode}
-          variant={variant}
-          showRetry={showRetry}
-          onRetry={this.handleRetry}
-        />
-      );
+    if (!this.state.hasError) {
+      return this.props.children;
     }
 
-    return this.props.children;
+    const { fallback, variant = 'card', showRetry = true, title, message } = this.props;
+    const error = this.state.error;
+
+    if (fallback) {
+      return typeof fallback === 'function'
+        ? fallback(error, this.state.errorInfo)
+        : fallback;
+    }
+
+    const errorType = classifyError(error);
+    const statusCode =
+      error?.statusCode ??
+      error?.response?.status ??
+      (error?.message?.includes('404') ? 404 : null) ??
+      (error?.message?.includes('500') ? 500 : null);
+
+    const displayMessage =
+      message ?? getUserFriendlyMessage(error, 'Something went wrong. Please try again.');
+    const displayTitle = title ?? (statusCode === 404 ? 'Not found' : 'Something went wrong');
+
+    return (
+      <ErrorDisplay
+        title={displayTitle}
+        message={displayMessage}
+        statusCode={statusCode}
+        variant={variant}
+        showRetry={showRetry}
+        onRetry={this.handleRetry}
+      />
+    );
   }
 }

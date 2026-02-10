@@ -21,7 +21,8 @@ import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 
 const ROUTE_KEY = 'route_appointments';
 
@@ -62,6 +63,8 @@ export default function AppointmentsPage() {
   const [doctorIdInitialized, setDoctorIdInitialized] = useState(false);
   const [loadingAppointmentId, setLoadingAppointmentId] = useState(null);
   const [notifications, setNotifications] = useState(3); // Mock notification count
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshIntervalRef = useRef(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -218,10 +221,10 @@ export default function AppointmentsPage() {
     }
   }, [settings]);
 
-  const fetchAppointments = useCallback(async () => {
+  const fetchAppointments = useCallback(async (silentRefresh = false) => {
     const hasDateFilter = dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl);
     const hasCache = tenantId && !hasDateFilter && routeCache.getData(ROUTE_KEY, tenantId);
-    if (!hasCache) setLoading(true);
+    if (!silentRefresh && !hasCache) setLoading(true);
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -251,7 +254,8 @@ export default function AppointmentsPage() {
     } catch (error) {
       logger.error('Failed to fetch appointments', error);
     } finally {
-      setLoading(false);
+      if (!silentRefresh) setLoading(false);
+      setRefreshing(false);
     }
   }, [currentPage, selectedDoctorId, selectedStatus, tenantId, dateFromUrl]);
 
@@ -264,6 +268,36 @@ export default function AppointmentsPage() {
       fetchAppointments();
     }
   }, [authLoading, user, router, fetchAppointments]);
+
+  // Setup automatic background refresh every 60 seconds
+  useEffect(() => {
+    if (!authLoading && user && !dateFromUrl && !selectedStatus && !selectedDoctorId) {
+      // Clear any existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+
+      // Set up auto-refresh interval
+      refreshIntervalRef.current = setInterval(() => {
+        // Silent background refresh - don't show loading, just update data
+        fetchAppointments(true);
+      }, DASHBOARD_AUTO_REFRESH_MS);
+
+      return () => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+        }
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, dateFromUrl, selectedStatus, selectedDoctorId, fetchAppointments]);
+
+  // Manual refresh handler
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchAppointments(false);
+  }, [fetchAppointments]);
 
   // Fetch stats separately when settings are loaded
   useEffect(() => {
@@ -506,6 +540,8 @@ export default function AppointmentsPage() {
         })}
         notifications={[]}
         unreadCount={0}
+        onRefresh={handleManualRefresh}
+        refreshing={refreshing}
         actionButton={
           <Button
             href='/appointments/new'

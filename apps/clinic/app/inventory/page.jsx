@@ -16,7 +16,8 @@ import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 
 const ROUTE_KEY = 'route_inventory';
 
@@ -31,6 +32,8 @@ export default function InventoryPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showLowStock, setShowLowStock] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshIntervalRef = useRef(null);
 
   useLayoutEffect(() => {
     if (!tenantId) return;
@@ -41,9 +44,9 @@ export default function InventoryPage() {
     }
   }, [tenantId]);
 
-  const fetchItems = useCallback(async () => {
+  const fetchItems = useCallback(async (silentRefresh = false) => {
     const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
-    if (!hasCache) setLoading(true);
+    if (!silentRefresh && !hasCache) setLoading(true);
     try {
       const params = new URLSearchParams();
       if (showLowStock) params.set('lowStock', 'true');
@@ -56,7 +59,8 @@ export default function InventoryPage() {
     } catch (error) {
       logger.error('Failed to fetch inventory items', error);
     } finally {
-      setLoading(false);
+      if (!silentRefresh) setLoading(false);
+      setRefreshing(false);
     }
   }, [tenantId, showLowStock]);
 
@@ -65,6 +69,36 @@ export default function InventoryPage() {
       fetchItems();
     }
   }, [authLoading, user, showLowStock, fetchItems]);
+
+  // Setup automatic background refresh every 60 seconds
+  useEffect(() => {
+    if (!authLoading && user && !showLowStock) {
+      // Clear any existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+
+      // Set up auto-refresh interval
+      refreshIntervalRef.current = setInterval(() => {
+        // Silent background refresh - don't show loading, just update data
+        fetchItems(true);
+      }, DASHBOARD_AUTO_REFRESH_MS);
+
+      return () => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+        }
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, showLowStock, fetchItems]);
+
+  // Manual refresh handler
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchItems(false);
+  }, [fetchItems]);
 
   const formatCurrency = (amount) => {
     if (!amount) return 'N/A';
@@ -120,6 +154,8 @@ export default function InventoryPage() {
         subtitle={t('inventory.items')}
         notifications={[]}
         unreadCount={0}
+        onRefresh={handleManualRefresh}
+        refreshing={refreshing}
         actionButton={
           managerReadOnly ? null : (
             <Button

@@ -92,10 +92,7 @@ export default function PrescriptionDetailPage() {
       <Layout>
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
-            <div className='text-status-error mb-4'>{error || 'Prescription not found'}</div>
-            <Button variant='primary' size='md' href='/prescriptions'>
-              Back to Prescriptions
-            </Button>
+            <div className='text-status-error'>{error || 'Prescription not found'}</div>
           </div>
         </div>
       </Layout>

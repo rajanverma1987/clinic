@@ -7,7 +7,6 @@ import { PrescriptionPrintPreview } from '@/components/prescriptions/Prescriptio
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,11 +16,13 @@ import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
 import { isManagerPathReadOnly } from '@/lib/constants/route-security';
+import { ACTIONS, RESOURCES, hasPermission } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 
 const ROUTE_KEY = 'route_prescriptions';
 
@@ -34,11 +35,16 @@ export default function PrescriptionsPage() {
   const { prefetchPrescription } = usePrefetchDetail();
   const tenantId = user?.tenantId ?? null;
   const managerReadOnly = isManagerPathReadOnly(pathname);
+  const canCreatePrescription = user
+    ? hasPermission(user.role, RESOURCES.PRESCRIPTION, ACTIONS.CREATE)
+    : false;
 
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [printPrescriptionId, setPrintPrescriptionId] = useState(null);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshIntervalRef = useRef(null);
 
   useLayoutEffect(() => {
     if (!tenantId) return;
@@ -49,9 +55,9 @@ export default function PrescriptionsPage() {
     }
   }, [tenantId]);
 
-  const fetchPrescriptions = useCallback(async () => {
+  const fetchPrescriptions = useCallback(async (silentRefresh = false) => {
     const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
-    if (!hasCache) setLoading(true);
+    if (!silentRefresh && !hasCache) setLoading(true);
     try {
       const response = await apiClient.get('/prescriptions');
       if (response.success && response.data) {
@@ -65,7 +71,8 @@ export default function PrescriptionsPage() {
       logger.error('Failed to fetch prescriptions:', error);
       setPrescriptions([]);
     } finally {
-      setLoading(false);
+      if (!silentRefresh) setLoading(false);
+      setRefreshing(false);
     }
   }, [tenantId]);
 
@@ -74,6 +81,36 @@ export default function PrescriptionsPage() {
       fetchPrescriptions();
     }
   }, [authLoading, user, fetchPrescriptions]);
+
+  // Setup automatic background refresh every 60 seconds
+  useEffect(() => {
+    if (!authLoading && user) {
+      // Clear any existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+
+      // Set up auto-refresh interval
+      refreshIntervalRef.current = setInterval(() => {
+        // Silent background refresh - don't show loading, just update data
+        fetchPrescriptions(true);
+      }, DASHBOARD_AUTO_REFRESH_MS);
+
+      return () => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+        }
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, fetchPrescriptions]);
+
+  // Manual refresh handler
+  const handleManualRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchPrescriptions(false);
+  }, [fetchPrescriptions]);
 
   const getStatusLabel = useCallback(
     (status) => {
@@ -223,8 +260,10 @@ export default function PrescriptionsPage() {
         subtitle={t('prescriptions.prescriptionList')}
         notifications={[]}
         unreadCount={0}
+        onRefresh={handleManualRefresh}
+        refreshing={refreshing}
         actionButton={
-          managerReadOnly ? null : (
+          canCreatePrescription ? (
             <Button
               href='/prescriptions/new'
               variant='primary'
@@ -233,7 +272,7 @@ export default function PrescriptionsPage() {
             >
               + {t('prescriptions.createPrescription')}
             </Button>
-          )
+          ) : null
         }
       />
       <div style={{ padding: '0 10px' }}>
@@ -244,12 +283,12 @@ export default function PrescriptionsPage() {
         ) : (
           <Card>
             <Table
-            data={prescriptions}
-            columns={columns}
-            onRowClick={(row) => router.push(`/prescriptions/${row._id}`)}
-            onRowMouseEnter={(row) => row?._id && prefetchPrescription(row._id)}
-            emptyMessage={t('common.noDataFound')}
-          />
+              data={prescriptions}
+              columns={columns}
+              onRowClick={(row) => router.push(`/prescriptions/${row._id}`)}
+              onRowMouseEnter={(row) => row?._id && prefetchPrescription(row._id)}
+              emptyMessage={t('common.noDataFound')}
+            />
           </Card>
         )}
 

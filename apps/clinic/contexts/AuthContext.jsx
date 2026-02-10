@@ -62,7 +62,7 @@ export function AuthProvider({ children }) {
         }
 
         try {
-          await apiClient.post('/auth/logout');
+          await apiClient.post('/auth/logout', undefined, {}, true);
         } catch (error) {
           // Continue with logout even if API call fails
         } finally {
@@ -577,13 +577,12 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      await apiClient.post('/auth/logout');
+      await apiClient.post('/auth/logout', undefined, {}, true);
     } catch (error) {
       // Continue with logout even if API call fails
     } finally {
       apiClient.setToken('');
       if (typeof window !== 'undefined') {
-        // Clear all authentication-related localStorage items
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userInfo');

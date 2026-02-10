@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { logger } from '@/lib/utils/logger.js';
+import { logger } from '../utils/logger.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -16,12 +16,12 @@ function getEncryptionKey() {
   if (!key) {
     throw new Error('ENCRYPTION_KEY environment variable is required');
   }
-  
+
   // If key is hex string, convert to buffer
   if (key.length === 64) {
     return Buffer.from(key, 'hex');
   }
-  
+
   // Otherwise, derive key using PBKDF2
   return crypto.pbkdf2Sync(key, 'clinic-phi-salt', 100000, KEY_LENGTH, 'sha512');
 }
@@ -53,7 +53,9 @@ export function encryptField(plaintext) {
     // Format: iv:tag:encrypted
     return `${iv.toString('hex')}:${tag.toString('hex')}:${encrypted}`;
   } catch (error) {
-    throw new Error(`Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
   }
 }
 
@@ -70,7 +72,12 @@ function isEncryptedFormat(text) {
   }
   // Check if iv and tag are valid hex strings with correct lengths
   const [ivHex, tagHex] = parts;
-  return ivHex.length === 32 && tagHex.length === 32 && /^[0-9a-f]+$/i.test(ivHex) && /^[0-9a-f]+$/i.test(tagHex);
+  return (
+    ivHex.length === 32 &&
+    tagHex.length === 32 &&
+    /^[0-9a-f]+$/i.test(ivHex) &&
+    /^[0-9a-f]+$/i.test(tagHex)
+  );
 }
 
 /**
@@ -85,13 +92,14 @@ export function decryptField(ciphertext) {
   // Check if the field is in encrypted format
   if (!isEncryptedFormat(ciphertext)) {
     // Field is not encrypted (legacy data or plain text), return as-is
+    // No warning needed - this is expected for legacy data
     return ciphertext;
   }
 
   try {
     const key = getEncryptionKey();
     const parts = ciphertext.split(':');
-    
+
     if (parts.length !== 3) {
       // Not in encrypted format, return as-is
       return ciphertext;
@@ -109,9 +117,23 @@ export function decryptField(ciphertext) {
 
     return decrypted;
   } catch (error) {
-    // If decryption fails, return the original value (might be plain text or corrupted)
-    // Log a warning but don't break the application
-    logger.warn(`Decryption failed, returning original value: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Data IS in encrypted format but decryption failed - this indicates a real issue
+    // Only log warning if data appears to be encrypted (has correct format)
+    // This could mean: wrong encryption key, corrupted data, or key changed
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+
+    // Check if error is about authentication tag (indicates wrong key or corrupted data)
+    if (errorMsg.includes('Unsupported state') || errorMsg.includes('unable to authenticate')) {
+      // This is likely due to encryption key mismatch or corrupted encrypted data
+      // Log at debug level to reduce noise, but still track it
+      logger.debug(
+        `Decryption failed for encrypted field (likely key mismatch or corrupted data): ${errorMsg}`,
+      );
+    } else {
+      // Other errors (e.g., invalid format) - log as debug since we handle gracefully
+      logger.debug(`Decryption failed, returning original value: ${errorMsg}`);
+    }
+
     return ciphertext;
   }
 }
@@ -175,4 +197,3 @@ export function phiEncryptionPlugin(schema, fields) {
     }
   });
 }
-

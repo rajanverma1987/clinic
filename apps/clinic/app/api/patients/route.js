@@ -70,10 +70,14 @@ async function getHandler(req, user) {
   const { searchParams } = new URL(req.url);
 
   // When user is doctor, scope to their patients (patients with at least one appointment with this doctor)
-  const doctorId =
-    user.role === 'doctor'
-      ? user._id?.toString() || user.userId
-      : searchParams.get('doctorId') || undefined;
+  // EXCEPTIONS:
+  // 1. Dashboard "recent patients" widget should show all clinic patients (limit=5 with sortBy=createdAt)
+  // 2. Main patients page should show all clinic patients (no doctorId filter unless explicitly requested)
+  // Dashboard requests are identified by limit=5 with sortBy=createdAt (dashboard widget pattern)
+  const isDashboardWidget =
+    searchParams.get('limit') === '5' && searchParams.get('sortBy') === 'createdAt';
+  // Only apply doctor filter if explicitly requested via doctorId param, not automatically for doctors
+  const doctorId = searchParams.get('doctorId') || undefined;
 
   // Build filters from query params
   const filters = {
@@ -122,7 +126,7 @@ async function getHandler(req, user) {
     user.tenantId,
     user.userId,
     ipAddress,
-    userAgent
+    userAgent,
   );
 
   return NextResponse.json(successResponse(result));
@@ -212,8 +216,8 @@ async function postHandler(req, user) {
  */
 export const GET = withErrorHandler(
   withRequestLogger(
-    apiRateLimit(withAuth(requirePermission(RESOURCES.PATIENT, ACTIONS.READ)(getHandler)))
-  )
+    apiRateLimit(withAuth(requirePermission(RESOURCES.PATIENT, ACTIONS.READ)(getHandler))),
+  ),
 );
 
 /**
@@ -229,6 +233,6 @@ export const GET = withErrorHandler(
  */
 export const POST = withErrorHandler(
   withRequestLogger(
-    apiRateLimit(withAuth(requirePermission(RESOURCES.PATIENT, ACTIONS.CREATE)(postHandler)))
-  )
+    apiRateLimit(withAuth(requirePermission(RESOURCES.PATIENT, ACTIONS.CREATE)(postHandler))),
+  ),
 );

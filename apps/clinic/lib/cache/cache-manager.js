@@ -4,9 +4,9 @@
  * Based on NEW-PLANS.md requirements
  */
 
-import { getCache, setCache, deleteCache, deleteCachePattern } from './redis-client.js';
-import { logger } from '@/lib/utils/logger.js';
-import { recordCacheOperation } from '@/lib/monitoring/metrics.js';
+import { recordCacheOperation } from '../monitoring/metrics.js';
+import { logger } from '../utils/logger.js';
+import { deleteCache, deleteCachePattern, getCache, setCache } from './redis-client.js';
 
 /**
  * Generate cache key

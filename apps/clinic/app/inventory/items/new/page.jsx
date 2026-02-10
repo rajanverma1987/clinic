@@ -2,7 +2,6 @@
 
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -11,8 +10,8 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
+import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -95,7 +94,6 @@ export default function NewInventoryItemPage() {
         subtitle={t('inventory.items')}
         notifications={[]}
         unreadCount={0}
-        actionButton={<BackButton />}
       />
       <div style={{ padding: '0 10px' }}>
         <Card>

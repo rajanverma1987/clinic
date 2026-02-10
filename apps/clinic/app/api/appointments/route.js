@@ -34,11 +34,11 @@ import { NextResponse } from 'next/server';
  * GET /api/appointments
  *
  * List appointments with pagination, filtering, and sorting.
- * Supports filtering by patient, doctor, status, type, and date range.
+ * Supports incremental updates via 'since' parameter for efficient polling.
  *
  * Query Parameters:
  * - page: Page number (default: 1)
- * - limit: Items per page (default: 10, max: 100)
+ * - limit: Items per page (default: 50, max: 100)
  * - patientId: Filter by patient ID
  * - doctorId: Filter by doctor ID
  * - status: Filter by status (scheduled, confirmed, completed, cancelled, no_show)
@@ -47,15 +47,17 @@ import { NextResponse } from 'next/server';
  * - endDate: Filter appointments until this date (ISO format)
  * - date: Filter by specific date (ISO format)
  * - isActive: Filter by active status (true/false)
+ * - since: ISO datetime string - only fetch appointments updated since this timestamp (incremental updates)
  *
  * @async
  * @function getHandler
  * @param {Request} req - HTTP request object
  * @param {Object} user - Authenticated user object with tenantId and userId
- * @returns {Promise<NextResponse>} Paginated list of appointments
+ * @returns {Promise<NextResponse>} Paginated list of appointments with incremental update metadata
  *
  * @example
  * GET /api/appointments?status=scheduled&doctorId=123&page=1&limit=20
+ * GET /api/appointments?since=2026-02-10T10:00:00Z (incremental update)
  *
  * @security
  * - Requires APPOINTMENT:READ permission
@@ -63,9 +65,10 @@ import { NextResponse } from 'next/server';
  * - Feature access check for Appointment Scheduling
  *
  * @performance
- * - Uses optimized queries with .lean()
+ * - Uses optimized queries with aggregation pipeline
+ * - Supports incremental updates to reduce data transfer
  * - Supports pagination to prevent large result sets
- * - Indexed queries for date and status filters
+ * - Indexed queries for date, status, and updatedAt filters
  */
 async function getHandler(req, user) {
   // Check if Appointment Scheduling feature is available (skip for super_admin)
@@ -81,8 +84,8 @@ async function getHandler(req, user) {
     const { searchParams } = new URL(req.url);
 
     const queryParams = {
-      page: searchParams.get('page') || undefined,
-      limit: searchParams.get('limit') || undefined,
+      page: searchParams.get('page') || '1',
+      limit: searchParams.get('limit') || '50', // Default to 50 for appointments
       patientId: searchParams.get('patientId') || undefined,
       doctorId: searchParams.get('doctorId') || undefined,
       status: searchParams.get('status') || undefined,
@@ -91,6 +94,7 @@ async function getHandler(req, user) {
       endDate: searchParams.get('endDate') || undefined,
       date: searchParams.get('date') || undefined,
       isActive: searchParams.get('isActive') || undefined,
+      since: searchParams.get('since') || undefined, // For incremental updates
     };
 
     const validationResult = appointmentQuerySchema.safeParse(queryParams);
@@ -105,10 +109,41 @@ async function getHandler(req, user) {
       queryData.status = 'scheduled';
     }
 
+    // Add incremental update filter if 'since' parameter is provided
+    const isIncremental = !!queryData.since;
+    if (queryData.since) {
+      // Add updatedAt filter to only get appointments updated since the given timestamp
+      queryData.updatedAt = { $gt: new Date(queryData.since) };
+    }
+
     const result = await listAppointments(queryData, user.tenantId, user.userId);
 
-    return NextResponse.json(successResponse(result));
+    // Enhance response with incremental update metadata and normalize pagination format
+    const enhancedResult = {
+      data: result.data || [],
+      pagination: result.pagination
+        ? {
+            total: result.pagination.total,
+            page: result.pagination.page,
+            limit: result.pagination.limit,
+            pages:
+              result.pagination.totalPages ||
+              result.pagination.pages ||
+              Math.ceil(result.pagination.total / result.pagination.limit),
+          }
+        : {
+            total: 0,
+            page: parseInt(queryData.page) || 1,
+            limit: parseInt(queryData.limit) || 50,
+            pages: 0,
+          },
+      isIncremental,
+      timestamp: new Date().toISOString(),
+    };
+
+    return NextResponse.json(successResponse(enhancedResult));
   } catch (error) {
+    logger.error('Fetch appointments error:', error);
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
       return NextResponse.json(handleMongoError(error), { status: 400 });
     }
@@ -268,7 +303,7 @@ async function postHandler(req, user) {
             sessionLink,
             appointment.startTime,
             telemedicineSession.sessionId,
-            user.tenantId
+            user.tenantId,
           );
 
           logger.info('Video consultation email sent', {
@@ -317,7 +352,7 @@ async function postHandler(req, user) {
         isRecurring: body.isRecurring || false,
         recurringCount: recurringCount,
       }),
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
@@ -327,9 +362,9 @@ async function postHandler(req, user) {
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to create appointment',
-        'CREATE_ERROR'
+        'CREATE_ERROR',
       ),
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
@@ -347,8 +382,8 @@ async function postHandler(req, user) {
  */
 export const GET = withErrorHandler(
   withRequestLogger(
-    apiRateLimit(withAuth(requirePermission(RESOURCES.APPOINTMENT, ACTIONS.READ)(getHandler)))
-  )
+    apiRateLimit(withAuth(requirePermission(RESOURCES.APPOINTMENT, ACTIONS.READ)(getHandler))),
+  ),
 );
 
 /**
@@ -364,6 +399,6 @@ export const GET = withErrorHandler(
  */
 export const POST = withErrorHandler(
   withRequestLogger(
-    apiRateLimit(withAuth(requirePermission(RESOURCES.APPOINTMENT, ACTIONS.CREATE)(postHandler)))
-  )
+    apiRateLimit(withAuth(requirePermission(RESOURCES.APPOINTMENT, ACTIONS.CREATE)(postHandler))),
+  ),
 );

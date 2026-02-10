@@ -1,7 +1,6 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
-import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -9,8 +8,8 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
-import { isManagerPathLimitedWrite } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
+import { isManagerPathLimitedWrite } from '@/lib/constants/route-security';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
 import { usePathname, useRouter } from 'next/navigation';
@@ -117,7 +116,7 @@ export default function NewInvoicePage() {
         const recentAppointment = appointmentsData
           .filter((apt) => apt.status === 'completed' || apt.status === 'in_progress')
           .sort(
-            (a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime()
+            (a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime(),
           )[0];
 
         if (recentAppointment) {
@@ -149,14 +148,14 @@ export default function NewInvoicePage() {
 
         // Filter for active/dispensed prescriptions and get the most recent one
         const activePrescriptions = prescriptionsData.filter(
-          (pres) => pres.status === 'active' || pres.status === 'dispensed'
+          (pres) => pres.status === 'active' || pres.status === 'dispensed',
         );
 
         // Sort by creation date (most recent first) and get only the latest prescription
         const latestPrescription = activePrescriptions.sort(
           (a, b) =>
             new Date(b.createdAt || b._id.getTimestamp()).getTime() -
-            new Date(a.createdAt || a._id.getTimestamp()).getTime()
+            new Date(a.createdAt || a._id.getTimestamp()).getTime(),
         )[0];
 
         // Process only the latest prescription
@@ -387,7 +386,6 @@ export default function NewInvoicePage() {
     <Layout>
       <div style={{ padding: '0 10px' }}>
         <div className='mb-4 pt-2'>
-          <BackButton className='mb-2' />
           <h1 className='text-2xl font-bold text-neutral-900'>{t('invoices.createInvoice')}</h1>
           <p className='text-neutral-600 mt-1 text-sm'>{t('invoices.invoiceList')}</p>
         </div>
@@ -415,7 +413,9 @@ export default function NewInvoicePage() {
                   disabled={patients.length === 0}
                 >
                   <option value=''>
-                    {patients.length === 0 ? t('patients.noPatientsFound') : t('patientSelector.selectPatient')}
+                    {patients.length === 0
+                      ? t('patients.noPatientsFound')
+                      : t('patientSelector.selectPatient')}
                   </option>
                   {patients.map((patient) => (
                     <option key={patient._id} value={patient._id}>
@@ -614,9 +614,7 @@ export default function NewInvoicePage() {
               </h2>
               <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 items-end'>
                 <div>
-                  <label className={labelClass}>
-                    {t('invoices.discountType')}
-                  </label>
+                  <label className={labelClass}>{t('invoices.discountType')}</label>
                   <select
                     value={formData.discountType}
                     onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
@@ -628,9 +626,7 @@ export default function NewInvoicePage() {
                   </select>
                 </div>
                 <div>
-                  <label className={labelClass}>
-                    {t('invoices.discountValue')}
-                  </label>
+                  <label className={labelClass}>{t('invoices.discountValue')}</label>
                   <Input
                     type='number'
                     min='0'
@@ -643,9 +639,7 @@ export default function NewInvoicePage() {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>
-                    {t('invoices.reason')}
-                  </label>
+                  <label className={labelClass}>{t('invoices.reason')}</label>
                   <Input
                     value={formData.discountReason}
                     onChange={(e) => setFormData({ ...formData, discountReason: e.target.value })}
@@ -663,22 +657,22 @@ export default function NewInvoicePage() {
               </h2>
               <div className='flex justify-end'>
                 <div className='bg-neutral-100 p-3 rounded-lg space-y-1.5 max-w-xs w-full sm:w-auto min-w-[12rem]'>
-                <div className='flex justify-between text-sm'>
-                  <span className='text-neutral-600'>{t('invoices.subtotal')}</span>
-                  <span>{formatCurrencyUtil(totals.subtotal, currency, locale)}</span>
-                </div>
-                <div className='flex justify-between text-sm'>
-                  <span className='text-neutral-600'>{t('invoices.discount')}</span>
-                  <span>-{formatCurrencyUtil(totals.invoiceDiscount, currency, locale)}</span>
-                </div>
-                <div className='flex justify-between text-sm'>
-                  <span className='text-neutral-600'>{t('invoices.tax')}</span>
-                  <span>{formatCurrencyUtil(totals.totalTax, currency, locale)}</span>
-                </div>
-                <div className='flex justify-between font-semibold border-t border-neutral-200 pt-2 mt-2'>
-                  <span>{t('invoices.total')}</span>
-                  <span>{formatCurrencyUtil(totals.finalTotal, currency, locale)}</span>
-                </div>
+                  <div className='flex justify-between text-sm'>
+                    <span className='text-neutral-600'>{t('invoices.subtotal')}</span>
+                    <span>{formatCurrencyUtil(totals.subtotal, currency, locale)}</span>
+                  </div>
+                  <div className='flex justify-between text-sm'>
+                    <span className='text-neutral-600'>{t('invoices.discount')}</span>
+                    <span>-{formatCurrencyUtil(totals.invoiceDiscount, currency, locale)}</span>
+                  </div>
+                  <div className='flex justify-between text-sm'>
+                    <span className='text-neutral-600'>{t('invoices.tax')}</span>
+                    <span>{formatCurrencyUtil(totals.totalTax, currency, locale)}</span>
+                  </div>
+                  <div className='flex justify-between font-semibold border-t border-neutral-200 pt-2 mt-2'>
+                    <span>{t('invoices.total')}</span>
+                    <span>{formatCurrencyUtil(totals.finalTotal, currency, locale)}</span>
+                  </div>
                 </div>
               </div>
             </div>

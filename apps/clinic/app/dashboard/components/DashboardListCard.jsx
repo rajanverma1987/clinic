@@ -1,7 +1,7 @@
 'use client';
 
 import TodayAppointments from '@/components/dashboard/TodayAppointments';
-import { Button } from '@/components/ui/Button';
+import { ChevronRightIcon } from '@/components/icons';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -79,7 +79,7 @@ function DashboardListCardInner({
           transition={{ duration: 0.25 }}
         >
           {/* Header – alignment from dashboard.css .section-header */}
-          <div className='section-header'>
+          <div className='section-header mb-3'>
             <div className={`accent-bar accent-bar-${colorScheme}`} />
             <h2 className='section-title'>{title}</h2>
           </div>
@@ -124,13 +124,11 @@ function DashboardListCardInner({
             )}
           </div>
 
-          {/* See All Link */}
+          {/* See All Link - positioned at bottom for better UX */}
           {showSeeAll && data && data.length > 0 && (
-            <div className='pt-3 border-t border-neutral-200 mt-3'>
-              <Button
-                variant='link'
-                size='sm'
-                className='w-full justify-center'
+            <div className='pt-3 border-t border-neutral-200 dark:border-neutral-700 mt-auto'>
+              <button
+                type='button'
                 onClick={() => {
                   if (onSeeAll) {
                     onSeeAll();
@@ -138,9 +136,15 @@ function DashboardListCardInner({
                     window.location.href = seeAllLink;
                   }
                 }}
+                className='w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium group'
+                aria-label={t('dashboard.seeAll')}
               >
-                {t('dashboard.seeAll')}
-              </Button>
+                <span>{t('dashboard.seeAll')}</span>
+                <ChevronRightIcon
+                  className='icon icon-xs group-hover:translate-x-0.5 transition-transform'
+                  ariaHidden
+                />
+              </button>
             </div>
           )}
         </motion.div>

@@ -1,4 +1,4 @@
-import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import { ACTIONS, RESOURCES, hasPermission } from '@/lib/permissions/constants';
 import {
   errorResponse,
   handleMongoError,
@@ -19,12 +19,19 @@ import { NextResponse } from 'next/server';
  * List invoices with pagination and filters
  */
 async function getHandler(req, user) {
-  // Check if Invoice & Billing feature is available (skip for super_admin)
+  // Check if Invoice & Billing feature is available (skip for super_admin and roles with invoice permissions)
+  // Managers and other roles with INVOICE:READ permission should be able to read invoices even if feature isn't in plan
   if (user.role !== 'super_admin') {
-    const { requireFeature } = await import('@/middleware/feature-check');
-    const featureCheck = await requireFeature(req, user, 'Invoice & Billing');
-    if (!featureCheck.allowed) {
-      return featureCheck.error;
+    const hasInvoiceReadPermission = hasPermission(user.role, RESOURCES.INVOICE, ACTIONS.READ);
+    
+    // Only check feature if user doesn't have explicit permission
+    // This allows managers and other roles to access invoices even if feature isn't in subscription
+    if (!hasInvoiceReadPermission) {
+      const { requireFeature } = await import('@/middleware/feature-check');
+      const featureCheck = await requireFeature(req, user, 'Invoice & Billing');
+      if (!featureCheck.allowed) {
+        return featureCheck.error;
+      }
     }
   }
 

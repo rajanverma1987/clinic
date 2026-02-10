@@ -28,41 +28,47 @@ export const COMPARISON_TABLE_ROWS = [
   ['subscriptionSpec.support', 'Email 24h', 'Phone + Chat', '24/7 Dedicated'],
 ];
 
-/** Add-ons per Subscriptions.md: key, labelKey, price (exact doc wording), noteKey */
+/** Add-ons per Subscriptions.md: key, labelKey, descriptionKey, price (exact doc wording), noteKey */
 export const ADDONS = [
   {
     key: 'extraDoctor',
     labelKey: 'subscriptionSpec.extraDoctor',
+    descriptionKey: 'subscriptionSpec.extraDoctorDesc',
     price: '$10/month',
     noteKey: 'subscriptionSpec.addonUnlimitedEnterprise',
   },
   {
     key: 'extraStaff',
     labelKey: 'subscriptionSpec.extraStaff',
+    descriptionKey: 'subscriptionSpec.extraStaffDesc',
     price: '$5/month',
     noteKey: 'subscriptionSpec.addonUnlimitedEnterprise',
   },
   {
     key: 'extraSms',
     labelKey: 'subscriptionSpec.extraSms',
+    descriptionKey: 'subscriptionSpec.extraSmsDesc',
     price: '100 SMS - $5, 500 SMS - $20, 1000 SMS - $35',
     noteKey: 'subscriptionSpec.addonUnlimitedEnterprise',
   },
   {
     key: 'additionalStorage',
     labelKey: 'subscriptionSpec.additionalStorage',
+    descriptionKey: 'subscriptionSpec.additionalStorageDesc',
     price: '25GB - $10/month, 100GB - $30/month',
     noteKey: 'subscriptionSpec.addonUnlimitedEnterprise',
   },
   {
     key: 'whatsApp',
     labelKey: 'subscriptionSpec.whatsApp',
+    descriptionKey: 'subscriptionSpec.whatsAppDesc',
     price: '$20/month (includes 500 messages)',
     noteKey: 'subscriptionSpec.addonBuiltInEnterprise',
   },
   {
     key: 'advancedReports',
     labelKey: 'subscriptionSpec.advancedReports',
+    descriptionKey: 'subscriptionSpec.advancedReportsDesc',
     price: '$15/month (custom dashboards)',
     noteKey: 'subscriptionSpec.addonBuiltInEnterprise',
   },

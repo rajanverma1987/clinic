@@ -4,7 +4,6 @@ import { Layout } from '@/components/layout/Layout';
 import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
 import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
 import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
-import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -490,7 +489,6 @@ export default function EditPrescriptionPage() {
     <Layout>
       <div style={{ padding: '0 10px' }}>
         <div className='mb-6' style={{ paddingTop: '10px' }}>
-          <BackButton className='mb-4' />
           <h1 className='text-2xl font-bold text-neutral-900'>Edit Prescription</h1>
         </div>
 

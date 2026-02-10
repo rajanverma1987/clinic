@@ -136,6 +136,7 @@ export const appointmentQuerySchema = z.object({
     .string()
     .transform((val) => val === 'true')
     .optional(),
+  since: z.string().datetime().optional(), // For incremental updates - ISO datetime string
 });
 
 export const changeStatusSchema = z.object({

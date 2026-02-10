@@ -851,19 +851,25 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 const tab = item.href.includes('?tab=')
                   ? item.href.split('?tab=')[1]?.split('&')[0]
                   : null;
+                const currentTab = searchParams?.get('tab');
                 let itemMatches;
                 if (tab === 'appointments') {
                   itemMatches =
-                    (pathname === '/dashboard' && searchParams?.get('tab') === 'appointments') ||
+                    (pathname === '/dashboard' && currentTab === 'appointments') ||
                     pathname === '/appointments' ||
                     pathname?.startsWith('/appointments/');
                 } else if (tab === 'prescriptions') {
                   itemMatches =
-                    (pathname === '/dashboard' && searchParams?.get('tab') === 'prescriptions') ||
+                    (pathname === '/dashboard' && currentTab === 'prescriptions') ||
                     pathname === '/prescriptions' ||
                     pathname?.startsWith('/prescriptions/');
                 } else {
-                  itemMatches = pathname === hrefPath || pathname?.startsWith(hrefPath + '/');
+                  // For dashboard (no tab), only match if pathname is /dashboard AND no tab is active
+                  if (hrefPath === '/dashboard') {
+                    itemMatches = pathname === '/dashboard' && !currentTab;
+                  } else {
+                    itemMatches = pathname === hrefPath || pathname?.startsWith(hrefPath + '/');
+                  }
                 }
                 const longerMatchExists = menuItems.some((other) => {
                   const otherPath = other.href.split('?')[0];
@@ -872,10 +878,16 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                     : null;
                   const otherMatches =
                     otherTab === 'appointments'
-                      ? pathname === '/appointments' || pathname?.startsWith('/appointments/')
+                      ? (pathname === '/dashboard' && currentTab === 'appointments') ||
+                        pathname === '/appointments' ||
+                        pathname?.startsWith('/appointments/')
                       : otherTab === 'prescriptions'
-                        ? pathname === '/prescriptions' || pathname?.startsWith('/prescriptions/')
-                        : pathname === otherPath || pathname?.startsWith(otherPath + '/');
+                        ? (pathname === '/dashboard' && currentTab === 'prescriptions') ||
+                          pathname === '/prescriptions' ||
+                          pathname?.startsWith('/prescriptions/')
+                        : otherPath === '/dashboard'
+                          ? pathname === '/dashboard' && !currentTab
+                          : pathname === otherPath || pathname?.startsWith(otherPath + '/');
                   return otherPath.length > hrefPath.length && otherMatches;
                 });
                 const isActive = itemMatches && !longerMatchExists;

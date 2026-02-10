@@ -13,6 +13,7 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { apiClient } from '@/lib/api/client';
 import { CARD_FEATURES_BY_PLAN } from '@/lib/constants/plan-features';
 import {
@@ -33,6 +34,7 @@ export default function SubscriptionPage() {
   const { user, loading: authLoading } = useAuth();
   const { open: openConfirm } = useConfirmation();
   const { t } = useI18n();
+  const { handleError, safeTranslate } = useErrorHandler({ t, showToast: true });
   const [subscription, setSubscription] = useState(null);
   const [availablePlans, setAvailablePlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -305,6 +307,54 @@ export default function SubscriptionPage() {
       amount / 100,
     );
 
+  const renderAddonCard = (addon) => {
+    try {
+      const hasSubscription = subscription && subscription._id;
+      const alreadyAdded =
+        Array.isArray(subscription?.addons) &&
+        subscription.addons.some((a) => a.addonKey === addon.key);
+      const canAdd = hasSubscription && !alreadyAdded;
+      return (
+        <div key={addon.key} className='sub-addon-card'>
+          <div className='sub-addon-card-header'>
+            <div className='sub-addon-title'>
+              {safeTranslate(addon?.labelKey, addon?.key || 'Add-on')}
+            </div>
+            {canAdd && (
+              <button
+                type='button'
+                className='sub-addon-add-icon'
+                onClick={() => handleAddAddon(addon)}
+                disabled={!!addonLoading}
+                aria-label={safeTranslate('subscription.addAddon', 'Add')}
+                title={safeTranslate('subscription.addAddon', 'Add')}
+              >
+                {addonLoading === addon.key ? (
+                  <span className='sub-addon-add-icon-spinner' aria-hidden />
+                ) : (
+                  <PlusIcon className='icon icon-sm' ariaHidden />
+                )}
+              </button>
+            )}
+            {alreadyAdded && (
+              <span className='sub-addon-badge' aria-hidden>
+                ✓ {safeTranslate('subscription.added', 'Added')}
+              </span>
+            )}
+          </div>
+          {addon?.descriptionKey && (
+            <p className='sub-addon-description'>{safeTranslate(addon.descriptionKey, '')}</p>
+          )}
+          <div className='sub-addon-price'>{addon?.price || 'N/A'}</div>
+          {addon?.noteKey && <p className='sub-addon-note'>{safeTranslate(addon.noteKey, '')}</p>}
+        </div>
+      );
+    } catch (error) {
+      console.error('Error rendering addon card:', addon?.key, error);
+      return null;
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -540,50 +590,6 @@ export default function SubscriptionPage() {
             </div>
 
             <div className='dashboard-section sub-section-compact'>
-              {subscription._id &&
-                Array.isArray(subscription.addons) &&
-                subscription.addons.length > 0 && (
-                  <>
-                    <h2 className='sub-section-title'>
-                      <span className='sub-accent' />
-                      {t('subscription.yourAddons')}
-                    </h2>
-                    <Card className='mb-4'>
-                      <p
-                        className='sub-section-desc'
-                        style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}
-                      >
-                        {t('subscription.yourAddonsDescription')}
-                      </p>
-                      <ul className='sub-your-addons-list'>
-                        {subscription.addons.map((item) => {
-                          const spec = ADDONS.find((a) => a.key === item.addonKey);
-                          const label = spec ? t(spec.labelKey) : item.addonKey;
-                          return (
-                            <li key={item.addonKey} className='sub-your-addon-item'>
-                              <span className='sub-your-addon-label'>
-                                {label}
-                                {item.option ? ` (${item.option})` : ''}
-                                {item.quantity > 1 ? ` × ${item.quantity}` : ''}
-                              </span>
-                              <Button
-                                variant='secondary'
-                                size='sm'
-                                onClick={() =>
-                                  handleRemoveAddon(item.addonKey, spec?.labelKey || item.addonKey)
-                                }
-                                isLoading={addonLoading === item.addonKey}
-                                disabled={!!addonLoading}
-                              >
-                                {t('subscription.removeAddon')}
-                              </Button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </Card>
-                  </>
-                )}
               <Card title={t('subscriptionSpec.addOns')}>
                 <p
                   className='sub-section-desc'
@@ -592,96 +598,13 @@ export default function SubscriptionPage() {
                   {t('subscriptionSpec.addOnsSubtitle')}
                 </p>
                 <div className='content-grid-3 content-grid-gap-3'>
-                  {ADDONS.map((addon) => {
-                    const hasSubscription = subscription && subscription._id;
-                    const alreadyAdded =
-                      Array.isArray(subscription?.addons) &&
-                      subscription.addons.some((a) => a.addonKey === addon.key);
-                    const canAdd = hasSubscription && !alreadyAdded;
-                    return (
-                      <div key={addon.key} className='sub-addon-card'>
-                        <div className='sub-addon-card-header'>
-                          <div className='sub-addon-title'>{t(addon.labelKey)}</div>
-                          {canAdd && (
-                            <button
-                              type='button'
-                              className='sub-addon-add-icon'
-                              onClick={() => handleAddAddon(addon)}
-                              disabled={!!addonLoading}
-                              aria-label={t('subscription.addAddon')}
-                              title={t('subscription.addAddon')}
-                            >
-                              {addonLoading === addon.key ? (
-                                <span className='sub-addon-add-icon-spinner' aria-hidden />
-                              ) : (
-                                <PlusIcon className='icon icon-sm' ariaHidden />
-                              )}
-                            </button>
-                          )}
-                          {alreadyAdded && (
-                            <span className='sub-addon-badge' aria-hidden>
-                              ✓ {t('subscription.added')}
-                            </span>
-                          )}
-                        </div>
-                        <div className='sub-addon-price'>{addon.price}</div>
-                        <p className='sub-addon-note'>{t(addon.noteKey)}</p>
-                      </div>
-                    );
-                  })}
+                  {ADDONS.map(renderAddonCard)}
                 </div>
               </Card>
             </div>
           </div>
         ) : (
           <>
-            {/* No subscription: Your add-ons (only if somehow we have addons) */}
-            {subscription &&
-              subscription._id &&
-              Array.isArray(subscription.addons) &&
-              subscription.addons.length > 0 && (
-                <div className='dashboard-section sub-section-compact'>
-                  <h2 className='sub-section-title'>
-                    <span className='sub-accent' />
-                    {t('subscription.yourAddons')}
-                  </h2>
-                  <Card>
-                    <p
-                      className='sub-section-desc'
-                      style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}
-                    >
-                      {t('subscription.yourAddonsDescription')}
-                    </p>
-                    <ul className='sub-your-addons-list'>
-                      {subscription.addons.map((item) => {
-                        const spec = ADDONS.find((a) => a.key === item.addonKey);
-                        const label = spec ? t(spec.labelKey) : item.addonKey;
-                        return (
-                          <li key={item.addonKey} className='sub-your-addon-item'>
-                            <span className='sub-your-addon-label'>
-                              {label}
-                              {item.option ? ` (${item.option})` : ''}
-                              {item.quantity > 1 ? ` × ${item.quantity}` : ''}
-                            </span>
-                            <Button
-                              variant='secondary'
-                              size='sm'
-                              onClick={() =>
-                                handleRemoveAddon(item.addonKey, spec?.labelKey || item.addonKey)
-                              }
-                              isLoading={addonLoading === item.addonKey}
-                              disabled={!!addonLoading}
-                            >
-                              {t('subscription.removeAddon')}
-                            </Button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </Card>
-                </div>
-              )}
-
             {/* Add-ons catalog – full width when no current plan */}
             <div className='dashboard-section sub-section-compact'>
               <Card title={t('subscriptionSpec.addOns')}>
@@ -692,43 +615,7 @@ export default function SubscriptionPage() {
                   {t('subscriptionSpec.addOnsSubtitle')}
                 </p>
                 <div className='content-grid-3 content-grid-gap-3'>
-                  {ADDONS.map((addon) => {
-                    const hasSubscription = subscription && subscription._id;
-                    const alreadyAdded =
-                      Array.isArray(subscription?.addons) &&
-                      subscription.addons.some((a) => a.addonKey === addon.key);
-                    const canAdd = hasSubscription && !alreadyAdded;
-                    return (
-                      <div key={addon.key} className='sub-addon-card'>
-                        <div className='sub-addon-card-header'>
-                          <div className='sub-addon-title'>{t(addon.labelKey)}</div>
-                          {canAdd && (
-                            <button
-                              type='button'
-                              className='sub-addon-add-icon'
-                              onClick={() => handleAddAddon(addon)}
-                              disabled={!!addonLoading}
-                              aria-label={t('subscription.addAddon')}
-                              title={t('subscription.addAddon')}
-                            >
-                              {addonLoading === addon.key ? (
-                                <span className='sub-addon-add-icon-spinner' aria-hidden />
-                              ) : (
-                                <PlusIcon className='icon icon-sm' ariaHidden />
-                              )}
-                            </button>
-                          )}
-                          {alreadyAdded && (
-                            <span className='sub-addon-badge' aria-hidden>
-                              ✓ {t('subscription.added')}
-                            </span>
-                          )}
-                        </div>
-                        <div className='sub-addon-price'>{addon.price}</div>
-                        <p className='sub-addon-note'>{t(addon.noteKey)}</p>
-                      </div>
-                    );
-                  })}
+                  {ADDONS.map(renderAddonCard)}
                 </div>
               </Card>
             </div>

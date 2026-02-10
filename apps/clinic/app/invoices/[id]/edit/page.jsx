@@ -1,7 +1,6 @@
 'use client';
 
 import { Layout } from '@/components/layout/Layout';
-import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -9,8 +8,8 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
-import { isManagerPathLimitedWrite } from '@/lib/constants/route-security';
 import { apiClient } from '@/lib/api/client';
+import { isManagerPathLimitedWrite } from '@/lib/constants/route-security';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
 import { useParams, usePathname, useRouter } from 'next/navigation';
@@ -271,7 +270,6 @@ export default function EditInvoicePage() {
     <Layout>
       <div style={{ padding: '0 10px' }}>
         <div className='mb-8' style={{ paddingTop: '10px' }}>
-          <BackButton className='mb-4' />
           <h1 className='text-3xl font-bold text-neutral-900'>Edit Invoice</h1>
           <p className='text-neutral-600 mt-2'>Update invoice details</p>
         </div>

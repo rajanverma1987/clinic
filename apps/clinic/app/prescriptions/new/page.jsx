@@ -10,7 +10,6 @@ import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPa
 import { PrescriptionFormPrintPreview } from '@/components/prescriptions/PrescriptionFormPrintPreview';
 import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
 import { PrescriptionPatientHeader } from '@/components/prescriptions/PrescriptionPatientHeader';
-import { BackButton } from '@/components/ui/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
@@ -706,7 +705,6 @@ function NewPrescriptionPageContent() {
           subtitle={t('prescriptions.prescriptionList')}
           notifications={[]}
           unreadCount={0}
-          actionButton={<BackButton />}
         />
         <div style={{ padding: '0 10px' }}>
           {/* Two-column layout: Form on left (wider), Patient details on right */}
@@ -1114,7 +1112,10 @@ function NewPrescriptionPageContent() {
                         // Download prescription as PDF
                         const selectedPatient = patients.find((p) => p._id === formData.patientId);
                         if (!selectedPatient) {
-                          showError(t('prescriptions.selectPatientFirst') || 'Please select a patient first');
+                          showError(
+                            t('prescriptions.selectPatientFirst') ||
+                              'Please select a patient first',
+                          );
                           return;
                         }
                         try {

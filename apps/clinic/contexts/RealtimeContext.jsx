@@ -6,14 +6,15 @@
  * Must be used inside SWRConfig so mutate is available.
  */
 
+import { useAuth } from '@/contexts/AuthContext';
 import {
-  initRealtimeClient,
   disconnectRealtimeClient,
-  onRealtimeEvent,
+  initRealtimeClient,
   isRealtimeConnected,
   joinAppointment,
-  joinQueue,
   joinDoctor,
+  joinQueue,
+  onRealtimeEvent,
 } from '@/lib/realtime/realtime-client';
 import {
   DASHBOARD_LISTS_KEY,
@@ -24,7 +25,6 @@ import {
 import { showToast } from '@/lib/utils/toast';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useSWRConfig } from 'swr';
-import { useAuth } from '@/contexts/AuthContext';
 
 const BATCH_MS = 100;
 
@@ -47,32 +47,39 @@ export function RealtimeProvider({ children }) {
     const items = batchRef.current;
     batchRef.current = [];
     if (items.length === 0) return;
-    globalMutate(DASHBOARD_LISTS_KEY, (current) => {
-      previousListsRef.current = current;
-      let next = current;
-      for (const { type, data } of items) {
-        if (!next) next = current;
-        if (type === 'appointment.created' && data?.appointment) {
-          const list = Array.isArray(next.todayAppointments) ? next.todayAppointments : [];
-          const id = data.appointment._id || data.appointment.id;
-          if (!list.some((a) => (a._id || a.id) === id)) {
-            next = { ...next, todayAppointments: [{ ...data.appointment, _updated: true }, ...list] };
+    globalMutate(
+      DASHBOARD_LISTS_KEY,
+      (current) => {
+        previousListsRef.current = current;
+        let next = current;
+        for (const { type, data } of items) {
+          if (!next) next = current;
+          if (type === 'appointment.created' && data?.appointment) {
+            const list = Array.isArray(next.todayAppointments) ? next.todayAppointments : [];
+            const id = data.appointment._id || data.appointment.id;
+            if (!list.some((a) => (a._id || a.id) === id)) {
+              next = {
+                ...next,
+                todayAppointments: [{ ...data.appointment, _updated: true }, ...list],
+              };
+            }
+          } else if (type === 'appointment.statusChanged') {
+            const list = Array.isArray(next.todayAppointments) ? next.todayAppointments : [];
+            const id = data?.appointmentId || data?.appointment?._id;
+            next = {
+              ...next,
+              todayAppointments: list.map((a) =>
+                (a._id || a.id) === id
+                  ? { ...a, ...data.appointment, status: data.status, _updated: true }
+                  : a,
+              ),
+            };
           }
-        } else if (type === 'appointment.statusChanged') {
-          const list = Array.isArray(next.todayAppointments) ? next.todayAppointments : [];
-          const id = data?.appointmentId || data?.appointment?._id;
-          next = {
-            ...next,
-            todayAppointments: list.map((a) =>
-              (a._id || a.id) === id
-                ? { ...a, ...data.appointment, status: data.status, _updated: true }
-                : a
-            ),
-          };
         }
-      }
-      return next;
-    }, { revalidate: false });
+        return next;
+      },
+      { revalidate: false },
+    );
     globalMutate(DASHBOARD_STATS_KEY);
     if (items.some((i) => i.type === 'appointment.created')) {
       showToast('New appointment added', 'success');
@@ -145,11 +152,7 @@ export function RealtimeProvider({ children }) {
     joinDoctor,
   };
 
-  return (
-    <RealtimeContext.Provider value={value}>
-      {children}
-    </RealtimeContext.Provider>
-  );
+  return <RealtimeContext.Provider value={value}>{children}</RealtimeContext.Provider>;
 }
 
 export function useRealtime() {

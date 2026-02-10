@@ -1,7 +1,6 @@
 'use client';
 
-import { WarningIcon } from '@/components/icons';
-import { Button } from '@/components/ui/Button';
+import { ChevronRightIcon, WarningIcon } from '@/components/icons';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -25,14 +24,20 @@ function AlertItem({ alert, onViewAll, t }) {
           </div>
           <p className='text-body-sm font-medium text-neutral-900 flex-1 truncate'>{message}</p>
         </div>
-        <Button
-          variant={severity === 'error' ? 'danger' : severity === 'warning' ? 'warning' : 'primary'}
-          size='sm'
-          className='flex-shrink-0'
+        <button
+          type='button'
           onClick={() => onViewAll?.(alert)}
+          className='inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg text-xs font-medium hover:bg-primary-50 dark:hover:bg-primary-900/30 shrink-0 group'
+          aria-label={count > 1 ? t('common.viewAll') : t('dashboard.viewAlert')}
         >
-          {count > 1 ? t('common.viewAll') : t('dashboard.viewAlert')}
-        </Button>
+          <span className='text-xs whitespace-nowrap'>
+            {count > 1 ? t('common.viewAll') : t('dashboard.viewAlert')}
+          </span>
+          <ChevronRightIcon
+            className='icon icon-xs group-hover:translate-x-0.5 transition-transform'
+            ariaHidden
+          />
+        </button>
       </div>
     </div>
   );

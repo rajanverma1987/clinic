@@ -30,13 +30,16 @@ export const TabContent = memo(function TabContent({
   children,
   appointmentsContent = null,
   prescriptionsContent = null,
+  hidden = false,
 }) {
   const { t } = useI18n();
   const normalizedTab = activeTab || 'overview';
 
-  // Render all tabs but hide inactive ones for instant switching
+  // Render all tabs but hide inactive ones for instant switching.
+  // When `hidden` is true the entire block is invisible (during initial dashboard load)
+  // but components remain mounted so their data fetches run in the background.
   return (
-    <>
+    <div style={{ display: hidden ? 'none' : undefined }}>
       {/* Overview Tab */}
       <div
         className='dashboard-tab-content'
@@ -63,6 +66,6 @@ export const TabContent = memo(function TabContent({
       >
         {prescriptionsContent ?? <TabPlaceholderMemo tabLabel={t('prescriptions.title')} />}
       </div>
-    </>
+    </div>
   );
 });

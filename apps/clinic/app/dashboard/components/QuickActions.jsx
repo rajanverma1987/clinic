@@ -2,8 +2,8 @@
 
 import {
   CalendarIcon,
-  ChevronDownIcon,
   DocumentIcon,
+  PlusIcon,
   PrescriptionIcon,
   QueueIcon,
   UserAddIcon,
@@ -29,6 +29,16 @@ export function QuickActions({ onNavigate, loading = false }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
+  // Safety check for translation function
+  const safeTranslate = (key) => {
+    try {
+      return t && typeof t === 'function' ? t(key) : key;
+    } catch (error) {
+      console.error('Translation error:', error);
+      return key;
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -49,17 +59,18 @@ export function QuickActions({ onNavigate, loading = false }) {
     <div className='relative inline-block' ref={menuRef}>
       <Button
         type='button'
-        variant='secondary'
-        size='sm'
+        variant='ghost'
+        size='md'
+        iconOnly
         onClick={() => setOpen((v) => !v)}
-        className='gap-2 focus:ring-0 focus:ring-offset-0'
+        className='w-10 h-10 border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 transition-all'
         aria-expanded={open}
         aria-haspopup='true'
-        aria-label={t('dashboard.quickActions')}
+        aria-label={safeTranslate('dashboard.quickActions')}
+        title={safeTranslate('dashboard.quickActions')}
       >
-        <span>{t('dashboard.quickActions')}</span>
-        <ChevronDownIcon
-          className={`icon icon-sm shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+        <PlusIcon
+          className={`icon icon-sm transition-transform duration-200 ${open ? 'rotate-45' : ''}`}
           ariaHidden
         />
       </Button>
@@ -76,23 +87,33 @@ export function QuickActions({ onNavigate, loading = false }) {
             data-wide
             role='menu'
           >
-            {ACTIONS.map(({ path, labelKey, Icon }) => (
-              <Button
-                key={path}
-                type='button'
-                variant='ghost'
-                size='sm'
-                role='menuitem'
-                className='!min-h-0 !w-full !justify-start'
-                onClick={() => {
-                  onNavigate(path);
-                  setOpen(false);
-                }}
-              >
-                <Icon className='icon icon-sm shrink-0' aria-hidden />
-                <span>{t(labelKey)}</span>
-              </Button>
-            ))}
+            {ACTIONS.map(({ path, labelKey, Icon }) => {
+              if (!Icon || typeof Icon !== 'function') {
+                console.error(`Invalid Icon component for ${labelKey}`);
+                return null;
+              }
+              return (
+                <Button
+                  key={path}
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  role='menuitem'
+                  className='!min-h-0 !w-full !justify-start'
+                  onClick={() => {
+                    if (onNavigate && typeof onNavigate === 'function') {
+                      onNavigate(path);
+                    } else {
+                      window.location.href = path;
+                    }
+                    setOpen(false);
+                  }}
+                >
+                  <Icon className='icon icon-sm shrink-0' aria-hidden />
+                  <span>{safeTranslate(labelKey)}</span>
+                </Button>
+              );
+            })}
           </div>
         </>
       )}

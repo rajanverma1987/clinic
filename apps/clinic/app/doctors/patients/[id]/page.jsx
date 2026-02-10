@@ -182,10 +182,7 @@ export default function DoctorPatientRecordsPage() {
     return (
       <Layout>
         <Card className='p-8 text-center'>
-          <p className='text-neutral-500 mb-4'>Patient not found</p>
-          <Button variant='primary' href='/patients'>
-            Back to Patients
-          </Button>
+          <p className='text-neutral-500'>Patient not found</p>
         </Card>
       </Layout>
     );

@@ -4,7 +4,7 @@ import { NotificationCenter } from '@/components/notifications/NotificationCente
 import { WelcomeNotification } from '@/components/notifications/WelcomeNotification';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import { Loader } from '@/components/ui/Loader';
-import { SubscriptionExpiredBanner } from '@/components/ui/SubscriptionExpiredBanner.jsx';
+import { SubscriptionOverlay } from '@/components/ui/SubscriptionOverlay.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useFeatures } from '@/contexts/FeatureContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
@@ -23,25 +23,10 @@ export function Layout({ children, title, subtitle, actionButton, actionButtons 
   const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const { subscription } = useFeatures();
-  const [showSubscriptionBanner, setShowSubscriptionBanner] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
-
-  // Show subscription banner after 2 seconds (only for non-super-admin users)
-  useEffect(() => {
-    const shouldShowBanner = user && user.role !== 'super_admin';
-    if (shouldShowBanner) {
-      const timer = setTimeout(() => {
-        setShowSubscriptionBanner(true);
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    } else {
-      setShowSubscriptionBanner(false);
-    }
-  }, [user]);
 
   // Global keyboard shortcuts and custom events
   useEffect(() => {
@@ -100,29 +85,6 @@ export function Layout({ children, title, subtitle, actionButton, actionButtons 
       )}
       <Sidebar isMobileOpen={sidebarMobileOpen} onMobileClose={() => setSidebarMobileOpen(false)} />
       <main className='flex-1 flex flex-col min-w-0' style={{ position: 'relative', zIndex: 0 }}>
-        {showSubscriptionBanner && subscription && (
-          <div
-            className={`transition-all duration-500 ${
-              showSubscriptionBanner ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-            }`}
-          >
-            <SubscriptionExpiredBanner
-              subscriptionStatus={subscription.status}
-              expiryDate={subscription.currentPeriodEnd}
-              trialDaysRemaining={subscription.trialDaysRemaining}
-              paypalApprovalUrl={subscription.paypalApprovalUrl}
-            />
-          </div>
-        )}
-        {showSubscriptionBanner && !subscription && (
-          <div
-            className={`transition-all duration-500 ${
-              showSubscriptionBanner ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-            }`}
-          >
-            <SubscriptionExpiredBanner subscriptionStatus={null} />
-          </div>
-        )}
         {/* Welcome Notification - shows after login */}
         <WelcomeNotification />
         <div
@@ -180,6 +142,22 @@ export function Layout({ children, title, subtitle, actionButton, actionButtons 
         unreadCount={unreadNotificationCount}
         onUnreadCountChange={setUnreadNotificationCount}
       />
+
+      {/* Subscription Overlay - Bottom Right Corner */}
+      {user && user.role !== 'super_admin' && (
+        <>
+          {subscription ? (
+            <SubscriptionOverlay
+              subscriptionStatus={subscription.status}
+              expiryDate={subscription.currentPeriodEnd}
+              trialDaysRemaining={subscription.trialDaysRemaining}
+              paypalApprovalUrl={subscription.paypalApprovalUrl}
+            />
+          ) : (
+            <SubscriptionOverlay subscriptionStatus={null} />
+          )}
+        </>
+      )}
     </div>
   );
 }

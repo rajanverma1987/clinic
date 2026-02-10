@@ -1,77 +1,63 @@
-import { useAuth } from '@/contexts/AuthContext';
-import { apiClient } from '@/lib/api/client';
-import * as dashboardCache from '@/lib/cache/dashboard-cache';
-import { useCallback, useLayoutEffect, useState } from 'react';
-
 /**
- * Clinic dashboard stats. Cache-first: hydrate from localStorage in useLayoutEffect
- * (no hydration mismatch, no flash), then revalidate in background.
+ * Dashboard Stats Hook with Auto-Refresh
+ * Matches ENTERPRISE_DASHBOARD_PERFORMANCE.md spec exactly.
  */
-export function useDashboardStats() {
-  const { user } = useAuth();
-  const tenantId = user?.tenantId ?? null;
 
+import { apiClient } from '@/lib/api/client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+export function useDashboardStats({ enabled = true } = {}) {
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
+  const intervalRef = useRef(null);
 
-  useLayoutEffect(() => {
-    if (!tenantId) return;
-    const cached = dashboardCache.getData('stats', tenantId);
-    if (cached) {
-      setStats(cached);
-      setLoading(false);
-    }
-  }, [tenantId]);
-
-  const fetchStats = useCallback(async () => {
-    const cacheKey = tenantId ?? 'clinic';
-    const cached = dashboardCache.getData('stats', cacheKey);
-    const isBackgroundRevalidate = !!cached;
-
+  const fetchStats = useCallback(async (showLoading = true) => {
     try {
-      if (!isBackgroundRevalidate) setLoading(true);
+      if (showLoading) setLoading(true);
+
+      const response = await apiClient.get('/dashboard/stats');
+      setStats(response.data.data);
       setError(null);
-      const response = await apiClient.get('/reports/dashboard');
-      if (response.success && response.data) {
-        let next = response.data;
-        if (!next.patientsSummary) {
-          const newPatients = next.newPatientsThisMonth || 0;
-          const totalPatients = next.activePatients || 0;
-          const oldPatients = Math.max(0, totalPatients - newPatients);
-          next = {
-            ...next,
-            patientsSummary: { newPatients, oldPatients, totalPatients },
-          };
-        }
-        setStats(next);
-        dashboardCache.set('stats', cacheKey, next);
-      } else {
-        setStats({
-          todayAppointments: 0,
-          todayRevenue: 0,
-          activePatients: 0,
-          newPatientsThisMonth: 0,
-          completedToday: 0,
-          pendingInvoices: 0,
-        });
-        setError(response.error || new Error('Failed to fetch stats'));
-      }
+      setLoading(false);
     } catch (err) {
-      // Fetch failed
-      setError(err);
-      setStats({
-        todayAppointments: 0,
-        todayRevenue: 0,
-        activePatients: 0,
-        newPatientsThisMonth: 0,
-        completedToday: 0,
-        pendingInvoices: 0,
-      });
-    } finally {
+      console.error('Failed to fetch stats:', err);
+      setError(err.message);
       setLoading(false);
     }
-  }, [tenantId]);
+  }, []);
 
-  return { stats, loading, error, fetchStats };
+  const refresh = useCallback(async () => {
+    try {
+      const response = await apiClient.post('/dashboard/stats/refresh');
+      setStats(response.data.data);
+    } catch (err) {
+      console.error('Failed to refresh stats:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Skip entirely when disabled (e.g. doctor role doesn't use this endpoint)
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+
+    fetchStats(true);
+
+    // Poll only when the browser tab is visible to avoid unnecessary background traffic.
+    intervalRef.current = setInterval(() => {
+      if (!document.hidden) {
+        fetchStats(false);
+      }
+    }, 60000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [fetchStats, enabled]);
+
+  return { stats, loading, error, refresh, forceRefresh: refresh };
 }
