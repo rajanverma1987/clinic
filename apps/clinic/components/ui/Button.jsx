@@ -45,21 +45,23 @@ const VARIANTS = {
   link: 'bg-transparent text-primary-500 dark:text-primary-400 border-0 shadow-none hover:text-primary-700 dark:hover:text-primary-300 hover:underline focus:ring-primary-500 underline-offset-2',
 };
 
-/** Same design for all sizes: proportional padding + min-height; radius comes from SHAPES. */
+/** All buttons use same height (2.375rem) to match filter inputs/dropdowns. */
+const BUTTON_HEIGHT = 'min-h-[2.375rem] h-[2.375rem]';
+
 const SIZES = {
-  xs: 'gap-1.5 px-3 py-2 text-body-xs min-h-[32px]',
-  sm: 'gap-2 px-4 py-2.5 text-body-sm min-h-[40px]',
-  md: 'gap-2 px-5 py-3 text-button min-h-[44px]',
-  lg: 'gap-2.5 px-6 py-3.5 text-body-md min-h-[52px]',
-  xl: 'gap-3 px-7 py-4 text-body-lg min-h-[60px]',
+  xs: `gap-1.5 px-3 py-0 text-body-xs ${BUTTON_HEIGHT}`,
+  sm: `gap-2 px-4 py-0 text-body-sm ${BUTTON_HEIGHT}`,
+  md: `gap-2 px-5 py-0 text-button ${BUTTON_HEIGHT}`,
+  lg: `gap-2.5 px-6 py-0 text-body-md ${BUTTON_HEIGHT}`,
+  xl: `gap-3 px-7 py-0 text-body-lg ${BUTTON_HEIGHT}`,
 };
 
 const ICON_ONLY_SIZES = {
-  xs: 'w-8 h-8 p-0 min-h-[32px] min-w-[32px]',
-  sm: 'w-10 h-10 p-0 min-h-[40px] min-w-[40px]',
-  md: 'w-11 h-11 p-0 min-h-[44px] min-w-[44px]',
-  lg: 'w-12 h-12 p-0 min-h-[52px] min-w-[52px]',
-  xl: 'w-14 h-14 p-0 min-h-[60px] min-w-[60px]',
+  xs: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
+  sm: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
+  md: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
+  lg: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
+  xl: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
 };
 
 /** Single radius for all button sizes – design system token (--radius-lg = 8px). */
