@@ -171,7 +171,7 @@ class ToastManager {
       if (type === 'error') {
         return 'border-left: 4px solid var(--color-primary-500); border-top: none; border-right: none; border-bottom: none;';
       }
-      return `border: 2px solid ${getThemeBorderColor(type)};`;
+      return `border: 1px solid ${getThemeBorderColor(type)};`;
     };
 
     toast.innerHTML = `

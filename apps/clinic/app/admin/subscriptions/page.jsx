@@ -1,6 +1,6 @@
 'use client';
 
-import { DocumentIcon, LayoutDashboardIcon, ListChecksIcon, PencilIcon } from '@/components/icons';
+import { DocumentIcon, LayoutDashboardIcon, ListChecksIcon, PencilIcon, TrashIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
@@ -22,6 +23,9 @@ import { useEffect, useState } from 'react';
 
 const VIEW_TABLE = 'table';
 const VIEW_CARDS = 'cards';
+
+/** Only real/correct plans per subscription spec */
+const ALLOWED_PLAN_NAMES = ['SOLO', 'CLINIC', 'ENTERPRISE'];
 
 // Available features that can be included/excluded in subscription plans
 const AVAILABLE_FEATURES = [
@@ -50,6 +54,7 @@ export default function AdminSubscriptionsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const { open: openConfirm } = useConfirmation();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState(VIEW_TABLE);
@@ -98,7 +103,7 @@ export default function AdminSubscriptionsPage() {
       const response = await apiClient.get('/admin/subscription-plans');
       if (response?.success && response.data != null) {
         const raw = response.data;
-        const plansData = Array.isArray(raw) ? raw : (raw.plans || raw.items || []);
+        const plansData = Array.isArray(raw) ? raw : raw.plans || raw.items || [];
         if (!Array.isArray(plansData)) {
           logger.warn('Plans data is not an array', { type: typeof plansData });
           setPlans([]);
@@ -180,6 +185,31 @@ export default function AdminSubscriptionsPage() {
     }
   };
 
+  const handleDelete = (plan) => {
+    openConfirm({
+      title: t('common.delete'),
+      message:
+        t('admin.planDeleteConfirm')?.replace('{{name}}', plan.name) ||
+        `Delete plan "${plan.name}"? This cannot be undone.`,
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await apiClient.delete(`/admin/subscription-plans/${plan._id}`);
+          if (response?.success) {
+            showSuccess(t('admin.planDeleted') || 'Plan deleted');
+            fetchPlans();
+          } else {
+            showError(response?.error?.message || t('admin.planDeleteFailed') || 'Failed to delete plan');
+          }
+        } catch (error) {
+          showError(
+            error?.message || t('admin.planDeleteFailed') || 'Failed to delete plan',
+          );
+        }
+      },
+    });
+  };
+
   const handleCancel = () => {
     setShowForm(false);
     setEditingPlanId(null);
@@ -250,6 +280,11 @@ export default function AdminSubscriptionsPage() {
       currency: currency || 'USD',
     }).format(price / 100);
   };
+
+  /** Only real plans per spec (SOLO, CLINIC, ENTERPRISE) */
+  const displayPlans = plans.filter(
+    (p) => p && p.name && ALLOWED_PLAN_NAMES.includes(p.name),
+  );
 
   const columns = [
     {
@@ -322,6 +357,13 @@ export default function AdminSubscriptionsPage() {
               onClick: () => handleEdit(row),
             },
             {
+              key: 'delete',
+              label: t('common.delete'),
+              icon: <TrashIcon className='icon icon-sm' />,
+              danger: true,
+              onClick: () => handleDelete(row),
+            },
+            {
               key: 'copy',
               label: t('admin.copyPlanId'),
               icon: <DocumentIcon className='icon icon-sm' />,
@@ -350,54 +392,18 @@ export default function AdminSubscriptionsPage() {
         onRefresh={() => fetchPlans(true)}
         refreshing={refreshing}
         actionButtons={
-          <div className='flex items-center gap-2'>
-            <div
-              className='inline-flex rounded-lg border border-neutral-300 bg-neutral-50 p-0.5'
-              role='tablist'
-              aria-label={t('admin.viewTable')}
-            >
-              <button
-                type='button'
-                role='tab'
-                aria-selected={viewMode === VIEW_TABLE}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  viewMode === VIEW_TABLE
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
-                onClick={() => setViewMode(VIEW_TABLE)}
-              >
-                <ListChecksIcon className='icon icon-sm' />
-                {t('admin.viewTable')}
-              </button>
-              <button
-                type='button'
-                role='tab'
-                aria-selected={viewMode === VIEW_CARDS}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  viewMode === VIEW_CARDS
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
-                onClick={() => setViewMode(VIEW_CARDS)}
-              >
-                <LayoutDashboardIcon className='icon icon-sm' />
-                {t('admin.viewCards')}
-              </button>
-            </div>
-            <Button
-              variant='primary'
-              onClick={() => {
-                if (showForm) handleCancel();
-                else {
-                  setShowForm(true);
-                  setEditingPlanId(null);
-                }
-              }}
-            >
-              {showForm ? t('common.cancel') : `+ ${t('admin.createPlan')}`}
-            </Button>
-          </div>
+          <Button
+            variant='primary'
+            onClick={() => {
+              if (showForm) handleCancel();
+              else {
+                setShowForm(true);
+                setEditingPlanId(null);
+              }
+            }}
+          >
+            {showForm ? t('common.cancel') : `+ ${t('admin.createPlan')}`}
+          </Button>
         }
       />
       <div className='admin-page-content'>
@@ -581,7 +587,10 @@ export default function AdminSubscriptionsPage() {
                     onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
                     size='sm'
                   />
-                  <label htmlFor='isPopular' className='block text-sm text-neutral-700 cursor-pointer'>
+                  <label
+                    htmlFor='isPopular'
+                    className='block text-sm text-neutral-700 cursor-pointer'
+                  >
                     {t('admin.markAsPopular')}
                   </label>
                 </div>
@@ -592,7 +601,10 @@ export default function AdminSubscriptionsPage() {
                     onChange={(e) => setFormData({ ...formData, isHidden: e.target.checked })}
                     size='sm'
                   />
-                  <label htmlFor='isHidden' className='block text-sm text-neutral-700 cursor-pointer'>
+                  <label
+                    htmlFor='isHidden'
+                    className='block text-sm text-neutral-700 cursor-pointer'
+                  >
                     {t('admin.hideFromPricing')}
                   </label>
                 </div>
@@ -616,108 +628,143 @@ export default function AdminSubscriptionsPage() {
         )}
 
         <Card>
-          {plans.length === 0 ? (
+          {displayPlans.length === 0 ? (
             <div className='p-8 text-center'>
               <p className='text-neutral-500 mb-4'>{t('admin.noSubscriptionPlans')}</p>
               <Button onClick={() => fetchPlans(true)} variant='secondary'>
                 {t('common.refresh')}
               </Button>
             </div>
-          ) : viewMode === VIEW_CARDS ? (
-            <>
-              <div className='p-4 border-b border-neutral-200'>
-                <p className='text-sm text-neutral-600'>
-                  {(t('admin.showingPlans') || 'Showing {{count}} subscription plan(s)').replace(
-                    '{{count}}',
-                    String(plans.length),
-                  )}
-                </p>
-              </div>
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4'>
-                {plans.map((plan) => (
-                  <div
-                    key={plan._id}
-                    className='rounded-lg border border-neutral-200 bg-neutral-50/50 p-4 flex flex-col'
-                  >
-                    <div className='flex items-start justify-between gap-2 mb-2'>
-                      <div>
-                        <h3 className='font-semibold text-neutral-900'>{plan.name}</h3>
-                        <p className='text-xs text-neutral-500 font-mono mt-0.5'>ID: {plan._id}</p>
-                      </div>
-                      <ActionsMenu
-                        ariaLabel={t('common.actions')}
-                        triggerSize='xs'
-                        items={[
-                          {
-                            key: 'edit',
-                            label: t('common.edit'),
-                            icon: <PencilIcon className='icon icon-sm' />,
-                            onClick: () => handleEdit(plan),
-                          },
-                          {
-                            key: 'copy',
-                            label: t('admin.copyPlanId'),
-                            icon: <DocumentIcon className='icon icon-sm' />,
-                            onClick: () => {
-                              navigator.clipboard.writeText(plan._id);
-                              showSuccess(t('admin.planIdCopied'));
-                            },
-                          },
-                        ]}
-                      />
-                    </div>
-                    <div className='mt-2'>
-                      <p className='text-lg font-bold text-neutral-900'>
-                        {formatPrice(plan.price, plan.currency)}
-                        <span className='text-neutral-500 text-sm font-normal ml-1'>
-                          /{plan.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}
-                        </span>
-                      </p>
-                    </div>
-                    <div className='flex gap-2 mt-2'>
-                      {plan.isPopular && (
-                        <Tag variant='success' size='sm'>
-                          {t('admin.popular')}
-                        </Tag>
-                      )}
-                      {plan.isHidden && (
-                        <Tag variant='default' size='sm'>
-                          {t('admin.hidden')}
-                        </Tag>
-                      )}
-                    </div>
-                    <p className='text-sm text-neutral-600 mt-2'>
-                      {(t('admin.featuresCount') || '{{count}} features').replace(
-                        '{{count}}',
-                        String((plan.features || []).length),
-                      )}
-                    </p>
-                    <div className='text-sm text-neutral-500 mt-2'>
-                      {plan.maxUsers != null && <div>Users: {plan.maxUsers}</div>}
-                      {plan.maxPatients != null && (
-                        <div>Patients: {Number(plan.maxPatients).toLocaleString()}</div>
-                      )}
-                      {plan.maxStorageGB != null && <div>Storage: {plan.maxStorageGB}GB</div>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
           ) : (
             <>
-              <div className='p-4 border-b border-neutral-200'>
+              <div className='flex flex-wrap items-center justify-between gap-3 p-4 border-b border-neutral-200'>
                 <p className='text-sm text-neutral-600'>
-                  {(t('admin.showingPlans') || 'Showing {{count}} subscription plan(s)').replace(
-                    '{{count}}',
-                    String(plans.length),
-                  )}
+                {(t('admin.showingPlans') || 'Showing {{count}} subscription plan(s)').replace(
+                      '{{count}}',
+                      String(displayPlans.length),
+                    )}
                 </p>
+                <div
+                  className='inline-flex rounded-lg border border-neutral-300 bg-neutral-50 p-0.5'
+                  role='tablist'
+                  aria-label={t('admin.viewTable')}
+                >
+                  <button
+                    type='button'
+                    role='tab'
+                    aria-selected={viewMode === VIEW_TABLE}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      viewMode === VIEW_TABLE
+                        ? 'bg-primary-100 text-primary-700 shadow-sm dark:bg-primary-900/40 dark:text-primary-300'
+                        : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                    }`}
+                    onClick={() => setViewMode(VIEW_TABLE)}
+                  >
+                    <ListChecksIcon className='icon icon-sm' />
+                    {t('admin.viewTable')}
+                  </button>
+                  <button
+                    type='button'
+                    role='tab'
+                    aria-selected={viewMode === VIEW_CARDS}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      viewMode === VIEW_CARDS
+                        ? 'bg-primary-100 text-primary-700 shadow-sm dark:bg-primary-900/40 dark:text-primary-300'
+                        : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                    }`}
+                    onClick={() => setViewMode(VIEW_CARDS)}
+                  >
+                    <LayoutDashboardIcon className='icon icon-sm' />
+                    {t('admin.viewCards')}
+                  </button>
+                </div>
               </div>
-              <Table
-                data={plans}
-                columns={columns}
-                emptyMessage={t('admin.noSubscriptionPlans')}
-              />
+              {viewMode === VIEW_CARDS ? (
+                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4'>
+                  {displayPlans.map((plan) => (
+                    <div
+                      key={plan._id}
+                      className='rounded-lg border border-neutral-200 bg-neutral-50/50 p-4 flex flex-col'
+                    >
+                      <div className='flex items-start justify-between gap-2 mb-2'>
+                        <div>
+                          <h3 className='font-semibold text-neutral-900'>{plan.name}</h3>
+                          <p className='text-xs text-neutral-500 font-mono mt-0.5'>
+                            ID: {plan._id}
+                          </p>
+                        </div>
+                        <ActionsMenu
+                          ariaLabel={t('common.actions')}
+                          triggerSize='xs'
+                          items={[
+                            {
+                              key: 'edit',
+                              label: t('common.edit'),
+                              icon: <PencilIcon className='icon icon-sm' />,
+                              onClick: () => handleEdit(plan),
+                            },
+                            {
+                              key: 'delete',
+                              label: t('common.delete'),
+                              icon: <TrashIcon className='icon icon-sm' />,
+                              danger: true,
+                              onClick: () => handleDelete(plan),
+                            },
+                            {
+                              key: 'copy',
+                              label: t('admin.copyPlanId'),
+                              icon: <DocumentIcon className='icon icon-sm' />,
+                              onClick: () => {
+                                navigator.clipboard.writeText(plan._id);
+                                showSuccess(t('admin.planIdCopied'));
+                              },
+                            },
+                          ]}
+                        />
+                      </div>
+                      <div className='mt-2'>
+                        <p className='text-lg font-bold text-neutral-900'>
+                          {formatPrice(plan.price, plan.currency)}
+                          <span className='text-neutral-500 text-sm font-normal ml-1'>
+                            /{plan.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}
+                          </span>
+                        </p>
+                      </div>
+                      <div className='flex gap-2 mt-2'>
+                        {plan.isPopular && (
+                          <Tag variant='success' size='sm'>
+                            {t('admin.popular')}
+                          </Tag>
+                        )}
+                        {plan.isHidden && (
+                          <Tag variant='default' size='sm'>
+                            {t('admin.hidden')}
+                          </Tag>
+                        )}
+                      </div>
+                      <p className='text-sm text-neutral-600 mt-2'>
+                        {(t('admin.featuresCount') || '{{count}} features').replace(
+                          '{{count}}',
+                          String((plan.features || []).length),
+                        )}
+                      </p>
+                      <div className='text-sm text-neutral-500 mt-2'>
+                        {plan.maxUsers != null && <div>Users: {plan.maxUsers}</div>}
+                        {plan.maxPatients != null && (
+                          <div>Patients: {Number(plan.maxPatients).toLocaleString()}</div>
+                        )}
+                        {plan.maxStorageGB != null && <div>Storage: {plan.maxStorageGB}GB</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Table
+                  data={displayPlans}
+                  columns={columns}
+                  emptyMessage={t('admin.noSubscriptionPlans')}
+                />
+              )}
             </>
           )}
         </Card>

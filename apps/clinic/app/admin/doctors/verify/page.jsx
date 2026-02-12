@@ -337,9 +337,6 @@ function AdminDoctorVerificationContent() {
                   </button>
                 </div>
                 <div className='verify-filters-bar__sort'>
-                  <span className='verify-filters-bar__sort-label' id='verify-sort-label'>
-                    {t('admin.verifySort')}
-                  </span>
                   <select
                     id='verify-sort'
                     className='verify-filters-bar__sort-select'
@@ -349,7 +346,7 @@ function AdminDoctorVerificationContent() {
                       setSortBy(s);
                       setSortOrder(o);
                     }}
-                    aria-labelledby='verify-sort-label'
+                    aria-label={t('admin.verifySort')}
                   >
                     {SORT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={`${opt.value}-${opt.order}`}>

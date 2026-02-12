@@ -140,7 +140,7 @@ export function canAddStaff(role) {
 }
 
 export function canDeleteStaff(role) {
-  return ['super_admin', 'doctor'].includes(r(role)); // Admin: limited delete
+  return ['super_admin', 'doctor', 'admin'].includes(r(role));
 }
 
 export function canManageSchedulesStaff(role) {
@@ -180,26 +180,26 @@ export function canBulkMessage(role) {
 }
 
 /**
- * SETTINGS – Admin limited; Manager no access
+ * SETTINGS – Clinic Admin has full access to clinic settings (add/edit/change) as per plan
  */
 export function canEditClinicSettings(role) {
-  return ['super_admin', 'doctor'].includes(r(role));
+  return ['super_admin', 'doctor', 'admin'].includes(r(role));
 }
 
 export function canEditUserPermissions(role) {
-  return ['super_admin', 'doctor'].includes(r(role));
+  return ['super_admin', 'doctor', 'admin'].includes(r(role));
 }
 
 export function canEditBillingSettings(role) {
-  return ['super_admin', 'doctor'].includes(r(role));
+  return ['super_admin', 'doctor', 'admin'].includes(r(role));
 }
 
 export function canEditIntegrationSettings(role) {
-  return ['super_admin', 'doctor'].includes(r(role));
+  return ['super_admin', 'doctor', 'admin'].includes(r(role));
 }
 
 export function canBackupRestore(role) {
-  return ['super_admin', 'doctor'].includes(r(role));
+  return ['super_admin', 'doctor', 'admin'].includes(r(role));
 }
 
 /**

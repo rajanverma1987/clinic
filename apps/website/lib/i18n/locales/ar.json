@@ -1239,6 +1239,7 @@
   },
   "navigation": {
     "features": "Features",
+    "about": "About",
     "blog": "Blog",
     "support": "Support",
     "contact": "Contact",
@@ -1479,6 +1480,7 @@
   "footer": {
     "description": "Global-ready clinic management system with HIPAA/GDPR compliance. Streamline your practice with our comprehensive healthcare management platform.",
     "product": "Product",
+    "about": "About",
     "features": "Features",
     "getStarted": "Get Started",
     "support": "Support",

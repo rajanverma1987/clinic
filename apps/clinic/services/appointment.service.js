@@ -588,6 +588,11 @@ export async function listAppointments(query, tenantId, userId) {
     filter.isActive = query.isActive;
   }
 
+  // Incremental update filter - only get appointments updated since the given timestamp
+  if (query.updatedAt && query.updatedAt.$gt) {
+    filter.updatedAt = query.updatedAt;
+  }
+
   // Date filters - check both appointmentDate and startTime to catch all appointments
   if (query.date) {
     const date = new Date(query.date);
@@ -672,7 +677,7 @@ export async function listAppointments(query, tenantId, userId) {
         localField: 'patientId',
         foreignField: '_id',
         as: 'patient',
-        pipeline: [{ $project: { firstName: 1, lastName: 1, patientId: 1, phone: 1 } }],
+        pipeline: [{ $project: { firstName: 1, lastName: 1, patientId: 1, phone: 1, email: 1 } }],
       },
     },
     {
@@ -681,7 +686,7 @@ export async function listAppointments(query, tenantId, userId) {
         localField: 'doctorId',
         foreignField: '_id',
         as: 'doctor',
-        pipeline: [{ $project: { firstName: 1, lastName: 1 } }],
+        pipeline: [{ $project: { firstName: 1, lastName: 1, specialization: 1 } }],
       },
     },
     {

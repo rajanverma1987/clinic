@@ -1,6 +1,5 @@
 'use client';
 
-import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -14,15 +13,8 @@ export default function AdminFinancialCommissionPage() {
   }, [authLoading, user, router]);
   if (authLoading || user?.role !== 'super_admin') return null;
   return (
-    <Layout
-      title='Commission Settings'
-      subtitle='Platform %, doctor/specialty rates, payment cycle'
-    >
-      <div className='admin-page-content'>
-        <Card className='p-6'>
-          <p className='text-neutral-600'>Commission settings are planned.</p>
-        </Card>
-      </div>
-    </Layout>
+    <Card className='p-6'>
+      <p className='text-neutral-600'>Commission settings are planned.</p>
+    </Card>
   );
 }

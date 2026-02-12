@@ -789,16 +789,9 @@ export async function getDashboardStats(tenantId, userId) {
       };
     }
 
-    const [
-      todayStats,
-      yesterdayStats,
-      monthInvoicesRaw,
-      activePatients,
-      newPatientsThisMonth,
-      newPatientsLastMonth,
-      pendingInvoices,
-      pendingInvoicesYesterday,
-    ] = await Promise.all([
+    // Optimize: Use aggregation pipelines to combine queries and reduce connection pool usage
+    // Query 1: Appointments stats (today, yesterday) - single aggregation
+    const [todayStats, yesterdayStats] = await Promise.all([
       getDashboardStatsForDate(tenantId, todayStr).catch((err) => {
         logger.error('Error fetching today dashboard stats:', err);
         return {
@@ -817,76 +810,121 @@ export async function getDashboardStats(tenantId, userId) {
           revenue: 0,
         };
       }),
-      // Only fetch invoices if they exist (optimization for empty collections)
-      hasInvoices
-        ? Invoice.find(
-            withTenant(tenantId, {
-              invoiceDate: { $gte: thisMonth },
-              status: { $ne: InvoiceStatus.CANCELLED },
-              deletedAt: null,
-            }),
-          )
-            .select('totalAmount')
-            .lean()
-            .limit(10000) // Safety limit to prevent memory issues
-            .catch((err) => {
-              logger.error('Error fetching month invoices:', err);
-              return [];
-            })
-        : Promise.resolve([]),
-      // Optimize: Skip count queries if collections are empty
-      hasPatients
-        ? Patient.countDocuments(withTenant(tenantId, { deletedAt: null })).catch((err) => {
-            logger.error('Error counting active patients:', err);
-            return 0;
-          })
-        : Promise.resolve(0),
-      hasPatients
-        ? Patient.countDocuments(
-            withTenant(tenantId, {
-              createdAt: { $gte: thisMonth },
-              deletedAt: null,
-            }),
-          ).catch((err) => {
-            logger.error('Error counting new patients this month:', err);
-            return 0;
-          })
-        : Promise.resolve(0),
-      hasPatients
-        ? Patient.countDocuments(
-            withTenant(tenantId, {
-              createdAt: { $gte: lastMonth, $lte: endOfLastMonth },
-              deletedAt: null,
-            }),
-          ).catch((err) => {
-            logger.error('Error counting new patients last month:', err);
-            return 0;
-          })
-        : Promise.resolve(0),
-      hasInvoices
-        ? Invoice.countDocuments(
-            withTenant(tenantId, {
-              status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
-              deletedAt: null,
-            }),
-          ).catch((err) => {
-            logger.error('Error counting pending invoices:', err);
-            return 0;
-          })
-        : Promise.resolve(0),
-      hasInvoices
-        ? Invoice.countDocuments(
-            withTenant(tenantId, {
-              status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
-              deletedAt: null,
-              invoiceDate: { $lte: endOfYesterday },
-            }),
-          ).catch((err) => {
-            logger.error('Error counting pending invoices yesterday:', err);
-            return 0;
-          })
-        : Promise.resolve(0),
     ]);
+
+    // Query 2: Invoice stats (month revenue, pending) - single aggregation
+    const invoiceStats = hasInvoices
+      ? await Invoice.aggregate([
+          {
+            $match: withTenant(tenantId, {
+              deletedAt: null,
+              status: { $ne: InvoiceStatus.CANCELLED },
+              $or: [
+                { invoiceDate: { $gte: thisMonth } },
+                { status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] } },
+              ],
+            }),
+          },
+          {
+            $facet: {
+              monthRevenue: [
+                {
+                  $match: {
+                    invoiceDate: { $gte: thisMonth },
+                  },
+                },
+                {
+                  $group: {
+                    _id: null,
+                    total: { $sum: '$totalAmount' },
+                  },
+                },
+              ],
+              pendingInvoices: [
+                {
+                  $match: {
+                    status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+                  },
+                },
+                { $count: 'count' },
+              ],
+              pendingInvoicesYesterday: [
+                {
+                  $match: {
+                    status: { $in: [InvoiceStatus.PENDING, InvoiceStatus.PARTIAL] },
+                    invoiceDate: { $lte: endOfYesterday },
+                  },
+                },
+                { $count: 'count' },
+              ],
+            },
+          },
+        ]).catch((err) => {
+          logger.error('Error fetching invoice stats:', err);
+          return [
+            {
+              monthRevenue: [],
+              pendingInvoices: [],
+              pendingInvoicesYesterday: [],
+            },
+          ];
+        })
+      : Promise.resolve([
+          {
+            monthRevenue: [],
+            pendingInvoices: [],
+            pendingInvoicesYesterday: [],
+          },
+        ]);
+
+    const invStats = invoiceStats[0] || {};
+    const monthRevenue = invStats.monthRevenue?.[0]?.total || 0;
+    const pendingInvoices = invStats.pendingInvoices?.[0]?.count || 0;
+    const pendingInvoicesYesterday = invStats.pendingInvoicesYesterday?.[0]?.count || 0;
+
+    // Query 3: Patient stats (active, new this month, new last month) - single aggregation
+    const patientStats = hasPatients
+      ? await Patient.aggregate([
+          {
+            $match: withTenant(tenantId, {
+              deletedAt: null,
+              $or: [
+                { createdAt: { $gte: lastMonth } },
+                { createdAt: { $exists: true } },
+              ],
+            }),
+          },
+          {
+            $facet: {
+              activePatients: [{ $count: 'count' }],
+              newPatientsThisMonth: [
+                {
+                  $match: {
+                    createdAt: { $gte: thisMonth },
+                  },
+                },
+                { $count: 'count' },
+              ],
+              newPatientsLastMonth: [
+                {
+                  $match: {
+                    createdAt: { $gte: lastMonth, $lte: endOfLastMonth },
+                  },
+                },
+                { $count: 'count' },
+              ],
+            },
+          },
+        ]).catch((err) => {
+          logger.error('Error fetching patient stats:', err);
+          return [{ activePatients: [], newPatientsThisMonth: [], newPatientsLastMonth: [] }];
+        })
+      : Promise.resolve([{ activePatients: [], newPatientsThisMonth: [], newPatientsLastMonth: [] }]);
+
+    const patStats = patientStats[0] || {};
+    const activePatients = patStats.activePatients?.[0]?.count || 0;
+    const newPatientsThisMonth = patStats.newPatientsThisMonth?.[0]?.count || 0;
+    const newPatientsLastMonth = patStats.newPatientsLastMonth?.[0]?.count || 0;
 
     const todayAppointments = todayStats.totalAppointments;
     const yesterdayAppointments = yesterdayStats.totalAppointments;
@@ -894,11 +932,6 @@ export async function getDashboardStats(tenantId, userId) {
     const completedYesterday = yesterdayStats.completedAppointments;
     const todayRevenue = todayStats.revenue;
     const yesterdayRevenue = yesterdayStats.revenue;
-
-    const monthRevenue = (Array.isArray(monthInvoicesRaw) ? monthInvoicesRaw : []).reduce(
-      (sum, inv) => sum + (inv.totalAmount || 0),
-      0,
-    );
 
     // Calculate trends
     const appointmentsTrend =

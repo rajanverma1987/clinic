@@ -45,21 +45,23 @@ const VARIANTS = {
   link: 'bg-transparent text-primary-500 border-0 shadow-none hover:text-primary-700 hover:underline focus:ring-primary-500 underline-offset-2',
 };
 
-/** Inline padding: generous horizontal + vertical (same as Quick Actions standard) for all sizes. */
+/** All buttons use same height (2.375rem) to match filter inputs/dropdowns across clinic and website. */
+const BUTTON_HEIGHT = 'min-h-[2.375rem] h-[2.375rem]';
+
 const SIZES = {
-  xs: 'px-4 py-2 text-body-xs min-h-[32px]',
-  sm: 'px-5 py-3 text-body-sm min-h-[40px]',
-  md: 'px-6 py-3.5 text-button min-h-[44px]',
-  lg: 'px-7 py-4 text-body-md min-h-[52px]',
-  xl: 'px-8 py-4 text-body-lg min-h-[60px]',
+  xs: `px-4 py-0 text-body-xs ${BUTTON_HEIGHT}`,
+  sm: `px-5 py-0 text-body-sm ${BUTTON_HEIGHT}`,
+  md: `px-6 py-0 text-button ${BUTTON_HEIGHT}`,
+  lg: `px-7 py-0 text-body-md ${BUTTON_HEIGHT}`,
+  xl: `px-8 py-0 text-body-lg ${BUTTON_HEIGHT}`,
 };
 
 const ICON_ONLY_SIZES = {
-  xs: 'w-8 h-8 p-0 min-h-[32px]',
-  sm: 'w-10 h-10 p-0 min-h-[40px]',
-  md: 'w-12 h-12 p-0 min-h-[44px]',
-  lg: 'w-14 h-14 p-0 min-h-[52px]',
-  xl: 'w-16 h-16 p-0 min-h-[60px]',
+  xs: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
+  sm: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
+  md: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
+  lg: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
+  xl: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
 };
 
 const SHAPES = {
@@ -87,10 +89,10 @@ export function Button({
   const isDisabled = disabled || isLoading;
   const variantStyle = VARIANTS[variant] ?? VARIANTS.primary;
   const sizeStyle = iconOnly
-    ? ICON_ONLY_SIZES[size] ?? ICON_ONLY_SIZES.md
-    : SIZES[size] ?? SIZES.md;
+    ? (ICON_ONLY_SIZES[size] ?? ICON_ONLY_SIZES.md)
+    : (SIZES[size] ?? SIZES.md);
   const shapeStyle =
-    iconOnly && shape === 'rounded' ? SHAPES.rounded : SHAPES[shape] ?? SHAPES.rounded;
+    iconOnly && shape === 'rounded' ? SHAPES.rounded : (SHAPES[shape] ?? SHAPES.rounded);
   const pillShape = iconOnly && shape === 'pill' ? SHAPES.pill : shapeStyle;
   const isSecondaryStyle = variant === 'secondary' || variant === 'outline';
   const iconOnlyPill = iconOnly && shape === 'pill';

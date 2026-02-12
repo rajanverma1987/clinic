@@ -1,9 +1,10 @@
 import { BlogImage } from '@/components/blog/BlogImage';
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Card } from '@/components/ui/Card';
-import { CLINIC_APP_URL } from '@/lib/config';
 import { getAllBlogPosts, getBlogPostBySlug, getRelatedPosts } from '@/lib/blog/blog-data';
+import { CLINIC_APP_URL } from '@/lib/config';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -107,18 +108,13 @@ export default function BlogPostPage({ params }) {
           }}
         >
           <div className='max-w-4xl mx-auto relative z-10'>
-            {/* Breadcrumb */}
-            <nav className='mb-8 text-sm text-neutral-600'>
-              <Link href='/' className='hover:text-primary-600'>
-                Home
-              </Link>
-              <span className='mx-2'>/</span>
-              <Link href='/blog' className='hover:text-primary-600'>
-                Blog
-              </Link>
-              <span className='mx-2'>/</span>
-              <span className='text-neutral-900'>{post.title}</span>
-            </nav>
+            <Breadcrumb
+              items={[
+                { label: 'Home', href: '/' },
+                { label: 'Blog', href: '/blog' },
+                { label: post.title },
+              ]}
+            />
 
             {/* Category and Read Time */}
             <div className='flex items-center justify-between mb-4'>
@@ -299,38 +295,37 @@ export default function BlogPostPage({ params }) {
               </div>
             </div>
 
-            {/* Tags */}
-            {post.tags && post.tags.length > 0 && (
-              <div className='mt-12 pt-8 border-t border-neutral-200'>
-                <h3 className='text-sm font-semibold text-neutral-900 mb-4'>Tags:</h3>
-                <div className='flex flex-wrap gap-2'>
+            {/* Tags + CTA Section — combined unit with proper padding to prevent tag cutoff */}
+            <div className='mt-12 overflow-visible'>
+              {post.tags && post.tags.length > 0 && (
+                <div className='flex flex-wrap justify-center gap-2 px-4 py-4'>
                   {post.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className='px-3 py-1 bg-neutral-100 text-neutral-700 rounded-full text-sm hover:bg-neutral-200'
+                      className='px-3 py-1 bg-neutral-100 text-neutral-700 rounded-full text-sm hover:bg-neutral-200 whitespace-nowrap'
                     >
                       #{tag}
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* CTA Section */}
-            <div className='mt-12 p-8 bg-gradient-to-r from-primary-600 to-primary-800 rounded-lg text-center'>
-              <h3 className='text-2xl font-bold text-white mb-4'>
-                Ready to Transform Your Clinic?
-              </h3>
-              <p className='text-primary-100 mb-6'>
-                Start your free trial today and see how Doctor&apos;s Clinic can streamline your
-                operations.
-              </p>
-              <a
-                href={`${clinicAppUrl}/register`}
-                className='inline-block bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-primary-100'
-              >
-                Start Free Trial
-              </a>
+              {/* CTA Banner */}
+              <div className='p-8 sm:p-10 bg-gradient-to-r from-primary-600 to-primary-800 rounded-lg text-center overflow-visible'>
+                <h3 className='text-2xl font-bold text-white mb-4'>
+                  Ready to Transform Your Clinic?
+                </h3>
+                <p className='text-primary-100 mb-6'>
+                  Start your free trial today and see how Doctor&apos;s Clinic can streamline your
+                  operations.
+                </p>
+                <a
+                  href={`${clinicAppUrl}/register`}
+                  className='inline-block bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-primary-100'
+                >
+                  Start Free Trial
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -384,7 +379,7 @@ export default function BlogPostPage({ params }) {
           </section>
         )}
 
-        {/* Back to Blog */}
+        {/* Breadcrumb */}
         <section
           className='bg-white'
           style={{
@@ -394,21 +389,13 @@ export default function BlogPostPage({ params }) {
             paddingRight: '32px',
           }}
         >
-          <div className='max-w-4xl mx-auto text-center'>
-            <Link
-              href='/blog'
-              className='inline-flex items-center text-primary-600 hover:text-primary-700 font-medium'
-            >
-              <svg className='w-5 h-5 mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M10 19l-7-7m0 0l7-7m-7 7h18'
-                />
-              </svg>
-              Back to Blog
-            </Link>
+          <div className='max-w-4xl mx-auto'>
+            <Breadcrumb
+              items={[
+                { label: 'Home', href: '/' },
+                { label: 'Blog', href: '/blog' },
+              ]}
+            />
           </div>
         </section>
       </main>

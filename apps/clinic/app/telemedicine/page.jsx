@@ -4,7 +4,6 @@ import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
@@ -105,7 +104,14 @@ export default function TelemedicinePage() {
   ];
 
   if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return (
+      <Layout
+        title={t('telemedicine.title')}
+        subtitle={t('telemedicine.subtitle')}
+        loading
+        loadingText={t('common.loading')}
+      />
+    );
   }
 
   return (

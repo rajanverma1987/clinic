@@ -335,20 +335,8 @@ export async function listQueueEntries(query, tenantId, userId) {
     filter.joinedAt = { $gte: startOfDay, $lte: endOfDay };
   }
 
-  // Early return optimization: Quick check if any queue entries exist
-  const hasEntries = await Queue.countDocuments(filter);
-  if (hasEntries === 0) {
-    // No entries exist - return empty result immediately
-    await AuditLogger.auditWrite('queue', 'list', userId, tenantId, AuditAction.READ, undefined, {
-      count: 0,
-      filters: query,
-      emptyCollection: true,
-    });
-    return createPaginationResult([], 0, page || 1, limit || 10);
-  }
-
-  // Get total count
-  const total = await Queue.countDocuments(filter);
+  // Optimize: Get total count and entries in parallel using aggregation
+  // This avoids two separate queries and leverages MongoDB's efficiency
 
   // Get paginated results
   // For active queues, sort by priority and position
@@ -358,63 +346,87 @@ export async function listQueueEntries(query, tenantId, userId) {
       : { joinedAt: -1 };
 
   // Optimize: Use aggregation with $lookup instead of populate to avoid N+1 queries
+  // Use $facet to get both count and data in a single aggregation
   const pipeline = [
     { $match: filter },
     {
-      $lookup: {
-        from: 'patients',
-        localField: 'patientId',
-        foreignField: '_id',
-        as: 'patient',
-        pipeline: [{ $project: { firstName: 1, lastName: 1, patientId: 1, phone: 1 } }],
-      },
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'doctorId',
-        foreignField: '_id',
-        as: 'doctor',
-        pipeline: [{ $project: { firstName: 1, lastName: 1 } }],
-      },
-    },
-    {
-      $lookup: {
-        from: 'appointments',
-        localField: 'appointmentId',
-        foreignField: '_id',
-        as: 'appointment',
-        pipeline: [
+      $facet: {
+        // Get total count
+        totalCount: [{ $count: 'count' }],
+        // Get paginated results with lookups
+        data: [
           {
-            $project: {
-              appointmentDate: 1,
-              startTime: 1,
-              endTime: 1,
-              isTelemedicine: 1,
-              telemedicineSessionId: 1,
-              patientId: 1,
-              doctorId: 1,
+            $lookup: {
+              from: 'patients',
+              localField: 'patientId',
+              foreignField: '_id',
+              as: 'patient',
+              pipeline: [{ $project: { firstName: 1, lastName: 1, patientId: 1, phone: 1 } }],
             },
           },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'doctorId',
+              foreignField: '_id',
+              as: 'doctor',
+              pipeline: [{ $project: { firstName: 1, lastName: 1 } }],
+            },
+          },
+          {
+            $lookup: {
+              from: 'appointments',
+              localField: 'appointmentId',
+              foreignField: '_id',
+              as: 'appointment',
+              pipeline: [
+                {
+                  $project: {
+                    appointmentDate: 1,
+                    startTime: 1,
+                    endTime: 1,
+                    isTelemedicine: 1,
+                    telemedicineSessionId: 1,
+                    patientId: 1,
+                    doctorId: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              patientId: { $arrayElemAt: ['$patient', 0] },
+              doctorId: { $arrayElemAt: ['$doctor', 0] },
+              appointmentId: { $arrayElemAt: ['$appointment', 0] },
+            },
+          },
+          { $sort: sortOptions },
+          { $skip: ((page || 1) - 1) * (limit || 10) },
+          { $limit: limit || 10 },
         ],
       },
     },
-    {
-      $addFields: {
-        patientId: { $arrayElemAt: ['$patient', 0] },
-        doctorId: { $arrayElemAt: ['$doctor', 0] },
-        appointmentId: { $arrayElemAt: ['$appointment', 0] },
-      },
-    },
-    { $sort: sortOptions },
-    { $skip: ((page || 1) - 1) * (limit || 10) },
-    { $limit: limit || 10 },
   ];
 
   try {
-    const queueEntries = await measureTime(`listQueueEntries-${tenantId}`, () =>
+    const result = await measureTime(`listQueueEntries-${tenantId}`, () =>
       Queue.aggregate(pipeline),
     );
+
+    const aggregationResult = result[0] || { totalCount: [{ count: 0 }], data: [] };
+    const total = aggregationResult.totalCount[0]?.count || 0;
+    const queueEntries = aggregationResult.data || [];
+
+    // Early return if no entries
+    if (total === 0) {
+      await AuditLogger.auditWrite('queue', 'list', userId, tenantId, AuditAction.READ, undefined, {
+        count: 0,
+        filters: query,
+        emptyCollection: true,
+      });
+      return createPaginationResult([], 0, page || 1, limit || 10);
+    }
 
     // Audit list access
     await AuditLogger.auditWrite('queue', 'list', userId, tenantId, AuditAction.READ, undefined, {

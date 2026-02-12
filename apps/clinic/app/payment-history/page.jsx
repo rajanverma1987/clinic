@@ -3,7 +3,6 @@
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
@@ -137,7 +136,14 @@ export default function PaymentHistoryPage() {
   }
 
   if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return (
+      <Layout
+        title={t('subscription.paymentHistory')}
+        subtitle={t('subscription.paymentHistoryDesc')}
+        loading
+        loadingText={t('common.loading')}
+      />
+    );
   }
 
   if (!user) {

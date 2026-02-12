@@ -13,7 +13,6 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
 import { Table } from '@/components/ui/Table';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Tag } from '@/components/ui/Tag';
@@ -437,13 +436,13 @@ export default function QueuePage() {
           ...(isClinicAdmin && doctors.length > 0
             ? [
                 <div key='doctor-filter' className='flex items-center gap-2'>
-                  <label className='text-sm text-neutral-600'>{t('queue.selectDoctor')}</label>
                   <select
                     value={selectedDoctorId}
                     onChange={(e) => setSelectedDoctorId(e.target.value)}
                     className='px-3 py-2 border border-neutral-300 rounded-lg text-sm'
+                    aria-label={t('queue.selectDoctor')}
                   >
-                    <option value=''>{t('queue.allDoctors')}</option>
+                    <option value=''>{t('queue.selectDoctor')}</option>
                     {doctors.map((d) => (
                       <option key={d._id} value={d._id}>
                         {d.firstName} {d.lastName}
@@ -456,9 +455,8 @@ export default function QueuePage() {
           <Button
             key='toggle-completed'
             variant='secondary'
-            size='md'
             onClick={() => setShowCompleted(!showCompleted)}
-            className='flex items-center gap-2'
+            className='filter-button flex items-center gap-2'
           >
             <ListChecksIcon className='icon icon-sm shrink-0' ariaHidden />
             {showCompleted ? t('queue.hideCompleted') : t('queue.showCompleted')}
@@ -473,10 +471,10 @@ export default function QueuePage() {
         ) : (
           <Card>
             <Table
-            data={queueEntries.sort((a, b) => a.position - b.position)}
-            columns={columns}
-            emptyMessage={t('common.noDataFound')}
-          />
+              data={queueEntries.sort((a, b) => a.position - b.position)}
+              columns={columns}
+              emptyMessage={t('common.noDataFound')}
+            />
           </Card>
         )}
       </div>

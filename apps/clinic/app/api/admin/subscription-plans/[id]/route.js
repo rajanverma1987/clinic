@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
-import { updateSubscriptionPlan, getSubscriptionPlanById } from '@/services/subscription.service';
+import {
+  updateSubscriptionPlan,
+  getSubscriptionPlanById,
+  deleteSubscriptionPlan,
+} from '@/services/subscription.service';
 import { PlanBillingCycle, PlanStatus } from '@/models/SubscriptionPlan';
 
 /**
@@ -81,6 +85,37 @@ async function putHandler(req, user, planId) {
     }
 }
 
+/**
+ * DELETE /api/admin/subscription-plans/[id]
+ * Delete subscription plan (Admin only). Fails if active subscriptions use it.
+ */
+async function deleteHandler(req, user, planId) {
+  try {
+    if (user.role !== 'super_admin') {
+      return NextResponse.json(
+        errorResponse('Unauthorized', 'UNAUTHORIZED'),
+        { status: 403 },
+      );
+    }
+
+    const result = await deleteSubscriptionPlan(planId);
+    if (!result) {
+      return NextResponse.json(
+        errorResponse('Subscription plan not found', 'NOT_FOUND'),
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json(successResponse(result));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json(
+      errorResponse(message || 'Failed to delete subscription plan', 'DELETE_ERROR'),
+      { status: 400 },
+    );
+  }
+}
+
 export async function GET(
     req,
     context
@@ -111,3 +146,12 @@ export async function PUT(
     return putHandler(authenticatedReq, authResult.user, params.id);
 }
 
+export async function DELETE(req, context) {
+  const authResult = await import('@/middleware/auth').then((m) => m.authenticate(req));
+  if ('error' in authResult) {
+    return authResult.error;
+  }
+
+  const params = await context.params;
+  return deleteHandler(req, authResult.user, params.id);
+}

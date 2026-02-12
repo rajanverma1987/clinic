@@ -5,7 +5,6 @@ import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -84,7 +83,7 @@ export default function InvoiceDetailPage() {
   }
 
   if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return <Layout title={t('invoices.title')} loading loadingText={t('common.loading')} />;
   }
 
   if (!invoice) {

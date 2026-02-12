@@ -5,7 +5,6 @@ import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -90,7 +89,9 @@ export default function AdminDashboardPage() {
   }
 
   if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return (
+      <Layout title={t('admin.superAdminDashboard')} loading loadingText={t('common.loading')} />
+    );
   }
 
   if (user?.role !== 'super_admin') {

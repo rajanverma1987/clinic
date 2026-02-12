@@ -7,60 +7,78 @@ import { Loader } from '@/components/ui/Loader';
 import { SubscriptionCard } from '@/components/ui/SubscriptionCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { CLINIC_APP_URL } from '@/lib/config';
+import { useApiResource } from '@/hooks/useApiResource';
 import { apiClient } from '@/lib/api/client';
+import { fetchData } from '@/lib/api/fetchData';
+import { CLINIC_APP_URL } from '@/lib/config';
 import { CARD_FEATURES_BY_PLAN } from '@/lib/constants/plan-features';
-import { YEARLY_SAVE } from '@/lib/constants/subscription-spec';
+import { COMPARISON_TABLE_PLAN_SLUGS, YEARLY_SAVE } from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
+import { showToast } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function PricingPage() {
   const router = useRouter();
   const { t } = useI18n();
   const { user } = useAuth();
-  const [plans, setPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [billingCycle, setBillingCycle] = useState('MONTHLY');
   const [selectingPlanId, setSelectingPlanId] = useState(null);
   const [selectingMethod, setSelectingMethod] = useState(null);
   const [currentUserPlan, setCurrentUserPlan] = useState(null);
 
-  useEffect(() => {
-    fetchPlans();
-    if (user) {
-      fetchCurrentSubscription();
+  const loadPlans = useCallback(async () => {
+    const response = await fetchData('/subscription-plans');
+    if (!response.success) {
+      return {
+        ...response,
+        error: {
+          ...(response.error || {}),
+          message:
+            response.error?.message ||
+            t('errors.failedToLoadDashboard', 'Failed to load dashboard data'),
+        },
+      };
     }
-  }, [user]);
+    return response;
+  }, [t]);
 
-  const fetchCurrentSubscription = async () => {
+  const {
+    data: plans = [],
+    loading: plansLoading,
+    error: plansError,
+    refetch: refetchPlans,
+  } = useApiResource(loadPlans, { initialData: [], toastOnError: false });
+
+  useEffect(() => {
+    if (plansError) {
+      showToast(plansError, 'warning');
+    }
+  }, [plansError]);
+
+  const fetchCurrentSubscription = useCallback(async () => {
+    if (!user) return;
     try {
-      const response = await apiClient.get('/subscriptions/current');
+      const response = await fetchData('/subscriptions/current');
       if (response.success && response.data) {
         setCurrentUserPlan(response.data.planId);
+      } else if (response.error?.message) {
+        showToast(response.error.message, 'warning');
+        logger.warn('Failed to fetch current subscription', response.error);
       }
     } catch (error) {
       logger.error('Failed to fetch current subscription', error);
+      showToast(t('errors.networkError', 'Network error. Please try again.'), 'warning');
     }
-  };
+  }, [t, user]);
 
-  const fetchPlans = async () => {
-    try {
-      setError(null);
-      const response = await apiClient.get('/subscription-plans');
-      if (response.success && response.data) {
-        setPlans(response.data);
-      } else {
-        setError('Failed to load subscription plans. Please try again later.');
-      }
-    } catch (error) {
-      logger.error('Failed to fetch plans', error);
-      setError('Unable to connect to the server. Please check your internet connection.');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (user) {
+      fetchCurrentSubscription();
+    } else {
+      setCurrentUserPlan(null);
     }
-  };
+  }, [user, fetchCurrentSubscription]);
 
   const formatPrice = (price, currency) => {
     return new Intl.NumberFormat('en-US', {
@@ -93,7 +111,7 @@ export default function PricingPage() {
         } else if (response.data.approvalUrl) {
           window.location.href = response.data.approvalUrl;
         } else {
-          alert(t('subscription.subscriptionUpdated'));
+          showToast(t('subscription.subscriptionUpdated'), 'success');
           setSelectingPlanId(null);
           setSelectingMethod(null);
           router.push('/subscription');
@@ -103,16 +121,17 @@ export default function PricingPage() {
       }
     } catch (error) {
       logger.error('Failed to create subscription', error);
-      alert(error.message || t('subscription.updateFailed'));
+      showToast(error.message || t('subscription.updateFailed'), 'error');
       setSelectingPlanId(null);
       setSelectingMethod(null);
     }
   };
 
-  // Show SOLO, CLINIC, ENTERPRISE only (no free plan; all plans have 14-day free trial)
-  const DISPLAY_PLAN_SLUGS = ['SOLO', 'CLINIC', 'ENTERPRISE'];
-  const allowedPlans = plans.filter(
-    (plan) => plan && plan.name && DISPLAY_PLAN_SLUGS.includes(plan.name)
+  const planCollection = Array.isArray(plans) ? plans : [];
+
+  // Same plans as admin: SOLO, CLINIC, ENTERPRISE only (per subscription-spec)
+  const allowedPlans = planCollection.filter(
+    (plan) => plan && plan.name && COMPARISON_TABLE_PLAN_SLUGS.includes(plan.name),
   );
   const monthlyPlans = allowedPlans.filter((p) => p.billingCycle === 'MONTHLY');
   const yearlyPlans = allowedPlans.filter((p) => p.billingCycle === 'YEARLY');
@@ -121,7 +140,8 @@ export default function PricingPage() {
       ? monthlyPlans
       : allowedPlans.filter((p) => p.billingCycle === billingCycle);
   const filteredPlans = basePlans.sort(
-    (a, b) => DISPLAY_PLAN_SLUGS.indexOf(a.name) - DISPLAY_PLAN_SLUGS.indexOf(b.name)
+    (a, b) =>
+      COMPARISON_TABLE_PLAN_SLUGS.indexOf(a.name) - COMPARISON_TABLE_PLAN_SLUGS.indexOf(b.name),
   );
 
   // Annual 5% off: when showing yearly, use monthly price * 12 * 0.95 (or existing yearly price)
@@ -141,7 +161,7 @@ export default function PricingPage() {
 
   const displayedPlans = plansWithDiscount;
 
-  if (loading) {
+  if (plansLoading) {
     return (
       <div className='min-h-screen flex flex-col bg-white'>
         <Header />
@@ -153,7 +173,7 @@ export default function PricingPage() {
     );
   }
 
-  if (error) {
+  if (plansError) {
     return (
       <div className='min-h-screen flex flex-col bg-white'>
         <Header />
@@ -175,16 +195,17 @@ export default function PricingPage() {
                   />
                 </svg>
               </div>
-              <h2 className='text-2xl font-bold text-red-900 mb-2'>Unable to Load Pricing</h2>
-              <p className='text-red-700 mb-6'>{error}</p>
+              <h2 className='text-2xl font-bold text-red-900 mb-2'>
+                {t('errors.generic', 'An unexpected error occurred')}
+              </h2>
+              <p className='text-red-700 mb-6'>{plansError}</p>
               <Button
                 variant='primary'
                 onClick={() => {
-                  setLoading(true);
-                  fetchPlans();
+                  refetchPlans();
                 }}
               >
-                Try Again
+                {t('common.retry', 'Retry')}
               </Button>
             </div>
           </div>

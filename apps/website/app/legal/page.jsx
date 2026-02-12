@@ -2,6 +2,7 @@
 
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Disclaimer } from '@/components/ui/Disclaimer';
 import Link from 'next/link';
 import { useEffect } from 'react';
@@ -23,30 +24,7 @@ export default function LegalPage() {
         }}
       >
         <div className='max-w-5xl mx-auto'>
-          {/* Back Link */}
-          <div className='mb-8'>
-            <Link
-              href='/'
-              className='inline-flex items-center text-primary-600 hover:text-primary-700 font-medium group'
-              style={{ fontSize: '15px', lineHeight: '24px' }}
-            >
-              <svg
-                style={{ width: '18px', height: '18px', marginRight: '8px' }}
-                className='group-hover:-translate-x-1 transition-transform'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M15 19l-7-7 7-7'
-                />
-              </svg>
-              Back to Home
-            </Link>
-          </div>
+          <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Legal & Disclaimers' }]} />
 
           {/* Header Section */}
           <div className='mb-12'>
@@ -486,11 +464,11 @@ export default function LegalPage() {
                   Privacy & Data Protection
                 </h3>
                 <a
-                  href='mailto:privacy@clinichub.com'
+                  href='mailto:privacy@doctorsclinic.services'
                   className='text-primary-600 hover:text-primary-700 hover:underline'
                   style={{ fontSize: '14px' }}
                 >
-                  privacy@clinichub.com
+                  privacy@doctorsclinic.services
                 </a>
               </div>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>
@@ -498,11 +476,11 @@ export default function LegalPage() {
                   Legal & Terms
                 </h3>
                 <a
-                  href='mailto:legal@clinichub.com'
+                  href='mailto:legal@doctorsclinic.services'
                   className='text-primary-600 hover:text-primary-700 hover:underline'
                   style={{ fontSize: '14px' }}
                 >
-                  legal@clinichub.com
+                  legal@doctorsclinic.services
                 </a>
               </div>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>
@@ -510,11 +488,11 @@ export default function LegalPage() {
                   Data Protection Officer (GDPR)
                 </h3>
                 <a
-                  href='mailto:dpo@clinichub.com'
+                  href='mailto:dpo@doctorsclinic.services'
                   className='text-primary-600 hover:text-primary-700 hover:underline'
                   style={{ fontSize: '14px' }}
                 >
-                  dpo@clinichub.com
+                  dpo@doctorsclinic.services
                 </a>
               </div>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>

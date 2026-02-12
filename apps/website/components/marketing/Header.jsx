@@ -45,12 +45,12 @@ export function Header() {
   const navigationLinks = useMemo(
     () => [
       { href: '/#features', label: t('navigation.features') },
+      { href: '/about', label: t('navigation.about') || 'About' },
       { href: '/blog', label: t('navigation.blog') || 'Blog' },
       { href: '/pricing', label: t('navigation.pricing') },
-      { href: '/support', label: t('navigation.support') },
       { href: '/support/contact', label: t('navigation.contact') },
     ],
-    [t]
+    [t],
   );
 
   return (
@@ -179,12 +179,12 @@ export function Header() {
                         {user.role === 'super_admin'
                           ? 'Super Admin'
                           : user.role === 'clinic_admin'
-                          ? 'Clinic Admin'
-                          : user.role === 'doctor'
-                          ? 'Doctor'
-                          : user.role === 'staff'
-                          ? 'Staff'
-                          : user.role || 'User'}
+                            ? 'Clinic Admin'
+                            : user.role === 'doctor'
+                              ? 'Doctor'
+                              : user.role === 'staff'
+                                ? 'Staff'
+                                : user.role || 'User'}
                       </p>
                     </div>
                   </div>
@@ -395,12 +395,12 @@ export function Header() {
                             {user.role === 'super_admin'
                               ? 'Super Admin'
                               : user.role === 'clinic_admin'
-                              ? 'Clinic Admin'
-                              : user.role === 'doctor'
-                              ? 'Doctor'
-                              : user.role === 'staff'
-                              ? 'Staff'
-                              : user.role || 'User'}
+                                ? 'Clinic Admin'
+                                : user.role === 'doctor'
+                                  ? 'Doctor'
+                                  : user.role === 'staff'
+                                    ? 'Staff'
+                                    : user.role || 'User'}
                           </p>
                         </div>
                       </div>

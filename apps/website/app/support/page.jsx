@@ -115,7 +115,7 @@ export default function SupportPage() {
         },
         {
           q: 'How do I report a bug or issue?',
-          a: 'You can report issues through the support contact form, email us at support@clinichub.com, or use the in-app feedback feature. We prioritize security and critical issues.',
+          a: 'You can report issues through the support contact form, email us at support@doctorsclinic.services, or use the in-app feedback feature. We prioritize security and critical issues.',
         },
         {
           q: 'Is there an API available?',

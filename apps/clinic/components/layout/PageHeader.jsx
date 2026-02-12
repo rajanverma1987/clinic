@@ -99,7 +99,7 @@ export function PageHeader({
     <header
       role='banner'
       className={`sticky-header-bar ${scrolled ? 'header-scrolled' : ''} ${className}`}
-      style={{ marginBottom: 'var(--dashboard-element-gap, 16px)' }}
+      style={{ marginBottom: 'var(--dashboard-element-gap, var(--space-6, 24px))' }}
     >
       <div className='sticky-header-bar__inner'>
         <div className='sticky-header-bar__left'>

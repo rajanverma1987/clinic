@@ -430,6 +430,8 @@ export const ADMIN_ROUTES = [
     requiredFeature: null,
     requiredPermission: { resource: RESOURCES.DOCTOR, action: ACTIONS.READ },
     requiredRoles: ['super_admin'],
+    /** Hidden from Super Admin sidebar: not in spec key features (System Admin: subscriptions, logs, clinics, support). Route remains accessible via URL. */
+    showInSuperAdminSidebar: false,
   },
 ];
 

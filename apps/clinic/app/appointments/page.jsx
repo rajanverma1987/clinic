@@ -17,12 +17,12 @@ import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
+import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 
 const ROUTE_KEY = 'route_appointments';
 
@@ -221,43 +221,46 @@ export default function AppointmentsPage() {
     }
   }, [settings]);
 
-  const fetchAppointments = useCallback(async (silentRefresh = false) => {
-    const hasDateFilter = dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl);
-    const hasCache = tenantId && !hasDateFilter && routeCache.getData(ROUTE_KEY, tenantId);
-    if (!silentRefresh && !hasCache) setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '10',
-      });
-      if (selectedDoctorId) params.append('doctorId', selectedDoctorId);
-      if (selectedStatus) params.append('status', selectedStatus);
-      if (hasDateFilter) params.append('date', dateFromUrl);
+  const fetchAppointments = useCallback(
+    async (silentRefresh = false) => {
+      const hasDateFilter = dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl);
+      const hasCache = tenantId && !hasDateFilter && routeCache.getData(ROUTE_KEY, tenantId);
+      if (!silentRefresh && !hasCache) setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: '10',
+        });
+        if (selectedDoctorId) params.append('doctorId', selectedDoctorId);
+        if (selectedStatus) params.append('status', selectedStatus);
+        if (hasDateFilter) params.append('date', dateFromUrl);
 
-      const response = await apiClient.get(`/appointments?${params}`);
-      if (response.success && response.data) {
-        const appointmentsList = extractArrayData(response);
-        const filteredAppointments = appointmentsList.filter(
-          (apt) => !apt.isTelemedicine && apt.status !== 'arrived',
-        );
-        const list = Array.isArray(filteredAppointments) ? filteredAppointments : [];
-        const pages = response.data.pagination?.totalPages || 1;
-        setAppointments(list);
-        setTotalPages(pages);
-        if (tenantId && !hasDateFilter)
-          routeCache.set(ROUTE_KEY, tenantId, {
-            appointments: list,
-            currentPage,
-            totalPages: pages,
-          });
+        const response = await apiClient.get(`/appointments?${params}`);
+        if (response.success && response.data) {
+          const appointmentsList = extractArrayData(response);
+          const filteredAppointments = appointmentsList.filter(
+            (apt) => !apt.isTelemedicine && apt.status !== 'arrived',
+          );
+          const list = Array.isArray(filteredAppointments) ? filteredAppointments : [];
+          const pages = response.data.pagination?.totalPages || 1;
+          setAppointments(list);
+          setTotalPages(pages);
+          if (tenantId && !hasDateFilter)
+            routeCache.set(ROUTE_KEY, tenantId, {
+              appointments: list,
+              currentPage,
+              totalPages: pages,
+            });
+        }
+      } catch (error) {
+        logger.error('Failed to fetch appointments', error);
+      } finally {
+        if (!silentRefresh) setLoading(false);
+        setRefreshing(false);
       }
-    } catch (error) {
-      logger.error('Failed to fetch appointments', error);
-    } finally {
-      if (!silentRefresh) setLoading(false);
-      setRefreshing(false);
-    }
-  }, [currentPage, selectedDoctorId, selectedStatus, tenantId, dateFromUrl]);
+    },
+    [currentPage, selectedDoctorId, selectedStatus, tenantId, dateFromUrl],
+  );
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -595,9 +598,6 @@ export default function AppointmentsPage() {
                 {/* Doctor Filter - Only for clinic_admin */}
                 {(user?.role === 'clinic_admin' || user?.role === 'super_admin') && (
                   <div className='w-auto min-w-0'>
-                    <label className='block text-body-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1'>
-                      {t('appointments.filterByDoctor') || 'Filter by Doctor'}
-                    </label>
                     <select
                       value={selectedDoctorId}
                       onChange={(e) => {
@@ -605,8 +605,11 @@ export default function AppointmentsPage() {
                         setCurrentPage(1);
                       }}
                       className='filter-select'
+                      aria-label={t('appointments.filterByDoctor') || 'Filter by Doctor'}
                     >
-                      <option value=''>{t('appointments.allDoctors') || 'All Doctors'}</option>
+                      <option value=''>
+                        {t('appointments.filterByDoctor') || 'Filter by Doctor'}
+                      </option>
                       {doctors && Array.isArray(doctors) && doctors.length > 0 ? (
                         doctors.map((doctor) => {
                           // Handle both id and _id properties
@@ -634,9 +637,6 @@ export default function AppointmentsPage() {
 
                 {/* Status Filter - For all roles */}
                 <div className='w-auto min-w-0'>
-                  <label className='block text-body-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1'>
-                    {t('appointments.filterByStatus') || 'Filter by Status'}
-                  </label>
                   <select
                     value={selectedStatus}
                     onChange={(e) => {
@@ -644,8 +644,11 @@ export default function AppointmentsPage() {
                       setCurrentPage(1);
                     }}
                     className='filter-select'
+                    aria-label={t('appointments.filterByStatus') || 'Filter by Status'}
                   >
-                    <option value=''>{t('appointments.allStatuses') || 'All Statuses'}</option>
+                    <option value=''>
+                      {t('appointments.filterByStatus') || 'Filter by Status'}
+                    </option>
                     <option value='scheduled'>{t('appointments.scheduled')}</option>
                     <option value='confirmed'>{t('appointments.confirmed')}</option>
                     <option value='in_progress'>{t('appointments.inProgress')}</option>
@@ -662,9 +665,8 @@ export default function AppointmentsPage() {
                   <div className='flex items-end'>
                     <Button
                       variant='secondary'
-                      size='md'
                       onClick={() => setShowCalendar(!showCalendar)}
-                      className='whitespace-nowrap'
+                      className='filter-button whitespace-nowrap'
                     >
                       {showCalendar
                         ? t('appointments.hideCalendar')

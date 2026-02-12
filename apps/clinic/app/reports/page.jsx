@@ -442,25 +442,23 @@ export default function ReportsPage() {
         <div className='tab-content-wide-width data-tabs-content'>
           <div className='filter-row filter-row-items-end mb-4'>
             <div className='w-auto min-w-0'>
-              <label className='block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                {t('reports.startDate')}
-              </label>
               <input
                 type='date'
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className='filter-input-date'
+                aria-label={t('reports.startDate')}
+                title={t('reports.startDate')}
               />
             </div>
             <div className='w-auto min-w-0'>
-              <label className='block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                {t('reports.endDate')}
-              </label>
               <input
                 type='date'
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className='filter-input-date'
+                aria-label={t('reports.endDate')}
+                title={t('reports.endDate')}
               />
             </div>
             <Button
@@ -471,7 +469,7 @@ export default function ReportsPage() {
                 else if (activeTab === 'inventory') fetchInventoryReport();
               }}
               isLoading={loading}
-              size='md'
+              className='filter-button'
             >
               {t('reports.generateReport')}
             </Button>

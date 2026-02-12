@@ -2,10 +2,15 @@
 
 import { MoreVerticalIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+
+const DROPDOWN_ESTIMATED_HEIGHT = 240;
+const DROPDOWN_Z_INDEX = 10060;
 
 /**
  * Single icon (⋮) that opens a dropdown of actions. Use in tables/lists to replace multiple buttons.
+ * Dropdown is portaled to document.body so it stays visible when inside overflow containers (e.g. last table row).
  *
  * @param {Object} props
  * @param {Array<{ key: string, label: string, icon?: React.ReactNode, onClick: () => void, danger?: boolean, disabled?: boolean }>} props.items - Menu items
@@ -22,23 +27,95 @@ export function ActionsMenu({
   alignRight = true,
 }) {
   const [open, setOpen] = useState(false);
+  const [dropdownStyle, setDropdownStyle] = useState({});
   const wrapperRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!open || !wrapperRef.current) return;
+
+    const updatePosition = () => {
+      if (!wrapperRef.current) return;
+      const rect = wrapperRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const openAbove = spaceBelow < DROPDOWN_ESTIMATED_HEIGHT + 8;
+
+      setDropdownStyle({
+        position: 'fixed',
+        zIndex: DROPDOWN_Z_INDEX,
+        minWidth: '10rem',
+        ...(alignRight
+          ? { right: `${window.innerWidth - rect.right}px` }
+          : { left: `${rect.left}px` }),
+        ...(openAbove
+          ? { bottom: `${viewportHeight - rect.top + 4}px`, top: 'auto' }
+          : { top: `${rect.bottom + 4}px`, bottom: 'auto' }),
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, { passive: true });
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [open, alignRight]);
 
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target)
+      ) {
         setOpen(false);
       }
     };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
   const filteredItems = Array.isArray(items)
     ? items.filter((i) => i && (i.label != null || i.key))
     : [];
   if (filteredItems.length === 0) return null;
+
+  const dropdownContent =
+    open &&
+    typeof document !== 'undefined' &&
+    createPortal(
+      <div
+        ref={dropdownRef}
+        className='dropdown-menu-unified'
+        style={dropdownStyle}
+        role='menu'
+        aria-orientation='vertical'
+      >
+        {filteredItems.map((item) => (
+          <button
+            key={item.key}
+            type='button'
+            role='menuitem'
+            disabled={item.disabled}
+            data-danger={item.danger ? '' : undefined}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!item.disabled && item.onClick) item.onClick();
+              setOpen(false);
+            }}
+          >
+            {item.icon && <span className='flex-shrink-0'>{item.icon}</span>}
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </div>,
+      document.body,
+    );
 
   return (
     <div className={`relative inline-block ${className}`.trim()} ref={wrapperRef}>
@@ -56,31 +133,7 @@ export function ActionsMenu({
       >
         <MoreVerticalIcon className='icon icon-sm' ariaHidden />
       </Button>
-      {open && (
-        <div
-          className={`dropdown-menu-unified absolute mt-1 ${alignRight ? 'right-0' : 'left-0'}`}
-          role='menu'
-          aria-orientation='vertical'
-        >
-          {filteredItems.map((item) => (
-            <button
-              key={item.key}
-              type='button'
-              role='menuitem'
-              disabled={item.disabled}
-              data-danger={item.danger ? '' : undefined}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!item.disabled && item.onClick) item.onClick();
-                setOpen(false);
-              }}
-            >
-              {item.icon && <span className='flex-shrink-0'>{item.icon}</span>}
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {dropdownContent}
     </div>
   );
 }

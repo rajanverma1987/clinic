@@ -12,6 +12,7 @@
 /.next/
 /out/
 website/.next/
+apps/clinic/.next/
 
 # production
 /build

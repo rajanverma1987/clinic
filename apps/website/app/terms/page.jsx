@@ -1,5 +1,6 @@
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import Link from 'next/link';
 
 export const metadata = {
@@ -21,11 +22,7 @@ export default function TermsPage() {
         }}
       >
         <div className='max-w-4xl mx-auto'>
-          <div className='mb-8'>
-            <Link href='/' className='text-primary-600 hover:text-primary-700 font-medium'>
-              ← Back to Home
-            </Link>
-          </div>
+          <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Terms of Service' }]} />
 
           <h1
             className='text-neutral-900 mb-4'
@@ -566,9 +563,10 @@ export default function TermsPage() {
                   fontWeight: '400',
                 }}
               >
-                TO THE MAXIMUM EXTENT PERMITTED BY LAW, CLINICHUB SHALL NOT BE LIABLE FOR ANY
-                INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT
-                LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.
+                TO THE MAXIMUM EXTENT PERMITTED BY LAW, DOCTOR&apos;S CLINIC SHALL NOT BE LIABLE FOR
+                ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING
+                WITHOUT LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE
+                LOSSES.
               </p>
               <p
                 className='text-neutral-700 mb-4'
@@ -798,8 +796,11 @@ export default function TermsPage() {
               <div className='bg-neutral-100 p-6 rounded-lg'>
                 <p className='text-neutral-700 mb-2'>
                   <strong>Email:</strong>{' '}
-                  <a href='mailto:legal@clinichub.com' className='text-primary-600 hover:underline'>
-                    legal@clinichub.com
+                  <a
+                    href='mailto:legal@doctorsclinic.services'
+                    className='text-primary-600 hover:underline'
+                  >
+                    legal@doctorsclinic.services
                   </a>
                 </p>
                 <p

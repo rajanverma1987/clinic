@@ -1,5 +1,6 @@
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import Link from 'next/link';
 
 export const metadata = {
@@ -21,30 +22,7 @@ export default function PrivacyPage() {
         }}
       >
         <div className='max-w-4xl mx-auto'>
-          {/* Back Link */}
-          <div className='mb-8'>
-            <Link
-              href='/'
-              className='inline-flex items-center text-primary-600 hover:text-primary-700 font-medium group'
-              style={{ fontSize: '15px', lineHeight: '24px' }}
-            >
-              <svg
-                style={{ width: '18px', height: '18px', marginRight: '8px' }}
-                className='group-hover:-translate-x-1'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M15 19l-7-7 7-7'
-                />
-              </svg>
-              Back to Home
-            </Link>
-          </div>
+          <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Privacy Policy' }]} />
 
           {/* Header Section */}
           <div className='mb-12'>
@@ -436,10 +414,10 @@ export default function PrivacyPage() {
               >
                 To exercise these rights, please contact us at{' '}
                 <a
-                  href='mailto:privacy@clinichub.com'
+                  href='mailto:privacy@doctorsclinic.services'
                   className='text-primary-600 hover:text-primary-700 hover:underline'
                 >
-                  privacy@clinichub.com
+                  privacy@doctorsclinic.services
                 </a>
                 .
               </p>
@@ -643,10 +621,10 @@ export default function PrivacyPage() {
                 >
                   <strong className='text-neutral-900'>Email:</strong>{' '}
                   <a
-                    href='mailto:privacy@clinichub.com'
+                    href='mailto:privacy@doctorsclinic.services'
                     className='text-primary-600 hover:text-primary-700 hover:underline'
                   >
-                    privacy@clinichub.com
+                    privacy@doctorsclinic.services
                   </a>
                 </p>
                 <p
@@ -658,10 +636,10 @@ export default function PrivacyPage() {
                 >
                   <strong className='text-neutral-900'>Data Protection Officer:</strong>{' '}
                   <a
-                    href='mailto:dpo@clinichub.com'
+                    href='mailto:dpo@doctorsclinic.services'
                     className='text-primary-600 hover:text-primary-700 hover:underline'
                   >
-                    dpo@clinichub.com
+                    dpo@doctorsclinic.services
                   </a>
                 </p>
                 <p

@@ -1,6 +1,7 @@
 'use client';
 
 import { LOADER_PRESETS } from '@/lib/constants/loader-usage';
+import './loader.css';
 
 export function Loader({
   type,
@@ -63,11 +64,11 @@ export function Loader({
 
   const cfg = sizeConfig[effectiveSize] ?? sizeConfig.md;
   const colors = variantConfig[variant] ?? variantConfig.primary;
-  const width = Math.round(cfg.spinner * 1.5);
+  const width = Math.round(cfg.spinner * 1.5 * 1.25); /* +25% size; logo and bar share same width */
 
   const spinner = (
     <div className='loader-root flex shrink-0 flex-col items-center gap-3' aria-hidden='true'>
-      {/* Logo */}
+      {/* Logo — stable, no animation */}
       <div className='flex items-center justify-center'>
         <img
           src='/images/logoclinic.png'
@@ -75,35 +76,26 @@ export function Loader({
           width={width}
           height={width}
           className='object-contain'
-          style={{
-            filter: 'drop-shadow(0 3px 10px rgba(0, 0, 0, 0.12))',
-          }}
         />
       </div>
 
-      {/* Loading bar */}
+      {/* Loading bar — single inner bar sweeps inside one track */}
       <div
-        className='loader-bar rounded-md p-0.5'
+        className='loader-bar rounded-md overflow-hidden'
         style={{
           width: width,
-          background: '#cecece',
+          height: 8,
+          background: '#e8e8e8',
           border: `1px solid ${colors.main}`,
-          boxShadow: `0 0 20px rgba(${colors.mainRgb}, 0.5)`,
         }}
       >
-        <div className='loader-bar-track'>
-          {Array.from({ length: 12 }).map((_, i) => (
-            <span
-              key={i}
-              className='loader-bar-segment'
-              style={{
-                '--segment-delay': `${i * 0.15}s`,
-                '--color-rgb': colors.mainRgb,
-                '--color-main': colors.main,
-              }}
-            />
-          ))}
-        </div>
+        <div
+          className='loader-bar-fill'
+          style={{
+            '--color-rgb': colors.mainRgb,
+            '--color-main': colors.main,
+          }}
+        />
       </div>
     </div>
   );
@@ -123,13 +115,13 @@ export function Loader({
         style={{
           zIndex: 10070,
           background:
-            'linear-gradient(135deg, rgba(255,255,255,0.99) 0%, rgba(247,250,252,0.98) 100%)',
-          backdropFilter: 'blur(20px)',
+            'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(249,250,251,0.98) 100%)',
+          backdropFilter: 'blur(12px)',
         }}
         {...a11yProps}
       >
         <div
-          className='absolute inset-0 opacity-[0.02]'
+          className='absolute inset-0 opacity-[0.015]'
           style={{
             backgroundImage: `radial-gradient(circle at 2px 2px, ${colors.main} 1px, transparent 0)`,
             backgroundSize: '40px 40px',

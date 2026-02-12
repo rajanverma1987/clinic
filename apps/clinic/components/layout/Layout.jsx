@@ -17,8 +17,17 @@ import { Sidebar } from './Sidebar.jsx';
  * Layout wraps sidebar + main content. Optional title/subtitle/actionButton (or actionButtons)
  * render PageHeader above children so admin and other pages get the same sticky header
  * without each page importing PageHeader.
+ * When loading=true, shows section loader in content area (sidebar + header stay visible).
  */
-export function Layout({ children, title, subtitle, actionButton, actionButtons }) {
+export function Layout({
+  children,
+  title,
+  subtitle,
+  actionButton,
+  actionButtons,
+  loading = false,
+  loadingText,
+}) {
   const router = useRouter();
   const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
@@ -74,15 +83,6 @@ export function Layout({ children, title, subtitle, actionButton, actionButtons 
         gap: 0,
       }}
     >
-      {/* Show loader overlay while auth is checking, but don't block layout structure */}
-      {authLoading && (
-        <div
-          className='fixed inset-0 flex items-center justify-center bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm'
-          style={{ zIndex: 'var(--z-loader, 10070)' }}
-        >
-          <Loader type='page' text={t('common.loading')} />
-        </div>
-      )}
       <Sidebar isMobileOpen={sidebarMobileOpen} onMobileClose={() => setSidebarMobileOpen(false)} />
       <main className='flex-1 flex flex-col min-w-0' style={{ position: 'relative', zIndex: 0 }}>
         {/* Welcome Notification - shows after login */}
@@ -92,7 +92,7 @@ export function Layout({ children, title, subtitle, actionButton, actionButtons 
           data-main-scroll
           style={{ minHeight: 0 }}
         >
-          <div className='page-shell' style={{ paddingTop: '5px' }}>
+          <div className='page-shell'>
             {/* Mobile: hamburger to open sidebar (touch target min 44px) */}
             <div className='md:hidden flex items-center h-12 min-h-[44px] px-4 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800'>
               <button
@@ -127,7 +127,19 @@ export function Layout({ children, title, subtitle, actionButton, actionButtons 
                 unreadCount={unreadNotificationCount}
               />
             )}
-            {children}
+            {/* Auth or page loading: loader in content area only; sidebar and header stay visible */}
+            {authLoading || loading ? (
+              <div
+                className='flex items-center justify-center min-h-[calc(100vh-12rem)]'
+                role='status'
+                aria-busy='true'
+                aria-label={loadingText ?? t('common.loading')}
+              >
+                <Loader type='section' size='lg' text={loadingText ?? t('common.loading')} />
+              </div>
+            ) : (
+              children
+            )}
           </div>
         </div>
       </main>

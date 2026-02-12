@@ -17,13 +17,15 @@
     color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
     color-mix(in srgb, var(--color-neutral-100) 90%, transparent) 100%
   );
-  border: 2px solid color-mix(in srgb, var(--color-neutral-200) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-neutral-200) 90%, transparent);
   border-radius: var(--radius-xl);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
-  box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in srgb, var(--color-neutral-50) 50%, transparent) inset;
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 1px color-mix(in srgb, var(--color-neutral-50) 50%, transparent) inset;
   outline: none;
   overflow: hidden;
 }
@@ -189,11 +191,13 @@
 .NotificationDropdown-backdrop {
   position: fixed;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--color-primary-500) 3%, transparent) 0%,
-    color-mix(in srgb, var(--color-secondary-500) 3%, transparent) 100%
-  ), color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary-500) 3%, transparent) 0%,
+      color-mix(in srgb, var(--color-secondary-500) 3%, transparent) 100%
+    ),
+    color-mix(in srgb, var(--color-neutral-900) 10%, transparent);
   backdrop-filter: blur(8px) saturate(150%);
   -webkit-backdrop-filter: blur(8px) saturate(150%);
   z-index: var(--z-dropdown-backdrop-high, 10051);
@@ -234,7 +238,7 @@
     color-mix(in srgb, var(--color-neutral-50) 99%, transparent) 0%,
     color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 100%
   );
-  border: 2px solid color-mix(in srgb, var(--color-neutral-200) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-neutral-200) 90%, transparent);
   border-radius: var(--radius-2xl);
   z-index: var(--z-dropdown-menu-high, 10050);
   overflow: hidden;
@@ -298,7 +302,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-6);
-  border-bottom: 2px solid color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in srgb, var(--color-neutral-50) 50%, transparent) 0%,
@@ -557,11 +561,7 @@
   flex-shrink: 0;
   width: 10px;
   height: 10px;
-  background: linear-gradient(
-    135deg,
-    var(--color-primary-500) 0%,
-    var(--color-secondary-500) 100%
-  );
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-secondary-500) 100%);
   border-radius: var(--radius-full);
   margin-top: var(--space-1);
   box-shadow:
@@ -581,7 +581,8 @@
 }
 
 @keyframes pulseDot {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -605,7 +606,7 @@
 /* Footer - Premium */
 .NotificationDropdown-footer {
   padding: var(--space-5) var(--space-6);
-  border-top: 2px solid color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in srgb, var(--color-neutral-100) 80%, transparent) 0%,
@@ -623,7 +624,7 @@
     color-mix(in srgb, var(--color-primary-500) 12%, transparent) 0%,
     color-mix(in srgb, var(--color-primary-500) 8%, transparent) 100%
   );
-  border: 2px solid color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 25%, transparent);
   border-radius: var(--radius-xl);
   color: var(--color-primary-500);
   font-size: var(--text-body-sm);

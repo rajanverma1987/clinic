@@ -115,6 +115,32 @@ export async function getSubscriptionPlanById(planId) {
 }
 
 /**
+ * Delete subscription plan (Admin only).
+ * Fails if any active subscription references this plan.
+ */
+export async function deleteSubscriptionPlan(planId) {
+  await connectDB();
+
+  const plan = await SubscriptionPlan.findById(planId);
+  if (!plan) {
+    return null;
+  }
+
+  const activeCount = await Subscription.countDocuments({
+    planId,
+    status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PENDING] },
+  });
+  if (activeCount > 0) {
+    throw new Error(
+      `Cannot delete plan: ${activeCount} active subscription(s) are using it. Cancel or switch them first.`,
+    );
+  }
+
+  await SubscriptionPlan.findByIdAndDelete(planId);
+  return { deleted: true, planId };
+}
+
+/**
  * Create subscription for tenant. Only PayPal is supported.
  * @param {string} [paymentMethod] - 'paypal' only (card/Stripe removed).
  */

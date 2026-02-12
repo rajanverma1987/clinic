@@ -1,0 +1,603 @@
+/*!****************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../../node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!../../node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./components/ui/LanguageSwitcher.css ***!
+  \****************************************************************************************************************************************************************************************************************************************************************************************/
+/* LanguageSwitcher Premium Design Styles */
+
+.LanguageSwitcher {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  overflow: visible;
+  pointer-events: auto;
+}
+
+/* Backdrop overlay */
+.LanguageSwitcher-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-neutral-900) 5%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 10051;
+  animation: fadeIn 0.2s ease-out;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Premium Button Styles */
+.LanguageSwitcher-button {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-2xl);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  overflow: visible;
+  min-width: auto;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+.LanguageSwitcher-button:active,
+.LanguageSwitcher-button:focus {
+  outline: none;
+  border: none;
+}
+
+.LanguageSwitcher-button-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Light variant - Glassmorphism */
+.LanguageSwitcher-button--light {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 90%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 70%, transparent) 100%
+  );
+  border: none;
+  color: var(--color-neutral-800);
+  box-shadow:
+    var(--shadow-md),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+.LanguageSwitcher-button--light:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 85%, transparent) 100%
+  );
+  border: none;
+  color: var(--color-neutral-800);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 var(--color-neutral-50);
+  transform: scale(1.02);
+}
+
+.LanguageSwitcher-button--light.is-open {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 85%, transparent) 100%
+  );
+  border: none;
+  color: var(--color-neutral-800);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+/* Button shows flag + chevron only (no code text) for space */
+.LanguageSwitcher-button--light .LanguageSwitcher-code {
+  display: none;
+}
+
+/* Dark variant - Light theme: contrast style (no dark UI) */
+.LanguageSwitcher-button--dark {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-200) 98%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 100%
+  );
+  border: 1.5px solid var(--color-neutral-300);
+  color: var(--color-neutral-800);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+.LanguageSwitcher-button--dark:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-100) 30%, transparent) 100%
+  );
+  border-color: var(--color-neutral-400);
+  color: var(--color-primary-700);
+  box-shadow:
+    0 8px 30px color-mix(in srgb, var(--color-primary-500) 15%, transparent),
+    var(--shadow-lg),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+  transform: scale(1.02);
+}
+
+.LanguageSwitcher-button--dark.is-open {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-100) 50%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 100%
+  );
+  border-color: var(--color-primary-300);
+  color: var(--color-primary-700);
+  box-shadow:
+    0 8px 30px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    var(--shadow-lg),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+.LanguageSwitcher-button--dark .LanguageSwitcher-code {
+  display: none;
+}
+
+/* Size variants – flag + chevron only */
+.LanguageSwitcher-button--sm {
+  padding: var(--space-2) var(--space-2);
+  min-width: auto;
+  gap: var(--gap-1);
+}
+
+.LanguageSwitcher-button--md {
+  padding: var(--space-2) var(--space-3);
+  min-width: auto;
+  gap: var(--gap-2);
+}
+
+/* Flag wrapper with premium styling */
+.LanguageSwitcher-flag-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-8);
+  height: var(--size-8);
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 5%, transparent) 100%
+  );
+  backdrop-filter: blur(10px);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 30%, transparent);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.LanguageSwitcher-button:hover .LanguageSwitcher-flag-wrapper {
+  transform: scale(1.1);
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 40%, transparent);
+}
+
+.LanguageSwitcher-button--dark .LanguageSwitcher-flag-wrapper {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 90%, transparent) 100%
+  );
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 80%, transparent);
+}
+
+.LanguageSwitcher-button--dark:hover .LanguageSwitcher-flag-wrapper {
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 25%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 80%, transparent);
+}
+
+.LanguageSwitcher-flag {
+  display: block;
+  line-height: 1;
+  font-size: 22px;
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.LanguageSwitcher-button:hover .LanguageSwitcher-flag {
+  transform: scale(1.05);
+}
+
+.LanguageSwitcher-flag--sm {
+  font-size: 18px;
+}
+
+.LanguageSwitcher-button--sm .LanguageSwitcher-flag-wrapper {
+  width: 28px;
+  height: 28px;
+}
+
+.LanguageSwitcher-flag--md {
+  font-size: 22px;
+}
+
+/* Icon wrapper */
+.LanguageSwitcher-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.LanguageSwitcher-icon {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+}
+
+.LanguageSwitcher-icon.is-open {
+  transform: rotate(180deg);
+}
+
+/* Ripple effect */
+.LanguageSwitcher-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  margin-top: -50%;
+  margin-left: -50%;
+  pointer-events: none;
+  transition:
+    width 0.6s ease,
+    height 0.6s ease,
+    opacity 0.6s ease;
+  opacity: 0;
+}
+
+.LanguageSwitcher-button:active .LanguageSwitcher-ripple {
+  width: 200px;
+  height: 200px;
+  opacity: 1;
+  transition:
+    width 0.3s ease,
+    height 0.3s ease,
+    opacity 0.3s ease;
+}
+
+/* Premium Dropdown */
+.LanguageSwitcher-dropdown {
+  position: fixed;
+  min-width: 220px;
+  max-width: calc(100vw - var(--space-8));
+  border-radius: var(--radius-2xl);
+  z-index: var(--z-dropdown-menu-high, 10050);
+  overflow: visible;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Adjust dropdown position - now using fixed positioning, handled by JS */
+.LanguageSwitcher-dropdown.is-left-aligned {
+  /* Position handled by JavaScript */
+}
+
+.LanguageSwitcher-dropdown.is-top-aligned {
+  /* Position handled by JavaScript */
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Light dropdown */
+.LanguageSwitcher-dropdown--light {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 90%, transparent) 100%
+  );
+  border: 1.5px solid color-mix(in srgb, var(--color-neutral-50) 80%, transparent);
+  box-shadow:
+    var(--shadow-2xl),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+/* Dark dropdown - Light theme: contrast style */
+.LanguageSwitcher-dropdown--dark {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 98%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 100%
+  );
+  border: 1.5px solid var(--color-neutral-300);
+  box-shadow:
+    var(--shadow-2xl),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
+}
+
+.LanguageSwitcher-menu {
+  padding: var(--space-2);
+}
+
+/* Premium Menu Items */
+.LanguageSwitcher-item {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-3);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--space-1);
+  overflow: hidden;
+}
+
+.LanguageSwitcher-item:last-child {
+  margin-bottom: 0;
+}
+
+.LanguageSwitcher-item--sm {
+  font-size: var(--text-body-xs);
+  line-height: var(--text-body-xs-line-height);
+  padding: var(--space-3) var(--space-4);
+}
+
+.LanguageSwitcher-item--md {
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-line-height);
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Light item styles */
+.LanguageSwitcher-item--light {
+  color: var(--color-neutral-700);
+  background: transparent;
+}
+
+.LanguageSwitcher-item--light:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 8%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 4%, transparent) 100%
+  );
+  color: var(--color-primary-700);
+  transform: scale(1.02);
+}
+
+.LanguageSwitcher-item--light.is-active {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 100%
+  );
+  color: var(--color-primary-700);
+  font-weight: 600;
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 50%, transparent);
+}
+
+/* Dark item styles - Light theme: contrast style */
+.LanguageSwitcher-item--dark {
+  color: var(--color-neutral-800);
+  background: transparent;
+}
+
+.LanguageSwitcher-item--dark:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-100) 90%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-100) 20%, transparent) 100%
+  );
+  color: var(--color-primary-700);
+  transform: scale(1.02);
+}
+
+.LanguageSwitcher-item--dark.is-active {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-100) 60%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 15%, transparent) 100%
+  );
+  color: var(--color-primary-700);
+  font-weight: 600;
+  box-shadow:
+    0 4px 12px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 80%, transparent);
+}
+
+/* Flag wrapper in items */
+.LanguageSwitcher-item-flag-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-8);
+  height: var(--size-8);
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 5%, transparent) 100%
+  );
+  backdrop-filter: blur(10px);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 30%, transparent);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.LanguageSwitcher-item:hover .LanguageSwitcher-item-flag-wrapper {
+  transform: scale(1.1);
+  box-shadow:
+    0 4px 10px color-mix(in srgb, var(--color-primary-500) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 40%, transparent);
+}
+
+.LanguageSwitcher-item--dark .LanguageSwitcher-item-flag-wrapper {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-neutral-50) 10%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-50) 5%, transparent) 100%
+  );
+  box-shadow:
+    var(--shadow-md),
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 10%, transparent);
+}
+
+.LanguageSwitcher-item-flag {
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.LanguageSwitcher-item:hover .LanguageSwitcher-item-flag {
+  transform: scale(1.05);
+}
+
+.LanguageSwitcher-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.LanguageSwitcher-item-name {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+  transition: color 0.3s ease;
+}
+
+.LanguageSwitcher-item-code {
+  font-size: var(--text-body-xs);
+  line-height: var(--text-body-xs-line-height);
+  display: block;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: opacity 0.3s ease;
+}
+
+.LanguageSwitcher-item-code.is-active {
+  opacity: 0.9;
+}
+
+.LanguageSwitcher-item-code:not(.is-active) {
+  opacity: 0.7;
+}
+
+/* Check icon wrapper */
+.LanguageSwitcher-item-check-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-6);
+  height: var(--size-6);
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 100%
+  );
+  flex-shrink: 0;
+  animation: checkIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes checkIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.LanguageSwitcher-item-check {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+  flex-shrink: 0;
+  stroke-width: 3;
+  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-neutral-900) 10%, transparent));
+}
+
+/* Hover glow effect */
+.LanguageSwitcher-item-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-500) 10%, transparent) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.LanguageSwitcher-item:hover .LanguageSwitcher-item-glow {
+  opacity: 1;
+}
+

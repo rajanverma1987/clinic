@@ -1237,6 +1237,7 @@
   },
   "navigation": {
     "features": "Fonctionnalités",
+    "about": "À propos",
     "blog": "Blog",
     "support": "Support",
     "contact": "Contact",
@@ -1477,6 +1478,7 @@
   "footer": {
     "description": "Système de gestion de clinique prêt pour le monde entier avec conformité HIPAA/GDPR. Rationalisez votre pratique avec notre plateforme complète de gestion des soins de santé.",
     "product": "Produit",
+    "about": "À propos",
     "features": "Fonctionnalités",
     "getStarted": "Commencer",
     "support": "Support",

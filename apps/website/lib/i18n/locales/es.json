@@ -1239,6 +1239,7 @@
   },
   "navigation": {
     "features": "Características",
+    "about": "Nosotros",
     "blog": "Blog",
     "support": "Soporte",
     "contact": "Contacto",
@@ -1479,6 +1480,7 @@
   "footer": {
     "description": "Sistema de gestión de clínica listo para el mundo con cumplimiento HIPAA/GDPR. Optimiza tu práctica con nuestra plataforma integral de gestión de atención médica.",
     "product": "Producto",
+    "about": "Nosotros",
     "features": "Características",
     "getStarted": "Comenzar",
     "support": "Soporte",

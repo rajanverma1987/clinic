@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- White medical plus on transparent; visible on dark tab bars -->
+  <path fill="#fff" d="M14 6h4v6h6v4h-6v6h-4v-6H8v-4h6z"/>
+</svg>

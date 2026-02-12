@@ -1,41 +1,45 @@
-/* Dashboard-specific styles following theme system - Professional Clinic Design */
+/* Dashboard-specific styles following theme system - Professional Clinic Design
+ * Standard dashboard: header, KPI row, main content grid, consistent spacing hierarchy
+ */
 
-/* Alignment tokens – use everywhere for perfect alignment across all sections/tabs */
+/* Alignment tokens – standard dashboard spacing (8px base, 4/8/12/16/24/32px scale) */
 :root {
-  --dashboard-content-padding: 16px;
-  --dashboard-element-gap: 16px;
-  --dashboard-grid-gap: 16px;
-  --dashboard-card-height: 420px;
-  --dashboard-section-header-gap: 12px;
-  --dashboard-section-header-mb: 16px;
+  --dashboard-content-padding: var(--space-6);
+  --dashboard-element-gap: var(--space-6);
+  --dashboard-grid-gap: var(--space-5);
+  --dashboard-section-gap: var(--space-8);
+  --dashboard-card-min-height: 320px;
+  --dashboard-card-target-height: 380px;
+  --dashboard-section-header-gap: var(--space-3);
+  --dashboard-section-header-mb: var(--space-4);
 }
 
-/* Dashboard Container – full width, consistent horizontal padding for alignment */
+/* Dashboard Container – full width, standard horizontal padding */
 .dashboard-container {
   width: 100%;
   max-width: 100%;
   padding-left: var(--dashboard-content-padding);
   padding-right: var(--dashboard-content-padding);
-  padding-top: 0;
-  padding-bottom: 0;
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-8);
   box-sizing: border-box;
 }
 
+/* Section – standard gap between major dashboard sections */
 .dashboard-section {
   width: 100%;
-  margin-bottom: var(--dashboard-element-gap);
+  margin-bottom: var(--dashboard-section-gap);
   box-sizing: border-box;
 }
 
-/* All dashboard grids use same gap for alignment */
+/* All dashboard grids use consistent gap */
 .dashboard-grid {
   gap: var(--dashboard-grid-gap);
 }
 
-/* Grid cell for 3-per-row cards – even size (same height as Patients Summary) */
+/* Grid cell – min-height only; content can grow (standard dashboard pattern) */
 .dashboard-card-cell {
-  min-height: var(--dashboard-card-height);
-  height: var(--dashboard-card-height);
+  min-height: var(--dashboard-card-min-height);
   display: flex;
   flex-direction: column;
 }
@@ -53,7 +57,7 @@
 .dashboard-tab-bar {
   background: var(--color-neutral-50);
   border-radius: var(--radius-lg);
-  padding: 8px;
+  padding: var(--space-2);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-neutral-200);
 }
@@ -64,10 +68,10 @@
 }
 
 .dashboard-tab-bar [role='tablist'] {
-  font-size: 14px;
+  font-size: var(--text-body-sm);
   font-weight: 600;
   letter-spacing: -0.01em;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 /* Card Backgrounds - solid surfaces */
@@ -109,8 +113,8 @@
 }
 
 .dashboard-pending-task-item {
-  padding: 12px;
-  border-radius: 8px;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -169,7 +173,7 @@
     box-shadow 0.2s ease;
   cursor: pointer;
   min-height: 128px;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   background: var(--color-neutral-50);
   border: 1px solid var(--color-neutral-200);
   border-left-width: 4px;
@@ -401,7 +405,7 @@
   transform: scale(1.05);
 }
 
-/* List Cards - Professional Clinic Design - Consistent Height */
+/* List Cards - Professional Clinic Design - Flexible height (standard pattern) */
 .dashboard-list-card {
   position: relative;
   overflow: hidden;
@@ -410,8 +414,7 @@
   background: var(--color-neutral-50);
   border: 1px solid var(--color-neutral-200);
   box-shadow: var(--shadow-sm);
-  min-height: var(--dashboard-card-height);
-  height: var(--dashboard-card-height);
+  min-height: var(--dashboard-card-min-height);
   display: flex;
   flex-direction: column;
 }
@@ -893,7 +896,7 @@
   }
 }
 
-/* Chart Styles - Professional Clinic Design */
+/* Chart Styles - Professional Clinic Design - Flexible height */
 .chart-card {
   position: relative;
   overflow: hidden;
@@ -904,8 +907,7 @@
   box-shadow:
     0 2px 4px color-mix(in srgb, var(--color-neutral-900) 6%, transparent),
     0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent);
-  min-height: var(--dashboard-card-height);
-  height: var(--dashboard-card-height);
+  min-height: var(--dashboard-card-min-height);
   display: flex;
   flex-direction: column;
 }
@@ -964,26 +966,25 @@
   border-color: color-mix(in srgb, var(--color-status-warning) 30%, transparent);
 }
 
-/* Section Header – aligned across all dashboard cards/tabs */
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: var(--dashboard-section-header-gap, 12px);
-  margin-bottom: var(--dashboard-section-header-mb, 16px);
-  position: relative;
-  flex-shrink: 0;
+/* Section Header – extends globals .section-header; dashboard-specific gap/mb */
+.dashboard-container .section-header,
+.dashboard-section .section-header {
+  gap: var(--dashboard-section-header-gap);
+  margin-bottom: var(--dashboard-section-header-mb);
 }
 
-.section-title {
-  font-size: 16px;
-  line-height: 20px;
+.dashboard-container .section-title,
+.dashboard-section .section-title {
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-line-height);
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--color-neutral-900);
   font-family: var(--font-family);
   margin: 0;
 }
-.dark .section-title {
+.dark .dashboard-container .section-title,
+.dark .dashboard-section .section-title {
   color: var(--color-text-primary);
 }
 
@@ -993,14 +994,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px 20px;
+  padding: var(--space-8) var(--space-5);
   text-align: center;
 }
 
 .empty-state-icon {
   width: var(--icon-size-empty, 64px);
   height: var(--icon-size-empty, 64px);
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
   opacity: 0.4;
   color: var(--color-neutral-400);
   display: flex;
@@ -1018,8 +1019,8 @@
 
 .empty-state p {
   color: var(--color-neutral-500);
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-line-height);
 }
 .dark .empty-state p {
   color: var(--color-text-secondary);
@@ -1027,11 +1028,11 @@
 
 /* Appointment List Item - Professional Clinic Design */
 .dashboard-appointment-item {
-  padding: 12px;
+  padding: var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-neutral-200);
   background: var(--color-neutral-50);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
@@ -1058,12 +1059,12 @@
 
 /* Time Badge - Professional Design */
 .time-badge {
-  padding: 6px 12px;
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
   background: var(--color-primary-500);
   color: var(--color-neutral-50);
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--text-body-xs);
   white-space: nowrap;
   flex-shrink: 0;
   box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
@@ -1074,7 +1075,7 @@
   box-shadow: 0 2px 4px color-mix(in srgb, var(--color-secondary-500) 20%, transparent);
 }
 
-/* Next Patient Card - Professional Design */
+/* Next Patient Card - Professional Design - Flexible height */
 .dashboard-next-patient-card {
   border: 1px solid var(--color-neutral-200);
   box-shadow:
@@ -1082,8 +1083,7 @@
     0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent);
   border-radius: var(--radius-lg);
   background: var(--color-neutral-50);
-  min-height: var(--dashboard-card-height);
-  height: var(--dashboard-card-height);
+  min-height: var(--dashboard-card-min-height);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1091,12 +1091,12 @@
 
 /* Patient History Badge - Quick Action Button Style */
 .patient-history-badge {
-  padding: 6px 14px;
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
   background: var(--color-primary-100);
   color: var(--color-primary-700);
   border: 1px solid var(--color-primary-200);
-  font-size: 12px;
+  font-size: var(--text-body-xs);
   font-weight: 600;
   transition: all 0.2s ease;
   cursor: pointer;
@@ -1126,8 +1126,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-neutral-200);
   background: var(--color-neutral-50);
@@ -1135,6 +1135,7 @@
   transition: all 0.2s ease;
   cursor: pointer;
   font-weight: 600;
+  font-size: var(--text-body-sm);
 }
 
 .patient-action-btn:hover {
@@ -1178,8 +1179,15 @@
   box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
 }
 
-/* Responsive utilities - Compact Design */
+/* Responsive utilities - Standard mobile dashboard */
 @media (max-width: 640px) {
+  :root {
+    --dashboard-content-padding: var(--space-4);
+    --dashboard-section-gap: var(--space-6);
+    --dashboard-grid-gap: var(--space-4);
+    --dashboard-card-min-height: 280px;
+  }
+
   .stat-value {
     font-size: 24px;
     line-height: 30px;
@@ -1190,39 +1198,37 @@
   }
 
   .quick-action-btn {
-    min-height: 80px;
-    padding: 12px 10px;
+    min-height: 44px;
+    padding: 12px 16px;
   }
 
-  /* Allow tall cards to shrink on very small screens */
   .chart-card,
   .dashboard-list-card,
   .dashboard-next-patient-card {
-    height: auto;
-    min-height: 320px;
+    min-height: var(--dashboard-card-min-height);
   }
 
   .section-header {
-    margin-bottom: 12px;
-    padding-bottom: 8px;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
   }
 
   .section-title {
-    font-size: 14px;
-    line-height: 18px;
+    font-size: var(--text-body-sm);
+    line-height: var(--text-body-sm-line-height);
   }
 
   .dashboard-list-item {
-    padding: 10px;
+    padding: var(--space-2);
   }
 
   .dashboard-appointment-item {
-    padding: 10px;
+    padding: var(--space-2);
   }
 
   .time-badge {
-    padding: 4px 10px;
-    font-size: 11px;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-body-xs);
   }
 }
 

@@ -5,8 +5,6 @@ import { Layout } from '@/components/layout/Layout';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { Loader } from '@/components/ui/Loader';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
@@ -155,7 +153,15 @@ export default function AdminAppointmentsPage() {
     });
   };
 
-  if (authLoading || loading) return <Loader type='page' text={t('common.loading')} />;
+  if (authLoading || loading)
+    return (
+      <Layout
+        title={t('admin.appointments')}
+        subtitle={t('admin.appointmentsSubtitleAll')}
+        loading
+        loadingText={t('common.loading')}
+      />
+    );
   if (user?.role !== 'super_admin') return null;
 
   const pages =
@@ -174,82 +180,73 @@ export default function AdminAppointmentsPage() {
       <div className='admin-page-content'>
         <Card className='mb-6 overflow-hidden'>
           <div className='p-4 sm:p-6'>
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end'>
-              <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  Booking ID
-                </label>
-                <Input
-                  type='text'
-                  placeholder='Search by appointment number'
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                />
-              </div>
-              <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  {t('admin.appointmentsStatusLabel')}
-                </label>
-                <select
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setPagination((p) => ({ ...p, page: 1 }));
-                  }}
-                >
-                  <option value=''>{t('common.all')}</option>
-                  <option value='scheduled'>{t('admin.appointmentsScheduled')}</option>
-                  <option value='confirmed'>{t('admin.appointmentsConfirmed')}</option>
-                  <option value='arrived'>{t('admin.appointmentsArrived')}</option>
-                  <option value='in_progress'>{t('admin.appointmentsInProgress')}</option>
-                  <option value='completed'>{t('admin.appointmentsCompleted')}</option>
-                  <option value='cancelled'>{t('admin.appointmentsCancelled')}</option>
-                  <option value='no_show'>{t('admin.appointmentsNoShow')}</option>
-                </select>
-              </div>
-              <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  {t('admin.appointmentsType')}
-                </label>
-                <select
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
-                  value={typeFilter}
-                  onChange={(e) => {
-                    setTypeFilter(e.target.value);
-                    setPagination((p) => ({ ...p, page: 1 }));
-                  }}
-                >
-                  <option value=''>{t('admin.appointmentsTypeAll')}</option>
-                  {APPOINTMENT_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type.replace('_', ' ')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  {t('admin.appointmentsFromDate')}
-                </label>
-                <Input
-                  type='date'
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  {t('admin.appointmentsToDate')}
-                </label>
-                <Input type='date' value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-              </div>
-              <div className='flex items-end sm:col-span-2 lg:col-span-1'>
-                <Button variant='primary' onClick={handleSearch} className='w-full min-w-[100px]'>
-                  {t('admin.activityLogsApply')}
-                </Button>
-              </div>
+            <div className='flex flex-wrap items-center gap-3'>
+              <input
+                type='text'
+                placeholder={t('admin.appointmentsSearchPlaceholder') || 'Search by appointment'}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className='filter-input-date min-w-[10rem] max-w-[14rem]'
+                aria-label={t('admin.appointmentsBookingId') || 'Booking ID'}
+              />
+              <select
+                className='filter-select'
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPagination((p) => ({ ...p, page: 1 }));
+                }}
+                aria-label={t('admin.appointmentsStatusLabel') || 'Status'}
+              >
+                <option value=''>{t('admin.appointmentsStatusLabel') || 'Status'}</option>
+                <option value='scheduled'>{t('admin.appointmentsScheduled')}</option>
+                <option value='confirmed'>{t('admin.appointmentsConfirmed')}</option>
+                <option value='arrived'>{t('admin.appointmentsArrived')}</option>
+                <option value='in_progress'>{t('admin.appointmentsInProgress')}</option>
+                <option value='completed'>{t('admin.appointmentsCompleted')}</option>
+                <option value='cancelled'>{t('admin.appointmentsCancelled')}</option>
+                <option value='no_show'>{t('admin.appointmentsNoShow')}</option>
+              </select>
+              <select
+                className='filter-select'
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value);
+                  setPagination((p) => ({ ...p, page: 1 }));
+                }}
+                aria-label={t('admin.appointmentsType') || 'Type'}
+              >
+                <option value=''>{t('admin.appointmentsType') || 'Type'}</option>
+                {APPOINTMENT_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type.replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
+              <input
+                type='date'
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className='filter-input-date'
+                aria-label={t('admin.appointmentsFromDate') || 'From date'}
+                title={t('admin.appointmentsFromDate') || 'From date'}
+              />
+              <input
+                type='date'
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className='filter-input-date'
+                aria-label={t('admin.appointmentsToDate') || 'To date'}
+                title={t('admin.appointmentsToDate') || 'To date'}
+              />
+              <Button
+                variant='primary'
+                onClick={handleSearch}
+                className='filter-button shrink-0 min-w-[100px]'
+              >
+                {t('admin.activityLogsApply')}
+              </Button>
             </div>
           </div>
         </Card>

@@ -1,4 +1,4 @@
-// File: /Users/shivramrana/Documents/clinictool/clinic/apps/website/app/support/contact/page.jsx
+// File: /Users/shivramrana/Documents/clinic/apps/website/app/support/contact/page.jsx
 import * as entry from '../../../../../app/support/contact/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

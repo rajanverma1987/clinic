@@ -5,7 +5,6 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
@@ -114,7 +113,15 @@ export default function AdminActivityLogsPage() {
     showSuccess(t('admin.activityLogsEmailReportComingSoon', 'Email report is coming soon'));
   };
 
-  if (authLoading || loading) return <Loader type='page' text={t('common.loading')} />;
+  if (authLoading || loading)
+    return (
+      <Layout
+        title={t('admin.activityLogs')}
+        subtitle={t('admin.activityLogsSubtitle')}
+        loading
+        loadingText={t('common.loading')}
+      />
+    );
   if (user?.role !== 'super_admin') return null;
 
   const pages =
@@ -166,7 +173,7 @@ export default function AdminActivityLogsPage() {
             <div className='flex gap-2 shrink-0'>
               <Button
                 variant='ghost'
-                size='md'
+                className='filter-button'
                 onClick={() => {
                   setUserIdFilter('');
                   setActionFilter('');
@@ -179,7 +186,7 @@ export default function AdminActivityLogsPage() {
               </Button>
               <Button
                 variant='primary'
-                size='md'
+                className='filter-button'
                 onClick={() => {
                   setPagination((p) => ({ ...p, page: 1 }));
                   fetchLogs();

@@ -2,8 +2,8 @@
 
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
 import { useState } from 'react';
 
 export default function ContactPage() {
@@ -69,28 +69,13 @@ export default function ContactPage() {
           ></div>
 
           <div className='max-w-7xl mx-auto relative z-10'>
-            <div style={{ marginBottom: '32px' }}>
-              <Link
-                href='/support'
-                className='text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center group'
-              >
-                <svg
-                  className='mr-2 group-hover:-translate-x-1'
-                  style={{ width: '20px', height: '20px' }}
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M15 19l-7-7 7-7'
-                  />
-                </svg>
-                Back to Support
-              </Link>
-            </div>
+            <Breadcrumb
+              items={[
+                { label: 'Home', href: '/' },
+                { label: 'Support', href: '/support' },
+                { label: 'Contact' },
+              ]}
+            />
 
             <div className='text-center'>
               {/* Premium badge */}

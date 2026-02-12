@@ -452,9 +452,10 @@ export async function listPrescriptions(query, tenantId, userId) {
     }
   }
 
-  // Early return optimization: Quick check if any prescriptions exist
-  const hasPrescriptions = await Prescription.countDocuments(filter);
-  if (hasPrescriptions === 0) {
+  // Get total count (removed redundant early check to reduce connection pool usage)
+  const total = await Prescription.countDocuments(filter);
+  
+  if (total === 0) {
     // No prescriptions exist - return empty result immediately
     await AuditLogger.auditWrite(
       'prescription',
@@ -467,9 +468,6 @@ export async function listPrescriptions(query, tenantId, userId) {
     );
     return createPaginationResult([], 0, page || 1, limit || 10);
   }
-
-  // Get total count
-  const total = await Prescription.countDocuments(filter);
 
   // Optimize: Use aggregation with $lookup instead of populate to avoid N+1 queries
   const pipeline = [

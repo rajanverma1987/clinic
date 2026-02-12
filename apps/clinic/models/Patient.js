@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { phiEncryptionPlugin } from '@/lib/encryption/phi-encryption.js';
+import { phiEncryptionPlugin } from '../lib/encryption/phi-encryption.js';
 
 export const Gender = {
   MALE: 'male',
@@ -27,7 +27,7 @@ const PatientSchema = new Schema(
       ref: 'Tenant',
       required: true,
     },
-    
+
     // Demographics
     firstName: {
       type: String,
@@ -52,7 +52,7 @@ const PatientSchema = new Schema(
       type: String,
       enum: Object.values(BloodGroup),
     },
-    
+
     // Contact Information
     email: {
       type: String,
@@ -75,7 +75,7 @@ const PatientSchema = new Schema(
       zipCode: String,
       country: String,
     },
-    
+
     // Identifiers
     patientId: {
       type: String,
@@ -91,7 +91,7 @@ const PatientSchema = new Schema(
       type: String,
       trim: true,
     },
-    
+
     // Medical Information (PHI - will be encrypted)
     medicalHistory: {
       type: String,
@@ -111,7 +111,7 @@ const PatientSchema = new Schema(
       phone: String,
       email: String,
     },
-    
+
     // Insurance information (as per NEW-PLANS.md)
     insurance: {
       provider: String,
@@ -120,13 +120,15 @@ const PatientSchema = new Schema(
       validFrom: Date,
       validUntil: Date,
     },
-    
+
     // Family members (as per NEW-PLANS.md)
-    familyMembers: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Patient',
-    }],
-    
+    familyMembers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Patient',
+      },
+    ],
+
     // Patient portal access (as per NEW-PLANS.md)
     portalAccess: {
       enabled: {
@@ -151,7 +153,7 @@ const PatientSchema = new Schema(
         type: Date,
       },
     },
-    
+
     // Status (as per NEW-PLANS.md)
     status: {
       type: String,
@@ -159,7 +161,7 @@ const PatientSchema = new Schema(
       default: 'active',
       index: true,
     },
-    
+
     // Attachments
     attachments: [
       {
@@ -170,14 +172,14 @@ const PatientSchema = new Schema(
         uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
       },
     ],
-    
+
     // Created by (as per NEW-PLANS.md)
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       index: true,
     },
-    
+
     // Metadata
     notes: {
       type: String,
@@ -203,7 +205,7 @@ const PatientSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Apply PHI encryption plugin to sensitive fields
@@ -235,4 +237,3 @@ PatientSchema.index({
 });
 
 export default mongoose.models.Patient || mongoose.model('Patient', PatientSchema);
-

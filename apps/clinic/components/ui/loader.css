@@ -1,0 +1,299 @@
+/**
+ * Loader component – all loader-related styles.
+ * Imported by Loader.jsx.
+ */
+
+:root {
+  --z-loader: 10070;
+}
+
+/* Keyframes used by Loader */
+@keyframes logoFloat {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Loader spinner (legacy / alternate) */
+@keyframes loader-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-spinner {
+  animation: loader-spin 0.8s linear infinite;
+}
+
+/* Loader component – medical / premium animations */
+@keyframes loader-medical-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loader-medical-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.55;
+  }
+}
+
+@keyframes loader-logo-pulse {
+  0%,
+  100% {
+    opacity: 0.96;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes loader-fade-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes loader-message-pulse {
+  0%,
+  100% {
+    opacity: 0.88;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-0.5px) scale(1.002);
+  }
+}
+
+@keyframes loader-compact-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loader-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes loader-ring-inner-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.loader-ring {
+  animation: loader-medical-spin 0.9s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  will-change: transform;
+}
+
+.loader-ring-inner {
+  animation: loader-ring-inner-spin 1.35s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  will-change: transform;
+}
+
+.loader-bg-pulse {
+  animation: loader-medical-pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.loader-glow-ring {
+  animation: loader-glow-pulse 2.2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.loader-logo {
+  animation: loader-logo-pulse 2.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.loader-logo-wrap {
+  animation: loader-fade-pulse 2.1s ease-in-out infinite;
+  will-change: opacity;
+}
+
+.loader-logo-glow {
+  animation: loader-glow-pulse 2.2s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.loader-text-pulse {
+  animation: loader-message-pulse 2.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: opacity, transform;
+}
+
+.loader-compact-ring {
+  animation: loader-compact-spin 0.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+/* Loader loading bar – legacy segment style */
+@keyframes loader-bar-fade-in {
+  0% {
+    opacity: 1;
+    transform: scaleY(1);
+    background: linear-gradient(
+      180deg,
+      rgba(var(--loader-color-rgb, 30, 79, 181), 1) 0%,
+      rgba(var(--loader-color-rgb, 30, 79, 181), 0.6) 56%,
+      rgba(var(--loader-color-rgb, 30, 79, 181), 0.3) 100%
+    );
+    border-radius: 0;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(0.1);
+    background: rgba(var(--loader-color-rgb, 30, 79, 181), 1);
+    border-radius: 4px;
+  }
+}
+
+.loader-loading-bar__progress {
+  min-height: 20px;
+}
+
+.loader-loading-bar__segment {
+  margin: 0 auto;
+  flex-basis: 11%;
+  flex-grow: 1;
+  flex-shrink: 1;
+  height: 20px;
+  background: rgba(var(--loader-color-rgb, 30, 79, 181), 1);
+  border-radius: 4px;
+  animation: loader-bar-fade-in 1.8s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.loader-loading-bar__segment.first {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.loader-loading-bar__segment.last {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+/* Loader progress bar – single bar sweeps inside one track */
+.loader-bar-fill {
+  height: 100%;
+  width: 40%;
+  min-width: 32px;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--color-rgb, 30, 79, 181), 0.9) 30%,
+    var(--color-main, #1e4fb5) 50%,
+    rgba(var(--color-rgb, 30, 79, 181), 0.9) 70%,
+    transparent 100%
+  );
+  animation: loader-bar-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes loader-bar-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .loader-ring,
+  .loader-ring-inner,
+  .loader-compact-ring {
+    animation-duration: 2s;
+  }
+  .loader-bg-pulse,
+  .loader-glow-ring,
+  .loader-logo,
+  .loader-logo-wrap,
+  .loader-logo-glow {
+    animation: none;
+    opacity: 0.9;
+  }
+  .loader-text-pulse {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .loader-loading-bar__segment {
+    animation: none;
+    opacity: 1;
+    background: rgba(var(--loader-color-rgb, 30, 79, 181), 0.6);
+  }
+  .loader-bar-fill {
+    animation: none;
+    transform: translateX(0);
+    width: 60%;
+    background: rgba(var(--color-rgb, 30, 79, 181), 0.7);
+  }
+}

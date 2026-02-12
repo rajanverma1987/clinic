@@ -2,6 +2,7 @@
 
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 
@@ -17,28 +18,7 @@ export default function ContactPage() {
           className='max-w-4xl mx-auto'
           style={{ paddingLeft: '32px', paddingRight: '32px', paddingBottom: '64px' }}
         >
-          {/* Back Link */}
-          <div className='mb-8'>
-            <Link
-              href='/'
-              className='inline-flex items-center text-primary-600 hover:text-primary-700 font-medium group text-base'
-            >
-              <svg
-                className='w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M15 19l-7-7 7-7'
-                />
-              </svg>
-              Back to Home
-            </Link>
-          </div>
+          <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Contact' }]} />
 
           {/* Header Section */}
           <div className='mb-12'>

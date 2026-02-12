@@ -14,13 +14,13 @@ import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { apiClient } from '@/lib/api/client';
+import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { getRolePermissions } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 
 const ROLE_OPTIONS = [
   { value: 'clinic_admin', labelKey: 'settings.admin' },
@@ -109,7 +109,13 @@ export default function StaffPage() {
 
   // Setup automatic background refresh every 60 seconds
   useEffect(() => {
-    if (!authLoading && user && allowedRoles.includes(user.role) && !debouncedSearchTerm && !roleFilter) {
+    if (
+      !authLoading &&
+      user &&
+      allowedRoles.includes(user.role) &&
+      !debouncedSearchTerm &&
+      !roleFilter
+    ) {
       // Clear any existing interval
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
@@ -424,13 +430,13 @@ export default function StaffPage() {
           >
             <div className='search-modal-grid'>
               <div className='search-modal-field'>
-                <label>{t('staff.role')}</label>
                 <select
                   className='filter-select w-full'
                   value={advancedRole}
                   onChange={(e) => setAdvancedRole(e.target.value)}
+                  aria-label={t('staff.role')}
                 >
-                  <option value=''>{t('common.all')}</option>
+                  <option value=''>{t('staff.role')}</option>
                   {ROLE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {t(opt.labelKey)}

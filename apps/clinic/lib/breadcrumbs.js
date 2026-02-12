@@ -75,11 +75,18 @@ export function getBreadcrumbItems(pathname, t, currentPageLabel) {
   const chain = getBreadcrumbChain(routeKey);
   if (chain.length === 0) return [];
   const pathSegments = pathname.split('?')[0].replace(/\/$/, '').split('/').filter(Boolean);
-  return chain.map((item, index) => {
+  const items = chain.map((item, index) => {
     const isLast = index === chain.length - 1;
     const label =
       isLast && currentPageLabel ? currentPageLabel : item.labelKey ? t(item.labelKey) : item.path;
     const href = isLast ? undefined : '/' + pathSegments.slice(0, item.segmentCount).join('/');
     return { label, href };
   });
+  if (items.length === 1 && routeKey !== '/dashboard' && routeKey !== '/') {
+    items.unshift({
+      label: t('dashboard.title'),
+      href: '/dashboard',
+    });
+  }
+  return items;
 }

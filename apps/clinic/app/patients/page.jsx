@@ -6,6 +6,8 @@ import {
   ChevronRightIcon,
   EyeIcon,
   FilterIcon,
+  LayoutDashboardIcon,
+  ListChecksIcon,
   PencilIcon,
 } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
@@ -35,7 +37,6 @@ import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
 import { logger } from '@/lib/utils/logger';
 import { addRecentSearch, getRecentSearches } from '@/lib/utils/recent-search-cache';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { Grid3x3 as GridIcon, Table as TableIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -543,11 +544,11 @@ export default function PatientsPage() {
         >
           <div className='search-modal-grid'>
             <div className='search-modal-field'>
-              <label>{t('common.filter')}</label>
               <select
                 className='filter-select w-full'
                 value={advancedStatus}
                 onChange={(e) => setAdvancedStatus(e.target.value)}
+                aria-label={t('common.filter')}
               >
                 <option value='all'>{t('patients.filterAll')}</option>
                 <option value='active'>{t('patients.filterActive')}</option>
@@ -556,7 +557,6 @@ export default function PatientsPage() {
               </select>
             </div>
             <div className='search-modal-field'>
-              <label>{t('patients.sortBy')}</label>
               <select
                 className='filter-select w-full'
                 value={`${advancedSortBy}-${advancedSortOrder}`}
@@ -565,6 +565,7 @@ export default function PatientsPage() {
                   setAdvancedSortBy(s);
                   setAdvancedSortOrder(o || 'desc');
                 }}
+                aria-label={t('patients.sortBy')}
               >
                 <option value='createdAt-desc'>{t('patients.sortDateAdded')}</option>
                 <option value='lastName-asc'>{t('patients.sortName')}</option>
@@ -604,35 +605,39 @@ export default function PatientsPage() {
                   {t('patients.showingCount').replace('{{n}}', String(patients.length))}
                 </span>
               </div>
-              <div className='flex items-center gap-1'>
-                <Button
-                  variant={viewMode === 'table' ? 'primary' : 'ghost'}
-                  size='sm'
-                  iconOnly
-                  onClick={() => setViewMode('table')}
-                  aria-label={t('patients.viewTable')}
-                  className={
+              <div
+                className='inline-flex rounded-lg border border-neutral-300 bg-neutral-50 dark:bg-neutral-800 dark:border-neutral-600 p-0.5'
+                role='tablist'
+                aria-label={t('patients.viewTable')}
+              >
+                <button
+                  type='button'
+                  role='tab'
+                  aria-selected={viewMode === 'table'}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     viewMode === 'table'
-                      ? ''
-                      : 'border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
-                  }
+                      ? 'bg-primary-100 text-primary-700 shadow-sm dark:bg-primary-900/40 dark:text-primary-300'
+                      : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                  }`}
+                  onClick={() => setViewMode('table')}
                 >
-                  <TableIcon className='icon icon-sm' strokeWidth={2} />
-                </Button>
-                <Button
-                  variant={viewMode === 'cards' ? 'primary' : 'ghost'}
-                  size='sm'
-                  iconOnly
-                  onClick={() => setViewMode('cards')}
-                  aria-label={t('patients.viewCards')}
-                  className={
+                  <ListChecksIcon className='icon icon-sm' />
+                  {t('patients.viewTable')}
+                </button>
+                <button
+                  type='button'
+                  role='tab'
+                  aria-selected={viewMode === 'cards'}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     viewMode === 'cards'
-                      ? ''
-                      : 'border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
-                  }
+                      ? 'bg-primary-100 text-primary-700 shadow-sm dark:bg-primary-900/40 dark:text-primary-300'
+                      : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                  }`}
+                  onClick={() => setViewMode('cards')}
                 >
-                  <GridIcon className='icon icon-sm' strokeWidth={2} />
-                </Button>
+                  <LayoutDashboardIcon className='icon icon-sm' />
+                  {t('patients.viewCards')}
+                </button>
               </div>
             </div>
             {viewMode === 'table' ? (
@@ -660,9 +665,6 @@ export default function PatientsPage() {
             {patients.length > 0 && (
               <div className='mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-700 flex items-center justify-between gap-4 flex-wrap'>
                 <div className='flex items-center gap-2'>
-                  <label className='text-body-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap'>
-                    {t('common.show') || 'Show'}:
-                  </label>
                   <select
                     value={pageSize}
                     onChange={(e) => {
@@ -675,6 +677,7 @@ export default function PatientsPage() {
                       setCurrentPage(1); // Reset to first page when changing page size
                     }}
                     className='px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors'
+                    aria-label={t('common.show') || 'Show per page'}
                   >
                     <option value={25}>25</option>
                     <option value={50}>50</option>
@@ -682,9 +685,6 @@ export default function PatientsPage() {
                     <option value={100}>100</option>
                     <option value={200}>200</option>
                   </select>
-                  <span className='text-body-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap'>
-                    {t('common.perPage') || 'per page'}
-                  </span>
                 </div>
                 {totalPages > 1 && (
                   <div className='flex items-center gap-2'>

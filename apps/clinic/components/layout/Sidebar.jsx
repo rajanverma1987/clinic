@@ -819,29 +819,6 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                   {t('admin.settings')}
                 </span>
               </Link>
-              <Link
-                href='/admin/reviews'
-                onClick={handleLinkClick}
-                prefetch={false}
-                onMouseEnter={(e) =>
-                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.reviews') })
-                }
-                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
-                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/reviews') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
-                title={isCollapsed ? undefined : ''}
-                aria-label={isCollapsed ? t('admin.reviews') : undefined}
-              >
-                <span
-                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
-                >
-                  <IconReviews />
-                </span>
-                <span
-                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
-                >
-                  {t('admin.reviews')}
-                </span>
-              </Link>
             </>
           ) : (
             /* Regular menu items for non-admin users */

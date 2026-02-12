@@ -65,8 +65,21 @@ app.prepare().then(async () => {
   try {
     const { initRealtimeManager } = require('./lib/realtime/realtime-manager.js');
     initRealtimeManager(io);
+    logger.info('✅ Real-time manager initialized');
   } catch (err) {
     logger.warn('Failed to initialize real-time manager; continuing without real-time features', {
+      error: err?.message,
+    });
+  }
+
+  // Initialize background jobs after server setup
+  // Jobs will connect to DB internally when needed
+  try {
+    const { initializeJobs } = require('./jobs/index.js');
+    initializeJobs();
+    logger.info('✅ Background jobs initialized');
+  } catch (err) {
+    logger.warn('Failed to initialize background jobs; continuing without pre-computed stats', {
       error: err?.message,
     });
   }
@@ -141,7 +154,9 @@ app.prepare().then(async () => {
       process.exit(1);
     })
     .listen(port, () => {
+      logger.info(`🚀 Server running on port ${port}`);
       logger.info(`Ready on http://${hostname}:${port}`);
       logger.info('Socket.IO server initialized');
+      logger.info('Background jobs active');
     });
 });

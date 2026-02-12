@@ -65,14 +65,7 @@ function getSettingsTabLabel(t, tabId) {
 
 function SettingsPageFallback() {
   const { t } = useI18n();
-  return (
-    <Layout>
-      <PageHeader title='Settings' />
-      <div className='flex justify-center p-8'>
-        <Loader type='page' text={t('common.loading')} />
-      </div>
-    </Layout>
-  );
+  return <Layout title={t('settings.title')} loading loadingText={t('common.loading')} />;
 }
 
 function SettingsPageContent() {

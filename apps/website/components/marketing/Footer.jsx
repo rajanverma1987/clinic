@@ -78,6 +78,7 @@ function FooterComponent() {
                 >
                   {[
                     { href: '/#features', label: t('footer.features') || 'Features', external: false },
+                    { href: '/about', label: t('footer.about') || 'About', external: false },
                     { href: '/pricing', label: t('navigation.pricing') || 'Pricing', external: false },
                     { href: `${clinicAppUrl}/register`, label: t('footer.getStarted') || 'Get Started', external: true },
                   ].map((link) => (
