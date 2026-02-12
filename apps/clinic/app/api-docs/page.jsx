@@ -6,10 +6,18 @@ import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { showSuccess } from '@/lib/utils/toast';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function APIDocsPage() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (authLoading) return;
+    if (user?.role !== 'super_admin') {
+      router.replace('/dashboard');
+    }
+  }, [user, authLoading, router]);
   const { t } = useI18n();
   const [apiToken, setApiToken] = useState('');
   const [showToken, setShowToken] = useState(false);
@@ -86,6 +94,16 @@ export default function APIDocsPage() {
       ],
     },
   ];
+
+  if (authLoading || user?.role !== 'super_admin') {
+    return (
+      <Layout>
+        <div className='mb-8'>
+          <p className='text-neutral-600'>{t('common.loading')}</p>
+        </div>
+      </Layout>
+    );
+  }
 
   const getMethodColor = (method) => {
     const colors = {

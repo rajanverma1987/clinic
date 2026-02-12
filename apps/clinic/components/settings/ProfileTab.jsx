@@ -8,6 +8,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 import { AvailabilityForm } from './AvailabilityForm';
 import { SettingsTabHeader } from './SettingsTabHeader';
+import { TwoFactorSetup } from './TwoFactorSetup';
 
 export function ProfileTab({
   currentUser,
@@ -17,21 +18,23 @@ export function ProfileTab({
   availabilityForm,
   setAvailabilityForm,
   onEditProfileClick,
+  on2FAStatusChange,
 }) {
   const { t } = useI18n();
 
   const getRoleLabel = (role) => {
-    const roles = {
-      super_admin: 'Super Admin',
-      clinic_admin: 'Clinic Admin',
-      doctor: 'Doctor',
-      nurse: 'Nurse',
-      receptionist: 'Receptionist',
-      accountant: 'Accountant',
-      pharmacist: 'Pharmacist',
-      staff: 'Staff',
+    const roleKeys = {
+      super_admin: 'common.roleSuperAdmin',
+      clinic_admin: 'common.roleClinicAdmin',
+      doctor: 'common.roleDoctor',
+      nurse: 'settings.roleNurse',
+      receptionist: 'settings.roleReceptionist',
+      accountant: 'settings.roleAccountant',
+      pharmacist: 'settings.rolePharmacist',
+      staff: 'common.roleStaff',
+      manager: 'settings.roleManager',
     };
-    return roles[role] || role;
+    return roleKeys[role] ? t(roleKeys[role]) : role;
   };
 
   return (
@@ -225,6 +228,15 @@ export function ProfileTab({
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>Role</label>
                 <Input value={getRoleLabel(currentUser?.role) || ''} disabled />
               </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('settings.subscriptionPlan')}
+                </label>
+                <Input
+                  value={currentUser?.subscriptionPlan?.name || t('settings.noPlan')}
+                  disabled
+                />
+              </div>
             </div>
           </div>
         </Card>
@@ -259,6 +271,18 @@ export function ProfileTab({
                     {t('settings.changePasswordLabel')}
                   </Button>
                 </Link>
+              </div>
+              <div className='pt-4 border-t border-neutral-200'>
+                <p className='text-sm font-medium text-neutral-700 mb-1'>
+                  Two-Factor Authentication
+                </p>
+                <p className='text-xs text-neutral-500 mb-3'>
+                  Add an extra layer of security using an authenticator app.
+                </p>
+                <TwoFactorSetup
+                  is2FAEnabled={!!currentUser?.twoFactorEnabled}
+                  onStatusChange={on2FAStatusChange}
+                />
               </div>
             </div>
           </div>

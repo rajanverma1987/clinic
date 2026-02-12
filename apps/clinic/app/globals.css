@@ -194,16 +194,16 @@
     --page-section-gap: var(--space-6);
     --page-section-gap-sm: var(--space-4);
 
-    --tab-container-padding-x: 24px;
+    --tab-container-padding-x: 20px;
     --tab-content-standard-width: 56rem;
     --tab-content-wide-width: 80rem;
-    --page-shell-padding-x: clamp(16px, 2.5vw, 32px);
+    --page-shell-padding-x: clamp(8px, 1vw, 16px);
     --dashboard-page-padding: 24px;
     --dashboard-card-padding: 20px;
     --dashboard-section-margin: 32px;
     --dashboard-element-gap: 16px;
     --dashboard-header-height: 70px;
-    --dashboard-header-padding-x: 24px;
+    --dashboard-header-padding-x: 20px;
     --dashboard-search-width: 400px;
     --dashboard-sidebar-width: 280px;
     --dashboard-sidebar-item-padding: 16px 24px;
@@ -554,7 +554,7 @@
 
 .breadcrumb-bar {
   width: 100%;
-  padding: 2px var(--dashboard-header-padding-x, 24px) 6px;
+  padding: 2px var(--page-shell-padding-x) 6px;
   background: transparent;
   border-bottom: none;
 }
@@ -642,7 +642,9 @@
 .sticky-header-bar__inner {
   width: 100%;
   min-height: var(--dashboard-header-height, 64px);
-  padding: var(--space-3, 12px) var(--dashboard-header-padding-x, 24px);
+  padding: var(--space-3, 12px) 0;
+  padding-left: var(--page-shell-padding-x);
+  padding-right: var(--page-shell-padding-x);
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;

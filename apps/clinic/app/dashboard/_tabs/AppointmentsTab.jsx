@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * Dashboard tab: appointments list. Fetches own data; links to full /appointments page.
+ * Dashboard tab: appointments list.
+ * Enterprise stale-while-revalidate: show cached/preloaded data immediately, revalidate after 5s.
  */
 import { AppointmentsListSkeleton } from '@/components/skeletons';
 import { Button } from '@/components/ui/Button';
@@ -12,76 +13,66 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
-import { apiClient } from '@/lib/api/client';
-import { extractArrayData } from '@/lib/utils/api-response-extractor';
-import { logger } from '@/lib/utils/logger';
+import {
+  fetchAppointmentsTab,
+  getCachedAppointments,
+  REVALIDATE_DELAY_MS,
+} from '@/lib/dashboard-tab-cache';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const LIMIT = 10;
-const CACHE_TTL_MS = 30000; // 30 seconds cache
 
-// Simple in-memory cache per user
-const cache = new Map();
-
-export function AppointmentsTab() {
+export function AppointmentsTab({ isActive = false }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { prefetchAppointment } = usePrefetchDetail();
-  const hasFetchedRef = useRef(false);
+  const userId = user?._id || user?.userId;
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRevalidating, setIsRevalidating] = useState(false);
+  const revalidateTimerRef = useRef(null);
 
-  const fetchAppointments = useCallback(async (forceRefresh = false) => {
-    if (!user || authLoading) return;
-    
-    const cacheKey = `appointments-tab-${user._id || user.id}`;
-    const cached = cache.get(cacheKey);
-    const now = Date.now();
-    
-    // Use cache if available and not expired
-    if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_TTL_MS) {
-      setAppointments(cached.data);
-      setLoading(false);
-      hasFetchedRef.current = true;
-      return;
-    }
-    
-    setError(null);
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: '1', limit: String(LIMIT) });
-      const response = await apiClient.get(`/appointments?${params}`);
-      if (response.success && response.data) {
-        const list = extractArrayData(response);
-        const filtered = (list || []).filter(
-          (apt) => apt && !apt.isTelemedicine && apt.status !== 'arrived',
-        );
-        setAppointments(filtered);
-        // Update cache
-        cache.set(cacheKey, { data: filtered, timestamp: now });
+  const fetchAndUpdate = useCallback(
+    async (showRevalidating = false) => {
+      if (!userId) return;
+      if (showRevalidating) setIsRevalidating(true);
+      const { data, error: err } = await fetchAppointmentsTab(userId);
+      if (err) {
+        if (!showRevalidating) setError(err?.message || t('common.error'));
+        setAppointments((prev) => prev.length ? prev : []);
       } else {
-        setAppointments([]);
-        cache.set(cacheKey, { data: [], timestamp: now });
+        setAppointments(data || []);
+        setError(null);
       }
-    } catch (err) {
-      logger.error('Failed to fetch appointments (tab)', err);
-      setAppointments([]);
-      setError(err?.message || t('common.error'));
-    } finally {
       setLoading(false);
-      hasFetchedRef.current = true;
-    }
-  }, [user, authLoading, t]);
+      setIsRevalidating(false);
+    },
+    [userId, t],
+  );
 
+  // When tab becomes active: show cached immediately, revalidate after delay. Cache is always updated on fetch.
   useEffect(() => {
-    if (!authLoading && user && !hasFetchedRef.current) {
-      fetchAppointments();
+    if (authLoading || !user || !userId) return;
+    if (!isActive) return;
+
+    const cached = getCachedAppointments(userId);
+    if (cached !== null && Array.isArray(cached)) {
+      setAppointments(cached);
+      setLoading(false);
+      setError(null);
+    } else {
+      fetchAndUpdate(false);
     }
-  }, [authLoading, user, fetchAppointments]);
+
+    revalidateTimerRef.current = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
+    return () => {
+      if (revalidateTimerRef.current) clearTimeout(revalidateTimerRef.current);
+    };
+  }, [isActive, userId, authLoading, user, fetchAndUpdate]);
 
   const getStatusLabel = useCallback((status) => {
     const map = {
@@ -133,7 +124,6 @@ export function AppointmentsTab() {
     },
   ], [t, getStatusLabel]);
 
-  // Calculate quick stats – memoized so it only recomputes when appointments change
   const stats = useMemo(() => ({
     total: appointments.length,
     scheduled: appointments.filter(a => a.status === 'scheduled' || a.status === 'confirmed').length,
@@ -147,6 +137,11 @@ export function AppointmentsTab() {
         <div className='flex items-center gap-3'>
           <div className='accent-bar accent-bar-primary' />
           <h2 className='section-title'>{t('appointments.title')}</h2>
+          {isRevalidating && (
+            <span className='text-xs text-neutral-500' aria-hidden>
+              {t('common.updating') || 'Updating…'}
+            </span>
+          )}
         </div>
         <div className='flex gap-2 ml-auto'>
           <Button variant='secondary' size='sm' href='/appointments'>
@@ -158,7 +153,6 @@ export function AppointmentsTab() {
         </div>
       </div>
 
-      {/* Quick Stats Bar */}
       <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
         <div className='text-center'>
           <div className='text-2xl font-bold text-primary-600'>{stats.total}</div>
@@ -200,7 +194,7 @@ export function AppointmentsTab() {
     );
   }
 
-  if (loading) {
+  if (loading && appointments.length === 0) {
     return (
       <div className='dashboard-section'>
         <AppointmentsListSkeleton />
@@ -208,7 +202,7 @@ export function AppointmentsTab() {
     );
   }
 
-  if (error) {
+  if (error && appointments.length === 0) {
     return (
       <div className='dashboard-section'>
         <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col justify-center items-center'>
@@ -218,7 +212,7 @@ export function AppointmentsTab() {
             </svg>
           </div>
           <p className='text-status-error text-body-md font-medium mb-4'>{error}</p>
-          <Button variant='primary' size='md' onClick={() => fetchAppointments(true)}>
+          <Button variant='primary' size='md' onClick={() => fetchAndUpdate(false)}>
             {t('common.retry')}
           </Button>
         </Card>

@@ -1,6 +1,5 @@
 'use client';
 
-import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -210,112 +209,108 @@ export default function LocationsPage() {
   const submitLabel = editingId ? t('settings.updateLocation') : t('settings.addLocation');
 
   return (
-    <Layout
-      title={t('settings.multiLocationManagement')}
-      subtitle={t('settings.multiLocationDescription')}
-      actionButton={
+    <div style={{ padding: '0 10px' }}>
+      <div className='flex items-center justify-between mb-4'>
+        <div>
+          <h1 className='text-xl font-semibold text-neutral-900'>
+            {t('settings.multiLocationManagement')}
+          </h1>
+          <p className='text-sm text-neutral-600 mt-0.5'>
+            {t('settings.multiLocationDescription')}
+          </p>
+        </div>
         <Button onClick={openAdd} disabled={saving}>
           + {t('settings.addLocation')}
         </Button>
-      }
-    >
-      <div style={{ padding: '0 10px' }}>
-        <Card>
-          {loading ? (
-            <div className='p-8 text-center text-neutral-600'>{t('common.loading')}</div>
-          ) : (
-            <Table
-              data={locations}
-              columns={columns}
-              emptyMessage={t('settings.noLocationsFound')}
-            />
-          )}
-        </Card>
-
-        {showModal && (
-          <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
-            <Card className='max-w-md w-full mx-4'>
-              <div className='p-6'>
-                <h2 className='text-xl font-semibold mb-4'>{modalTitle}</h2>
-
-                <form onSubmit={handleSubmit} className='space-y-4' noValidate>
-                  <Input
-                    label={t('settings.locationName')}
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                    placeholder={t('settings.locationNamePlaceholder')}
-                  />
-
-                  <Input
-                    label={t('common.address')}
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    required
-                    placeholder={t('settings.addressPlaceholder')}
-                  />
-
-                  <Input
-                    label={t('common.phone')}
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    required
-                    placeholder={t('settings.phonePlaceholder')}
-                  />
-
-                  <Input
-                    label={t('auth.email')}
-                    type='email'
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    placeholder={t('settings.emailPlaceholder')}
-                  />
-
-                  <div className='flex items-center gap-3'>
-                    <Checkbox
-                      id='isMain'
-                      checked={formData.isMain}
-                      onChange={(e) => setFormData({ ...formData, isMain: e.target.checked })}
-                      size='sm'
-                    />
-                    <label
-                      htmlFor='isMain'
-                      className='block text-sm text-neutral-700 cursor-pointer'
-                    >
-                      {t('settings.setAsMainLocation')}
-                    </label>
-                  </div>
-
-                  <div className='flex gap-4 pt-4'>
-                    <Button type='submit' className='flex-1' disabled={saving}>
-                      {submitLabel}
-                    </Button>
-                    <Button
-                      type='button'
-                      variant='secondary'
-                      onClick={() => {
-                        setShowModal(false);
-                        setEditingId(null);
-                        setFormData({
-                          name: '',
-                          address: '',
-                          phone: '',
-                          email: '',
-                          isMain: false,
-                        });
-                      }}
-                      className='flex-1'
-                    >
-                      {t('common.cancel')}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            </Card>
-          </div>
-        )}
       </div>
-    </Layout>
+      <Card>
+        {loading ? (
+          <div className='p-8 text-center text-neutral-600'>{t('common.loading')}</div>
+        ) : (
+          <Table data={locations} columns={columns} emptyMessage={t('settings.noLocationsFound')} />
+        )}
+      </Card>
+
+      {showModal && (
+        <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
+          <Card className='max-w-md w-full mx-4'>
+            <div className='p-6'>
+              <h2 className='text-xl font-semibold mb-4'>{modalTitle}</h2>
+
+              <form onSubmit={handleSubmit} className='space-y-4' noValidate>
+                <Input
+                  label={t('settings.locationName')}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  placeholder={t('settings.locationNamePlaceholder')}
+                />
+
+                <Input
+                  label={t('common.address')}
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  required
+                  placeholder={t('settings.addressPlaceholder')}
+                />
+
+                <Input
+                  label={t('common.phone')}
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  required
+                  placeholder={t('settings.phonePlaceholder')}
+                />
+
+                <Input
+                  label={t('auth.email')}
+                  type='email'
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  placeholder={t('settings.emailPlaceholder')}
+                />
+
+                <div className='flex items-center gap-3'>
+                  <Checkbox
+                    id='isMain'
+                    checked={formData.isMain}
+                    onChange={(e) => setFormData({ ...formData, isMain: e.target.checked })}
+                    size='sm'
+                  />
+                  <label htmlFor='isMain' className='block text-sm text-neutral-700 cursor-pointer'>
+                    {t('settings.setAsMainLocation')}
+                  </label>
+                </div>
+
+                <div className='flex gap-4 pt-4'>
+                  <Button type='submit' className='flex-1' disabled={saving}>
+                    {submitLabel}
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={() => {
+                      setShowModal(false);
+                      setEditingId(null);
+                      setFormData({
+                        name: '',
+                        address: '',
+                        phone: '',
+                        email: '',
+                        isMain: false,
+                      });
+                    }}
+                    className='flex-1'
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
   );
 }

@@ -12,12 +12,12 @@ function escapeCSVField(value) {
   }
 
   const stringValue = String(value);
-  
+
   // If contains comma, quote, or newline, wrap in quotes and escape quotes
   if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
     return `"${stringValue.replace(/"/g, '""')}"`;
   }
-  
+
   return stringValue;
 }
 
@@ -31,10 +31,10 @@ export function arrayToCSV(data, headers) {
 
   // Get headers from first object if not provided
   const csvHeaders = headers || Object.keys(data[0]);
-  
+
   // Build CSV
   const rows = [];
-  
+
   // Header row
   rows.push(csvHeaders.map(escapeCSVField).join(','));
 
@@ -43,7 +43,7 @@ export function arrayToCSV(data, headers) {
     const values = csvHeaders.map((header) => escapeCSVField(row[header]));
     rows.push(values.join(','));
   });
-  
+
   return rows.join('\n');
 }
 
@@ -52,12 +52,12 @@ export function arrayToCSV(data, headers) {
  */
 export function reportToCSV(reportData, reportType) {
   const rows = [];
-  
+
   // Add report header
   rows.push(`Report Type: ${reportType}`);
   rows.push(`Generated: ${new Date().toISOString()}`);
   rows.push('');
-  
+
   // Add summary
   if (reportData.summary) {
     rows.push('Summary');
@@ -66,7 +66,7 @@ export function reportToCSV(reportData, reportType) {
     });
     rows.push('');
   }
-  
+
   // Add breakdown
   if (reportData.breakdown) {
     rows.push('Breakdown');
@@ -80,7 +80,7 @@ export function reportToCSV(reportData, reportType) {
     });
     rows.push('');
   }
-  
+
   // Add time series
   if (reportData.timeSeries && Array.isArray(reportData.timeSeries)) {
     rows.push('Time Series');
@@ -93,7 +93,7 @@ export function reportToCSV(reportData, reportType) {
     }
     rows.push('');
   }
-  
+
   // Add detailed data (low stock, expired items, etc.)
   if (reportData.lowStockItems && Array.isArray(reportData.lowStockItems)) {
     rows.push('Low Stock Items');
@@ -103,29 +103,39 @@ export function reportToCSV(reportData, reportType) {
     });
     rows.push('');
   }
-  
+
   if (reportData.expiredItems && Array.isArray(reportData.expiredItems)) {
     rows.push('Expired Items');
     rows.push('Item Name,Batch Number,Expiry Date,Quantity');
     reportData.expiredItems.forEach((item) => {
       rows.push(
-        `${escapeCSVField(item.itemName)},${escapeCSVField(item.batchNumber)},${escapeCSVField(item.expiryDate)},${item.quantity}`
+        `${escapeCSVField(item.itemName)},${escapeCSVField(item.batchNumber)},${escapeCSVField(item.expiryDate)},${item.quantity}`,
       );
     });
     rows.push('');
   }
-  
+
   if (reportData.predictions && Array.isArray(reportData.predictions)) {
     rows.push('Inventory Predictions');
     rows.push('Item Name,Current Stock,Reorder Point,Predicted Reorder Days,Daily Consumption');
     reportData.predictions.forEach((pred) => {
       rows.push(
-        `${escapeCSVField(pred.itemName)},${pred.currentStock},${pred.reorderPoint},${pred.predictedReorderDays},${pred.dailyConsumption}`
+        `${escapeCSVField(pred.itemName)},${pred.currentStock},${pred.reorderPoint},${pred.predictedReorderDays},${pred.dailyConsumption}`,
       );
     });
     rows.push('');
   }
-  
+
+  if (reportData.doctors && Array.isArray(reportData.doctors)) {
+    rows.push('Doctor Performance');
+    rows.push('Doctor Name,Total Appointments,Completed,No Shows,Completion Rate %,Total Revenue');
+    reportData.doctors.forEach((d) => {
+      rows.push(
+        `${escapeCSVField(d.doctorName)},${d.totalAppointments || 0},${d.completed || 0},${d.noShows || 0},${d.completionRate || 0},${d.totalRevenue || 0}`,
+      );
+    });
+    rows.push('');
+  }
+
   return rows.join('\n');
 }
-

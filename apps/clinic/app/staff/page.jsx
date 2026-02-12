@@ -11,6 +11,7 @@ import { PageSearchBar } from '@/components/ui/PageSearchBar';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
+import { useFeatures } from '@/contexts/FeatureContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { apiClient } from '@/lib/api/client';
@@ -19,6 +20,7 @@ import { getRolePermissions } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -74,6 +76,10 @@ export default function StaffPage() {
   const refreshIntervalRef = useRef(null);
 
   const allowedRoles = ['doctor', 'clinic_admin'];
+  const { limits } = useFeatures();
+  const maxUsers = limits?.maxUsers;
+  const currentUserCount = staff.length;
+  const atUserLimit = maxUsers != null && currentUserCount >= maxUsers;
 
   const fetchStaff = useCallback(async (silentRefresh = false) => {
     try {
@@ -395,9 +401,28 @@ export default function StaffPage() {
         onRefresh={handleManualRefresh}
         refreshing={refreshing}
         action={
-          <Button variant='primary' onClick={() => setShowAddModal(true)}>
-            {t('staff.addStaff')}
-          </Button>
+          <div className='flex items-center gap-3'>
+            {maxUsers != null && (
+              <span
+                className='text-sm text-neutral-600'
+                title={t('staff.userLimitDesc') || 'Users used vs plan limit'}
+              >
+                {currentUserCount}/{maxUsers} {t('staff.usersUsed') || 'users'}
+              </span>
+            )}
+            <Button
+              variant='primary'
+              onClick={() => setShowAddModal(true)}
+              disabled={atUserLimit}
+              title={
+                atUserLimit
+                  ? t('staff.upgradeToAddMore') || 'Upgrade plan to add more users'
+                  : undefined
+              }
+            >
+              {t('staff.addStaff')}
+            </Button>
+          </div>
         }
       />
       <div style={{ padding: '0 10px' }} className='space-y-6'>
@@ -481,6 +506,18 @@ export default function StaffPage() {
           <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50 p-4'>
             <Card className='p-6 max-w-md w-full max-h-[90vh] overflow-y-auto'>
               <h2 className='text-lg font-bold text-neutral-900 mb-4'>{t('staff.addStaff')}</h2>
+              {atUserLimit && (
+                <div className='mb-4 p-3 bg-status-warning/10 border border-status-warning/30 rounded-lg text-sm text-neutral-700'>
+                  {t('staff.userLimitReached') || 'User limit reached.'}{' '}
+                  <Link
+                    href='/subscription'
+                    className='text-primary-600 hover:underline font-medium'
+                  >
+                    {t('staff.upgradePlan') || 'Upgrade plan'}
+                  </Link>{' '}
+                  {t('staff.toAddMoreUsers') || 'to add more users.'}
+                </div>
+              )}
               <form onSubmit={handleAddSubmit} className='space-y-4'>
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 mb-1'>

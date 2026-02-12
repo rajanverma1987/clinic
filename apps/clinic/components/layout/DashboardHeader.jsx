@@ -22,14 +22,14 @@ export function DashboardHeader({
 }) {
   const router = useRouter();
   const { t } = useI18n();
-  const { settings } = useSettings();
+  const { settings, locale } = useSettings();
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarButtonRef = useRef(null);
 
   const formatDateDisplay = useCallback(
     (date, options) => {
       try {
-        return new Intl.DateTimeFormat(settings?.settings?.locale || 'en-US', {
+        return new Intl.DateTimeFormat(locale || 'en-US', {
           timeZone: settings?.settings?.timezone || 'UTC',
           ...options,
         }).format(date || new Date());
@@ -38,7 +38,7 @@ export function DashboardHeader({
         return new Date(date || new Date()).toLocaleDateString(undefined, options);
       }
     },
-    [settings],
+    [settings, locale],
   );
 
   return (

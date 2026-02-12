@@ -32,6 +32,9 @@ export default function PatientDetailPage() {
   const [prescriptions, setPrescriptions] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [labTests, setLabTests] = useState([]);
+  const [labResults, setLabResults] = useState([]);
+  const [imagingStudies, setImagingStudies] = useState([]);
+  const [insuranceClaims, setInsuranceClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const tabFromUrl = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(
@@ -69,11 +72,14 @@ export default function PatientDetailPage() {
       const patientId = params.id;
 
       // Prefetch all tab data in parallel (total time ≈ slowest request)
-      const [patientRes, aptRes, presRes, invRes] = await Promise.all([
+      const [patientRes, aptRes, presRes, invRes, labResRes, imagingRes, claimsRes] = await Promise.all([
         apiClient.get(`/patients/${patientId}`),
         apiClient.get(`/appointments?patientId=${patientId}&limit=100`),
         apiClient.get(`/prescriptions?patientId=${patientId}&limit=100`),
         apiClient.get(`/invoices?patientId=${patientId}&limit=100`),
+        apiClient.get(`/lab-results?patientId=${patientId}&limit=100`),
+        apiClient.get(`/imaging?patientId=${patientId}&limit=100`),
+        apiClient.get(`/insurance/claims?patientId=${patientId}&limit=100`),
       ]);
 
       if (patientRes.success && patientRes.data) {
@@ -101,6 +107,16 @@ export default function PatientDetailPage() {
         setInvoices(invData);
       } else {
         logger.error('Failed to fetch invoices', invRes.error);
+      }
+
+      if (labResRes.success && labResRes.data) {
+        setLabResults(Array.isArray(labResRes.data) ? labResRes.data : labResRes.data?.data || []);
+      }
+      if (imagingRes.success && imagingRes.data) {
+        setImagingStudies(Array.isArray(imagingRes.data) ? imagingRes.data : imagingRes.data?.data || []);
+      }
+      if (claimsRes.success && claimsRes.data) {
+        setInsuranceClaims(Array.isArray(claimsRes.data) ? claimsRes.data : claimsRes.data?.data || []);
       }
 
       // Lab tests derived from prescriptions (use response, not state)
@@ -147,6 +163,7 @@ export default function PatientDetailPage() {
           'insuranceId',
           'medicalHistory',
           'allergies',
+          'chronicConditions',
           'currentMedications',
           'notes',
         ];
@@ -218,9 +235,12 @@ export default function PatientDetailPage() {
         if (tab.id === 'prescriptions') label += ` (${prescriptions.length})`;
         if (tab.id === 'invoices') label += ` (${invoices.length})`;
         if (tab.id === 'lab-tests') label += ` (${labTests.length})`;
+        if (tab.id === 'lab-results') label += ` (${labResults.length})`;
+        if (tab.id === 'imaging') label += ` (${imagingStudies.length})`;
+        if (tab.id === 'insurance') label += ` (${insuranceClaims.length})`;
         return { id: tab.id, label };
       });
-  }, [user, appointments.length, prescriptions.length, invoices.length, labTests.length, t]);
+  }, [user, appointments.length, prescriptions.length, invoices.length, labTests.length, labResults.length, imagingStudies.length, insuranceClaims.length, t]);
 
   const tabs = visibleTabs;
   const visibleIds = useMemo(() => tabs.map((tab) => tab.id), [tabs]);
@@ -593,6 +613,24 @@ export default function PatientDetailPage() {
                       </div>
                       <div>
                         <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+                          Chronic Conditions
+                        </label>
+                        {isEditing ? (
+                          <Input
+                            value={formData.chronicConditions || ''}
+                            placeholder='e.g. Diabetes Type 2, Hypertension'
+                            onChange={(e) =>
+                              setFormData({ ...formData, chronicConditions: e.target.value })
+                            }
+                          />
+                        ) : (
+                          <p className='text-neutral-900 dark:text-neutral-100'>
+                            {patient.chronicConditions || t('patients.noneKnown')}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
                           {t('patients.currentMedications')}
                         </label>
                         {isEditing ? (
@@ -930,6 +968,180 @@ export default function PatientDetailPage() {
                       </tbody>
                     </table>
                   </div>
+                </Card>
+              )}
+
+              {/* ── Lab Results tab ── */}
+              {activeTab === 'lab-results' && (
+                <Card title='Lab Results'>
+                  <div className='clinic-table-wrap'>
+                    <table className='clinic-table'>
+                      <thead>
+                        <tr>
+                          <th>Test Name</th>
+                          <th>Ordered By</th>
+                          <th>Date</th>
+                          <th>Status</th>
+                          <th>Result</th>
+                          <th>Reference Range</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {labResults.map((r) => (
+                          <tr key={r._id}>
+                            <td className='font-medium'>{r.testName || r.test?.name || '-'}</td>
+                            <td>{r.orderedBy?.firstName ? `Dr. ${r.orderedBy.firstName} ${r.orderedBy.lastName}` : '-'}</td>
+                            <td className='whitespace-nowrap'>{r.resultDate ? new Date(r.resultDate).toLocaleDateString() : new Date(r.createdAt).toLocaleDateString()}</td>
+                            <td>
+                              <span className={`px-2 py-0.5 text-xs rounded-full ${r.status === 'verified' ? 'bg-status-success/10 text-status-success' : r.status === 'pending' ? 'bg-status-warning/10 text-status-warning' : 'bg-neutral-100 text-neutral-600'}`}>
+                                {r.status || 'pending'}
+                              </span>
+                            </td>
+                            <td>{r.results || r.value || '-'}</td>
+                            <td className='text-neutral-500 text-xs'>{r.referenceRange || '-'}</td>
+                          </tr>
+                        ))}
+                        {labResults.length === 0 && (
+                          <tr data-empty><td colSpan={6}>{t('common.noDataFound')}</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+
+              {/* ── Imaging tab ── */}
+              {activeTab === 'imaging' && (
+                <Card title='Imaging & Radiology'>
+                  <div className='clinic-table-wrap'>
+                    <table className='clinic-table'>
+                      <thead>
+                        <tr>
+                          <th>Study Type</th>
+                          <th>Body Part</th>
+                          <th>Date</th>
+                          <th>Status</th>
+                          <th>Radiologist</th>
+                          <th>Findings</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {imagingStudies.map((img) => (
+                          <tr key={img._id}>
+                            <td className='font-medium capitalize'>{img.studyType || img.modality || '-'}</td>
+                            <td className='capitalize'>{img.bodyPart || img.region || '-'}</td>
+                            <td className='whitespace-nowrap'>{img.studyDate ? new Date(img.studyDate).toLocaleDateString() : new Date(img.createdAt).toLocaleDateString()}</td>
+                            <td>
+                              <span className={`px-2 py-0.5 text-xs rounded-full ${img.status === 'reported' ? 'bg-status-success/10 text-status-success' : img.status === 'pending' ? 'bg-status-warning/10 text-status-warning' : 'bg-neutral-100 text-neutral-600'}`}>
+                                {img.status || 'pending'}
+                              </span>
+                            </td>
+                            <td>{img.radiologist?.name || img.radiologistName || '-'}</td>
+                            <td className='max-w-xs truncate text-sm'>{img.findings || img.report?.findings || '-'}</td>
+                          </tr>
+                        ))}
+                        {imagingStudies.length === 0 && (
+                          <tr data-empty><td colSpan={6}>{t('common.noDataFound')}</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+
+              {/* ── Insurance tab ── */}
+              {activeTab === 'insurance' && (
+                <div className='space-y-6'>
+                  {/* Insurance policy details from patient record */}
+                  <Card title='Insurance Policy'>
+                    {patient.insurance?.provider ? (
+                      <div className='grid grid-cols-2 gap-4'>
+                        <div>
+                          <p className='text-xs text-neutral-500 mb-1'>Provider</p>
+                          <p className='font-medium'>{patient.insurance.provider}</p>
+                        </div>
+                        <div>
+                          <p className='text-xs text-neutral-500 mb-1'>Policy Number</p>
+                          <p className='font-medium'>{patient.insurance.policyNumber || '-'}</p>
+                        </div>
+                        <div>
+                          <p className='text-xs text-neutral-500 mb-1'>Group Number</p>
+                          <p className='font-medium'>{patient.insurance.groupNumber || '-'}</p>
+                        </div>
+                        <div>
+                          <p className='text-xs text-neutral-500 mb-1'>Valid Until</p>
+                          <p className='font-medium'>{patient.insurance.validUntil ? new Date(patient.insurance.validUntil).toLocaleDateString() : '-'}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className='text-neutral-500 text-sm'>No insurance policy on file.</p>
+                    )}
+                  </Card>
+
+                  {/* Insurance claims */}
+                  <Card title='Claims History'>
+                    <div className='clinic-table-wrap'>
+                      <table className='clinic-table'>
+                        <thead>
+                          <tr>
+                            <th>Claim #</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Diagnosis</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {insuranceClaims.map((claim) => (
+                            <tr key={claim._id}>
+                              <td className='font-medium whitespace-nowrap'>{claim.claimNumber || claim._id?.slice(-8)}</td>
+                              <td className='whitespace-nowrap'>{new Date(claim.createdAt).toLocaleDateString()}</td>
+                              <td className='whitespace-nowrap'>${(claim.totalAmount || 0).toFixed(2)}</td>
+                              <td>
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${claim.status === 'approved' ? 'bg-status-success/10 text-status-success' : claim.status === 'rejected' ? 'bg-status-error/10 text-status-error' : 'bg-status-warning/10 text-status-warning'}`}>
+                                  {claim.status || 'pending'}
+                                </span>
+                              </td>
+                              <td>{claim.diagnosisCode || claim.diagnosis || '-'}</td>
+                            </tr>
+                          ))}
+                          {insuranceClaims.length === 0 && (
+                            <tr data-empty><td colSpan={5}>{t('common.noDataFound')}</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
+              {/* ── Documents tab ── */}
+              {activeTab === 'documents' && (
+                <Card title='Patient Documents'>
+                  {patient.attachments && patient.attachments.length > 0 ? (
+                    <div className='space-y-2'>
+                      {patient.attachments.map((doc, i) => (
+                        <div key={i} className='flex items-center justify-between p-3 border border-neutral-200 rounded-lg hover:bg-neutral-50'>
+                          <div className='flex items-center gap-3'>
+                            <svg className='icon icon-sm text-primary-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
+                            </svg>
+                            <div>
+                              <p className='text-sm font-medium text-neutral-900'>{doc.filename || doc.name}</p>
+                              {doc.uploadedAt && <p className='text-xs text-neutral-500'>{new Date(doc.uploadedAt).toLocaleDateString()}</p>}
+                            </div>
+                          </div>
+                          {doc.url && (
+                            <a href={doc.url} target='_blank' rel='noopener noreferrer' className='text-primary-600 hover:text-primary-700 text-sm font-medium'>
+                              View
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className='text-neutral-500 text-sm'>{t('common.noDataFound')}</p>
+                  )}
                 </Card>
               )}
 

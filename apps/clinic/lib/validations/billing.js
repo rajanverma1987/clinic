@@ -88,6 +88,7 @@ export const invoiceQuerySchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
   patientId: z.string().optional(),
+  search: z.string().max(200).optional(),
   status: z.enum([
     InvoiceStatus.DRAFT,
     InvoiceStatus.PENDING,

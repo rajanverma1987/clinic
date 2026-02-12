@@ -9,6 +9,7 @@ export function Tabs({
   tabs,
   activeTab,
   onChange,
+  onTabHover,
   className = '',
   variant = 'default',
   idPrefix = 'tabs',
@@ -78,6 +79,7 @@ export function Tabs({
             aria-selected={isActive}
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(tab.id)}
+            onMouseEnter={onTabHover ? () => onTabHover(tab.id) : undefined}
             className={
               isActive
                 ? 'py-1.5 px-1 border-b-2 border-primary-500 text-primary-500 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap transition-all duration-200 ease-out'

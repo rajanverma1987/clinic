@@ -24,13 +24,13 @@ export default function AdminAppointmentAnalyticsPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      if (user.role !== 'super_admin') {
-        router.push('/dashboard');
+      if (user.role === 'super_admin') {
+        router.replace('/admin');
         return;
       }
-      fetchAnalytics();
+      router.replace('/dashboard');
     }
-  }, [authLoading, user, startDate, endDate]);
+  }, [authLoading, user, router]);
 
   const fetchAnalytics = async () => {
     try {

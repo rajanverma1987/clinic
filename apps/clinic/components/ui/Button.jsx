@@ -19,17 +19,21 @@ import { CompactLoader } from './Loader';
  * Sizes: xs, sm, md, lg, xl. Shape: rounded (design system radius), pill, square.
  */
 const BASE =
-  'inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-neutral-900 disabled:opacity-50 disabled:pointer-events-none flex-shrink-0 self-center [&_svg]:shrink-0 [&_svg]:text-current [&_svg]:stroke-current [&_svg]:fill-none group relative overflow-hidden';
+  'inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-neutral-900 flex-shrink-0 self-center [&_svg]:shrink-0 [&_svg]:text-current [&_svg]:stroke-current [&_svg]:fill-none group relative overflow-hidden';
 
+/**
+ * Primary/secondary match website header (Login = secondary, Get Started = primary).
+ * Primary: green default, hover → primary-500 (blue). Secondary: blue fill, green overlay on hover.
+ */
 const VARIANTS = {
   primary:
-    'bg-[#15803d] text-white border-2 border-white shadow-[0_0_0_1px_#15803d] hover:bg-[#166534] hover:border-white active:bg-[#14532d] focus:ring-[#15803d] focus:ring-offset-0 dark:focus:ring-offset-neutral-900 transition-all duration-200',
+    'bg-[#15803d] text-white border border-white shadow-[0_0_0_0.5px_#15803d] hover:bg-primary-500 hover:shadow-[0_0_0_0.5px_#3b82f6] active:bg-primary-600 focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900 transition-all duration-200',
   success:
-    'bg-[#15803d] text-white border-2 border-white shadow-[0_0_0_1px_#15803d] hover:bg-[#166534] hover:border-white active:bg-[#14532d] focus:ring-[#15803d] focus:ring-offset-0 dark:focus:ring-offset-neutral-900 transition-all duration-200',
+    'bg-[#15803d] text-white border border-white shadow-[0_0_0_0.5px_#15803d] hover:bg-primary-500 hover:shadow-[0_0_0_0.5px_#3b82f6] active:bg-primary-600 focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900 transition-all duration-200',
   secondary:
-    'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_var(--color-primary-500)] focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900',
+    'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_#3b82f6] focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900',
   outline:
-    'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_var(--color-primary-500)] focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900',
+    'bg-primary-500 text-white border border-white shadow-[0_0_0_0.5px_#3b82f6] focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-neutral-900',
   danger:
     'bg-status-error text-white border border-status-error hover:opacity-90 active:opacity-80 focus:ring-status-error focus:ring-offset-0 dark:focus:ring-offset-neutral-900 shadow-sm transition-opacity',
   destructive:
@@ -64,15 +68,16 @@ const ICON_ONLY_SIZES = {
   xl: `w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]`,
 };
 
-/** Single radius for all button sizes – design system token (--radius-lg = 8px). */
+/** Same as website: rounded-[10px] for rounded shape. */
 const SHAPES = {
-  rounded: 'rounded-lg',
+  rounded: 'rounded-[10px]',
   pill: 'rounded-full',
   square: 'rounded-none',
 };
 
+/** Disabled: secondary-style (blue) with 50% opacity and not-allowed cursor. */
 const DISABLED =
-  '!bg-neutral-300 !text-white !border-neutral-300 hover:!bg-neutral-300 hover:!border-neutral-300 dark:!bg-neutral-600 dark:!text-neutral-300 dark:!border-neutral-600 dark:hover:!bg-neutral-600 dark:hover:!border-neutral-600';
+  '!bg-primary-500 !text-white !border-white !shadow-[0_0_0_0.5px_#3b82f6] opacity-50 cursor-not-allowed hover:!bg-primary-500 hover:!opacity-50 active:!bg-primary-500 dark:hover:!bg-primary-500';
 
 /**
  * When href is provided, renders as Next.js Link (navigation); otherwise as button.
@@ -122,7 +127,7 @@ export function Button({
 
   const fillOverlay = isSecondaryStyle && !isDisabled && (
     <span
-      className='absolute left-[1px] top-[1px] bottom-[1px] w-0 group-hover:w-[calc(100%-2px)] transition-[width] duration-300 ease-out rounded-l-[7px] group-hover:rounded-[7px] bg-gradient-to-r from-[#15803d] to-[#166534] z-0'
+      className='absolute left-[1px] top-[1px] bottom-[1px] w-0 group-hover:w-[calc(100%-2px)] transition-[width] duration-300 ease-out rounded-l-[9px] group-hover:rounded-[9px] bg-gradient-to-r from-[#15803d] to-[#166534] z-0'
       aria-hidden
     />
   );

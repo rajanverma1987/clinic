@@ -3,9 +3,11 @@
  * Validates JWT token and attaches user to request
  */
 
+import connectDB from '@/lib/db/connection.js';
 import { verifyAccessToken } from '@/lib/auth/jwt.js';
 import { TEST_ACCOUNT_ALLOWED_ROLES, TEST_ACCOUNT_EMAIL, TEST_ACCOUNT_ENABLED } from '@/lib/constants/test-account.js';
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 
 /**
  * Middleware to authenticate requests
@@ -40,6 +42,29 @@ export async function authenticate(request) {
         }
       }
     }
+
+    // Session revocation check: if token carries a tokenVersion, verify it hasn't been
+    // invalidated by a password change (tokenVersion on user > token's tokenVersion).
+    if (typeof user.tokenVersion === 'number' && user.userId) {
+      try {
+        await connectDB();
+        const UserModel = mongoose.models.User;
+        if (UserModel) {
+          const dbUser = await UserModel.findById(user.userId).select('tokenVersion').lean();
+          if (dbUser && (dbUser.tokenVersion ?? 0) > user.tokenVersion) {
+            return {
+              error: NextResponse.json(
+                { success: false, error: { message: 'Session expired. Please log in again.', code: 'SESSION_REVOKED' } },
+                { status: 401, headers: NO_CACHE_HEADERS }
+              ),
+            };
+          }
+        }
+      } catch {
+        // DB lookup failure should not block auth — degrade gracefully
+      }
+    }
+
     return { user };
   } catch (error) {
     return {

@@ -80,6 +80,14 @@ export function FeatureProvider({ children }) {
     }
   }, [authLoading, user]);
 
+  // Refetch subscription when user returns (e.g. from PayPal or pricing) so purchase syncs to account
+  useEffect(() => {
+    if (!user || user.role === 'super_admin') return;
+    const onFocus = () => fetchFeatures();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [user]);
+
   const hasFeature = (featureName) => {
     if (features.includes('*')) return true; // Super admin
     return features.includes(featureName);

@@ -86,20 +86,20 @@ async function postHandler(req, user) {
   // Determine target role
   const targetRole = body.role || UserRole.DOCTOR;
 
-  // CursorMD/New: only Doctor and Super Admin can assign Admin or Manager roles
+  // Doctor and Clinic Admin (clinic admin = doctor account for clinic) can assign Admin or Manager roles
   const assignAdminOrManager = [UserRole.CLINIC_ADMIN, UserRole.ADMIN, UserRole.MANAGER].includes(
     targetRole,
   );
   if (assignAdminOrManager && !canAssignAdminManager(user.role)) {
     return NextResponse.json(
-      errorResponse('Only Doctor or Super Admin can assign Admin or Manager roles', 'FORBIDDEN'),
+      errorResponse('Only Doctor or Clinic Admin can assign Admin or Manager roles', 'FORBIDDEN'),
       { status: 403 },
     );
   }
 
   // Role-based access control
   if (user.role !== 'super_admin') {
-    // Doctor can assign admin/manager (CursorMD/New); clinic_admin (Admin) cannot
+    // Doctor and Clinic Admin can assign admin/manager; others have restricted allowedRoles
     const allowedRoles = [
       UserRole.DOCTOR,
       UserRole.CLINIC_ADMIN,
@@ -110,7 +110,7 @@ async function postHandler(req, user) {
       UserRole.PHARMACIST,
     ];
     if (!canAssignAdminManager(user.role)) {
-      // Admin role: remove manager and clinic_admin from allowed
+      // Roles that cannot assign Admin/Manager: only staff roles (no manager, no clinic_admin)
       const allowedForAdmin = [
         UserRole.DOCTOR,
         UserRole.NURSE,

@@ -5,10 +5,12 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   EyeIcon,
+  FileDownIcon,
   FilterIcon,
   LayoutDashboardIcon,
   ListChecksIcon,
   PencilIcon,
+  TrashIcon,
 } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -25,6 +27,7 @@ import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Table } from '@/components/ui/Table';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
@@ -32,6 +35,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
+import { canDeletePatient } from '@/lib/permissions/cursor-md-matrix';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { getCountryCodeFromRegion } from '@/lib/utils/country-code-mapping';
 import { logger } from '@/lib/utils/logger';
@@ -49,6 +53,7 @@ export default function PatientsPage() {
   const { t } = useI18n();
   const { locale } = useSettings();
   const { prefetchPatient } = usePrefetchDetail();
+  const { open: openConfirm } = useConfirmation();
   const tenantId = user?.tenantId ?? null;
 
   const [patients, setPatients] = useState([]);
@@ -61,6 +66,8 @@ export default function PatientsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [genderFilter, setGenderFilter] = useState('all');
+  const [ageGroupFilter, setAgeGroupFilter] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [viewMode, setViewMode] = useState('table');
@@ -99,8 +106,11 @@ export default function PatientsPage() {
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [advancedStatus, setAdvancedStatus] = useState('all');
+  const [advancedGender, setAdvancedGender] = useState('all');
+  const [advancedAgeGroup, setAdvancedAgeGroup] = useState('all');
   const [advancedSortBy, setAdvancedSortBy] = useState('createdAt');
   const [advancedSortOrder, setAdvancedSortOrder] = useState('desc');
+  const [exporting, setExporting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -163,6 +173,28 @@ export default function PatientsPage() {
         if (statusFilter && statusFilter !== 'all') {
           params.append('status', statusFilter);
         }
+        if (genderFilter && genderFilter !== 'all') {
+          params.append('gender', genderFilter);
+        }
+        if (ageGroupFilter && ageGroupFilter !== 'all') {
+          const now = new Date();
+          if (ageGroupFilter === 'child') {
+            const from = new Date(now);
+            from.setFullYear(from.getFullYear() - 17);
+            params.append('dateOfBirthFrom', from.toISOString().slice(0, 10));
+          } else if (ageGroupFilter === 'adult') {
+            const from = new Date(now);
+            from.setFullYear(from.getFullYear() - 64);
+            const to = new Date(now);
+            to.setFullYear(to.getFullYear() - 18);
+            params.append('dateOfBirthFrom', from.toISOString().slice(0, 10));
+            params.append('dateOfBirthTo', to.toISOString().slice(0, 10));
+          } else if (ageGroupFilter === 'senior') {
+            const to = new Date(now);
+            to.setFullYear(to.getFullYear() - 65);
+            params.append('dateOfBirthTo', to.toISOString().slice(0, 10));
+          }
+        }
 
         const response = await apiClient.get(`/patients?${params}`);
 
@@ -202,6 +234,8 @@ export default function PatientsPage() {
       searchTerm,
       debouncedSearchTerm,
       statusFilter,
+      genderFilter,
+      ageGroupFilter,
       sortBy,
       sortOrder,
     ],
@@ -235,6 +269,8 @@ export default function PatientsPage() {
     pageSize,
     debouncedSearchTerm,
     statusFilter,
+    genderFilter,
+    ageGroupFilter,
     sortBy,
     sortOrder,
   ]);
@@ -376,6 +412,88 @@ export default function PatientsPage() {
     }
   };
 
+  const handleExportCsv = useCallback(async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({
+        page: '1',
+        limit: '10000',
+        sortBy: sortBy || 'createdAt',
+        sortOrder: sortOrder || 'desc',
+      });
+      if (debouncedSearchTerm ?? searchTerm) params.append('search', (debouncedSearchTerm ?? searchTerm) || '');
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+      if (genderFilter && genderFilter !== 'all') params.append('gender', genderFilter);
+      if (ageGroupFilter && ageGroupFilter !== 'all') {
+        const now = new Date();
+        if (ageGroupFilter === 'child') {
+          const from = new Date(now);
+          from.setFullYear(from.getFullYear() - 17);
+          params.append('dateOfBirthFrom', from.toISOString().slice(0, 10));
+        } else if (ageGroupFilter === 'adult') {
+          const from = new Date(now);
+          from.setFullYear(from.getFullYear() - 64);
+          const to = new Date(now);
+          to.setFullYear(to.getFullYear() - 18);
+          params.append('dateOfBirthFrom', from.toISOString().slice(0, 10));
+          params.append('dateOfBirthTo', to.toISOString().slice(0, 10));
+        } else if (ageGroupFilter === 'senior') {
+          const to = new Date(now);
+          to.setFullYear(to.getFullYear() - 65);
+          params.append('dateOfBirthTo', to.toISOString().slice(0, 10));
+        }
+      }
+      const res = await apiClient.get(`/patients?${params.toString()}`);
+      const list = extractArrayData(res) || [];
+      if (!list.length) {
+        showError(t('patients.noPatientsToExport'));
+        return;
+      }
+      const headers = [
+        t('patients.patientId'),
+        t('patients.name'),
+        t('patients.phone'),
+        t('patients.email'),
+        t('patients.dateOfBirth'),
+        t('patients.gender'),
+      ];
+      const rows = list.map((p) => [
+        p.patientId || '',
+        `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim(),
+        p.phone || '',
+        p.email || '',
+        p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString() : '',
+        p.gender || '',
+      ]);
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')),
+      ].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `patients-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showSuccess(t('patients.exportSuccess'));
+    } catch (err) {
+      logger.error('Patient export failed', err);
+      showError(t('patients.exportFailed'));
+    } finally {
+      setExporting(false);
+    }
+  }, [
+    sortBy,
+    sortOrder,
+    searchTerm,
+    debouncedSearchTerm,
+    statusFilter,
+    genderFilter,
+    ageGroupFilter,
+    t,
+  ]);
+
   const handleRowClick = useCallback(
     (row) => {
       if (!user) return;
@@ -432,6 +550,41 @@ export default function PatientsPage() {
                 }
               },
             },
+            ...(canDeletePatient(user?.role)
+              ? [
+                  {
+                    key: 'delete',
+                    label: t('common.delete') || 'Delete',
+                    icon: <TrashIcon className='icon icon-sm' />,
+                    onClick: () => {
+                      const id = row?._id ?? row?.id;
+                      const name = `${row?.firstName ?? ''} ${row?.lastName ?? ''}`.trim();
+                      if (!id) return;
+                      openConfirm({
+                        title: t('patients.deletePatient') || 'Delete patient',
+                        message:
+                          t('patients.deletePatientConfirm')?.replace('{{name}}', name) ||
+                          `Delete "${name}"? This cannot be undone.`,
+                        variant: 'danger',
+                        onConfirm: async () => {
+                          try {
+                            const res = await apiClient.delete(`/patients/${id}`);
+                            if (res?.success) {
+                              showSuccess(t('patients.patientDeleted'));
+                              routeCache.clear(ROUTE_KEY, tenantId);
+                              fetchPatients(false, false);
+                            } else {
+                              showError(res?.error?.message || t('patients.deleteFailed'));
+                            }
+                          } catch (err) {
+                            showError(err?.message || t('patients.deleteFailed'));
+                          }
+                        },
+                      });
+                    },
+                  },
+                ]
+              : []),
           ];
           return (
             <div onClick={(e) => e.stopPropagation()}>
@@ -445,7 +598,7 @@ export default function PatientsPage() {
         },
       },
     ],
-    [t, router, user],
+    [t, router, user, openConfirm, tenantId, fetchPatients],
   );
 
   // Redirect if not authenticated (non-blocking)
@@ -471,6 +624,21 @@ export default function PatientsPage() {
         refreshing={refreshing}
         actionButtons={
           <div className='flex items-center gap-2'>
+            <Button
+              variant='secondary'
+              size='md'
+              onClick={handleExportCsv}
+              disabled={exporting || totalCount === 0}
+              aria-label={t('patients.exportCsv')}
+              title={t('patients.exportCsv')}
+            >
+              {exporting ? (
+                <CompactLoader size='xs' aria-hidden />
+              ) : (
+                <FileDownIcon className='icon icon-sm' aria-hidden />
+              )}
+              <span className='ml-1.5'>{t('patients.exportCsv') || 'Export CSV'}</span>
+            </Button>
             <Link
               href='/appointments/new'
               className='inline-flex items-center justify-center w-10 h-10 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500'
@@ -514,6 +682,8 @@ export default function PatientsPage() {
             iconOnly
             onClick={() => {
               setAdvancedStatus(statusFilter);
+              setAdvancedGender(genderFilter);
+              setAdvancedAgeGroup(ageGroupFilter);
               setAdvancedSortBy(sortBy);
               setAdvancedSortOrder(sortOrder);
               setShowAdvancedSearch(true);
@@ -544,6 +714,7 @@ export default function PatientsPage() {
         >
           <div className='search-modal-grid'>
             <div className='search-modal-field'>
+              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>{t('patients.filterStatus') || 'Status'}</label>
               <select
                 className='filter-select w-full'
                 value={advancedStatus}
@@ -557,6 +728,35 @@ export default function PatientsPage() {
               </select>
             </div>
             <div className='search-modal-field'>
+              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>{t('patients.filterGender') || 'Gender'}</label>
+              <select
+                className='filter-select w-full'
+                value={advancedGender}
+                onChange={(e) => setAdvancedGender(e.target.value)}
+                aria-label={t('patients.filterGender')}
+              >
+                <option value='all'>{t('patients.filterAll')}</option>
+                <option value='male'>{t('patients.genderMale') || 'Male'}</option>
+                <option value='female'>{t('patients.genderFemale') || 'Female'}</option>
+                <option value='other'>{t('patients.genderOther') || 'Other'}</option>
+              </select>
+            </div>
+            <div className='search-modal-field'>
+              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>{t('patients.filterAgeGroup') || 'Age group'}</label>
+              <select
+                className='filter-select w-full'
+                value={advancedAgeGroup}
+                onChange={(e) => setAdvancedAgeGroup(e.target.value)}
+                aria-label={t('patients.filterAgeGroup')}
+              >
+                <option value='all'>{t('patients.filterAll')}</option>
+                <option value='child'>{t('patients.ageGroupChild') || '0–17'}</option>
+                <option value='adult'>{t('patients.ageGroupAdult') || '18–64'}</option>
+                <option value='senior'>{t('patients.ageGroupSenior') || '65+'}</option>
+              </select>
+            </div>
+            <div className='search-modal-field'>
+              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>{t('patients.sortBy')}</label>
               <select
                 className='filter-select w-full'
                 value={`${advancedSortBy}-${advancedSortOrder}`}
@@ -581,13 +781,15 @@ export default function PatientsPage() {
               variant='primary'
               onClick={() => {
                 setStatusFilter(advancedStatus);
+                setGenderFilter(advancedGender);
+                setAgeGroupFilter(advancedAgeGroup);
                 setSortBy(advancedSortBy);
                 setSortOrder(advancedSortOrder);
                 setCurrentPage(1);
                 setShowAdvancedSearch(false);
               }}
             >
-              {t('admin.applyFilters')}
+              {t('patients.applyFilters') || t('common.apply') || 'Apply'}
             </Button>
           </div>
         </Modal>

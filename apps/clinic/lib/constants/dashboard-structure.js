@@ -66,6 +66,7 @@ export const DASHBOARD_STRUCTURE_STATUS = {
     '/admin/reports',
     '/admin/analytics',
     '/admin/activity-logs',
+    '/admin/support',
     '/admin/settings',
     '/admin/reviews',
     '/admin/create-admin',
@@ -129,9 +130,9 @@ export const ROLE_DESCRIPTIONS = {
   doctor:
     'Clinic owner/primary. Full clinic access; can create Admin/Manager; manage staff, settings, billing config. Access gated by subscription features.',
   clinic_admin:
-    'Same as Admin. Full clinic access except cannot assign Admin/Manager; no billing config. Alias: admin in permissions.',
+    'Clinic admin account (same as Doctor for clinic). Full clinic access; can create Manager and Admin accounts; settings, billing, staff. Alias: admin in permissions.',
   admin:
-    'Full clinic access within tenant. Cannot create Admin/Manager. Settings read; limited audit. Subscription features apply.',
+    'Full clinic access within tenant. Can create Manager and Admin accounts (same as Doctor). Settings, billing, staff, audit. Subscription features apply.',
   manager:
     'Limited clinic access. View-only reports; add/edit patients; book/cancel appointments; create invoices (no pricing); no medical records, no inventory manage, no staff, no settings.',
   nurse:
@@ -418,6 +419,13 @@ export const ADMIN_ROUTES = [
     requiredRoles: ['super_admin'],
   },
   {
+    path: '/admin/support',
+    labelKey: 'admin.supportTickets',
+    requiredFeature: null,
+    requiredPermission: { resource: RESOURCES.SETTINGS, action: ACTIONS.READ },
+    requiredRoles: ['super_admin'],
+  },
+  {
     path: '/admin/settings',
     labelKey: 'admin.settings',
     requiredFeature: null,
@@ -625,12 +633,6 @@ export const SETTINGS_CHILD_ROUTES = [
     labelKey: 'nav.whiteLabel',
     tabId: 'general',
     requiredFeature: 'WHITE_LABEL',
-  },
-  {
-    path: '/api-docs',
-    labelKey: 'nav.apiDocs',
-    tabId: 'general',
-    requiredFeature: 'API_ACCESS',
   },
   {
     path: '/settings/create-manager',
@@ -1100,6 +1102,58 @@ export const ADMIN_SETTINGS_CHILDREN = [
     labelKey: 'admin.settingsSecurity',
     descKey: 'admin.settingsSecurityDesc',
   },
+  {
+    path: '/admin/settings/tax',
+    labelKey: 'admin.settingsTax',
+    descKey: 'admin.settingsTaxDesc',
+  },
+  {
+    path: '/admin/settings/currency',
+    labelKey: 'admin.settingsCurrency',
+    descKey: 'admin.settingsCurrencyDesc',
+  },
+  {
+    path: '/admin/settings/templates',
+    labelKey: 'admin.settingsTemplates',
+    descKey: 'admin.settingsTemplatesDesc',
+  },
+  {
+    path: '/admin/settings/terms',
+    labelKey: 'admin.settingsTerms',
+    descKey: 'admin.settingsTermsDesc',
+  },
+  {
+    path: '/admin/settings/privacy',
+    labelKey: 'admin.settingsPrivacy',
+    descKey: 'admin.settingsPrivacyDesc',
+  },
+  {
+    path: '/admin/settings/maintenance',
+    labelKey: 'admin.settingsMaintenance',
+    descKey: 'admin.settingsMaintenanceDesc',
+  },
+  {
+    path: '/admin/settings/backup',
+    labelKey: 'admin.settingsBackup',
+    descKey: 'admin.settingsBackupDesc',
+  },
+];
+
+/** Child pages under /settings (clinic dashboard). Same tab design as Finance. All options as sub-tabs (no cards/buttons). */
+export const SETTINGS_CHILDREN = [
+  { path: '/settings/profile', labelKey: 'settings.profile', adminOnly: false },
+  { path: '/settings/general', labelKey: 'settings.clinicInfo', adminOnly: true },
+  { path: '/settings/compliance', labelKey: 'settings.compliance', adminOnly: true },
+  { path: '/settings/doctors', labelKey: 'settings.doctorsStaff', adminOnly: true },
+  { path: '/settings/hours', labelKey: 'settings.clinicHours', adminOnly: true },
+  { path: '/settings/queue', labelKey: 'settings.queueSettings', adminOnly: true },
+  { path: '/settings/tax', labelKey: 'settings.taxSettings', adminOnly: true },
+  { path: '/settings/smtp', labelKey: 'settings.emailSettings', adminOnly: true },
+  { path: '/settings/holidays', labelKey: 'settings.holidays', adminOnly: true },
+  { path: '/settings/create-manager', labelKey: 'settings.createManager', adminOnly: true },
+  { path: '/settings/locations', labelKey: 'nav.locations', adminOnly: true },
+  { path: '/settings/branding', labelKey: 'nav.branding', adminOnly: true },
+  { path: '/settings/white-label', labelKey: 'nav.whiteLabel', adminOnly: true },
 ];
 
 /** Child pages under /admin/financial. */
@@ -1600,6 +1654,60 @@ export const PAGE_EXTRA_DETAILS = {
     order: 11,
     requiredFeature: null,
   },
+  '/settings/profile': {
+    parentPath: '/settings',
+    descKey: 'settings.profile',
+    order: 0,
+    requiredFeature: null,
+  },
+  '/settings/general': {
+    parentPath: '/settings',
+    descKey: 'settings.clinicInfo',
+    order: 1,
+    requiredFeature: null,
+  },
+  '/settings/compliance': {
+    parentPath: '/settings',
+    descKey: 'settings.compliance',
+    order: 2,
+    requiredFeature: null,
+  },
+  '/settings/doctors': {
+    parentPath: '/settings',
+    descKey: 'settings.doctorsStaff',
+    order: 3,
+    requiredFeature: null,
+  },
+  '/settings/hours': {
+    parentPath: '/settings',
+    descKey: 'settings.clinicHours',
+    order: 4,
+    requiredFeature: null,
+  },
+  '/settings/queue': {
+    parentPath: '/settings',
+    descKey: 'settings.queueSettings',
+    order: 5,
+    requiredFeature: null,
+  },
+  '/settings/tax': {
+    parentPath: '/settings',
+    descKey: 'settings.taxSettings',
+    order: 6,
+    requiredFeature: null,
+  },
+  '/settings/smtp': {
+    parentPath: '/settings',
+    descKey: 'settings.emailSettings',
+    order: 7,
+    requiredFeature: null,
+  },
+  '/settings/holidays': {
+    parentPath: '/settings',
+    descKey: 'settings.holidays',
+    order: 8,
+    requiredFeature: null,
+  },
   '/settings/locations': {
     parentPath: '/settings',
     descKey: 'nav.locationsDesc',
@@ -1625,10 +1733,10 @@ export const PAGE_EXTRA_DETAILS = {
     requiredFeature: null,
   },
   '/api-docs': {
-    parentPath: '/settings',
+    parentPath: '/admin',
     descKey: 'nav.apiDocsDesc',
     order: 5,
-    requiredFeature: 'API_ACCESS',
+    requiredFeature: null,
   },
   '/subscription': {
     parentPath: '/settings',
@@ -1749,6 +1857,12 @@ export const PAGE_EXTRA_DETAILS = {
     parentPath: '/admin',
     descKey: 'admin.activityLogsDesc',
     order: 14,
+    requiredFeature: null,
+  },
+  '/admin/support': {
+    parentPath: '/admin',
+    descKey: 'admin.supportTicketsSubtitle',
+    order: 15,
     requiredFeature: null,
   },
   '/admin/settings/general': {
@@ -2052,6 +2166,60 @@ export const ALL_PAGES = [
   // Clinic settings
   { path: '/settings', labelKey: 'settings.title', section: 'clinic', requiredRoles: null },
   {
+    path: '/settings/profile',
+    labelKey: 'settings.profile',
+    section: 'clinic',
+    requiredRoles: null,
+  },
+  {
+    path: '/settings/general',
+    labelKey: 'settings.clinicInfo',
+    section: 'clinic',
+    requiredRoles: null,
+  },
+  {
+    path: '/settings/compliance',
+    labelKey: 'settings.compliance',
+    section: 'clinic',
+    requiredRoles: null,
+  },
+  {
+    path: '/settings/doctors',
+    labelKey: 'settings.doctorsStaff',
+    section: 'clinic',
+    requiredRoles: null,
+  },
+  {
+    path: '/settings/hours',
+    labelKey: 'settings.clinicHours',
+    section: 'clinic',
+    requiredRoles: null,
+  },
+  {
+    path: '/settings/queue',
+    labelKey: 'settings.queueSettings',
+    section: 'clinic',
+    requiredRoles: null,
+  },
+  {
+    path: '/settings/tax',
+    labelKey: 'settings.taxSettings',
+    section: 'clinic',
+    requiredRoles: null,
+  },
+  {
+    path: '/settings/smtp',
+    labelKey: 'settings.emailSettings',
+    section: 'clinic',
+    requiredRoles: null,
+  },
+  {
+    path: '/settings/holidays',
+    labelKey: 'settings.holidays',
+    section: 'clinic',
+    requiredRoles: null,
+  },
+  {
     path: '/settings/locations',
     labelKey: 'nav.locations',
     section: 'clinic',
@@ -2078,8 +2246,8 @@ export const ALL_PAGES = [
   {
     path: '/api-docs',
     labelKey: 'nav.apiDocs',
-    section: 'clinic',
-    requiredRoles: ['clinic_admin'],
+    section: 'admin',
+    requiredRoles: ['super_admin'],
   },
   { path: '/subscription', labelKey: 'subscription.title', section: 'clinic', requiredRoles: null },
   {
@@ -2232,6 +2400,12 @@ export const ALL_PAGES = [
   {
     path: '/admin/activity-logs',
     labelKey: 'admin.activityLogs',
+    section: 'admin',
+    requiredRoles: ['super_admin'],
+  },
+  {
+    path: '/admin/support',
+    labelKey: 'admin.supportTickets',
     section: 'admin',
     requiredRoles: ['super_admin'],
   },

@@ -28,7 +28,7 @@ export const LOADER_PRESETS = {
   /**
    * Section loader – inline in a content block (e.g. below tabs).
    * Use for: tab content loading, modal body loading, a section of the page.
-   * Wrap in .tab-content-loading for consistent min-height and centering.
+   * Brand loader (logo + progress bar).
    */
   section: {
     fullScreen: false,
@@ -38,8 +38,21 @@ export const LOADER_PRESETS = {
   },
 
   /**
+   * Card loader – progress bar only, no logo. Same bar as brand loader.
+   * Use for: cards, small widgets, list items. Brand loader unchanged.
+   */
+  card: {
+    fullScreen: false,
+    inline: true,
+    size: 'sm',
+    defaultMessageKey: null,
+    useCardLoader: true,
+  },
+
+  /**
    * Inline loader – small block (e.g. inside a card or list area).
    * Use for: card content loading, list refresh, single widget.
+   * Brand loader (logo + progress bar).
    */
   inline: {
     fullScreen: false,
@@ -81,7 +94,7 @@ export const LOADER_PRESETS = {
  */
 export const LOADER_MESSAGES = {
   page: {
-    loading: 'common.loading',           // "Loading..."
+    loading: 'common.loading', // "Loading..."
     redirecting: 'auth.redirectingToLogin', // "Redirecting to login"
     loadingDashboard: 'dashboard.loading',
     loadingDetails: 'common.loadingDetails',
@@ -100,6 +113,7 @@ export const LOADER_MESSAGES = {
  * |----------|--------------------------------------|-------------------------------|
  * | page     | Auth, initial route, redirect        | <Loader type="page" text={} /> |
  * | section  | Tab content, modal body, data block  | .tab-content-loading + <Loader type="section" /> |
+ * | card     | Cards, small widgets (progress bar only) | <Loader type="card" />     |
  * | inline   | Card body, single widget             | <Loader type="inline" />      |
  * | button   | Buttons (submit, action)             | <CompactLoader />             |
  * | skeleton | Tables, card grids, list rows        | <TableSkeleton />, .skeleton  |

@@ -20,55 +20,76 @@ async function getHandler(req, user) {
     return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
   }
   await connectDB();
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-    const action = searchParams.get('action');
-    const resource = searchParams.get('resource');
-    const resourceId = searchParams.get('resourceId');
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
+  const { searchParams } = new URL(req.url);
+  const userId = searchParams.get('userId');
+  const action = searchParams.get('action');
+  const resource = searchParams.get('resource');
+  const resourceId = searchParams.get('resourceId');
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
+  const search = searchParams.get('search')?.trim();
+  const ipAddress = searchParams.get('ipAddress')?.trim();
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
 
-    const query = {};
-    if (userId) query.userId = userId;
-    if (action) query.action = action;
-    if (resource) query.resource = resource;
-    if (resourceId) query.resourceId = resourceId;
+  const query = {};
+  if (ipAddress) query.ipAddress = { $regex: ipAddress.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+  if (userId) query.userId = userId;
+  if (action) query.action = action;
+  if (resource) query.resource = resource;
+  if (resourceId) query.resourceId = resourceId;
+  if (startDate || endDate) {
+    query.timestamp = {};
+    if (startDate) query.timestamp.$gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      query.timestamp.$lte = end;
+    }
+  }
+  if (search) {
+    query.$or = [
+      { action: { $regex: search, $options: 'i' } },
+      { resource: { $regex: search, $options: 'i' } },
+    ];
+  }
 
-    const total = await AuditLog.countDocuments(query);
-    const skip = (page - 1) * limit;
-    const logs = await AuditLog.find(query)
-      .populate('userId', 'firstName lastName email role')
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+  const total = await AuditLog.countDocuments(query);
+  const skip = (page - 1) * limit;
+  const logs = await AuditLog.find(query)
+    .populate('userId', 'firstName lastName email role')
+    .sort({ timestamp: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
 
-    const data = logs.map((l) => ({
-      _id: l._id.toString(),
-      userId: l.userId?._id?.toString(),
-      userName: l.userId ? `${l.userId.firstName || ''} ${l.userId.lastName || ''}`.trim() : null,
-      userEmail: l.userId?.email,
-      action: l.action,
-      resource: l.resource,
-      resourceId: l.resourceId?.toString(),
-      details: l.details,
-      ipAddress: l.ipAddress,
-      timestamp: l.timestamp,
-      phiAccessed: l.phiAccessed,
-    }));
+  const data = logs.map((l) => ({
+    _id: l._id.toString(),
+    userId: l.userId?._id?.toString(),
+    userName: l.userId ? `${l.userId.firstName || ''} ${l.userId.lastName || ''}`.trim() : null,
+    userEmail: l.userId?.email,
+    action: l.action,
+    resource: l.resource,
+    resourceId: l.resourceId?.toString(),
+    details: l.details,
+    ipAddress: l.ipAddress,
+    userAgent: l.userAgent,
+    timestamp: l.timestamp,
+    phiAccessed: l.phiAccessed,
+  }));
 
-    return NextResponse.json(
-      successResponse({
-        data,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit) || 1,
-          totalPages: Math.ceil(total / limit) || 1,
-        },
-      }),
-    );
+  return NextResponse.json(
+    successResponse({
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit) || 1,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    }),
+  );
 }
 
 /**

@@ -485,20 +485,19 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   }
 
-  // For PAID plans: Create PayPal subscription
+  // For PAID plans: Create PayPal subscription when configured; otherwise allow admin assignment
   let paypalSubscriptionId;
   let approvalUrl;
   const isPaidPlan = newPlan.price > 0;
+  let subscriptionStatus = SubscriptionStatus.ACTIVE;
+  let requiresPayment = false;
 
-  if (isPaidPlan) {
-    // SECURITY: Paid plans MUST have PayPal integration
-    if (!newPlan.paypalPlanId) {
-      throw new Error(
-        'This plan requires payment but PayPal integration is not configured. ' +
-          'Please run: npm run setup:paypal-plans to configure PayPal billing plans.',
-      );
-    }
-
+  if (
+    isPaidPlan &&
+    newPlan.paypalPlanId &&
+    process.env.PAYPAL_CLIENT_ID &&
+    process.env.PAYPAL_CLIENT_SECRET
+  ) {
     try {
       const baseUrl =
         process.env.NEXT_PUBLIC_APP_URL ||
@@ -511,28 +510,38 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
         newPlan.paypalPlanId,
         returnUrl,
         cancelUrl,
-        customerEmail || tenant.name, // Use tenant name if no email
+        customerEmail || tenant.name,
         customerName || tenant.name,
       );
 
       paypalSubscriptionId = paypalResult.subscriptionId;
       approvalUrl = paypalResult.approvalUrl;
+      subscriptionStatus = SubscriptionStatus.PENDING;
+      requiresPayment = true;
 
       logger.info(`✅ Created PayPal subscription for ${tenant.name}: ${paypalSubscriptionId}`);
       logger.info(`📧 Payment URL: ${approvalUrl}`);
     } catch (error) {
-      logger.error('Failed to create PayPal subscription:', error);
-      throw new Error(`Failed to create PayPal subscription: ${error.message}`);
+      logger.error(
+        'Failed to create PayPal subscription, assigning plan without payment link:',
+        error,
+      );
+      // Admin override: assign plan as ACTIVE; client can pay later via subscription page
+      subscriptionStatus = SubscriptionStatus.ACTIVE;
     }
+  } else if (isPaidPlan) {
+    logger.info(
+      `PayPal not configured or plan missing paypalPlanId. Assigning plan "${newPlan.name}" to ${tenant.name} as ACTIVE (admin override).`,
+    );
   }
 
   // Create new subscription
   const newSubscription = await Subscription.create({
     tenantId,
     planId: newPlanId,
-    status: isPaidPlan ? SubscriptionStatus.PENDING : SubscriptionStatus.ACTIVE, // PENDING until client pays
+    status: subscriptionStatus,
     paypalSubscriptionId,
-    paypalApprovalUrl: approvalUrl, // Store approval URL so user can pay later
+    paypalApprovalUrl: approvalUrl,
     currentPeriodStart: periodStart,
     currentPeriodEnd: periodEnd,
     cancelAtPeriodEnd: false,
@@ -541,8 +550,8 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
 
   return {
     subscription: newSubscription,
-    approvalUrl, // Send this URL to client so they can pay
-    requiresPayment: isPaidPlan,
+    approvalUrl: approvalUrl || null,
+    requiresPayment,
   };
 }
 

@@ -117,12 +117,12 @@ export function SettingsTabs({ activeTab, setActiveTab, canAccessAdminTabs, acti
   );
 
   return (
-    <div className='mb-2 flex w-full flex-wrap items-center justify-between gap-2 py-1.5 text-left'>
+    <div className='flex w-full flex-wrap items-center justify-between gap-2'>
       <nav
         ref={tabListRef}
         role='tablist'
         aria-label={t('settings.title') || 'Settings'}
-        className='flex min-w-0 flex-1 items-center justify-start overflow-x-auto gap-1.5 scrollbar-hide'
+        className='w-full flex flex-wrap items-center gap-x-4 gap-y-1 overflow-x-auto scrollbar-hide py-1.5 border-b border-neutral-200 dark:border-neutral-600 min-w-0 flex-1'
         style={{ scrollbarWidth: 'none' }}
         onKeyDown={handleKeyDown}
       >
@@ -137,22 +137,13 @@ export function SettingsTabs({ activeTab, setActiveTab, canAccessAdminTabs, acti
               aria-selected={isActive}
               tabIndex={isActive ? 0 : -1}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              className={
                 isActive
-                  ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
-                  : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
-              }`}
+                  ? 'py-1.5 px-1 border-b-2 border-primary-500 text-primary-600 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap -mb-[1px]'
+                  : 'py-1.5 px-1 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 -mb-[1px]'
+              }
             >
-              <span
-                className={
-                  isActive
-                    ? 'text-primary-700 dark:text-primary-300'
-                    : 'text-neutral-500 dark:text-neutral-400'
-                }
-              >
-                {tab.icon}
-              </span>
-              <span>{tab.label}</span>
+              {tab.label}
             </button>
           );
         })}

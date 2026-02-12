@@ -17,6 +17,12 @@ function escapeCsv(val) {
 
 async function getHandler(req, user, id) {
   try {
+    if (user.role === 'super_admin') {
+      return NextResponse.json(
+        { success: false, error: 'Access denied. Platform role has no tenant operational data access.' },
+        { status: 403 }
+      );
+    }
     if (user.role !== 'super_admin') {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
     }

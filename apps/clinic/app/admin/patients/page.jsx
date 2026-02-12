@@ -63,6 +63,13 @@ export default function AdminPatientsPage() {
   const [advancedTenantId, setAdvancedTenantId] = useState('');
 
   useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'super_admin') router.replace('/admin');
+      else router.replace('/dashboard');
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
     const timer = setTimeout(() => setDebouncedTenantFilter(tenantFilter), 400);
     return () => clearTimeout(timer);
   }, [tenantFilter]);

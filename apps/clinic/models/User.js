@@ -72,6 +72,16 @@ const UserSchema = new Schema(
       type: String,
       select: false, // Don't return by default
     },
+    twoFactorRecoveryCodes: {
+      type: [String],
+      select: false, // Only returned when explicitly requested
+      default: undefined,
+    },
+    // Token version — incremented on password change to invalidate all existing tokens
+    tokenVersion: {
+      type: Number,
+      default: 0,
+    },
     // Profile information (as per NEW-PLANS.md)
     phone: {
       type: String,

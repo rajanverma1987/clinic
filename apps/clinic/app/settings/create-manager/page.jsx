@@ -1,6 +1,5 @@
 'use client';
 
-import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -128,130 +127,124 @@ export default function CreateManagerPage() {
   }
 
   return (
-    <Layout title={t('admin.createManager')} subtitle={t('admin.allUsersDescription')}>
-      <div className='tab-content-standard-width-left mt-3'>
-        <Card>
-          <div className='p-6'>
-            <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
-              <h3 className='font-semibold text-blue-900 mb-2'>
-                {t('settings.managerAccessTitle')}
-              </h3>
-              <p className='text-sm text-blue-800'>{t('settings.managerAccessDescription')}</p>
+    <div className='tab-content-standard-width-left mt-3'>
+      <Card>
+        <div className='p-6'>
+          <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
+            <h3 className='font-semibold text-blue-900 mb-2'>{t('settings.managerAccessTitle')}</h3>
+            <p className='text-sm text-blue-800'>{t('settings.managerAccessDescription')}</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className='space-y-6'>
+            {error && (
+              <div className='p-4 bg-red-50 border border-red-200 rounded-lg text-red-700'>
+                {error}
+              </div>
+            )}
+
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  First Name *
+                </label>
+                <Input
+                  type='text'
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  Last Name *
+                </label>
+                <Input
+                  type='text'
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  required
+                />
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className='space-y-6'>
-              {error && (
-                <div className='p-4 bg-red-50 border border-red-200 rounded-lg text-red-700'>
-                  {error}
-                </div>
-              )}
-
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    First Name *
+            <div className='border border-neutral-200 rounded-lg p-4 bg-neutral-50/50'>
+              <h4 className='text-sm font-medium text-neutral-800 mb-3'>
+                {t('settings.managerAccessTitle')}
+              </h4>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                {MANAGER_ACCESS_OPTIONS.filter(
+                  (opt) => opt.requiredFeature === null || hasFeature(opt.requiredFeature),
+                ).map((opt) => (
+                  <label key={opt.id} className='flex items-center gap-2 cursor-pointer'>
+                    <Checkbox
+                      checked={selectedAccess.includes(opt.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedAccess((prev) => [...prev, opt.id]);
+                        } else {
+                          setSelectedAccess((prev) => prev.filter((id) => id !== opt.id));
+                        }
+                      }}
+                      aria-label={t(opt.labelKey)}
+                    />
+                    <span className='text-sm text-neutral-700'>{t(opt.labelKey)}</span>
                   </label>
-                  <Input
-                    type='text'
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Last Name *
-                  </label>
-                  <Input
-                    type='text'
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    required
-                  />
-                </div>
+                ))}
               </div>
+            </div>
 
-              <div className='border border-neutral-200 rounded-lg p-4 bg-neutral-50/50'>
-                <h4 className='text-sm font-medium text-neutral-800 mb-3'>
-                  {t('settings.managerAccessTitle')}
-                </h4>
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
-                  {MANAGER_ACCESS_OPTIONS.filter(
-                    (opt) => opt.requiredFeature === null || hasFeature(opt.requiredFeature),
-                  ).map((opt) => (
-                    <label key={opt.id} className='flex items-center gap-2 cursor-pointer'>
-                      <Checkbox
-                        checked={selectedAccess.includes(opt.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedAccess((prev) => [...prev, opt.id]);
-                          } else {
-                            setSelectedAccess((prev) => prev.filter((id) => id !== opt.id));
-                          }
-                        }}
-                        aria-label={t(opt.labelKey)}
-                      />
-                      <span className='text-sm text-neutral-700'>{t(opt.labelKey)}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>Email *</label>
+              <Input
+                type='email'
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+            </div>
 
-              <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Email *</label>
-                <Input
-                  type='email'
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  Password *
-                </label>
-                <div className='relative'>
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    minLength={8}
-                  />
-                  <button
-                    type='button'
-                    onClick={() => setShowPassword(!showPassword)}
-                    className='absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-neutral-700'
-                  >
-                    {showPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-                <p className='text-sm text-neutral-500 mt-1'>Minimum 8 characters</p>
-              </div>
-
-              <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  Confirm Password *
-                </label>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>Password *</label>
+              <div className='relative'>
                 <Input
                   type={showPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
+                  minLength={8}
                 />
+                <button
+                  type='button'
+                  onClick={() => setShowPassword(!showPassword)}
+                  className='absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-neutral-700'
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
               </div>
+              <p className='text-sm text-neutral-500 mt-1'>Minimum 8 characters</p>
+            </div>
 
-              <div className='flex gap-4'>
-                <Button type='submit' variant='primary' disabled={isLoading}>
-                  {isLoading ? t('common.creating') : 'Create Manager Account'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </Card>
-      </div>
-    </Layout>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                Confirm Password *
+              </label>
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className='flex gap-4'>
+              <Button type='submit' variant='primary' disabled={isLoading}>
+                {isLoading ? t('common.creating') : 'Create Manager Account'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Card>
+    </div>
   );
 }

@@ -401,6 +401,8 @@ export default function AdminDashboardPage() {
                   <p className='admin-stat-card__sub'>
                     {formatNumber(stats?.tenants?.active || 0)} active,{' '}
                     {formatNumber(stats?.tenants?.inactive || 0)} inactive
+                    {(stats?.tenants?.suspended || 0) > 0 &&
+                      `, ${formatNumber(stats?.tenants?.suspended || 0)} suspended`}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-primary-100'>
@@ -522,7 +524,9 @@ export default function AdminDashboardPage() {
                     {formatCurrency(stats?.revenue?.total || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatCurrency(stats?.revenue?.thisMonth || 0)} this month
+                    {formatCurrency(stats?.revenue?.today || 0)} today,{' '}
+                    {formatCurrency(stats?.revenue?.thisMonth || 0)} this month,{' '}
+                    {formatCurrency(stats?.revenue?.thisYear || 0)} this year
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-green-100'>
@@ -630,6 +634,52 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
+        {/* 5b. Subscription Alerts (renewal, expiring) */}
+        {((stats?.subscriptions?.expiringIn7Days || 0) > 0 ||
+          (stats?.subscriptions?.renewalAlerts || 0) > 0) && (
+          <section className='admin-section'>
+            <div className='flex flex-wrap gap-4'>
+              {(stats?.subscriptions?.expiringIn7Days || 0) > 0 && (
+                <div
+                  className='flex items-center gap-3 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
+                  role='alert'
+                >
+                  <span className='text-amber-700 dark:text-amber-400 font-medium'>
+                    {formatNumber(stats.subscriptions.expiringIn7Days)}{' '}
+                    {t('admin.subscriptionExpiringIn7Days') || 'subscription(s) expiring in 7 days'}
+                  </span>
+                  <Button
+                    variant='secondary'
+                    size='sm'
+                    onClick={() => router.push('/admin/subscriptions')}
+                  >
+                    {t('admin.viewAll')}
+                  </Button>
+                </div>
+              )}
+              {(stats?.subscriptions?.renewalAlerts || 0) > 0 && (
+                <div
+                  className='flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                  role='alert'
+                >
+                  <span className='text-blue-700 dark:text-blue-400 font-medium'>
+                    {formatNumber(stats.subscriptions.renewalAlerts)}{' '}
+                    {t('admin.subscriptionRenewalAlerts') ||
+                      'subscription(s) set to cancel at period end'}
+                  </span>
+                  <Button
+                    variant='secondary'
+                    size='sm'
+                    onClick={() => router.push('/admin/subscriptions')}
+                  >
+                    {t('admin.viewAll')}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* 6. Subscriptions & Plans */}
         <section className='admin-section'>
           <div className='admin-section__title'>
@@ -699,7 +749,13 @@ export default function AdminDashboardPage() {
                   <p className='admin-stat-card__value text-status-error'>
                     {formatNumber(stats?.subscriptions?.expired || 0)}
                   </p>
-                  <p className='admin-stat-card__sub'>{t('admin.requiresAttention')}</p>
+                  <p className='admin-stat-card__sub'>
+                    {t('admin.requiresAttention')}
+                    {(stats?.subscriptions?.expiringIn7Days || 0) > 0 &&
+                      ` • ${formatNumber(stats.subscriptions.expiringIn7Days)} expiring in 7 days`}
+                    {(stats?.subscriptions?.renewalAlerts || 0) > 0 &&
+                      ` • ${formatNumber(stats.subscriptions.renewalAlerts)} renewal alerts`}
+                  </p>
                 </div>
                 <div className='admin-stat-card__icon bg-red-100'>
                   <svg

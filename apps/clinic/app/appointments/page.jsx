@@ -1,6 +1,7 @@
 'use client';
 
 import AppointmentCalendar from '@/components/appointments/AppointmentCalendar';
+import { CancelAppointmentModal } from '@/components/appointments/CancelAppointmentModal';
 import { EyeIcon, XIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -62,6 +63,7 @@ export default function AppointmentsPage() {
   const [showCalendar, setShowCalendar] = useState(true);
   const [doctorIdInitialized, setDoctorIdInitialized] = useState(false);
   const [loadingAppointmentId, setLoadingAppointmentId] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null); // { id, patientName }
   const [notifications, setNotifications] = useState(3); // Mock notification count
   const [refreshing, setRefreshing] = useState(false);
   const refreshIntervalRef = useRef(null);
@@ -139,7 +141,7 @@ export default function AppointmentsPage() {
   const formatDateDisplay = useCallback(
     (date, options) => {
       try {
-        return new Intl.DateTimeFormat(settings?.settings?.locale || 'en-US', {
+        return new Intl.DateTimeFormat(locale || 'en-US', {
           timeZone: settings?.settings?.timezone || 'UTC',
           ...options,
         }).format(date);
@@ -148,7 +150,7 @@ export default function AppointmentsPage() {
         return date.toLocaleDateString();
       }
     },
-    [settings],
+    [settings, locale],
   );
 
   const formatDateForApi = useCallback(
@@ -308,6 +310,33 @@ export default function AppointmentsPage() {
       fetchStats();
     }
   }, [settings, fetchStats]);
+
+  const handleCancelConfirm = async (reason) => {
+    if (!cancelTarget) return;
+    const { id, patientName: name } = cancelTarget;
+    setLoadingAppointmentId(id);
+    try {
+      const response = await apiClient.put(`/appointments/${id}/status`, {
+        status: 'cancelled',
+        cancellationReason: reason,
+      });
+      if (response.success) {
+        setCancelTarget(null);
+        invalidateLists();
+        invalidateStats();
+        showSuccess(t('appointments.cancelledFor', { name: name || 'patient' }));
+        fetchAppointments();
+        fetchStats();
+      } else {
+        showError(response.error?.message || 'Failed to cancel appointment');
+      }
+    } catch (error) {
+      logger.error('Failed to cancel appointment', error);
+      showError(error.message || 'Failed to cancel appointment');
+    } finally {
+      setLoadingAppointmentId(null);
+    }
+  };
 
   const handleStatusChange = async (appointmentId, newStatus, patientName) => {
     // Set loading state for this specific appointment
@@ -499,7 +528,7 @@ export default function AppointmentsPage() {
                   key: 'cancel',
                   label: t('appointments.cancelAppointment') || 'Cancel Appointment',
                   icon: <XIcon className='icon icon-sm' />,
-                  onClick: () => handleStatusChange(row._id, 'cancelled', patientName),
+                  onClick: () => setCancelTarget({ id: row._id, patientName }),
                   disabled: loadingAppointmentId === row._id,
                   danger: true,
                 },
@@ -819,6 +848,15 @@ export default function AppointmentsPage() {
           </>
         )}
       </div>
+
+      {/* Cancel Appointment Modal */}
+      <CancelAppointmentModal
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleCancelConfirm}
+        patientName={cancelTarget?.patientName}
+        loading={!!loadingAppointmentId}
+      />
     </Layout>
   );
 }

@@ -126,10 +126,11 @@ export function canManageSuppliers(role) {
 }
 
 /**
- * STAFF MANAGEMENT – Only Doctor and Super Admin can assign Admin/Manager
+ * STAFF MANAGEMENT – Doctor and Clinic Admin (same as Doctor for clinic) can assign Admin/Manager.
+ * Clinic admin account is the Doctor account; both can create manager accounts.
  */
 export function canAssignAdminManager(role) {
-  return ['super_admin', 'doctor'].includes(r(role));
+  return ['super_admin', 'doctor', 'admin'].includes(r(role));
 }
 
 export function canAddStaff(role) {

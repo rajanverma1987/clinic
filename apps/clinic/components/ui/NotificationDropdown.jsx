@@ -126,8 +126,9 @@ export function NotificationDropdown({
     if (onNotificationClick) {
       onNotificationClick(notification);
     }
-    if (notification.unread && onMarkAsRead) {
-      onMarkAsRead(notification.id);
+    const unread = notification.unread ?? !notification.channels?.inApp?.read;
+    if (unread && onMarkAsRead) {
+      onMarkAsRead(notification.id ?? notification._id);
     }
     setIsOpen(false);
   };
@@ -264,14 +265,15 @@ export function NotificationDropdown({
               safeNotifications.map((notification) => {
                 const itemClasses = [
                   'NotificationDropdown-item',
-                  notification.unread ? 'is-unread' : '',
+                  (notification.unread ?? !notification.channels?.inApp?.read) ? 'is-unread' : '',
                 ]
                   .filter(Boolean)
                   .join(' ');
+                const notifId = notification.id ?? notification._id ?? Math.random();
 
                 return (
                   <button
-                    key={notification.id}
+                    key={notifId}
                     type='button'
                     onClick={() => handleNotificationClick(notification)}
                     className={itemClasses}
@@ -288,7 +290,9 @@ export function NotificationDropdown({
                         {formatTime(notification.createdAt)}
                       </div>
                     </div>
-                    {notification.unread && <div className='NotificationDropdown-item-dot'></div>}
+                    {(notification.unread ?? !notification.channels?.inApp?.read) && (
+                      <div className='NotificationDropdown-item-dot'></div>
+                    )}
                   </button>
                 );
               })

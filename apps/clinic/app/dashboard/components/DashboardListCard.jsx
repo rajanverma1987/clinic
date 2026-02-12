@@ -19,6 +19,8 @@ function DashboardListCardInner({
   seeAllLink,
   onSeeAll,
   compact = false,
+  /** Optional: call when row is hovered for prefetch (item) => void */
+  onRowMouseEnter,
   /** When set, lists with data.length >= this value use a virtualized list (e.g. 15) */
   virtualizeAbove = null,
   /** Height of virtualized list area in px (used when virtualizeAbove is set) */
@@ -90,7 +92,18 @@ function DashboardListCardInner({
               virtualizeAbove != null && data.length >= virtualizeAbove ? (
                 <TodayAppointments
                   appointments={data}
-                  renderItem={(item, index) => renderItem(item, index)}
+                  renderItem={(item, index) =>
+                    onRowMouseEnter ? (
+                      <div
+                        onMouseEnter={() => onRowMouseEnter(item)}
+                        style={{ height: '100%' }}
+                      >
+                        {renderItem(item, index)}
+                      </div>
+                    ) : (
+                      renderItem(item, index)
+                    )
+                  }
                   listHeight={virtualListHeight}
                   estimateSize={80}
                   overscan={5}
@@ -109,6 +122,9 @@ function DashboardListCardInner({
                         layout
                         transition={{ type: 'layout', duration: 0.2 }}
                         className={item._updated ? 'data-row-updated rounded' : ''}
+                        onMouseEnter={
+                          onRowMouseEnter ? () => onRowMouseEnter(item) : undefined
+                        }
                       >
                         {renderItem(item, index)}
                       </motion.div>

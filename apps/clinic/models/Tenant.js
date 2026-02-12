@@ -144,6 +144,9 @@ const TenantSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    /** Suspended by super_admin (blocks login; separate from isActive) */
+    suspended: { type: Boolean, default: false },
+    suspendReason: { type: String, trim: true },
   },
   {
     timestamps: true,

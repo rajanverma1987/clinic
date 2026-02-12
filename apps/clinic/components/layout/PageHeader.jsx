@@ -72,8 +72,7 @@ export function PageHeader({
   }, [onRefresh, router]);
 
   const isRefreshing = typeof onRefresh === 'function' ? refreshing : defaultRefreshing;
-  const hasQuickActions =
-    showSearch || actionButton || actionsList.length > 0 || true;
+  const hasQuickActions = showSearch || actionButton || actionsList.length > 0 || true;
 
   useEffect(() => {
     const handleKeyDown = (e) => {

@@ -5,11 +5,11 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
 import { useI18n } from '@/contexts/I18nContext';
-import { SettingsTabHeader } from './SettingsTabHeader';
 
 export function DoctorsTab({
   isClinicAdmin,
   users,
+  currentUserId,
   newUserForm,
   setNewUserForm,
   showNewUserForm,
@@ -58,13 +58,18 @@ export function DoctorsTab({
       accountant: '💼',
       pharmacist: '💊',
       clinic_admin: '👔',
+      manager: '👤',
     };
     return icons[role] || '👤';
   };
 
+  /** Only managers and sub-accounts (exclude current user); all can be activated/deactivated. */
+  const staffList = (users || []).filter(
+    (u) => (u.id || u._id)?.toString() !== (currentUserId ?? '')?.toString(),
+  );
+
   return (
     <div className='space-y-3 text-left'>
-      <SettingsTabHeader title={t('settings.doctorsStaff')} />
       {/* Add User Form */}
       {showNewUserForm && (
         <Card>
@@ -172,9 +177,12 @@ export function DoctorsTab({
         </Card>
       )}
 
-      {/* Staff Members List */}
+      {/* Managers and sub-accounts: list excludes current user; all can be activated/deactivated */}
       <Card>
         <div className='p-4'>
+          <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-3'>
+            {t('settings.managersAndSubAccountsDescription')}
+          </p>
           <div className='flex items-center gap-2 mb-3'>
             <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
               <svg
@@ -191,11 +199,13 @@ export function DoctorsTab({
                 />
               </svg>
             </div>
-            <h2 className='text-lg font-bold text-neutral-900'>{t('settings.staffMembers')}</h2>
-            <span className='text-sm text-neutral-500'>({users.length})</span>
+            <h2 className='text-lg font-bold text-neutral-900'>
+              {t('settings.managersAndSubAccounts')}
+            </h2>
+            <span className='text-sm text-neutral-500'>({staffList.length})</span>
           </div>
 
-          {users.length === 0 ? (
+          {staffList.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-10 text-neutral-400'>
               <svg className='w-12 h-12 mb-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
@@ -205,13 +215,13 @@ export function DoctorsTab({
                   d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
                 />
               </svg>
-              <p className='text-sm'>No staff members found</p>
+              <p className='text-sm'>{t('settings.noManagersOrSubAccounts')}</p>
             </div>
           ) : (
             <div className='space-y-2'>
-              {users.map((user) => (
+              {staffList.map((user) => (
                 <div
-                  key={user.id}
+                  key={user.id || user._id}
                   className='flex items-center justify-between p-3 border border-neutral-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all'
                 >
                   <div className='flex items-center gap-3 flex-1'>
@@ -226,18 +236,20 @@ export function DoctorsTab({
                       <div className='flex flex-wrap items-center gap-1.5 mt-1'>
                         <span className='px-1.5 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full font-medium'>
                           {user.role === 'doctor'
-                            ? 'Doctor'
+                            ? t('settings.roleDoctor')
                             : user.role === 'nurse'
-                              ? 'Nurse'
+                              ? t('settings.roleNurse')
                               : user.role === 'receptionist'
-                                ? 'Receptionist'
+                                ? t('settings.roleReceptionist')
                                 : user.role === 'accountant'
-                                  ? 'Accountant'
+                                  ? t('settings.roleAccountant')
                                   : user.role === 'pharmacist'
-                                    ? 'Pharmacist'
+                                    ? t('settings.rolePharmacist')
                                     : user.role === 'clinic_admin'
-                                      ? 'Clinic Admin'
-                                      : user.role}
+                                      ? t('settings.roleClinicAdmin')
+                                      : user.role === 'manager'
+                                        ? t('settings.roleManager')
+                                        : user.role}
                         </span>
                         <span
                           className={`px-1.5 py-0.5 text-xs rounded-full font-medium ${
@@ -246,7 +258,7 @@ export function DoctorsTab({
                               : 'bg-red-100 text-red-700'
                           }`}
                         >
-                          {user.isActive ? 'Active' : 'Inactive'}
+                          {user.isActive ? t('common.active') : t('common.inactive')}
                         </span>
                       </div>
                     </div>
@@ -254,15 +266,15 @@ export function DoctorsTab({
                   <div className='flex items-center gap-2'>
                     <Toggle
                       checked={user.isActive || false}
-                      onChange={() => onToggleUserStatus(user.id, user.isActive)}
+                      onChange={() => onToggleUserStatus(user.id || user._id, user.isActive)}
                     />
                     <Button
                       type='button'
                       variant={user.isActive ? 'danger' : 'primary'}
                       size='sm'
-                      onClick={() => onToggleUserStatus(user.id, user.isActive)}
+                      onClick={() => onToggleUserStatus(user.id || user._id, user.isActive)}
                     >
-                      {user.isActive ? 'Deactivate' : 'Activate'}
+                      {user.isActive ? t('staff.deactivate') : t('staff.activate')}
                     </Button>
                   </div>
                 </div>

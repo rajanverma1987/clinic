@@ -66,6 +66,7 @@ import {
   useDashboardListsSWR,
   useDashboardStatsSWR,
 } from '@/hooks/useSWRDashboard';
+import { canViewRevenueReports } from '@/lib/permissions/cursor-md-matrix';
 import { TabBar } from './_components/TabBar';
 import { TabContent } from './_components/TabContent';
 import { AppointmentsTab } from './_tabs/AppointmentsTab';
@@ -75,6 +76,7 @@ import { useDoctorDashboardLists } from './hooks/useDoctorDashboardLists';
 import { useDoctorDashboardStats } from './hooks/useDoctorDashboardStats';
 // Performance hooks as per ENTERPRISE_DASHBOARD_PERFORMANCE.md spec
 import { useIncrementalAppointments } from '@/hooks/useIncrementalAppointments';
+import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { AppointmentsListWithHook } from './components/AppointmentsList';
 import { useDashboardStats } from './hooks/useDashboardStats';
 
@@ -230,6 +232,7 @@ export default function DashboardPage() {
     clinicListsSWR.fetchDashboardLists,
   );
   const [isPending, startTransition] = useTransition();
+  const { prefetchAppointment, prefetchPatient } = usePrefetchDetail();
   // Non-blocking navigation so clicks stay responsive
   const navigate = useCallback((path) => startTransition(() => router.push(path)), [router]);
 
@@ -387,9 +390,15 @@ export default function DashboardPage() {
     });
   }, [locale]);
 
-  // Memoize tab content components - must be called unconditionally (before any early returns)
-  const appointmentsContent = useMemo(() => <AppointmentsTab />, []);
-  const prescriptionsContent = useMemo(() => <PrescriptionsTab />, []);
+  // Memoize tab content – pass isActive so tabs revalidate when switched to
+  const appointmentsContent = useMemo(
+    () => <AppointmentsTab isActive={activeTab === 'appointments'} />,
+    [activeTab],
+  );
+  const prescriptionsContent = useMemo(
+    () => <PrescriptionsTab isActive={activeTab === 'prescriptions'} />,
+    [activeTab],
+  );
 
   // Prepare notifications for PageHeader - memoized to prevent recreation on every render
   // Must be called unconditionally (before any early returns) to follow Rules of Hooks
@@ -515,7 +524,7 @@ export default function DashboardPage() {
             }
             actionButton={
               <div className='flex items-center gap-3 shrink-0'>
-                <QuickActions onNavigate={navigate} loading={false} />
+                <QuickActions onNavigate={navigate} loading={false} userRole={user?.role} />
               </div>
             }
           />
@@ -529,6 +538,7 @@ export default function DashboardPage() {
               className='dashboard-section dashboard-tab-bar'
               activeTab={activeTab}
               onTabChange={setActiveTab}
+              userId={user?._id || user?.userId}
             />
           </div>
 
@@ -771,19 +781,21 @@ export default function DashboardPage() {
                         onClick={() => navigate('/appointments')}
                         loading={statsLoading}
                       />
-                      <StatsCard
-                        title={t('dashboard.todayRevenue')}
-                        value={formatCurrency(
-                          stats?.todayRevenue || stats?.revenue?.today?.paid || 0,
-                        )}
-                        subtitle={`${t('dashboard.total') || 'Total'}: ${formatCurrency(stats?.revenue?.today?.total || 0)}`}
-                        trend={stats?.revenueTrend}
-                        icon='currency-dollar'
-                        colorScheme='success'
-                        layout='stacked'
-                        onClick={() => navigate('/invoices')}
-                        loading={statsLoading}
-                      />
+                      {canViewRevenueReports(user?.role) && (
+                        <StatsCard
+                          title={t('dashboard.todayRevenue')}
+                          value={formatCurrency(
+                            stats?.todayRevenue || stats?.revenue?.today?.paid || 0,
+                          )}
+                          subtitle={`${t('dashboard.total') || 'Total'}: ${formatCurrency(stats?.revenue?.today?.total || 0)}`}
+                          trend={stats?.revenueTrend}
+                          icon='currency-dollar'
+                          colorScheme='success'
+                          layout='stacked'
+                          onClick={() => navigate('/invoices')}
+                          loading={statsLoading}
+                        />
+                      )}
                       <StatsCard
                         title={t('dashboard.queueStatus') || 'Queue Status'}
                         value={Object.values(stats?.queue || {}).reduce((a, b) => a + b, 0)}
@@ -913,6 +925,7 @@ export default function DashboardPage() {
                           emptyMessage={t('dashboard.emptyToday')}
                           showSeeAll={true}
                           onSeeAll={() => navigate('/appointments')}
+                          onRowMouseEnter={(item) => item?._id && prefetchAppointment(item._id)}
                           virtualizeAbove={15}
                           virtualListHeight={400}
                           renderItem={(appointment) => {
@@ -1071,16 +1084,17 @@ export default function DashboardPage() {
                       </div>
 
                       {upcomingAppointments && upcomingAppointments.length > 0 && (
-                        <div className='dashboard-card-cell'>
-                          <DashboardListCard
-                            title={t('doctors.upcomingAppointments')}
-                            data={upcomingAppointments}
-                            loading={listsLoading}
-                            colorScheme='primary'
-                            emptyMessage={t('doctors.noUpcomingAppointments')}
-                            showSeeAll={true}
-                            onSeeAll={() => navigate('/appointments')}
-                            renderItem={(appointment) => (
+                      <div className='dashboard-card-cell'>
+                        <DashboardListCard
+                          title={t('doctors.upcomingAppointments')}
+                          data={upcomingAppointments}
+                          loading={listsLoading}
+                          colorScheme='primary'
+                          emptyMessage={t('doctors.noUpcomingAppointments')}
+                          showSeeAll={true}
+                          onSeeAll={() => navigate('/appointments')}
+                          onRowMouseEnter={(item) => item?._id && prefetchAppointment(item._id)}
+                          renderItem={(appointment) => (
                               <AppointmentListItem
                                 key={appointment._id || appointment.id}
                                 appointment={appointment}
@@ -1094,18 +1108,19 @@ export default function DashboardPage() {
                       )}
 
                       {pendingReviews && pendingReviews.length > 0 && (
-                        <div className='dashboard-card-cell'>
-                          <DashboardListCard
-                            title={t('dashboard.pendingReviews')}
-                            data={pendingReviews}
-                            loading={listsLoading}
-                            colorScheme='warning'
-                            emptyMessage={t('doctors.noPendingReviews')}
-                            showSeeAll={true}
-                            onSeeAll={() =>
-                              navigate('/appointments?status=completed&hasClinicalNote=false')
-                            }
-                            renderItem={(appointment) => (
+                      <div className='dashboard-card-cell'>
+                        <DashboardListCard
+                          title={t('dashboard.pendingReviews')}
+                          data={pendingReviews}
+                          loading={listsLoading}
+                          colorScheme='warning'
+                          emptyMessage={t('doctors.noPendingReviews')}
+                          showSeeAll={true}
+                          onSeeAll={() =>
+                            navigate('/appointments?status=completed&hasClinicalNote=false')
+                          }
+                          onRowMouseEnter={(item) => item?._id && prefetchAppointment(item._id)}
+                          renderItem={(appointment) => (
                               <AppointmentListItem
                                 key={appointment._id || appointment.id}
                                 appointment={appointment}
@@ -1199,16 +1214,17 @@ export default function DashboardPage() {
                       )}
 
                       {recentPatients && recentPatients.length > 0 && (
-                        <div className='dashboard-card-cell'>
-                          <DashboardListCard
-                            title={t('dashboard.recentPatients')}
-                            data={recentPatients.slice(0, 5)}
-                            loading={listsLoading}
-                            colorScheme='primary'
-                            emptyMessage={t('dashboard.emptyRecent')}
-                            showSeeAll={true}
-                            onSeeAll={() => navigate('/patients')}
-                            renderItem={(patient) => (
+                      <div className='dashboard-card-cell'>
+                        <DashboardListCard
+                          title={t('dashboard.recentPatients')}
+                          data={recentPatients.slice(0, 5)}
+                          loading={listsLoading}
+                          colorScheme='primary'
+                          emptyMessage={t('dashboard.emptyRecent')}
+                          showSeeAll={true}
+                          onSeeAll={() => navigate('/patients')}
+                          onRowMouseEnter={(item) => item?._id && prefetchPatient(item._id)}
+                          renderItem={(patient) => (
                               <PatientListItem
                                 key={patient._id || patient.id}
                                 patient={patient}
@@ -1301,30 +1317,45 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Charts Section - Only for non-doctors */}
+              {/* Charts Section - Only for non-doctors. Graceful degradation when charts fail. */}
               {!isDoctor && (
                 <div className='dashboard-section'>
                   <ErrorBoundary>
-                    <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
-                      <ChartCard
-                        title={t('dashboard.revenueTrend14')}
-                        data={chartData.revenue}
-                        colorScheme='primary'
-                        loading={chartsLoading}
-                      />
-                      <ChartCard
-                        title={t('dashboard.appointmentTrend14')}
-                        data={chartData.appointments}
-                        colorScheme='primary'
-                        loading={chartsLoading}
-                      />
-                      <ChartCard
-                        title={t('dashboard.newPatients14')}
-                        data={chartData.patients}
-                        colorScheme='warning'
-                        loading={chartsLoading}
-                      />
-                    </div>
+                    {clinicChartsSWR?.error ? (
+                      <Card className='dashboard-list-card dashboard-list-card-primary p-6 lg:col-span-3'>
+                        <p className='text-neutral-600 dark:text-neutral-400 text-center mb-4'>
+                          {t('dashboard.chartsUnavailable') || 'Charts temporarily unavailable.'}
+                        </p>
+                        <Button
+                          variant='secondary'
+                          size='sm'
+                          onClick={() => clinicChartsSWR?.fetchChartData?.()}
+                        >
+                          {t('common.retry')}
+                        </Button>
+                      </Card>
+                    ) : (
+                      <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
+                        <ChartCard
+                          title={t('dashboard.revenueTrend14')}
+                          data={chartData.revenue}
+                          colorScheme='primary'
+                          loading={chartsLoading}
+                        />
+                        <ChartCard
+                          title={t('dashboard.appointmentTrend14')}
+                          data={chartData.appointments}
+                          colorScheme='primary'
+                          loading={chartsLoading}
+                        />
+                        <ChartCard
+                          title={t('dashboard.newPatients14')}
+                          data={chartData.patients}
+                          colorScheme='warning'
+                          loading={chartsLoading}
+                        />
+                      </div>
+                    )}
                   </ErrorBoundary>
                 </div>
               )}

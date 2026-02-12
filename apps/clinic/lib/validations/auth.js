@@ -51,15 +51,22 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });
 
-export const verify2FASchema = z.object({
-  email: z.string().email('Invalid email address'),
-  otp: z
-    .string()
-    .length(6, 'OTP must be 6 digits')
-    .regex(/^\d{6}$/, 'OTP must contain only digits'),
-  tenantId: z.string().optional(), // For multi-tenant login
-  rememberMe: z.boolean().optional().default(false),
-});
+export const verify2FASchema = z
+  .object({
+    email: z.string().email('Invalid email address'),
+    otp: z
+      .string()
+      .length(6, 'OTP must be 6 digits')
+      .regex(/^\d{6}$/, 'OTP must contain only digits')
+      .optional(),
+    recoveryCode: z.string().min(8).max(20).optional(),
+    tenantId: z.string().optional(),
+    rememberMe: z.boolean().optional().default(false),
+  })
+  .refine((data) => data.otp || data.recoveryCode, {
+    message: 'Either OTP or recovery code is required',
+    path: ['otp'],
+  });
 
 export const changePasswordSchema = z
   .object({

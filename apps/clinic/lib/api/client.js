@@ -1,5 +1,6 @@
 import { endApiRequestTiming } from '@/lib/cache/perf-markers';
 import { ERROR_HANDLING } from '@/lib/constants/route-security';
+import { tryChunkRecovery } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger.js';
 
 /**
@@ -146,23 +147,26 @@ class ApiClient {
           }
         }
 
-        return {
-          success: false,
-          error: data.error || {
-            message:
-              response.status === 403
-                ? 'Access denied'
-                : response.status === 401
-                  ? 'Unauthorized'
-                  : 'An error occurred',
-            code:
-              response.status === 403
-                ? 'FORBIDDEN'
-                : response.status === 401
-                  ? 'UNAUTHORIZED'
-                  : 'UNKNOWN_ERROR',
-          },
+        const err = data.error || {
+          message:
+            response.status === 403
+              ? 'Access denied'
+              : response.status === 401
+                ? 'Unauthorized'
+                : 'An error occurred',
+          code:
+            response.status === 403
+              ? 'FORBIDDEN'
+              : response.status === 401
+                ? 'UNAUTHORIZED'
+                : 'UNKNOWN_ERROR',
         };
+
+        if (err.code === 'CHUNK_LOAD_FAILED' && typeof window !== 'undefined') {
+          tryChunkRecovery();
+        }
+
+        return { success: false, error: err };
       }
 
       // Cache successful GET responses with TTL by endpoint

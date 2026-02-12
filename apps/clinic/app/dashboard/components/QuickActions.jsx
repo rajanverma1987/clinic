@@ -10,21 +10,47 @@ import {
 } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
+import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import { useEffect, useRef, useState } from 'react';
 
-const ACTIONS = [
-  { path: '/appointments/new', labelKey: 'dashboard.newAppointment', Icon: CalendarIcon },
-  { path: '/patients?new=true', labelKey: 'dashboard.addPatient', Icon: UserAddIcon },
-  { path: '/queue', labelKey: 'dashboard.emergencyCheckin', Icon: QueueIcon },
-  { path: '/prescriptions/new', labelKey: 'dashboard.newPrescription', Icon: PrescriptionIcon },
-  { path: '/reports', labelKey: 'dashboard.generateReport', Icon: DocumentIcon },
+const ALL_ACTIONS = [
+  {
+    path: '/appointments/new',
+    labelKey: 'dashboard.newAppointment',
+    Icon: CalendarIcon,
+    requiredPermission: { resource: RESOURCES.APPOINTMENT, action: ACTIONS.CREATE },
+  },
+  {
+    path: '/patients?new=true',
+    labelKey: 'dashboard.addPatient',
+    Icon: UserAddIcon,
+    requiredPermission: { resource: RESOURCES.PATIENT, action: ACTIONS.CREATE },
+  },
+  {
+    path: '/queue',
+    labelKey: 'dashboard.emergencyCheckin',
+    Icon: QueueIcon,
+    requiredPermission: { resource: RESOURCES.QUEUE, action: ACTIONS.CREATE },
+  },
+  {
+    path: '/prescriptions/new',
+    labelKey: 'dashboard.newPrescription',
+    Icon: PrescriptionIcon,
+    requiredPermission: { resource: RESOURCES.PRESCRIPTION, action: ACTIONS.CREATE },
+  },
+  {
+    path: '/reports',
+    labelKey: 'dashboard.generateReport',
+    Icon: DocumentIcon,
+    requiredPermission: { resource: RESOURCES.REPORT, action: ACTIONS.READ },
+  },
 ];
 
 /**
- * Quick Actions – single header-style button that opens a dropdown with all options.
+ * Quick Actions – single header-style button that opens a dropdown with role-filtered options.
  * Place in header bar via PageHeader actionButton.
  */
-export function QuickActions({ onNavigate, loading = false }) {
+export function QuickActions({ onNavigate, loading = false, userRole }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -38,6 +64,12 @@ export function QuickActions({ onNavigate, loading = false }) {
       return key;
     }
   };
+
+  // Filter actions based on role permissions
+  const visibleActions = ALL_ACTIONS.filter(({ requiredPermission }) => {
+    if (!userRole || !requiredPermission) return true;
+    return hasPermission(userRole, requiredPermission.resource, requiredPermission.action);
+  });
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -54,6 +86,8 @@ export function QuickActions({ onNavigate, loading = false }) {
   if (loading) {
     return <div className='h-9 w-32 rounded-lg bg-neutral-100 animate-pulse' aria-hidden />;
   }
+
+  if (visibleActions.length === 0) return null;
 
   return (
     <div className='relative inline-block' ref={menuRef}>
@@ -87,7 +121,7 @@ export function QuickActions({ onNavigate, loading = false }) {
             data-wide
             role='menu'
           >
-            {ACTIONS.map(({ path, labelKey, Icon }) => {
+            {visibleActions.map(({ path, labelKey, Icon }) => {
               if (!Icon || typeof Icon !== 'function') {
                 console.error(`Invalid Icon component for ${labelKey}`);
                 return null;

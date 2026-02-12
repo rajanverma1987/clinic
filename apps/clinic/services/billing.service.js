@@ -504,6 +504,25 @@ export async function listInvoices(query, tenantId, userId) {
     filter.status = query.status;
   }
 
+  if (query.search) {
+    const searchRegex = new RegExp(query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const matchingPatients = await Patient.find(
+      withTenant(tenantId, {
+        $or: [
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+          { patientId: searchRegex },
+        ],
+      }),
+      { _id: 1 }
+    ).lean();
+    const patientIds = matchingPatients.map((p) => p._id);
+    const searchOr = [{ invoiceNumber: searchRegex }];
+    if (patientIds.length > 0) searchOr.push({ patientId: { $in: patientIds } });
+    filter.$and = filter.$and || [];
+    filter.$and.push({ $or: searchOr });
+  }
+
   if (query.isActive !== undefined) {
     filter.isActive = query.isActive;
   }

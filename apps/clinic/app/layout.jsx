@@ -18,6 +18,7 @@ export default function RootLayout({ children }) {
     <html lang='en' suppressHydrationWarning>
       <head>
         <link rel='icon' href='/images/faviconw.png' type='image/png' />
+        <script src='/chunk-recovery.js' />
         <script src='/theme-init.js' />
         <script src='/sw-register.js' async />
       </head>

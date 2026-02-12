@@ -3,6 +3,7 @@
  * Handles user registration, login, and token management
  */
 
+import { createHash } from 'crypto';
 import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '@/lib/auth/jwt.js';
 import { isTestAccount } from '@/lib/constants/test-account.js';
@@ -13,6 +14,12 @@ import SubscriptionPlan, { PlanStatus } from '@/models/SubscriptionPlan.js';
 import Tenant from '@/models/Tenant.js';
 import User, { UserRole } from '@/models/User.js';
 import speakeasy from 'speakeasy';
+
+/** Format locale (e.g. "en" -> "en-US") without importing i18n (avoids module resolution issues in API context). */
+function formatLocale(locale) {
+  const map = { en: 'en-US', es: 'es-ES', ar: 'ar-SA' };
+  return map[locale] || 'en-US';
+}
 
 /**
  * Register a new user
@@ -85,8 +92,6 @@ export async function registerUser(input) {
     // Format locale properly if provided
     let formattedLocale = input.locale || 'en-US';
     if (formattedLocale && !formattedLocale.includes('-')) {
-      // If locale is just language code (e.g., 'en'), format it properly
-      const { formatLocale } = await import('@/lib/i18n/index.js');
       formattedLocale = formatLocale(formattedLocale);
     }
 
@@ -200,6 +205,7 @@ export async function registerUser(input) {
     tenantId: tenantIdString,
     email: user.email,
     role: user.role,
+    tokenVersion: user.tokenVersion ?? 0,
   };
 
   const accessToken = generateAccessToken(tokenPayload);
@@ -283,11 +289,14 @@ export async function loginUser(input, options = {}) {
     throw new Error('Invalid email or password');
   }
 
-  // Validate tenant is active (skip for super_admin and testing account)
+  // Validate tenant is active and not suspended (skip for super_admin and testing account)
   if (!isTestAccount(user.email) && user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
-    const tenant = await Tenant.findById(user.tenantId).select('isActive').lean();
+    const tenant = await Tenant.findById(user.tenantId).select('isActive suspended').lean();
     if (!tenant || !tenant.isActive) {
       throw new Error('Tenant is not active');
+    }
+    if (tenant.suspended) {
+      throw new Error('Tenant is suspended');
     }
   }
 
@@ -318,6 +327,7 @@ export async function loginUser(input, options = {}) {
     tenantId: tenantId,
     email: user.email,
     role: user.role,
+    tokenVersion: user.tokenVersion ?? 0,
   };
 
   const accessToken = generateAccessToken(tokenPayload);
@@ -355,13 +365,13 @@ export async function verify2FA(input, options = {}) {
   await connectDB();
 
   const clientIP = options.clientIP ?? 'unknown';
-  const { email, otp, tenantId, rememberMe = false } = input;
+  const { email, otp, recoveryCode, tenantId, rememberMe = false } = input;
 
   // Find user
   const normalizedEmail = email?.toLowerCase().trim();
   let user = await User.findOne({
     email: normalizedEmail,
-  }).select('+password +twoFactorSecret');
+  }).select('+password +twoFactorSecret +twoFactorRecoveryCodes');
 
   if (!user) {
     throw new Error('Invalid email or password');
@@ -372,16 +382,28 @@ export async function verify2FA(input, options = {}) {
     throw new Error('2FA is not enabled for this account');
   }
 
-  // Verify OTP
-  const isValid = speakeasy.totp.verify({
-    secret: user.twoFactorSecret,
-    encoding: 'base32',
-    token: otp,
-    window: 2, // Allow 2 time steps before/after
-  });
-
-  if (!isValid) {
-    throw new Error('Invalid OTP');
+  if (recoveryCode) {
+    // Recovery code path — hash the provided code and check against stored hashes
+    const hashedInput = createHash('sha256').update(recoveryCode).digest('hex');
+    const storedCodes = user.twoFactorRecoveryCodes || [];
+    const codeIndex = storedCodes.indexOf(hashedInput);
+    if (codeIndex === -1) {
+      throw new Error('Invalid recovery code');
+    }
+    // Consume the code (single-use)
+    storedCodes.splice(codeIndex, 1);
+    user.twoFactorRecoveryCodes = storedCodes;
+  } else {
+    // TOTP path
+    const isValid = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: otp,
+      window: 2,
+    });
+    if (!isValid) {
+      throw new Error('Invalid OTP');
+    }
   }
 
   // For non-super_admin users, validate tenantId matches if provided (testing account bypass)
@@ -393,11 +415,14 @@ export async function verify2FA(input, options = {}) {
 
   // All registered accounts can log in; isActive is not enforced at session validation.
 
-  // Validate tenant is active (skip for super_admin and testing account)
+  // Validate tenant is active and not suspended (skip for super_admin and testing account)
   if (!isTestAccount(user.email) && user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
-    const tenant = await Tenant.findById(user.tenantId);
+    const tenant = await Tenant.findById(user.tenantId).select('isActive suspended').lean();
     if (!tenant || !tenant.isActive) {
       throw new Error('Tenant is not active');
+    }
+    if (tenant.suspended) {
+      throw new Error('Tenant is suspended');
     }
   }
 
@@ -424,6 +449,7 @@ export async function verify2FA(input, options = {}) {
     tenantId: tenantIdString,
     email: user.email,
     role: user.role,
+    tokenVersion: user.tokenVersion ?? 0,
   };
 
   const accessToken = generateAccessToken(tokenPayload);
@@ -480,9 +506,10 @@ export async function changePassword(userId, currentPassword, newPassword, tenan
     }
   }
 
-  // Update password
+  // Update password and invalidate all existing sessions by bumping tokenVersion
   user.password = newPassword; // Will be hashed by pre-save hook
   user.passwordChangedAt = new Date();
+  user.tokenVersion = (user.tokenVersion ?? 0) + 1;
   await user.save();
 
   // Audit log
@@ -509,20 +536,19 @@ export async function refreshAccessToken(refreshToken) {
     // Verify user still exists; all registered accounts can refresh (isActive not enforced)
     // Optimize: Use lean() and select() to reduce overhead
     await connectDB();
-    const user = await User.findById(payload.userId)
-      .select('_id email role tenantId')
-      .lean();
+    const user = await User.findById(payload.userId).select('_id email role tenantId').lean();
     if (!user) {
       throw new Error('User not found');
     }
 
-    // Verify tenant is still active - optimize with lean() and select()
+    // Verify tenant is still active and not suspended - optimize with lean() and select()
     if (user.tenantId) {
-      const tenant = await Tenant.findById(user.tenantId)
-        .select('isActive')
-        .lean();
+      const tenant = await Tenant.findById(user.tenantId).select('isActive suspended').lean();
       if (!tenant || !tenant.isActive) {
         throw new Error('Tenant is not active');
+      }
+      if (tenant.suspended) {
+        throw new Error('Tenant is suspended');
       }
     }
 
@@ -533,6 +559,7 @@ export async function refreshAccessToken(refreshToken) {
       tenantId: tenantId,
       email: user.email,
       role: user.role,
+      tokenVersion: user.tokenVersion ?? 0,
     };
 
     const accessToken = generateAccessToken(tokenPayload);

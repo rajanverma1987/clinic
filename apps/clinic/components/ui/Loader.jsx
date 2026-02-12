@@ -20,13 +20,24 @@ export function Loader({
   const effectiveInline = preset ? preset.inline : inline;
   const effectiveSize = preset ? preset.size : size;
 
+  if (preset?.useCardLoader) {
+    return (
+      <CardLoader
+        size={effectiveSize}
+        className={className}
+        variant={variant}
+        aria-label={ariaLabel ?? text ?? 'Loading'}
+      />
+    );
+  }
+
   if (preset?.useCompact) {
     return (
       <CompactLoader
         size={effectiveSize}
         className={className}
         variant={variant}
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? text ?? 'Loading'}
       />
     );
   }
@@ -135,6 +146,54 @@ export function Loader({
   return (
     <div className={`flex items-center justify-center ${className}`} {...a11yProps}>
       {spinner}
+    </div>
+  );
+}
+
+/**
+ * Card loader – progress bar only (same as below brand logo), no logo.
+ * For small contexts: cards, widgets, list items. Brand loader stays for page/section.
+ */
+export function CardLoader({
+  size = 'sm',
+  className = '',
+  variant = 'primary',
+  'aria-label': ariaLabel = 'Loading',
+}) {
+  const variantConfig = {
+    primary: { main: '#1e4fb5', mainRgb: '30, 79, 181' },
+    secondary: { main: '#27AE60', mainRgb: '39, 174, 96' },
+    neutral: { main: '#828282', mainRgb: '130, 130, 130' },
+  };
+  const sizeConfig = { xs: 28, sm: 36, md: 44, lg: 56 };
+  const spinner = sizeConfig[size] ?? sizeConfig.sm;
+  const width = Math.round(spinner * 1.5 * 1.25);
+  const colors = variantConfig[variant] ?? variantConfig.primary;
+
+  return (
+    <div
+      className={`flex items-center justify-center py-6 ${className}`}
+      role='status'
+      aria-label={ariaLabel}
+      aria-busy='true'
+    >
+      <div
+        className='loader-bar rounded-md overflow-hidden'
+        style={{
+          width,
+          height: 8,
+          background: '#e8e8e8',
+          border: `1px solid ${colors.main}`,
+        }}
+      >
+        <div
+          className='loader-bar-fill'
+          style={{
+            '--color-rgb': colors.mainRgb,
+            '--color-main': colors.main,
+          }}
+        />
+      </div>
     </div>
   );
 }

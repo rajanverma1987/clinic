@@ -1,6 +1,12 @@
 'use client';
 
-import { EyeIcon, PencilIcon, PrinterIcon, TrashIcon } from '@/components/icons';
+import {
+  EyeIcon,
+  FileDownIcon,
+  PencilIcon,
+  PrinterIcon,
+  TrashIcon,
+} from '@/components/icons';
 import { InvoicePrintPreview } from '@/components/invoices/InvoicePrintPreview';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -10,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Table } from '@/components/ui/Table';
+import { PageSearchBar } from '@/components/ui/PageSearchBar';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
@@ -52,8 +59,10 @@ export default function InvoicesPage() {
   const [deletingInvoiceId, setDeletingInvoiceId] = useState(null);
   const [markingPaidId, setMarkingPaidId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [exporting, setExporting] = useState(false);
   const [recordPaymentInvoice, setRecordPaymentInvoice] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -85,6 +94,7 @@ export default function InvoicesPage() {
             params.append('status', statusFilter);
           }
         }
+        if (searchTerm?.trim()) params.append('search', searchTerm.trim());
         if (startDate) params.append('startDate', new Date(startDate).toISOString());
         if (endDate) params.append('endDate', new Date(endDate + 'T23:59:59.999Z').toISOString());
         const response = await apiClient.get(`/invoices?${params}`);
@@ -110,7 +120,7 @@ export default function InvoicesPage() {
         setRefreshing(false);
       }
     },
-    [tenantId, statusFilter, startDate, endDate],
+    [tenantId, statusFilter, searchTerm, startDate, endDate],
   );
 
   useEffect(() => {
@@ -157,11 +167,76 @@ export default function InvoicesPage() {
     const statusMap = {
       paid: t('invoices.paid'),
       pending: t('invoices.pending'),
+      partial: t('invoices.partial') || 'Partial',
       overdue: t('invoices.overdue'),
-      draft: 'Draft',
+      draft: t('invoices.draft') || 'Draft',
     };
     return statusMap[status] || status;
   };
+
+  const handleExportCsv = useCallback(async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({ limit: '10000' });
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'overdue') params.append('status', 'pending');
+        else params.append('status', statusFilter);
+      }
+      if (searchTerm?.trim()) params.append('search', searchTerm.trim());
+      if (startDate) params.append('startDate', new Date(startDate).toISOString());
+      if (endDate) params.append('endDate', new Date(endDate + 'T23:59:59.999Z').toISOString());
+      const res = await apiClient.get(`/invoices?${params}`);
+      let list = extractArrayData(res) || [];
+      if (statusFilter === 'overdue') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        list = list.filter(
+          (inv) => inv.status === 'pending' && inv.dueDate && new Date(inv.dueDate) < today,
+        );
+      }
+      if (!list.length) {
+        showError(t('invoices.noInvoicesToExport'));
+        return;
+      }
+      const headers = [
+        t('invoices.invoiceHash'),
+        t('appointments.patient'),
+        t('invoices.status'),
+        t('invoices.total'),
+        t('invoices.paid'),
+        t('invoices.balance') || 'Balance',
+        t('appointments.date'),
+      ];
+      const rows = list.map((inv) => [
+        inv.invoiceNumber || '',
+        inv.patientId
+          ? `${inv.patientId.firstName ?? ''} ${inv.patientId.lastName ?? ''}`.trim()
+          : '',
+        inv.status || '',
+        String(inv.totalAmount ?? 0),
+        String(inv.paidAmount ?? 0),
+        String(inv.balanceAmount ?? 0),
+        inv.invoiceDate ? new Date(inv.invoiceDate).toLocaleDateString() : '',
+      ]);
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')),
+      ].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoices-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showSuccess(t('invoices.exportSuccess'));
+    } catch (err) {
+      logger.error('Invoice export failed', err);
+      showError(t('invoices.exportFailed'));
+    } finally {
+      setExporting(false);
+    }
+  }, [statusFilter, searchTerm, startDate, endDate, t]);
 
   const handleDelete = (invoiceId, invoiceNumber) => {
     openConfirm({
@@ -265,11 +340,13 @@ export default function InvoicesPage() {
           className={`px-2 py-1 rounded-full text-xs font-medium ${
             row.status === 'paid'
               ? 'bg-secondary-100 text-secondary-700'
-              : row.status === 'pending'
-                ? 'bg-status-warning/10 text-status-warning'
-                : row.status === 'draft'
-                  ? 'bg-neutral-100 text-neutral-700'
-                  : 'bg-neutral-100 text-neutral-700'
+              : row.status === 'partial'
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                : row.status === 'pending'
+                  ? 'bg-status-warning/10 text-status-warning'
+                  : row.status === 'draft'
+                    ? 'bg-neutral-100 text-neutral-700'
+                    : 'bg-neutral-100 text-neutral-700'
           }`}
         >
           {getStatusLabel(row.status)}
@@ -382,13 +459,39 @@ export default function InvoicesPage() {
         unreadCount={0}
         onRefresh={handleManualRefresh}
         refreshing={refreshing}
-        actionButton={
-          <Button href='/invoices/new' variant='primary' size='md' className='whitespace-nowrap'>
-            + {t('invoices.createInvoice')}
-          </Button>
+        actionButtons={
+          <>
+            <Button
+              variant='secondary'
+              size='md'
+              onClick={handleExportCsv}
+              disabled={exporting || invoices.length === 0}
+              aria-label={t('invoices.exportCsv')}
+            >
+              {exporting ? (
+                <span className='animate-pulse'>{t('common.loading')}</span>
+              ) : (
+                <>
+                  <FileDownIcon className='icon icon-sm mr-1.5' aria-hidden />
+                  {t('invoices.exportCsv') || 'Export CSV'}
+                </>
+              )}
+            </Button>
+            <Button href='/invoices/new' variant='primary' size='md' className='whitespace-nowrap'>
+              + {t('invoices.createInvoice')}
+            </Button>
+          </>
         }
       />
       <div style={{ padding: '0 10px' }}>
+        <div className='mb-4'>
+          <PageSearchBar
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onSearch={() => fetchInvoices()}
+            placeholder={t('invoices.searchPlaceholder') || 'Search by invoice #, patient...'}
+          />
+        </div>
         {loading ? (
           <Card>
             <TableSkeleton rows={10} cols={6} />
@@ -408,8 +511,9 @@ export default function InvoicesPage() {
                   <option value='all'>{t('invoices.filterAll')}</option>
                   <option value='paid'>{t('invoices.paid')}</option>
                   <option value='pending'>{t('invoices.pending')}</option>
-                  <option value='overdue'>{t('invoices.overdue')}</option>
-                  <option value='draft'>{t('invoices.draft')}</option>
+                <option value='partial'>{t('invoices.partial') || 'Partial'}</option>
+                <option value='overdue'>{t('invoices.overdue')}</option>
+                <option value='draft'>{t('invoices.draft')}</option>
                 </select>
                 <span className='text-sm text-neutral-500 dark:text-neutral-400'>
                   {t('invoices.filterDateRange')}

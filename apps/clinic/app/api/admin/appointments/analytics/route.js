@@ -15,6 +15,12 @@ import Appointment from '@/models/Appointment';
 import { NextResponse } from 'next/server';
 
 async function getHandler(req, user) {
+  if (user.role === 'super_admin') {
+    return NextResponse.json(
+      errorResponse('Access denied. Platform role has no tenant operational data access.', 'DATA_PRIVACY'),
+      { status: 403 }
+    );
+  }
   if (user.role !== 'super_admin') {
     return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
   }

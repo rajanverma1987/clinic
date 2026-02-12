@@ -23,7 +23,7 @@ async function getHandler(req, user) {
   await connectDB();
 
     const tenants = await Tenant.find()
-      .select('name slug region isActive createdAt updatedAt')
+      .select('name slug region isActive suspended suspendReason createdAt updatedAt')
       .sort({ createdAt: -1 })
       .lean();
 

@@ -1,16 +1,28 @@
 'use client';
 
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
-import { classifyError, getUserFriendlyMessage } from '@/lib/utils/error-handler';
+import {
+  classifyError,
+  getUserFriendlyMessage,
+  isChunkOrStaleError,
+  tryChunkRecovery,
+} from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 import { useEffect } from 'react';
 
 /**
  * Next.js global error page. Renders when an unhandled error occurs.
  * Uses centralized error-handler for classification and user-facing message.
+ * Auto hard-refreshes on chunk/stale-build errors (recoverable via reload).
  */
 export default function Error({ error, reset }) {
   useEffect(() => {
+    if (isChunkOrStaleError(error)) {
+      logger.warn('Chunk/stale error detected, attempting recovery refresh', {
+        message: error?.message,
+      });
+      if (tryChunkRecovery()) return;
+    }
     const errorType = classifyError(error);
     logger.error('Global error page caught an error', error, {
       errorBoundary: 'RootErrorBoundary',
@@ -27,7 +39,7 @@ export default function Error({ error, reset }) {
 
   const message = getUserFriendlyMessage(
     error,
-    'Something went wrong. Please try again or go back.'
+    'Something went wrong. Please try again or go back.',
   );
 
   return (

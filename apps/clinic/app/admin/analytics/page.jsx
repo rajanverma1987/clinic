@@ -220,6 +220,110 @@ export default function AdminAnalyticsPage() {
             colorScheme='primary'
             loading={loading}
           />
+          <ChartCard
+            title={t('admin.subscriptionGrowth') || 'Subscription Growth'}
+            data={data?.subscriptionGrowth ?? []}
+            colorScheme='primary'
+            loading={loading}
+          />
+          <ChartCard
+            title={t('admin.appointmentTrend') || 'Appointments'}
+            data={data?.appointmentTrends ?? []}
+            colorScheme='primary'
+            loading={loading}
+          />
+        </div>
+
+        {/* Subscription & Revenue Metrics */}
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6'>
+          <Card>
+            <div className='p-4'>
+              <p className='text-xs font-medium text-neutral-500 uppercase'>
+                {t('admin.churnRate') || 'Churn Rate'}
+              </p>
+              <p className='text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1'>
+                {data?.churnRate ?? 0}%
+              </p>
+            </div>
+          </Card>
+          <Card>
+            <div className='p-4'>
+              <p className='text-xs font-medium text-neutral-500 uppercase'>
+                {t('admin.avgRevenuePerClinic') || 'Avg Revenue per Clinic'}
+              </p>
+              <p className='text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1'>
+                ${(data?.avgRevenuePerClinic ?? 0).toLocaleString()}
+              </p>
+            </div>
+          </Card>
+          <Card>
+            <div className='p-4'>
+              <p className='text-xs font-medium text-neutral-500 uppercase'>
+                {t('admin.paymentSuccessRate') || 'Payment Success'}
+              </p>
+              <p className='text-2xl font-bold text-green-600 dark:text-green-500 mt-1'>
+                {data?.paymentSuccessRate ?? 0}%
+              </p>
+            </div>
+          </Card>
+          <Card>
+            <div className='p-4'>
+              <p className='text-xs font-medium text-neutral-500 uppercase'>
+                {t('admin.newVsCancelledSubs') || 'New vs Cancelled Subs'}
+              </p>
+              <p className='text-lg font-bold text-neutral-900 dark:text-neutral-100 mt-1'>
+                +{data?.newSubscriptions ?? 0} / −{data?.cancelledSubscriptions ?? 0}
+              </p>
+            </div>
+          </Card>
+        </div>
+
+        {/* Plan Distribution & Top Clinics */}
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
+          <Card>
+            <div className='p-6'>
+              <h3 className='text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
+                {t('admin.planDistribution') || 'Plan Distribution'}
+              </h3>
+              {(data?.planDistribution ?? []).length === 0 ? (
+                <p className='text-neutral-500 dark:text-neutral-400'>No data available</p>
+              ) : (
+                <ul className='space-y-2'>
+                  {data.planDistribution.map((p) => (
+                    <li key={p._id || p.name} className='flex justify-between text-sm'>
+                      <span className='text-neutral-700 dark:text-neutral-300'>{p.name}</span>
+                      <span className='font-medium text-neutral-900 dark:text-neutral-100'>
+                        {p.count}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </Card>
+          <Card>
+            <div className='p-6'>
+              <h3 className='text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
+                {t('admin.topClinicsByRevenue') || 'Top Clinics by Revenue'}
+              </h3>
+              {(data?.topClinicsByRevenue ?? []).length === 0 ? (
+                <p className='text-neutral-500 dark:text-neutral-400'>No data available</p>
+              ) : (
+                <ul className='space-y-2'>
+                  {data.topClinicsByRevenue.map((c, i) => (
+                    <li key={c.tenantId || i} className='flex justify-between text-sm'>
+                      <span className='text-neutral-700 dark:text-neutral-300 truncate mr-2'>
+                        {c.tenantName}
+                      </span>
+                      <span className='font-medium text-neutral-900 dark:text-neutral-100 shrink-0'>
+                        ${(c.total / 100 || 0).toLocaleString()}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </Card>
         </div>
 
         {/* Specialties & Peak Hours */}

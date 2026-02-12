@@ -131,6 +131,20 @@
     "settingsSeoDesc": "Meta tags, sitemap, robots, analytics",
     "settingsSecurity": "Security Settings",
     "settingsSecurityDesc": "Password policies, 2FA, IP whitelist, rate limiting",
+    "settingsTax": "Tax Settings",
+    "settingsTaxDesc": "Default tax type, rate, country (GST/VAT/Sales Tax)",
+    "settingsCurrency": "Currency Settings",
+    "settingsCurrencyDesc": "Default currency and supported currencies for platform",
+    "settingsTemplates": "Email & SMS Templates",
+    "settingsTemplatesDesc": "Platform notification templates for appointment, prescription, payment",
+    "settingsTerms": "Terms & Conditions",
+    "settingsTermsDesc": "Edit platform terms of service",
+    "settingsPrivacy": "Privacy Policy",
+    "settingsPrivacyDesc": "Edit platform privacy policy",
+    "settingsMaintenance": "Maintenance Mode",
+    "settingsMaintenanceDesc": "Enable maintenance mode to block non-admin access",
+    "settingsBackup": "Database Backup",
+    "settingsBackupDesc": "Export database backup and counts",
     "reportsAndAnalytics": "Reports & Analytics",
     "reportsHubSubtitle": "User, appointment, financial, performance reports and export",
     "reviewsHubSubtitle": "Reviews dashboard, actions, and rating analytics",
@@ -448,7 +462,8 @@
     "failedToCreateAdminAccount": "Failed to create admin account"
   },
   "apiDocs": {
-    "copied": "API key copied to clipboard"
+    "copied": "API key copied to clipboard",
+    "superAdminOnly": "توثيق API متاح لـ Super Admin فقط. الأدوار الأخرى لا يمكنها الوصول."
   },
   "search": {
     "placeholder": "Search patients, appointments, prescriptions... (Ctrl+K)",
@@ -524,7 +539,7 @@
     "account": "الحساب",
     "user": "المستخدم",
     "roleSuperAdmin": "المشرف الأعلى",
-    "roleClinicAdmin": "مدير العيادة",
+    "roleClinicAdmin": "حساب العيادة",
     "roleDoctor": "الطبيب",
     "roleStaff": "الموظف",
     "address": "العنوان",
@@ -684,6 +699,7 @@
     "next": "Next",
     "successMessage": "Account created. Sign in to get started.",
     "registerFailed": "Registration failed. Please try again.",
+    "alreadyHaveAccount": "Already have an account? Sign in",
     "cancelAnytime": "You can cancel your subscription anytime."
   },
   "dashboard": {
@@ -792,7 +808,12 @@
     "newMessages": "رسائل جديدة",
     "prescriptionsToApprove": "وصفات للموافقة",
     "recentActivity": "النشاط الأخير",
-    "noRecentActivity": "لا يوجد نشاط حديث"
+    "noRecentActivity": "لا يوجد نشاط حديث",
+    "tabError": "فشل تحميل {{tab}}. يرجى المحاولة مرة أخرى.",
+    "chartsUnavailable": "الرسوم البيانية غير متوفرة مؤقتًا."
+  },
+  "offline": {
+    "actionsSynced": "تم مزامنة {{count}} إجراء (إجراءات) بنجاح."
   },
   "staff": {
     "title": "الموظفون",
@@ -1223,7 +1244,16 @@
     "batchPlaceholder": "e.g., BATCH-2024-001",
     "supplierPlaceholder": "Supplier name or ID",
     "inventoryLots": "Inventory Lots",
-    "inventoryLotsSubtitle": "Manage and track inventory batches"
+    "inventoryLotsSubtitle": "Manage and track inventory batches",
+    "filterAll": "الكل",
+    "medicine": "دواء",
+    "medicalSupply": "مستلزمات طبية",
+    "equipment": "معدات",
+    "consumable": "مستهلكات",
+    "searchPlaceholder": "البحث بالاسم أو الكود أو الاسم العلمي أو التجاري...",
+    "noItemsToExport": "لا توجد عناصر للتصدير",
+    "exportSuccess": "تم التصدير بنجاح",
+    "exportFailed": "فشل التصدير"
   },
   "reports": {
     "title": "Reports",
@@ -1305,6 +1335,7 @@
     "integrations": "Integrations",
     "clinicInfo": "Clinic Info",
     "doctorsStaff": "Doctors & Staff",
+    "currentAccount": "حسابك",
     "queueSettings": "Queue Settings",
     "language": "Language",
     "currency": "Currency",
@@ -1355,10 +1386,12 @@
     "addHoliday": "Add Holiday",
     "users": "Users",
     "role": "Role",
+    "subscriptionPlan": "خطة الاشتراك",
+    "noPlan": "—",
     "doctor": "Doctor",
     "nurse": "Nurse",
     "admin": "Admin",
-    "manager": "Manager",
+    "manager": "مدير العيادة",
     "receptionist": "Receptionist",
     "accountant": "Accountant",
     "pharmacist": "Pharmacist",
@@ -1440,6 +1473,16 @@
     "addNewUser": "Add New User",
     "addNewHoliday": "Add New Holiday",
     "staffMembers": "Staff Members",
+    "managersAndSubAccounts": "المدراء والحسابات الفرعية",
+    "managersAndSubAccountsDescription": "المدراء والحسابات الفرعية التي أنشأتها للعيادة. يمكنك تفعيلها أو إلغاء تفعيلها.",
+    "noManagersOrSubAccounts": "لا يوجد مدراء أو حسابات فرعية بعد. أضف مستخدمين أعلاه.",
+    "roleDoctor": "طبيب",
+    "roleNurse": "ممرض/ة",
+    "roleReceptionist": "موظف استقبال",
+    "roleAccountant": "محاسب",
+    "rolePharmacist": "صيدلي",
+    "roleClinicAdmin": "حساب العيادة",
+    "roleManager": "مدير العيادة",
     "holidaysClosures": "Holidays & Closures",
     "noHolidaysConfigured": "No holidays configured",
     "accessRestricted": "Access Restricted",
@@ -1828,6 +1871,7 @@
     "chooseDescription": "Select a plan to get started.",
     "allPlansIncludeTrial": "All plans include 14 days free. Billing starts after the trial.",
     "switchToPlan": "Switch to this plan",
+    "viewOnly": "View Only",
     "getStarted": "Get Started",
     "noActiveSubscription": "You don't have an active subscription.",
     "viewPlans": "View Plans",

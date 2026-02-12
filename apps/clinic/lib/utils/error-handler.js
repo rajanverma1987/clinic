@@ -130,6 +130,58 @@ export function classifyError(error) {
 }
 
 /**
+ * Detects chunk-load / stale-build errors that are recoverable via hard refresh.
+ * Used by error boundaries and error page to auto-refresh instead of showing error UI.
+ * @param {Error|{ message?: string }} error - Error object
+ * @returns {boolean}
+ */
+export function isChunkOrStaleError(error) {
+  const msg = error?.message ?? (typeof error === 'string' ? error : '');
+  if (!msg || typeof msg !== 'string') return false;
+  const s = msg.toLowerCase();
+  return (
+    s.includes("reading 'call'") ||
+    s.includes('chunkloaderror') ||
+    (s.includes('loading chunk') && s.includes('failed')) ||
+    s.includes('loading css chunk') ||
+    s.includes('failed to fetch dynamically imported module') ||
+    s.includes('import promise')
+  );
+}
+
+/**
+ * Attempts a hard refresh when chunk/stale errors occur. Uses sessionStorage to avoid loops.
+ * Unregisters service workers first to bypass SW cache and fetch fresh chunks.
+ * Call only when isChunkOrStaleError(error) is true.
+ * @returns {boolean} True if refresh was triggered
+ */
+export function tryChunkRecovery() {
+  if (typeof window === 'undefined') return false;
+  try {
+    const KEY = 'chunkReloadAttempted';
+    const COOLDOWN_MS = 10000;
+    const raw = sessionStorage.getItem(KEY);
+    const last = raw ? parseInt(raw, 10) : 0;
+    if (Date.now() - last < COOLDOWN_MS) return false;
+    sessionStorage.setItem(KEY, String(Date.now()));
+
+    const doReload = () => window.location.reload();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+        .then(doReload)
+        .catch(doReload);
+    } else {
+      doReload();
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
  * Get user-friendly error message
  * @param {Error} error - Error object
  * @param {string} fallback - Fallback message
@@ -415,6 +467,8 @@ export async function withRetry(fn, options = {}) {
 export default {
   classifyError,
   getUserFriendlyMessage,
+  isChunkOrStaleError,
+  tryChunkRecovery,
   safeWrapper,
   safeAccess,
   safeAsync,

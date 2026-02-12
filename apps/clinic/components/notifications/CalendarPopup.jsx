@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export function CalendarPopup({ isOpen, onClose, buttonRef }) {
   const { t } = useI18n();
-  const { settings } = useSettings();
+  const { settings, locale } = useSettings();
   const router = useRouter();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -135,7 +135,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
   const formatDate = (date) => {
     if (!date) return '';
     try {
-      return new Intl.DateTimeFormat(settings?.settings?.locale || 'en-US', {
+      return new Intl.DateTimeFormat(locale || 'en-US', {
         timeZone: settings?.settings?.timezone || 'UTC',
         weekday: 'long',
         year: 'numeric',

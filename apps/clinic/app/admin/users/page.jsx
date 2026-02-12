@@ -1,6 +1,13 @@
 'use client';
 
-import { FilterIcon, UserAddIcon, XIcon } from '@/components/icons';
+import {
+  EyeIcon,
+  FileDownIcon,
+  FilterIcon,
+  HistoryIcon,
+  UserAddIcon,
+  XIcon,
+} from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -16,7 +23,7 @@ import { extractArrayData, extractPaginationData } from '@/lib/utils/api-respons
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function AdminUsersPage() {
   const router = useRouter();
@@ -35,6 +42,10 @@ export default function AdminUsersPage() {
   const [advancedRole, setAdvancedRole] = useState('');
   const [advancedActive, setAdvancedActive] = useState('');
   const [advancedTenant, setAdvancedTenant] = useState('');
+  const [detailsUser, setDetailsUser] = useState(null);
+  const [resetPasswordUser, setResetPasswordUser] = useState(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -86,6 +97,68 @@ export default function AdminUsersPage() {
       logger.error('Failed to fetch users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportCSV = useCallback(() => {
+    const headers = [
+      'Email',
+      'First Name',
+      'Last Name',
+      'Role',
+      'Tenant',
+      'Status',
+      'Last Login',
+      'Created',
+    ];
+    const rows = (filteredUsers || []).map((u) => [
+      u.email || '',
+      u.firstName || '',
+      u.lastName || '',
+      u.role || '',
+      u.tenantName || '',
+      u.isActive ? 'Active' : 'Inactive',
+      u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : 'Never',
+      u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '',
+    ]);
+    const csv = [
+      headers.join(','),
+      ...rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')),
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `users-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showSuccess(t('admin.exportSuccessful') || 'Export successful');
+  }, [filteredUsers, t]);
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser || !resetPasswordValue?.trim() || resetPasswordValue.length < 8) {
+      showError(t('admin.passwordMinLength') || 'Password must be at least 8 characters');
+      return;
+    }
+    const userId = resetPasswordUser._id || resetPasswordUser.id;
+    if (!userId) return;
+    setResettingPassword(true);
+    try {
+      const response = await apiClient.post(`/admin/users/${userId}/reset-password`, {
+        newPassword: resetPasswordValue.trim(),
+      });
+      if (response?.success) {
+        showSuccess(t('admin.passwordResetSuccess') || 'Password reset successfully');
+        setResetPasswordUser(null);
+        setResetPasswordValue('');
+      } else {
+        showError(response?.error?.message || t('admin.passwordResetFailed'));
+      }
+    } catch (err) {
+      logger.error('Reset password failed', err);
+      showError(t('admin.passwordResetFailed') || 'Failed to reset password');
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -185,10 +258,48 @@ export default function AdminUsersPage() {
       accessor: (row) => (
         <div className='flex items-center gap-1'>
           <Button
+            variant='ghost'
+            size='xs'
+            iconOnly
+            onClick={(e) => {
+              e.stopPropagation();
+              setDetailsUser(row);
+            }}
+            aria-label={t('common.view')}
+            title={t('common.view')}
+          >
+            <EyeIcon className='icon icon-xs' />
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            href={`/admin/activity-logs?userId=${row._id || row.id}`}
+            aria-label={t('admin.viewActivityLog') || 'View activity log'}
+            title={t('admin.viewActivityLog') || 'View activity log'}
+          >
+            <HistoryIcon className="icon icon-xs" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              setResetPasswordUser(row);
+              setResetPasswordValue('');
+            }}
+            aria-label={t('admin.resetPassword')}
+            title={t('admin.resetPassword')}
+          >
+            {t('admin.resetPassword') || 'Reset'}
+          </Button>
+          <Button
             variant={row.isActive ? 'danger' : 'primary'}
             size='xs'
             iconOnly
-            onClick={() => handleToggleActive(row.id, row.isActive)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleActive(row._id || row.id, row.isActive);
+            }}
             aria-label={
               row.isActive
                 ? t('admin.deactivate') || 'Deactivate'
@@ -228,6 +339,10 @@ export default function AdminUsersPage() {
           onSearch={() => setPagination((p) => ({ ...p, page: 1 }))}
           placeholder={t('admin.searchUsersPlaceholder')}
         >
+          <Button variant='secondary' size='sm' onClick={handleExportCSV}>
+            <FileDownIcon className='icon icon-sm mr-1' />
+            {t('admin.exportCSV') || 'Export CSV'}
+          </Button>
           <Button
             variant='secondary'
             size='md'
@@ -357,6 +472,115 @@ export default function AdminUsersPage() {
             )}
           </div>
         </Card>
+
+        {/* User Details Modal */}
+        {detailsUser && (
+          <Modal
+            isOpen={!!detailsUser}
+            onClose={() => setDetailsUser(null)}
+            title={t('admin.userDetails') || 'User Details'}
+          >
+            <div className='space-y-3 text-sm'>
+              <div>
+                <span className='font-medium text-neutral-500'>{t('common.email')}: </span>
+                {detailsUser.email}
+              </div>
+              <div>
+                <span className='font-medium text-neutral-500'>{t('admin.clientName')}: </span>
+                {detailsUser.firstName} {detailsUser.lastName}
+              </div>
+              <div>
+                <span className='font-medium text-neutral-500'>{t('admin.role')}: </span>
+                {detailsUser.role?.replace('_', ' ')}
+              </div>
+              <div>
+                <span className='font-medium text-neutral-500'>{t('admin.tenant')}: </span>
+                {detailsUser.tenantName || 'N/A'}
+              </div>
+              <div>
+                <span className='font-medium text-neutral-500'>{t('admin.status')}: </span>
+                {detailsUser.isActive ? t('admin.active') : t('admin.inactive')}
+              </div>
+              <div>
+                <span className='font-medium text-neutral-500'>
+                  {t('admin.lastLogin') || 'Last Login'}:{' '}
+                </span>
+                {detailsUser.lastLoginAt
+                  ? new Date(detailsUser.lastLoginAt).toLocaleString()
+                  : 'Never'}
+              </div>
+              <div>
+                <span className="font-medium text-neutral-500">{t('admin.created')}: </span>
+                {detailsUser.createdAt ? new Date(detailsUser.createdAt).toLocaleString() : '-'}
+              </div>
+              <div className="pt-3 border-t">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  href={`/admin/activity-logs?userId=${detailsUser._id || detailsUser.id}`}
+                >
+                  <HistoryIcon className="icon icon-sm mr-1" />
+                  {t('admin.viewActivityLog') || 'View activity log'}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Reset Password Modal */}
+        {resetPasswordUser && (
+          <Modal
+            isOpen={!!resetPasswordUser}
+            onClose={() => {
+              setResetPasswordUser(null);
+              setResetPasswordValue('');
+            }}
+            title={t('admin.resetPassword') || 'Reset Password'}
+          >
+            <div className='space-y-4'>
+              <p className='text-sm text-neutral-600'>
+                {t('admin.resetPasswordFor') || 'Reset password for'}:{' '}
+                <strong>{resetPasswordUser.email}</strong>
+              </p>
+              <div>
+                <label className='block text-sm font-medium mb-1'>
+                  {t('admin.newPassword') || 'New Password'}
+                </label>
+                <input
+                  type='password'
+                  value={resetPasswordValue}
+                  onChange={(e) => setResetPasswordValue(e.target.value)}
+                  placeholder={t('admin.passwordMinLength') || 'Min 8 characters'}
+                  className='form-control-height w-full border rounded-lg px-3'
+                  minLength={8}
+                />
+              </div>
+              <div className='flex gap-2'>
+                <Button
+                  onClick={handleResetPassword}
+                  disabled={
+                    !resetPasswordValue?.trim() ||
+                    resetPasswordValue.length < 8 ||
+                    resettingPassword
+                  }
+                  isLoading={resettingPassword}
+                >
+                  {t('admin.resetPassword')}
+                </Button>
+                <Button
+                  variant='secondary'
+                  onClick={() => {
+                    setResetPasswordUser(null);
+                    setResetPasswordValue('');
+                  }}
+                  disabled={resettingPassword}
+                >
+                  {t('common.cancel')}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
       </div>
     </Layout>
   );

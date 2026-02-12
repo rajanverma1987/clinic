@@ -72,6 +72,28 @@ export function NotificationCenter({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose?.();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [isOpen]);
+
   // Real-time Socket.IO connection
   useEffect(() => {
     if (!user?.tenantId) return;
@@ -139,10 +161,11 @@ export function NotificationCenter({
         '/notifications?limit=50&sortBy=createdAt&sortOrder=desc',
       );
       if (response.success) {
-        const list = response.data || [];
-        setNotifications(list);
+        const list = response.data?.notifications ?? response.data ?? [];
+        const notificationsList = Array.isArray(list) ? list : [];
+        setNotifications(notificationsList);
         if (onUnreadCountChange) {
-          const unread = list.filter((n) => !n.channels?.inApp?.read).length;
+          const unread = notificationsList.filter((n) => !n.channels?.inApp?.read).length;
           onUnreadCountChange(() => unread);
         }
       }
@@ -174,7 +197,7 @@ export function NotificationCenter({
 
   const handleMarkAllAsRead = async () => {
     try {
-      await apiClient.post('/notifications/read-all');
+      await apiClient.put('/notifications/read-all');
       setNotifications((prev) =>
         prev.map((n) => ({
           ...n,

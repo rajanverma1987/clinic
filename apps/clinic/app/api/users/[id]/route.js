@@ -31,15 +31,15 @@ async function putHandler(req, user, id) {
       return NextResponse.json(errorResponse('User not found', 'NOT_FOUND'), { status: 404 });
     }
 
-    // CursorMD/New: only Doctor and Super Admin can assign Admin or Manager roles
+    // Doctor and Clinic Admin can assign Admin or Manager roles
     if (body.role !== undefined && ['admin', 'clinic_admin', 'manager'].includes(body.role)) {
       if (!canAssignAdminManager(user.role)) {
         return NextResponse.json(
           errorResponse(
-            'Only Doctor or Super Admin can assign Admin or Manager roles',
-            'FORBIDDEN'
+            'Only Doctor or Clinic Admin can assign Admin or Manager roles',
+            'FORBIDDEN',
           ),
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
@@ -62,7 +62,7 @@ async function putHandler(req, user, id) {
         role: targetUser.role,
         isActive: targetUser.isActive,
         updatedAt: targetUser.updatedAt,
-      })
+      }),
     );
   } catch (error) {
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
@@ -72,9 +72,9 @@ async function putHandler(req, user, id) {
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to update user',
-        'UPDATE_ERROR'
+        'UPDATE_ERROR',
       ),
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
@@ -111,7 +111,7 @@ async function deleteHandler(req, user, id) {
       successResponse({
         message: 'User deactivated successfully',
         id: targetUser._id.toString(),
-      })
+      }),
     );
   } catch (error) {
     if (error.name === 'MongoError' || error.name === 'ValidationError') {
@@ -121,9 +121,9 @@ async function deleteHandler(req, user, id) {
     return NextResponse.json(
       errorResponse(
         (error instanceof Error ? error.message : String(error)) || 'Failed to deactivate user',
-        'DELETE_ERROR'
+        'DELETE_ERROR',
       ),
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

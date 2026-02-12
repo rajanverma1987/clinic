@@ -39,12 +39,11 @@ export function ConfirmationModal({
   }, []);
 
   useEffect(() => {
-    if (isOpen && containerRef.current) {
-      const frame = requestAnimationFrame(() => {
-        containerRef.current?.focus();
-      });
-      return () => cancelAnimationFrame(frame);
-    }
+    if (!isOpen) return;
+    const id = requestAnimationFrame(() => {
+      containerRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(id);
   }, [isOpen]);
 
   useEffect(() => {

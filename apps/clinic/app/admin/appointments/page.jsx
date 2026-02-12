@@ -43,13 +43,13 @@ export default function AdminAppointmentsPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      if (user.role !== 'super_admin') {
-        router.push('/dashboard');
+      if (user.role === 'super_admin') {
+        router.replace('/admin');
         return;
       }
-      fetchAppointments();
+      router.replace('/dashboard');
     }
-  }, [authLoading, user, pagination.page, statusFilter, typeFilter]);
+  }, [authLoading, user, router]);
 
   const fetchAppointments = async (pageOverride) => {
     try {

@@ -22,7 +22,7 @@ export const SESSION_CONFIG = {
   refreshTokenTTL: 7 * 24 * 60 * 60, // 7 days
   maxConcurrentSessions: 3,
   inactivityTimeout: 30 * 60, // 30 min
-  require2FA: ['super_admin', 'doctor'],
+  require2FA: ['super_admin', 'doctor', 'admin', 'clinic_admin'],
 };
 
 // ─── 4. Multi-Tenancy Isolation ───────────────────────────────────────────
@@ -100,6 +100,30 @@ export const PATIENT_DETAIL_TABS = {
       labelKey: 'reports.labTests',
       requiredPermission: { resource: 'lab_result', action: 'read' },
       phiLevel: 'sensitive',
+    },
+    {
+      id: 'lab-results',
+      labelKey: 'lab.labResults',
+      requiredPermission: { resource: 'lab_result', action: 'read' },
+      phiLevel: 'sensitive',
+    },
+    {
+      id: 'imaging',
+      labelKey: 'imaging.title',
+      requiredPermission: { resource: 'imaging', action: 'read' },
+      phiLevel: 'sensitive',
+    },
+    {
+      id: 'insurance',
+      labelKey: 'insurance.title',
+      requiredPermission: { resource: 'patient', action: 'read' },
+      phiLevel: 'medium',
+    },
+    {
+      id: 'documents',
+      labelKey: 'patients.documents',
+      requiredPermission: { resource: 'patient', action: 'read' },
+      phiLevel: 'medium',
     },
     {
       id: 'notes',

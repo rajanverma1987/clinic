@@ -21,6 +21,12 @@ import { logger } from '@/lib/utils/logger.js';
  */
 async function getHandler(req, user, id) {
   try {
+    if (user.role === 'super_admin') {
+      return NextResponse.json(
+        errorResponse('Access denied. Platform role has no tenant PHI access.', 'DATA_PRIVACY'),
+        { status: 403 }
+      );
+    }
     if (user.role !== 'super_admin') {
       return NextResponse.json(
         errorResponse('Unauthorized', 'UNAUTHORIZED'),
@@ -118,6 +124,12 @@ async function getHandler(req, user, id) {
  */
 async function putHandler(req, user, id) {
   try {
+    if (user.role === 'super_admin') {
+      return NextResponse.json(
+        errorResponse('Access denied. Platform role has no tenant PHI access.', 'DATA_PRIVACY'),
+        { status: 403 }
+      );
+    }
     if (user.role !== 'super_admin') {
       return NextResponse.json(
         errorResponse('Unauthorized', 'UNAUTHORIZED'),
@@ -183,6 +195,12 @@ async function putHandler(req, user, id) {
  */
 async function deleteHandler(req, user, id) {
   try {
+    if (user.role === 'super_admin') {
+      return NextResponse.json(
+        errorResponse('Access denied. Platform role has no tenant PHI access.', 'DATA_PRIVACY'),
+        { status: 403 }
+      );
+    }
     if (user.role !== 'super_admin') {
       return NextResponse.json(
         errorResponse('Unauthorized', 'UNAUTHORIZED'),

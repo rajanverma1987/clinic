@@ -4,13 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 /**
- * Public clinic signup is not in scope. Clinics are provisioned by admin/sales.
- * Redirect to login. Future: replace with /invite/accept/[token] for staff-only invites.
+ * Register entry: Get Started on website points to clinic app /register.
+ * Show the same registration flow as try-for-free (clinic + admin account).
  */
 export default function RegisterPage() {
   const router = useRouter();
   useEffect(() => {
-    router.replace('/login');
+    router.replace('/try-for-free');
   }, [router]);
   return null;
 }

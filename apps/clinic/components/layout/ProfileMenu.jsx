@@ -66,6 +66,7 @@ export function ProfileMenu({ isCollapsed }) {
           clinic_admin: t('common.roleClinicAdmin'),
           doctor: t('common.roleDoctor'),
           staff: t('common.roleStaff'),
+          manager: t('settings.roleManager'),
         };
         return roleMap[user.role] || user.role || t('common.user');
       })()

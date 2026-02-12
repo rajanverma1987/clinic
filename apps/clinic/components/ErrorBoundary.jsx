@@ -11,6 +11,8 @@ import {
   classifyError,
   getUserFriendlyMessage,
   handleComponentError,
+  isChunkOrStaleError,
+  tryChunkRecovery,
 } from '@/lib/utils/error-handler';
 import { logger } from '@/lib/utils/logger';
 import { Component } from 'react';
@@ -27,6 +29,7 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     const name = this.props.name || 'Unknown';
+    if (isChunkOrStaleError(error) && tryChunkRecovery()) return;
     handleComponentError(error, errorInfo, name);
     this.setState({ errorInfo });
 
@@ -62,7 +65,7 @@ export class ErrorBoundary extends Component {
 
     if (fallback) {
       return typeof fallback === 'function'
-        ? fallback(error, this.state.errorInfo)
+        ? fallback(error, this.state.errorInfo, this.handleRetry)
         : fallback;
     }
 

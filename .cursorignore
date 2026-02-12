@@ -3,12 +3,13 @@ node_modules/
 .pnp
 .pnp.js
 
-# Build outputs
-.next/
-out/
-build/
-dist/
+# Build outputs (exclude for Cursor speed)
+**/.next/
+**/out/
+**/build/
+**/dist/
 *.tsbuildinfo
+**/.turbo/
 
 # Testing
 coverage/

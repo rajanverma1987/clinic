@@ -1,12 +1,1 @@
-{
-  "lib/api/client.js -> @/lib/api/offline-queue": {
-    "id": "lib/api/client.js -> @/lib/api/offline-queue",
-    "files": [
-      "static/chunks/_app-pages-browser_lib_api_offline-queue_js.js"
-    ]
-  },
-  "lib/api/client.js -> @/lib/utils/api-cache": {
-    "id": "lib/api/client.js -> @/lib/utils/api-cache",
-    "files": []
-  }
-}
+{}

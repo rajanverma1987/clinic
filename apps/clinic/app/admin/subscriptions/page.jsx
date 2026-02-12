@@ -1,6 +1,13 @@
 'use client';
 
-import { DocumentIcon, LayoutDashboardIcon, ListChecksIcon, PencilIcon, TrashIcon } from '@/components/icons';
+import {
+  DocumentIcon,
+  LayoutDashboardIcon,
+  ListChecksIcon,
+  PencilIcon,
+  TrashIcon,
+  UsersIcon,
+} from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
@@ -16,6 +23,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import {
+  COMPARISON_TABLE_PLAN_SLUGS,
+  COMPARISON_TABLE_ROWS,
+} from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
@@ -23,6 +34,7 @@ import { useEffect, useState } from 'react';
 
 const VIEW_TABLE = 'table';
 const VIEW_CARDS = 'cards';
+const VIEW_COMPARISON = 'comparison';
 
 /** Only real/correct plans per subscription spec */
 const ALLOWED_PLAN_NAMES = ['SOLO', 'CLINIC', 'ENTERPRISE'];
@@ -77,6 +89,7 @@ export default function AdminSubscriptionsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [creatingPayPalPlan, setCreatingPayPalPlan] = useState(false);
+  const [clients, setClients] = useState([]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -90,8 +103,9 @@ export default function AdminSubscriptionsPage() {
         router.push('/dashboard');
         return;
       }
-      // User is super admin - fetch plans
+      // User is super admin - fetch plans and clients (for clinics-per-plan)
       fetchPlans();
+      fetchClients();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, router]);
@@ -121,6 +135,17 @@ export default function AdminSubscriptionsPage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      const res = await apiClient.get('/admin/clients');
+      if (res?.success && Array.isArray(res.data)) {
+        setClients(res.data);
+      }
+    } catch {
+      setClients([]);
     }
   };
 
@@ -199,12 +224,12 @@ export default function AdminSubscriptionsPage() {
             showSuccess(t('admin.planDeleted') || 'Plan deleted');
             fetchPlans();
           } else {
-            showError(response?.error?.message || t('admin.planDeleteFailed') || 'Failed to delete plan');
+            showError(
+              response?.error?.message || t('admin.planDeleteFailed') || 'Failed to delete plan',
+            );
           }
         } catch (error) {
-          showError(
-            error?.message || t('admin.planDeleteFailed') || 'Failed to delete plan',
-          );
+          showError(error?.message || t('admin.planDeleteFailed') || 'Failed to delete plan');
         }
       },
     });
@@ -282,9 +307,16 @@ export default function AdminSubscriptionsPage() {
   };
 
   /** Only real plans per spec (SOLO, CLINIC, ENTERPRISE) */
-  const displayPlans = plans.filter(
-    (p) => p && p.name && ALLOWED_PLAN_NAMES.includes(p.name),
-  );
+  const displayPlans = plans.filter((p) => p && p.name && ALLOWED_PLAN_NAMES.includes(p.name));
+
+  /** Clinics count per plan (keyed by plan name) */
+  const clinicsPerPlan = displayPlans.reduce((acc, plan) => {
+    const count = clients.filter(
+      (c) => c.subscription?.planId?._id === plan._id || c.subscription?.planId?.name === plan.name,
+    ).length;
+    acc[plan.name] = count;
+    return acc;
+  }, {});
 
   const columns = [
     {
@@ -342,6 +374,21 @@ export default function AdminSubscriptionsPage() {
           {!row.maxUsers && !row.maxPatients && !row.maxStorageGB && '—'}
         </div>
       ),
+    },
+    {
+      header: t('admin.clinicsOnPlan') || 'Clinics',
+      accessor: (row) => {
+        const count = clinicsPerPlan[row.name] ?? 0;
+        return (
+          <a
+            href={`/admin/clients?plan=${encodeURIComponent(row.name)}`}
+            className='text-primary-600 hover:underline text-sm inline-flex items-center gap-1'
+          >
+            <UsersIcon className='icon icon-sm' />
+            {count} {t('admin.viewClinics') || 'View'}
+          </a>
+        );
+      },
     },
     {
       header: t('common.actions'),
@@ -639,10 +686,10 @@ export default function AdminSubscriptionsPage() {
             <>
               <div className='flex flex-wrap items-center justify-between gap-3 p-4 border-b border-neutral-200'>
                 <p className='text-sm text-neutral-600'>
-                {(t('admin.showingPlans') || 'Showing {{count}} subscription plan(s)').replace(
-                      '{{count}}',
-                      String(displayPlans.length),
-                    )}
+                  {(t('admin.showingPlans') || 'Showing {{count}} subscription plan(s)').replace(
+                    '{{count}}',
+                    String(displayPlans.length),
+                  )}
                 </p>
                 <div
                   className='inline-flex rounded-lg border border-neutral-300 bg-neutral-50 p-0.5'
@@ -655,8 +702,8 @@ export default function AdminSubscriptionsPage() {
                     aria-selected={viewMode === VIEW_TABLE}
                     className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       viewMode === VIEW_TABLE
-                        ? 'bg-primary-100 text-primary-700 shadow-sm dark:bg-primary-900/40 dark:text-primary-300'
-                        : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                        ? 'bg-primary-100 text-primary-700 shadow-sm'
+                        : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                     onClick={() => setViewMode(VIEW_TABLE)}
                   >
@@ -669,17 +716,72 @@ export default function AdminSubscriptionsPage() {
                     aria-selected={viewMode === VIEW_CARDS}
                     className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       viewMode === VIEW_CARDS
-                        ? 'bg-primary-100 text-primary-700 shadow-sm dark:bg-primary-900/40 dark:text-primary-300'
-                        : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
+                        ? 'bg-primary-100 text-primary-700 shadow-sm'
+                        : 'text-neutral-600 hover:text-neutral-900'
                     }`}
                     onClick={() => setViewMode(VIEW_CARDS)}
                   >
                     <LayoutDashboardIcon className='icon icon-sm' />
                     {t('admin.viewCards')}
                   </button>
+                  <button
+                    type='button'
+                    role='tab'
+                    aria-selected={viewMode === VIEW_COMPARISON}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      viewMode === VIEW_COMPARISON
+                        ? 'bg-primary-100 text-primary-700 shadow-sm'
+                        : 'text-neutral-600 hover:text-neutral-900'
+                    }`}
+                    onClick={() => setViewMode(VIEW_COMPARISON)}
+                  >
+                    <DocumentIcon className='icon icon-sm' />
+                    {t('admin.planComparison') || 'Comparison'}
+                  </button>
                 </div>
               </div>
-              {viewMode === VIEW_CARDS ? (
+              {viewMode === VIEW_COMPARISON ? (
+                <div className='overflow-x-auto p-4'>
+                  <table className='w-full border-collapse text-sm'>
+                    <thead>
+                      <tr className='border-b border-neutral-200'>
+                        <th className='text-left py-3 px-4 font-medium'>
+                          {t('subscriptionSpec.feature') || 'Feature'}
+                        </th>
+                        {COMPARISON_TABLE_PLAN_SLUGS.map((slug) => {
+                          const plan = displayPlans.find((p) => p.name === slug);
+                          return (
+                            <th key={slug} className='text-center py-3 px-4 font-medium'>
+                              <div>{slug}</div>
+                              {plan && (
+                                <div className='text-primary-600 font-semibold mt-1'>
+                                  {formatPrice(plan.price, plan.currency)}/
+                                  {plan.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}
+                                </div>
+                              )}
+                              <div className='text-neutral-500 text-xs mt-1'>
+                                {clinicsPerPlan[slug] ?? 0} {t('admin.clinics') || 'clinics'}
+                              </div>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {COMPARISON_TABLE_ROWS.map((row, idx) => (
+                        <tr key={idx} className='border-b border-neutral-100'>
+                          <td className='py-2 px-4 text-neutral-700'>{t(row[0])}</td>
+                          {row.slice(1).map((cell, cidx) => (
+                            <td key={cidx} className='py-2 px-4 text-center'>
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : viewMode === VIEW_CARDS ? (
                 <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4'>
                   {displayPlans.map((plan) => (
                     <div
@@ -748,6 +850,14 @@ export default function AdminSubscriptionsPage() {
                           String((plan.features || []).length),
                         )}
                       </p>
+                      <a
+                        href={`/admin/clients?plan=${encodeURIComponent(plan.name)}`}
+                        className='inline-flex items-center gap-1 text-sm text-primary-600 hover:underline mt-2'
+                      >
+                        <UsersIcon className='icon icon-sm' />
+                        {clinicsPerPlan[plan.name] ?? 0} {t('admin.clinics') || 'clinics'} –{' '}
+                        {t('admin.viewClinics') || 'View'}
+                      </a>
                       <div className='text-sm text-neutral-500 mt-2'>
                         {plan.maxUsers != null && <div>Users: {plan.maxUsers}</div>}
                         {plan.maxPatients != null && (

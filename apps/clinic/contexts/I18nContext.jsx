@@ -3,12 +3,14 @@
 import { apiClient } from '@/lib/api/client.js';
 import { extractLocale, formatLocale, getTranslation, supportedLocales } from '@/lib/i18n/index.js';
 import { logger } from '@/lib/utils/logger.js';
+import { useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext.jsx';
 
 const I18nContext = createContext(undefined);
 
 export function I18nProvider({ children }) {
+  const router = useRouter();
   const { user } = useAuth();
   const [locale, setLocaleState] = useState('en');
   const [loading, setLoading] = useState(true);
@@ -71,10 +73,12 @@ export function I18nProvider({ children }) {
   }, [user, mounted]);
 
   const setLocale = (newLocale) => {
-    setLocaleState(newLocale);
+    const normalized = extractLocale(newLocale);
+    setLocaleState(normalized);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('locale', newLocale);
+      localStorage.setItem('locale', normalized);
     }
+    router.refresh();
 
     // Optionally update tenant settings if user is logged in
     if (user) {
@@ -82,7 +86,7 @@ export function I18nProvider({ children }) {
       apiClient
         .put('/settings', {
           settings: {
-            locale: formatLocale(newLocale),
+            locale: formatLocale(normalized),
           },
         })
         .catch((error) => {
@@ -99,7 +103,7 @@ export function I18nProvider({ children }) {
       Object.entries(params).forEach(([paramKey, paramValue]) => {
         translation = translation.replace(
           new RegExp(`\\{\\{${paramKey}\\}\\}`, 'g'),
-          String(paramValue)
+          String(paramValue),
         );
       });
     }
@@ -118,6 +122,15 @@ export function useI18n() {
   const context = useContext(I18nContext);
   if (context === undefined) {
     throw new Error('useI18n must be used within an I18nProvider');
+  }
+  return context;
+}
+
+/** Safe when rendered outside I18nProvider (e.g. portal or edge load). Returns t that falls back to key. */
+export function useI18nOptional() {
+  const context = useContext(I18nContext);
+  if (context === undefined) {
+    return { t: (key) => key, locale: 'en', setLocale: () => {}, loading: false };
   }
   return context;
 }

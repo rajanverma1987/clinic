@@ -131,6 +131,20 @@
     "settingsSeoDesc": "Meta tags, sitemap, robots, analytics",
     "settingsSecurity": "Security Settings",
     "settingsSecurityDesc": "Password policies, 2FA, IP whitelist, rate limiting",
+    "settingsTax": "Tax Settings",
+    "settingsTaxDesc": "Default tax type, rate, country (GST/VAT/Sales Tax)",
+    "settingsCurrency": "Currency Settings",
+    "settingsCurrencyDesc": "Default currency and supported currencies for platform",
+    "settingsTemplates": "Email & SMS Templates",
+    "settingsTemplatesDesc": "Platform notification templates for appointment, prescription, payment",
+    "settingsTerms": "Terms & Conditions",
+    "settingsTermsDesc": "Edit platform terms of service",
+    "settingsPrivacy": "Privacy Policy",
+    "settingsPrivacyDesc": "Edit platform privacy policy",
+    "settingsMaintenance": "Maintenance Mode",
+    "settingsMaintenanceDesc": "Enable maintenance mode to block non-admin access",
+    "settingsBackup": "Database Backup",
+    "settingsBackupDesc": "Export database backup and counts",
     "reportsAndAnalytics": "Reports & Analytics",
     "reportsHubSubtitle": "User, appointment, financial, performance reports and export",
     "reviewsHubSubtitle": "Reviews dashboard, actions, and rating analytics",
@@ -448,7 +462,8 @@
     "failedToCreateAdminAccount": "Failed to create admin account"
   },
   "apiDocs": {
-    "copied": "API key copied to clipboard"
+    "copied": "API key copied to clipboard",
+    "superAdminOnly": "La documentación de la API está disponible solo para Super Admin. Otros roles no pueden acceder."
   },
   "search": {
     "placeholder": "Search patients, appointments, prescriptions... (Ctrl+K)",
@@ -524,7 +539,7 @@
     "account": "Account",
     "user": "User",
     "roleSuperAdmin": "Super Admin",
-    "roleClinicAdmin": "Clinic Admin",
+    "roleClinicAdmin": "Cuenta de clínica",
     "roleDoctor": "Doctor",
     "roleStaff": "Staff",
     "address": "Address",
@@ -684,6 +699,7 @@
     "next": "Next",
     "successMessage": "Account created. Sign in to get started.",
     "registerFailed": "Registration failed. Please try again.",
+    "alreadyHaveAccount": "Already have an account? Sign in",
     "cancelAnytime": "You can cancel your subscription anytime."
   },
   "dashboard": {
@@ -792,7 +808,12 @@
     "newMessages": "Mensajes nuevos",
     "prescriptionsToApprove": "Recetas por aprobar",
     "recentActivity": "Actividad Reciente",
-    "noRecentActivity": "Sin actividad reciente"
+    "noRecentActivity": "Sin actividad reciente",
+    "tabError": "{{tab}} no se pudo cargar. Inténtelo de nuevo.",
+    "chartsUnavailable": "Gráficos temporalmente no disponibles."
+  },
+  "offline": {
+    "actionsSynced": "{{count}} acción(es) sincronizada(s) correctamente."
   },
   "staff": {
     "title": "Personal",
@@ -1223,7 +1244,16 @@
     "batchPlaceholder": "e.g., BATCH-2024-001",
     "supplierPlaceholder": "Supplier name or ID",
     "inventoryLots": "Inventory Lots",
-    "inventoryLotsSubtitle": "Manage and track inventory batches"
+    "inventoryLotsSubtitle": "Manage and track inventory batches",
+    "filterAll": "Todos",
+    "medicine": "Medicamento",
+    "medicalSupply": "Suministro médico",
+    "equipment": "Equipo",
+    "consumable": "Consumible",
+    "searchPlaceholder": "Buscar por nombre, código, genérico o marca...",
+    "noItemsToExport": "No hay artículos para exportar",
+    "exportSuccess": "Exportación exitosa",
+    "exportFailed": "Error al exportar"
   },
   "reports": {
     "title": "Informes",
@@ -1305,6 +1335,7 @@
     "integrations": "Integrations",
     "clinicInfo": "Clinic Info",
     "doctorsStaff": "Doctors & Staff",
+    "currentAccount": "Tu cuenta",
     "queueSettings": "Queue Settings",
     "language": "Idioma",
     "currency": "Moneda",
@@ -1355,10 +1386,12 @@
     "addHoliday": "Agregar festivo",
     "users": "Users",
     "role": "Role",
+    "subscriptionPlan": "Plan de suscripción",
+    "noPlan": "—",
     "doctor": "Doctor",
     "nurse": "Nurse",
     "admin": "Admin",
-    "manager": "Manager",
+    "manager": "Gestor de clínica",
     "receptionist": "Receptionist",
     "accountant": "Accountant",
     "pharmacist": "Pharmacist",
@@ -1440,6 +1473,16 @@
     "addNewUser": "Agregar nuevo usuario",
     "addNewHoliday": "Agregar nuevo festivo",
     "staffMembers": "Miembros del personal",
+    "managersAndSubAccounts": "Gestores y subcuentas",
+    "managersAndSubAccountsDescription": "Gestores y subcuentas que creaste para la clínica. Puedes activarlas o desactivarlas.",
+    "noManagersOrSubAccounts": "Aún no hay gestores ni subcuentas. Añade usuarios arriba.",
+    "roleDoctor": "Médico",
+    "roleNurse": "Enfermero/a",
+    "roleReceptionist": "Recepcionista",
+    "roleAccountant": "Contable",
+    "rolePharmacist": "Farmacéutico",
+    "roleClinicAdmin": "Cuenta de clínica",
+    "roleManager": "Gestor de clínica",
     "holidaysClosures": "Festivos y cierres",
     "noHolidaysConfigured": "No hay festivos configurados",
     "accessRestricted": "Acceso restringido",
@@ -1828,6 +1871,7 @@
     "chooseDescription": "Selecciona un plan para comenzar.",
     "allPlansIncludeTrial": "Todos los planes incluyen 14 días gratis. La facturación comienza después del período de prueba.",
     "switchToPlan": "Cambiar a este plan",
+    "viewOnly": "Solo lectura",
     "getStarted": "Comenzar",
     "noActiveSubscription": "No tienes una suscripción activa.",
     "viewPlans": "Ver planes",

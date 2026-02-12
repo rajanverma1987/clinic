@@ -1,13 +1,18 @@
 'use client';
 
+import { FormTransition } from '@/components/layout/FormTransition';
+import { ImageTransition } from '@/components/layout/ImageTransition';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { showError, showSuccess } from '@/lib/utils/toast';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+
+const Image = dynamic(() => import('next/image'), { ssr: false });
 
 const STEPS = [
   { id: 1, key: 'tryForFree.stepClinic' },
@@ -15,12 +20,19 @@ const STEPS = [
   { id: 3, key: 'tryForFree.stepAccount' },
 ];
 
+const inputWrapperClass =
+  'flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height';
+const labelClass = 'block text-sm font-semibold text-neutral-800 mb-2';
+const selectClass =
+  'w-full border border-neutral-300 rounded-[10px] px-3 py-0 text-neutral-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 form-control-height bg-white';
+
 export default function TryForFreePage() {
   const router = useRouter();
   const { t } = useI18n();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [duplicateEmail, setDuplicateEmail] = useState(false);
 
   const [data, setData] = useState({
     clinicName: '',
@@ -60,12 +72,14 @@ export default function TryForFreePage() {
 
   const handleNext = () => {
     setError('');
+    setDuplicateEmail(false);
     if (step === 1 && canProceedStep1) setStep(2);
     else if (step === 2 && canProceedStep2) setStep(3);
   };
 
   const handleBack = () => {
     setError('');
+    setDuplicateEmail(false);
     if (step > 1) setStep(step - 1);
   };
 
@@ -94,64 +108,166 @@ export default function TryForFreePage() {
         showSuccess(t('tryForFree.successMessage') || 'Account created. Sign in to get started.');
         router.push('/login');
       } else {
-        setError(res.error?.message || t('tryForFree.registerFailed'));
-        showError(res.error?.message || t('tryForFree.registerFailed'));
+        const errMsg = res.error?.message || t('tryForFree.registerFailed');
+        setError(errMsg);
+        showError(errMsg);
+        if (res.error?.code === 'DUPLICATE_EMAIL') {
+          setDuplicateEmail(true);
+        } else {
+          setDuplicateEmail(false);
+        }
       }
     } catch (err) {
       const msg = err?.message || t('tryForFree.registerFailed');
       setError(msg);
       showError(msg);
+      setDuplicateEmail(false);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className='min-h-screen flex flex-col bg-neutral-50'>
-      <header className='border-b border-neutral-200 bg-white py-4'>
-        <div className='max-w-2xl mx-auto px-4 flex items-center justify-between'>
-          <Link href='/login' className='text-primary-600 hover:underline text-sm font-medium'>
-            {t('common.back') || 'Back'}
-          </Link>
-          <span className='text-neutral-600 text-sm'>
-            {t('tryForFree.title') || 'Try for free'} — {t(STEPS[step - 1].key) || `Step ${step}`}
-          </span>
-        </div>
-      </header>
+  const stepTitle =
+    step === 1
+      ? t('tryForFree.tellUsAboutClinic') || 'Tell us about your clinic'
+      : step === 2
+        ? t('tryForFree.contactAndAddress') || 'Contact & address'
+        : t('tryForFree.createAccount') || 'Create your account';
+  const stepSubtitle =
+    step === 1
+      ? t('tryForFree.stepClinicDesc') || 'A few quick questions to get started.'
+      : step === 2
+        ? t('tryForFree.stepDetailsDesc') || 'Where we can reach you and your clinic location.'
+        : t('tryForFree.threeMonthsFree') ||
+          '3 months free for Solo & Clinic. Payment applies after. Cancel anytime.';
 
-      <main className='flex-1 flex items-start justify-center px-4 py-8'>
-        <div className='w-full max-w-lg'>
-          {/* Progress */}
-          <div className='flex gap-2 mb-8'>
-            {STEPS.map((s) => (
-              <div
-                key={s.id}
-                className={`h-1 flex-1 rounded-full ${step >= s.id ? 'bg-primary-500' : 'bg-neutral-200'}`}
-                aria-hidden
-              />
-            ))}
+  return (
+    <div className='h-screen flex bg-neutral-50 overflow-hidden'>
+      {/* Left - Background (same as login) */}
+      <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 h-full'>
+        <div className='absolute inset-0 w-full h-full'>
+          <ImageTransition
+            src='/images/login.png'
+            alt='Register'
+            fill
+            className='object-cover opacity-90'
+            quality={75}
+            priority
+            sizes='50vw'
+            style={{ objectFit: 'cover', objectPosition: 'center' }}
+          />
+        </div>
+        <div className='absolute inset-0 bg-gradient-to-br from-neutral-900/10 via-transparent to-neutral-900/20' />
+      </div>
+
+      {/* Right - Form (same layout as login) */}
+      <div className='w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 h-full overflow-y-auto'>
+        <div className='w-full max-w-md'>
+          {/* Logo mobile */}
+          <div className='lg:hidden mb-8 text-center'>
+            <Link href='/' className='inline-flex items-center justify-center group'>
+              <div className='flex items-center justify-center group-hover:opacity-90 transition-opacity'>
+                <Image
+                  src='/images/logoclinic.png'
+                  alt='Clinic Logo'
+                  width={180}
+                  height={158}
+                  className='object-contain drop-shadow-md w-44 max-w-full'
+                  priority
+                />
+              </div>
+            </Link>
           </div>
 
-          <div className='bg-white rounded-2xl border border-neutral-200 shadow-lg p-6 sm:p-8'>
+          <FormTransition className='bg-white rounded-2xl border-2 border-neutral-200/80 shadow-2xl p-8 lg:p-10'>
+            {/* Logo desktop */}
+            <div className='hidden lg:flex justify-center mb-6'>
+              <Link href='/' className='inline-flex items-center justify-center group'>
+                <div className='flex items-center justify-center group-hover:opacity-90 transition-opacity'>
+                  <ImageTransition
+                    src='/images/logoclinic.png'
+                    alt='Clinic Logo'
+                    width={180}
+                    height={158}
+                    className='object-contain drop-shadow-sm w-44'
+                    priority
+                  />
+                </div>
+              </Link>
+            </div>
+
+            {/* Progress */}
+            <div className='flex gap-2 mb-6' aria-hidden>
+              {STEPS.map((s) => (
+                <div
+                  key={s.id}
+                  className={`h-1 flex-1 rounded-full ${step >= s.id ? 'bg-primary-500' : 'bg-neutral-200'}`}
+                />
+              ))}
+            </div>
+
+            <div className='text-center mb-6'>
+              <h2
+                className='text-neutral-900 mb-2'
+                style={{
+                  fontSize: '32px',
+                  lineHeight: '40px',
+                  letterSpacing: '-0.02em',
+                  fontWeight: '700',
+                }}
+              >
+                {t('auth.register') || 'Register'}
+              </h2>
+              <p
+                className='text-neutral-600'
+                style={{
+                  fontSize: '16px',
+                  lineHeight: '24px',
+                  fontWeight: '400',
+                }}
+              >
+                {stepTitle}
+              </p>
+              <p className='text-neutral-500 text-sm mt-1'>{stepSubtitle}</p>
+            </div>
+
             {error && (
-              <div className='mb-4 p-3 rounded-lg bg-status-error/10 border border-status-error/30 text-status-error text-sm'>
-                {error}
+              <div className='mb-6 bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex flex-col gap-2 shadow-sm'>
+                <span className='text-sm font-medium'>{error}</span>
+                {duplicateEmail && (
+                  <Link
+                    href='/login'
+                    className='text-primary-600 hover:text-primary-700 font-semibold text-sm'
+                  >
+                    {t('tryForFree.alreadyHaveAccount') || 'Already have an account? Sign in'}
+                  </Link>
+                )}
               </div>
             )}
 
             {step === 1 && (
-              <>
-                <h2 className='text-xl font-bold text-neutral-900 mb-1'>
-                  {t('tryForFree.tellUsAboutClinic') || 'Tell us about your clinic'}
-                </h2>
-                <p className='text-neutral-600 text-sm mb-6'>
-                  {t('tryForFree.stepClinicDesc') || 'A few quick questions to get started.'}
-                </p>
-                <div className='space-y-4'>
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('tryForFree.clinicName') || 'Clinic name'} *
-                    </label>
+              <div className='space-y-5'>
+                <div>
+                  <label className={labelClass}>
+                    {t('tryForFree.clinicName') || 'Clinic name'} *
+                  </label>
+                  <div className={inputWrapperClass}>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                      <svg
+                        className='w-5 h-5 text-neutral-600'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth={2}
+                        viewBox='0 0 24 24'
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h3m-3 4h3m4-4h3m3 4h3'
+                        />
+                      </svg>
+                    </div>
                     <Input
                       value={data.clinicName}
                       onChange={(e) => update('clinicName', e.target.value)}
@@ -159,259 +275,353 @@ export default function TryForFreePage() {
                         t('tryForFree.clinicNamePlaceholder') || 'e.g. City Health Clinic'
                       }
                       required
+                      className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0'
                     />
                   </div>
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('tryForFree.clinicType') || 'Type'} *
-                    </label>
-                    <select
-                      value={data.clinicType}
-                      onChange={(e) => update('clinicType', e.target.value)}
-                      className='w-full border border-neutral-300 rounded-lg px-3 py-2.5 text-neutral-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                      required
-                    >
-                      <option value=''>{t('tryForFree.selectType') || 'Select type'}</option>
-                      <option value='general'>
-                        {t('tryForFree.typeGeneral') || 'General practice'}
-                      </option>
-                      <option value='specialist'>
-                        {t('tryForFree.typeSpecialist') || 'Specialist'}
-                      </option>
-                      <option value='dental'>{t('tryForFree.typeDental') || 'Dental'}</option>
-                      <option value='other'>{t('tryForFree.typeOther') || 'Other'}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('tryForFree.country') || 'Country'} *
-                    </label>
-                    <select
-                      value={data.country}
-                      onChange={(e) => update('country', e.target.value)}
-                      className='w-full border border-neutral-300 rounded-lg px-3 py-2.5 text-neutral-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                      required
-                    >
-                      <option value=''>{t('tryForFree.selectCountry') || 'Select country'}</option>
-                      <option value='US'>United States</option>
-                      <option value='IN'>India</option>
-                      <option value='CA'>Canada</option>
-                      <option value='AU'>Australia</option>
-                      <option value='UK'>United Kingdom</option>
-                      <option value='OTHER'>{t('tryForFree.other') || 'Other'}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('tryForFree.staffSize') || 'Staff size'} *
-                    </label>
-                    <select
-                      value={data.staffSize}
-                      onChange={(e) => update('staffSize', e.target.value)}
-                      className='w-full border border-neutral-300 rounded-lg px-3 py-2.5 text-neutral-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
-                      required
-                    >
-                      <option value=''>{t('tryForFree.selectSize') || 'Select size'}</option>
-                      <option value='1-5'>1–5</option>
-                      <option value='6-20'>6–20</option>
-                      <option value='21-50'>21–50</option>
-                      <option value='50+'>50+</option>
-                    </select>
-                  </div>
                 </div>
-              </>
+                <div>
+                  <label className={labelClass}>{t('tryForFree.clinicType') || 'Type'} *</label>
+                  <select
+                    value={data.clinicType}
+                    onChange={(e) => update('clinicType', e.target.value)}
+                    className={selectClass}
+                    required
+                  >
+                    <option value=''>{t('tryForFree.selectType') || 'Select type'}</option>
+                    <option value='general'>
+                      {t('tryForFree.typeGeneral') || 'General practice'}
+                    </option>
+                    <option value='specialist'>
+                      {t('tryForFree.typeSpecialist') || 'Specialist'}
+                    </option>
+                    <option value='dental'>{t('tryForFree.typeDental') || 'Dental'}</option>
+                    <option value='other'>{t('tryForFree.typeOther') || 'Other'}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>{t('tryForFree.country') || 'Country'} *</label>
+                  <select
+                    value={data.country}
+                    onChange={(e) => update('country', e.target.value)}
+                    className={selectClass}
+                    required
+                  >
+                    <option value=''>{t('tryForFree.selectCountry') || 'Select country'}</option>
+                    <option value='US'>United States</option>
+                    <option value='IN'>India</option>
+                    <option value='CA'>Canada</option>
+                    <option value='AU'>Australia</option>
+                    <option value='UK'>United Kingdom</option>
+                    <option value='OTHER'>{t('tryForFree.other') || 'Other'}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>
+                    {t('tryForFree.staffSize') || 'Staff size'} *
+                  </label>
+                  <select
+                    value={data.staffSize}
+                    onChange={(e) => update('staffSize', e.target.value)}
+                    className={selectClass}
+                    required
+                  >
+                    <option value=''>{t('tryForFree.selectSize') || 'Select size'}</option>
+                    <option value='1-5'>1–5</option>
+                    <option value='6-20'>6–20</option>
+                    <option value='21-50'>21–50</option>
+                    <option value='50+'>50+</option>
+                  </select>
+                </div>
+                <div className='flex gap-3 pt-2'>
+                  <Link href='/login' className='flex-1'>
+                    <Button type='button' variant='secondary' className='w-full' size='lg'>
+                      {t('auth.login') || 'Login'}
+                    </Button>
+                  </Link>
+                  <Button
+                    type='button'
+                    variant='primary'
+                    onClick={handleNext}
+                    disabled={!canProceedStep1}
+                    className='flex-1'
+                    size='lg'
+                  >
+                    {t('tryForFree.next') || 'Next'}
+                  </Button>
+                </div>
+              </div>
             )}
 
             {step === 2 && (
-              <>
-                <h2 className='text-xl font-bold text-neutral-900 mb-1'>
-                  {t('tryForFree.contactAndAddress') || 'Contact & address'}
-                </h2>
-                <p className='text-neutral-600 text-sm mb-6'>
-                  {t('tryForFree.stepDetailsDesc') ||
-                    'Where we can reach you and your clinic location.'}
-                </p>
-                <div className='space-y-4'>
-                  <div className='grid grid-cols-2 gap-4'>
-                    <div>
-                      <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                        {t('auth.firstName') || 'First name'} *
-                      </label>
-                      <Input
-                        value={data.firstName}
-                        onChange={(e) => update('firstName', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                        {t('auth.lastName') || 'Last name'} *
-                      </label>
-                      <Input
-                        value={data.lastName}
-                        onChange={(e) => update('lastName', e.target.value)}
-                        required
-                      />
-                    </div>
+              <div className='space-y-5'>
+                <div className='grid grid-cols-2 gap-4'>
+                  <div>
+                    <label className={labelClass}>{t('auth.firstName') || 'First name'} *</label>
+                    <Input
+                      value={data.firstName}
+                      onChange={(e) => update('firstName', e.target.value)}
+                      required
+                      className='border border-neutral-300 rounded-[10px] form-control-height'
+                    />
                   </div>
                   <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('tryForFree.phone') || 'Phone'} *
-                    </label>
+                    <label className={labelClass}>{t('auth.lastName') || 'Last name'} *</label>
+                    <Input
+                      value={data.lastName}
+                      onChange={(e) => update('lastName', e.target.value)}
+                      required
+                      className='border border-neutral-300 rounded-[10px] form-control-height'
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>{t('tryForFree.phone') || 'Phone'} *</label>
+                  <div className={inputWrapperClass}>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                      <svg
+                        className='w-5 h-5 text-neutral-600'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth={2}
+                        viewBox='0 0 24 24'
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z'
+                        />
+                      </svg>
+                    </div>
                     <Input
                       type='tel'
                       value={data.phone}
                       onChange={(e) => update('phone', e.target.value)}
                       placeholder='+1 234 567 8900'
                       required
-                    />
-                  </div>
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('tryForFree.address') || 'Address'} *
-                    </label>
-                    <Input
-                      value={data.address}
-                      onChange={(e) => update('address', e.target.value)}
-                      placeholder={t('tryForFree.addressPlaceholder') || 'Street address'}
-                      required
-                    />
-                  </div>
-                  <div className='grid grid-cols-2 gap-4'>
-                    <div>
-                      <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                        {t('tryForFree.city') || 'City'} *
-                      </label>
-                      <Input
-                        value={data.city}
-                        onChange={(e) => update('city', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                        {t('tryForFree.state') || 'State / Province'} *
-                      </label>
-                      <Input
-                        value={data.state}
-                        onChange={(e) => update('state', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('tryForFree.zipCode') || 'ZIP / Postal code'} *
-                    </label>
-                    <Input
-                      value={data.zipCode}
-                      onChange={(e) => update('zipCode', e.target.value)}
-                      required
+                      className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0'
                     />
                   </div>
                 </div>
-              </>
+                <div>
+                  <label className={labelClass}>{t('tryForFree.address') || 'Address'} *</label>
+                  <Input
+                    value={data.address}
+                    onChange={(e) => update('address', e.target.value)}
+                    placeholder={t('tryForFree.addressPlaceholder') || 'Street address'}
+                    required
+                    className='border border-neutral-300 rounded-[10px] form-control-height'
+                  />
+                </div>
+                <div className='grid grid-cols-2 gap-4'>
+                  <div>
+                    <label className={labelClass}>{t('tryForFree.city') || 'City'} *</label>
+                    <Input
+                      value={data.city}
+                      onChange={(e) => update('city', e.target.value)}
+                      required
+                      className='border border-neutral-300 rounded-[10px] form-control-height'
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>
+                      {t('tryForFree.state') || 'State / Province'} *
+                    </label>
+                    <Input
+                      value={data.state}
+                      onChange={(e) => update('state', e.target.value)}
+                      required
+                      className='border border-neutral-300 rounded-[10px] form-control-height'
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>
+                    {t('tryForFree.zipCode') || 'ZIP / Postal code'} *
+                  </label>
+                  <Input
+                    value={data.zipCode}
+                    onChange={(e) => update('zipCode', e.target.value)}
+                    required
+                    className='border border-neutral-300 rounded-[10px] form-control-height'
+                  />
+                </div>
+                <div className='flex gap-3 pt-2'>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={handleBack}
+                    className='flex-1'
+                    size='lg'
+                  >
+                    {t('common.back') || 'Back'}
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='primary'
+                    onClick={handleNext}
+                    disabled={!canProceedStep2}
+                    className='flex-1'
+                    size='lg'
+                  >
+                    {t('tryForFree.next') || 'Next'}
+                  </Button>
+                </div>
+              </div>
             )}
 
             {step === 3 && (
-              <>
-                <h2 className='text-xl font-bold text-neutral-900 mb-1'>
-                  {t('tryForFree.createAccount') || 'Create your account'}
-                </h2>
-                <div className='p-4 rounded-lg bg-primary-50 border border-primary-200 mb-6'>
-                  <p className='text-sm text-primary-900 font-medium'>
-                    {t('tryForFree.threeMonthsFree') ||
-                      '3 months free for Solo & Clinic. Payment applies after. Cancel anytime.'}
-                  </p>
-                </div>
-                <form onSubmit={handleSubmit} className='space-y-4'>
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('auth.email') || 'Email'} *
-                    </label>
+              <form onSubmit={handleSubmit} className='space-y-5' noValidate>
+                <div>
+                  <label htmlFor='reg-email' className={labelClass}>
+                    {t('auth.email') || 'Email'} *
+                  </label>
+                  <div className={inputWrapperClass}>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                      <svg
+                        className='w-5 h-5 text-neutral-600'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth={2}
+                        viewBox='0 0 24 24'
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207'
+                        />
+                      </svg>
+                    </div>
                     <Input
+                      id='reg-email'
                       type='email'
                       value={data.email}
                       onChange={(e) => update('email', e.target.value)}
                       required
+                      placeholder={t('auth.emailPlaceholder') || 'you@example.com'}
+                      autoComplete='email'
+                      className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0'
                     />
                   </div>
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('auth.password') || 'Password'} * (min 8 characters)
-                    </label>
+                </div>
+                <div>
+                  <label htmlFor='reg-password' className={labelClass}>
+                    {t('auth.password') || 'Password'} * (min 8 characters)
+                  </label>
+                  <div className={inputWrapperClass}>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                      <svg
+                        className='w-5 h-5 text-neutral-600'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth={2}
+                        viewBox='0 0 24 24'
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+                        />
+                      </svg>
+                    </div>
                     <Input
+                      id='reg-password'
                       type='password'
                       value={data.password}
                       onChange={(e) => update('password', e.target.value)}
                       minLength={8}
                       required
+                      placeholder={t('auth.passwordPlaceholder') || '••••••••'}
+                      autoComplete='new-password'
+                      className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0'
                     />
                   </div>
-                  <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      {t('auth.confirmPassword') || 'Confirm password'} *
-                    </label>
+                </div>
+                <div>
+                  <label htmlFor='reg-confirm' className={labelClass}>
+                    {t('auth.confirmPassword') || 'Confirm password'} *
+                  </label>
+                  <div className={inputWrapperClass}>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                      <svg
+                        className='w-5 h-5 text-neutral-600'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth={2}
+                        viewBox='0 0 24 24'
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
+                        />
+                      </svg>
+                    </div>
                     <Input
+                      id='reg-confirm'
                       type='password'
                       value={data.confirmPassword}
                       onChange={(e) => update('confirmPassword', e.target.value)}
                       required
+                      placeholder={t('auth.confirmPassword') || 'Confirm password'}
+                      autoComplete='new-password'
+                      className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0'
                     />
                   </div>
-                  <div className='flex gap-3 pt-2'>
-                    <Button
-                      type='button'
-                      variant='secondary'
-                      onClick={handleBack}
-                      className='flex-1'
-                    >
-                      {t('common.back') || 'Back'}
-                    </Button>
-                    <Button
-                      type='submit'
-                      variant='primary'
-                      disabled={loading || !canProceedStep3}
-                      className='flex-1'
-                    >
-                      {loading
-                        ? t('common.creating') || 'Creating…'
-                        : t('tryForFree.createAccount') || 'Create account'}
-                    </Button>
-                  </div>
-                </form>
-              </>
+                </div>
+                <div className='flex gap-3 pt-2'>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    onClick={handleBack}
+                    className='flex-1'
+                    size='lg'
+                  >
+                    {t('common.back') || 'Back'}
+                  </Button>
+                  <Button
+                    type='submit'
+                    variant='primary'
+                    isLoading={loading}
+                    disabled={loading || !canProceedStep3}
+                    className='flex-1'
+                    size='lg'
+                  >
+                    {loading
+                      ? t('common.creating') || 'Creating…'
+                      : t('tryForFree.createAccount') || 'Create account'}
+                  </Button>
+                </div>
+              </form>
             )}
+          </FormTransition>
 
-            {step !== 3 && (
-              <div className='flex gap-3 mt-6 pt-6 border-t border-neutral-200'>
-                <Button
-                  type='button'
-                  variant='secondary'
-                  onClick={handleBack}
-                  disabled={step === 1}
-                  className='flex-1'
-                >
-                  {t('common.back') || 'Back'}
-                </Button>
-                <Button
-                  type='button'
-                  variant='primary'
-                  onClick={handleNext}
-                  disabled={(step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2)}
-                  className='flex-1'
-                >
-                  {t('tryForFree.next') || 'Next'}
-                </Button>
-              </div>
-            )}
+          <div className='mt-8 text-center'>
+            <p className='text-sm text-neutral-700'>
+              {t('tryForFree.cancelAnytime') || 'You can cancel your subscription anytime.'}
+            </p>
+            <p className='text-neutral-500 mt-2 text-sm'>
+              {t('auth.alreadyHaveAccount') || 'Already have an account? '}
+              <Link href='/login' className='text-primary-600 hover:text-primary-700 font-semibold'>
+                {t('auth.signIn') || 'Sign in'}
+              </Link>
+            </p>
+            <p className='text-neutral-500 mt-2' style={{ fontSize: '10px', lineHeight: '14px' }}>
+              By signing up, you agree to our{' '}
+              <Link
+                href='/legal'
+                className='text-primary-600 hover:text-primary-700 font-medium underline'
+                style={{ fontSize: '10px' }}
+              >
+                Legal Information & Disclaimers
+              </Link>
+            </p>
           </div>
-
-          <p className='text-center text-neutral-500 text-sm mt-6'>
-            {t('tryForFree.cancelAnytime') || 'You can cancel your subscription anytime.'}
-          </p>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

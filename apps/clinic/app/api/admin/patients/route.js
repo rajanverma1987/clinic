@@ -20,6 +20,12 @@ import { NextResponse } from 'next/server';
  * Query: search, tenantId, status, dateFrom, dateTo, doctorId, hasAppointments, sortBy, sortOrder, page, limit
  */
 async function getHandler(req, user) {
+  if (user.role === 'super_admin') {
+    return NextResponse.json(
+      errorResponse('Access denied. Platform role has no tenant PHI access.', 'DATA_PRIVACY'),
+      { status: 403 }
+    );
+  }
   if (user.role !== 'super_admin') {
     return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
   }

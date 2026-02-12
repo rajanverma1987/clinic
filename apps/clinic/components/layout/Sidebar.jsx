@@ -5,6 +5,7 @@ import {
   BellIcon,
   Building2Icon,
   CalendarIcon,
+  ChatIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ClockIcon,
@@ -111,6 +112,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   const IconProfile = () => navIcon(UserIcon);
   const IconDoctors = () => navIcon(VideoIcon);
   const IconActivityLogs = () => navIcon(RefreshCwIcon);
+  const IconSupport = () => navIcon(ChatIcon);
 
   // Production clinic sidebar order: Dashboard first → daily workflow (Appointments, Queue, Patients) → clinical/business → settings
   const menuItemsWithFeatures = [
@@ -126,6 +128,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       labelKey: 'queue.title',
       icon: IconQueue,
       requiredFeature: 'Queue Management',
+      requiredPermission: { resource: RESOURCES.QUEUE, action: ACTIONS.READ },
     },
     {
       href: '/patients',
@@ -138,7 +141,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       labelKey: 'staff.title',
       icon: IconStaff,
       requiredFeature: null,
-      requiredRoles: ['doctor', 'clinic_admin'],
+      requiredRoles: ['doctor', 'clinic_admin', 'admin'],
     },
     {
       href: '/dashboard?tab=prescriptions',
@@ -164,6 +167,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       labelKey: 'nav.lots',
       icon: IconLots,
       requiredFeature: 'Inventory Management',
+      requiredPermission: { resource: RESOURCES.INVENTORY, action: ACTIONS.UPDATE },
     },
     {
       href: '/reports',
@@ -176,34 +180,14 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       labelKey: 'telemedicine.title',
       icon: IconTelemedicine,
       requiredFeature: null,
-    },
-    {
-      href: '/settings/locations',
-      labelKey: 'nav.locations',
-      icon: IconLocation,
-      requiredFeature: 'Multi-Location Support',
-      requiredRoles: ['clinic_admin'],
+      requiredPermission: { resource: RESOURCES.TELEMEDICINE, action: ACTIONS.READ },
     },
     {
       href: '/api-docs',
       labelKey: 'nav.apiDocs',
       icon: IconAPI,
       requiredFeature: 'API Access',
-      requiredRoles: ['clinic_admin'],
-    },
-    {
-      href: '/settings/branding',
-      labelKey: 'nav.branding',
-      icon: IconBranding,
-      requiredFeature: 'Custom Branding',
-      requiredRoles: ['clinic_admin'],
-    },
-    {
-      href: '/settings/white-label',
-      labelKey: 'nav.whiteLabel',
-      icon: IconWhiteLabel,
-      requiredFeature: 'White Label Solution',
-      requiredRoles: ['clinic_admin'],
+      requiredRoles: ['super_admin'],
     },
     {
       href: '/settings',
@@ -275,6 +259,15 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   const dashboardItem = menuItemsWithFeatures.find((m) => m.href === '/dashboard');
   const restClinicItems = menuItemsWithFeatures.filter((m) => m.href !== '/dashboard');
 
+  // When showAllItems (features loading), still respect requiredRoles so doctor never sees API Docs etc.
+  const itemAllowed = (item) => {
+    const passesFilter = showAllItems || canShowItem(item);
+    const roleOk =
+      !item.requiredRoles ||
+      (item.requiredRoles.length > 0 && item.requiredRoles.includes(user?.role));
+    return passesFilter && roleOk;
+  };
+
   const menuItems =
     user?.role === 'super_admin'
       ? []
@@ -283,7 +276,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             ? [stripFeature(dashboardItem)]
             : []),
           ...(user?.role === 'doctor' ? doctorMenuItems.map(stripFeature) : []),
-          ...restClinicItems.filter((item) => showAllItems || canShowItem(item)).map(stripFeature),
+          ...restClinicItems.filter(itemAllowed).map(stripFeature),
         ];
 
   // Update ref when state changes
@@ -557,65 +550,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                   {t('admin.allUsers')}
                 </span>
               </Link>
-              <Link
-                href='/admin/patients'
-                onClick={handleLinkClick}
-                prefetch={false}
-                onMouseEnter={(e) =>
-                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('admin.patients') })
-                }
-                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
-                className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
-                } min-h-[44px] text-body-sm font-medium ${
-                  pathname === '/admin/patients' || pathname?.startsWith('/admin/patients/')
-                    ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
-                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
-                }`}
-                title={isCollapsed ? undefined : ''}
-                aria-label={isCollapsed ? t('admin.patients') : undefined}
-              >
-                <span
-                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
-                >
-                  <IconPatients />
-                </span>
-                <span
-                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
-                >
-                  {t('admin.patients')}
-                </span>
-              </Link>
-              <Link
-                href='/admin/appointments'
-                onClick={handleLinkClick}
-                prefetch={false}
-                onMouseEnter={(e) =>
-                  isCollapsed &&
-                  setTooltip({ anchor: e.currentTarget, label: t('admin.appointments') })
-                }
-                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
-                className={`flex items-center ${
-                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
-                } min-h-[44px] text-body-sm font-medium ${
-                  pathname === '/admin/appointments'
-                    ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
-                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
-                }`}
-                title={isCollapsed ? undefined : ''}
-                aria-label={isCollapsed ? t('admin.appointments') : undefined}
-              >
-                <span
-                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
-                >
-                  <IconAppointments />
-                </span>
-                <span
-                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
-                >
-                  {t('admin.appointments')}
-                </span>
-              </Link>
+              {/* Patients & Appointments removed for super_admin: platform role - no tenant PHI access (data privacy) */}
               <Link
                 href='/admin/doctors'
                 onClick={handleLinkClick}
@@ -797,6 +732,56 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                 </span>
               </Link>
               <Link
+                href='/admin/support'
+                onClick={handleLinkClick}
+                prefetch={false}
+                onMouseEnter={(e) =>
+                  isCollapsed &&
+                  setTooltip({
+                    anchor: e.currentTarget,
+                    label: t('admin.supportTickets') || 'Support',
+                  })
+                }
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname?.startsWith('/admin/support') ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('admin.supportTickets') || 'Support' : undefined}
+              >
+                <span
+                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
+                >
+                  <IconSupport />
+                </span>
+                <span
+                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+                >
+                  {t('admin.supportTickets') || 'Support'}
+                </span>
+              </Link>
+              <Link
+                href='/api-docs'
+                onClick={handleLinkClick}
+                prefetch={false}
+                onMouseEnter={(e) =>
+                  isCollapsed && setTooltip({ anchor: e.currentTarget, label: t('nav.apiDocs') })
+                }
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'} min-h-[44px] text-body-sm font-medium ${pathname === '/api-docs' ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500' : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'}`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('nav.apiDocs') : undefined}
+              >
+                <span
+                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
+                >
+                  <IconAPI />
+                </span>
+                <span
+                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+                >
+                  {t('nav.apiDocs')}
+                </span>
+              </Link>
+              <Link
                 href='/admin/settings'
                 onClick={handleLinkClick}
                 prefetch={false}
@@ -918,7 +903,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             background: 'transparent',
           }}
         >
-          {/* Subscription + Payment History – same block as Collapse (only for non–super_admin with permission) */}
+          {/* Subscription + Payment History – clinic users; doctor sees own payment history only */}
           {user?.role !== 'super_admin' &&
             hasPermission(user?.role, RESOURCES.SUBSCRIPTION, ACTIONS.READ) && (
               <div className='sidebar-subscription-section flex flex-col gap-0'>

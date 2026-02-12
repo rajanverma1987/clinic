@@ -10,6 +10,9 @@ export const PLAN_SLUGS = ['FREE', 'SOLO', 'CLINIC', 'ENTERPRISE'];
 /** Plans shown in comparison table (SOLO, CLINIC, ENTERPRISE only; all have 14-day trial) */
 export const COMPARISON_TABLE_PLAN_SLUGS = ['SOLO', 'CLINIC', 'ENTERPRISE'];
 
+/** Plan names allowed in admin "Update Subscription" dropdown (canonical product plans only) */
+export const AVAILABLE_PLAN_NAMES_FOR_ASSIGNMENT = ['FREE', 'Free Trial', 'SOLO', 'CLINIC', 'ENTERPRISE'];
+
 /** Quick Feature Comparison – 14 rows, SOLO | CLINIC | ENTERPRISE only (no FREE column) */
 export const COMPARISON_TABLE_ROWS = [
   ['subscriptionSpec.doctorAccounts', '1', '5', 'Unlimited'],

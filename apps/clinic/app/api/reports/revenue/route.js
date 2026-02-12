@@ -29,6 +29,14 @@ async function getHandler(req, user) {
     );
   }
 
+  // Manager role cannot access revenue/financial reports (UI restriction enforced at API level)
+  if (user.role === 'manager') {
+    return NextResponse.json(
+      errorResponse('Access denied. Managers do not have access to revenue reports.', 'FORBIDDEN'),
+      { status: 403 }
+    );
+  }
+
   const { searchParams } = new URL(req.url);
 
   const queryParams = {

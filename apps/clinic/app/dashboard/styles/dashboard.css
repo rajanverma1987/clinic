@@ -4,7 +4,7 @@
 
 /* Alignment tokens – standard dashboard spacing (8px base, 4/8/12/16/24/32px scale) */
 :root {
-  --dashboard-content-padding: var(--space-6);
+  --dashboard-content-padding: var(--space-5);
   --dashboard-element-gap: var(--space-6);
   --dashboard-grid-gap: var(--space-5);
   --dashboard-section-gap: var(--space-8);
@@ -14,12 +14,12 @@
   --dashboard-section-header-mb: var(--space-4);
 }
 
-/* Dashboard Container – full width, standard horizontal padding */
+/* Dashboard Container – full width; horizontal padding from .page-shell only to avoid double gap */
 .dashboard-container {
   width: 100%;
   max-width: 100%;
-  padding-left: var(--dashboard-content-padding);
-  padding-right: var(--dashboard-content-padding);
+  padding-left: 0;
+  padding-right: 0;
   padding-top: var(--space-4);
   padding-bottom: var(--space-8);
   box-sizing: border-box;

@@ -59,9 +59,12 @@ export const ACTIONS = {
 /**
  * Permission matrix: Role -> Resource -> Actions
  * Based on NEW-PLANS.md role definitions
+ *
+ * Super Admin: Platform role (company side). Complimentary rights only.
+ * No tenant PHI access: /admin/patients and /admin/appointments are blocked at API level.
  */
 export const PERMISSIONS = {
-  // Super Admin - Full access to everything
+  // Super Admin - Platform oversight only; no tenant PHI (patients, appointments blocked via API)
   super_admin: {
     [RESOURCES.PATIENT]: [ACTIONS.MANAGE],
     [RESOURCES.APPOINTMENT]: [ACTIONS.MANAGE],
@@ -157,7 +160,7 @@ export const PERMISSIONS = {
     [RESOURCES.REPORT]: [ACTIONS.READ],
     [RESOURCES.SETTINGS]: [ACTIONS.READ],
     [RESOURCES.AUDIT_LOG]: [], // No access
-    [RESOURCES.SUBSCRIPTION]: [], // No access
+    [RESOURCES.SUBSCRIPTION]: [ACTIONS.READ], // Own/clinic payment history only
     [RESOURCES.NOTIFICATION]: [ACTIONS.READ, ACTIONS.UPDATE],
     [RESOURCES.TELEMEDICINE]: [ACTIONS.CREATE, ACTIONS.READ, ACTIONS.UPDATE],
     [RESOURCES.QUEUE]: [ACTIONS.READ, ACTIONS.UPDATE],

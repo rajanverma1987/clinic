@@ -13,6 +13,7 @@ export function ComplianceTab({
   setComplianceForm,
   saving,
   onSave,
+  onCancel,
 }) {
   const { t } = useI18n();
 
@@ -84,133 +85,144 @@ export function ComplianceTab({
         }}
         className='space-y-3'
       >
-      {/* Compliance Standards */}
-      <Card>
-        <div className='p-4'>
-          <div className='flex items-center gap-2 mb-3'>
-            <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-              <svg
-                className='icon icon-xs text-primary-600'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
-                />
-              </svg>
-            </div>
-            <h2 className='text-lg font-bold text-neutral-900'>Compliance Standards</h2>
-          </div>
-
-          <div className='space-y-2'>
-            {complianceOptions.map((option) => (
-              <div
-                key={option.key}
-                className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                  complianceForm[option.key]
-                    ? 'border-primary-300 bg-primary-50/50'
-                    : 'border-neutral-200 bg-white hover:border-neutral-300'
-                }`}
-              >
-                <div className='flex items-start gap-3 flex-1'>
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      complianceForm[option.key] ? 'bg-primary-100' : 'bg-neutral-100'
-                    }`}
-                  >
-                    <svg
-                      className={`icon icon-xs ${
-                        complianceForm[option.key] ? 'text-primary-600' : 'text-neutral-400'
-                      }`}
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
-                      />
-                    </svg>
-                  </div>
-                  <div className='flex-1'>
-                    <div className='flex items-center gap-2 mb-0.5'>
-                      <h3 className='font-semibold text-neutral-900 text-sm'>{option.title}</h3>
-                      <span className='px-1.5 py-0.5 bg-neutral-100 text-neutral-600 text-xs rounded'>
-                        {option.region}
-                      </span>
-                    </div>
-                    <p className='text-xs text-neutral-600'>{option.description}</p>
-                  </div>
-                </div>
-                <Toggle
-                  checked={complianceForm[option.key]}
-                  onChange={(e) =>
-                    setComplianceForm({ ...complianceForm, [option.key]: e.target.checked })
-                  }
-                />
+        {/* Compliance Standards */}
+        <Card>
+          <div className='p-4'>
+            <div className='flex items-center gap-2 mb-3'>
+              <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
+                <svg
+                  className='icon icon-xs text-primary-600'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
+                  />
+                </svg>
               </div>
-            ))}
-          </div>
-        </div>
-      </Card>
-
-      {/* Data Retention */}
-      <Card>
-        <div className='p-5'>
-          <div className='flex items-center gap-2 mb-5'>
-            <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-              <svg
-                className='icon icon-xs text-primary-600'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
-                />
-              </svg>
+              <h2 className='text-lg font-bold text-neutral-900'>Compliance Standards</h2>
             </div>
-            <h2 className='text-lg font-bold text-neutral-900'>Data Retention</h2>
-          </div>
 
-          <div>
-            <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-              Data Retention Period (Years) <span className='text-red-500'>*</span>
-            </label>
-            <Input
-              type='number'
-              min='1'
-              max='30'
-              value={complianceForm.dataRetentionYears}
-              onChange={(e) =>
-                setComplianceForm({
-                  ...complianceForm,
-                  dataRetentionYears: parseInt(e.target.value) || 7,
-                })
-              }
-              placeholder='7'
-              required
-              className='max-w-xs'
-            />
-            <div className='mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg'>
-              <p className='text-xs text-amber-800'>
-                <strong>Note:</strong> Data retention periods vary by region and compliance
-                requirements. Consult legal counsel for specific requirements.
-              </p>
+            <div className='space-y-2'>
+              {complianceOptions.map((option) => (
+                <div
+                  key={option.key}
+                  className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                    complianceForm[option.key]
+                      ? 'border-primary-300 bg-primary-50/50'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300'
+                  }`}
+                >
+                  <div className='flex items-start gap-3 flex-1'>
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        complianceForm[option.key] ? 'bg-primary-100' : 'bg-neutral-100'
+                      }`}
+                    >
+                      <svg
+                        className={`icon icon-xs ${
+                          complianceForm[option.key] ? 'text-primary-600' : 'text-neutral-400'
+                        }`}
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
+                        />
+                      </svg>
+                    </div>
+                    <div className='flex-1'>
+                      <div className='flex items-center gap-2 mb-0.5'>
+                        <h3 className='font-semibold text-neutral-900 text-sm'>{option.title}</h3>
+                        <span className='px-1.5 py-0.5 bg-neutral-100 text-neutral-600 text-xs rounded'>
+                          {option.region}
+                        </span>
+                      </div>
+                      <p className='text-xs text-neutral-600'>{option.description}</p>
+                    </div>
+                  </div>
+                  <Toggle
+                    checked={complianceForm[option.key]}
+                    onChange={(e) =>
+                      setComplianceForm({ ...complianceForm, [option.key]: e.target.checked })
+                    }
+                  />
+                </div>
+              ))}
             </div>
           </div>
+        </Card>
+
+        {/* Data Retention */}
+        <Card>
+          <div className='p-5'>
+            <div className='flex items-center gap-2 mb-5'>
+              <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
+                <svg
+                  className='icon icon-xs text-primary-600'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
+                  />
+                </svg>
+              </div>
+              <h2 className='text-lg font-bold text-neutral-900'>Data Retention</h2>
+            </div>
+
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                Data Retention Period (Years) <span className='text-red-500'>*</span>
+              </label>
+              <Input
+                type='number'
+                min='1'
+                max='30'
+                value={complianceForm.dataRetentionYears}
+                onChange={(e) =>
+                  setComplianceForm({
+                    ...complianceForm,
+                    dataRetentionYears: parseInt(e.target.value) || 7,
+                  })
+                }
+                placeholder='7'
+                required
+                className='max-w-xs'
+              />
+              <div className='mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+                <p className='text-xs text-amber-800'>
+                  <strong>Note:</strong> Data retention periods vary by region and compliance
+                  requirements. Consult legal counsel for specific requirements.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <div className='flex justify-end gap-3 pt-4'>
+          {onCancel && (
+            <Button type='button' variant='secondary' onClick={onCancel} disabled={saving}>
+              {t('common.cancel')}
+            </Button>
+          )}
+          <Button type='submit' variant='primary' isLoading={saving} disabled={saving}>
+            {t('common.save')}
+          </Button>
         </div>
-      </Card>
-    </form>
+      </form>
     </div>
   );
 }

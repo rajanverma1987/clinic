@@ -1,5 +1,6 @@
 'use client';
 
+import { PrinterIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ReportTabSkeleton } from '@/components/skeletons';
@@ -11,14 +12,23 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { canExportData, canViewRevenueAnalytics } from '@/lib/permissions/cursor-md-matrix';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
 import { showError } from '@/lib/utils/toast';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 const REPORTS_AUTO_REFRESH_MS = 2 * 60 * 1000; // 2 minutes – silent refresh for current tab
-const REPORTS_TAB_IDS = ['revenue', 'patients', 'appointments', 'inventory'];
+const ALL_REPORTS_TAB_IDS = ['revenue', 'doctors', 'patients', 'appointments', 'inventory'];
+
+// Revenue and doctors tabs restricted to roles with financial report access (doctor, admin, accountant)
+function getVisibleTabIds(role) {
+  return ALL_REPORTS_TAB_IDS.filter((id) => {
+    if (id === 'revenue' || id === 'doctors') return canViewRevenueAnalytics(role);
+    return true;
+  });
+}
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -27,15 +37,18 @@ export default function ReportsPage() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { currency, locale } = useSettings();
+  const visibleTabIds = useMemo(() => getVisibleTabIds(user?.role), [user?.role]);
+  const defaultTab = visibleTabIds[0] || 'patients';
   const tabFromUrl = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(
-    tabFromUrl && REPORTS_TAB_IDS.includes(tabFromUrl) ? tabFromUrl : 'revenue',
+    tabFromUrl && visibleTabIds.includes(tabFromUrl) ? tabFromUrl : defaultTab,
   );
   const [startDate, setStartDate] = useState(
     new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
   );
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [revenueReport, setRevenueReport] = useState(null);
+  const [doctorReport, setDoctorReport] = useState(null);
   const [patientReport, setPatientReport] = useState(null);
   const [appointmentReport, setAppointmentReport] = useState(null);
   const [inventoryReport, setInventoryReport] = useState(null);
@@ -47,6 +60,8 @@ export default function ReportsPage() {
     if (!authLoading && user) {
       if (activeTab === 'revenue') {
         fetchRevenueReport();
+      } else if (activeTab === 'doctors') {
+        fetchDoctorReport();
       } else if (activeTab === 'patients') {
         fetchPatientReport();
       } else if (activeTab === 'appointments') {
@@ -64,6 +79,7 @@ export default function ReportsPage() {
     const runSilentRefresh = () => {
       if (document.hidden) return;
       if (activeTab === 'revenue') fetchRevenueReport(true);
+      else if (activeTab === 'doctors') fetchDoctorReport(true);
       else if (activeTab === 'patients') fetchPatientReport(true);
       else if (activeTab === 'appointments') fetchAppointmentReport(true);
       else if (activeTab === 'inventory') fetchInventoryReport(true);
@@ -92,8 +108,9 @@ export default function ReportsPage() {
 
   useEffect(() => {
     const t = searchParams.get('tab');
-    if (t && REPORTS_TAB_IDS.includes(t)) setActiveTab(t);
-  }, [searchParams]);
+    if (t && visibleTabIds.includes(t)) setActiveTab(t);
+    else if (!visibleTabIds.includes(activeTab)) setActiveTab(defaultTab);
+  }, [searchParams, visibleTabIds]);
 
   const [isPending, startTransition] = useTransition();
 
@@ -126,6 +143,33 @@ export default function ReportsPage() {
       }
     } catch (error) {
       logger.error('Failed to fetch revenue report', error);
+      if (!silent) {
+        showError(error?.message || t('reports.fetchError'));
+        setReportError(error?.message || t('reports.fetchError'));
+      }
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  const fetchDoctorReport = async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setReportError(null);
+    }
+    try {
+      const params = new URLSearchParams({
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
+        groupBy: 'day',
+      });
+
+      const response = await apiClient.get(`/reports/doctors?${params}`);
+      if (response.success && response.data) {
+        setDoctorReport(response.data);
+      }
+    } catch (error) {
+      logger.error('Failed to fetch doctor report', error);
       if (!silent) {
         showError(error?.message || t('reports.fetchError'));
         setReportError(error?.message || t('reports.fetchError'));
@@ -464,6 +508,7 @@ export default function ReportsPage() {
             <Button
               onClick={() => {
                 if (activeTab === 'revenue') fetchRevenueReport();
+                else if (activeTab === 'doctors') fetchDoctorReport();
                 else if (activeTab === 'patients') fetchPatientReport();
                 else if (activeTab === 'appointments') fetchAppointmentReport();
                 else if (activeTab === 'inventory') fetchInventoryReport();
@@ -473,15 +518,29 @@ export default function ReportsPage() {
             >
               {t('reports.generateReport')}
             </Button>
+            <Button
+              variant='secondary'
+              size='md'
+              onClick={() => window.print()}
+              className='filter-button'
+              aria-label={t('reports.print')}
+            >
+              <PrinterIcon className='icon icon-sm mr-1.5' aria-hidden />
+              {t('reports.print') || 'Print'}
+            </Button>
           </div>
 
           <Tabs
             tabs={[
-              { id: 'revenue', label: t('reports.revenue') },
+              visibleTabIds.includes('revenue') && { id: 'revenue', label: t('reports.revenue') },
+              visibleTabIds.includes('doctors') && {
+                id: 'doctors',
+                label: t('reports.doctorPerformance') || 'Doctor Performance',
+              },
               { id: 'patients', label: t('reports.patients') },
               { id: 'appointments', label: t('reports.appointments') },
               { id: 'inventory', label: t('reports.inventory') },
-            ]}
+            ].filter(Boolean)}
             activeTab={activeTab}
             onChange={handleTabChange}
             idPrefix='reports-tabs'
@@ -550,9 +609,11 @@ export default function ReportsPage() {
                   <Card>
                     <div className='flex items-center justify-between mb-4'>
                       <h2 className='text-xl font-semibold'>{t('reports.revenueTrend')}</h2>
-                      <Button variant='secondary' size='md' onClick={() => exportCSV('revenue')}>
-                        {t('reports.exportToCSV')}
-                      </Button>
+                      {canExportData(user?.role) && (
+                        <Button variant='secondary' size='md' onClick={() => exportCSV('revenue')}>
+                          {t('reports.exportToCSV')}
+                        </Button>
+                      )}
                     </div>
                     {renderBarChart(
                       revenueReport.timeSeries.map((item) => ({
@@ -576,6 +637,80 @@ export default function ReportsPage() {
                       {renderPieChart(revenueReport.breakdown.statuses)}
                     </Card>
                   </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'doctors' && doctorReport?.summary && (
+              <div className='space-y-6'>
+                <div className='content-grid-4'>
+                  <Card>
+                    <div className='p-4'>
+                      <p className='text-sm text-neutral-600 mb-1'>
+                        {t('reports.totalAppointments')}
+                      </p>
+                      <p className='text-3xl font-bold text-primary-600'>
+                        {doctorReport.summary.totalAppointments || 0}
+                      </p>
+                    </div>
+                  </Card>
+                  <Card>
+                    <div className='p-4'>
+                      <p className='text-sm text-neutral-600 mb-1'>{t('reports.totalRevenue')}</p>
+                      <p className='text-3xl font-bold text-secondary-600'>
+                        {formatCurrency(doctorReport.summary.totalRevenue || 0)}
+                      </p>
+                    </div>
+                  </Card>
+                  <Card>
+                    <div className='p-4'>
+                      <p className='text-sm text-neutral-600 mb-1'>{t('reports.completionRate')}</p>
+                      <p className='text-3xl font-bold text-primary-700'>
+                        {Math.round(doctorReport.summary.averageCompletionRate || 0)}%
+                      </p>
+                    </div>
+                  </Card>
+                  <Card>
+                    <div className='p-4'>
+                      <p className='text-sm text-neutral-600 mb-1'>
+                        {t('reports.totalDoctors') || 'Total Doctors'}
+                      </p>
+                      <p className='text-3xl font-bold text-neutral-800'>
+                        {doctorReport.summary.totalDoctors || 0}
+                      </p>
+                    </div>
+                  </Card>
+                </div>
+                {doctorReport.doctors && doctorReport.doctors.length > 0 && (
+                  <Card>
+                    <div className='flex items-center justify-between mb-4'>
+                      <h2 className='text-xl font-semibold'>
+                        {t('reports.doctorPerformance') || 'Doctor Performance'}
+                      </h2>
+                      {canExportData(user?.role) && (
+                        <Button variant='secondary' size='md' onClick={() => exportCSV('doctors')}>
+                          {t('reports.exportToCSV')}
+                        </Button>
+                      )}
+                    </div>
+                    <Table
+                      columns={[
+                        { header: t('staff.fullName') || 'Doctor', accessor: 'doctorName' },
+                        { header: t('reports.totalAppointments'), accessor: 'totalAppointments' },
+                        { header: t('reports.completed'), accessor: 'completed' },
+                        { header: t('reports.noShows'), accessor: 'noShows' },
+                        {
+                          header: t('reports.completionRate'),
+                          accessor: (row) => `${row.completionRate}%`,
+                        },
+                        {
+                          header: t('reports.totalRevenue'),
+                          accessor: (row) => formatCurrency(row.totalRevenue),
+                        },
+                      ]}
+                      data={doctorReport.doctors}
+                    />
+                  </Card>
                 )}
               </div>
             )}
@@ -624,9 +759,11 @@ export default function ReportsPage() {
                       <h2 className='text-xl font-semibold'>
                         {t('reports.patientGrowthOverTime')}
                       </h2>
-                      <Button variant='secondary' size='md' onClick={() => exportCSV('patients')}>
-                        {t('reports.exportToCSV')}
-                      </Button>
+                      {canExportData(user?.role) && (
+                        <Button variant='secondary' size='md' onClick={() => exportCSV('patients')}>
+                          {t('reports.exportToCSV')}
+                        </Button>
+                      )}
                     </div>
                     {renderBarChart(
                       patientReport.monthlyTrend.map((item) => ({
@@ -754,13 +891,15 @@ export default function ReportsPage() {
                   <Card>
                     <div className='flex items-center justify-between mb-4'>
                       <h2 className='text-xl font-semibold'>{t('reports.appointmentsOverTime')}</h2>
-                      <Button
-                        variant='secondary'
-                        size='md'
-                        onClick={() => exportCSV('appointments')}
-                      >
-                        {t('reports.exportToCSV')}
-                      </Button>
+                      {canExportData(user?.role) && (
+                        <Button
+                          variant='secondary'
+                          size='md'
+                          onClick={() => exportCSV('appointments')}
+                        >
+                          {t('reports.exportToCSV')}
+                        </Button>
+                      )}
                     </div>
                     {renderBarChart(
                       appointmentReport.timeSeries.map((item) => ({
@@ -850,9 +989,15 @@ export default function ReportsPage() {
                   <Card>
                     <div className='flex items-center justify-between mb-4'>
                       <h3 className='text-lg font-semibold'>Low Stock Items</h3>
-                      <Button variant='secondary' size='md' onClick={() => exportCSV('inventory')}>
-                        {t('reports.exportToCSV')}
-                      </Button>
+                      {canExportData(user?.role) && (
+                        <Button
+                          variant='secondary'
+                          size='md'
+                          onClick={() => exportCSV('inventory')}
+                        >
+                          {t('reports.exportToCSV')}
+                        </Button>
+                      )}
                     </div>
                     <Table
                       columns={[
@@ -986,6 +1131,22 @@ export default function ReportsPage() {
               </Card>
             )}
 
+            {!loading && reportError && activeTab === 'doctors' && !doctorReport && (
+              <Card className='p-6'>
+                <p className='text-status-error text-body-sm mb-3'>{reportError}</p>
+                <Button
+                  variant='secondary'
+                  size='md'
+                  onClick={() => {
+                    setReportError(null);
+                    fetchDoctorReport();
+                  }}
+                >
+                  {t('common.retry')}
+                </Button>
+              </Card>
+            )}
+
             {!loading && !reportError && activeTab === 'revenue' && !revenueReport && (
               <Card>
                 <p className='text-neutral-600 text-center py-8'>{t('reports.noRevenueData')}</p>
@@ -1009,6 +1170,12 @@ export default function ReportsPage() {
             {!loading && !reportError && activeTab === 'inventory' && !inventoryReport && (
               <Card>
                 <p className='text-neutral-600 text-center py-8'>{t('reports.noInventoryData')}</p>
+              </Card>
+            )}
+
+            {!loading && !reportError && activeTab === 'doctors' && !doctorReport && (
+              <Card>
+                <p className='text-neutral-600 text-center py-8'>{t('reports.noDoctorData')}</p>
               </Card>
             )}
           </div>

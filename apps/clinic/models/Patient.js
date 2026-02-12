@@ -101,6 +101,10 @@ const PatientSchema = new Schema(
       type: String,
       // Will be encrypted by plugin
     },
+    chronicConditions: {
+      type: String,
+      // Comma-separated list or free text (e.g. "Diabetes Type 2, Hypertension")
+    },
     currentMedications: {
       type: String,
       // Will be encrypted by plugin

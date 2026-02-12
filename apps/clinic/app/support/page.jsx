@@ -3,10 +3,12 @@
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useState } from 'react';
 
 export default function SupportPage() {
+  const { user } = useAuth();
   const [openFaqs, setOpenFaqs] = useState({});
 
   const toggleFaq = (categoryIndex, faqIndex) => {
@@ -342,64 +344,66 @@ export default function SupportPage() {
                 </div>
               </Link>
 
-              <Link
-                href='/api-docs'
-                className='group relative bg-white border-2 border-neutral-200 rounded-2xl hover:border-primary-300 hover:shadow-xl overflow-hidden'
-                style={{ padding: '32px' }}
-              >
-                <div className='absolute inset-0 bg-gradient-to-br from-primary-50 to-transparent opacity-0 group-hover:opacity-100'></div>
+              {user?.role === 'super_admin' && (
+                <Link
+                  href='/api-docs'
+                  className='group relative bg-white border-2 border-neutral-200 rounded-2xl hover:border-primary-300 hover:shadow-xl overflow-hidden'
+                  style={{ padding: '32px' }}
+                >
+                  <div className='absolute inset-0 bg-gradient-to-br from-primary-50 to-transparent opacity-0 group-hover:opacity-100'></div>
 
-                <div className='relative z-10'>
-                  <div
-                    className='bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 shadow-lg'
-                    style={{ width: '64px', height: '64px', marginBottom: '24px' }}
-                  >
-                    <svg
-                      className='text-white'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                      style={{ width: '32px', height: '32px' }}
+                  <div className='relative z-10'>
+                    <div
+                      className='bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 shadow-lg'
+                      style={{ width: '64px', height: '64px', marginBottom: '24px' }}
                     >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'
-                      />
-                    </svg>
-                  </div>
-                  <h3
-                    className='text-2xl font-bold text-neutral-900 group-hover:text-primary-600'
-                    style={{ marginBottom: '12px' }}
-                  >
-                    Documentation
-                  </h3>
-                  <p className='text-neutral-600 text-body-md leading-relaxed'>
-                    Access user guides and API documentation
-                  </p>
-                  <div
-                    className='flex items-center text-primary-600 font-semibold group-hover:translate-x-2'
-                    style={{ marginTop: '24px' }}
-                  >
-                    <span>View docs</span>
-                    <svg
-                      className='fill-none stroke-currentColor'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                      style={{ width: '20px', height: '20px', marginLeft: '8px' }}
+                      <svg
+                        className='text-white'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        style={{ width: '32px', height: '32px' }}
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'
+                        />
+                      </svg>
+                    </div>
+                    <h3
+                      className='text-2xl font-bold text-neutral-900 group-hover:text-primary-600'
+                      style={{ marginBottom: '12px' }}
                     >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M13 7l5 5m0 0l-5 5m5-5H6'
-                      />
-                    </svg>
+                      Documentation
+                    </h3>
+                    <p className='text-neutral-600 text-body-md leading-relaxed'>
+                      Access user guides and API documentation
+                    </p>
+                    <div
+                      className='flex items-center text-primary-600 font-semibold group-hover:translate-x-2'
+                      style={{ marginTop: '24px' }}
+                    >
+                      <span>View docs</span>
+                      <svg
+                        className='fill-none stroke-currentColor'
+                        fill='none'
+                        stroke='currentColor'
+                        viewBox='0 0 24 24'
+                        style={{ width: '20px', height: '20px', marginLeft: '8px' }}
+                      >
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M13 7l5 5m0 0l-5 5m5-5H6'
+                        />
+                      </svg>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              )}
             </div>
           </div>
         </section>

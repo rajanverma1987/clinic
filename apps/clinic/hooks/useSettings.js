@@ -1,5 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18nOptional } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { formatLocale } from '@/lib/i18n';
 import { useEffect, useState } from 'react';
 
 const DEFAULT_SETTINGS = {
@@ -17,6 +19,7 @@ const DEFAULT_SETTINGS = {
  */
 export function useSettings() {
   const { user, loading: authLoading } = useAuth();
+  const { locale: i18nLocale } = useI18nOptional();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,7 +65,7 @@ export function useSettings() {
     loading,
     error,
     currency: settings?.settings?.currency || 'USD',
-    locale: settings?.settings?.locale || 'en-US',
+    locale: formatLocale(i18nLocale) || settings?.settings?.locale || 'en-US',
     timezone: settings?.settings?.timezone || 'UTC',
   };
 }

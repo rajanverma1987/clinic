@@ -15,6 +15,12 @@ import { canExportData } from '@/lib/permissions/cursor-md-matrix';
 
 async function postHandler(req, user) {
   try {
+    if (user.role === 'super_admin') {
+      return NextResponse.json(
+        errorResponse('Access denied. Platform role has no tenant PHI access.', 'DATA_PRIVACY'),
+        { status: 403 }
+      );
+    }
     if (!canExportData(user.role)) {
       return NextResponse.json(
         errorResponse('You do not have permission to export patient data', 'FORBIDDEN'),

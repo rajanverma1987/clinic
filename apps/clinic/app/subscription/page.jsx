@@ -313,7 +313,7 @@ export default function SubscriptionPage() {
       const alreadyAdded =
         Array.isArray(subscription?.addons) &&
         subscription.addons.some((a) => a.addonKey === addon.key);
-      const canAdd = hasSubscription && !alreadyAdded;
+      const canAdd = canManageSubscription && hasSubscription && !alreadyAdded;
       return (
         <div key={addon.key} className='sub-addon-card'>
           <div className='sub-addon-card-header'>
@@ -420,6 +420,9 @@ export default function SubscriptionPage() {
 
   if (!user) return null;
   if (loading) return <Loader type='page' text={t('common.loading')} />;
+
+  // Only clinic owners (doctor/admin/clinic_admin) can manage subscriptions; accountant is read-only
+  const canManageSubscription = ['doctor', 'admin', 'clinic_admin'].includes(user.role);
 
   // No plans at all: show empty state with i18n
   if (uniquePlans.length === 0) {
@@ -561,24 +564,28 @@ export default function SubscriptionPage() {
                   </div>
                 )}
                 <div className='sub-actions'>
-                  <Button
-                    variant='link'
-                    size='xs'
-                    onClick={handleCancel}
-                    isLoading={cancelling}
-                    className={
-                      subscription.cancelAtPeriodEnd
-                        ? 'text-primary-600 dark:text-primary-400'
-                        : '!text-status-error hover:!text-red-700 dark:hover:!text-red-400'
-                    }
-                  >
-                    {subscription.cancelAtPeriodEnd
-                      ? t('subscription.reactivateSubscription')
-                      : t('subscription.cancelSubscription')}
-                  </Button>
-                  <span className='sub-actions-sep' aria-hidden>
-                    ·
-                  </span>
+                  {canManageSubscription && (
+                    <>
+                      <Button
+                        variant='link'
+                        size='xs'
+                        onClick={handleCancel}
+                        isLoading={cancelling}
+                        className={
+                          subscription.cancelAtPeriodEnd
+                            ? 'text-primary-600 dark:text-primary-400'
+                            : '!text-status-error hover:!text-red-700 dark:hover:!text-red-400'
+                        }
+                      >
+                        {subscription.cancelAtPeriodEnd
+                          ? t('subscription.reactivateSubscription')
+                          : t('subscription.cancelSubscription')}
+                      </Button>
+                      <span className='sub-actions-sep' aria-hidden>
+                        ·
+                      </span>
+                    </>
+                  )}
                   <Link
                     href='/payment-history'
                     className='sub-action-link text-body-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:underline underline-offset-2'
@@ -660,13 +667,15 @@ export default function SubscriptionPage() {
                     isPopular={plan.isPopular}
                     yearlySaveAmount={YEARLY_SAVE[plan.name]}
                     trialDays={plan.trialDays ?? 14}
-                    showPaymentMethods={isPaid}
-                    onSubscribe={isPaid ? () => setPaymentModalPlan(plan) : undefined}
-                    onSelect={!isPaid ? () => handleUpgrade(plan._id) : undefined}
+                    showPaymentMethods={canManageSubscription && isPaid}
+                    onSubscribe={canManageSubscription && isPaid ? () => setPaymentModalPlan(plan) : undefined}
+                    onSelect={canManageSubscription && !isPaid ? () => handleUpgrade(plan._id) : undefined}
                     ctaText={
-                      subscription ? t('subscription.switchToPlan') : t('subscription.getStarted')
+                      canManageSubscription
+                        ? (subscription ? t('subscription.switchToPlan') : t('subscription.getStarted'))
+                        : t('subscription.viewOnly')
                     }
-                    ctaDisabled={upgrading}
+                    ctaDisabled={upgrading || !canManageSubscription}
                   />
                 );
               })}

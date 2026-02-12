@@ -1,7 +1,5 @@
 'use client';
 
-import { Layout } from '@/components/layout/Layout';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { ClinicHoursTab } from '@/components/settings/ClinicHoursTab';
 import { ComplianceTab } from '@/components/settings/ComplianceTab';
 import { DoctorsTab } from '@/components/settings/DoctorsTab';
@@ -9,11 +7,8 @@ import { GeneralSettingsTab } from '@/components/settings/GeneralSettingsTab';
 import { HolidayManagementTab } from '@/components/settings/HolidayManagementTab';
 import { ProfileTab } from '@/components/settings/ProfileTab';
 import { QueueSettingsTab } from '@/components/settings/QueueSettingsTab';
-import { SettingsTabs } from '@/components/settings/SettingsTabs';
 import { SMTPSettingsTab } from '@/components/settings/SMTPSettingsTab';
 import { TaxSettingsTab } from '@/components/settings/TaxSettingsTab';
-import { Card, TabPanels } from '@/components/ui';
-import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -21,8 +16,8 @@ import { apiClient } from '@/lib/api/client';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState, useTransition } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const SETTINGS_TAB_IDS = [
   'profile',
@@ -47,39 +42,24 @@ const ADMIN_ONLY_TABS = [
   'holidays',
 ];
 
-/** Tab id → breadcrumb label (must match SettingsTabs labels for i18n). */
-function getSettingsTabLabel(t, tabId) {
-  const labels = {
-    profile: t('settings.profile'),
-    general: t('settings.clinicInfo'),
-    compliance: t('settings.compliance'),
-    doctors: t('settings.doctorsStaff'),
-    hours: t('settings.clinicHours'),
-    queue: t('settings.queueSettings'),
-    tax: t('settings.taxSettings'),
-    smtp: t('settings.emailSettings') || 'Email Settings',
-    holidays: 'Holidays',
-  };
-  return labels[tabId] || tabId;
-}
-
 function SettingsPageFallback() {
   const { t } = useI18n();
-  return <Layout title={t('settings.title')} loading loadingText={t('common.loading')} />;
+  return (
+    <div className='flex items-center justify-center min-h-[400px]'>
+      <Loader type='section' text={t('common.loading')} />
+    </div>
+  );
 }
 
 function SettingsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { user: currentUser, loading: authLoading, logout } = useAuth();
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(null);
   const [users, setUsers] = useState([]);
-  const [isPending, startTransition] = useTransition();
 
   // Form states
   const [clinicForm, setClinicForm] = useState({
@@ -159,32 +139,16 @@ function SettingsPageContent() {
   // Who can access settings (and thus admin-only tabs like Clinic info): doctor, clinic_admin
   const canAccessSettings = hasPermission(currentUser?.role, RESOURCES.SETTINGS, ACTIONS.READ);
 
-  // Sync tab from URL when URL has a tab param (don't overwrite with profile when param missing – avoids reverting after tab click before URL updates)
-  useEffect(() => {
-    if (authLoading || !currentUser) return;
-    const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && SETTINGS_TAB_IDS.includes(tabFromUrl)) {
-      const canOpenTab = !ADMIN_ONLY_TABS.includes(tabFromUrl) || canAccessSettings;
-      if (canOpenTab) {
-        setActiveTab(tabFromUrl);
-        return;
-      }
-      // User cannot access this tab (e.g. manager with admin-only tab in URL): switch to profile
-      router.replace((pathname || '/settings') + '?tab=profile');
-      setActiveTab('profile');
-      return;
-    }
-    if (tabFromUrl === 'profile') {
-      setActiveTab('profile');
-    } else if (!tabFromUrl || tabFromUrl === '') {
-      setActiveTab('general');
-    }
-  }, [authLoading, currentUser, canAccessSettings, searchParams, pathname, router]);
+  // Derive active tab from pathname (path-based tabs like Finance: /settings/profile, /settings/general)
+  const activeTab = (() => {
+    const segment = (pathname || '').replace(/^\/settings\/?/, '').split('/')[0] || 'general';
+    return SETTINGS_TAB_IDS.includes(segment) ? segment : 'general';
+  })();
 
   useEffect(() => {
     if (!authLoading && currentUser) {
       fetchSettings();
-      if (currentUser.role === 'clinic_admin') {
+      if (currentUser.role === 'clinic_admin' || currentUser.role === 'doctor') {
         fetchUsers();
       }
     }
@@ -201,19 +165,9 @@ function SettingsPageContent() {
   const canAccessAdminTabs = canAccessSettings;
   useEffect(() => {
     if (currentUser && !canAccessAdminTabs && ADMIN_ONLY_TABS.includes(activeTab)) {
-      setActiveTab('profile');
-      router.replace((pathname || '/settings') + '?tab=profile');
+      router.replace('/settings/profile');
     }
-  }, [activeTab, currentUser, canAccessAdminTabs, pathname, router]);
-
-  const handleTabChange = (tabId) => {
-    // Update UI immediately for instant feedback
-    setActiveTab(tabId);
-    // Update URL in a non-blocking transition
-    startTransition(() => {
-      router.replace((pathname || '/settings') + '?tab=' + encodeURIComponent(tabId));
-    });
-  };
+  }, [activeTab, currentUser, canAccessAdminTabs, router]);
 
   // Reset header-controlled form state when leaving tab
   useEffect(() => {
@@ -683,270 +637,140 @@ function SettingsPageContent() {
   // Manager has no Settings access – show loader while redirect runs (redirect in useEffect above)
   if (!authLoading && currentUser && !canAccessSettings) {
     return (
-      <Layout>
-        <PageHeader title={t('settings.title')} subtitle={t('settings.settings')} />
-        <div className='flex items-center justify-center min-h-[400px]'>
-          <Loader type='section' text={t('auth.redirectingToLogin')} />
-        </div>
-      </Layout>
+      <div className='flex items-center justify-center min-h-[400px]'>
+        <Loader type='section' text={t('auth.redirectingToLogin')} />
+      </div>
     );
   }
 
   // Doctor and Clinic Admin can access all settings tabs and add staff
   const isClinicAdmin = currentUser?.role === 'clinic_admin' || currentUser?.role === 'doctor';
 
-  // Per-tab action buttons for header bar (compact, always visible)
-  const tabActionButtons = (() => {
-    if (activeTab === 'general') {
-      return (
-        <Button onClick={handleSaveGeneral} isLoading={saving} disabled={saving} size='sm'>
-          {t('settings.saveChanges') || 'Save Changes'}
-        </Button>
-      );
-    }
-    if (activeTab === 'compliance') {
-      return (
-        <Button onClick={handleSaveCompliance} isLoading={saving} disabled={saving} size='sm'>
-          {t('settings.saveChanges') || 'Save Changes'}
-        </Button>
-      );
-    }
-    if (activeTab === 'doctors' && isClinicAdmin) {
-      return showNewUserForm ? (
-        <Button variant='secondary' onClick={() => setShowNewUserForm(false)} size='sm'>
-          {t('common.cancel') || 'Cancel'}
-        </Button>
-      ) : (
-        <Button onClick={() => setShowNewUserForm(true)} size='sm'>
-          + {t('settings.addUser') || 'Add User'}
-        </Button>
-      );
-    }
-    if (activeTab === 'hours') {
-      return (
-        <Button onClick={handleSaveHours} isLoading={saving} disabled={saving} size='sm'>
-          {t('settings.saveHours') || 'Save Hours'}
-        </Button>
-      );
-    }
-    if (activeTab === 'queue') {
-      return (
-        <Button onClick={handleSaveQueue} isLoading={saving} disabled={saving} size='sm'>
-          {t('settings.saveChanges') || 'Save Changes'}
-        </Button>
-      );
-    }
-    if (activeTab === 'tax') {
-      return (
-        <Button onClick={handleSaveTax} isLoading={saving} disabled={saving} size='sm'>
-          {t('settings.saveChanges') || 'Save Changes'}
-        </Button>
-      );
-    }
-    if (activeTab === 'smtp') {
-      return (
-        <Button onClick={handleSaveSmtp} isLoading={saving} disabled={saving} size='sm'>
-          {t('settings.saveChanges') || 'Save Changes'}
-        </Button>
-      );
-    }
-    if (activeTab === 'holidays') {
-      return showHolidayAddForm ? (
-        <Button variant='secondary' onClick={() => setShowHolidayAddForm(false)} size='sm'>
-          {t('common.cancel') || 'Cancel'}
-        </Button>
-      ) : (
-        <Button onClick={() => setShowHolidayAddForm(true)} size='sm'>
-          + {t('settings.addHoliday') || 'Add Holiday'}
-        </Button>
-      );
-    }
-    return null;
-  })();
-
   return (
-    <Layout>
-      <PageHeader
-        title={t('settings.title') || 'Settings'}
-        subtitle={t('settings.description') || 'Manage your clinic settings and preferences'}
-        breadcrumbs={[
-          { label: t('settings.title') || 'Settings', href: '/settings' },
-          { label: getSettingsTabLabel(t, activeTab) },
-        ]}
-        notifications={[]}
-        unreadCount={0}
-        actionButton={tabActionButtons}
-      />
+    <>
       {loading ? (
         <div className='flex items-center justify-center min-h-[400px]'>
           <Loader type='section' text={t('common.loading')} />
         </div>
       ) : (
         <div className='data-tabs-container w-full'>
-          {/* Tabs bar below header – full width within container */}
-          <SettingsTabs
-            activeTab={activeTab}
-            setActiveTab={handleTabChange}
-            canAccessAdminTabs={canAccessAdminTabs}
-          />
-
-          {/* Tab content: panels stay mounted, visibility toggled (no remount on switch) */}
-          <div className='tab-content-standard-width-left mt-3 relative'>
-            <TabPanels
-              tabs={(canAccessAdminTabs
-                ? SETTINGS_TAB_IDS
-                : SETTINGS_TAB_IDS.filter((id) => !ADMIN_ONLY_TABS.includes(id))
-              ).map((id) => ({ id }))}
-              activeTab={activeTab}
-              idPrefix='settings-tabs'
-              className='min-h-[200px]'
-            >
-              {(tabId) => {
-                if (tabId === 'profile') {
-                  return (
-                    <div className='w-full'>
-                      <ProfileTab
-                        currentUser={currentUser}
-                        logout={logout}
-                        saving={saving}
-                        onToggleStatus={handleToggleMyStatus}
-                        availabilityForm={availabilityForm}
-                        setAvailabilityForm={setAvailabilityForm}
-                        onEditProfileClick={() => handleTabChange('profile')}
-                      />
-                      {(currentUser?.role === 'doctor' || currentUser?.role === 'clinic_admin') && (
-                        <Card className='mt-4'>
-                          <div className='p-4'>
-                            <div className='flex items-center justify-between mb-3'>
-                              <div>
-                                <h3 className='text-lg font-semibold text-neutral-900'>
-                                  {t('settings.managerAccounts')}
-                                </h3>
-                                <p className='text-sm text-neutral-600 mt-1'>
-                                  {t('settings.managerAccountsDesc')}
-                                </p>
-                              </div>
-                              <Button variant='primary' href='/settings/create-manager'>
-                                {t('settings.createManagerButton')}
-                              </Button>
-                            </div>
-                            <div className='p-4 bg-blue-50 border border-blue-200 rounded-lg'>
-                              <p className='text-sm text-blue-800'>
-                                {t('settings.managerAccountsNotice')}
-                              </p>
-                            </div>
-                          </div>
-                        </Card>
-                      )}
-                    </div>
-                  );
-                }
-                if (tabId === 'general') {
-                  return (
-                    <GeneralSettingsTab
-                      isClinicAdmin={isClinicAdmin}
-                      clinicForm={clinicForm}
-                      setClinicForm={setClinicForm}
-                      saving={saving}
-                      onSave={handleSaveGeneral}
-                    />
-                  );
-                }
-                if (tabId === 'compliance') {
-                  return (
-                    <ComplianceTab
-                      isClinicAdmin={isClinicAdmin}
-                      complianceForm={complianceForm}
-                      setComplianceForm={setComplianceForm}
-                      saving={saving}
-                      onSave={handleSaveCompliance}
-                    />
-                  );
-                }
-                if (tabId === 'doctors') {
-                  return (
-                    <DoctorsTab
-                      isClinicAdmin={isClinicAdmin}
-                      users={users}
-                      newUserForm={newUserForm}
-                      setNewUserForm={setNewUserForm}
-                      showNewUserForm={showNewUserForm}
-                      setShowNewUserForm={setShowNewUserForm}
-                      generatedPassword={generatedPassword}
-                      setGeneratedPassword={setGeneratedPassword}
-                      onGeneratePassword={generatePassword}
-                      onCreateUser={handleCreateUser}
-                      onToggleUserStatus={handleToggleUserStatus}
-                    />
-                  );
-                }
-                if (tabId === 'hours') {
-                  return (
-                    <ClinicHoursTab
-                      clinicHours={clinicHours}
-                      updateClinicHour={updateClinicHour}
-                      addTimeSlot={addTimeSlot}
-                      removeTimeSlot={removeTimeSlot}
-                      updateTimeSlot={updateTimeSlot}
-                      saving={saving}
-                      onSave={handleSaveHours}
-                    />
-                  );
-                }
-                if (tabId === 'queue') {
-                  return (
-                    <QueueSettingsTab
-                      queueForm={queueForm}
-                      setQueueForm={setQueueForm}
-                      saving={saving}
-                      onSave={handleSaveQueue}
-                    />
-                  );
-                }
-                if (tabId === 'tax') {
-                  return (
-                    <TaxSettingsTab
-                      taxForm={taxForm}
-                      setTaxForm={setTaxForm}
-                      saving={saving}
-                      onSave={handleSaveTax}
-                    />
-                  );
-                }
-                if (tabId === 'smtp') {
-                  return (
-                    <SMTPSettingsTab
-                      smtpForm={smtpForm}
-                      setSmtpForm={setSmtpForm}
-                      saving={saving}
-                      onSave={handleSaveSmtp}
-                    />
-                  );
-                }
-                if (tabId === 'holidays') {
-                  return (
-                    <HolidayManagementTab
-                      settings={settings}
-                      onUpdate={fetchSettings}
-                      showAddForm={showHolidayAddForm}
-                      setShowAddForm={setShowHolidayAddForm}
-                    />
-                  );
-                }
-                return null;
-              }}
-            </TabPanels>
+          <div className='tab-content-standard-width-left min-h-[200px]'>
+            {activeTab === 'profile' && (
+              <div className='w-full'>
+                <ProfileTab
+                  currentUser={currentUser}
+                  logout={logout}
+                  saving={saving}
+                  onToggleStatus={handleToggleMyStatus}
+                  availabilityForm={availabilityForm}
+                  setAvailabilityForm={setAvailabilityForm}
+                  onEditProfileClick={() => {}}
+                />
+              </div>
+            )}
+            {activeTab === 'general' && (
+              <GeneralSettingsTab
+                isClinicAdmin={isClinicAdmin}
+                clinicForm={clinicForm}
+                setClinicForm={setClinicForm}
+                saving={saving}
+                onSave={handleSaveGeneral}
+                onCancel={fetchSettings}
+              />
+            )}
+            {activeTab === 'compliance' && (
+              <ComplianceTab
+                isClinicAdmin={isClinicAdmin}
+                complianceForm={complianceForm}
+                setComplianceForm={setComplianceForm}
+                saving={saving}
+                onSave={handleSaveCompliance}
+                onCancel={fetchSettings}
+              />
+            )}
+            {activeTab === 'doctors' && (
+              <DoctorsTab
+                isClinicAdmin={isClinicAdmin}
+                users={users}
+                currentUserId={currentUser?.id ?? currentUser?.userId}
+                newUserForm={newUserForm}
+                setNewUserForm={setNewUserForm}
+                showNewUserForm={showNewUserForm}
+                setShowNewUserForm={setShowNewUserForm}
+                generatedPassword={generatedPassword}
+                setGeneratedPassword={setGeneratedPassword}
+                onGeneratePassword={generatePassword}
+                onCreateUser={handleCreateUser}
+                onToggleUserStatus={handleToggleUserStatus}
+              />
+            )}
+            {activeTab === 'hours' && (
+              <ClinicHoursTab
+                clinicHours={clinicHours}
+                updateClinicHour={updateClinicHour}
+                addTimeSlot={addTimeSlot}
+                removeTimeSlot={removeTimeSlot}
+                updateTimeSlot={updateTimeSlot}
+                saving={saving}
+                onSave={handleSaveHours}
+                onCancel={fetchSettings}
+              />
+            )}
+            {activeTab === 'queue' && (
+              <QueueSettingsTab
+                queueForm={queueForm}
+                setQueueForm={setQueueForm}
+                saving={saving}
+                onSave={handleSaveQueue}
+                onCancel={fetchSettings}
+              />
+            )}
+            {activeTab === 'tax' && (
+              <TaxSettingsTab
+                taxForm={taxForm}
+                setTaxForm={setTaxForm}
+                saving={saving}
+                onSave={handleSaveTax}
+                onCancel={fetchSettings}
+              />
+            )}
+            {activeTab === 'smtp' && (
+              <SMTPSettingsTab
+                smtpForm={smtpForm}
+                setSmtpForm={setSmtpForm}
+                saving={saving}
+                onSave={handleSaveSmtp}
+                onCancel={fetchSettings}
+              />
+            )}
+            {activeTab === 'holidays' && (
+              <HolidayManagementTab
+                settings={settings}
+                onUpdate={fetchSettings}
+                showAddForm={showHolidayAddForm}
+                setShowAddForm={setShowHolidayAddForm}
+              />
+            )}
           </div>
         </div>
       )}
-    </Layout>
+    </>
   );
 }
 
-export default function SettingsPage() {
+/** Redirect /settings to first tab (general). Layout renders tab bar + children. */
+function SettingsIndexPage() {
+  const router = useRouter();
+  const { t } = useI18n();
+  useEffect(() => {
+    router.replace('/settings/general');
+  }, [router]);
   return (
-    <Suspense fallback={<SettingsPageFallback />}>
-      <SettingsPageContent />
-    </Suspense>
+    <div className='flex items-center justify-center min-h-[200px]'>
+      <Loader type='section' text={t('common.loading')} />
+    </div>
   );
 }
+
+export default SettingsIndexPage;
+export { SettingsPageContent };

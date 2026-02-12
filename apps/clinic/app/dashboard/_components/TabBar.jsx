@@ -2,17 +2,18 @@
 
 /**
  * Dashboard tab navigation. Updates URL only (no full route); tab content is rendered in-page.
- * Drive by searchParams (?tab=overview|appointments|prescriptions).
- * Optimized with instant state-based switching + URL sync for instant tab switching.
+ * Prefetch on hover for instant display when tab is clicked.
  */
 import { Tabs } from '@/components/ui/Tabs';
 import { useI18n } from '@/contexts/I18nContext';
-import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  prefetchAppointmentsTab,
+  prefetchPrescriptionsTab,
+} from '@/lib/dashboard-tab-cache';
+import { useRouter } from 'next/navigation';
 import { useCallback, useTransition } from 'react';
 
-const TAB_IDS = ['overview', 'appointments', 'prescriptions'];
-
-export function TabBar({ className = '', activeTab, onTabChange }) {
+export function TabBar({ className = '', activeTab, onTabChange, userId }) {
   const router = useRouter();
   const { t } = useI18n();
   const [isPending, startTransition] = useTransition();
@@ -46,12 +47,22 @@ export function TabBar({ className = '', activeTab, onTabChange }) {
     { id: 'prescriptions', label: t('prescriptions.title') },
   ];
 
+  const handleTabHover = useCallback(
+    (tabId) => {
+      if (!userId) return;
+      if (tabId === 'appointments') prefetchAppointmentsTab(userId);
+      else if (tabId === 'prescriptions') prefetchPrescriptionsTab(userId);
+    },
+    [userId],
+  );
+
   return (
     <div className={className}>
       <Tabs
         tabs={tabs}
         activeTab={activeTab}
         onChange={switchTab}
+        onTabHover={handleTabHover}
         idPrefix='dashboard-tab'
         ariaLabel={t('dashboard.tabsLabel')}
       />

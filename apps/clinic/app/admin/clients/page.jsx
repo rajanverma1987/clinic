@@ -1,11 +1,23 @@
 'use client';
 
-import { PencilIcon, TrashIcon, UserAddIcon } from '@/components/icons';
+import {
+  BellIcon,
+  EyeIcon,
+  FileDownIcon,
+  PencilIcon,
+  TrashIcon,
+  UserAddIcon,
+  UserIcon,
+  UsersIcon,
+  WarningIcon,
+} from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
+import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
@@ -13,13 +25,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { AVAILABLE_PLAN_NAMES_FOR_ASSIGNMENT } from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function AdminClientsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useI18n();
   const { open: openConfirm } = useConfirmation();
   const { user, loading: authLoading } = useAuth();
@@ -32,6 +46,22 @@ export default function AdminClientsPage() {
   const [currentClient, setCurrentClient] = useState(null);
   const [paymentUrl, setPaymentUrl] = useState('');
   const [showPaymentUrlModal, setShowPaymentUrlModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [regionFilter, setRegionFilter] = useState('');
+  const [planFilter, setPlanFilter] = useState(() => searchParams.get('plan') || '');
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [detailsClient, setDetailsClient] = useState(null);
+  const [usageStats, setUsageStats] = useState(null);
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [suspendClient, setSuspendClient] = useState(null);
+  const [suspendReason, setSuspendReason] = useState('');
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [notifyClient, setNotifyClient] = useState(null);
+  const [notifyTitle, setNotifyTitle] = useState('');
+  const [notifyMessage, setNotifyMessage] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showBulkBar, setShowBulkBar] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -43,6 +73,11 @@ export default function AdminClientsPage() {
       fetchPlans();
     }
   }, [authLoading, user, router]);
+
+  useEffect(() => {
+    const plan = searchParams.get('plan');
+    if (plan) setPlanFilter(plan);
+  }, [searchParams]);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -62,7 +97,17 @@ export default function AdminClientsPage() {
       const response = await apiClient.get('/admin/subscription-plans');
       if (response.success && response.data) {
         const plansData = Array.isArray(response.data) ? response.data : [];
-        setPlans(plansData);
+        const available = plansData.filter(
+          (p) =>
+            p &&
+            p.name &&
+            p.status === 'ACTIVE' &&
+            p.isHidden !== true &&
+            AVAILABLE_PLAN_NAMES_FOR_ASSIGNMENT.some(
+              (n) => n.toLowerCase() === (p.name || '').toLowerCase(),
+            ),
+        );
+        setPlans(available);
       }
     } catch (error) {
       logger.error('Failed to fetch plans', error);
@@ -130,6 +175,223 @@ export default function AdminClientsPage() {
     }
   };
 
+  const filteredClients = useMemo(() => {
+    let list = [...(clients || [])];
+    if (searchTerm?.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      list = list.filter(
+        (c) =>
+          (c.name || '').toLowerCase().includes(q) ||
+          (c.slug || '').toLowerCase().includes(q) ||
+          (c.region || '').toLowerCase().includes(q),
+      );
+    }
+    if (statusFilter === 'active') list = list.filter((c) => c.isActive === true && !c.suspended);
+    else if (statusFilter === 'inactive') list = list.filter((c) => c.isActive === false);
+    else if (statusFilter === 'suspended') list = list.filter((c) => c.suspended === true);
+    if (regionFilter) list = list.filter((c) => c.region === regionFilter);
+    if (planFilter)
+      list = list.filter(
+        (c) =>
+          c.subscription?.planId?.name === planFilter || c.subscription?.planId?._id === planFilter,
+      );
+    return list;
+  }, [clients, searchTerm, statusFilter, regionFilter, planFilter]);
+
+  const regions = useMemo(() => {
+    const s = new Set(clients?.map((c) => c.region).filter(Boolean) || []);
+    return Array.from(s).sort();
+  }, [clients]);
+
+  const planNames = useMemo(() => {
+    const s = new Set(clients?.map((c) => c.subscription?.planId?.name).filter(Boolean) || []);
+    return Array.from(s).sort();
+  }, [clients]);
+
+  const handleViewDetails = async (client) => {
+    setDetailsClient(client);
+    setShowDetailsModal(true);
+    setUsageStats(null);
+    try {
+      const res = await apiClient.get(`/admin/clients/${client._id}/usage`);
+      if (res.success && res.data) setUsageStats(res.data);
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handleSuspend = (client) => {
+    setSuspendClient(client);
+    setSuspendReason(client.suspendReason || '');
+    setShowSuspendModal(true);
+  };
+
+  const handleSubmitSuspend = async () => {
+    if (!suspendClient) return;
+    try {
+      const res = await apiClient.put(`/admin/clients/${suspendClient._id}`, {
+        suspended: true,
+        suspendReason: suspendReason.trim() || undefined,
+      });
+      if (res.success) {
+        showSuccess(t('admin.clinicSuspended') || 'Clinic suspended successfully');
+        setShowSuspendModal(false);
+        setSuspendClient(null);
+        setSuspendReason('');
+        fetchClients();
+      } else {
+        showError(res.error?.message || t('admin.suspendFailed'));
+      }
+    } catch (err) {
+      showError(err.message || t('admin.suspendFailed'));
+    }
+  };
+
+  const handleUnsuspend = async (client) => {
+    openConfirm({
+      title: t('admin.unsuspendClinic') || 'Unsuspend clinic',
+      message: t('admin.unsuspendConfirm') || 'Allow this clinic to log in again?',
+      variant: 'default',
+      onConfirm: async () => {
+        try {
+          const res = await apiClient.put(`/admin/clients/${client._id}`, {
+            suspended: false,
+          });
+          if (res.success) {
+            showSuccess(t('admin.clinicUnsuspended') || 'Clinic unsuspended successfully');
+            fetchClients();
+          } else {
+            showError(res.error?.message || 'Failed');
+          }
+        } catch (err) {
+          showError(err.message || 'Failed');
+        }
+      },
+    });
+  };
+
+  const handleNotify = (client) => {
+    setNotifyClient(client);
+    setNotifyTitle('');
+    setNotifyMessage('');
+    setShowNotifyModal(true);
+  };
+
+  const handleSubmitNotify = async () => {
+    if (!notifyClient || !notifyTitle.trim() || !notifyMessage.trim()) return;
+    try {
+      const res = await apiClient.post(`/admin/clients/${notifyClient._id}/notify`, {
+        title: notifyTitle.trim(),
+        message: notifyMessage.trim(),
+      });
+      if (res.success) {
+        showSuccess(t('admin.notificationSent') || 'Notification sent');
+        setShowNotifyModal(false);
+        setNotifyClient(null);
+        setNotifyTitle('');
+        setNotifyMessage('');
+      } else {
+        showError(res.error?.message || 'Failed');
+      }
+    } catch (err) {
+      showError(err.message || 'Failed');
+    }
+  };
+
+  const handleImpersonate = async (client) => {
+    try {
+      const res = await apiClient.post(`/admin/clients/${client._id}/impersonate`);
+      if (res.success && res.data?.redirectUrl) {
+        window.open(res.data.redirectUrl, '_blank', 'noopener');
+      } else {
+        showError(res.error?.message || 'Failed');
+      }
+    } catch (err) {
+      showError(err.message || 'Failed');
+    }
+  };
+
+  const handleBulkAction = async (action) => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    let suspendReasonVal = '';
+    if (action === 'suspend') {
+      suspendReasonVal =
+        window.prompt(t('admin.suspendReasonPrompt') || 'Reason for suspension (optional):') || '';
+    }
+    try {
+      const res = await apiClient.post('/admin/clients/bulk', {
+        action,
+        tenantIds: ids,
+        suspendReason: suspendReasonVal.trim() || undefined,
+      });
+      if (res.success) {
+        showSuccess(res.data?.message || 'Done');
+        setSelectedIds(new Set());
+        setShowBulkBar(false);
+        fetchClients();
+      } else {
+        showError(res.error?.message || 'Failed');
+      }
+    } catch (err) {
+      showError(err.message || 'Failed');
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredClients.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredClients.map((c) => c._id)));
+    }
+  };
+
+  const handleExportCSV = useCallback(() => {
+    const headers = [
+      'Name',
+      'Slug',
+      'Region',
+      'Status',
+      'Plan',
+      'Subscription Status',
+      'Next Billing',
+      'Created',
+    ];
+    const rows = (filteredClients || []).map((c) => [
+      c.name || '',
+      c.slug || '',
+      c.region || '',
+      c.isActive ? 'Active' : 'Inactive',
+      c.subscription?.planId?.name || 'None',
+      c.subscription?.status || '-',
+      c.subscription?.currentPeriodEnd
+        ? new Date(c.subscription.currentPeriodEnd).toLocaleDateString()
+        : '-',
+      c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '-',
+    ]);
+    const csv = [
+      headers.join(','),
+      ...rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')),
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clients-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showSuccess(t('admin.exportSuccessful') || 'Export successful');
+  }, [filteredClients, t]);
+
   const handleToggleClientAccess = async (client) => {
     const action = client.isActive ? 'deactivate' : 'activate';
     openConfirm({
@@ -159,6 +421,24 @@ export default function AdminClientsPage() {
 
   const columns = [
     {
+      header: (
+        <input
+          type='checkbox'
+          checked={filteredClients.length > 0 && selectedIds.size === filteredClients.length}
+          onChange={toggleSelectAll}
+          aria-label={t('common.selectAll') || 'Select all'}
+        />
+      ),
+      accessor: (row) => (
+        <input
+          type='checkbox'
+          checked={selectedIds.has(row._id)}
+          onChange={() => toggleSelect(row._id)}
+          aria-label={`Select ${row.name}`}
+        />
+      ),
+    },
+    {
       header: 'Client Name',
       accessor: (row) => row.name,
     },
@@ -169,9 +449,15 @@ export default function AdminClientsPage() {
     {
       header: 'Status',
       accessor: (row) => (
-        <Tag variant={row.isActive ? 'success' : 'danger'}>
-          {row.isActive ? 'Active' : 'Inactive'}
-        </Tag>
+        <div className='flex flex-wrap gap-1'>
+          {row.suspended ? (
+            <Tag variant='warning'>{t('admin.suspended') || 'Suspended'}</Tag>
+          ) : (
+            <Tag variant={row.isActive ? 'success' : 'danger'}>
+              {row.isActive ? t('admin.active') || 'Active' : t('admin.inactive') || 'Inactive'}
+            </Tag>
+          )}
+        </div>
       ),
     },
     {
@@ -228,11 +514,52 @@ export default function AdminClientsPage() {
           triggerSize='xs'
           items={[
             {
+              key: 'view',
+              label: t('common.view') || 'View',
+              icon: <EyeIcon className='icon icon-sm' />,
+              onClick: () => handleViewDetails(row),
+            },
+            {
+              key: 'usage',
+              label: t('admin.usageStats') || 'Usage stats',
+              icon: <UsersIcon className='icon icon-sm' />,
+              onClick: () => handleViewDetails(row),
+            },
+            {
               key: 'update',
               label: t('common.update') || 'Update',
               icon: <PencilIcon className='icon icon-sm' />,
               onClick: () => handleUpdateSubscription(row),
             },
+            {
+              key: 'impersonate',
+              label: t('admin.loginAsClinic') || 'Login as clinic',
+              icon: <UserIcon className='icon icon-sm' />,
+              onClick: () => handleImpersonate(row),
+            },
+            {
+              key: 'notify',
+              label: t('admin.sendNotification') || 'Send notification',
+              icon: <BellIcon className='icon icon-sm' />,
+              onClick: () => handleNotify(row),
+            },
+            ...(row.suspended
+              ? [
+                  {
+                    key: 'unsuspend',
+                    label: t('admin.unsuspend') || 'Unsuspend',
+                    icon: <UserAddIcon className='icon icon-sm' />,
+                    onClick: () => handleUnsuspend(row),
+                  },
+                ]
+              : [
+                  {
+                    key: 'suspend',
+                    label: t('admin.suspend') || 'Suspend',
+                    icon: <WarningIcon className='icon icon-sm' />,
+                    onClick: () => handleSuspend(row),
+                  },
+                ]),
             {
               key: 'toggle',
               label: row.isActive
@@ -268,9 +595,207 @@ export default function AdminClientsPage() {
   return (
     <Layout title={t('admin.clients')} subtitle={t('admin.clientsManagementSubtitle')}>
       <div className='admin-page-content'>
+        <div className='flex flex-col sm:flex-row gap-4 mb-4'>
+          <div className='flex-1 flex flex-wrap gap-2'>
+            <Input
+              placeholder={t('admin.searchClientsPlaceholder') || 'Search by name, slug, region...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className='max-w-xs'
+            />
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              width='fit'
+              options={[
+                { value: '', label: t('admin.allStatuses') || 'All statuses' },
+                { value: 'active', label: t('admin.active') || 'Active' },
+                { value: 'inactive', label: t('admin.inactive') || 'Inactive' },
+                { value: 'suspended', label: t('admin.suspended') || 'Suspended' },
+              ]}
+            />
+            <Select
+              value={regionFilter}
+              onChange={(e) => setRegionFilter(e.target.value)}
+              width='fit'
+              options={[
+                { value: '', label: t('admin.allRegions') || 'All regions' },
+                ...regions.map((r) => ({ value: r, label: r })),
+              ]}
+            />
+            <Select
+              value={planFilter}
+              onChange={(e) => setPlanFilter(e.target.value)}
+              width='fit'
+              options={[
+                { value: '', label: t('admin.allPlans') || 'All plans' },
+                ...planNames.map((p) => ({ value: p, label: p })),
+              ]}
+            />
+          </div>
+          <Button
+            variant='secondary'
+            size='sm'
+            onClick={handleExportCSV}
+            aria-label={t('admin.exportCSV')}
+          >
+            <FileDownIcon className='icon icon-sm mr-1' />
+            {t('admin.exportCSV') || 'Export CSV'}
+          </Button>
+        </div>
+        {selectedIds.size > 0 && (
+          <div className='mb-4 flex items-center gap-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4'>
+            <span className='text-sm font-medium'>
+              {selectedIds.size} {t('common.selected') || 'selected'}
+            </span>
+            <div className='flex gap-2'>
+              <Button variant='secondary' size='sm' onClick={() => handleBulkAction('activate')}>
+                {t('admin.activate') || 'Activate'}
+              </Button>
+              <Button variant='secondary' size='sm' onClick={() => handleBulkAction('suspend')}>
+                {t('admin.suspend') || 'Suspend'}
+              </Button>
+              <Button variant='danger' size='sm' onClick={() => handleBulkAction('deactivate')}>
+                {t('admin.deactivate') || 'Deactivate'}
+              </Button>
+              <Button variant='ghost' size='sm' onClick={() => setSelectedIds(new Set())}>
+                {t('common.clear') || 'Clear'}
+              </Button>
+            </div>
+          </div>
+        )}
         <Card>
-          <Table data={clients} columns={columns} emptyMessage={t('admin.noClientsFound')} />
+          <Table
+            data={filteredClients}
+            columns={columns}
+            emptyMessage={t('admin.noClientsFound')}
+          />
         </Card>
+
+        {/* Clinic Details Modal */}
+        {showDetailsModal && detailsClient && (
+          <Modal
+            isOpen={showDetailsModal}
+            onClose={() => {
+              setShowDetailsModal(false);
+              setDetailsClient(null);
+            }}
+            title={t('admin.clinicDetails') || 'Clinic Details'}
+          >
+            <div className='space-y-4'>
+              <div>
+                <p className='text-sm font-medium text-neutral-500'>
+                  {t('admin.clientName') || 'Name'}
+                </p>
+                <p className='text-lg font-semibold'>{detailsClient.name}</p>
+              </div>
+              <div>
+                <p className='text-sm font-medium text-neutral-500'>{t('admin.slug') || 'Slug'}</p>
+                <p className='font-mono text-sm'>{detailsClient.slug}</p>
+              </div>
+              <div>
+                <p className='text-sm font-medium text-neutral-500'>
+                  {t('admin.region') || 'Region'}
+                </p>
+                <p>{detailsClient.region}</p>
+              </div>
+              <div>
+                <p className='text-sm font-medium text-neutral-500'>
+                  {t('admin.status') || 'Status'}
+                </p>
+                <div className='flex flex-wrap gap-2'>
+                  {detailsClient.suspended ? (
+                    <Tag variant='warning'>{t('admin.suspended') || 'Suspended'}</Tag>
+                  ) : (
+                    <Tag variant={detailsClient.isActive ? 'success' : 'danger'}>
+                      {detailsClient.isActive ? t('admin.active') : t('admin.inactive')}
+                    </Tag>
+                  )}
+                </div>
+                {detailsClient.suspended && detailsClient.suspendReason && (
+                  <p className='mt-2 text-sm text-neutral-600'>
+                    {t('admin.reason') || 'Reason'}: {detailsClient.suspendReason}
+                  </p>
+                )}
+              </div>
+              {usageStats && (
+                <div>
+                  <p className='text-sm font-medium text-neutral-500'>
+                    {t('admin.usageStats') || 'Usage stats'}
+                  </p>
+                  <div className='grid grid-cols-2 gap-2 text-sm'>
+                    <span>
+                      {t('patients.patients') || 'Patients'}: {usageStats.patientsCount}
+                    </span>
+                    <span>
+                      {t('admin.managers') || 'Managers'}: {usageStats.managersCount}
+                    </span>
+                    <span>
+                      {t('admin.staff') || 'Staff'}: {usageStats.staffCount}
+                    </span>
+                    <span>
+                      {t('admin.appointments') || 'Appointments'}: {usageStats.appointmentsCount}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {detailsClient.subscription && (
+                <>
+                  <div>
+                    <p className='text-sm font-medium text-neutral-500'>
+                      {t('admin.subscriptionPlan') || 'Plan'}
+                    </p>
+                    <p>{detailsClient.subscription.planId?.name || '-'}</p>
+                    <p className='text-sm text-neutral-500'>
+                      {formatCurrency(detailsClient.subscription.planId?.price || 0)}/
+                      {detailsClient.subscription.planId?.billingCycle === 'MONTHLY'
+                        ? 'month'
+                        : 'year'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className='text-sm font-medium text-neutral-500'>
+                      {t('admin.subscriptionStatus') || 'Subscription Status'}
+                    </p>
+                    <Tag
+                      variant={
+                        {
+                          ACTIVE: 'success',
+                          CANCELLED: 'danger',
+                          SUSPENDED: 'warning',
+                          EXPIRED: 'danger',
+                          PENDING: 'warning',
+                        }[detailsClient.subscription.status] || 'default'
+                      }
+                    >
+                      {detailsClient.subscription.status}
+                    </Tag>
+                  </div>
+                  <div>
+                    <p className='text-sm font-medium text-neutral-500'>
+                      {t('admin.nextBilling') || 'Next Billing'}
+                    </p>
+                    <p>
+                      {detailsClient.subscription.currentPeriodEnd
+                        ? new Date(detailsClient.subscription.currentPeriodEnd).toLocaleDateString()
+                        : '-'}
+                    </p>
+                  </div>
+                </>
+              )}
+              <div>
+                <p className='text-sm font-medium text-neutral-500'>
+                  {t('admin.created') || 'Created'}
+                </p>
+                <p>
+                  {detailsClient.createdAt
+                    ? new Date(detailsClient.createdAt).toLocaleString()
+                    : '-'}
+                </p>
+              </div>
+            </div>
+          </Modal>
+        )}
 
         {/* Update Subscription Modal */}
         {showUpdateModal && currentClient && (
@@ -291,12 +816,19 @@ export default function AdminClientsPage() {
                     placeholder={t('admin.selectPlanPlaceholder')}
                     options={[
                       { value: '', label: t('admin.selectPlanPlaceholder') },
-                      ...plans.map((plan) => ({
-                        value: plan._id,
-                        label: `${plan.name} - ${formatCurrency(plan.price)}/${
-                          plan.billingCycle === 'MONTHLY' ? 'month' : 'year'
-                        }`,
-                      })),
+                      ...(() => {
+                        const planList = [...plans];
+                        const currentPlan = currentClient?.subscription?.planId;
+                        if (currentPlan && !planList.some((p) => p._id === currentPlan._id)) {
+                          planList.unshift(currentPlan);
+                        }
+                        return planList.map((plan) => ({
+                          value: plan._id,
+                          label: `${plan.name} - ${formatCurrency(plan.price)}/${
+                            plan.billingCycle === 'MONTHLY' ? 'month' : 'year'
+                          }`,
+                        }));
+                      })(),
                     ]}
                   />
                 </div>
@@ -324,6 +856,114 @@ export default function AdminClientsPage() {
               </div>
             </Card>
           </div>
+        )}
+
+        {/* Suspend clinic modal */}
+        {showSuspendModal && suspendClient && (
+          <Modal
+            isOpen={showSuspendModal}
+            onClose={() => {
+              setShowSuspendModal(false);
+              setSuspendClient(null);
+              setSuspendReason('');
+            }}
+            title={t('admin.suspendClinic') || 'Suspend clinic'}
+          >
+            <div className='space-y-4'>
+              <p className='text-sm text-neutral-600'>
+                {t('admin.suspendClinicConfirm') ||
+                  'Suspending will block all users from logging in.'}{' '}
+                {suspendClient.name}
+              </p>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.reason') || 'Reason'} ({t('common.optional') || 'optional'})
+                </label>
+                <Input
+                  value={suspendReason}
+                  onChange={(e) => setSuspendReason(e.target.value)}
+                  placeholder={t('admin.suspendReasonPlaceholder') || 'e.g. Payment overdue'}
+                />
+              </div>
+              <div className='flex gap-2'>
+                <Button variant='danger' onClick={handleSubmitSuspend}>
+                  {t('admin.suspend') || 'Suspend'}
+                </Button>
+                <Button
+                  variant='secondary'
+                  onClick={() => {
+                    setShowSuspendModal(false);
+                    setSuspendClient(null);
+                    setSuspendReason('');
+                  }}
+                >
+                  {t('common.cancel') || 'Cancel'}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Send notification modal */}
+        {showNotifyModal && notifyClient && (
+          <Modal
+            isOpen={showNotifyModal}
+            onClose={() => {
+              setShowNotifyModal(false);
+              setNotifyClient(null);
+              setNotifyTitle('');
+              setNotifyMessage('');
+            }}
+            title={t('admin.sendNotification') || 'Send notification'}
+          >
+            <div className='space-y-4'>
+              <p className='text-sm text-neutral-600'>
+                {t('admin.sendNotificationTo') || 'Send to all users of'} {notifyClient.name}
+              </p>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.title') || 'Title'}
+                </label>
+                <Input
+                  value={notifyTitle}
+                  onChange={(e) => setNotifyTitle(e.target.value)}
+                  placeholder={t('admin.notificationTitlePlaceholder') || 'Notification title'}
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.message') || 'Message'}
+                </label>
+                <textarea
+                  className='w-full rounded-md border border-neutral-300 px-3 py-2'
+                  rows={4}
+                  value={notifyMessage}
+                  onChange={(e) => setNotifyMessage(e.target.value)}
+                  placeholder={t('admin.notificationMessagePlaceholder') || 'Message content'}
+                />
+              </div>
+              <div className='flex gap-2'>
+                <Button
+                  variant='primary'
+                  onClick={handleSubmitNotify}
+                  disabled={!notifyTitle.trim() || !notifyMessage.trim()}
+                >
+                  {t('admin.send') || 'Send'}
+                </Button>
+                <Button
+                  variant='secondary'
+                  onClick={() => {
+                    setShowNotifyModal(false);
+                    setNotifyClient(null);
+                    setNotifyTitle('');
+                    setNotifyMessage('');
+                  }}
+                >
+                  {t('common.cancel') || 'Cancel'}
+                </Button>
+              </div>
+            </div>
+          </Modal>
         )}
 
         {/* Payment URL Modal - Shows PayPal approval link for client */}

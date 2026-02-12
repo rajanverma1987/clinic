@@ -42,6 +42,7 @@ async function getHandler(req, user) {
       page: searchParams.get('page') || undefined,
       limit: searchParams.get('limit') || undefined,
       patientId: searchParams.get('patientId') || undefined,
+      search: searchParams.get('search')?.trim() || undefined,
       status: searchParams.get('status') || undefined,
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,

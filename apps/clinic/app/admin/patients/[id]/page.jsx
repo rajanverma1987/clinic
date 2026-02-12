@@ -40,13 +40,13 @@ export default function AdminPatientDetailPage() {
 
   useEffect(() => {
     if (!authLoading && user && params.id) {
-      if (user.role !== 'super_admin') {
-        router.push('/dashboard');
+      if (user.role === 'super_admin') {
+        router.replace('/admin');
         return;
       }
-      fetchData();
+      router.replace('/dashboard');
     }
-  }, [authLoading, user, params.id]);
+  }, [authLoading, user, params.id, router]);
 
   const fetchData = async () => {
     setLoading(true);
