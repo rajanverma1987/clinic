@@ -122,7 +122,7 @@ export default function AdminAnalyticsPage() {
               <div className='flex flex-col sm:flex-row gap-4 flex-1'>
                 <div className='flex-1 sm:flex-initial'>
                   <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
-                    From Date
+                    {t('admin.analyticsFromDate')}
                   </label>
                   <Input
                     type='date'
@@ -133,7 +133,7 @@ export default function AdminAnalyticsPage() {
                 </div>
                 <div className='flex-1 sm:flex-initial'>
                   <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
-                    To Date
+                    {t('admin.analyticsToDate')}
                   </label>
                   <Input
                     type='date'
@@ -157,8 +157,8 @@ export default function AdminAnalyticsPage() {
                   onClick={handleExport}
                   disabled={exporting}
                   iconOnly
-                  aria-label='Export CSV'
-                  title='Export CSV'
+                  aria-label={t('admin.exportCSV')}
+                  title={t('admin.exportCSV')}
                 >
                   {exporting ? (
                     <RefreshCwIcon className='icon icon-xs animate-spin' />
@@ -171,13 +171,13 @@ export default function AdminAnalyticsPage() {
                   size='xs'
                   onClick={handleScheduleReport}
                   iconOnly
-                  aria-label='Schedule report email'
-                  title='Schedule report email'
+                  aria-label={t('admin.scheduleReportEmail')}
+                  title={t('admin.scheduleReportEmail')}
                 >
                   <MailIcon className='icon icon-xs' />
                 </Button>
                 <Button variant='primary' size='md' onClick={fetchAnalytics}>
-                  Apply
+                  {t('admin.analyticsApply')}
                 </Button>
               </div>
             </div>
@@ -188,7 +188,9 @@ export default function AdminAnalyticsPage() {
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6'>
           <Card>
             <div className='p-4'>
-              <p className='text-xs font-medium text-neutral-500 uppercase'>Total Appointments</p>
+              <p className='text-xs font-medium text-neutral-500 uppercase'>
+                {t('admin.analyticsTotalAppointments')}
+              </p>
               <p className='text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1'>
                 {stats.total ?? 0}
               </p>
@@ -196,7 +198,9 @@ export default function AdminAnalyticsPage() {
           </Card>
           <Card>
             <div className='p-4'>
-              <p className='text-xs font-medium text-neutral-500 uppercase'>Completed</p>
+              <p className='text-xs font-medium text-neutral-500 uppercase'>
+                {t('admin.analyticsCompleted')}
+              </p>
               <p className='text-2xl font-bold text-green-600 dark:text-green-500 mt-1'>
                 {stats.completed ?? 0}
               </p>
@@ -204,7 +208,9 @@ export default function AdminAnalyticsPage() {
           </Card>
           <Card>
             <div className='p-4'>
-              <p className='text-xs font-medium text-neutral-500 uppercase'>Cancelled</p>
+              <p className='text-xs font-medium text-neutral-500 uppercase'>
+                {t('admin.analyticsCancelled')}
+              </p>
               <p className='text-2xl font-bold text-amber-600 dark:text-amber-500 mt-1'>
                 {stats.cancelled ?? 0}
               </p>
@@ -212,7 +218,9 @@ export default function AdminAnalyticsPage() {
           </Card>
           <Card>
             <div className='p-4'>
-              <p className='text-xs font-medium text-neutral-500 uppercase'>No-show</p>
+              <p className='text-xs font-medium text-neutral-500 uppercase'>
+                {t('admin.analyticsNoShow')}
+              </p>
               <p className='text-2xl font-bold text-red-600 dark:text-red-500 mt-1'>
                 {stats.no_show ?? 0}
               </p>
@@ -253,7 +261,7 @@ export default function AdminAnalyticsPage() {
           <Card>
             <div className='p-4'>
               <p className='text-xs font-medium text-neutral-500 uppercase'>
-                {t('admin.churnRate') || 'Churn Rate'}
+                {t('admin.analyticsChurnRate')}
               </p>
               <p className='text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1'>
                 {data?.churnRate ?? 0}%
@@ -263,7 +271,7 @@ export default function AdminAnalyticsPage() {
           <Card>
             <div className='p-4'>
               <p className='text-xs font-medium text-neutral-500 uppercase'>
-                {t('admin.avgRevenuePerClinic') || 'Avg Revenue per Clinic'}
+                {t('admin.analyticsAvgRevenuePerClinic')}
               </p>
               <p className='text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1'>
                 ${(data?.avgRevenuePerClinic ?? 0).toLocaleString()}
@@ -273,7 +281,7 @@ export default function AdminAnalyticsPage() {
           <Card>
             <div className='p-4'>
               <p className='text-xs font-medium text-neutral-500 uppercase'>
-                {t('admin.paymentSuccessRate') || 'Payment Success'}
+                {t('admin.analyticsPaymentSuccess')}
               </p>
               <p className='text-2xl font-bold text-green-600 dark:text-green-500 mt-1'>
                 {data?.paymentSuccessRate ?? 0}%
@@ -283,7 +291,7 @@ export default function AdminAnalyticsPage() {
           <Card>
             <div className='p-4'>
               <p className='text-xs font-medium text-neutral-500 uppercase'>
-                {t('admin.newVsCancelledSubs') || 'New vs Cancelled Subs'}
+                {t('admin.analyticsNewVsCancelledSubs')}
               </p>
               <p className='text-lg font-bold text-neutral-900 dark:text-neutral-100 mt-1'>
                 +{data?.newSubscriptions ?? 0} / −{data?.cancelledSubscriptions ?? 0}
@@ -297,10 +305,12 @@ export default function AdminAnalyticsPage() {
           <Card>
             <div className='p-6'>
               <h3 className='text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
-                {t('admin.planDistribution') || 'Plan Distribution'}
+                {t('admin.analyticsPlanDistribution')}
               </h3>
               {(data?.planDistribution ?? []).length === 0 ? (
-                <p className='text-neutral-500 dark:text-neutral-400'>No data available</p>
+                <p className='text-neutral-500 dark:text-neutral-400'>
+                  {t('admin.analyticsNoDataAvailable')}
+                </p>
               ) : (
                 <ul className='space-y-2'>
                   {data.planDistribution.map((p) => (
@@ -318,10 +328,12 @@ export default function AdminAnalyticsPage() {
           <Card>
             <div className='p-6'>
               <h3 className='text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
-                {t('admin.topClinicsByRevenue') || 'Top Clinics by Revenue'}
+                {t('admin.analyticsTopClinicsByRevenue')}
               </h3>
               {(data?.topClinicsByRevenue ?? []).length === 0 ? (
-                <p className='text-neutral-500 dark:text-neutral-400'>No data available</p>
+                <p className='text-neutral-500 dark:text-neutral-400'>
+                  {t('admin.analyticsNoDataAvailable')}
+                </p>
               ) : (
                 <ul className='space-y-2'>
                   {data.topClinicsByRevenue.map((c, i) => (
@@ -345,10 +357,12 @@ export default function AdminAnalyticsPage() {
           <Card>
             <div className='p-6'>
               <h3 className='text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
-                Popular Specialties
+                {t('admin.analyticsPopularSpecialties')}
               </h3>
               {specialties.length === 0 ? (
-                <p className='text-neutral-500 dark:text-neutral-400'>No data available</p>
+                <p className='text-neutral-500 dark:text-neutral-400'>
+                  {t('admin.analyticsNoDataAvailable')}
+                </p>
               ) : (
                 <ul className='space-y-2'>
                   {specialties.slice(0, 10).map((s) => (
@@ -367,10 +381,12 @@ export default function AdminAnalyticsPage() {
           <Card>
             <div className='p-6'>
               <h3 className='text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
-                Peak Hours (last 90 days)
+                {t('admin.analyticsPeakHours')}
               </h3>
               {peakHours.length === 0 ? (
-                <p className='text-neutral-500 dark:text-neutral-400'>No data available</p>
+                <p className='text-neutral-500 dark:text-neutral-400'>
+                  {t('admin.analyticsNoDataAvailable')}
+                </p>
               ) : (
                 <div className='flex flex-wrap gap-2'>
                   {peakHours

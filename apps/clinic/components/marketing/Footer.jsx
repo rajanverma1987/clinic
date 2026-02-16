@@ -177,7 +177,7 @@ function FooterComponent() {
                   >
                     <Image
                       src='/images/logoclinic.png'
-                      alt='Clinic Logo'
+                      alt={t('common.altClinicLogo')}
                       width={160}
                       height={45}
                       className='object-contain'

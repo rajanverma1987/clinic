@@ -904,7 +904,7 @@ function VideoConsultationRoomContent() {
               // Initial connection error
               setIsConnecting(false);
               const technicalMsg =
-                state.error?.message || state.reason || 'Connection error occurred';
+                state.error?.message || state.reason || t('telemedicine.connectionError');
               const friendlyMsg = getUserFriendlyMessage(technicalMsg);
               setConnectionError(friendlyMsg);
             }
@@ -1742,12 +1742,15 @@ function VideoConsultationRoomContent() {
                     </p>
                     <p className='text-neutral-600 text-sm'>
                       {waitingForRemoteUser
-                        ? 'The other person disconnected. Waiting for them to reconnect...'
-                        : "You're connected. Waiting for the other participant to join the call."}
+                        ? t('telemedicine.otherPersonDisconnected')
+                        : t('telemedicine.waitingForParticipantToJoin')}
                     </p>
                     {reconnectAttempts > 0 && (
                       <p className='text-status-warning text-xs mt-2'>
-                        Reconnecting... (try {reconnectAttempts} of 10)
+                        {t('telemedicine.reconnectingTry').replace(
+                          '{{attempts}}',
+                          String(reconnectAttempts),
+                        )}
                       </p>
                     )}
                   </div>
@@ -1762,7 +1765,7 @@ function VideoConsultationRoomContent() {
                 >
                   <p className='text-status-warning/90 text-sm flex items-center space-x-2'>
                     <span>⚠️</span>
-                    <span>Poor connection. Please check your internet connection.</span>
+                    <span>{t('telemedicine.poorConnection')}</span>
                   </p>
                 </div>
               )}
@@ -1823,12 +1826,12 @@ function VideoConsultationRoomContent() {
                 </svg>
               </div>
               <h3 className='text-neutral-900 text-lg sm:text-xl font-semibold mb-2'>
-                Ready to Join
+                {t('telemedicine.readyToJoin')}
               </h3>
               <p className='text-neutral-600 text-sm sm:text-base mb-4 sm:mb-6 px-2'>
                 {isPatientLink
-                  ? 'Click below to start the video consultation. You will be asked to allow camera and microphone access.'
-                  : 'Click the button below to start the video consultation. You will be asked to allow camera and microphone access.'}
+                  ? t('telemedicine.clickToStartPatient')
+                  : t('telemedicine.clickToStartDoctor')}
               </p>
               <Button
                 onClick={handleConnect}
@@ -1840,19 +1843,21 @@ function VideoConsultationRoomContent() {
                 isLoading={isConnecting}
               >
                 {sessionExpired
-                  ? 'Session Expired'
+                  ? t('telemedicine.sessionExpired')
                   : isConnecting
-                    ? 'Requesting Permissions...'
+                    ? t('telemedicine.requestingPermissions')
                     : !hasCameraPermission || !hasMicrophonePermission
-                      ? 'Permissions Required'
-                      : 'Join Video Call'}
+                      ? t('telemedicine.permissionsRequired')
+                      : t('telemedicine.joinVideoCall')}
               </Button>
               {(() => {
                 const mediaSupport = checkMediaSupport();
                 if (!mediaSupport.supported) {
                   return (
                     <div className='text-status-warning text-xs mt-3 px-2 max-w-md space-y-1 bg-status-warning/10 border border-status-warning/30 rounded-lg p-3'>
-                      <p className='font-semibold mb-2'>⚠️ Browser Compatibility Check:</p>
+                      <p className='font-semibold mb-2'>
+                        ⚠️ {t('telemedicine.browserCompatibilityCheck')}
+                      </p>
                       <p>• Media Devices: {mediaSupport.hasMediaDevices ? '✅' : '❌'}</p>
                       <p>• getUserMedia: {mediaSupport.hasGetUserMedia ? '✅' : '❌'}</p>
                       <p>
@@ -1869,20 +1874,14 @@ function VideoConsultationRoomContent() {
                 }
                 return (
                   <div className='text-neutral-500 text-xs mt-3 px-2 max-w-md space-y-1'>
-                    <p>
-                      💡 <strong>On Mobile:</strong> A permission popup will appear. Tap
-                      &quot;Allow&quot; for both camera and microphone.
-                    </p>
-                    <p>
-                      💡 <strong>If denied:</strong> Look for the camera/microphone icon in your
-                      browser&apos;s address bar and tap &quot;Allow&quot;
-                    </p>
+                    <p>💡 {t('telemedicine.onMobilePermission')}</p>
+                    <p>💡 {t('telemedicine.ifDeniedPermission')}</p>
                   </div>
                 );
               })()}
               {connectionError && (
                 <div className='mt-4 p-3 bg-status-error/10 border border-status-error/30 text-status-error rounded-lg text-sm max-w-md mx-auto'>
-                  <p className='font-semibold'>Unable to Connect</p>
+                  <p className='font-semibold'>{t('telemedicine.unableToConnect')}</p>
                   <p>
                     {typeof connectionError === 'string'
                       ? connectionError
@@ -1895,7 +1894,7 @@ function VideoConsultationRoomContent() {
               {!hasCameraPermission || !hasMicrophonePermission ? (
                 <div className='mt-4 p-4 bg-status-warning/10 border border-status-warning/30 rounded-lg text-sm max-w-md mx-auto'>
                   <p className='font-semibold text-status-warning/80 mb-2'>
-                    ⚠️ Permissions Required
+                    ⚠️ {t('telemedicine.permissionsRequiredTitle')}
                   </p>
                   <ul className='text-status-warning/90 space-y-1 text-xs'>
                     {!hasCameraPermission && <li>❌ Camera permission denied</li>}
@@ -1938,7 +1937,9 @@ function VideoConsultationRoomContent() {
       {showPaymentModal && userRole === 'doctor' && (
         <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
           <Card className='p-6 max-w-md w-full mx-4'>
-            <h3 className='text-lg font-bold text-neutral-900 mb-4'>Collect Payment</h3>
+            <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+              {t('telemedicine.collectPayment')}
+            </h3>
             <div className='space-y-4'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>Amount</label>

@@ -134,7 +134,7 @@ function ChangePasswordContent() {
         <div className='absolute inset-0 w-full h-full'>
           <ImageTransition
             src='/images/login.png'
-            alt='Change Password Background'
+            alt={t('common.altChangePasswordBackground')}
             fill
             className='object-cover opacity-90'
             quality={75}
@@ -155,7 +155,7 @@ function ChangePasswordContent() {
               <div className='flex items-center justify-center group-hover:opacity-90'>
                 <ImageTransition
                   src='/images/logoclinic.png'
-                  alt='Clinic Logo'
+                  alt={t('common.altClinicLogo')}
                   width={128}
                   height={112}
                   className='object-contain drop-shadow-md w-32 max-w-full'
@@ -177,7 +177,7 @@ function ChangePasswordContent() {
                 <div className='flex items-center justify-center group-hover:opacity-90'>
                   <ImageTransition
                     src='/images/logoclinic.png'
-                    alt='Clinic Logo'
+                    alt={t('common.altClinicLogo')}
                     width={128}
                     height={112}
                     className='object-contain drop-shadow-sm w-32 max-w-full'

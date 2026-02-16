@@ -1,15 +1,15 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
 import { Loader } from '@/components/ui/Loader';
-import { loadJsPDF } from '@/lib/utils/dynamic-imports';
+import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { loadJsPDF } from '@/lib/utils/dynamic-imports';
+import { logger } from '@/lib/utils/logger.js';
 import { useEffect, useState } from 'react';
 import { generatePrescriptionPrintHTML } from './PrescriptionPrintTemplate';
-import { logger } from '@/lib/utils/logger.js';
 
 export function PrescriptionFormPrintPreview({
   isOpen,
@@ -51,7 +51,7 @@ export function PrescriptionFormPrintPreview({
       const age = selectedPatient.dateOfBirth
         ? Math.floor(
             (new Date().getTime() - new Date(selectedPatient.dateOfBirth).getTime()) /
-              (365.25 * 24 * 60 * 60 * 1000)
+              (365.25 * 24 * 60 * 60 * 1000),
           )
         : undefined;
 
@@ -70,7 +70,7 @@ export function PrescriptionFormPrintPreview({
               (h) =>
                 `${h.day}: ${h.timeSlots?.[0]?.startTime || ''} - ${
                   h.timeSlots?.[0]?.endTime || ''
-                }`
+                }`,
             )
             .join(', ')
         : '';
@@ -80,7 +80,7 @@ export function PrescriptionFormPrintPreview({
       if (formData.appointmentId) {
         try {
           const noteResponse = await apiClient.get(
-            `/clinical-notes?appointmentId=${formData.appointmentId}&limit=1`
+            `/clinical-notes?appointmentId=${formData.appointmentId}&limit=1`,
           );
           if (noteResponse.success && noteResponse.data) {
             const noteData = noteResponse.data?.data || noteResponse.data;
@@ -146,10 +146,10 @@ export function PrescriptionFormPrintPreview({
                   item.drugName || ''
                 }`.trim()
               : item.itemType === 'lab'
-              ? item.labTestName || ''
-              : item.itemType === 'procedure'
-              ? item.procedureName || ''
-              : item.itemName || '';
+                ? item.labTestName || ''
+                : item.itemType === 'procedure'
+                  ? item.procedureName || ''
+                  : item.itemName || '';
 
           const dosage =
             item.itemType === 'drug' && item.frequency
@@ -157,10 +157,10 @@ export function PrescriptionFormPrintPreview({
                   item.takeBeforeMeal
                     ? ' (Before Food)'
                     : item.takeAfterMeal
-                    ? ' (After Food)'
-                    : item.takeWithFood
-                    ? ' (With Food)'
-                    : ''
+                      ? ' (After Food)'
+                      : item.takeWithFood
+                        ? ' (With Food)'
+                        : ''
                 }`
               : '';
 
@@ -267,7 +267,7 @@ export function PrescriptionFormPrintPreview({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title='Print Preview' size='print'>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('prescriptions.printPreview')} size='print'>
       <div className='space-y-4'>
         {loading && (
           <div className='flex items-center justify-center py-8'>
@@ -299,7 +299,9 @@ export function PrescriptionFormPrintPreview({
                 Close
               </Button>
               <Button variant='secondary' onClick={handleDownloadPDF} disabled={downloadingPdf}>
-                {downloadingPdf ? t('common.loading') : t('prescriptions.downloadPdf') || 'Download PDF'}
+                {downloadingPdf
+                  ? t('common.loading')
+                  : t('prescriptions.downloadPdf') || 'Download PDF'}
               </Button>
               <Button onClick={handlePrint}>{t('prescriptions.print') || 'Print'}</Button>
             </div>

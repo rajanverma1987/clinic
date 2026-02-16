@@ -127,9 +127,9 @@ export function PageHeader({
                   variant='ghost'
                   size='sm'
                   onClick={() => setShowSearchModal(true)}
-                  title='Search (Ctrl+K)'
+                  title={t('common.ariaLabelSearchCtrlK')}
                   className='header-search-trigger'
-                  aria-label='Search'
+                  aria-label={t('common.ariaLabelSearch')}
                 >
                   <SearchIcon className='icon icon-sm' ariaHidden />
                 </Button>

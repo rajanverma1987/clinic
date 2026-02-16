@@ -54,7 +54,7 @@ export default function AdminSettingsTermsPage() {
     }
   };
 
-  if (authLoading || loading) return <Loader type="page" text={t('common.loading')} />;
+  if (authLoading || loading) return <Loader type='page' text={t('common.loading')} />;
   if (user?.role !== 'super_admin') return null;
 
   return (
@@ -62,23 +62,23 @@ export default function AdminSettingsTermsPage() {
       title={t('admin.termsConditions') || 'Terms & Conditions'}
       subtitle={t('admin.termsConditionsDesc') || 'Edit platform terms and conditions'}
     >
-      <div className="admin-page-content">
-        <Card className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="block text-sm font-medium text-neutral-700">
+      <div className='admin-page-content'>
+        <Card className='p-6'>
+          <form onSubmit={handleSubmit} className='space-y-4'>
+            <label className='block text-sm font-medium text-neutral-700'>
               {t('admin.content') || 'Content'}
             </label>
             <textarea
-              className="w-full min-h-[400px] px-3 py-2 border border-neutral-300 rounded-lg font-mono text-sm"
+              className='w-full min-h-[400px] px-3 py-2 border border-neutral-300 rounded-lg font-mono text-sm'
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Enter terms and conditions (plain text or HTML)..."
+              placeholder={t('admin.termsPlaceholder')}
             />
-            <div className="flex gap-2">
-              <Button type="submit" variant="primary" disabled={saving}>
+            <div className='flex gap-2'>
+              <Button type='submit' variant='primary' disabled={saving}>
                 {saving ? t('common.saving') || 'Saving…' : t('common.save') || 'Save'}
               </Button>
-              <Button type="button" variant="secondary" href="/admin/settings">
+              <Button type='button' variant='secondary' href='/admin/settings'>
                 {t('common.cancel') || 'Cancel'}
               </Button>
             </div>

@@ -7,7 +7,7 @@ const {
 } = require('./lib/cache/http-cache-strategy.js');
 
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: process.env.NODE_ENV === 'production',
   // Explicitly disable Babel to use SWC
   // Babel config is only for Jest tests (located in .jest/babel.config.js)
   experimental: {

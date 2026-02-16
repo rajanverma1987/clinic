@@ -421,7 +421,8 @@ export default function PatientsPage() {
         sortBy: sortBy || 'createdAt',
         sortOrder: sortOrder || 'desc',
       });
-      if (debouncedSearchTerm ?? searchTerm) params.append('search', (debouncedSearchTerm ?? searchTerm) || '');
+      if (debouncedSearchTerm ?? searchTerm)
+        params.append('search', (debouncedSearchTerm ?? searchTerm) || '');
       if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
       if (genderFilter && genderFilter !== 'all') params.append('gender', genderFilter);
       if (ageGroupFilter && ageGroupFilter !== 'all') {
@@ -547,9 +548,7 @@ export default function PatientsPage() {
                 const id = row?._id ?? row?.id;
                 if (id) {
                   router.push(
-                    user.role === 'doctor'
-                      ? `/doctors/patients/${id}`
-                      : `/patients/${id}`,
+                    user.role === 'doctor' ? `/doctors/patients/${id}` : `/patients/${id}`,
                   );
                 }
               },
@@ -718,7 +717,9 @@ export default function PatientsPage() {
         >
           <div className='search-modal-grid'>
             <div className='search-modal-field'>
-              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>{t('patients.filterStatus') || 'Status'}</label>
+              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
+                {t('patients.filterStatus') || 'Status'}
+              </label>
               <select
                 className='filter-select w-full'
                 value={advancedStatus}
@@ -732,7 +733,9 @@ export default function PatientsPage() {
               </select>
             </div>
             <div className='search-modal-field'>
-              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>{t('patients.filterGender') || 'Gender'}</label>
+              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
+                {t('patients.filterGender') || 'Gender'}
+              </label>
               <select
                 className='filter-select w-full'
                 value={advancedGender}
@@ -746,7 +749,9 @@ export default function PatientsPage() {
               </select>
             </div>
             <div className='search-modal-field'>
-              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>{t('patients.filterAgeGroup') || 'Age group'}</label>
+              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
+                {t('patients.filterAgeGroup') || 'Age group'}
+              </label>
               <select
                 className='filter-select w-full'
                 value={advancedAgeGroup}
@@ -760,7 +765,9 @@ export default function PatientsPage() {
               </select>
             </div>
             <div className='search-modal-field'>
-              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>{t('patients.sortBy')}</label>
+              <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
+                {t('patients.sortBy')}
+              </label>
               <select
                 className='filter-select w-full'
                 value={`${advancedSortBy}-${advancedSortOrder}`}
@@ -883,7 +890,7 @@ export default function PatientsPage() {
                       setCurrentPage(1); // Reset to first page when changing page size
                     }}
                     className='px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 rounded-lg text-sm bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors'
-                    aria-label={t('common.show') || 'Show per page'}
+                    aria-label={t('common.showPerPage')}
                   >
                     <option value={25}>25</option>
                     <option value={50}>50</option>

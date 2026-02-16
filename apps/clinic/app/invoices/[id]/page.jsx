@@ -90,7 +90,7 @@ export default function InvoiceDetailPage() {
     return (
       <Layout>
         <div className='flex items-center justify-center h-64'>
-          <div className='text-neutral-500'>Invoice not found</div>
+          <div className='text-neutral-500'>{t('invoices.invoiceNotFound')}</div>
         </div>
       </Layout>
     );
@@ -103,12 +103,12 @@ export default function InvoiceDetailPage() {
     <Layout>
       <PageHeader
         title={`Invoice ${invoice.invoiceNumber}`}
-        subtitle='Invoice Details'
+        subtitle={t('invoices.invoiceDetails')}
         notifications={[]}
         unreadCount={0}
         actionButtons={
           <>
-            <Button onClick={() => setShowPrintPreview(true)}>Print Invoice</Button>
+            <Button onClick={() => setShowPrintPreview(true)}>{t('invoices.printInvoice')}</Button>
           </>
         }
       />
@@ -118,14 +118,18 @@ export default function InvoiceDetailPage() {
             {/* Invoice Information */}
             <Card>
               <div className='p-6'>
-                <h2 className='text-xl font-semibold mb-4'>Invoice Information</h2>
+                <h2 className='text-xl font-semibold mb-4'>{t('invoices.invoiceInformation')}</h2>
                 <div className='grid grid-cols-2 gap-4'>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Invoice Number</label>
+                    <label className='text-sm font-medium text-neutral-500'>
+                      {t('invoices.invoiceNumber')}
+                    </label>
                     <p className='text-lg font-semibold'>{invoice.invoiceNumber}</p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Status</label>
+                    <label className='text-sm font-medium text-neutral-500'>
+                      {t('invoices.status')}
+                    </label>
                     <div className='mt-1'>
                       <Tag variant={getStatusVariant(invoice.status)} size='sm'>
                         {(invoice.status || '').toUpperCase()}
@@ -133,11 +137,15 @@ export default function InvoiceDetailPage() {
                     </div>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Invoice Date</label>
+                    <label className='text-sm font-medium text-neutral-500'>
+                      {t('invoices.invoiceDate')}
+                    </label>
                     <p>{formatDate(invoice.invoiceDate)}</p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Due Date</label>
+                    <label className='text-sm font-medium text-neutral-500'>
+                      {t('invoices.dueDate')}
+                    </label>
                     <p>{formatDate(invoice.dueDate)}</p>
                   </div>
                 </div>
@@ -147,24 +155,32 @@ export default function InvoiceDetailPage() {
             {/* Patient Information */}
             <Card>
               <div className='p-6'>
-                <h2 className='text-xl font-semibold mb-4'>Patient Information</h2>
+                <h2 className='text-xl font-semibold mb-4'>{t('invoices.patientInformation')}</h2>
                 <div className='grid grid-cols-2 gap-4'>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Patient ID</label>
+                    <label className='text-sm font-medium text-neutral-500'>
+                      {t('patients.patientId')}
+                    </label>
                     <p>{patient.patientId || patient._id}</p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Name</label>
+                    <label className='text-sm font-medium text-neutral-500'>
+                      {t('patients.name')}
+                    </label>
                     <p>
                       {patient.firstName} {patient.lastName}
                     </p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Phone</label>
+                    <label className='text-sm font-medium text-neutral-500'>
+                      {t('patients.phone')}
+                    </label>
                     <p>{patient.phone || 'N/A'}</p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Email</label>
+                    <label className='text-sm font-medium text-neutral-500'>
+                      {t('patients.email')}
+                    </label>
                     <p>{patient.email || 'N/A'}</p>
                   </div>
                 </div>
@@ -174,19 +190,19 @@ export default function InvoiceDetailPage() {
             {/* Invoice Items */}
             <Card>
               <div className='p-6'>
-                <h2 className='text-xl font-semibold mb-4'>Invoice Items</h2>
+                <h2 className='text-xl font-semibold mb-4'>{t('invoices.invoiceItems')}</h2>
                 <div className='clinic-table-wrap'>
                   <table className='clinic-table'>
                     <thead>
                       <tr>
                         <th>#</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th className='text-center'>Qty</th>
-                        <th className='text-right'>Unit Price</th>
-                        <th className='text-right'>Discount</th>
-                        <th className='text-right'>Tax</th>
-                        <th className='text-right'>Total</th>
+                        <th>{t('invoices.type')}</th>
+                        <th>{t('invoices.description')}</th>
+                        <th className='text-center'>{t('invoices.qty')}</th>
+                        <th className='text-right'>{t('invoices.unitPrice')}</th>
+                        <th className='text-right'>{t('invoices.discount')}</th>
+                        <th className='text-right'>{t('invoices.tax')}</th>
+                        <th className='text-right'>{t('invoices.total')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -217,15 +233,15 @@ export default function InvoiceDetailPage() {
           <div className='lg:col-span-1'>
             <Card>
               <div className='p-6'>
-                <h2 className='text-xl font-semibold mb-4'>Summary</h2>
+                <h2 className='text-xl font-semibold mb-4'>{t('invoices.summary')}</h2>
                 <div className='space-y-3'>
                   <div className='flex justify-between'>
-                    <span className='text-neutral-600'>Subtotal:</span>
+                    <span className='text-neutral-600'>{t('invoices.subtotal')}:</span>
                     <span className='font-medium'>{formatCurrency(invoice.subtotal || 0)}</span>
                   </div>
                   {(invoice.totalDiscount || 0) > 0 && (
                     <div className='flex justify-between'>
-                      <span className='text-neutral-600'>Discount:</span>
+                      <span className='text-neutral-600'>{t('invoices.discount')}:</span>
                       <span className='font-medium'>
                         -{formatCurrency(invoice.totalDiscount || 0)}
                       </span>
@@ -233,17 +249,17 @@ export default function InvoiceDetailPage() {
                   )}
                   {(invoice.totalTax || 0) > 0 && (
                     <div className='flex justify-between'>
-                      <span className='text-neutral-600'>Tax:</span>
+                      <span className='text-neutral-600'>{t('invoices.tax')}:</span>
                       <span className='font-medium'>{formatCurrency(invoice.totalTax || 0)}</span>
                     </div>
                   )}
                   <div className='flex justify-between text-lg font-bold border-t pt-3'>
-                    <span>Total Amount:</span>
+                    <span>{t('invoices.totalAmount')}:</span>
                     <span>{formatCurrency(invoice.totalAmount || 0)}</span>
                   </div>
                   {(invoice.paidAmount || 0) > 0 && (
                     <div className='flex justify-between'>
-                      <span className='text-neutral-600'>Paid Amount:</span>
+                      <span className='text-neutral-600'>{t('invoices.paidAmount')}:</span>
                       <span className='font-medium text-secondary-600'>
                         {formatCurrency(invoice.paidAmount || 0)}
                       </span>
@@ -251,7 +267,7 @@ export default function InvoiceDetailPage() {
                   )}
                   {(invoice.balanceAmount || 0) > 0 && invoice.status !== 'paid' && (
                     <div className='flex justify-between text-lg font-bold border-t pt-3'>
-                      <span>Balance Due:</span>
+                      <span>{t('invoices.balanceDue')}:</span>
                       <span className='text-status-error'>
                         {formatCurrency(invoice.balanceAmount || 0)}
                       </span>
@@ -259,15 +275,17 @@ export default function InvoiceDetailPage() {
                   )}
                   {invoice.status === 'paid' && (
                     <div className='flex justify-between text-lg font-bold border-t pt-3'>
-                      <span>Status:</span>
-                      <span className='text-secondary-600'>Fully Paid</span>
+                      <span>{t('invoices.status')}:</span>
+                      <span className='text-secondary-600'>{t('invoices.fullyPaid')}</span>
                     </div>
                   )}
                 </div>
 
                 {invoice.notes && (
                   <div className='mt-6 pt-6 border-t'>
-                    <h3 className='text-sm font-medium text-neutral-700 mb-2'>Notes</h3>
+                    <h3 className='text-sm font-medium text-neutral-700 mb-2'>
+                      {t('invoices.notes')}
+                    </h3>
                     <p className='text-sm text-neutral-600'>{invoice.notes}</p>
                   </div>
                 )}

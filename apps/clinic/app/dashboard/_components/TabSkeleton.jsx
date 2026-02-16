@@ -6,13 +6,20 @@
  */
 import { Card } from '@/components/ui/Card';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { useI18n } from '@/contexts/I18nContext';
 
 const TAB_LIST_ROWS = 10;
 const TAB_LIST_COLS = 4;
 
 export function TabSkeleton() {
+  const { t } = useI18n();
   return (
-    <Card className='p-6' aria-busy='true' aria-label='Loading tab content' role='status'>
+    <Card
+      className='p-6'
+      aria-busy='true'
+      aria-label={t('common.ariaLabelLoadingTabContent')}
+      role='status'
+    >
       <div className='flex items-center justify-between gap-4 mb-4'>
         <div className='h-6 w-32 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse' />
         <div className='flex gap-2'>

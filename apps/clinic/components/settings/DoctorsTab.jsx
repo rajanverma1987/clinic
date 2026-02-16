@@ -79,41 +79,41 @@ export function DoctorsTab({
             </h2>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
               <Input
-                label='First Name *'
+                label={t('settings.firstNameRequired')}
                 value={newUserForm.firstName}
                 onChange={(e) => setNewUserForm({ ...newUserForm, firstName: e.target.value })}
                 required
               />
               <Input
-                label='Last Name *'
+                label={t('settings.lastNameRequired')}
                 value={newUserForm.lastName}
                 onChange={(e) => setNewUserForm({ ...newUserForm, lastName: e.target.value })}
                 required
               />
               <Input
-                label='Email *'
+                label={t('settings.emailRequired')}
                 type='email'
                 value={newUserForm.email}
                 onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
                 required
               />
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Role <span className='text-red-500'>*</span>
-                </label>
+                  <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                    {t('settings.role')} <span className='text-red-500'>*</span>
+                  </label>
                 <select
                   value={newUserForm.role}
                   onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-neutral-900 text-sm'
                   required
                 >
-                  <option value='doctor'>Doctor</option>
-                  <option value='clinic_admin'>Admin (full clinic access)</option>
-                  <option value='manager'>Manager (limited clinic access)</option>
-                  <option value='nurse'>Nurse</option>
-                  <option value='receptionist'>Receptionist</option>
-                  <option value='accountant'>Accountant</option>
-                  <option value='pharmacist'>Pharmacist</option>
+                  <option value='doctor'>{t('settings.roleDoctor')}</option>
+                  <option value='clinic_admin'>{t('settings.roleClinicAdmin')}</option>
+                  <option value='manager'>{t('settings.roleManager')}</option>
+                  <option value='nurse'>{t('settings.roleNurse')}</option>
+                  <option value='receptionist'>{t('settings.roleReceptionist')}</option>
+                  <option value='accountant'>{t('settings.roleAccountant')}</option>
+                  <option value='pharmacist'>{t('settings.rolePharmacist')}</option>
                 </select>
                 <p className='text-xs text-neutral-500 mt-1'>
                   {t('settings.adminManagerAccessByPlan')}
@@ -123,7 +123,7 @@ export function DoctorsTab({
                 <div className='flex items-start gap-2'>
                   <div className='flex-1'>
                     <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                      Password <span className='text-red-500'>*</span>
+                      {t('auth.password')} <span className='text-red-500'>*</span>
                     </label>
                     <Input
                       type='password'
@@ -132,7 +132,7 @@ export function DoctorsTab({
                         setNewUserForm({ ...newUserForm, password: e.target.value });
                         setGeneratedPassword('');
                       }}
-                      placeholder='Enter password or generate one'
+                      placeholder={t('settings.passwordPlaceholder')}
                       required
                     />
                   </div>
@@ -150,19 +150,19 @@ export function DoctorsTab({
                 {generatedPassword && (
                   <div className='mt-3 p-3 bg-primary-50 border border-primary-200 rounded-lg'>
                     <p className='text-primary-700 font-semibold mb-1.5 text-xs'>
-                      Generated Password:
+                      {t('settings.generatedPassword')}
                     </p>
                     <p className='font-mono text-primary-900 break-all mb-1.5 text-xs'>
                       {generatedPassword}
                     </p>
-                    <p className='text-primary-600 text-xs'>User can reset this password later</p>
+                    <p className='text-primary-600 text-xs'>{t('settings.userCanResetPassword')}</p>
                   </div>
                 )}
               </div>
             </div>
             <div className='flex gap-2 pt-3 border-t border-neutral-200'>
               <Button type='submit' className='flex-1'>
-                Create User
+                {t('settings.createUser')}
               </Button>
               <Button
                 type='button'
@@ -170,7 +170,7 @@ export function DoctorsTab({
                 onClick={() => setShowNewUserForm(false)}
                 className='flex-1'
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </form>

@@ -921,7 +921,7 @@ export default function ReportsPage() {
                     )}
                     {appointmentReport.breakdown.types && (
                       <Card>
-                        <h3 className='text-lg font-semibold mb-4'>By Type</h3>
+                        <h3 className='text-lg font-semibold mb-4'>{t('reports.byType')}</h3>
                         {renderPieChart(appointmentReport.breakdown.types)}
                       </Card>
                     )}
@@ -977,7 +977,7 @@ export default function ReportsPage() {
                   <div className='content-grid-2 content-grid-gap-6'>
                     {inventoryReport.breakdown.types && (
                       <Card>
-                        <h3 className='text-lg font-semibold mb-4'>By Type</h3>
+                        <h3 className='text-lg font-semibold mb-4'>{t('reports.byType')}</h3>
                         {renderPieChart(inventoryReport.breakdown.types)}
                       </Card>
                     )}
@@ -988,7 +988,7 @@ export default function ReportsPage() {
                 {inventoryReport.lowStockItems && inventoryReport.lowStockItems.length > 0 && (
                   <Card>
                     <div className='flex items-center justify-between mb-4'>
-                      <h3 className='text-lg font-semibold'>Low Stock Items</h3>
+                      <h3 className='text-lg font-semibold'>{t('reports.lowStockItems')}</h3>
                       {canExportData(user?.role) && (
                         <Button
                           variant='secondary'

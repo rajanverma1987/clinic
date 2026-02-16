@@ -82,8 +82,8 @@ export function Tabs({
             onMouseEnter={onTabHover ? () => onTabHover(tab.id) : undefined}
             className={
               isActive
-                ? 'py-1.5 px-1 border-b-2 border-primary-500 text-primary-500 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap transition-all duration-200 ease-out'
-                : 'py-1.5 px-1 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-500 transition-all duration-200 ease-out'
+                ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-500 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap transition-all duration-200 ease-out'
+                : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-500 transition-all duration-200 ease-out'
             }
           >
             {tab.label}

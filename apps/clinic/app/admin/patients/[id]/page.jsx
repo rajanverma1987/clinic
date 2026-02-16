@@ -83,7 +83,7 @@ export default function AdminPatientDetailPage() {
         );
         setPatient((p) => (p ? { ...p, status: nextStatus } : null));
       } else {
-        showError(response.error?.message || 'Failed to update status');
+        showError(response.error?.message || t('admin.failedToUpdateStatus'));
       }
     } catch (err) {
       showError(t('admin.failedToUpdateStatus'));
@@ -105,7 +105,7 @@ export default function AdminPatientDetailPage() {
             showSuccess(t('admin.patientsDeleted'));
             router.push('/admin/patients');
           } else {
-            showError(response.error?.message || 'Failed to delete');
+            showError(response.error?.message || t('admin.failedToDelete'));
           }
         } catch (err) {
           showError(t('admin.failedToDeletePatient'));
@@ -164,7 +164,7 @@ export default function AdminPatientDetailPage() {
 
   return (
     <Layout
-      title='Patient Details'
+      title={t('admin.patientDetailsTitle')}
       subtitle={`${patient.firstName} ${patient.lastName}`}
       actionButton={
         <div className='flex items-center gap-1'>
@@ -222,7 +222,7 @@ export default function AdminPatientDetailPage() {
           activeTab={activeTab}
           onChange={handleTabChange}
           idPrefix='admin-patient-tabs'
-          ariaLabel='Patient details'
+          ariaLabel={t('patients.patientDetails')}
         />
         <div
           className='mt-4'
@@ -234,7 +234,7 @@ export default function AdminPatientDetailPage() {
             <Card className='mb-6'>
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
-                  <h2 className='text-lg font-semibold text-neutral-900'>Overview</h2>
+                  <h2 className='text-lg font-semibold text-neutral-900'>{t('common.overview')}</h2>
                   <Tag
                     className={
                       patient.status === 'active'
@@ -247,7 +247,7 @@ export default function AdminPatientDetailPage() {
                 </div>
                 <div className='content-grid-2'>
                   <div>
-                    <p className='text-sm text-neutral-500'>Patient ID</p>
+                    <p className='text-sm text-neutral-500'>{t('patients.patientId')}</p>
                     <p className='font-medium text-neutral-900'>{patient.patientId || '—'}</p>
                   </div>
                   <div>
@@ -265,7 +265,7 @@ export default function AdminPatientDetailPage() {
                     <p className='font-medium text-neutral-900'>{patient.phone || '—'}</p>
                   </div>
                   <div>
-                    <p className='text-sm text-neutral-500'>Date of birth</p>
+                    <p className='text-sm text-neutral-500'>{t('patients.dateOfBirth')}</p>
                     <p className='font-medium text-neutral-900'>
                       {formatDate(patient.dateOfBirth)}
                     </p>
@@ -276,7 +276,7 @@ export default function AdminPatientDetailPage() {
                   </div>
                   {patient.address && (
                     <div className='md:col-span-2'>
-                      <p className='text-sm text-neutral-500'>Address</p>
+                      <p className='text-sm text-neutral-500'>{t('patients.address')}</p>
                       <p className='font-medium text-neutral-900'>
                         {[
                           patient.address.street,
@@ -291,14 +291,16 @@ export default function AdminPatientDetailPage() {
                     </div>
                   )}
                   <div>
-                    <p className='text-sm text-neutral-500'>Created</p>
+                    <p className='text-sm text-neutral-500'>{t('patients.created')}</p>
                     <p className='font-medium text-neutral-900'>
                       {formatDateTime(patient.createdAt)}
                     </p>
                   </div>
                 </div>
                 <div className='mt-6 pt-4 border-t border-neutral-200'>
-                  <h3 className='text-sm font-semibold text-neutral-700 mb-2'>Payment summary</h3>
+                  <h3 className='text-sm font-semibold text-neutral-700 mb-2'>
+                    {t('patients.paymentSummary')}
+                  </h3>
                   <div className='flex gap-6'>
                     <span>Total: {formatCurrency(paymentSummary.total)}</span>
                     <span>Paid: {formatCurrency(paymentSummary.paid)}</span>
@@ -312,9 +314,11 @@ export default function AdminPatientDetailPage() {
           {activeTab === 'appointments' && (
             <Card className='mb-6'>
               <div className='p-6'>
-                <h2 className='text-lg font-semibold text-neutral-900 mb-4'>Appointment history</h2>
+                <h2 className='text-lg font-semibold text-neutral-900 mb-4'>
+                  {t('patients.appointmentHistory')}
+                </h2>
                 {appointments.length === 0 ? (
-                  <p className='text-neutral-500'>No appointments</p>
+                  <p className='text-neutral-500'>{t('doctors.noAppointments')}</p>
                 ) : (
                   <div className='clinic-table-wrap'>
                     <table className='clinic-table'>
@@ -352,24 +356,26 @@ export default function AdminPatientDetailPage() {
           {activeTab === 'payments' && (
             <Card className='mb-6'>
               <div className='p-6'>
-                <h2 className='text-lg font-semibold text-neutral-900 mb-4'>Payment history</h2>
+                <h2 className='text-lg font-semibold text-neutral-900 mb-4'>
+                  {t('patients.paymentHistory')}
+                </h2>
                 <div className='mb-4 flex gap-6'>
                   <span>Total: {formatCurrency(paymentSummary.total)}</span>
                   <span>Paid: {formatCurrency(paymentSummary.paid)}</span>
                   <span>Outstanding: {formatCurrency(paymentSummary.outstanding)}</span>
                 </div>
                 {invoices.length === 0 ? (
-                  <p className='text-neutral-500'>No invoices</p>
+                  <p className='text-neutral-500'>{t('patients.noInvoices')}</p>
                 ) : (
                   <div className='clinic-table-wrap'>
                     <table className='clinic-table'>
                       <thead>
                         <tr>
-                          <th>Invoice</th>
-                          <th>Total</th>
-                          <th>Paid</th>
-                          <th>Status</th>
-                          <th>Date</th>
+                          <th>{t('invoices.invoice')}</th>
+                          <th>{t('common.total')}</th>
+                          <th>{t('invoices.paid')}</th>
+                          <th>{t('invoices.status')}</th>
+                          <th>{t('patients.date')}</th>
                         </tr>
                       </thead>
                       <tbody>

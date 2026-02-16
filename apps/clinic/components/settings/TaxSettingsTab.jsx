@@ -36,22 +36,22 @@ export function TaxSettingsTab({ taxForm, setTaxForm, saving, onSave, onCancel }
                   />
                 </svg>
               </div>
-              <h2 className='text-lg font-bold text-neutral-900'>Tax Information</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.taxInformation')}</h2>
             </div>
 
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>Country</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>{t('settings.country')}</label>
                 <Input
                   value={taxForm.country}
                   onChange={(e) => setTaxForm({ ...taxForm, country: e.target.value })}
-                  placeholder='e.g., United States'
+                  placeholder={t('settings.countryPlaceholder')}
                 />
               </div>
 
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Tax Type <span className='text-red-500'>*</span>
+                  {t('settings.taxType')} <span className='text-red-500'>*</span>
                 </label>
                 <select
                   value={taxForm.taxType}
@@ -59,15 +59,15 @@ export function TaxSettingsTab({ taxForm, setTaxForm, saving, onSave, onCancel }
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
                   required
                 >
-                  <option value='SALES_TAX'>Sales Tax</option>
-                  <option value='GST'>GST (Goods and Services Tax)</option>
-                  <option value='VAT'>VAT (Value Added Tax)</option>
+                  <option value='SALES_TAX'>{t('admin.taxTypeSalesTax')}</option>
+                  <option value='GST'>{t('admin.taxTypeGst')}</option>
+                  <option value='VAT'>{t('admin.taxTypeVat')}</option>
                 </select>
               </div>
 
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Tax Rate (%) <span className='text-red-500'>*</span>
+                  {t('settings.taxRate')} <span className='text-red-500'>*</span>
                 </label>
                 <Input
                   type='number'
@@ -78,7 +78,7 @@ export function TaxSettingsTab({ taxForm, setTaxForm, saving, onSave, onCancel }
                   onChange={(e) =>
                     setTaxForm({ ...taxForm, rate: parseFloat(e.target.value) || 0 })
                   }
-                  placeholder='e.g., 8.5'
+                  placeholder={t('settings.taxRatePlaceholder')}
                   required
                 />
               </div>
@@ -86,8 +86,7 @@ export function TaxSettingsTab({ taxForm, setTaxForm, saving, onSave, onCancel }
 
             <div className='mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
               <p className='text-xs text-blue-800'>
-                <strong>Note:</strong> Tax rates will be automatically applied to all invoices.
-                Ensure the tax rate matches your local tax regulations.
+                <strong>{t('common.note')}:</strong> {t('settings.taxNote')}
               </p>
             </div>
           </div>

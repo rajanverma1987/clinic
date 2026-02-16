@@ -72,15 +72,16 @@ export default function PatientDetailPage() {
       const patientId = params.id;
 
       // Prefetch all tab data in parallel (total time ≈ slowest request)
-      const [patientRes, aptRes, presRes, invRes, labResRes, imagingRes, claimsRes] = await Promise.all([
-        apiClient.get(`/patients/${patientId}`),
-        apiClient.get(`/appointments?patientId=${patientId}&limit=100`),
-        apiClient.get(`/prescriptions?patientId=${patientId}&limit=100`),
-        apiClient.get(`/invoices?patientId=${patientId}&limit=100`),
-        apiClient.get(`/lab-results?patientId=${patientId}&limit=100`),
-        apiClient.get(`/imaging?patientId=${patientId}&limit=100`),
-        apiClient.get(`/insurance/claims?patientId=${patientId}&limit=100`),
-      ]);
+      const [patientRes, aptRes, presRes, invRes, labResRes, imagingRes, claimsRes] =
+        await Promise.all([
+          apiClient.get(`/patients/${patientId}`),
+          apiClient.get(`/appointments?patientId=${patientId}&limit=100`),
+          apiClient.get(`/prescriptions?patientId=${patientId}&limit=100`),
+          apiClient.get(`/invoices?patientId=${patientId}&limit=100`),
+          apiClient.get(`/lab-results?patientId=${patientId}&limit=100`),
+          apiClient.get(`/imaging?patientId=${patientId}&limit=100`),
+          apiClient.get(`/insurance/claims?patientId=${patientId}&limit=100`),
+        ]);
 
       if (patientRes.success && patientRes.data) {
         setPatient(patientRes.data);
@@ -113,10 +114,14 @@ export default function PatientDetailPage() {
         setLabResults(Array.isArray(labResRes.data) ? labResRes.data : labResRes.data?.data || []);
       }
       if (imagingRes.success && imagingRes.data) {
-        setImagingStudies(Array.isArray(imagingRes.data) ? imagingRes.data : imagingRes.data?.data || []);
+        setImagingStudies(
+          Array.isArray(imagingRes.data) ? imagingRes.data : imagingRes.data?.data || [],
+        );
       }
       if (claimsRes.success && claimsRes.data) {
-        setInsuranceClaims(Array.isArray(claimsRes.data) ? claimsRes.data : claimsRes.data?.data || []);
+        setInsuranceClaims(
+          Array.isArray(claimsRes.data) ? claimsRes.data : claimsRes.data?.data || [],
+        );
       }
 
       // Lab tests derived from prescriptions (use response, not state)
@@ -240,7 +245,17 @@ export default function PatientDetailPage() {
         if (tab.id === 'insurance') label += ` (${insuranceClaims.length})`;
         return { id: tab.id, label };
       });
-  }, [user, appointments.length, prescriptions.length, invoices.length, labTests.length, labResults.length, imagingStudies.length, insuranceClaims.length, t]);
+  }, [
+    user,
+    appointments.length,
+    prescriptions.length,
+    invoices.length,
+    labTests.length,
+    labResults.length,
+    imagingStudies.length,
+    insuranceClaims.length,
+    t,
+  ]);
 
   const tabs = visibleTabs;
   const visibleIds = useMemo(() => tabs.map((tab) => tab.id), [tabs]);
@@ -350,7 +365,9 @@ export default function PatientDetailPage() {
               {activeTab === 'overview' && (
                 <div className='content-grid-2 content-grid-gap-6'>
                   <Card>
-                    <h2 className='text-xl font-semibold mb-4'>Personal Information</h2>
+                    <h2 className='text-xl font-semibold mb-4'>
+                      {t('patients.personalInformation')}
+                    </h2>
                     <div className='space-y-4'>
                       <div className='grid grid-cols-2 gap-4'>
                         <div>
@@ -618,7 +635,7 @@ export default function PatientDetailPage() {
                         {isEditing ? (
                           <Input
                             value={formData.chronicConditions || ''}
-                            placeholder='e.g. Diabetes Type 2, Hypertension'
+                            placeholder={t('patients.conditionsPlaceholder')}
                             onChange={(e) =>
                               setFormData({ ...formData, chronicConditions: e.target.value })
                             }
@@ -835,8 +852,8 @@ export default function PatientDetailPage() {
                                     window.open(`/prescriptions/${pres._id}/print`, '_blank')
                                   }
                                   className='p-2 min-w-[2.25rem]'
-                                  title='Print'
-                                  aria-label='Print'
+                                  title={t('common.ariaLabelPrint')}
+                                  aria-label={t('common.ariaLabelPrint')}
                                 >
                                   <PrinterIcon className='icon icon-sm' ariaHidden />
                                 </Button>
@@ -973,27 +990,37 @@ export default function PatientDetailPage() {
 
               {/* ── Lab Results tab ── */}
               {activeTab === 'lab-results' && (
-                <Card title='Lab Results'>
+                <Card title={t('patients.labResults')}>
                   <div className='clinic-table-wrap'>
                     <table className='clinic-table'>
                       <thead>
                         <tr>
-                          <th>Test Name</th>
-                          <th>Ordered By</th>
-                          <th>Date</th>
-                          <th>Status</th>
-                          <th>Result</th>
-                          <th>Reference Range</th>
+                          <th>{t('patients.testName')}</th>
+                          <th>{t('patients.orderedBy')}</th>
+                          <th>{t('patients.date')}</th>
+                          <th>{t('common.status')}</th>
+                          <th>{t('patients.result')}</th>
+                          <th>{t('patients.referenceRange')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {labResults.map((r) => (
                           <tr key={r._id}>
                             <td className='font-medium'>{r.testName || r.test?.name || '-'}</td>
-                            <td>{r.orderedBy?.firstName ? `Dr. ${r.orderedBy.firstName} ${r.orderedBy.lastName}` : '-'}</td>
-                            <td className='whitespace-nowrap'>{r.resultDate ? new Date(r.resultDate).toLocaleDateString() : new Date(r.createdAt).toLocaleDateString()}</td>
                             <td>
-                              <span className={`px-2 py-0.5 text-xs rounded-full ${r.status === 'verified' ? 'bg-status-success/10 text-status-success' : r.status === 'pending' ? 'bg-status-warning/10 text-status-warning' : 'bg-neutral-100 text-neutral-600'}`}>
+                              {r.orderedBy?.firstName
+                                ? `Dr. ${r.orderedBy.firstName} ${r.orderedBy.lastName}`
+                                : '-'}
+                            </td>
+                            <td className='whitespace-nowrap'>
+                              {r.resultDate
+                                ? new Date(r.resultDate).toLocaleDateString()
+                                : new Date(r.createdAt).toLocaleDateString()}
+                            </td>
+                            <td>
+                              <span
+                                className={`px-2 py-0.5 text-xs rounded-full ${r.status === 'verified' ? 'bg-status-success/10 text-status-success' : r.status === 'pending' ? 'bg-status-warning/10 text-status-warning' : 'bg-neutral-100 text-neutral-600'}`}
+                              >
                                 {r.status || 'pending'}
                               </span>
                             </td>
@@ -1002,7 +1029,9 @@ export default function PatientDetailPage() {
                           </tr>
                         ))}
                         {labResults.length === 0 && (
-                          <tr data-empty><td colSpan={6}>{t('common.noDataFound')}</td></tr>
+                          <tr data-empty>
+                            <td colSpan={6}>{t('common.noDataFound')}</td>
+                          </tr>
                         )}
                       </tbody>
                     </table>
@@ -1012,36 +1041,48 @@ export default function PatientDetailPage() {
 
               {/* ── Imaging tab ── */}
               {activeTab === 'imaging' && (
-                <Card title='Imaging & Radiology'>
+                <Card title={t('patients.imagingRadiology')}>
                   <div className='clinic-table-wrap'>
                     <table className='clinic-table'>
                       <thead>
                         <tr>
-                          <th>Study Type</th>
-                          <th>Body Part</th>
-                          <th>Date</th>
-                          <th>Status</th>
-                          <th>Radiologist</th>
-                          <th>Findings</th>
+                          <th>{t('patients.studyType')}</th>
+                          <th>{t('patients.bodyPart')}</th>
+                          <th>{t('patients.date')}</th>
+                          <th>{t('common.status')}</th>
+                          <th>{t('patients.radiologist')}</th>
+                          <th>{t('patients.findings')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {imagingStudies.map((img) => (
                           <tr key={img._id}>
-                            <td className='font-medium capitalize'>{img.studyType || img.modality || '-'}</td>
+                            <td className='font-medium capitalize'>
+                              {img.studyType || img.modality || '-'}
+                            </td>
                             <td className='capitalize'>{img.bodyPart || img.region || '-'}</td>
-                            <td className='whitespace-nowrap'>{img.studyDate ? new Date(img.studyDate).toLocaleDateString() : new Date(img.createdAt).toLocaleDateString()}</td>
+                            <td className='whitespace-nowrap'>
+                              {img.studyDate
+                                ? new Date(img.studyDate).toLocaleDateString()
+                                : new Date(img.createdAt).toLocaleDateString()}
+                            </td>
                             <td>
-                              <span className={`px-2 py-0.5 text-xs rounded-full ${img.status === 'reported' ? 'bg-status-success/10 text-status-success' : img.status === 'pending' ? 'bg-status-warning/10 text-status-warning' : 'bg-neutral-100 text-neutral-600'}`}>
+                              <span
+                                className={`px-2 py-0.5 text-xs rounded-full ${img.status === 'reported' ? 'bg-status-success/10 text-status-success' : img.status === 'pending' ? 'bg-status-warning/10 text-status-warning' : 'bg-neutral-100 text-neutral-600'}`}
+                              >
                                 {img.status || 'pending'}
                               </span>
                             </td>
                             <td>{img.radiologist?.name || img.radiologistName || '-'}</td>
-                            <td className='max-w-xs truncate text-sm'>{img.findings || img.report?.findings || '-'}</td>
+                            <td className='max-w-xs truncate text-sm'>
+                              {img.findings || img.report?.findings || '-'}
+                            </td>
                           </tr>
                         ))}
                         {imagingStudies.length === 0 && (
-                          <tr data-empty><td colSpan={6}>{t('common.noDataFound')}</td></tr>
+                          <tr data-empty>
+                            <td colSpan={6}>{t('common.noDataFound')}</td>
+                          </tr>
                         )}
                       </tbody>
                     </table>
@@ -1053,52 +1094,70 @@ export default function PatientDetailPage() {
               {activeTab === 'insurance' && (
                 <div className='space-y-6'>
                   {/* Insurance policy details from patient record */}
-                  <Card title='Insurance Policy'>
+                  <Card title={t('patients.insurancePolicy')}>
                     {patient.insurance?.provider ? (
                       <div className='grid grid-cols-2 gap-4'>
                         <div>
-                          <p className='text-xs text-neutral-500 mb-1'>Provider</p>
+                          <p className='text-xs text-neutral-500 mb-1'>{t('patients.provider')}</p>
                           <p className='font-medium'>{patient.insurance.provider}</p>
                         </div>
                         <div>
-                          <p className='text-xs text-neutral-500 mb-1'>Policy Number</p>
+                          <p className='text-xs text-neutral-500 mb-1'>
+                            {t('patients.policyNumber')}
+                          </p>
                           <p className='font-medium'>{patient.insurance.policyNumber || '-'}</p>
                         </div>
                         <div>
-                          <p className='text-xs text-neutral-500 mb-1'>Group Number</p>
+                          <p className='text-xs text-neutral-500 mb-1'>
+                            {t('patients.groupNumber')}
+                          </p>
                           <p className='font-medium'>{patient.insurance.groupNumber || '-'}</p>
                         </div>
                         <div>
-                          <p className='text-xs text-neutral-500 mb-1'>Valid Until</p>
-                          <p className='font-medium'>{patient.insurance.validUntil ? new Date(patient.insurance.validUntil).toLocaleDateString() : '-'}</p>
+                          <p className='text-xs text-neutral-500 mb-1'>
+                            {t('patients.validUntil')}
+                          </p>
+                          <p className='font-medium'>
+                            {patient.insurance.validUntil
+                              ? new Date(patient.insurance.validUntil).toLocaleDateString()
+                              : '-'}
+                          </p>
                         </div>
                       </div>
                     ) : (
-                      <p className='text-neutral-500 text-sm'>No insurance policy on file.</p>
+                      <p className='text-neutral-500 text-sm'>{t('patients.noInsuranceOnFile')}</p>
                     )}
                   </Card>
 
                   {/* Insurance claims */}
-                  <Card title='Claims History'>
+                  <Card title={t('patients.claimsHistory')}>
                     <div className='clinic-table-wrap'>
                       <table className='clinic-table'>
                         <thead>
                           <tr>
-                            <th>Claim #</th>
-                            <th>Date</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Diagnosis</th>
+                            <th>{t('patients.claimNumber')}</th>
+                            <th>{t('patients.date')}</th>
+                            <th>{t('patients.amount')}</th>
+                            <th>{t('common.status')}</th>
+                            <th>{t('patients.diagnosis')}</th>
                           </tr>
                         </thead>
                         <tbody>
                           {insuranceClaims.map((claim) => (
                             <tr key={claim._id}>
-                              <td className='font-medium whitespace-nowrap'>{claim.claimNumber || claim._id?.slice(-8)}</td>
-                              <td className='whitespace-nowrap'>{new Date(claim.createdAt).toLocaleDateString()}</td>
-                              <td className='whitespace-nowrap'>${(claim.totalAmount || 0).toFixed(2)}</td>
+                              <td className='font-medium whitespace-nowrap'>
+                                {claim.claimNumber || claim._id?.slice(-8)}
+                              </td>
+                              <td className='whitespace-nowrap'>
+                                {new Date(claim.createdAt).toLocaleDateString()}
+                              </td>
+                              <td className='whitespace-nowrap'>
+                                ${(claim.totalAmount || 0).toFixed(2)}
+                              </td>
                               <td>
-                                <span className={`px-2 py-0.5 text-xs rounded-full ${claim.status === 'approved' ? 'bg-status-success/10 text-status-success' : claim.status === 'rejected' ? 'bg-status-error/10 text-status-error' : 'bg-status-warning/10 text-status-warning'}`}>
+                                <span
+                                  className={`px-2 py-0.5 text-xs rounded-full ${claim.status === 'approved' ? 'bg-status-success/10 text-status-success' : claim.status === 'rejected' ? 'bg-status-error/10 text-status-error' : 'bg-status-warning/10 text-status-warning'}`}
+                                >
                                   {claim.status || 'pending'}
                                 </span>
                               </td>
@@ -1106,7 +1165,9 @@ export default function PatientDetailPage() {
                             </tr>
                           ))}
                           {insuranceClaims.length === 0 && (
-                            <tr data-empty><td colSpan={5}>{t('common.noDataFound')}</td></tr>
+                            <tr data-empty>
+                              <td colSpan={5}>{t('common.noDataFound')}</td>
+                            </tr>
                           )}
                         </tbody>
                       </table>
@@ -1117,22 +1178,46 @@ export default function PatientDetailPage() {
 
               {/* ── Documents tab ── */}
               {activeTab === 'documents' && (
-                <Card title='Patient Documents'>
+                <Card title={t('patients.patientDocuments')}>
                   {patient.attachments && patient.attachments.length > 0 ? (
                     <div className='space-y-2'>
                       {patient.attachments.map((doc, i) => (
-                        <div key={i} className='flex items-center justify-between p-3 border border-neutral-200 rounded-lg hover:bg-neutral-50'>
+                        <div
+                          key={i}
+                          className='flex items-center justify-between p-3 border border-neutral-200 rounded-lg hover:bg-neutral-50'
+                        >
                           <div className='flex items-center gap-3'>
-                            <svg className='icon icon-sm text-primary-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
+                            <svg
+                              className='icon icon-sm text-primary-600'
+                              fill='none'
+                              stroke='currentColor'
+                              viewBox='0 0 24 24'
+                            >
+                              <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                              />
                             </svg>
                             <div>
-                              <p className='text-sm font-medium text-neutral-900'>{doc.filename || doc.name}</p>
-                              {doc.uploadedAt && <p className='text-xs text-neutral-500'>{new Date(doc.uploadedAt).toLocaleDateString()}</p>}
+                              <p className='text-sm font-medium text-neutral-900'>
+                                {doc.filename || doc.name}
+                              </p>
+                              {doc.uploadedAt && (
+                                <p className='text-xs text-neutral-500'>
+                                  {new Date(doc.uploadedAt).toLocaleDateString()}
+                                </p>
+                              )}
                             </div>
                           </div>
                           {doc.url && (
-                            <a href={doc.url} target='_blank' rel='noopener noreferrer' className='text-primary-600 hover:text-primary-700 text-sm font-medium'>
+                            <a
+                              href={doc.url}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='text-primary-600 hover:text-primary-700 text-sm font-medium'
+                            >
                               View
                             </a>
                           )}

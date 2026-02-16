@@ -55,15 +55,17 @@ export default function AdminAppointmentAnalyticsPage() {
 
   return (
     <Layout
-      title='Appointment Analytics'
-      subtitle='Completion, cancellation, no-show rates and peak hours'
+      title={t('admin.appointmentAnalyticsTitle')}
+      subtitle={t('admin.appointmentAnalyticsSubtitle')}
     >
       <div className='admin-page-content'>
         <Card className='mb-6'>
           <div className='p-6'>
             <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>From date</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.appointmentsFromDate')}
+                </label>
                 <Input
                   type='date'
                   value={startDate}
@@ -71,12 +73,14 @@ export default function AdminAppointmentAnalyticsPage() {
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>To date</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                  {t('admin.appointmentsToDate')}
+                </label>
                 <Input type='date' value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
               <div className='flex items-end'>
                 <Button variant='primary' onClick={fetchAnalytics}>
-                  Apply
+                  {t('admin.appointmentAnalyticsApply')}
                 </Button>
               </div>
             </div>
@@ -86,33 +90,43 @@ export default function AdminAppointmentAnalyticsPage() {
           <>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6'>
               <Card className='p-6'>
-                <p className='text-sm text-neutral-500'>Total appointments</p>
+                <p className='text-sm text-neutral-500'>
+                  {t('admin.appointmentAnalyticsTotalAppointments')}
+                </p>
                 <p className='text-2xl font-bold text-neutral-900'>{data.total}</p>
               </Card>
               <Card className='p-6'>
-                <p className='text-sm text-neutral-500'>Completion rate</p>
+                <p className='text-sm text-neutral-500'>
+                  {t('admin.appointmentAnalyticsCompletionRate')}
+                </p>
                 <p className='text-2xl font-bold text-green-600'>{data.completionRate}%</p>
               </Card>
               <Card className='p-6'>
-                <p className='text-sm text-neutral-500'>Cancellation rate</p>
+                <p className='text-sm text-neutral-500'>
+                  {t('admin.appointmentAnalyticsCancellationRate')}
+                </p>
                 <p className='text-2xl font-bold text-amber-600'>{data.cancellationRate}%</p>
               </Card>
               <Card className='p-6'>
-                <p className='text-sm text-neutral-500'>No-show rate</p>
+                <p className='text-sm text-neutral-500'>
+                  {t('admin.appointmentAnalyticsNoShowRate')}
+                </p>
                 <p className='text-2xl font-bold text-red-600'>{data.noShowRate}%</p>
               </Card>
             </div>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-6'>
               <Card className='p-6'>
                 <h3 className='text-lg font-semibold text-neutral-900 mb-4'>
-                  Average consultation duration
+                  {t('admin.appointmentAnalyticsAvgConsultation')}
                 </h3>
                 <p className='text-2xl font-bold text-neutral-900'>
                   {data.avgConsultationDurationMinutes?.toFixed(1) ?? '—'} min
                 </p>
               </Card>
               <Card className='p-6'>
-                <h3 className='text-lg font-semibold text-neutral-900 mb-4'>Peak hours (top 5)</h3>
+                <h3 className='text-lg font-semibold text-neutral-900 mb-4'>
+                  {t('admin.appointmentAnalyticsPeakHours')}
+                </h3>
                 <ul className='space-y-2'>
                   {(data.peakHours || []).map(({ hour, count }) => (
                     <li key={hour} className='flex justify-between text-sm'>
@@ -123,23 +137,23 @@ export default function AdminAppointmentAnalyticsPage() {
                     </li>
                   ))}
                   {(!data.peakHours || data.peakHours.length === 0) && (
-                    <li className='text-neutral-500'>No data</li>
+                    <li className='text-neutral-500'>{t('admin.appointmentAnalyticsNoData')}</li>
                   )}
                 </ul>
               </Card>
             </div>
             <Card className='p-6'>
               <h3 className='text-lg font-semibold text-neutral-900 mb-4'>
-                Doctor-wise stats (top 20)
+                {t('admin.appointmentAnalyticsDoctorWise')}
               </h3>
               <div className='clinic-table-wrap'>
                 <table className='clinic-table'>
                   <thead>
                     <tr>
-                      <th>Doctor ID</th>
+                      <th>{t('admin.appointmentAnalyticsDoctorId')}</th>
                       <th>Total</th>
-                      <th>Completed</th>
-                      <th>Cancelled</th>
+                      <th>{t('admin.appointmentAnalyticsCompleted')}</th>
+                      <th>{t('admin.appointmentAnalyticsCancelled')}</th>
                       <th>Completion %</th>
                     </tr>
                   </thead>

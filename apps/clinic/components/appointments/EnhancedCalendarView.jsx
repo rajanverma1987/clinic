@@ -426,7 +426,7 @@ export default function EnhancedCalendarView({
           <button
             type='button'
             onClick={goToPrevious}
-            aria-label='Previous'
+            aria-label={t('common.ariaLabelPrevious')}
             className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
           >
             <ChevronLeftIcon className='icon icon-md' />
@@ -434,7 +434,7 @@ export default function EnhancedCalendarView({
           <button
             type='button'
             onClick={goToToday}
-            aria-label='Go to today'
+            aria-label={t('common.ariaLabelGoToToday')}
             className='inline-flex items-center justify-center min-w-[4rem] h-10 px-3 rounded-lg border border-neutral-200 bg-white text-neutral-700 text-body-sm font-medium hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
           >
             Today
@@ -442,7 +442,7 @@ export default function EnhancedCalendarView({
           <button
             type='button'
             onClick={goToNext}
-            aria-label='Next'
+            aria-label={t('common.ariaLabelNext')}
             className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
           >
             <ChevronRightIcon className='icon icon-md' />

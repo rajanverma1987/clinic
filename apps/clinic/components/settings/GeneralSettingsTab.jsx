@@ -81,22 +81,22 @@ export function GeneralSettingsTab({
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Clinic Name <span className='text-red-500'>*</span>
+                  {t('settings.clinicName')} <span className='text-red-500'>*</span>
                 </label>
                 <Input
                   value={clinicForm.name}
                   onChange={(e) => setClinicForm({ ...clinicForm, name: e.target.value })}
-                  placeholder='Enter clinic name'
+                  placeholder={t('settings.clinicNamePlaceholder')}
                   required
                 />
                 <p className='text-xs text-neutral-500 mt-1'>
-                  Appears on invoices and prescriptions
+                  {t('settings.appearsOnInvoices')}
                 </p>
               </div>
 
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Region <span className='text-red-500'>*</span>
+                  {t('settings.region')} <span className='text-red-500'>*</span>
                 </label>
                 <select
                   value={clinicForm.region}
@@ -112,7 +112,7 @@ export function GeneralSettingsTab({
                   <option value='APAC'>Asia Pacific</option>
                   <option value='ME'>Middle East</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>Primary operating region</p>
+                <p className='text-xs text-neutral-500 mt-1'>{t('settings.primaryOperatingRegion')}</p>
               </div>
             </div>
           </div>
@@ -137,13 +137,13 @@ export function GeneralSettingsTab({
                   />
                 </svg>
               </div>
-              <h2 className='text-lg font-bold text-neutral-900'>Regional Settings</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.regionalSettings')}</h2>
             </div>
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Currency <span className='text-red-500'>*</span>
+                  {t('settings.currency')} <span className='text-red-500'>*</span>
                 </label>
                 <select
                   value={clinicForm.currency}
@@ -158,12 +158,12 @@ export function GeneralSettingsTab({
                   <option value='CAD'>CAD - Canadian Dollar</option>
                   <option value='AUD'>AUD - Australian Dollar</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>For billing and invoices</p>
+                <p className='text-xs text-neutral-500 mt-1'>{t('settings.forBillingInvoices')}</p>
               </div>
 
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Locale <span className='text-red-500'>*</span>
+                  {t('settings.locale')} <span className='text-red-500'>*</span>
                 </label>
                 <select
                   value={clinicForm.locale}
@@ -175,12 +175,12 @@ export function GeneralSettingsTab({
                   <option value='es-ES'>Español</option>
                   <option value='ar-SA'>العربية</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>Language and date format</p>
+                <p className='text-xs text-neutral-500 mt-1'>{t('settings.languageAndDateFormat')}</p>
               </div>
 
               <div className='md:col-span-2'>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Timezone <span className='text-red-500'>*</span>
+                  {t('settings.timezone')} <span className='text-red-500'>*</span>
                 </label>
                 <select
                   value={clinicForm.timezone}
@@ -200,7 +200,7 @@ export function GeneralSettingsTab({
                   <option value='Asia/Kolkata'>India - Asia/Kolkata</option>
                   <option value='Australia/Sydney'>Sydney - Australia/Sydney</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>For appointments and scheduling</p>
+                <p className='text-xs text-neutral-500 mt-1'>{t('settings.forAppointmentsScheduling')}</p>
               </div>
             </div>
           </div>
@@ -225,13 +225,13 @@ export function GeneralSettingsTab({
                   />
                 </svg>
               </div>
-              <h2 className='text-lg font-bold text-neutral-900'>Prescription Settings</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.prescriptionSettings')}</h2>
             </div>
 
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                Prescription Validity Days <span className='text-red-500'>*</span>
-              </label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  {t('settings.prescriptionValidityDays')} <span className='text-red-500'>*</span>
+                </label>
               <Input
                 type='number'
                 min='1'
@@ -243,12 +243,12 @@ export function GeneralSettingsTab({
                     prescriptionValidityDays: parseInt(e.target.value) || 30,
                   })
                 }
-                placeholder='30'
+                placeholder={t('settings.prescriptionValidityPlaceholder')}
                 required
                 className='max-w-xs'
               />
               <p className='text-xs text-neutral-500 mt-1'>
-                Number of days a prescription remains valid from issue date
+                {t('settings.prescriptionValidityHelp')}
               </p>
             </div>
           </div>

@@ -144,14 +144,14 @@ export default function AdminUsersPage() {
 
   const handleExportCSV = useCallback(() => {
     const headers = [
-      'Email',
-      'First Name',
-      'Last Name',
-      'Role',
-      'Tenant',
-      'Status',
-      'Last Login',
-      'Created',
+      t('auth.email'),
+      t('auth.firstName'),
+      t('auth.lastName'),
+      t('common.role'),
+      t('admin.tenant'),
+      t('admin.status'),
+      t('admin.lastLogin'),
+      t('admin.created'),
     ];
     const rows = (filteredUsers || []).map((u) => [
       u.email || '',
@@ -159,8 +159,8 @@ export default function AdminUsersPage() {
       u.lastName || '',
       u.role || '',
       u.tenantName || '',
-      u.isActive ? 'Active' : 'Inactive',
-      u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : 'Never',
+      u.isActive ? t('common.active') : t('common.inactive'),
+      u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : t('common.never'),
       u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '',
     ]);
     const csv = [
@@ -229,7 +229,7 @@ export default function AdminUsersPage() {
 
   const tableColumns = [
     {
-      header: 'Email',
+      header: t('auth.email'),
       accessor: (row) => (
         <div>
           <div className='font-medium text-neutral-900'>{row.email}</div>
@@ -240,7 +240,7 @@ export default function AdminUsersPage() {
       ),
     },
     {
-      header: 'Role',
+      header: t('common.role'),
       accessor: (row) => (
         <span className='px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 capitalize'>
           {row.role?.replace('_', ' ')}
@@ -248,7 +248,7 @@ export default function AdminUsersPage() {
       ),
     },
     {
-      header: 'Tenant',
+      header: t('admin.tenant'),
       accessor: (row) => (
         <div>
           <div className='font-medium text-neutral-900'>{row.tenantName || 'N/A'}</div>
@@ -264,20 +264,20 @@ export default function AdminUsersPage() {
             row.isActive ? 'bg-secondary-100 text-secondary-700' : 'bg-neutral-100 text-neutral-700'
           }`}
         >
-          {row.isActive ? 'Active' : 'Inactive'}
+          {row.isActive ? t('common.active') : t('common.inactive')}
         </span>
       ),
     },
     {
-      header: 'Last Login',
+      header: t('admin.lastLogin'),
       accessor: (row) => (
         <div className='text-sm text-neutral-600'>
-          {row.lastLoginAt ? new Date(row.lastLoginAt).toLocaleDateString() : 'Never'}
+          {row.lastLoginAt ? new Date(row.lastLoginAt).toLocaleDateString() : t('common.never')}
         </div>
       ),
     },
     {
-      header: 'Created',
+      header: t('admin.created'),
       accessor: (row) => (
         <div className='text-sm text-neutral-600'>
           {new Date(row.createdAt).toLocaleDateString()}
@@ -285,7 +285,7 @@ export default function AdminUsersPage() {
       ),
     },
     {
-      header: 'Actions',
+      header: t('common.actions'),
       accessor: (row) => (
         <div className='flex items-center gap-1'>
           <Button
@@ -302,17 +302,17 @@ export default function AdminUsersPage() {
             <EyeIcon className='icon icon-xs' />
           </Button>
           <Button
-            variant="ghost"
-            size="xs"
+            variant='ghost'
+            size='xs'
             href={`/admin/activity-logs?userId=${row._id || row.id}`}
             aria-label={t('admin.viewActivityLog') || 'View activity log'}
             title={t('admin.viewActivityLog') || 'View activity log'}
           >
-            <HistoryIcon className="icon icon-xs" />
+            <HistoryIcon className='icon icon-xs' />
           </Button>
           <Button
-            variant="ghost"
-            size="xs"
+            variant='ghost'
+            size='xs'
             onClick={(e) => {
               e.stopPropagation();
               setResetPasswordUser(row);
@@ -404,13 +404,13 @@ export default function AdminUsersPage() {
                 value={advancedRole}
                 onChange={(e) => setAdvancedRole(e.target.value)}
               >
-                <option value=''>All Roles</option>
-                <option value='clinic_admin'>Clinic Admin</option>
-                <option value='doctor'>Doctor</option>
-                <option value='nurse'>Nurse</option>
-                <option value='receptionist'>Receptionist</option>
-                <option value='accountant'>Accountant</option>
-                <option value='pharmacist'>Pharmacist</option>
+                <option value=''>{t('admin.allRoles')}</option>
+                <option value='clinic_admin'>{t('admin.roleClinicAdmin')}</option>
+                <option value='doctor'>{t('common.roleDoctor')}</option>
+                <option value='nurse'>{t('admin.roleNurse')}</option>
+                <option value='receptionist'>{t('admin.roleReceptionist')}</option>
+                <option value='accountant'>{t('admin.roleAccountant')}</option>
+                <option value='pharmacist'>{t('admin.rolePharmacist')}</option>
               </select>
             </div>
             <div className='search-modal-field'>
@@ -420,9 +420,9 @@ export default function AdminUsersPage() {
                 value={advancedActive}
                 onChange={(e) => setAdvancedActive(e.target.value)}
               >
-                <option value=''>All</option>
-                <option value='true'>Active</option>
-                <option value='false'>Inactive</option>
+                <option value=''>{t('common.all')}</option>
+                <option value='true'>{t('common.active')}</option>
+                <option value='false'>{t('common.inactive')}</option>
               </select>
             </div>
             <div className='search-modal-field full-width'>
@@ -432,7 +432,7 @@ export default function AdminUsersPage() {
                 value={advancedTenant}
                 onChange={(e) => setAdvancedTenant(e.target.value)}
               >
-                <option value=''>All Tenants</option>
+                <option value=''>{t('admin.allTenants')}</option>
                 {tenants.map((tenant) => (
                   <option key={tenant._id} value={tenant._id}>
                     {tenant.name}
@@ -541,16 +541,16 @@ export default function AdminUsersPage() {
                   : 'Never'}
               </div>
               <div>
-                <span className="font-medium text-neutral-500">{t('admin.created')}: </span>
+                <span className='font-medium text-neutral-500'>{t('admin.created')}: </span>
                 {detailsUser.createdAt ? new Date(detailsUser.createdAt).toLocaleString() : '-'}
               </div>
-              <div className="pt-3 border-t">
+              <div className='pt-3 border-t'>
                 <Button
-                  variant="secondary"
-                  size="sm"
+                  variant='secondary'
+                  size='sm'
                   href={`/admin/activity-logs?userId=${detailsUser._id || detailsUser.id}`}
                 >
-                  <HistoryIcon className="icon icon-sm mr-1" />
+                  <HistoryIcon className='icon icon-sm mr-1' />
                   {t('admin.viewActivityLog') || 'View activity log'}
                 </Button>
               </div>

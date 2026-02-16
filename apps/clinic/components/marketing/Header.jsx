@@ -88,7 +88,7 @@ export function Header() {
               >
                 <Image
                   src='/images/logoclinic.png'
-                  alt='Clinic Logo'
+                  alt={t('common.altClinicLogo')}
                   width={180}
                   height={50}
                   className='object-contain'
@@ -263,7 +263,7 @@ export function Header() {
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className='lg:hidden rounded-xl text-neutral-700 hover:bg-neutral-100'
-              aria-label='Toggle menu'
+              aria-label={t('common.ariaLabelToggleMenu')}
               style={{ padding: '8px' }}
             >
               {mobileMenuOpen ? (

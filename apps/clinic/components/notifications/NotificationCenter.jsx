@@ -246,7 +246,7 @@ export function NotificationCenter({
       className='NotificationCenter-overlay'
       onClick={onClose}
       role='presentation'
-      aria-label='Notifications'
+      aria-label={t('common.ariaLabelNotifications')}
     >
       <div className='NotificationCenter-backdrop' aria-hidden />
       <div className='NotificationCenter-panel' onClick={(e) => e.stopPropagation()}>
@@ -375,8 +375,10 @@ export function NotificationCenter({
               </div>
             ) : (
               <div className='p-8 text-center text-neutral-500 dark:text-neutral-400'>
-                <p>No notifications</p>
-                {filter !== 'all' && <p className='text-xs mt-2'>Try changing the filter</p>}
+                <p>{t('notifications.noNotifications')}</p>
+                {filter !== 'all' && (
+                  <p className='text-xs mt-2'>{t('notifications.tryChangingFilter')}</p>
+                )}
               </div>
             )}
           </div>

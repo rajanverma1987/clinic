@@ -90,7 +90,7 @@ export default function AdminSettingsEmailSmsPage() {
     }
   };
 
-  if (authLoading || loading) return <Loader type="page" text={t('common.loading')} />;
+  if (authLoading || loading) return <Loader type='page' text={t('common.loading')} />;
   if (user?.role !== 'super_admin') return null;
 
   return (
@@ -98,13 +98,13 @@ export default function AdminSettingsEmailSmsPage() {
       title={t('admin.settingsEmailSms') || 'Email/SMS Configuration'}
       subtitle={t('admin.settingsEmailSmsDesc') || 'SMTP, SMS gateway (Twilio), sender ID'}
     >
-      <div className="admin-page-content space-y-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">SMTP</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className='admin-page-content space-y-6'>
+        <Card className='p-6'>
+          <h3 className='text-lg font-semibold mb-4'>{t('settings.smtpSection')}</h3>
+          <form onSubmit={handleSubmit} className='space-y-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <Input
-                label="SMTP Host"
+                label={t('settings.smtpHost')}
                 value={form.smtp.host}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -112,11 +112,11 @@ export default function AdminSettingsEmailSmsPage() {
                     smtp: { ...f.smtp, host: e.target.value },
                   }))
                 }
-                placeholder="smtp.example.com"
+                placeholder={t('settings.smtpHostPlaceholder')}
               />
               <Input
-                label="Port"
-                type="number"
+                label={t('settings.smtpPort')}
+                type='number'
                 value={form.smtp.port}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -126,7 +126,7 @@ export default function AdminSettingsEmailSmsPage() {
                 }
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className='flex items-center gap-2'>
               <Checkbox
                 checked={form.smtp.secure}
                 onChange={(e) =>
@@ -136,11 +136,11 @@ export default function AdminSettingsEmailSmsPage() {
                   }))
                 }
               />
-              <span className="text-sm">Use TLS/SSL</span>
+              <span className='text-sm'>{t('settings.smtpUseTls')}</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <Input
-                label="Username"
+                label={t('settings.smtpUser')}
                 value={form.smtp.user}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -150,8 +150,8 @@ export default function AdminSettingsEmailSmsPage() {
                 }
               />
               <Input
-                label="Password"
-                type="password"
+                label={t('settings.smtpPassword')}
+                type='password'
                 value={form.smtp.password}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -159,13 +159,13 @@ export default function AdminSettingsEmailSmsPage() {
                     smtp: { ...f.smtp, password: e.target.value },
                   }))
                 }
-                placeholder={form.smtp.password ? '••••••••' : ''}
+                placeholder={form.smtp.password ? t('common.passwordMask') : ''}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <Input
-                label="From Email"
-                type="email"
+                label={t('settings.smtpFromEmail')}
+                type='email'
                 value={form.smtp.fromEmail}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -175,7 +175,7 @@ export default function AdminSettingsEmailSmsPage() {
                 }
               />
               <Input
-                label="From Name"
+                label={t('settings.smtpFromName')}
                 value={form.smtp.fromName}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -186,10 +186,10 @@ export default function AdminSettingsEmailSmsPage() {
               />
             </div>
 
-            <h3 className="text-lg font-semibold mt-8 mb-4">SMS (Twilio)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h3 className='text-lg font-semibold mt-8 mb-4'>{t('settings.smsTwilioSection')}</h3>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <Input
-                label="Twilio Account SID"
+                label={t('settings.twilioAccountSid')}
                 value={form.sms.twilioAccountSid}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -197,11 +197,11 @@ export default function AdminSettingsEmailSmsPage() {
                     sms: { ...f.sms, twilioAccountSid: e.target.value },
                   }))
                 }
-                placeholder="ACxxxxxxxx"
+                placeholder={t('settings.twilioAccountSidPlaceholder')}
               />
               <Input
-                label="Twilio Auth Token"
-                type="password"
+                label={t('settings.twilioAuthToken')}
+                type='password'
                 value={form.sms.twilioAuthToken}
                 onChange={(e) =>
                   setForm((f) => ({
@@ -209,11 +209,11 @@ export default function AdminSettingsEmailSmsPage() {
                     sms: { ...f.sms, twilioAuthToken: e.target.value },
                   }))
                 }
-                placeholder="••••••••"
+                placeholder={t('settings.twilioAuthTokenPlaceholder')}
               />
             </div>
             <Input
-              label="Twilio Phone Number"
+              label={t('settings.twilioPhoneNumber')}
               value={form.sms.twilioPhoneNumber}
               onChange={(e) =>
                 setForm((f) => ({
@@ -221,14 +221,14 @@ export default function AdminSettingsEmailSmsPage() {
                   sms: { ...f.sms, twilioPhoneNumber: e.target.value },
                 }))
               }
-              placeholder="+1234567890"
+              placeholder={t('settings.twilioPhonePlaceholder')}
             />
 
-            <div className="flex gap-2 pt-4">
-              <Button type="submit" variant="primary" disabled={saving}>
+            <div className='flex gap-2 pt-4'>
+              <Button type='submit' variant='primary' disabled={saving}>
                 {saving ? t('common.saving') || 'Saving…' : t('common.save') || 'Save'}
               </Button>
-              <Button type="button" variant="secondary" href="/admin/settings">
+              <Button type='button' variant='secondary' href='/admin/settings'>
                 {t('common.cancel') || 'Cancel'}
               </Button>
             </div>

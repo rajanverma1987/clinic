@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useI18n } from '@/contexts/I18nContext';
 
 /**
  * TwoFactorSetup
@@ -17,6 +18,7 @@ import { Input } from '@/components/ui/Input';
  *   onStatusChange {fn}     — called with new boolean after success
  */
 export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
+  const { t } = useI18n();
   const [step, setStep] = useState('idle'); // idle | setup | verify | disable
   const [qrUrl, setQrUrl] = useState('');
   const [secret, setSecret] = useState('');
@@ -43,7 +45,7 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
     try {
       const res = await fetch('/api/auth/2fa/setup', { method: 'POST' });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message || 'Setup failed');
+      if (!res.ok) throw new Error(json.error?.message || t('auth.setupFailed'));
       setQrUrl(json.data.qrCodeUrl);
       setSecret(json.data.secret);
       setStep('verify');
@@ -55,7 +57,7 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
   };
 
   const handleVerify = async () => {
-    if (code.length !== 6) { setError('Enter the 6-digit code from your authenticator app.'); return; }
+    if (code.length !== 6) { setError(t('auth.enter6DigitCode')); return; }
     setLoading(true);
     setError('');
     try {
@@ -65,8 +67,8 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
         body: JSON.stringify({ code }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message || 'Verification failed');
-      setSuccess('Two-factor authentication enabled successfully.');
+      if (!res.ok) throw new Error(json.error?.message || t('auth.verificationFailed'));
+      setSuccess(t('auth.twoFactorEnabledSuccess'));
       onStatusChange?.(true);
       setTimeout(reset, 2500);
     } catch (e) {
@@ -78,7 +80,7 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
 
   /* ── Disable flow ── */
   const handleDisable = async () => {
-    if (!password) { setError('Password is required to disable 2FA.'); return; }
+    if (!password) { setError(t('auth.passwordRequiredFor2fa')); return; }
     setLoading(true);
     setError('');
     try {
@@ -88,8 +90,8 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
         body: JSON.stringify({ password, code: code || undefined }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message || 'Failed to disable 2FA');
-      setSuccess('Two-factor authentication disabled.');
+      if (!res.ok) throw new Error(json.error?.message || t('auth.setupFailed'));
+      setSuccess(t('auth.twoFactorDisabledSuccess'));
       onStatusChange?.(false);
       setTimeout(reset, 2500);
     } catch (e) {
@@ -118,16 +120,16 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
                 : 'bg-neutral-100 text-neutral-500 border border-neutral-200'
             }`}
           >
-            {is2FAEnabled ? '2FA Enabled' : '2FA Disabled'}
+            {is2FAEnabled ? t('auth.twoFactorEnabled') : t('auth.twoFactorDisabled')}
           </span>
         </div>
         {is2FAEnabled ? (
           <Button variant='danger' size='sm' onClick={() => setStep('disable')}>
-            Disable 2FA
+            {t('auth.disable2fa')}
           </Button>
         ) : (
           <Button variant='secondary' size='sm' onClick={handleSetup} disabled={loading}>
-            {loading ? 'Setting up…' : 'Enable 2FA'}
+            {loading ? t('auth.settingUp') : t('auth.enable2fa')}
           </Button>
         )}
       </div>
@@ -139,8 +141,7 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
     return (
       <div className='space-y-4'>
         <p className='text-sm text-neutral-600'>
-          Scan this QR code with your authenticator app (e.g. Google Authenticator), then enter
-          the 6-digit code below.
+          {t('auth.scanQRInstructions')}
         </p>
         {/* QR code rendered as an <img> from the otpauth URL via a free QR service */}
         <img
@@ -154,12 +155,12 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
           Or enter manually: <span className='font-mono font-semibold'>{secret}</span>
         </p>
         <div className='space-y-2'>
-          <label className='block text-sm font-medium text-neutral-700'>Verification code</label>
+          <label className='block text-sm font-medium text-neutral-700'>{t('auth.verificationCode')}</label>
           <Input
             type='text'
             inputMode='numeric'
             maxLength={6}
-            placeholder='000000'
+            placeholder={t('auth.verificationCodePlaceholder')}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
           />
@@ -167,10 +168,10 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
         {error && <p className='text-xs text-status-error'>{error}</p>}
         <div className='flex gap-2'>
           <Button variant='primary' size='sm' onClick={handleVerify} disabled={loading}>
-            {loading ? 'Verifying…' : 'Verify & Enable'}
+            {loading ? t('auth.verifying') : t('auth.verifyAndEnable')}
           </Button>
           <Button variant='ghost' size='sm' onClick={reset}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </div>
@@ -182,26 +183,26 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
     return (
       <div className='space-y-4'>
         <p className='text-sm text-neutral-600'>
-          Enter your account password to confirm disabling two-factor authentication.
+          {t('auth.passwordRequiredToDisable')}
         </p>
         <div className='space-y-2'>
-          <label className='block text-sm font-medium text-neutral-700'>Password</label>
+          <label className='block text-sm font-medium text-neutral-700'>{t('auth.password')}</label>
           <Input
             type='password'
-            placeholder='Current password'
+            placeholder={t('auth.currentPasswordPlaceholder')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
         <div className='space-y-2'>
           <label className='block text-sm font-medium text-neutral-700'>
-            Authenticator code <span className='text-neutral-400'>(optional)</span>
+            {t('auth.authenticatorCodeOptional')}
           </label>
           <Input
             type='text'
             inputMode='numeric'
             maxLength={6}
-            placeholder='000000'
+            placeholder={t('auth.verificationCodePlaceholder')}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
           />
@@ -209,10 +210,10 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
         {error && <p className='text-xs text-status-error'>{error}</p>}
         <div className='flex gap-2'>
           <Button variant='danger' size='sm' onClick={handleDisable} disabled={loading}>
-            {loading ? 'Disabling…' : 'Confirm Disable'}
+            {loading ? t('auth.disabling') : t('auth.confirmDisable')}
           </Button>
           <Button variant='ghost' size='sm' onClick={reset}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </div>

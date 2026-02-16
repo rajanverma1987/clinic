@@ -168,7 +168,7 @@ export default function AdminFinancialDisputesPage() {
       ) : disputes.length === 0 ? (
         <Card className='p-12 text-center'>
           <p className='text-neutral-500'>{t('admin.disputeNoDisputesFound')}</p>
-          <p className='text-sm text-neutral-400 mt-2'>Disputes can be created from the API.</p>
+          <p className='text-sm text-neutral-400 mt-2'>{t('admin.disputesCreateFromApi')}</p>
         </Card>
       ) : (
         <div className='space-y-4'>
@@ -287,12 +287,12 @@ export default function AdminFinancialDisputesPage() {
               {actionModal.action === 'refund' ? 'Issue Refund' : `Mark as ${actionModal.action}`}
             </h3>
             <label className='block text-sm font-medium text-neutral-700 mb-2'>
-              Admin notes (optional)
+              {t('admin.disputesAdminNotesLabel')}
             </label>
             <textarea
               className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 mb-4'
               rows={3}
-              placeholder='Add notes...'
+              placeholder={t('admin.disputesAddNotesPlaceholder')}
               value={actionModal.adminNotes}
               onChange={(e) => setActionModal((m) => ({ ...m, adminNotes: e.target.value }))}
             />

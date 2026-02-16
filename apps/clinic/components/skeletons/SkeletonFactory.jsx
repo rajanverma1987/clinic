@@ -7,6 +7,7 @@
 
 import { Card } from '@/components/ui/Card';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { useI18n } from '@/contexts/I18nContext';
 import { SKELETON_TYPES } from '@/lib/loading/loading-states';
 
 const pulse = 'animate-pulse';
@@ -334,8 +335,13 @@ function GenericSkeleton() {
  * Report tab content skeleton – summary cards, chart block, table block. Use when loading any report tab (revenue, patients, appointments, inventory).
  */
 export function ReportTabSkeleton() {
+  const { t } = useI18n();
   return (
-    <div className={`space-y-6 ${pulse}`} aria-busy='true' aria-label='Loading report'>
+    <div
+      className={`space-y-6 ${pulse}`}
+      aria-busy='true'
+      aria-label={t('common.ariaLabelLoadingReport')}
+    >
       <div className='content-grid-4'>
         {[...Array(4)].map((_, i) => (
           <div key={i} className='bg-white dark:bg-neutral-800 rounded-lg p-6 shadow'>

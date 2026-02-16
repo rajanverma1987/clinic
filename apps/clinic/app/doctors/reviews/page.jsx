@@ -305,9 +305,11 @@ export default function DoctorReviewsPage() {
 
               <Card>
                 <div className='p-6'>
-                  <h3 className='text-sm font-medium text-neutral-600 mb-2'>Total Reviews</h3>
+                  <h3 className='text-sm font-medium text-neutral-600 mb-2'>
+                    {t('doctors.totalReviews')}
+                  </h3>
                   <p className='text-3xl font-bold text-neutral-900'>{totalReviews}</p>
-                  <p className='text-sm text-neutral-500 mt-2'>All time</p>
+                  <p className='text-sm text-neutral-500 mt-2'>{t('doctors.allTime')}</p>
                 </div>
               </Card>
             </div>
@@ -319,7 +321,7 @@ export default function DoctorReviewsPage() {
                   <div className='flex-1'>
                     <Input
                       type='text'
-                      placeholder='Search reviews by patient name or review text...'
+                      placeholder={t('doctors.searchReviewsPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />

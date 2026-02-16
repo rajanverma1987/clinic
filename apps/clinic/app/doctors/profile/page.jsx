@@ -334,7 +334,7 @@ export default function DoctorProfilePage() {
                       {profilePhotoPreview ? (
                         <img
                           src={profilePhotoPreview}
-                          alt='Profile'
+                          alt={t('common.altProfile')}
                           className='w-full h-full object-cover'
                         />
                       ) : (
@@ -532,11 +532,13 @@ export default function DoctorProfilePage() {
                 </div>
 
                 <div>
-                  <h2 className='text-lg font-bold text-neutral-900 mb-4'>Conditions Treated</h2>
+                  <h2 className='text-lg font-bold text-neutral-900 mb-4'>
+                    {t('doctors.conditionsTreated')}
+                  </h2>
                   <div className='flex gap-2 mb-3'>
                     <Input
                       type='text'
-                      placeholder='Add condition'
+                      placeholder={t('doctors.addCondition')}
                       value={newCondition}
                       onChange={(e) => setNewCondition(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addCondition()}
@@ -1074,7 +1076,7 @@ export default function DoctorProfilePage() {
                           type='number'
                           min='0'
                           step='0.01'
-                          placeholder='Fee'
+                          placeholder={t('doctors.feePlaceholder')}
                           value={newProcedureFee}
                           onChange={(e) => setNewProcedureFee(parseFloat(e.target.value) || 0)}
                         />

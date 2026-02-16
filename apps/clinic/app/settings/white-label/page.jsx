@@ -42,54 +42,52 @@ export default function WhiteLabelPage() {
       <div className='mb-8'>
         <div className='flex items-center justify-between'>
           <div>
-            <h1 className='text-3xl font-bold text-neutral-900'>White Label Solution</h1>
-            <p className='text-neutral-600 mt-2'>Complete customization and branding control</p>
+            <h1 className='text-3xl font-bold text-neutral-900'>{t('settings.whiteLabelSolution')}</h1>
+            <p className='text-neutral-600 mt-2'>{t('settings.whiteLabelDesc')}</p>
           </div>
-          <Tag variant='success'>Enterprise Feature</Tag>
+          <Tag variant='success'>{t('settings.enterpriseFeature')}</Tag>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className='space-y-6' noValidate>
-        {/* Company Branding */}
         <Card>
-          <h2 className='text-xl font-semibold mb-6'>Company Branding</h2>
+          <h2 className='text-xl font-semibold mb-6'>{t('settings.companyBranding')}</h2>
 
           <div className='space-y-6'>
             <Input
-              label='Company Name'
+              label={t('settings.companyName')}
               value={formData.companyName}
               onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-              placeholder='Your Company Name'
+              placeholder={t('settings.placeholderCompanyName')}
             />
 
             <Input
-              label='Custom Domain'
+              label={t('settings.customDomain')}
               value={formData.customDomain}
               onChange={(e) => setFormData({ ...formData, customDomain: e.target.value })}
-              placeholder='app.yourcompany.com'
+              placeholder={t('settings.placeholderAppDomain')}
             />
 
             <Input
-              label='Custom Email Domain'
+              label={t('settings.customEmailDomain')}
               value={formData.customEmailDomain}
               onChange={(e) => setFormData({ ...formData, customEmailDomain: e.target.value })}
-              placeholder='@yourcompany.com'
+              placeholder={t('settings.placeholderEmailDomain')}
             />
           </div>
         </Card>
 
-        {/* Branding Removal */}
         <Card>
-          <h2 className='text-xl font-semibold mb-6'>Doctor&apos;s Clinic Branding</h2>
+          <h2 className='text-xl font-semibold mb-6'>{t('settings.doctorsClinicBranding')}</h2>
 
           <div className='space-y-4'>
             <div className='flex items-center justify-between p-4 bg-neutral-100 rounded-lg'>
               <div>
                 <h3 className='font-medium text-neutral-900'>
-                  Remove Doctor&apos;s Clinic Branding
+                  {t('settings.removeDoctorsClinicBranding')}
                 </h3>
                 <p className='text-sm text-neutral-600 mt-1'>
-                  Hide all Doctor&apos;s Clinic logos, names, and references from the application
+                  {t('settings.removeDoctorsClinicBrandingDesc')}
                 </p>
               </div>
               <label className='relative inline-flex items-center cursor-pointer'>
@@ -107,9 +105,9 @@ export default function WhiteLabelPage() {
 
             <div className='flex items-center justify-between p-4 bg-neutral-100 rounded-lg'>
               <div>
-                <h3 className='font-medium text-neutral-900'>Custom Login Page</h3>
+                <h3 className='font-medium text-neutral-900'>{t('settings.customLoginPage')}</h3>
                 <p className='text-sm text-neutral-600 mt-1'>
-                  Use your own branded login page design
+                  {t('settings.customLoginPageDesc')}
                 </p>
               </div>
               <label className='relative inline-flex items-center cursor-pointer'>
@@ -125,48 +123,45 @@ export default function WhiteLabelPage() {
           </div>
         </Card>
 
-        {/* Legal Pages */}
         <Card>
-          <h2 className='text-xl font-semibold mb-6'>Custom Legal Pages</h2>
+          <h2 className='text-xl font-semibold mb-6'>{t('settings.customLegalPages')}</h2>
 
           <div className='space-y-4'>
             <Input
-              label='Custom Terms of Service URL'
+              label={t('settings.customTermsUrl')}
               value={formData.customTermsUrl}
               onChange={(e) => setFormData({ ...formData, customTermsUrl: e.target.value })}
-              placeholder='https://yourcompany.com/terms'
+              placeholder={t('settings.placeholderTermsUrl')}
             />
 
             <Input
-              label='Custom Privacy Policy URL'
+              label={t('settings.customPrivacyUrl')}
               value={formData.customPrivacyUrl}
               onChange={(e) => setFormData({ ...formData, customPrivacyUrl: e.target.value })}
-              placeholder='https://yourcompany.com/privacy'
+              placeholder={t('settings.placeholderPrivacyUrl')}
             />
           </div>
         </Card>
 
-        {/* Info */}
         <Card>
           <div className='bg-primary-100 border-l-4 border-primary-400 p-4'>
-            <h3 className='text-sm font-semibold text-primary-900 mb-2'>White Label Benefits</h3>
+            <h3 className='text-sm font-semibold text-primary-900 mb-2'>{t('settings.whiteLabelBenefits')}</h3>
             <ul className='text-sm text-primary-700 space-y-1'>
-              <li>• Present the platform as your own product</li>
-              <li>• Build your brand with clients</li>
-              <li>• Custom domain and email addresses</li>
-              <li>• Remove all third-party branding</li>
-              <li>• Enterprise-level customization</li>
+              <li>• {t('settings.whiteLabelBenefit1')}</li>
+              <li>• {t('settings.whiteLabelBenefit2')}</li>
+              <li>• {t('settings.whiteLabelBenefit3')}</li>
+              <li>• {t('settings.whiteLabelBenefit4')}</li>
+              <li>• {t('settings.whiteLabelBenefit5')}</li>
             </ul>
           </div>
         </Card>
 
-        {/* Save Button */}
         <div className='flex justify-end gap-4'>
           <Button type='button' variant='secondary' onClick={() => router.back()} disabled={saving}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type='submit' isLoading={saving} disabled={saving}>
-            Save White Label Settings
+            {t('settings.saveWhiteLabelSettings')}
           </Button>
         </div>
       </form>

@@ -37,7 +37,7 @@ export default function AppointmentDetailsPage({ params }) {
   const fetcher = () =>
     apiClient.get(`/appointments/${params.id}`).then((r) => {
       if (r.success && r.data) return r.data;
-      const err = new Error(r.error?.message || 'Not found');
+      const err = new Error(r.error?.message || t('appointments.notFound'));
       err.info = r.error;
       throw err;
     });
@@ -259,7 +259,7 @@ export default function AppointmentDetailsPage({ params }) {
   return (
     <Layout>
       <PageHeader
-        title='Appointment Details'
+        title={t('appointments.appointmentDetails')}
         subtitle={`Appointment ID: ${appointment._id}`}
         notifications={[]}
         unreadCount={0}
@@ -272,13 +272,13 @@ export default function AppointmentDetailsPage({ params }) {
                 onChange={(e) => handleStatusChange(e.target.value)}
                 disabled={saving}
               >
-                <option value='scheduled'>Scheduled</option>
-                <option value='confirmed'>Confirmed</option>
-                <option value='arrived'>Arrived</option>
-                <option value='in_progress'>In Progress</option>
-                <option value='completed'>Completed</option>
-                <option value='cancelled'>Cancelled</option>
-                <option value='no_show'>No Show</option>
+                <option value='scheduled'>{t('appointments.scheduled')}</option>
+                <option value='confirmed'>{t('appointments.confirmed')}</option>
+                <option value='arrived'>{t('appointments.arrived')}</option>
+                <option value='in_progress'>{t('appointments.inProgress')}</option>
+                <option value='completed'>{t('appointments.completed')}</option>
+                <option value='cancelled'>{t('appointments.cancelled')}</option>
+                <option value='no_show'>{t('appointments.noShow')}</option>
               </select>
             )}
             <Tag
@@ -300,7 +300,9 @@ export default function AppointmentDetailsPage({ params }) {
         {/* Quick Actions for Doctors */}
         {isDoctor && (
           <Card className='mb-6 p-4'>
-            <h3 className='text-lg font-semibold text-neutral-900 mb-4'>Quick Actions</h3>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-4'>
+              {t('appointments.quickActions')}
+            </h3>
             <div className='flex flex-wrap gap-3'>
               {appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
                 <>
@@ -312,7 +314,7 @@ export default function AppointmentDetailsPage({ params }) {
                     }}
                   >
                     <PlayIcon className='icon icon-sm' />
-                    Start Consultation
+                    {t('appointments.startConsultation')}
                   </Button>
                   {appointment.isTelemedicine && (
                     <Button
@@ -324,7 +326,7 @@ export default function AppointmentDetailsPage({ params }) {
                       }
                     >
                       <VideoIcon className='icon icon-sm' />
-                      Join Video Call
+                      {t('appointments.joinVideoCall')}
                     </Button>
                   )}
                 </>
@@ -336,7 +338,7 @@ export default function AppointmentDetailsPage({ params }) {
                 }
               >
                 <UserIcon className='icon icon-sm' />
-                View Patient History
+                {t('appointments.viewPatientHistory')}
               </Button>
               {appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
                 <>
@@ -345,7 +347,7 @@ export default function AppointmentDetailsPage({ params }) {
                     onClick={() => router.push(`/appointments/${params.id}/edit`)}
                   >
                     <CalendarIcon className='icon icon-sm' />
-                    Reschedule
+                    {t('appointments.reschedule')}
                   </Button>
                   <Button
                     variant='danger'
@@ -380,7 +382,7 @@ export default function AppointmentDetailsPage({ params }) {
                   }}
                 >
                   <CheckIcon className='icon icon-sm' />
-                  Mark as Completed
+                  {t('appointments.markAsCompleted')}
                 </Button>
               )}
             </div>
@@ -390,17 +392,20 @@ export default function AppointmentDetailsPage({ params }) {
         <div className='content-grid-2 content-grid-gap-6 mb-6'>
           <Card>
             <div className='flex items-center justify-between mb-4'>
-              <h2 className='text-lg font-semibold text-neutral-900'>Patient Information</h2>
+              <h2 className='text-lg font-semibold text-neutral-900'>
+                {t('appointments.patientInformation')}
+              </h2>
               <Tag variant='default' size='sm'>
-                {appointment.patientId?.patientId || 'Unknown ID'}
+                {appointment.patientId?.patientId || t('appointments.unknownId')}
               </Tag>
             </div>
             <div className='space-y-3 text-sm text-neutral-700'>
               <p>
-                <span className='font-medium text-neutral-900'>Name:</span> {patientFullName || '—'}
+                <span className='font-medium text-neutral-900'>{t('common.name')}:</span>{' '}
+                {patientFullName || '—'}
               </p>
               <p>
-                <span className='font-medium text-neutral-900'>Phone:</span>{' '}
+                <span className='font-medium text-neutral-900'>{t('common.phone')}:</span>{' '}
                 {appointment.patientId?.phone || '—'}
               </p>
               <p>
@@ -412,11 +417,13 @@ export default function AppointmentDetailsPage({ params }) {
 
           <Card>
             <div className='flex items-center justify-between mb-4'>
-              <h2 className='text-lg font-semibold text-neutral-900'>Doctor Information</h2>
+              <h2 className='text-lg font-semibold text-neutral-900'>
+                {t('appointments.doctorInformation')}
+              </h2>
             </div>
             <div className='space-y-3 text-sm text-neutral-700'>
               <p>
-                <span className='font-medium text-neutral-900'>Doctor:</span>{' '}
+                <span className='font-medium text-neutral-900'>{t('appointments.doctor')}:</span>{' '}
                 {doctorFullName || '—'}
               </p>
               <p>
@@ -430,7 +437,7 @@ export default function AppointmentDetailsPage({ params }) {
         <div className='content-grid-3 content-grid-gap-6 mb-6'>
           <Card>
             <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
-              Date
+              {t('appointments.date')}
             </h3>
             <p className='text-2xl font-bold text-neutral-900'>
               {formatDate(appointment.appointmentDate)}
@@ -438,7 +445,7 @@ export default function AppointmentDetailsPage({ params }) {
           </Card>
           <Card>
             <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
-              Time
+              {t('appointments.time')}
             </h3>
             <p className='text-xl font-semibold text-neutral-900'>
               {formatTime(appointment.startTime)} – {formatTime(appointment.endTime)}
@@ -446,7 +453,7 @@ export default function AppointmentDetailsPage({ params }) {
           </Card>
           <Card>
             <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
-              Duration
+              {t('appointments.duration')}
             </h3>
             <p className='text-2xl font-bold text-neutral-900'>{appointment.duration || 30} mins</p>
           </Card>
@@ -454,14 +461,20 @@ export default function AppointmentDetailsPage({ params }) {
 
         <div className='content-grid-2 content-grid-gap-6 mb-6'>
           <Card>
-            <h3 className='text-lg font-semibold text-neutral-900 mb-3'>Reason</h3>
-            <p className='text-neutral-700'>{appointment.reason || 'Not provided'}</p>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-3'>
+              {t('appointments.reason')}
+            </h3>
+            <p className='text-neutral-700'>
+              {appointment.reason || t('appointments.reasonNotProvided')}
+            </p>
           </Card>
 
           <Card>
-            <h3 className='text-lg font-semibold text-neutral-900 mb-3'>Notes</h3>
+            <h3 className='text-lg font-semibold text-neutral-900 mb-3'>
+              {t('appointments.notes')}
+            </h3>
             <p className='text-neutral-700 whitespace-pre-wrap'>
-              {appointment.notes || 'No additional notes'}
+              {appointment.notes || t('appointments.noAdditionalNotes')}
             </p>
           </Card>
         </div>
@@ -470,43 +483,45 @@ export default function AppointmentDetailsPage({ params }) {
         {isDoctor && (
           <Card className='mb-6'>
             <div className='flex items-center justify-between mb-4'>
-              <h3 className='text-lg font-semibold text-neutral-900'>Consultation Notes</h3>
+              <h3 className='text-lg font-semibold text-neutral-900'>
+                {t('appointments.consultationNotes')}
+              </h3>
               <Button
                 variant='secondary'
                 size='sm'
                 onClick={() => setShowConsultationNotes(!showConsultationNotes)}
               >
-                {showConsultationNotes ? 'Hide' : 'Add/Edit Notes'}
+                {showConsultationNotes ? t('common.hide') : t('appointments.addEditNotes')}
               </Button>
             </div>
             {showConsultationNotes ? (
               <div className='space-y-4'>
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Diagnosis
+                    {t('appointments.diagnosisLabel')}
                   </label>
                   <Input
                     type='text'
                     value={diagnosis}
                     onChange={(e) => setDiagnosis(e.target.value)}
-                    placeholder='Enter diagnosis...'
+                    placeholder={t('appointments.diagnosisPlaceholder')}
                   />
                 </div>
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Clinical Notes
+                    {t('appointments.clinicalNotes')}
                   </label>
                   <textarea
                     className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                     rows={6}
                     value={consultationNotes}
                     onChange={(e) => setConsultationNotes(e.target.value)}
-                    placeholder='Enter consultation notes, observations, treatment plan...'
+                    placeholder={t('appointments.consultationNotesPlaceholder')}
                   />
                 </div>
                 <div className='flex justify-end gap-3'>
                   <Button variant='secondary' onClick={() => setShowConsultationNotes(false)}>
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     variant='primary'
@@ -514,7 +529,7 @@ export default function AppointmentDetailsPage({ params }) {
                     onClick={handleSaveConsultationNotes}
                     disabled={saving}
                   >
-                    {saving ? 'Saving...' : 'Save Notes'}
+                    {saving ? t('common.saving') : t('appointments.saveNotes')}
                   </Button>
                 </div>
               </div>
@@ -524,13 +539,16 @@ export default function AppointmentDetailsPage({ params }) {
                   <div>
                     {diagnosis && (
                       <p className='mb-2'>
-                        <span className='font-semibold'>Diagnosis:</span> {diagnosis}
+                        <span className='font-semibold'>{t('appointments.diagnosisLabel')}:</span>{' '}
+                        {diagnosis}
                       </p>
                     )}
                     <p className='whitespace-pre-wrap'>{consultationNotes}</p>
                   </div>
                 ) : (
-                  <p className='text-neutral-500 italic'>No consultation notes yet</p>
+                  <p className='text-neutral-500 italic'>
+                    {t('appointments.noConsultationNotesYet')}
+                  </p>
                 )}
               </div>
             )}
@@ -544,15 +562,20 @@ export default function AppointmentDetailsPage({ params }) {
                 <VideoIcon className='icon icon-md text-primary-600' />
               </div>
               <div>
-                <h3 className='text-lg font-semibold text-neutral-900'>Telemedicine Session</h3>
+                <h3 className='text-lg font-semibold text-neutral-900'>
+                  {t('appointments.telemedicineSession')}
+                </h3>
                 <p className='text-neutral-700 mt-2'>
-                  Session ID:{' '}
+                  {t('appointments.sessionId')}:{' '}
                   <span className='font-mono text-sm'>
-                    {appointment.telemedicineSessionId || 'Pending'}
+                    {appointment.telemedicineSessionId || t('appointments.pending')}
                   </span>
                 </p>
                 <p className='text-neutral-700 mt-1'>
-                  Consent: {appointment.telemedicineConsent ? 'Captured' : 'Not captured'}
+                  {t('appointments.consentLabel')}:{' '}
+                  {appointment.telemedicineConsent
+                    ? t('appointments.consentCaptured')
+                    : t('appointments.consentNotCaptured')}
                 </p>
               </div>
             </div>

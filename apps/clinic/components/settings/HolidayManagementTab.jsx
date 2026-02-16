@@ -146,18 +146,18 @@ export function HolidayManagementTab({
             <div className='content-grid-2 content-grid-gap-3'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Holiday Name <span className='text-red-500'>*</span>
+                  {t('settings.holidayNameLabel')} <span className='text-red-500'>*</span>
                 </label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder='e.g., New Year, Christmas'
+                  placeholder={t('settings.holidayNamePlaceholder')}
                   required
                 />
               </div>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Date <span className='text-red-500'>*</span>
+                  {t('settings.dateLabel')} <span className='text-red-500'>*</span>
                 </label>
                 <DatePicker
                   value={formData.date}
@@ -174,7 +174,7 @@ export function HolidayManagementTab({
                 onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
                 className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
               />
-              <label className='text-sm text-neutral-700'>Recurring every year</label>
+              <label className='text-sm text-neutral-700'>{t('settings.recurringEveryYear')}</label>
             </div>
             <div className='flex gap-2 pt-2 border-t border-neutral-200'>
               <Button
@@ -184,7 +184,7 @@ export function HolidayManagementTab({
                 disabled={saving}
                 className='flex-1'
               >
-                Add Holiday
+                {t('settings.addHolidayButton')}
               </Button>
               <Button
                 type='button'
@@ -200,7 +200,7 @@ export function HolidayManagementTab({
                 }}
                 className='flex-1'
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </form>
@@ -223,7 +223,7 @@ export function HolidayManagementTab({
               <CalendarIcon className='icon icon-xl mb-2' ariaHidden />
               <p className='text-sm'>{t('settings.noHolidaysConfigured')}</p>
               <p className='text-xs mt-1'>
-                Add holidays to block appointment scheduling on those dates
+                {t('settings.addHolidaysHint')}
               </p>
             </div>
           ) : (
@@ -248,7 +248,7 @@ export function HolidayManagementTab({
                         })}
                         {holiday.isRecurring && (
                           <span className='ml-2 px-1.5 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full'>
-                            Recurring
+                            {t('settings.recurring')}
                           </span>
                         )}
                       </p>
@@ -260,7 +260,7 @@ export function HolidayManagementTab({
                     onClick={() => handleDeleteHoliday(holiday.id)}
                     disabled={saving}
                   >
-                    Delete
+                    {t('common.delete')}
                   </Button>
                 </div>
               ))}

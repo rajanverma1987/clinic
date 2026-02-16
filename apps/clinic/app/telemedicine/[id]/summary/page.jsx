@@ -86,7 +86,7 @@ Doctor: Dr. ${session.doctorId?.firstName} ${session.doctorId?.lastName}
 
 ${session.notes ? `Clinical Notes:\n${session.notes}\n\n` : ''}
 ${session.diagnosis ? `Diagnosis:\n${session.diagnosis}\n\n` : ''}
-Connection Quality: ${session.connectionQuality || 'N/A'}
+${t('telemedicine.connectionQuality')}: ${session.connectionQuality || 'N/A'}
     `.trim();
 
     const blob = new Blob([summaryContent], { type: 'text/plain' });
@@ -109,9 +109,9 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
       <Layout>
         <Card>
           <div className='p-8 text-center'>
-            <p className='text-neutral-600'>Session not found</p>
+            <p className='text-neutral-600'>{t('telemedicine.sessionNotFound')}</p>
             <Button href='/telemedicine' className='mt-4'>
-              Back to Sessions
+              {t('telemedicine.backToSessions')}
             </Button>
           </div>
         </Card>
@@ -123,27 +123,26 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
     <Layout>
       <div style={{ padding: '0 10px' }}>
         <div className='mb-8' style={{ paddingTop: '10px' }}>
-          <Button
-            variant='secondary'
-            size='md'
-            href='/telemedicine'
-            className='mb-4'
-          >
-            ← Back to Sessions
+          <Button variant='secondary' size='md' href='/telemedicine' className='mb-4'>
+            ← {t('telemedicine.backToSessions')}
           </Button>
-          <h1 className='text-3xl font-bold text-neutral-900'>Consultation Summary</h1>
-          <p className='text-neutral-600 mt-2'>Session {session.sessionId}</p>
+          <h1 className='text-3xl font-bold text-neutral-900'>
+            {t('telemedicine.consultationSummary')}
+          </h1>
+          <p className='text-neutral-600 mt-2'>
+            {t('telemedicine.sessionId')} {session.sessionId}
+          </p>
         </div>
 
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           {/* Main Summary */}
           <Card className='lg:col-span-2'>
-            <h2 className='text-xl font-semibold mb-6'>Session Details</h2>
+            <h2 className='text-xl font-semibold mb-6'>{t('telemedicine.sessionDetails')}</h2>
 
             <div className='space-y-4'>
               <div className='grid grid-cols-2 gap-4'>
                 <div>
-                  <label className='text-sm text-neutral-600'>Patient</label>
+                  <label className='text-sm text-neutral-600'>{t('telemedicine.patient')}</label>
                   <p className='font-medium text-neutral-900'>
                     {session.patientId.firstName} {session.patientId.lastName}
                     <span className='text-neutral-500 text-sm ml-2'>
@@ -160,7 +159,9 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                 </div>
 
                 <div>
-                  <label className='text-sm text-neutral-600'>Session Type</label>
+                  <label className='text-sm text-neutral-600'>
+                    {t('telemedicine.sessionType')}
+                  </label>
                   <Tag variant='default'>{session.sessionType}</Tag>
                 </div>
 
@@ -172,7 +173,9 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                 </div>
 
                 <div>
-                  <label className='text-sm text-neutral-600'>Scheduled Time</label>
+                  <label className='text-sm text-neutral-600'>
+                    {t('telemedicine.scheduledTime')}
+                  </label>
                   <p className='font-medium text-neutral-900'>
                     {new Date(session.scheduledStartTime).toLocaleString()}
                   </p>
@@ -180,14 +183,16 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
 
                 {session.duration && (
                   <div>
-                    <label className='text-sm text-neutral-600'>Duration</label>
+                    <label className='text-sm text-neutral-600'>{t('appointments.duration')}</label>
                     <p className='font-medium text-neutral-900'>{session.duration} minutes</p>
                   </div>
                 )}
 
                 {session.connectionQuality && (
                   <div>
-                    <label className='text-sm text-neutral-600'>Connection Quality</label>
+                    <label className='text-sm text-neutral-600'>
+                      {t('telemedicine.connectionQuality')}
+                    </label>
                     <Tag
                       variant={
                         session.connectionQuality === 'EXCELLENT' ||
@@ -204,14 +209,16 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
 
               {session.notes && (
                 <div className='pt-4 border-t'>
-                  <label className='text-sm text-neutral-600'>Clinical Notes</label>
+                  <label className='text-sm text-neutral-600'>
+                    {t('telemedicine.clinicalNotes')}
+                  </label>
                   <p className='mt-2 text-neutral-900 whitespace-pre-wrap'>{session.notes}</p>
                 </div>
               )}
 
               {session.diagnosis && (
                 <div className='pt-4 border-t'>
-                  <label className='text-sm text-neutral-600'>Diagnosis</label>
+                  <label className='text-sm text-neutral-600'>{t('telemedicine.diagnosis')}</label>
                   <p className='mt-2 text-neutral-900'>{session.diagnosis}</p>
                 </div>
               )}
@@ -220,7 +227,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
 
           {/* Chat History */}
           <Card>
-            <h2 className='text-xl font-semibold mb-6'>Chat History</h2>
+            <h2 className='text-xl font-semibold mb-6'>{t('telemedicine.chatHistory')}</h2>
 
             {session.chatMessages && session.chatMessages.length > 0 ? (
               <div className='space-y-3 max-h-96 overflow-y-auto'>
@@ -239,7 +246,9 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                 ))}
               </div>
             ) : (
-              <p className='text-neutral-500 text-sm text-center py-8'>No chat messages</p>
+              <p className='text-neutral-500 text-sm text-center py-8'>
+                {t('telemedicine.noChatMessages')}
+              </p>
             )}
           </Card>
         </div>
@@ -296,7 +305,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                   rows={4}
                   value={review}
                   onChange={(e) => setReview(e.target.value)}
-                  placeholder='Share your experience with this consultation...'
+                  placeholder={t('telemedicine.feedbackPlaceholder')}
                 />
               </div>
               <Button
@@ -314,8 +323,8 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
         <Card className='mt-6'>
           <div className='flex items-center justify-between flex-wrap gap-4'>
             <div>
-              <h3 className='font-semibold text-neutral-900'>Actions</h3>
-              <p className='text-sm text-neutral-600'>Next steps for this consultation</p>
+              <h3 className='font-semibold text-neutral-900'>{t('common.actions')}</h3>
+              <p className='text-sm text-neutral-600'>{t('telemedicine.nextStepsConsultation')}</p>
             </div>
             <div className='flex flex-wrap gap-3'>
               <Button
@@ -344,7 +353,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                     d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
                   />
                 </svg>
-                Create Prescription
+                {t('prescriptions.createPrescription')}
               </Button>
               <Button
                 variant='secondary'
@@ -370,7 +379,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                     d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
                   />
                 </svg>
-                Book Follow-up
+                {t('telemedicine.bookFollowUp')}
               </Button>
               <Button variant='primary' onClick={downloadSummary}>
                 <svg
@@ -386,7 +395,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                     d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
                   />
                 </svg>
-                Download Summary
+                {t('telemedicine.downloadSummary')}
               </Button>
               <Button variant='secondary' onClick={() => window.print()}>
                 <svg
@@ -402,7 +411,7 @@ Connection Quality: ${session.connectionQuality || 'N/A'}
                     d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z'
                   />
                 </svg>
-                Print Summary
+                {t('telemedicine.printSummary')}
               </Button>
             </div>
           </div>

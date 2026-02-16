@@ -121,7 +121,7 @@ export default function AdminActivityLogsPage() {
         l.resource || '',
         l.resourceId || '',
         l.ipAddress || '',
-        l.phiAccessed ? 'Yes' : '',
+        l.phiAccessed ? t('common.yes') : '',
       ]);
       const csvContent = [
         headers.join(','),
@@ -389,7 +389,7 @@ export default function AdminActivityLogsPage() {
                         <td>{l.resource || '—'}</td>
                         <td className='text-neutral-600'>{l.resourceId || '—'}</td>
                         <td className='text-neutral-600 font-mono text-xs'>{l.ipAddress || '—'}</td>
-                        <td>{l.phiAccessed ? 'Yes' : '—'}</td>
+                        <td>{l.phiAccessed ? t('common.yes') : '—'}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -171,11 +171,11 @@ export default function AdminContentBannersPage() {
               <table className='clinic-table'>
                 <thead>
                   <tr>
-                    <th>Order</th>
-                    <th>Title</th>
-                    <th>Image URL</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{t('common.order')}</th>
+                    <th>{t('common.title')}</th>
+                    <th>{t('admin.contentBannerLabelImageUrl')}</th>
+                    <th>{t('admin.status')}</th>
+                    <th>{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -194,7 +194,7 @@ export default function AdminContentBannersPage() {
                               : 'bg-neutral-100 text-neutral-600'
                           }
                         >
-                          {item.isActive ? 'Active' : 'Inactive'}
+                          {item.isActive ? t('common.active') : t('common.inactive')}
                         </Tag>
                       </td>
                       <td>
@@ -237,27 +237,29 @@ export default function AdminContentBannersPage() {
                 <Input
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder='Banner title'
+                  placeholder={t('admin.contentBannerPlaceholderTitle')}
                   required
                 />
               </div>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                  Image URL *
+                  {t('admin.contentBannerLabelImageUrl')} *
                 </label>
                 <Input
                   value={form.imageUrl}
                   onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                  placeholder='https://...'
+                  placeholder={t('admin.contentBannerPlaceholderImageUrl')}
                   required
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1'>Link URL</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.contentBannerLabelLinkUrl')}
+                </label>
                 <Input
                   value={form.linkUrl}
                   onChange={(e) => setForm({ ...form, linkUrl: e.target.value })}
-                  placeholder='Optional link'
+                  placeholder={t('admin.contentBannerPlaceholderLinkUrl')}
                 />
               </div>
               <div>
@@ -272,7 +274,7 @@ export default function AdminContentBannersPage() {
               </div>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                  Start date
+                  {t('admin.contentBannerLabelStartDate')}
                 </label>
                 <Input
                   type='date'
@@ -281,7 +283,9 @@ export default function AdminContentBannersPage() {
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1'>End date</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.contentBannerLabelEndDate')}
+                </label>
                 <Input
                   type='date'
                   value={form.endDate}
@@ -296,7 +300,7 @@ export default function AdminContentBannersPage() {
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                 />
                 <label htmlFor='banner-active' className='text-sm text-neutral-700'>
-                  Active
+                  {t('common.active')}
                 </label>
               </div>
               <div className='flex gap-2 justify-end'>

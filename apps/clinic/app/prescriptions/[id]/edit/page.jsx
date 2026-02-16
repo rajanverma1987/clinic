@@ -237,7 +237,7 @@ export default function EditPrescriptionPage() {
           ]);
         }
       } else {
-        setError('Prescription not found');
+        setError(t('prescriptions.prescriptionNotFound'));
       }
     } catch (error) {
       logger.error('Failed to fetch prescription:', error);
@@ -489,7 +489,9 @@ export default function EditPrescriptionPage() {
     <Layout>
       <div style={{ padding: '0 10px' }}>
         <div className='mb-6' style={{ paddingTop: '10px' }}>
-          <h1 className='text-2xl font-bold text-neutral-900'>Edit Prescription</h1>
+          <h1 className='text-2xl font-bold text-neutral-900'>
+            {t('prescriptions.editPrescription')}
+          </h1>
         </div>
 
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
@@ -520,7 +522,7 @@ export default function EditPrescriptionPage() {
                     >
                       <option value=''>
                         {patients.length === 0
-                          ? 'No patients available'
+                          ? t('prescriptions.noPatientsAvailable')
                           : `${t('common.select')} ${t('appointments.patient').toLowerCase()}`}
                       </option>
                       {patients.map((patient) => (
@@ -617,7 +619,7 @@ export default function EditPrescriptionPage() {
                     onClick={() => router.back()}
                     disabled={submitting}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     type='button'
@@ -625,10 +627,10 @@ export default function EditPrescriptionPage() {
                     onClick={handlePrint}
                     disabled={submitting}
                   >
-                    Print
+                    {t('prescriptions.print')}
                   </Button>
                   <Button type='submit' isLoading={submitting} disabled={submitting}>
-                    Update Prescription
+                    {t('prescriptions.updatePrescription')}
                   </Button>
                 </div>
               </form>

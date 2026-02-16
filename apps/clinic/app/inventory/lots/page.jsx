@@ -1,29 +1,17 @@
 'use client';
 
-import { EyeIcon } from '@/components/icons';
-import { Layout } from '@/components/layout/Layout';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { ActionsMenu } from '@/components/ui/ActionsMenu';
-import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
-import { TableSkeleton } from '@/components/ui/TableSkeleton';
-import { Tabs } from '@/components/ui/Tabs';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useI18n } from '@/contexts/I18nContext';
-import { useSettings } from '@/hooks/useSettings';
-import { apiClient } from '@/lib/api/client';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
-import { logger } from '@/lib/utils/logger';
+/**
+ * Redirects /inventory/lots to /inventory?tab=lots for unified tabbed UX.
+ * Keeps old links and bookmarks working.
+ */
 export default function LotsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
-  const { locale } = useSettings();
-  const [lots, setLots] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, expiringSoon, expired
 
   useEffect(() => {
     if (authLoading) return;
@@ -33,200 +21,10 @@ export default function LotsPage() {
       return;
     }
 
-    fetchLots();
-  }, [authLoading, user, router, filter]);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', 'lots');
+    router.replace(`/inventory?${params.toString()}`, { scroll: false });
+  }, [authLoading, user, router, searchParams]);
 
-  const fetchLots = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (filter === 'expiringSoon') {
-        params.append('expiringSoon', 'true');
-      } else if (filter === 'expired') {
-        params.append('expired', 'true');
-      }
-
-      const response = await apiClient.get(`/inventory/lots?${params.toString()}`);
-      if (response.success) {
-        setLots(response.data || []);
-      }
-    } catch (error) {
-      logger.error('Failed to fetch lots:', error);
-      setLots([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString(locale || 'en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const getStatusBadge = (lot) => {
-    if (lot.isExpired) {
-      return (
-        <span className='px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-700'>
-          Expired
-        </span>
-      );
-    }
-    if (lot.isExpiringSoon) {
-      return (
-        <span className='px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-700'>
-          {t('inventory.expiringSoon')} ({lot.daysUntilExpiry} {t('common.days')})
-        </span>
-      );
-    }
-    return (
-      <span className='px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-700'>
-        Active
-      </span>
-    );
-  };
-
-  // Keep Layout visible, show skeleton in content area
-  if (authLoading) {
-    return (
-      <Layout>
-        <PageHeader title={t('inventory.lots')} subtitle={t('inventory.lotsManagement')} />
-        <div style={{ padding: '0 10px' }}>
-          <Card>
-            <TableSkeleton rows={10} cols={7} />
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  if (loading) {
-    return (
-      <Layout>
-        <PageHeader title={t('inventory.lots')} subtitle={t('inventory.lotsManagement')} />
-        <div style={{ padding: '0 10px' }}>
-          <Card>
-            <TableSkeleton rows={10} cols={7} />
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
-
-  const expiringSoonCount = lots.filter((l) => l.isExpiringSoon && !l.isExpired).length;
-  const expiredCount = lots.filter((l) => l.isExpired).length;
-  const activeCount = lots.filter((l) => !l.isExpired && !l.isExpiringSoon).length;
-
-  return (
-    <Layout>
-      <PageHeader
-        title={t('inventory.inventoryLots')}
-        subtitle={t('inventory.inventoryLotsSubtitle')}
-        notifications={[]}
-        unreadCount={0}
-      />
-      <div className='data-tabs-container w-full'>
-        <div className='tab-content-wide-width'>
-          {/* Sub-tabs */}
-          <div className='data-tabs-content mb-6'>
-            <Tabs
-              variant='pills'
-              tabs={[
-                { id: 'all', label: t('inventory.allLots'), count: lots.length },
-                {
-                  id: 'expiringSoon',
-                  label: t('inventory.expiringSoon'),
-                  count: expiringSoonCount,
-                },
-                { id: 'expired', label: t('inventory.expired'), count: expiredCount },
-              ]}
-              activeTab={filter}
-              onChange={setFilter}
-              idPrefix='inventory-lots-tabs'
-              ariaLabel={t('inventory.inventoryLots')}
-            />
-          </div>
-
-          <div
-            role='tabpanel'
-            id={`inventory-lots-tabs-panel-${filter}`}
-            aria-labelledby={`inventory-lots-tabs-tab-${filter}`}
-          >
-            {/* Tab content: standard inline loader when loading (filter/tab change) */}
-            {loading ? (
-              <div
-                className='tab-content-loading'
-                aria-busy='true'
-                aria-label={t('common.loading')}
-              >
-                <Loader type='section' text={t('common.loading')} />
-              </div>
-            ) : lots.length === 0 ? (
-              <div className='bg-white rounded-lg border border-neutral-200 p-8 text-center'>
-                <p className='text-neutral-600'>No lots found</p>
-              </div>
-            ) : (
-              <div className='clinic-table-wrap'>
-                <table className='clinic-table'>
-                  <thead>
-                    <tr>
-                      <th>Item Name</th>
-                      <th>Batch Number</th>
-                      <th>Quantity</th>
-                      <th>Expiry Date</th>
-                      <th>Supplier</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lots.map((lot) => (
-                      <tr key={lot._id}>
-                        <td>
-                          <div>
-                            <div className='font-medium'>{lot.itemName}</div>
-                            {lot.itemCode && (
-                              <div className='text-xs text-neutral-500'>{lot.itemCode}</div>
-                            )}
-                          </div>
-                        </td>
-                        <td className='font-mono'>{lot.batchNumber}</td>
-                        <td>
-                          {lot.quantity} {lot.unit}
-                        </td>
-                        <td>{formatDate(lot.expiryDate)}</td>
-                        <td className='text-neutral-600'>{lot.supplierName || 'N/A'}</td>
-                        <td>{getStatusBadge(lot)}</td>
-                        <td>
-                          <ActionsMenu
-                            ariaLabel={t('common.actions') || 'Actions'}
-                            triggerSize='xs'
-                            items={[
-                              {
-                                key: 'view',
-                                label: t('inventory.viewItem') || 'View Item',
-                                icon: <EyeIcon className='icon icon-sm' />,
-                                onClick: () => router.push(`/inventory/items/${lot.itemId}`),
-                              },
-                            ]}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </Layout>
-  );
+  return null;
 }

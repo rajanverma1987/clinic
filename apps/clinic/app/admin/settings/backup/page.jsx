@@ -3,7 +3,6 @@
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
@@ -32,7 +31,8 @@ export default function AdminSettingsBackupPage() {
       if (res.success && res.data) {
         setLastResult(res.data);
         showSuccess(
-          t('admin.backupCompleted') || `Backup completed: ${res.data.totalDocs} documents in ${res.data.collections?.length || 0} collections`,
+          t('admin.backupCompleted') ||
+            `Backup completed: ${res.data.totalDocs} documents in ${res.data.collections?.length || 0} collections`,
         );
       } else {
         showError(res.error?.message || t('admin.backupFailed'));
@@ -51,26 +51,21 @@ export default function AdminSettingsBackupPage() {
       title={t('admin.backupDatabase') || 'Database Backup'}
       subtitle={t('admin.backupDatabaseDesc') || 'Export database collections (metadata only)'}
     >
-      <div className="admin-page-content">
-        <Card className="p-6 max-w-2xl">
-          <p className="text-neutral-600 mb-4">
+      <div className='admin-page-content'>
+        <Card className='p-6 max-w-2xl'>
+          <p className='text-neutral-600 mb-4'>
             {t('admin.backupDesc') ||
               'Run a database backup. This exports collection metadata and document counts. For full backup, use mongodump.'}
           </p>
-          <Button
-            variant="primary"
-            onClick={handleBackup}
-            disabled={running}
-            isLoading={running}
-          >
+          <Button variant='primary' onClick={handleBackup} disabled={running} isLoading={running}>
             {running ? t('admin.backingUp') || 'Backing up…' : t('admin.runBackup') || 'Run Backup'}
           </Button>
           {lastResult && (
-            <div className="mt-4 p-4 bg-neutral-100 rounded-lg text-sm">
-              <p className="font-medium">{t('admin.backupResult') || 'Result'}:</p>
+            <div className='mt-4 p-4 bg-neutral-100 rounded-lg text-sm'>
+              <p className='font-medium'>{t('admin.backupResult') || 'Result'}:</p>
               <p>
-                {lastResult.collections?.length || 0} {t('admin.collections') || 'collections'},{' '}
-                {lastResult.totalDocs || 0} {t('admin.documents') || 'documents'}
+                {lastResult.collections?.length || 0} {t('admin.backupCollections')},{' '}
+                {lastResult.totalDocs || 0} {t('admin.backupDocuments')}
               </p>
             </div>
           )}

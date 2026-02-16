@@ -205,7 +205,7 @@ function LoginPageContent() {
         <div className='absolute inset-0 w-full h-full'>
           <ImageTransition
             src='/images/login.png'
-            alt='Login Background'
+            alt={t('common.altLoginBackground')}
             fill
             className='object-cover opacity-90'
             quality={75}
@@ -232,7 +232,7 @@ function LoginPageContent() {
               <div className='flex items-center justify-center group-hover:opacity-90 transition-opacity'>
                 <Image
                   src='/images/logoclinic.png'
-                  alt='Clinic Logo'
+                  alt={t('common.altClinicLogo')}
                   width={128}
                   height={112}
                   className='object-contain drop-shadow-md w-32 max-w-full'
@@ -249,7 +249,7 @@ function LoginPageContent() {
                 <div className='flex items-center justify-center group-hover:opacity-90 transition-opacity'>
                   <ImageTransition
                     src='/images/logoclinic.png'
-                    alt='Clinic Logo'
+                    alt={t('common.altClinicLogo')}
                     width={128}
                     height={112}
                     className='object-contain drop-shadow-sm w-32'
@@ -383,7 +383,7 @@ function LoginPageContent() {
                       type='button'
                       onClick={() => setShowPassword(!showPassword)}
                       className='w-12 shrink-0 flex items-center justify-center text-neutral-500 hover:text-primary-600 transition-colors'
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     >
                       {showPassword ? (
                         <svg
@@ -611,7 +611,7 @@ function LoginPageContent() {
                       d='M10 19l-7-7m0 0l7-7m-7 7h18'
                     />
                   </svg>
-                  Back to Login
+                  {t('auth.backToLogin')}
                 </Button>
               </form>
             )}
@@ -645,7 +645,7 @@ function LoginPageContent() {
                           d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z'
                         />
                       </svg>
-                      <span className='ml-2'>Google</span>
+                      <span className='ml-2'>{t('auth.providerGoogle')}</span>
                     </Button>
                     <Button type='button' variant='secondary' size='sm' className='w-full'>
                       <svg
@@ -661,7 +661,7 @@ function LoginPageContent() {
                           d='M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5'
                         />
                       </svg>
-                      <span className='ml-2'>GitHub</span>
+                      <span className='ml-2'>{t('auth.providerGitHub')}</span>
                     </Button>
                   </div>
                 </div>

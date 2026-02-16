@@ -43,7 +43,7 @@ export function PrescriptionsTab({ isActive = false }) {
       const { data, error: err } = await fetchPrescriptionsTab(userId);
       if (err) {
         if (!showRevalidating) setError(err?.message || t('common.error'));
-        setPrescriptions((prev) => prev.length ? prev : []);
+        setPrescriptions((prev) => (prev.length ? prev : []));
       } else {
         setPrescriptions(data || []);
         setError(null);
@@ -74,56 +74,65 @@ export function PrescriptionsTab({ isActive = false }) {
     };
   }, [isActive, userId, authLoading, user, fetchAndUpdate]);
 
-  const getStatusLabel = useCallback((status) => {
-    const map = {
-      draft: t('prescriptions.draft'),
-      active: t('prescriptions.active'),
-      dispensed: t('prescriptions.dispensed'),
-      cancelled: t('prescriptions.cancelled'),
-      expired: t('prescriptions.expired'),
-    };
-    return map[status] || status;
-  }, [t]);
-
-  const columns = useMemo(() => [
-    { header: t('prescriptions.title') + ' #', accessor: 'prescriptionNumber' },
-    {
-      header: t('appointments.patient'),
-      accessor: (row) =>
-        [row.patientId?.firstName, row.patientId?.lastName].filter(Boolean).join(' ') || '—',
+  const getStatusLabel = useCallback(
+    (status) => {
+      const map = {
+        draft: t('prescriptions.draft'),
+        active: t('prescriptions.active'),
+        dispensed: t('prescriptions.dispensed'),
+        cancelled: t('prescriptions.cancelled'),
+        expired: t('prescriptions.expired'),
+      };
+      return map[status] || status;
     },
-    {
-      header: t('prescriptions.status'),
-      accessor: (row) => {
-        const variant =
-          row.status === 'active'
-            ? 'primary'
-            : row.status === 'dispensed'
-              ? 'success'
-              : row.status === 'draft'
-                ? 'warning'
-                : row.status === 'cancelled'
-                  ? 'danger'
-                  : 'default';
-        return (
-          <Tag variant={variant} size='sm'>
-            {getStatusLabel(row.status)}
-          </Tag>
-        );
+    [t],
+  );
+
+  const columns = useMemo(
+    () => [
+      { header: t('prescriptions.title') + ' #', accessor: 'prescriptionNumber' },
+      {
+        header: t('appointments.patient'),
+        accessor: (row) =>
+          [row.patientId?.firstName, row.patientId?.lastName].filter(Boolean).join(' ') || '—',
       },
-    },
-    {
-      header: t('common.createdAt'),
-      accessor: (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '—'),
-    },
-  ], [t, getStatusLabel]);
+      {
+        header: t('prescriptions.status'),
+        accessor: (row) => {
+          const variant =
+            row.status === 'active'
+              ? 'primary'
+              : row.status === 'dispensed'
+                ? 'success'
+                : row.status === 'draft'
+                  ? 'warning'
+                  : row.status === 'cancelled'
+                    ? 'danger'
+                    : 'default';
+          return (
+            <Tag variant={variant} size='sm'>
+              {getStatusLabel(row.status)}
+            </Tag>
+          );
+        },
+      },
+      {
+        header: t('common.createdAt'),
+        accessor: (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '—'),
+      },
+    ],
+    [t, getStatusLabel],
+  );
 
-  const stats = useMemo(() => ({
-    total: prescriptions.length,
-    draft: prescriptions.filter(p => p.status === 'draft').length,
-    active: prescriptions.filter(p => p.status === 'active').length,
-    dispensed: prescriptions.filter(p => p.status === 'dispensed').length,
-  }), [prescriptions]);
+  const stats = useMemo(
+    () => ({
+      total: prescriptions.length,
+      draft: prescriptions.filter((p) => p.status === 'draft').length,
+      active: prescriptions.filter((p) => p.status === 'active').length,
+      dispensed: prescriptions.filter((p) => p.status === 'dispensed').length,
+    }),
+    [prescriptions],
+  );
 
   const cardContent = (
     <>
@@ -138,10 +147,20 @@ export function PrescriptionsTab({ isActive = false }) {
           )}
         </div>
         <div className='flex gap-2 ml-auto'>
-          <Button variant='secondary' size='sm' href='/prescriptions'>
+          <Button
+            variant='secondary'
+            size='sm'
+            href='/prescriptions'
+            className='section-header-action'
+          >
             {t('dashboard.seeAll')}
           </Button>
-          <Button variant='primary' size='sm' href='/prescriptions/new'>
+          <Button
+            variant='primary'
+            size='sm'
+            href='/prescriptions/new'
+            className='section-header-action'
+          >
             + {t('prescriptions.createPrescription')}
           </Button>
         </div>
@@ -150,19 +169,27 @@ export function PrescriptionsTab({ isActive = false }) {
       <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
         <div className='text-center'>
           <div className='text-2xl font-bold text-primary-600'>{stats.total}</div>
-          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('common.total')}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>
+            {t('common.total')}
+          </div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-status-warning'>{stats.draft}</div>
-          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('prescriptions.draft')}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>
+            {t('prescriptions.draft')}
+          </div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-primary-600'>{stats.active}</div>
-          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('prescriptions.active')}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>
+            {t('prescriptions.active')}
+          </div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-secondary-600'>{stats.dispensed}</div>
-          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('prescriptions.dispensed')}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>
+            {t('prescriptions.dispensed')}
+          </div>
         </div>
       </div>
 
@@ -202,7 +229,12 @@ export function PrescriptionsTab({ isActive = false }) {
         <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col justify-center items-center'>
           <div className='empty-state-icon'>
             <svg className='icon icon-lg' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+              />
             </svg>
           </div>
           <p className='text-status-error text-body-md font-medium mb-4'>{error}</p>

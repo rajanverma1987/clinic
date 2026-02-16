@@ -46,33 +46,10 @@ export function ComplianceTab({
   }
 
   const complianceOptions = [
-    {
-      key: 'hipaa',
-      title: 'HIPAA Compliance',
-      region: 'United States',
-      description:
-        'Health Insurance Portability and Accountability Act compliance for US healthcare data protection',
-    },
-    {
-      key: 'gdpr',
-      title: 'GDPR Compliance',
-      region: 'European Union',
-      description:
-        'General Data Protection Regulation compliance for EU data protection and privacy',
-    },
-    {
-      key: 'pipeda',
-      title: 'PIPEDA Compliance',
-      region: 'Canada',
-      description:
-        'Personal Information Protection and Electronic Documents Act compliance for Canadian data protection',
-    },
-    {
-      key: 'privacyAct',
-      title: 'Privacy Act Compliance',
-      region: 'Australia',
-      description: 'Privacy Act compliance for Australian data protection and privacy regulations',
-    },
+    { key: 'hipaa', titleKey: 'settings.hipaaTitle', regionKey: 'settings.hipaaRegion', descKey: 'settings.hipaaDesc' },
+    { key: 'gdpr', titleKey: 'settings.gdprTitle', regionKey: 'settings.gdprRegion', descKey: 'settings.gdprDesc' },
+    { key: 'pipeda', titleKey: 'settings.pipedaTitle', regionKey: 'settings.pipedaRegion', descKey: 'settings.pipedaDesc' },
+    { key: 'privacyAct', titleKey: 'settings.privacyActTitle', regionKey: 'settings.privacyActRegion', descKey: 'settings.privacyActDesc' },
   ];
 
   return (
@@ -104,7 +81,7 @@ export function ComplianceTab({
                   />
                 </svg>
               </div>
-              <h2 className='text-lg font-bold text-neutral-900'>Compliance Standards</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.complianceStandards')}</h2>
             </div>
 
             <div className='space-y-2'>
@@ -141,12 +118,12 @@ export function ComplianceTab({
                     </div>
                     <div className='flex-1'>
                       <div className='flex items-center gap-2 mb-0.5'>
-                        <h3 className='font-semibold text-neutral-900 text-sm'>{option.title}</h3>
+                        <h3 className='font-semibold text-neutral-900 text-sm'>{t(option.titleKey)}</h3>
                         <span className='px-1.5 py-0.5 bg-neutral-100 text-neutral-600 text-xs rounded'>
-                          {option.region}
+                          {t(option.regionKey)}
                         </span>
                       </div>
-                      <p className='text-xs text-neutral-600'>{option.description}</p>
+                      <p className='text-xs text-neutral-600'>{t(option.descKey)}</p>
                     </div>
                   </div>
                   <Toggle
@@ -180,12 +157,12 @@ export function ComplianceTab({
                   />
                 </svg>
               </div>
-              <h2 className='text-lg font-bold text-neutral-900'>Data Retention</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.dataRetention')}</h2>
             </div>
 
             <div>
               <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                Data Retention Period (Years) <span className='text-red-500'>*</span>
+                {t('settings.dataRetentionYears')} <span className='text-red-500'>*</span>
               </label>
               <Input
                 type='number'
@@ -198,14 +175,13 @@ export function ComplianceTab({
                     dataRetentionYears: parseInt(e.target.value) || 7,
                   })
                 }
-                placeholder='7'
+                placeholder={t('settings.complianceValidityPlaceholder')}
                 required
                 className='max-w-xs'
               />
               <div className='mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg'>
                 <p className='text-xs text-amber-800'>
-                  <strong>Note:</strong> Data retention periods vary by region and compliance
-                  requirements. Consult legal counsel for specific requirements.
+                  <strong>{t('common.note')}:</strong> {t('settings.dataRetentionNote')}
                 </p>
               </div>
             </div>

@@ -2,6 +2,7 @@
 
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
@@ -83,23 +84,31 @@ export default function TelemedicinePage() {
     },
     {
       header: t('common.actions'),
-      accessor: (row) => (
-        <div className='flex gap-2'>
-          {row.status === 'SCHEDULED' || row.status === 'IN_PROGRESS' ? (
-            <Button size='sm' onClick={() => handleJoinSession(row._id)}>
-              {t('telemedicine.joinSession')}
-            </Button>
-          ) : (
-            <Button
-              variant='secondary'
-              size='sm'
-              onClick={() => router.push(`/telemedicine/${row._id}/summary`)}
-            >
-              {t('telemedicine.viewSummary')}
-            </Button>
-          )}
-        </div>
-      ),
+      accessor: (row) => {
+        const items = [];
+        if (row.status === 'SCHEDULED' || row.status === 'IN_PROGRESS') {
+          items.push({
+            key: 'join',
+            label: t('telemedicine.joinSession'),
+            onClick: () => handleJoinSession(row._id),
+          });
+        } else {
+          items.push({
+            key: 'summary',
+            label: t('telemedicine.viewSummary'),
+            onClick: () => router.push(`/telemedicine/${row._id}/summary`),
+          });
+        }
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <ActionsMenu
+              ariaLabel={t('common.actions')}
+              triggerSize='xs'
+              items={items}
+            />
+          </div>
+        );
+      },
     },
   ];
 

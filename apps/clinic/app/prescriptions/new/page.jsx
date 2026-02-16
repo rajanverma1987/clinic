@@ -445,24 +445,24 @@ function NewPrescriptionPageContent() {
 
     // Validate patient
     if (!formData.patientId || formData.patientId.trim() === '') {
-      errors.patientId = 'Patient is required';
+      errors.patientId = t('prescriptions.validationPatientRequired');
     }
 
     // Validate validUntil
     if (!formData.validUntil) {
-      errors.validUntil = 'Valid until date is required';
+      errors.validUntil = t('prescriptions.validationValidUntilRequired');
     } else {
       const validUntilDate = new Date(formData.validUntil);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (validUntilDate < today) {
-        errors.validUntil = 'Valid until date must be in the future';
+        errors.validUntil = t('prescriptions.validationValidUntilFuture');
       }
     }
 
     // Validate items
     if (items.length === 0) {
-      errors.items = 'At least one prescription item is required';
+      errors.items = t('prescriptions.validationItemsRequired');
     } else {
       items.forEach((item, index) => {
         const itemType = item.itemType || 'drug';
@@ -470,37 +470,37 @@ function NewPrescriptionPageContent() {
 
         if (itemType === 'drug') {
           if (!item.drugId || (typeof item.drugId === 'string' && item.drugId.trim() === '')) {
-            errors[itemKey] = 'Please select a drug';
+            errors[itemKey] = t('prescriptions.validationSelectDrug');
           }
           if (!item.frequency || item.frequency.trim() === '') {
-            errors[`${itemKey}_frequency`] = 'Frequency is required';
+            errors[`${itemKey}_frequency`] = t('prescriptions.validationFrequencyRequired');
           }
           if (!item.duration || item.duration < 1) {
-            errors[`${itemKey}_duration`] = 'Duration must be at least 1 day';
+            errors[`${itemKey}_duration`] = t('prescriptions.validationDurationMin');
           }
           if (!item.quantity || item.quantity < 1) {
-            errors[`${itemKey}_quantity`] = 'Quantity must be at least 1';
+            errors[`${itemKey}_quantity`] = t('prescriptions.validationQuantityMin');
           }
         } else if (itemType === 'lab') {
           if (
             !item.labTestCode ||
             (typeof item.labTestCode === 'string' && item.labTestCode.trim() === '')
           ) {
-            errors[itemKey] = 'Please select a lab test';
+            errors[itemKey] = t('prescriptions.validationSelectLabTest');
           }
         } else if (itemType === 'procedure') {
           if (
             !item.procedureName ||
             (typeof item.procedureName === 'string' && item.procedureName.trim() === '')
           ) {
-            errors[itemKey] = 'Please enter a procedure name';
+            errors[itemKey] = t('prescriptions.validationProcedureName');
           }
         } else if (itemType === 'other') {
           if (
             !item.itemName ||
             (typeof item.itemName === 'string' && item.itemName.trim() === '')
           ) {
-            errors[itemKey] = 'Please enter an item name';
+            errors[itemKey] = t('prescriptions.validationItemName');
           }
         }
       });
@@ -585,13 +585,13 @@ function NewPrescriptionPageContent() {
     setAutoSaveSubmitting(true);
 
     if (!validateForm()) {
-      setError('Please fix the errors in the form before submitting');
+      setError(t('prescriptions.validationFixErrors'));
       setSubmitting(false);
       setAutoSaveSubmitting(false);
       return;
     }
     if (!formData.digitalSignature?.trim()) {
-      setError('Digital signature is required for Sign & Send to Patient');
+      setError(t('prescriptions.validationSignatureRequired'));
       setSubmitting(false);
       setAutoSaveSubmitting(false);
       return;
@@ -605,13 +605,13 @@ function NewPrescriptionPageContent() {
         showSuccess(t('prescriptions.signedAndSentSuccess'));
         router.push('/prescriptions');
       } else {
-        const errorMessage = response.error?.message || 'Failed to create prescription';
+        const errorMessage = response.error?.message || t('prescriptions.failedToCreatePrescription');
         setError(errorMessage);
         showError(errorMessage);
       }
     } catch (error) {
       logger.error('Failed to create prescription:', error);
-      const errorMessage = error.message || 'Failed to create prescription';
+      const errorMessage = error.message || t('prescriptions.failedToCreatePrescription');
       setError(errorMessage);
       showError(errorMessage);
     } finally {
@@ -624,7 +624,7 @@ function NewPrescriptionPageContent() {
     setError('');
     setFieldErrors({});
     if (!formData.patientId?.trim()) {
-      setError('Please select a patient to save draft');
+      setError(t('prescriptions.validationSelectPatientForDraft'));
       return;
     }
     setSubmitting(true);
@@ -638,13 +638,13 @@ function NewPrescriptionPageContent() {
         clearDraft();
         showSuccess(t('prescriptions.savedAsDraftSuccess'));
       } else {
-        const errorMessage = response.error?.message || 'Failed to save prescription as draft';
+        const errorMessage = response.error?.message || t('prescriptions.failedToSaveDraft');
         setError(errorMessage);
         showError(errorMessage);
       }
     } catch (error) {
       logger.error('Failed to save prescription draft:', error);
-      const errorMessage = error.message || 'Failed to save prescription as draft';
+      const errorMessage = error.message || t('prescriptions.failedToSaveDraft');
       setError(errorMessage);
       showError(errorMessage);
     } finally {
@@ -770,7 +770,7 @@ function NewPrescriptionPageContent() {
                   />
 
                   <div className='prescription-form-section'>
-                    <h2 className='prescription-form-section-title'>Prescription Details</h2>
+                    <h2 className='prescription-form-section-title'>{t('prescriptions.prescriptionDetails')}</h2>
 
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
                       <div className='prescription-form-field'>
@@ -807,7 +807,7 @@ function NewPrescriptionPageContent() {
                         >
                           <option value=''>
                             {patients.length === 0
-                              ? 'No patients with in-progress appointments available'
+                              ? t('prescriptions.noPatientsInProgress')
                               : `${t('common.select')} ${t('appointments.patient').toLowerCase()}`}
                           </option>
                           {patients.map((patient) => (
@@ -824,14 +824,13 @@ function NewPrescriptionPageContent() {
                             className='prescription-form-help-text'
                             style={{ color: 'var(--color-secondary-700)' }}
                           >
-                            ✓ Linked to appointment:{' '}
+                            ✓ {t('prescriptions.linkedToAppointment')}:{' '}
                             {new Date(currentAppointment.appointmentDate).toLocaleDateString()}
                           </p>
                         )}
                         {patients.length === 0 && !loading && (
                           <p className='prescription-form-help-text'>
-                            Only patients with appointments in progress can receive prescriptions.
-                            Start an appointment from the Queue page first.
+                            {t('prescriptions.onlyPatientsWithAppointments')}
                           </p>
                         )}
                       </div>
@@ -841,7 +840,7 @@ function NewPrescriptionPageContent() {
                           htmlFor='validUntil'
                           className='prescription-form-label prescription-form-label-required'
                         >
-                          Valid Until
+                          {t('prescriptions.validUntil')}
                         </label>
                         <Input
                           id='validUntil'
@@ -858,7 +857,7 @@ function NewPrescriptionPageContent() {
                           <div className='prescription-form-error'>{fieldErrors.validUntil}</div>
                         )}
                         <p className='prescription-form-help-text'>
-                          Date until which this prescription is valid
+                          {t('prescriptions.validUntilHelp')}
                         </p>
                       </div>
 
@@ -870,10 +869,10 @@ function NewPrescriptionPageContent() {
                           id='symptoms'
                           value={formData.symptoms}
                           onChange={(e) => setFormData({ ...formData, symptoms: e.target.value })}
-                          placeholder='e.g., Fever, Headache, Cough...'
+                          placeholder={t('prescriptions.diagnosisPlaceholderExample')}
                         />
                         <p className='prescription-form-help-text'>
-                          Patient-reported symptoms or complaints
+                          {t('prescriptions.symptomsHelp')}
                         </p>
                       </div>
 
@@ -1053,7 +1052,7 @@ function NewPrescriptionPageContent() {
 
                   <div className='prescription-items-section'>
                     <div className='prescription-items-header'>
-                      <h3 className='prescription-items-title'>Prescription Items</h3>
+                        <h3 className='prescription-items-title'>{t('prescriptions.prescriptionItems')}</h3>
                       <Button type='button' variant='secondary' size='sm' onClick={addItem}>
                         + Add Item
                       </Button>
@@ -1103,14 +1102,17 @@ function NewPrescriptionPageContent() {
                       disabled={submitting || !formData.patientId}
                     >
                       <PrinterIcon className='icon icon-sm mr-2' ariaHidden />
-                      Print
+                      {t('prescriptions.print')}
                     </Button>
                     <Button
                       type='button'
                       variant='secondary'
                       onClick={handlePrintPreview}
                       disabled={submitting || !formData.patientId}
-                      title={t('prescriptions.downloadPdfHint') || 'Open preview to Print or Download PDF'}
+                      title={
+                        t('prescriptions.downloadPdfHint') ||
+                        {t('prescriptions.openPreviewToPrint')}
+                      }
                     >
                       <FileDownIcon className='icon icon-sm mr-2' ariaHidden />
                       {t('prescriptions.downloadPdf') || 'Download PDF'}

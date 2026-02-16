@@ -3,6 +3,7 @@
 import { apiClient } from '@/lib/api/client.js';
 import { extractLocale, formatLocale, getTranslation, supportedLocales } from '@/lib/i18n/index.js';
 import { logger } from '@/lib/utils/logger.js';
+import { configureToast } from '@/lib/utils/toast.js';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext.jsx';
@@ -110,6 +111,12 @@ export function I18nProvider({ children }) {
 
     return translation;
   };
+
+  useEffect(() => {
+    configureToast({
+      closeAriaLabel: getTranslation('common.ariaLabelCloseNotification', locale),
+    });
+  }, [locale]);
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, t, loading }}>

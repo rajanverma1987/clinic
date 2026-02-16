@@ -118,26 +118,22 @@ export default function APIDocsPage() {
   return (
     <Layout>
       <div className='mb-8'>
-        <h1 className='text-3xl font-bold text-gray-900'>API Documentation</h1>
-        <p className='text-neutral-600 mt-2'>
-          Integrate Doctor&apos;s Clinic with your applications
-        </p>
+        <h1 className='text-3xl font-bold text-gray-900'>{t('apiDocs.title')}</h1>
+        <p className='text-neutral-600 mt-2'>{t('apiDocs.subtitle')}</p>
       </div>
 
       {/* API Key Section */}
       <Card className='mb-8'>
-        <h2 className='text-xl font-semibold mb-4'>API Authentication</h2>
-        <p className='text-neutral-600 mb-4'>
-          Use your API key to authenticate requests to the Doctor&apos;s Clinic API.
-        </p>
+        <h2 className='text-xl font-semibold mb-4'>{t('apiDocs.authentication')}</h2>
+        <p className='text-neutral-600 mb-4'>{t('apiDocs.authenticationDesc')}</p>
 
         {!showToken ? (
-          <Button onClick={generateToken}>Generate API Key</Button>
+          <Button onClick={generateToken}>{t('common.generateApiKey')}</Button>
         ) : (
           <div className='space-y-4'>
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-2'>
-                Your API Key (Keep this secret!)
+                {t('apiDocs.apiKeyLabel')}
               </label>
               <div className='flex gap-2'>
                 <input
@@ -153,15 +149,14 @@ export default function APIDocsPage() {
                     showSuccess(t('apiDocs.copied') || 'API key copied to clipboard!');
                   }}
                 >
-                  Copy
+                  {t('apiDocs.copy')}
                 </Button>
               </div>
             </div>
 
             <div className='bg-status-warning/10 border-l-4 border-status-warning p-4'>
               <p className='text-sm text-status-warning'>
-                <strong>⚠️ Security:</strong> Never share your API key or commit it to version
-                control. Store it securely in environment variables.
+                <strong>⚠️ {t('apiDocs.securityLabel')}:</strong> {t('apiDocs.securityWarning')}
               </p>
             </div>
           </div>
@@ -170,7 +165,7 @@ export default function APIDocsPage() {
 
       {/* Quick Start */}
       <Card className='mb-8'>
-        <h2 className='text-xl font-semibold mb-4'>Quick Start</h2>
+        <h2 className='text-xl font-semibold mb-4'>{t('apiDocs.quickStart')}</h2>
         <div className='bg-neutral-100 text-neutral-900 border border-neutral-300 p-4 rounded-lg overflow-x-auto'>
           <pre className='text-sm'>
             {`// JavaScript/Node.js Example
@@ -190,7 +185,7 @@ const data = await response.json();
 
       {/* API Endpoints */}
       <Card>
-        <h2 className='text-xl font-semibold mb-6'>API Endpoints</h2>
+        <h2 className='text-xl font-semibold mb-6'>{t('apiDocs.endpoints')}</h2>
 
         <div className='space-y-8'>
           {endpoints.map((category) => (
@@ -224,7 +219,7 @@ const data = await response.json();
         </div>
 
         <div className='mt-8 pt-6 border-t'>
-          <h3 className='text-lg font-semibold mb-4'>Response Format</h3>
+          <h3 className='text-lg font-semibold mb-4'>{t('apiDocs.responseFormat')}</h3>
           <div className='bg-neutral-100 text-neutral-900 border border-neutral-300 p-4 rounded-lg overflow-x-auto'>
             <pre className='text-sm'>
               {`// Success Response
@@ -248,15 +243,13 @@ const data = await response.json();
 
       {/* Rate Limits */}
       <Card className='mt-6'>
-        <h2 className='text-xl font-semibold mb-4'>Rate Limits</h2>
-        <p className='text-neutral-600 mb-4'>
-          API requests are limited based on your subscription plan:
-        </p>
+        <h2 className='text-xl font-semibold mb-4'>{t('apiDocs.rateLimits')}</h2>
+        <p className='text-neutral-600 mb-4'>{t('apiDocs.rateLimitsDesc')}</p>
         <ul className='space-y-2 text-sm text-gray-700'>
-          <li>• Free Trial: 100 requests/hour</li>
-          <li>• Basic: 1,000 requests/hour</li>
-          <li>• Professional: 10,000 requests/hour</li>
-          <li>• Enterprise: Unlimited</li>
+          <li>• {t('apiDocs.freeTrial')}</li>
+          <li>• {t('apiDocs.basic')}</li>
+          <li>• {t('apiDocs.professional')}</li>
+          <li>• {t('apiDocs.enterprise')}</li>
         </ul>
       </Card>
     </Layout>

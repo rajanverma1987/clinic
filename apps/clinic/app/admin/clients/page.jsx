@@ -357,21 +357,21 @@ export default function AdminClientsPage() {
 
   const handleExportCSV = useCallback(() => {
     const headers = [
-      'Name',
-      'Slug',
-      'Region',
-      'Status',
-      'Plan',
-      'Subscription Status',
-      'Next Billing',
-      'Created',
+      t('admin.clientName'),
+      t('admin.slug'),
+      t('admin.region'),
+      t('admin.status'),
+      t('admin.subscriptionPlan'),
+      t('admin.subscriptionStatus'),
+      t('admin.nextBilling'),
+      t('admin.created'),
     ];
     const rows = (filteredClients || []).map((c) => [
       c.name || '',
       c.slug || '',
       c.region || '',
-      c.isActive ? 'Active' : 'Inactive',
-      c.subscription?.planId?.name || 'None',
+      c.isActive ? t('common.active') : t('common.inactive'),
+      c.subscription?.planId?.name || t('common.none'),
       c.subscription?.status || '-',
       c.subscription?.currentPeriodEnd
         ? new Date(c.subscription.currentPeriodEnd).toLocaleDateString()
@@ -439,15 +439,15 @@ export default function AdminClientsPage() {
       ),
     },
     {
-      header: 'Client Name',
+      header: t('admin.clientName'),
       accessor: (row) => row.name,
     },
     {
-      header: 'Region',
+      header: t('admin.region'),
       accessor: (row) => row.region,
     },
     {
-      header: 'Status',
+      header: t('admin.status'),
       accessor: (row) => (
         <div className='flex flex-wrap gap-1'>
           {row.suspended ? (
@@ -461,24 +461,26 @@ export default function AdminClientsPage() {
       ),
     },
     {
-      header: 'Subscription',
+      header: t('admin.subscriptionPlan'),
       accessor: (row) => {
         if (!row.subscription || !row.subscription.planId) {
-          return <Tag variant='default'>No Subscription</Tag>;
+          return <Tag variant='default'>{t('admin.noSubscription')}</Tag>;
         }
         return (
           <div>
             <div className='font-medium'>{row.subscription.planId.name}</div>
             <div className='text-sm text-neutral-500'>
               {formatCurrency(row.subscription.planId.price)}/
-              {row.subscription.planId.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}
+              {row.subscription.planId.billingCycle === 'MONTHLY'
+                ? t('admin.billingMonthlyShort')
+                : t('admin.billingYearlyShort')}
             </div>
           </div>
         );
       },
     },
     {
-      header: 'Subscription Status',
+      header: t('admin.subscriptionStatus'),
       accessor: (row) => {
         if (!row.subscription) return '-';
         const statusColors = {
@@ -496,18 +498,18 @@ export default function AdminClientsPage() {
       },
     },
     {
-      header: 'Next Billing',
+      header: t('admin.nextBilling'),
       accessor: (row) => {
         if (!row.subscription) return '-';
         return new Date(row.subscription.currentPeriodEnd).toLocaleDateString();
       },
     },
     {
-      header: 'Created',
+      header: t('admin.created'),
       accessor: (row) => new Date(row.createdAt).toLocaleDateString(),
     },
     {
-      header: 'Actions',
+      header: t('common.actions'),
       accessor: (row) => (
         <ActionsMenu
           ariaLabel={t('common.actions') || 'Actions'}
@@ -802,14 +804,14 @@ export default function AdminClientsPage() {
           <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
             <Card className='max-w-md w-full mx-4'>
               <div className='p-6'>
-                <h2 className='text-xl font-semibold mb-4'>Update Subscription</h2>
+                <h2 className='text-xl font-semibold mb-4'>{t('admin.updateSubscription')}</h2>
                 <p className='text-sm text-neutral-600 mb-4'>
                   Client: <span className='font-medium'>{currentClient.name}</span>
                 </p>
 
                 <div className='mb-4'>
                   <Select
-                    label='Select New Plan'
+                    label={t('admin.selectNewPlan')}
                     value={selectedPlanId}
                     onChange={(e) => setSelectedPlanId(e.target.value)}
                     required
@@ -825,7 +827,9 @@ export default function AdminClientsPage() {
                         return planList.map((plan) => ({
                           value: plan._id,
                           label: `${plan.name} - ${formatCurrency(plan.price)}/${
-                            plan.billingCycle === 'MONTHLY' ? 'month' : 'year'
+                            plan.billingCycle === 'MONTHLY'
+                              ? t('common.monthly').toLowerCase()
+                              : t('common.yearly').toLowerCase()
                           }`,
                         }));
                       })(),
@@ -972,22 +976,21 @@ export default function AdminClientsPage() {
             <Card className='max-w-2xl w-full mx-4'>
               <div className='p-6'>
                 <h2 className='text-xl font-semibold mb-4 text-secondary-600'>
-                  ✅ Subscription Created - Payment Required
+                  {t('admin.subscriptionCreatedPaymentRequired')}
                 </h2>
 
                 <div className='bg-primary-100 border-l-4 border-primary-500 p-4 mb-4'>
                   <p className='text-sm text-primary-700 mb-2'>
-                    <strong>PayPal subscription created successfully!</strong>
+                    <strong>{t('admin.paypalSubscriptionCreated')}</strong>
                   </p>
                   <p className='text-sm text-primary-600'>
-                    The client needs to complete payment to activate their subscription. Send them
-                    the payment link below.
+                    {t('admin.clientNeedsToCompletePayment')}
                   </p>
                 </div>
 
                 <div className='mb-4'>
                   <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Payment Link (Send to Client):
+                    {t('admin.paymentLinkSendToClient')}
                   </label>
                   <div className='flex gap-2'>
                     <input
@@ -1006,15 +1009,15 @@ export default function AdminClientsPage() {
                         );
                       }}
                     >
-                      Copy Link
+                      {t('admin.copyLink')}
                     </Button>
                   </div>
                 </div>
 
                 <div className='bg-status-warning/10 border-l-4 border-status-warning p-4 mb-4'>
                   <p className='text-sm text-status-warning'>
-                    <strong>⚠️ Important:</strong> The subscription status is PENDING until the
-                    client completes payment. Features will be disabled until payment is received.
+                    <strong>{t('admin.important')}</strong>{' '}
+                    {t('admin.subscriptionPendingUntilPaid')}
                   </p>
                 </div>
 
@@ -1025,7 +1028,7 @@ export default function AdminClientsPage() {
                     }}
                     className='flex-1'
                   >
-                    Open Payment Link
+                    {t('admin.openPaymentLink')}
                   </Button>
                   <Button
                     variant='secondary'
@@ -1035,7 +1038,7 @@ export default function AdminClientsPage() {
                     }}
                     className='flex-1'
                   >
-                    Close
+                    {t('common.close')}
                   </Button>
                 </div>
               </div>

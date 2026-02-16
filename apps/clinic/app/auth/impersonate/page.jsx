@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -7,6 +8,7 @@ import { useEffect, useState } from 'react';
 export default function ImpersonatePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
 
@@ -47,25 +49,25 @@ export default function ImpersonatePage() {
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-neutral-600">Logging in as clinic...</p>
+      <div className='flex min-h-screen items-center justify-center'>
+        <p className='text-neutral-600'>{t('auth.impersonateLoggingIn')}</p>
       </div>
     );
   }
 
   if (status === 'error') {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-red-600">
-          {error === 'missing_token' && 'Invalid link: missing token'}
-          {error === 'invalid_or_expired' && 'Link expired or invalid'}
-          {error === 'no_user' && 'No admin user found for this clinic'}
-          {error === 'network_error' && 'Network error. Please try again.'}
+      <div className='flex min-h-screen flex-col items-center justify-center gap-4'>
+        <p className='text-red-600'>
+          {error === 'missing_token' && t('auth.impersonateInvalidLink')}
+          {error === 'invalid_or_expired' && t('auth.impersonateLinkExpired')}
+          {error === 'no_user' && t('auth.impersonateNoUser')}
+          {error === 'network_error' && t('auth.impersonateNetworkError')}
           {!['missing_token', 'invalid_or_expired', 'no_user', 'network_error'].includes(error) &&
-            'Unable to log in'}
+            t('auth.impersonateUnableToLogIn')}
         </p>
-        <a href="/admin/clients" className="text-primary-600 hover:underline">
-          Back to Clients
+        <a href='/admin/clients' className='text-primary-600 hover:underline'>
+          {t('common.backToClients')}
         </a>
       </div>
     );

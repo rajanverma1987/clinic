@@ -164,13 +164,6 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       requiredFeature: 'Inventory Management',
     },
     {
-      href: '/inventory/lots',
-      labelKey: 'nav.lots',
-      icon: IconLots,
-      requiredFeature: 'Inventory Management',
-      requiredPermission: { resource: RESOURCES.INVENTORY, action: ACTIONS.UPDATE },
-    },
-    {
       href: '/reports',
       labelKey: 'reports.title',
       icon: IconReports,
@@ -328,7 +321,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       {isMobileOpen && typeof onMobileClose === 'function' && (
         <button
           type='button'
-          aria-label='Close menu'
+          aria-label={t('common.closeMenu')}
           className='md:hidden fixed inset-0 bg-neutral-600/25 z-[var(--z-sidebar)] transition-opacity'
           style={{ zIndex: 1000 }}
           onClick={onMobileClose}
@@ -361,7 +354,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
               type='button'
               onClick={onMobileClose}
               className='min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 p-2'
-              aria-label='Close menu'
+              aria-label={t('common.closeMenu')}
             >
               <svg
                 width='24'
@@ -398,7 +391,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
           >
             <img
               src='/images/logoclinic.png'
-              alt='Clinic Logo'
+              alt={t('common.altClinicLogo')}
               className='object-contain'
               style={{
                 height: isCollapsed ? 32 : 40,

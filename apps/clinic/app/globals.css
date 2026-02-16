@@ -1032,15 +1032,23 @@
   color: var(--color-text-primary);
 }
 
-/** Button height to match filter-select and filter-input-date. */
+/** Button height to match filter-select and filter-input-date. Includes inline padding for consistent tap targets. */
 .filter-button {
   height: 2.375rem;
   min-height: 2.375rem;
   padding-top: 0;
   padding-bottom: 0;
+  padding-left: var(--space-4, 16px);
+  padding-right: var(--space-4, 16px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/** Section header action links/buttons (e.g. See All, Create Prescription) – consistent inline padding. */
+.section-header-action {
+  padding-left: var(--space-4, 16px);
+  padding-right: var(--space-4, 16px);
 }
 
 .filter-row {

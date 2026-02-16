@@ -63,7 +63,7 @@ export default function AdminSettingsGeneralPage() {
         showSuccess(t('admin.settingsSaved'));
         if (response.data) setForm((f) => ({ ...f, ...response.data }));
       } else {
-        showError(response.error?.message || 'Failed to save');
+        showError(response.error?.message || t('admin.failedToSaveSettings'));
       }
     } catch (err) {
       showError(t('admin.failedToSaveSettings'));
@@ -77,91 +77,95 @@ export default function AdminSettingsGeneralPage() {
 
   return (
     <Layout
-      title='General Settings'
-      subtitle='Platform name, support contact, business hours, timezone, date and currency format'
+      title={t('admin.settingsGeneralTitle')}
+      subtitle={t('admin.settingsGeneralSubtitle')}
     >
       <div className='admin-page-content'>
         <Card className='p-6 max-w-2xl'>
           <form onSubmit={handleSubmit} className='space-y-4'>
             <div>
               <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Platform name
+                {t('admin.settingsPlatformName')}
               </label>
               <Input
                 type='text'
                 value={form.platformName}
                 onChange={(e) => setForm((f) => ({ ...f, platformName: e.target.value }))}
-                placeholder='Clinic Tool'
+                placeholder={t('admin.settingsPlaceholderPlatformName')}
               />
             </div>
             <div>
               <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Support email
+                {t('admin.settingsSupportEmail')}
               </label>
               <Input
                 type='email'
                 value={form.supportEmail}
                 onChange={(e) => setForm((f) => ({ ...f, supportEmail: e.target.value }))}
-                placeholder='support@example.com'
+                placeholder={t('admin.settingsPlaceholderSupportEmail')}
               />
             </div>
             <div>
               <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Support phone
+                {t('admin.settingsSupportPhone')}
               </label>
               <Input
                 type='text'
                 value={form.supportPhone}
                 onChange={(e) => setForm((f) => ({ ...f, supportPhone: e.target.value }))}
-                placeholder='+1 234 567 8900'
+                placeholder={t('admin.settingsPlaceholderSupportPhone')}
               />
             </div>
             <div>
               <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Business hours
+                {t('admin.settingsBusinessHours')}
               </label>
               <Input
                 type='text'
                 value={form.businessHours}
                 onChange={(e) => setForm((f) => ({ ...f, businessHours: e.target.value }))}
-                placeholder='Mon–Fri 9:00–17:00'
-              />
-            </div>
-            <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Timezone</label>
-              <Input
-                type='text'
-                value={form.timezone}
-                onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))}
-                placeholder='UTC'
-              />
-            </div>
-            <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Date format</label>
-              <Input
-                type='text'
-                value={form.dateFormat}
-                onChange={(e) => setForm((f) => ({ ...f, dateFormat: e.target.value }))}
-                placeholder='MM/dd/yyyy'
+                placeholder={t('admin.settingsPlaceholderBusinessHours')}
               />
             </div>
             <div>
               <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Currency format
+                {t('settings.timezone')}
+              </label>
+              <Input
+                type='text'
+                value={form.timezone}
+                onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))}
+                placeholder={t('admin.settingsPlaceholderTimezone')}
+              />
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                {t('settings.dateFormat')}
+              </label>
+              <Input
+                type='text'
+                value={form.dateFormat}
+                onChange={(e) => setForm((f) => ({ ...f, dateFormat: e.target.value }))}
+                placeholder={t('admin.settingsPlaceholderDateFormat')}
+              />
+            </div>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                {t('settings.currencyFormat')}
               </label>
               <Input
                 type='text'
                 value={form.currencyFormat}
                 onChange={(e) => setForm((f) => ({ ...f, currencyFormat: e.target.value }))}
-                placeholder='USD'
+                placeholder={t('admin.settingsPlaceholderCurrencyFormat')}
               />
             </div>
             <div className='flex gap-2 pt-4'>
               <Button type='submit' variant='primary' disabled={saving}>
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </Button>
               <Button type='button' variant='secondary' href='/admin/settings'>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </form>

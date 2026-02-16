@@ -209,7 +209,7 @@ export function TestimonialsSection({
               setCurrentTestimonialIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))
             }
             className='absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-3 shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10'
-            aria-label='Previous testimonial'
+            aria-label={t('common.ariaLabelPreviousTestimonial')}
           >
             <svg
               style={{ width: '24px', height: '24px' }}
@@ -231,7 +231,7 @@ export function TestimonialsSection({
               setCurrentTestimonialIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))
             }
             className='absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-3 shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10'
-            aria-label='Next testimonial'
+            aria-label={t('common.ariaLabelNextTestimonial')}
           >
             <svg
               style={{ width: '24px', height: '24px' }}

@@ -112,7 +112,7 @@ export default function EditInvoicePage() {
           );
         }
       } else {
-        setError('Invoice not found');
+        setError(t('invoices.invoiceNotFound'));
       }
     } catch (error) {
       logger.error('Failed to fetch invoice:', error);
@@ -271,8 +271,8 @@ export default function EditInvoicePage() {
     <Layout>
       <div style={{ padding: '0 10px' }}>
         <div className='mb-8' style={{ paddingTop: '10px' }}>
-          <h1 className='text-3xl font-bold text-neutral-900'>Edit Invoice</h1>
-          <p className='text-neutral-600 mt-2'>Update invoice details</p>
+          <h1 className='text-3xl font-bold text-neutral-900'>{t('invoices.editTitle')}</h1>
+          <p className='text-neutral-600 mt-2'>{t('invoices.updateInvoiceDetails')}</p>
         </div>
 
         <Card>
@@ -289,7 +289,7 @@ export default function EditInvoicePage() {
                   htmlFor='patientId'
                   className='block text-sm font-medium text-neutral-700 mb-2'
                 >
-                  Patient *
+                  {t('appointments.patient')} *
                 </label>
                 <select
                   id='patientId'
@@ -300,7 +300,9 @@ export default function EditInvoicePage() {
                   disabled={patients.length === 0}
                 >
                   <option value=''>
-                    {patients.length === 0 ? 'No patients available' : 'Select a patient'}
+                    {patients.length === 0
+                      ? t('patients.noPatientsAvailable')
+                      : t('patients.selectPatient')}
                   </option>
                   {patients.map((patient) => (
                     <option key={patient._id} value={patient._id}>
@@ -315,7 +317,7 @@ export default function EditInvoicePage() {
                   htmlFor='invoiceDate'
                   className='block text-sm font-medium text-neutral-700 mb-2'
                 >
-                  Invoice Date *
+                  {t('invoices.invoiceDate')} *
                 </label>
                 <Input
                   id='invoiceDate'
@@ -331,7 +333,7 @@ export default function EditInvoicePage() {
                   htmlFor='dueDate'
                   className='block text-sm font-medium text-neutral-700 mb-2'
                 >
-                  Due Date
+                  {t('invoices.dueDate')}
                 </label>
                 <Input
                   id='dueDate'
@@ -344,9 +346,9 @@ export default function EditInvoicePage() {
 
             <div className='border-t pt-6'>
               <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-xl font-semibold'>Invoice Items</h2>
+                <h2 className='text-xl font-semibold'>{t('invoices.invoiceItems')}</h2>
                 <Button type='button' variant='secondary' onClick={addItem}>
-                  + Add Item
+                  + {t('invoices.addItem')}
                 </Button>
               </div>
 
@@ -355,14 +357,14 @@ export default function EditInvoicePage() {
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>Type</th>
-                      <th>Description</th>
-                      <th>Quantity</th>
-                      <th>Unit Price</th>
-                      <th>Discount (%)</th>
-                      <th>Tax Rate (%)</th>
-                      <th>Total</th>
-                      <th>Actions</th>
+                      <th>{t('invoices.type')}</th>
+                      <th>{t('invoices.description')}</th>
+                      <th>{t('invoices.quantity')}</th>
+                      <th>{t('invoices.unitPrice')}</th>
+                      <th>{t('invoices.discount')} (%)</th>
+                      <th>{t('invoices.taxRate')}</th>
+                      <th>{t('invoices.total')}</th>
+                      <th>{t('common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -376,11 +378,11 @@ export default function EditInvoicePage() {
                             onChange={(e) => updateItem(index, 'type', e.target.value)}
                             className='w-full px-2 py-1 text-xs border border-neutral-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500'
                           >
-                            <option value='consultation'>Consultation</option>
-                            <option value='procedure'>Procedure</option>
-                            <option value='medication'>Medication</option>
-                            <option value='lab_test'>Lab Test</option>
-                            <option value='other'>Other</option>
+                            <option value='consultation'>{t('invoices.typeConsultation')}</option>
+                            <option value='procedure'>{t('invoices.typeProcedure')}</option>
+                            <option value='medication'>{t('invoices.typeMedication')}</option>
+                            <option value='lab_test'>{t('invoices.typeLabTest')}</option>
+                            <option value='other'>{t('invoices.typeOther')}</option>
                           </select>
                         </td>
                         <td>
@@ -456,7 +458,7 @@ export default function EditInvoicePage() {
                               onClick={() => removeItem(index)}
                               className='text-status-error hover:text-status-error/80 text-xs'
                             >
-                              Remove
+                              {t('invoices.removeItem')}
                             </Button>
                           )}
                         </td>
@@ -468,11 +470,11 @@ export default function EditInvoicePage() {
             </div>
 
             <div className='border-t pt-6'>
-              <h2 className='text-xl font-semibold mb-4'>Invoice Discount</h2>
+              <h2 className='text-xl font-semibold mb-4'>{t('invoices.invoiceDiscount')}</h2>
               <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Discount Type
+                    {t('invoices.discountType')}
                   </label>
                   <select
                     value={formData.discountType}
@@ -480,14 +482,14 @@ export default function EditInvoicePage() {
                     className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                     disabled={managerLimitedWrite}
                   >
-                    <option value='percentage'>Percentage</option>
-                    <option value='fixed'>Fixed Amount</option>
+                    <option value='percentage'>{t('invoices.percentage')}</option>
+                    <option value='fixed'>{t('invoices.fixedAmount')}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    Discount Value
+                    {t('invoices.discountValue')}
                   </label>
                   <Input
                     type='number'
@@ -513,7 +515,7 @@ export default function EditInvoicePage() {
             </div>
 
             <div className='border-t pt-6'>
-              <h2 className='text-xl font-semibold mb-4'>Summary</h2>
+              <h2 className='text-xl font-semibold mb-4'>{t('invoices.summary')}</h2>
               <div className='bg-neutral-100 p-4 rounded-lg space-y-2'>
                 <div className='flex justify-between'>
                   <span>Subtotal:</span>

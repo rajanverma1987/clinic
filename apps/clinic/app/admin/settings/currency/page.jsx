@@ -129,7 +129,7 @@ export default function AdminSettingsCurrencyPage() {
                   type='text'
                   value={newCurrency}
                   onChange={(e) => setNewCurrency(e.target.value.toUpperCase().slice(0, 3))}
-                  placeholder='e.g. JPY'
+                  placeholder={t('admin.currencyPlaceholder')}
                   maxLength={3}
                 />
                 <Button

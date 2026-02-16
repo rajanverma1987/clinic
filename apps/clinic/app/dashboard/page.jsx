@@ -61,6 +61,7 @@ const CriticalAlerts = nextDynamic(
 );
 
 // Custom hooks – SWR for clinic (real-time + 30s poll), existing for doctor
+import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import {
   useDashboardChartsSWR,
   useDashboardListsSWR,
@@ -72,13 +73,10 @@ import { TabContent } from './_components/TabContent';
 import { AppointmentsTab } from './_tabs/AppointmentsTab';
 import { OverviewTab } from './_tabs/OverviewTab';
 import { PrescriptionsTab } from './_tabs/PrescriptionsTab';
-import { useDoctorDashboardLists } from './hooks/useDoctorDashboardLists';
-import { useDoctorDashboardStats } from './hooks/useDoctorDashboardStats';
-// Performance hooks as per ENTERPRISE_DASHBOARD_PERFORMANCE.md spec
-import { useIncrementalAppointments } from '@/hooks/useIncrementalAppointments';
-import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { AppointmentsListWithHook } from './components/AppointmentsList';
 import { useDashboardStats } from './hooks/useDashboardStats';
+import { useDoctorDashboardLists } from './hooks/useDoctorDashboardLists';
+import { useDoctorDashboardStats } from './hooks/useDoctorDashboardStats';
 
 /* Dashboard styles loaded by app/dashboard/layout.jsx for reliable load on client nav */
 
@@ -179,13 +177,12 @@ export default function DashboardPage() {
     [t],
   );
 
-  // Performance hooks as per ENTERPRISE_DASHBOARD_PERFORMANCE.md spec
-  // Disabled for doctors – they use useDoctorDashboardStats() instead.
-  // Passing `enabled` avoids an unnecessary /dashboard/stats request for the doctor role.
+  // Stats hook: clinic uses /dashboard/stats, doctor uses useDoctorDashboardStats()
   const performanceDashboardStats = useDashboardStats({ enabled: !isDoctor });
 
-  // Clinic: SWR only when !isDoctor (pass clinicTenantId=null for doctors to avoid 13 extra requests)
-  const clinicStatsSWR = useDashboardStatsSWR(clinicTenantId);
+  // Stats SWR is disabled for all users – performanceDashboardStats covers clinic, doctorStats covers doctors.
+  // Passing null prevents an extra /reports/dashboard fetch that would duplicate /dashboard/stats.
+  const clinicStatsSWR = useDashboardStatsSWR(null);
   const doctorStats = useDoctorDashboardStats();
 
   // Use performance hooks for clinic, SWR/doctor hooks for doctors
@@ -242,7 +239,7 @@ export default function DashboardPage() {
         doctorStats.fetchStats();
         doctorLists.fetchDashboardLists();
       } else {
-        clinicStatsSWR.fetchStats();
+        fetchStats();
         clinicListsSWR.fetchDashboardLists();
         if (chartsEnabled) clinicChartsSWR.fetchChartData();
       }
@@ -250,29 +247,19 @@ export default function DashboardPage() {
   }, [
     isDoctor,
     startTransition,
+    fetchStats,
     doctorStats,
     doctorLists,
-    clinicStatsSWR,
     clinicListsSWR,
     clinicChartsSWR,
     chartsEnabled,
   ]);
 
-  // Performance hook: useIncrementalAppointments for recent appointments (spec requirement).
-  // Pass primitives directly – the hook now accepts { limit, status } as named params so no
-  // object is created on every render, preventing unnecessary re-fetches.
-  const incrementalAppointmentsHook = useIncrementalAppointments({
-    limit: 10,
-    status: 'scheduled',
-  });
-
-  // Use doctor-specific lists if doctor, otherwise general lists
-  // For clinic: prefer incremental appointments hook, fallback to SWR lists
+  // Use doctor-specific lists if doctor, otherwise SWR lists (AppointmentsListWithHook in the
+  // Today's Schedule card handles its own incremental fetching for the live list display).
   const todayAppointments = isDoctor
     ? doctorLists.todayAppointments
-    : incrementalAppointmentsHook.appointments.length > 0
-      ? incrementalAppointmentsHook.appointments
-      : generalLists.todayAppointments;
+    : generalLists.todayAppointments;
   const recentPatients = isDoctor ? doctorLists.recentPatients : generalLists.recentPatients;
   const overdueInvoices = isDoctor ? [] : generalLists.overdueInvoices;
   const lowStockList = isDoctor ? [] : generalLists.lowStockList;
@@ -581,7 +568,7 @@ export default function DashboardPage() {
                           <button
                             type='button'
                             onClick={() => navigate('/doctors/reviews')}
-                            className='text-sm font-medium text-primary-600 hover:text-primary-700'
+                            className='section-header-action inline-flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors'
                           >
                             {t('dashboard.seeAll')}
                           </button>
@@ -831,7 +818,7 @@ export default function DashboardPage() {
                             </div>
                             <Link
                               href='/appointments'
-                              className='inline-flex items-center justify-center gap-1 px-2 py-1.5 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium shrink-0'
+                              className='section-header-action inline-flex items-center justify-center gap-1.5 py-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium shrink-0'
                               aria-label={t('dashboard.seeAll')}
                             >
                               <span className='text-sm'>{t('dashboard.seeAll')}</span>
@@ -1084,17 +1071,17 @@ export default function DashboardPage() {
                       </div>
 
                       {upcomingAppointments && upcomingAppointments.length > 0 && (
-                      <div className='dashboard-card-cell'>
-                        <DashboardListCard
-                          title={t('doctors.upcomingAppointments')}
-                          data={upcomingAppointments}
-                          loading={listsLoading}
-                          colorScheme='primary'
-                          emptyMessage={t('doctors.noUpcomingAppointments')}
-                          showSeeAll={true}
-                          onSeeAll={() => navigate('/appointments')}
-                          onRowMouseEnter={(item) => item?._id && prefetchAppointment(item._id)}
-                          renderItem={(appointment) => (
+                        <div className='dashboard-card-cell'>
+                          <DashboardListCard
+                            title={t('doctors.upcomingAppointments')}
+                            data={upcomingAppointments}
+                            loading={listsLoading}
+                            colorScheme='primary'
+                            emptyMessage={t('doctors.noUpcomingAppointments')}
+                            showSeeAll={true}
+                            onSeeAll={() => navigate('/appointments')}
+                            onRowMouseEnter={(item) => item?._id && prefetchAppointment(item._id)}
+                            renderItem={(appointment) => (
                               <AppointmentListItem
                                 key={appointment._id || appointment.id}
                                 appointment={appointment}
@@ -1108,19 +1095,19 @@ export default function DashboardPage() {
                       )}
 
                       {pendingReviews && pendingReviews.length > 0 && (
-                      <div className='dashboard-card-cell'>
-                        <DashboardListCard
-                          title={t('dashboard.pendingReviews')}
-                          data={pendingReviews}
-                          loading={listsLoading}
-                          colorScheme='warning'
-                          emptyMessage={t('doctors.noPendingReviews')}
-                          showSeeAll={true}
-                          onSeeAll={() =>
-                            navigate('/appointments?status=completed&hasClinicalNote=false')
-                          }
-                          onRowMouseEnter={(item) => item?._id && prefetchAppointment(item._id)}
-                          renderItem={(appointment) => (
+                        <div className='dashboard-card-cell'>
+                          <DashboardListCard
+                            title={t('dashboard.pendingReviews')}
+                            data={pendingReviews}
+                            loading={listsLoading}
+                            colorScheme='warning'
+                            emptyMessage={t('doctors.noPendingReviews')}
+                            showSeeAll={true}
+                            onSeeAll={() =>
+                              navigate('/appointments?status=completed&hasClinicalNote=false')
+                            }
+                            onRowMouseEnter={(item) => item?._id && prefetchAppointment(item._id)}
+                            renderItem={(appointment) => (
                               <AppointmentListItem
                                 key={appointment._id || appointment.id}
                                 appointment={appointment}
@@ -1214,17 +1201,17 @@ export default function DashboardPage() {
                       )}
 
                       {recentPatients && recentPatients.length > 0 && (
-                      <div className='dashboard-card-cell'>
-                        <DashboardListCard
-                          title={t('dashboard.recentPatients')}
-                          data={recentPatients.slice(0, 5)}
-                          loading={listsLoading}
-                          colorScheme='primary'
-                          emptyMessage={t('dashboard.emptyRecent')}
-                          showSeeAll={true}
-                          onSeeAll={() => navigate('/patients')}
-                          onRowMouseEnter={(item) => item?._id && prefetchPatient(item._id)}
-                          renderItem={(patient) => (
+                        <div className='dashboard-card-cell'>
+                          <DashboardListCard
+                            title={t('dashboard.recentPatients')}
+                            data={recentPatients.slice(0, 5)}
+                            loading={listsLoading}
+                            colorScheme='primary'
+                            emptyMessage={t('dashboard.emptyRecent')}
+                            showSeeAll={true}
+                            onSeeAll={() => navigate('/patients')}
+                            onRowMouseEnter={(item) => item?._id && prefetchPatient(item._id)}
+                            renderItem={(patient) => (
                               <PatientListItem
                                 key={patient._id || patient.id}
                                 patient={patient}
@@ -1360,24 +1347,11 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Recent Appointments Section - Using incremental hook as per spec */}
-              {!isDoctor && (
-                <div className='dashboard-section'>
-                  <div className='section-header mb-4'>
-                    <div className='accent-bar accent-bar-primary' />
-                    <h2 className='section-title'>
-                      {t('dashboard.recentAppointments') || 'Recent Appointments'}
-                    </h2>
-                  </div>
-                  <Card className='dashboard-list-card dashboard-list-card-primary p-6'>
-                    <AppointmentsListWithHook filters={{ limit: 10, status: 'scheduled' }} />
-                  </Card>
-                  {stats?.lastUpdated && (
-                    <div className='mt-4 text-center text-sm text-neutral-500'>
-                      {t('dashboard.lastUpdated') || 'Last updated'}:{' '}
-                      {new Date(stats.lastUpdated).toLocaleString()}
-                    </div>
-                  )}
+              {/* Last updated timestamp */}
+              {!isDoctor && stats?.lastUpdated && (
+                <div className='mt-2 text-center text-sm text-neutral-500'>
+                  {t('dashboard.lastUpdated') || 'Last updated'}:{' '}
+                  {new Date(stats.lastUpdated).toLocaleString()}
                 </div>
               )}
 

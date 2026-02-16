@@ -10,10 +10,10 @@ import {
   listQueueEntries,
 } from '@/services/queue.service';
 import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
-import CacheManager from '@/lib/cache/cache-manager.js';
+import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 
-/** Server-side cache TTL for queue entries (seconds). Cache only for common queries. */
-const QUEUE_CACHE_TTL = 30; // 30 seconds - queue data changes frequently
+/** Server-side cache TTL for queue entries (ms). Cache only for common queries. */
+const QUEUE_CACHE_TTL_MS = 30000; // 30 seconds - queue data changes frequently
 
 /**
  * GET /api/queue
@@ -55,20 +55,13 @@ async function getHandler(req, user) {
     ? `queue-${user.tenantId}-${validationResult.data.status || 'all'}-${validationResult.data.doctorId || 'all'}-${validationResult.data.page || 1}-${validationResult.data.limit || 100}`
     : null;
 
-  // Try cache first for cacheable queries
-  if (cacheKey) {
-    const cached = await CacheManager.get('queue', cacheKey);
-    if (cached) {
-      return NextResponse.json(successResponse(cached));
-    }
-  }
-
-  const result = await listQueueEntries(validationResult.data, user.tenantId, user.userId);
-
-  // Cache result for cacheable queries
-  if (cacheKey) {
-    await CacheManager.set('queue', result, QUEUE_CACHE_TTL, cacheKey);
-  }
+  const result = cacheKey
+    ? await optimizedCacheManager.getOrFetch(
+        `queue:${cacheKey}`,
+        () => listQueueEntries(validationResult.data, user.tenantId, user.userId),
+        QUEUE_CACHE_TTL_MS,
+      )
+    : await listQueueEntries(validationResult.data, user.tenantId, user.userId);
 
   return NextResponse.json(successResponse(result));
 }

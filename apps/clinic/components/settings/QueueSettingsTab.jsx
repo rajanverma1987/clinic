@@ -38,13 +38,13 @@ export function QueueSettingsTab({ queueForm, setQueueForm, saving, onSave, onCa
                   />
                 </svg>
               </div>
-              <h2 className='text-lg font-bold text-neutral-900'>Queue Configuration</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.queueConfiguration')}</h2>
             </div>
 
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Display Order <span className='text-red-500'>*</span>
+                  {t('settings.displayOrder')} <span className='text-red-500'>*</span>
                 </label>
                 <select
                   value={queueForm.displayOrder}
@@ -52,15 +52,15 @@ export function QueueSettingsTab({ queueForm, setQueueForm, saving, onSave, onCa
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
                   required
                 >
-                  <option value='priority'>By Priority</option>
-                  <option value='fifo'>First In First Out</option>
-                  <option value='appointment_time'>By Appointment Time</option>
+                  <option value='priority'>{t('settings.displayOrderPriority')}</option>
+                  <option value='fifo'>{t('settings.displayOrderFifo')}</option>
+                  <option value='appointment_time'>{t('settings.displayOrderAppointmentTime')}</option>
                 </select>
               </div>
 
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Avg Consultation Time (min) <span className='text-red-500'>*</span>
+                  {t('settings.avgConsultationTime')} <span className='text-red-500'>*</span>
                 </label>
                 <Input
                   type='number'
@@ -73,14 +73,14 @@ export function QueueSettingsTab({ queueForm, setQueueForm, saving, onSave, onCa
                       averageConsultationTime: parseInt(e.target.value) || 30,
                     })
                   }
-                  placeholder='30'
+                  placeholder={t('settings.queueEstWaitPlaceholder')}
                   required
                 />
               </div>
 
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  Max Queue Length
+                  {t('settings.maxQueueLength')}
                 </label>
                 <Input
                   type='number'
@@ -89,7 +89,7 @@ export function QueueSettingsTab({ queueForm, setQueueForm, saving, onSave, onCa
                   onChange={(e) =>
                     setQueueForm({ ...queueForm, maxQueueLength: parseInt(e.target.value) || 50 })
                   }
-                  placeholder='50'
+                  placeholder={t('settings.queueMaxPatientsPlaceholder')}
                 />
               </div>
             </div>
@@ -121,28 +121,14 @@ export function QueueSettingsTab({ queueForm, setQueueForm, saving, onSave, onCa
                   />
                 </svg>
               </div>
-              <h2 className='text-lg font-bold text-neutral-900'>Display Options</h2>
+              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.displayOptions')}</h2>
             </div>
 
             <div className='space-y-2'>
               {[
-                {
-                  key: 'enablePublicDisplay',
-                  title: 'Enable Public Queue Display',
-                  description:
-                    'Display queue information publicly without any patient health information',
-                },
-                {
-                  key: 'showEstimatedWaitTime',
-                  title: 'Show Estimated Wait Time',
-                  description: 'Display estimated wait time for patients in the queue',
-                },
-                {
-                  key: 'autoCallNext',
-                  title: 'Automatically Call Next Patient',
-                  description:
-                    'Automatically call the next patient when the current consultation ends',
-                },
+                { key: 'enablePublicDisplay', titleKey: 'settings.enablePublicQueueDisplay', descKey: 'settings.enablePublicQueueDisplayDesc' },
+                { key: 'showEstimatedWaitTime', titleKey: 'settings.showEstimatedWaitTime', descKey: 'settings.showEstimatedWaitTimeDesc' },
+                { key: 'autoCallNext', titleKey: 'settings.autoCallNext', descKey: 'settings.autoCallNextDesc' },
               ].map((item) => (
                 <div
                   key={item.key}
@@ -153,8 +139,8 @@ export function QueueSettingsTab({ queueForm, setQueueForm, saving, onSave, onCa
                   }`}
                 >
                   <div className='flex-1'>
-                    <h3 className='font-semibold text-neutral-900 text-sm mb-0.5'>{item.title}</h3>
-                    <p className='text-xs text-neutral-600'>{item.description}</p>
+                    <h3 className='font-semibold text-neutral-900 text-sm mb-0.5'>{t(item.titleKey)}</h3>
+                    <p className='text-xs text-neutral-600'>{t(item.descKey)}</p>
                   </div>
                   <Toggle
                     checked={queueForm[item.key]}

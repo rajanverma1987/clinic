@@ -39,27 +39,27 @@ const VIEW_COMPARISON = 'comparison';
 /** Only real/correct plans per subscription spec */
 const ALLOWED_PLAN_NAMES = ['SOLO', 'CLINIC', 'ENTERPRISE'];
 
-// Available features that can be included/excluded in subscription plans
+// Available features: { key } for i18n, value is stored in API
 const AVAILABLE_FEATURES = [
-  'Patient Management',
-  'Appointment Scheduling',
-  'Queue Management',
-  'Prescriptions Management',
-  'Invoice & Billing',
-  'Inventory Management',
-  'Reports & Analytics',
-  'Automated Reminders',
-  'Multi-Location Support',
-  'Telemedicine',
-  'API Access',
-  'Custom Branding',
-  'Priority Support',
-  'Advanced Reports & Analytics',
-  'Data Export',
-  'Audit Logs',
-  'HIPAA/GDPR Compliance',
-  'White Label Solution',
-  'Dedicated Support',
+  { key: 'planFeaturePatientManagement', value: 'Patient Management' },
+  { key: 'planFeatureAppointmentScheduling', value: 'Appointment Scheduling' },
+  { key: 'planFeatureQueueManagement', value: 'Queue Management' },
+  { key: 'planFeaturePrescriptionsManagement', value: 'Prescriptions Management' },
+  { key: 'planFeatureInvoiceBilling', value: 'Invoice & Billing' },
+  { key: 'planFeatureInventoryManagement', value: 'Inventory Management' },
+  { key: 'planFeatureReportsAnalytics', value: 'Reports & Analytics' },
+  { key: 'planFeatureAutomatedReminders', value: 'Automated Reminders' },
+  { key: 'planFeatureMultiLocationSupport', value: 'Multi-Location Support' },
+  { key: 'planFeatureTelemedicine', value: 'Telemedicine' },
+  { key: 'planFeatureApiAccess', value: 'API Access' },
+  { key: 'planFeatureCustomBranding', value: 'Custom Branding' },
+  { key: 'planFeaturePrioritySupport', value: 'Priority Support' },
+  { key: 'planFeatureAdvancedReportsAnalytics', value: 'Advanced Reports & Analytics' },
+  { key: 'planFeatureDataExport', value: 'Data Export' },
+  { key: 'planFeatureAuditLogs', value: 'Audit Logs' },
+  { key: 'planFeatureHipaaGdprCompliance', value: 'HIPAA/GDPR Compliance' },
+  { key: 'planFeatureWhiteLabelSolution', value: 'White Label Solution' },
+  { key: 'planFeatureDedicatedSupport', value: 'Dedicated Support' },
 ];
 
 export default function AdminSubscriptionsPage() {
@@ -367,7 +367,7 @@ export default function AdminSubscriptionsPage() {
         <div>
           {formatPrice(row.price, row.currency)}
           <span className='text-neutral-500 text-sm ml-1'>
-            /{row.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}
+            /{row.billingCycle === 'MONTHLY' ? t('admin.billingMonthlyShort') : t('admin.billingYearlyShort')}
           </span>
         </div>
       ),
@@ -387,11 +387,15 @@ export default function AdminSubscriptionsPage() {
       header: t('admin.limits'),
       accessor: (row) => (
         <div className='text-sm text-neutral-600'>
-          {row.maxUsers != null && <div>Users: {row.maxUsers}</div>}
-          {row.maxPatients != null && (
-            <div>Patients: {Number(row.maxPatients).toLocaleString()}</div>
+          {row.maxUsers != null && (
+            <div>{t('admin.limitsUsers')}: {row.maxUsers}</div>
           )}
-          {row.maxStorageGB != null && <div>Storage: {row.maxStorageGB}GB</div>}
+          {row.maxPatients != null && (
+            <div>{t('admin.limitsPatients')}: {Number(row.maxPatients).toLocaleString()}</div>
+          )}
+          {row.maxStorageGB != null && (
+            <div>{t('admin.limitsStorage')}: {row.maxStorageGB}GB</div>
+          )}
           {!row.maxUsers && !row.maxPatients && !row.maxStorageGB && '—'}
         </div>
       ),
@@ -608,41 +612,41 @@ export default function AdminSubscriptionsPage() {
                 </label>
                 <div className='border border-neutral-300 rounded-lg p-4 max-h-96 overflow-y-auto bg-neutral-100'>
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-                    {AVAILABLE_FEATURES.map((feature) => (
+                    {AVAILABLE_FEATURES.map((f) => (
                       <label
-                        key={feature}
+                        key={f.value}
                         className='flex items-center gap-3 p-2 rounded hover:bg-neutral-100 cursor-pointer'
                       >
                         <Checkbox
-                          checked={formData.features.includes(feature)}
+                          checked={formData.features.includes(f.value)}
                           onChange={(e) => {
                             if (e.target.checked) {
                               setFormData({
                                 ...formData,
-                                features: [...formData.features, feature],
+                                features: [...formData.features, f.value],
                               });
                             } else {
                               setFormData({
                                 ...formData,
-                                features: formData.features.filter((f) => f !== feature),
+                                features: formData.features.filter((x) => x !== f.value),
                               });
                             }
                           }}
                           size='sm'
                         />
-                        <span className='text-sm text-neutral-700'>{feature}</span>
+                        <span className='text-sm text-neutral-700'>{t(`admin.${f.key}`)}</span>
                       </label>
                     ))}
                   </div>
                   {formData.features.length === 0 && (
                     <p className='text-sm text-neutral-500 mt-2 text-center'>
-                      Select features to include in this plan
+                      {t('admin.selectFeaturesForPlan')}
                     </p>
                   )}
                 </div>
                 {formData.features.length > 0 && (
                   <p className='text-sm text-neutral-500 mt-2'>
-                    {formData.features.length} feature(s) selected
+                    {t('admin.featuresSelectedCount').replace('{{count}}', String(formData.features.length))}
                   </p>
                 )}
               </div>
@@ -777,7 +781,9 @@ export default function AdminSubscriptionsPage() {
                               {plan && (
                                 <div className='text-primary-600 font-semibold mt-1'>
                                   {formatPrice(plan.price, plan.currency)}/
-                                  {plan.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}
+                                  {plan.billingCycle === 'MONTHLY'
+                                    ? t('admin.billingMonthlyShort')
+                                    : t('admin.billingYearlyShort')}
                                 </div>
                               )}
                               <div className='text-neutral-500 text-xs mt-1'>

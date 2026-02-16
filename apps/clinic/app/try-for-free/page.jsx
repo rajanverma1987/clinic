@@ -148,7 +148,7 @@ export default function TryForFreePage() {
         <div className='absolute inset-0 w-full h-full'>
           <ImageTransition
             src='/images/login.png'
-            alt='Register'
+            alt={t('common.altRegister')}
             fill
             className='object-cover opacity-90'
             quality={75}
@@ -169,7 +169,7 @@ export default function TryForFreePage() {
               <div className='flex items-center justify-center group-hover:opacity-90 transition-opacity'>
                 <Image
                   src='/images/logoclinic.png'
-                  alt='Clinic Logo'
+                  alt={t('common.altClinicLogo')}
                   width={180}
                   height={158}
                   className='object-contain drop-shadow-md w-44 max-w-full'
@@ -186,7 +186,7 @@ export default function TryForFreePage() {
                 <div className='flex items-center justify-center group-hover:opacity-90 transition-opacity'>
                   <ImageTransition
                     src='/images/logoclinic.png'
-                    alt='Clinic Logo'
+                    alt={t('common.altClinicLogo')}
                     width={180}
                     height={158}
                     className='object-contain drop-shadow-sm w-44'
@@ -307,11 +307,11 @@ export default function TryForFreePage() {
                     required
                   >
                     <option value=''>{t('tryForFree.selectCountry') || 'Select country'}</option>
-                    <option value='US'>United States</option>
-                    <option value='IN'>India</option>
-                    <option value='CA'>Canada</option>
-                    <option value='AU'>Australia</option>
-                    <option value='UK'>United Kingdom</option>
+                    <option value='US'>{t('tryForFree.countryUS')}</option>
+                    <option value='IN'>{t('tryForFree.countryIN')}</option>
+                    <option value='CA'>{t('tryForFree.countryCA')}</option>
+                    <option value='AU'>{t('tryForFree.countryAU')}</option>
+                    <option value='UK'>{t('tryForFree.countryUK')}</option>
                     <option value='OTHER'>{t('tryForFree.other') || 'Other'}</option>
                   </select>
                 </div>
@@ -397,7 +397,7 @@ export default function TryForFreePage() {
                       type='tel'
                       value={data.phone}
                       onChange={(e) => update('phone', e.target.value)}
-                      placeholder='+1 234 567 8900'
+                      placeholder={t('tryForFree.phonePlaceholder')}
                       required
                       className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0'
                     />

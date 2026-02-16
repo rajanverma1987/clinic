@@ -98,8 +98,9 @@ export default function CreateManagerPage() {
         });
         setSelectedAccess([]);
       } else {
-        setError(response.error?.message || 'Failed to create manager account');
-        showError(response.error?.message || 'Failed to create manager account');
+        const msg = response.error?.message || t('settings.createManagerServerError');
+        setError(msg);
+        showError(msg);
       }
     } catch (error) {
       const rawMessage =
@@ -145,7 +146,7 @@ export default function CreateManagerPage() {
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  First Name *
+                  {t('settings.firstNameRequired')}
                 </label>
                 <Input
                   type='text'
@@ -157,7 +158,7 @@ export default function CreateManagerPage() {
 
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  Last Name *
+                  {t('settings.lastNameRequired')}
                 </label>
                 <Input
                   type='text'
@@ -195,7 +196,7 @@ export default function CreateManagerPage() {
             </div>
 
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Email *</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>{t('settings.emailRequired')}</label>
               <Input
                 type='email'
                 value={formData.email}
@@ -205,7 +206,7 @@ export default function CreateManagerPage() {
             </div>
 
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>Password *</label>
+              <label className='block text-sm font-medium text-neutral-700 mb-2'>{t('settings.passwordRequired')}</label>
               <div className='relative'>
                 <Input
                   type={showPassword ? 'text' : 'password'}
@@ -219,15 +220,15 @@ export default function CreateManagerPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className='absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-neutral-700'
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {showPassword ? t('common.hide') : t('common.show')}
                 </button>
               </div>
-              <p className='text-sm text-neutral-500 mt-1'>Minimum 8 characters</p>
+              <p className='text-sm text-neutral-500 mt-1'>{t('settings.minimumChars')}</p>
             </div>
 
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Confirm Password *
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                {t('settings.confirmPasswordRequired')}
               </label>
               <Input
                 type={showPassword ? 'text' : 'password'}
@@ -239,7 +240,7 @@ export default function CreateManagerPage() {
 
             <div className='flex gap-4'>
               <Button type='submit' variant='primary' disabled={isLoading}>
-                {isLoading ? t('common.creating') : 'Create Manager Account'}
+                {isLoading ? t('common.creating') : t('settings.createManager')}
               </Button>
             </div>
           </form>

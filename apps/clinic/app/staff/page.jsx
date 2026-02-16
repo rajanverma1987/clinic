@@ -177,10 +177,10 @@ export default function StaffPage() {
             showSuccess(row.isActive ? t('staff.deactivate') + ' OK' : t('staff.activate') + ' OK');
             fetchStaff();
           } else {
-            showError(res?.error?.message || 'Failed to update');
+            showError(res?.error?.message || t('staff.failedToUpdate'));
           }
         } catch (err) {
-          showError(err?.message || 'Failed to update');
+          showError(err?.message || t('staff.failedToUpdate'));
         }
       },
     });
@@ -193,10 +193,10 @@ export default function StaffPage() {
         showSuccess(t('staff.activate') + ' OK');
         fetchStaff();
       } else {
-        showError(res?.error?.message || 'Failed to update');
+        showError(res?.error?.message || t('staff.failedToUpdate'));
       }
     } catch (err) {
-      showError(err?.message || 'Failed to update');
+      showError(err?.message || t('staff.failedToUpdate'));
     }
   };
 
@@ -212,10 +212,10 @@ export default function StaffPage() {
             showSuccess(t('staff.userRemoved'));
             fetchStaff();
           } else {
-            showError(res?.error?.message || 'Failed to remove');
+            showError(res?.error?.message || t('staff.failedToRemove'));
           }
         } catch (err) {
-          showError(err?.message || 'Failed to remove');
+          showError(err?.message || t('staff.failedToRemove'));
         }
       },
     });
@@ -242,10 +242,10 @@ export default function StaffPage() {
         setEditingUser(null);
         fetchStaff();
       } else {
-        showError(res?.error?.message || 'Failed to update');
+        showError(res?.error?.message || t('staff.failedToUpdate'));
       }
     } catch (err) {
-      showError(err?.message || 'Failed to update');
+      showError(err?.message || t('staff.failedToUpdate'));
     } finally {
       setSaving(false);
     }
@@ -281,10 +281,10 @@ export default function StaffPage() {
         });
         fetchStaff();
       } else {
-        showError(res?.error?.message || res?.data?.message || 'Failed to add staff');
+        showError(res?.error?.message || res?.data?.message || t('staff.failedToAddStaff'));
       }
     } catch (err) {
-      showError(err?.message || 'Failed to add staff');
+      showError(err?.message || t('staff.failedToAddStaff'));
     } finally {
       setSaving(false);
     }
@@ -525,13 +525,13 @@ export default function StaffPage() {
                   </label>
                   <div className='grid grid-cols-2 gap-2'>
                     <Input
-                      placeholder='First'
+                      placeholder={t('staff.placeholderFirst')}
                       value={addForm.firstName}
                       onChange={(e) => setAddForm({ ...addForm, firstName: e.target.value })}
                       required
                     />
                     <Input
-                      placeholder='Last'
+                      placeholder={t('staff.placeholderLast')}
                       value={addForm.lastName}
                       onChange={(e) => setAddForm({ ...addForm, lastName: e.target.value })}
                       required
@@ -555,7 +555,7 @@ export default function StaffPage() {
                   </label>
                   <Input
                     type='tel'
-                    placeholder='+1 234 567 8900'
+                    placeholder={t('staff.placeholderPhone')}
                     value={addForm.phone}
                     onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
                   />

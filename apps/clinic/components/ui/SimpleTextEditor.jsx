@@ -72,7 +72,7 @@ export function SimpleTextEditor({ value, onChange, placeholder, className = '',
             document.execCommand('bold', false);
             editorRef.current?.focus();
           }}
-          title='Bold (Ctrl+B)'
+          title={t('simpleTextEditor.bold')}
         >
           <strong>B</strong>
         </Button>
@@ -86,7 +86,7 @@ export function SimpleTextEditor({ value, onChange, placeholder, className = '',
             document.execCommand('italic', false);
             editorRef.current?.focus();
           }}
-          title='Italic (Ctrl+I)'
+          title={t('simpleTextEditor.italic')}
         >
           <em>I</em>
         </Button>
@@ -100,7 +100,7 @@ export function SimpleTextEditor({ value, onChange, placeholder, className = '',
             document.execCommand('underline', false);
             editorRef.current?.focus();
           }}
-          title='Underline (Ctrl+U)'
+          title={t('simpleTextEditor.underline')}
         >
           <u>U</u>
         </Button>
@@ -115,7 +115,7 @@ export function SimpleTextEditor({ value, onChange, placeholder, className = '',
             document.execCommand('insertUnorderedList', false);
             editorRef.current?.focus();
           }}
-          title='Bullet List'
+          title={t('simpleTextEditor.bulletList')}
         >
           •
         </Button>
@@ -129,7 +129,7 @@ export function SimpleTextEditor({ value, onChange, placeholder, className = '',
             document.execCommand('insertOrderedList', false);
             editorRef.current?.focus();
           }}
-          title='Numbered List'
+          title={t('simpleTextEditor.numberedList')}
         >
           1.
         </Button>

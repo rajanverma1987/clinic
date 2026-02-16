@@ -50,11 +50,11 @@ export default function InventoryItemDetailPage() {
         setItem(response.data);
         setFormData(response.data);
       } else {
-        setError(response.error?.message || 'Failed to load inventory item');
+        setError(response.error?.message || t('inventory.failedToLoadItem'));
       }
     } catch (error) {
       logger.error('Failed to fetch inventory item:', error);
-      setError(error.message || 'Failed to load inventory item');
+      setError(error.message || t('inventory.failedToLoadItem'));
     } finally {
       setLoading(false);
     }
@@ -104,11 +104,11 @@ export default function InventoryItemDetailPage() {
         setError('');
         fetchItem();
       } else {
-        setError(response.error?.message || 'Failed to update inventory item');
+        setError(response.error?.message || t('inventory.failedToUpdateItem'));
       }
     } catch (error) {
       logger.error('Failed to update inventory item:', error);
-      setError(error.message || 'Failed to update inventory item');
+      setError(error.message || t('inventory.failedToUpdateItem'));
     } finally {
       setSaving(false);
     }
@@ -217,7 +217,7 @@ export default function InventoryItemDetailPage() {
                 value={isEditing ? formData.code || '' : item.code || ''}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 disabled={!isEditing}
-                placeholder='e.g., MED-001'
+                placeholder={t('inventory.placeholderItemCode')}
               />
 
               <Select
@@ -261,7 +261,7 @@ export default function InventoryItemDetailPage() {
 
                   <div>
                     <label className='block text-sm font-semibold text-neutral-900 mb-2'>
-                      Low Stock Threshold
+                      {t('inventory.lowStockThreshold')}
                     </label>
                     <p className='text-lg font-medium text-neutral-900'>
                       {item.lowStockThreshold} {item.unit}
@@ -273,7 +273,7 @@ export default function InventoryItemDetailPage() {
               {isEditing && (
                 <>
                   <Input
-                    label='Low Stock Threshold'
+                    label={t('inventory.lowStockThreshold')}
                     type='number'
                     value={formData.lowStockThreshold?.toString() || ''}
                     onChange={(e) =>
@@ -307,7 +307,7 @@ export default function InventoryItemDetailPage() {
                   })
                 }
                 disabled={!isEditing}
-                placeholder='0.00'
+                placeholder={t('inventory.placeholderPrice')}
               />
 
               <Input
@@ -332,7 +332,7 @@ export default function InventoryItemDetailPage() {
                   })
                 }
                 disabled={!isEditing}
-                placeholder='0.00'
+                placeholder={t('inventory.placeholderPrice')}
               />
 
               <DatePicker
@@ -355,7 +355,7 @@ export default function InventoryItemDetailPage() {
                 value={isEditing ? formData.batchNumber || '' : item.batchNumber || ''}
                 onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
                 disabled={!isEditing}
-                placeholder='e.g., BATCH-2024-001'
+                placeholder={t('inventory.placeholderBatch')}
               />
 
               <Input

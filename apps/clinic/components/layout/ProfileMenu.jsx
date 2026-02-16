@@ -147,7 +147,7 @@ export function ProfileMenu({ isCollapsed }) {
               ? 'border-primary-300 bg-white dark:bg-neutral-800 dark:border-primary-500'
               : 'border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-md'
           }`}
-          aria-label='User menu'
+          aria-label={t('common.userMenu')}
           aria-expanded={showUserMenu}
           aria-haspopup='true'
         >
@@ -164,7 +164,7 @@ export function ProfileMenu({ isCollapsed }) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={user.avatar}
-                  alt={userDisplayName || 'Profile'}
+                  alt={userDisplayName || t('common.altProfile')}
                   className='w-full h-full object-cover'
                   onError={() => setAvatarError(true)}
                 />
@@ -210,7 +210,7 @@ export function ProfileMenu({ isCollapsed }) {
                 ref={userMenuDropdownRef}
                 className='profile-dropdown bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600'
                 role='menu'
-                aria-label='Account menu'
+                aria-label={t('common.accountMenu')}
                 style={{
                   position: 'fixed',
                   top: dropdownPosition.top,
@@ -233,7 +233,9 @@ export function ProfileMenu({ isCollapsed }) {
                       <span className='profile-dropdown__item-label'>
                         {getTranslation('settings.title', 'Settings')}
                       </span>
-                      <span className='profile-dropdown__item-desc'>Manage your preferences</span>
+                      <span className='profile-dropdown__item-desc'>
+                        {t('common.managePreferences')}
+                      </span>
                     </span>
                     <ChevronRightIcon className='icon icon-xs text-neutral-400 flex-shrink-0' />
                   </button>

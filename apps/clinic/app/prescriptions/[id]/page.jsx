@@ -39,11 +39,11 @@ export default function PrescriptionDetailPage() {
       if (response.success && response.data) {
         setPrescription(response.data);
       } else {
-        setError('Prescription not found');
+        setError(t('prescriptions.prescriptionNotFound'));
       }
     } catch (error) {
       logger.error('Failed to fetch prescription:', error);
-      setError('Failed to load prescription');
+      setError(t('prescriptions.failedToLoadPrescription'));
     } finally {
       setLoading(false);
     }
@@ -51,11 +51,11 @@ export default function PrescriptionDetailPage() {
 
   const getStatusLabel = (status) => {
     const statusMap = {
-      draft: 'Draft',
-      active: 'Active',
-      dispensed: 'Dispensed',
-      cancelled: 'Cancelled',
-      expired: 'Expired',
+      draft: t('prescriptions.statusDraft'),
+      active: t('prescriptions.statusActive'),
+      dispensed: t('prescriptions.statusDispensed'),
+      cancelled: t('prescriptions.statusCancelled'),
+      expired: t('prescriptions.statusExpired'),
     };
     return statusMap[status] || status;
   };
@@ -92,7 +92,7 @@ export default function PrescriptionDetailPage() {
       <Layout>
         <div className='flex items-center justify-center h-64'>
           <div className='text-center'>
-            <div className='text-status-error'>{error || 'Prescription not found'}</div>
+            <div className='text-status-error'>{error || t('prescriptions.prescriptionNotFound')}</div>
           </div>
         </div>
       </Layout>
@@ -105,13 +105,13 @@ export default function PrescriptionDetailPage() {
     <Layout>
       <PageHeader
         title={`Prescription #${prescription.prescriptionNumber}`}
-        subtitle={`Created on ${new Date(prescription.createdAt).toLocaleDateString()}`}
+        subtitle={`${t('prescriptions.createdOn')} ${new Date(prescription.createdAt).toLocaleDateString()}`}
         notifications={[]}
         unreadCount={0}
         actionButtons={
           <>
             <Button variant='primary' size='md' href={`/prescriptions/${prescriptionId}/edit`}>
-              Edit
+              {t('common.edit')}
             </Button>
             <Button
               variant='secondary'
@@ -141,7 +141,7 @@ export default function PrescriptionDetailPage() {
                   d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
                 />
               </svg>
-              Download PDF
+              {t('prescriptions.downloadPdf')}
             </Button>
             <Button
               variant='secondary'
@@ -152,8 +152,7 @@ export default function PrescriptionDetailPage() {
                   });
                   if (response.success)
                     showSuccess(
-                      t('prescriptions.emailSentSuccess') ||
-                        'Prescription sent to patient email successfully',
+                      t('prescriptions.emailSentSuccess'),
                     );
                   else
                     showError(
@@ -180,7 +179,7 @@ export default function PrescriptionDetailPage() {
                   d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
                 />
               </svg>
-              Email
+              {t('prescriptions.email')}
             </Button>
             <Button variant='secondary' size='md' onClick={() => setShowPrintPreview(true)}>
               <svg
@@ -196,7 +195,7 @@ export default function PrescriptionDetailPage() {
                   d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z'
                 />
               </svg>
-              Print
+              {t('prescriptions.print')}
             </Button>
           </>
         }
@@ -208,7 +207,7 @@ export default function PrescriptionDetailPage() {
             <Card>
               <div className='space-y-4'>
                 <div className='flex items-center justify-between pb-4 border-b'>
-                  <h2 className='text-lg font-semibold'>Prescription Details</h2>
+                  <h2 className='text-lg font-semibold'>{t('prescriptions.prescriptionDetails')}</h2>
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
                       prescription.status,
@@ -221,41 +220,41 @@ export default function PrescriptionDetailPage() {
                 <div className='grid grid-cols-2 gap-4'>
                   <div>
                     <label className='text-sm font-medium text-neutral-500'>
-                      Prescription Number
+                      {t('prescriptions.prescriptionNumber')}
                     </label>
                     <p className='text-neutral-900 font-semibold'>
                       {prescription.prescriptionNumber}
                     </p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Status</label>
+                    <label className='text-sm font-medium text-neutral-500'>{t('prescriptions.status')}</label>
                     <p className='text-neutral-900'>{getStatusLabel(prescription.status)}</p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Valid From</label>
+                    <label className='text-sm font-medium text-neutral-500'>{t('prescriptions.validFrom')}</label>
                     <p className='text-neutral-900'>
                       {new Date(prescription.validFrom).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Valid Until</label>
+                    <label className='text-sm font-medium text-neutral-500'>{t('prescriptions.validUntil')}</label>
                     <p className='text-neutral-900'>
                       {new Date(prescription.validUntil).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Refills Allowed</label>
+                    <label className='text-sm font-medium text-neutral-500'>{t('prescriptions.refillsAllowed')}</label>
                     <p className='text-neutral-900'>{prescription.refillsAllowed || 0}</p>
                   </div>
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Refills Used</label>
+                    <label className='text-sm font-medium text-neutral-500'>{t('prescriptions.refillsUsed')}</label>
                     <p className='text-neutral-900'>{prescription.refillsUsed || 0}</p>
                   </div>
                 </div>
 
                 {prescription.diagnosis && (
                   <div>
-                    <label className='text-sm font-medium text-neutral-500'>Diagnosis</label>
+                    <label className='text-sm font-medium text-neutral-500'>{t('prescriptions.diagnosisLabel')}</label>
                     <p className='text-neutral-900 mt-1'>{prescription.diagnosis}</p>
                   </div>
                 )}
@@ -263,7 +262,7 @@ export default function PrescriptionDetailPage() {
                 {prescription.additionalInstructions && (
                   <div>
                     <label className='text-sm font-medium text-neutral-500'>
-                      Additional Instructions
+                      {t('prescriptions.additionalInstructions')}
                     </label>
                     <div
                       className='text-neutral-900 mt-1 prose prose-sm max-w-none'
@@ -301,16 +300,16 @@ export default function PrescriptionDetailPage() {
 
             {/* Prescription Items */}
             <Card>
-              <h2 className='text-lg font-semibold mb-4'>Prescription Items</h2>
+              <h2 className='text-lg font-semibold mb-4'>{t('prescriptions.prescriptionItems')}</h2>
               <div className='clinic-table-wrap'>
                 <table className='clinic-table'>
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>Type</th>
-                      <th>Item</th>
-                      <th>Details</th>
-                      <th>Instructions</th>
+                      <th>{t('prescriptions.itemType')}</th>
+                      <th>{t('prescriptions.item')}</th>
+                      <th>{t('prescriptions.details')}</th>
+                      <th>{t('prescriptions.instructions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -367,17 +366,17 @@ export default function PrescriptionDetailPage() {
                                 {item.duration && <div>Duration: {item.duration} days</div>}
                                 {item.quantity && (
                                   <div>
-                                    Quantity: {item.quantity} {item.unit || 'units'}
+                                    {t('prescriptions.quantity')}: {item.quantity} {item.unit || t('prescriptions.units')}
                                   </div>
                                 )}
                                 {item.takeWithFood && (
-                                  <div className='text-xs text-neutral-500'>Take with food</div>
+                                  <div className='text-xs text-neutral-500'>{t('prescriptions.takeWithFood')}</div>
                                 )}
                                 {item.allowSubstitution !== undefined && (
                                   <div className='text-xs text-neutral-500'>
                                     {item.allowSubstitution
-                                      ? 'Substitution allowed'
-                                      : 'No substitution'}
+                                      ? t('prescriptions.substitutionAllowed')
+                                      : t('prescriptions.noSubstitution')}
                                   </div>
                                 )}
                               </div>
@@ -385,7 +384,7 @@ export default function PrescriptionDetailPage() {
                             {item.itemType === 'lab' && (
                               <div>
                                 {item.fastingRequired && (
-                                  <div className='text-xs text-orange-600'>Fasting required</div>
+                                  <div className='text-xs text-orange-600'>{t('prescriptions.fastingRequired')}</div>
                                 )}
                                 {item.labInstructions && (
                                   <div className='text-xs text-neutral-500'>
@@ -412,7 +411,7 @@ export default function PrescriptionDetailPage() {
                       ))
                     ) : (
                       <tr data-empty>
-                        <td colSpan={5}>No items in this prescription</td>
+                        <td colSpan={5}>{t('prescriptions.noItems')}</td>
                       </tr>
                     )}
                   </tbody>
@@ -423,17 +422,17 @@ export default function PrescriptionDetailPage() {
             {/* Doctor Info */}
             {prescription.doctorId && (
               <Card>
-                <h2 className='text-lg font-semibold mb-4'>Prescribed By</h2>
+                <h2 className='text-lg font-semibold mb-4'>{t('prescriptions.prescribedBy')}</h2>
                 <div className='space-y-2'>
                   <p className='text-neutral-900'>
                     {prescription.doctorId.firstName} {prescription.doctorId.lastName}
                   </p>
                   <p className='text-sm text-neutral-500'>
-                    Created on {new Date(prescription.createdAt).toLocaleString()}
+                    {t('prescriptions.createdOn')} {new Date(prescription.createdAt).toLocaleString()}
                   </p>
                   {prescription.dispensedAt && (
                     <p className='text-sm text-neutral-500'>
-                      Dispensed on {new Date(prescription.dispensedAt).toLocaleString()}
+                      {t('prescriptions.dispensedOn')} {new Date(prescription.dispensedAt).toLocaleString()}
                     </p>
                   )}
                 </div>

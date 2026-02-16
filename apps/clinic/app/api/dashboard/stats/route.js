@@ -1,4 +1,5 @@
 import CacheManager from '@/lib/cache/cache-manager.js';
+import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { logger } from '@/lib/utils/logger.js';
 import { withAuth } from '@/middleware/auth';
@@ -9,27 +10,35 @@ import { NextResponse } from 'next/server';
 
 /** Server-side cache TTL for dashboard stats (seconds). Redis optional; fails gracefully. */
 const DASHBOARD_CACHE_TTL = 300; // 5 minutes - matches background job interval
+const DASHBOARD_CACHE_TTL_MS = DASHBOARD_CACHE_TTL * 1000;
 
 /**
  * GET /api/dashboard/stats
  * Dashboard statistics. Uses pre-computed cache from background job (every 5 min).
  * Falls back to real-time calculation if cache miss.
+ * In-memory cache (OptimizedCacheManager) ensures sub-ms hits even when Redis is unavailable.
  */
 async function getHandler(req, user) {
   try {
     const tenantId = user.tenantId?.toString?.() || user.tenantId;
 
-    // Try to get from cache first (pre-computed by background job)
-    let stats = await CacheManager.get('dashboard', 'stats', tenantId);
+    // In-memory LRU cache (always available, no Redis dependency)
+    const stats = await optimizedCacheManager.getOrFetch(
+      `dashboard:stats:${tenantId}`,
+      async () => {
+        // Redis cache (populated by background job every 5 min)
+        const cached = await CacheManager.get('dashboard', 'stats', tenantId);
+        if (cached) return cached;
 
-    // Fallback to real-time calculation if cache miss
-    if (!stats) {
-      logger.debug('Cache miss - calculating dashboard stats on demand');
-      const dashboardStatsModule = await import('@/jobs/dashboard-stats.js');
-      const calculateDashboardStats = dashboardStatsModule.calculateDashboardStats;
-      stats = await calculateDashboardStats(tenantId);
-      await CacheManager.set('dashboard', stats, DASHBOARD_CACHE_TTL, 'stats', tenantId);
-    }
+        // On-demand fallback calculation
+        logger.debug('Cache miss - calculating dashboard stats on demand');
+        const dashboardStatsModule = await import('@/jobs/dashboard-stats.js');
+        const computed = await dashboardStatsModule.calculateDashboardStats(tenantId);
+        await CacheManager.set('dashboard', computed, DASHBOARD_CACHE_TTL, 'stats', tenantId);
+        return computed;
+      },
+      DASHBOARD_CACHE_TTL_MS,
+    );
 
     return NextResponse.json({
       success: true,

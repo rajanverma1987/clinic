@@ -26,8 +26,8 @@ import {
   notifyStockLow,
   notifyStockUpdated,
 } from '@/lib/realtime/integration-helpers.js';
-import { logger } from '@/lib/utils/logger.js';
 import { measureTime } from '@/lib/utils/enterprise-helpers.js';
+import { logger } from '@/lib/utils/logger.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
 import InventoryItem from '@/models/InventoryItem.js';
 import StockTransaction, { TransactionStatus } from '@/models/StockTransaction.js';
@@ -520,6 +520,41 @@ export async function listSuppliers(tenantId, userId) {
     .lean();
 
   return suppliers;
+}
+
+/**
+ * List stock transactions with optional filters
+ * Returns recent transactions with item name populated
+ */
+export async function listStockTransactions(tenantId, userId, options = {}) {
+  await connectDB();
+
+  const filter = withTenant(tenantId, {
+    deletedAt: null,
+  });
+
+  if (options.type) {
+    filter.type = options.type;
+  }
+
+  const limit = Math.min(options.limit ?? 100, 500);
+
+  const transactions = await StockTransaction.find(filter)
+    .populate('inventoryItemId', 'name code')
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  const list = transactions.map((tx) => ({
+    ...tx,
+    itemName: tx.inventoryItemId?.name ?? null,
+    itemCode: tx.inventoryItemId?.code ?? null,
+    inventoryItemId: tx.inventoryItemId?._id ?? tx.inventoryItemId,
+  }));
+
+  await AuditLogger.auditRead('stock_transaction', 'list', userId, tenantId);
+
+  return list;
 }
 
 /**

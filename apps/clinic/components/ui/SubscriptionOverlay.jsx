@@ -133,7 +133,7 @@ export function SubscriptionOverlay({
         <button
           onClick={handleDismiss}
           className='flex-shrink-0 w-6 h-6 flex items-center justify-center rounded text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50 transition-colors'
-          aria-label='Dismiss'
+          aria-label={t('common.ariaLabelDismiss')}
         >
           ×
         </button>

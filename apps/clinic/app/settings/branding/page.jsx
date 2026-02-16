@@ -41,66 +41,62 @@ export default function BrandingPage() {
   return (
     <div style={{ padding: '0 10px' }}>
       <div className='mb-8'>
-        <h1 className='text-3xl font-bold text-neutral-900'>Custom Branding</h1>
-        <p className='text-neutral-600 mt-2'>
-          Customize the look and feel of your clinic&apos;s portal
-        </p>
+        <h1 className='text-3xl font-bold text-neutral-900'>{t('settings.customBranding')}</h1>
+        <p className='text-neutral-600 mt-2'>{t('settings.customBrandingDesc')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className='space-y-6' noValidate>
-        {/* Basic Branding */}
         <Card>
-          <h2 className='text-xl font-semibold mb-6'>Basic Branding</h2>
+          <h2 className='text-xl font-semibold mb-6'>{t('settings.basicBranding')}</h2>
 
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <Input
-              label='Clinic Name'
+              label={t('settings.clinicName')}
               value={formData.clinicName}
               onChange={(e) => setFormData({ ...formData, clinicName: e.target.value })}
-              placeholder='Your Clinic Name'
+              placeholder={t('settings.placeholderClinicName')}
             />
 
             <Input
-              label='Custom Domain'
+              label={t('settings.customDomain')}
               value={formData.customDomain}
               onChange={(e) => setFormData({ ...formData, customDomain: e.target.value })}
-              placeholder='clinic.yourdomain.com'
+              placeholder={t('settings.placeholderCustomDomain')}
             />
           </div>
 
           <div className='mt-6'>
-            <label className='block text-sm font-medium text-neutral-700 mb-2'>Logo URL</label>
+            <label className='block text-sm font-medium text-neutral-700 mb-2'>
+              {t('settings.logoUrl')}
+            </label>
             <Input
               value={formData.logo}
               onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-              placeholder='https://example.com/logo.png'
+              placeholder={t('settings.placeholderLogoUrl')}
             />
-            <p className='text-sm text-neutral-500 mt-1'>
-              Enter URL of your logo image (recommended: 200x60px PNG)
-            </p>
+            <p className='text-sm text-neutral-500 mt-1'>{t('settings.logoUrlHint')}</p>
           </div>
 
           <div className='mt-6'>
-            <label className='block text-sm font-medium text-neutral-700 mb-2'>Favicon URL</label>
+            <label className='block text-sm font-medium text-neutral-700 mb-2'>
+              {t('settings.faviconUrl')}
+            </label>
             <Input
               value={formData.favicon}
               onChange={(e) => setFormData({ ...formData, favicon: e.target.value })}
-              placeholder='https://example.com/favicon.ico'
+              placeholder={t('settings.placeholderFaviconUrl')}
             />
-            <p className='text-sm text-neutral-500 mt-1'>
-              Enter URL of your favicon (recommended: 32x32px ICO or PNG)
-            </p>
+            <p className='text-sm text-neutral-500 mt-1'>{t('settings.faviconUrlHint')}</p>
           </div>
         </Card>
 
-        {/* Color Scheme */}
         <Card>
-          <h2 className='text-xl font-semibold mb-6'>Color Scheme</h2>
+          <h2 className='text-xl font-semibold mb-6'>{t('settings.colorScheme')}</h2>
 
           <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
             <div>
               <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Primary Color
+                {t('settings.primaryColor')}
               </label>
               <div className='flex gap-2'>
                 <input
@@ -124,7 +120,7 @@ export default function BrandingPage() {
 
             <div>
               <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Secondary Color
+                {t('settings.secondaryColor')}
               </label>
               <div className='flex gap-2'>
                 <input
@@ -136,7 +132,7 @@ export default function BrandingPage() {
                 <Input
                   value={formData.secondaryColor}
                   onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
-                  placeholder='#10B981'
+                  placeholder={t('settings.secondaryColorPlaceholder')}
                   className='flex-1'
                 />
               </div>
@@ -148,7 +144,7 @@ export default function BrandingPage() {
 
             <div>
               <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                Accent Color
+                {t('settings.accentColor')}
               </label>
               <div className='flex gap-2'>
                 <input
@@ -160,7 +156,7 @@ export default function BrandingPage() {
                 <Input
                   value={formData.accentColor}
                   onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
-                  placeholder='#8B5CF6'
+                  placeholder={t('settings.accentColorPlaceholder')}
                   className='flex-1'
                 />
               </div>
@@ -172,29 +168,29 @@ export default function BrandingPage() {
           </div>
         </Card>
 
-        {/* Footer Customization */}
         <Card>
-          <h2 className='text-xl font-semibold mb-6'>Footer Customization</h2>
+          <h2 className='text-xl font-semibold mb-6'>{t('settings.footerCustomization')}</h2>
 
           <div>
-            <label className='block text-sm font-medium text-neutral-700 mb-2'>Footer Text</label>
+            <label className='block text-sm font-medium text-neutral-700 mb-2'>
+              {t('settings.footerText')}
+            </label>
             <textarea
               value={formData.footerText}
               onChange={(e) => setFormData({ ...formData, footerText: e.target.value })}
               className='w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
               rows={3}
-              placeholder='© 2024 Your Clinic Name. All rights reserved.'
+              placeholder={t('settings.placeholderFooterText')}
             />
           </div>
         </Card>
 
-        {/* Save Button */}
         <div className='flex justify-end gap-4'>
           <Button type='button' variant='secondary' onClick={() => router.back()} disabled={saving}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type='submit' isLoading={saving} disabled={saving}>
-            Save Branding Settings
+            {t('settings.saveBrandingSettings')}
           </Button>
         </div>
       </form>

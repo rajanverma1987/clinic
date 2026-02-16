@@ -41,10 +41,10 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave, onCance
                 </div>
                 <div className='flex-1'>
                   <h2 className='text-lg font-bold text-neutral-900 mb-0.5'>
-                    Enable Clinic-Specific SMTP Settings
+                    {t('settings.enableClinicSmpt')}
                   </h2>
                   <p className='text-xs text-neutral-600'>
-                    Use custom SMTP configuration for this clinic instead of platform defaults
+                    {t('settings.enableClinicSmptDesc')}
                   </p>
                 </div>
               </div>
@@ -77,25 +77,25 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave, onCance
                       />
                     </svg>
                   </div>
-                  <h2 className='text-lg font-bold text-neutral-900'>Server Configuration</h2>
+                  <h2 className='text-lg font-bold text-neutral-900'>{t('settings.serverConfiguration')}</h2>
                 </div>
 
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                      SMTP Host <span className='text-red-500'>*</span>
+                      {t('settings.smtpHostLabel')} <span className='text-red-500'>*</span>
                     </label>
                     <Input
                       value={smtpForm.host}
                       onChange={(e) => setSmtpForm({ ...smtpForm, host: e.target.value })}
-                      placeholder='e.g., smtp.gmail.com'
+                      placeholder={t('settings.smtpHostPlaceholder')}
                       required
                     />
                   </div>
 
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                      SMTP Port <span className='text-red-500'>*</span>
+                      {t('settings.smtpPortLabel')} <span className='text-red-500'>*</span>
                     </label>
                     <Input
                       type='number'
@@ -103,7 +103,7 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave, onCance
                       onChange={(e) =>
                         setSmtpForm({ ...smtpForm, port: parseInt(e.target.value) || 587 })
                       }
-                      placeholder='587'
+                      placeholder={t('settings.smtpPortPlaceholder')}
                       required
                     />
                   </div>
@@ -111,9 +111,9 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave, onCance
 
                 <div className='mt-4 flex items-center justify-between p-3 border border-neutral-200 rounded-lg'>
                   <div className='flex-1'>
-                    <h3 className='font-semibold text-neutral-900 text-sm mb-0.5'>Use SSL/TLS</h3>
+                    <h3 className='font-semibold text-neutral-900 text-sm mb-0.5'>{t('settings.useSslTls')}</h3>
                     <p className='text-xs text-neutral-600'>
-                      Enable SSL/TLS encryption (usually required for port 465)
+                      {t('settings.useSslTlsDesc')}
                     </p>
                   </div>
                   <Toggle
@@ -143,32 +143,32 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave, onCance
                       />
                     </svg>
                   </div>
-                  <h2 className='text-lg font-bold text-neutral-900'>Authentication</h2>
+                  <h2 className='text-lg font-bold text-neutral-900'>{t('settings.authentication')}</h2>
                 </div>
 
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                      SMTP Username <span className='text-red-500'>*</span>
+                      {t('settings.smtpUsername')} <span className='text-red-500'>*</span>
                     </label>
                     <Input
                       value={smtpForm.user}
                       onChange={(e) => setSmtpForm({ ...smtpForm, user: e.target.value })}
-                      placeholder='your-email@gmail.com'
+                      placeholder={t('settings.smtpUserPlaceholder')}
                       required
                     />
                   </div>
 
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                      SMTP Password{' '}
-                      {smtpForm.password ? '(change)' : '(leave blank to keep existing)'}
+                      {t('settings.smtpPasswordLabel')}{' '}
+                      {smtpForm.password ? t('settings.smtpPasswordChange') : t('settings.smtpPasswordLeaveBlank')}
                     </label>
                     <Input
                       type='password'
                       value={smtpForm.password}
                       onChange={(e) => setSmtpForm({ ...smtpForm, password: e.target.value })}
-                      placeholder='Enter new password or leave blank'
+                      placeholder={t('settings.smtpPasswordPlaceholder')}
                     />
                   </div>
                 </div>
@@ -194,31 +194,31 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave, onCance
                       />
                     </svg>
                   </div>
-                  <h2 className='text-lg font-bold text-neutral-900'>Email Settings</h2>
+                  <h2 className='text-lg font-bold text-neutral-900'>{t('settings.emailSettings')}</h2>
                 </div>
 
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                      From Email Address <span className='text-red-500'>*</span>
+                      {t('settings.fromEmailAddress')} <span className='text-red-500'>*</span>
                     </label>
                     <Input
                       type='email'
                       value={smtpForm.fromEmail}
                       onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })}
-                      placeholder='noreply@yourclinic.com'
+                      placeholder={t('settings.smtpFromPlaceholder')}
                       required
                     />
                   </div>
 
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                      From Name
+                      {t('settings.fromName')}
                     </label>
                     <Input
                       value={smtpForm.fromName}
                       onChange={(e) => setSmtpForm({ ...smtpForm, fromName: e.target.value })}
-                      placeholder='Your Clinic Name'
+                      placeholder={t('settings.smtpFromNamePlaceholder')}
                     />
                   </div>
                 </div>
@@ -226,10 +226,10 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave, onCance
                 <div className='mt-4 flex items-center justify-between p-3 border border-neutral-200 rounded-lg'>
                   <div className='flex-1'>
                     <h3 className='font-semibold text-neutral-900 text-sm mb-0.5'>
-                      Reject Unauthorized SSL Certificates
+                      {t('settings.rejectUnauthorizedSsl')}
                     </h3>
                     <p className='text-xs text-neutral-600'>
-                      Reject SSL certificates that cannot be verified (recommended: enabled)
+                      {t('settings.rejectUnauthorizedSslDesc')}
                     </p>
                   </div>
                   <Toggle
@@ -261,24 +261,24 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave, onCance
                       />
                     </svg>
                   </div>
-                  <h2 className='text-lg font-bold text-neutral-900'>Common SMTP Providers</h2>
+                  <h2 className='text-lg font-bold text-neutral-900'>{t('settings.commonSmtpProviders')}</h2>
                 </div>
 
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
                   {[
-                    { name: 'Gmail', config: 'smtp.gmail.com, Port 587, Use App Password' },
-                    { name: 'Outlook', config: 'smtp.office365.com, Port 587' },
-                    { name: 'SendGrid', config: 'smtp.sendgrid.net, Port 587, Username: apikey' },
-                    { name: 'AWS SES', config: 'email-smtp.region.amazonaws.com, Port 587' },
+                    { nameKey: 'settings.smtpProviderGmail', configKey: 'settings.smtpProviderGmailConfig' },
+                    { nameKey: 'settings.smtpProviderOutlook', configKey: 'settings.smtpProviderOutlookConfig' },
+                    { nameKey: 'settings.smtpProviderSendGrid', configKey: 'settings.smtpProviderSendGridConfig' },
+                    { nameKey: 'settings.smtpProviderAws', configKey: 'settings.smtpProviderAwsConfig' },
                   ].map((provider) => (
                     <div
-                      key={provider.name}
+                      key={provider.nameKey}
                       className='p-2.5 bg-amber-50 border border-amber-200 rounded-lg'
                     >
                       <h4 className='font-semibold text-amber-900 mb-0.5 text-xs'>
-                        {provider.name}
+                        {t(provider.nameKey)}
                       </h4>
-                      <p className='text-xs text-amber-700'>{provider.config}</p>
+                      <p className='text-xs text-amber-700'>{t(provider.configKey)}</p>
                     </div>
                   ))}
                 </div>

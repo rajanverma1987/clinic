@@ -160,11 +160,11 @@ export default function AdminContentFaqsPage() {
               <table className='clinic-table'>
                 <thead>
                   <tr>
-                    <th>Order</th>
-                    <th>Question</th>
+                    <th>{t('common.order')}</th>
+                    <th>{t('admin.contentFaqLabelQuestion')}</th>
                     <th>{t('admin.categoryLabel')}</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{t('admin.status')}</th>
+                    <th>{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,7 +185,7 @@ export default function AdminContentFaqsPage() {
                               : 'bg-neutral-100 text-neutral-600'
                           }
                         >
-                          {item.isActive ? 'Active' : 'Inactive'}
+                          {item.isActive ? t('common.active') : t('common.inactive')}
                         </Tag>
                       </td>
                       <td>
@@ -223,23 +223,25 @@ export default function AdminContentFaqsPage() {
             <form onSubmit={handleSubmit} className='space-y-4'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                  Question *
+                  {t('admin.contentFaqLabelQuestion')} *
                 </label>
                 <Input
                   value={form.question}
                   onChange={(e) => setForm({ ...form, question: e.target.value })}
-                  placeholder='FAQ question'
+                  placeholder={t('admin.contentFaqPlaceholderQuestion')}
                   required
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1'>Answer *</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.contentFaqLabelAnswer')} *
+                </label>
                 <textarea
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg'
                   rows={4}
                   value={form.answer}
                   onChange={(e) => setForm({ ...form, answer: e.target.value })}
-                  placeholder='Answer'
+                  placeholder={t('admin.contentFaqPlaceholderAnswer')}
                   required
                 />
               </div>
@@ -277,7 +279,7 @@ export default function AdminContentFaqsPage() {
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                 />
                 <label htmlFor='faq-active' className='text-sm text-neutral-700'>
-                  Active
+                  {t('common.active')}
                 </label>
               </div>
               <div className='flex gap-2 justify-end'>

@@ -71,7 +71,7 @@ export function ClinicHoursTab({
                           type='button'
                           onClick={() => addTimeSlot(dayIndex)}
                           className='p-1 text-primary-600 hover:bg-primary-50 rounded transition-colors'
-                          title='Add time slot'
+                          title={t('settings.addTimeSlot')}
                         >
                           <svg
                             className='w-3.5 h-3.5'
@@ -153,7 +153,7 @@ export function ClinicHoursTab({
                                   type='button'
                                   onClick={() => removeTimeSlot(dayIndex, slotIndex)}
                                   className='p-1 text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity'
-                                  title='Remove time slot'
+                                  title={t('settings.removeTimeSlot')}
                                 >
                                   <svg
                                     className='w-3.5 h-3.5'

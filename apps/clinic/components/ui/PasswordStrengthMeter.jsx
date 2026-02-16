@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/contexts/I18nContext';
+
 /**
  * PasswordStrengthMeter
  * Shows a segmented bar + label indicating password strength (0–4).
@@ -8,15 +10,21 @@
  *   <PasswordStrengthMeter password={value} />
  */
 
-const RULES = [
-  { label: 'At least 8 characters', test: (p) => p.length >= 8 },
-  { label: 'Uppercase letter', test: (p) => /[A-Z]/.test(p) },
-  { label: 'Lowercase letter', test: (p) => /[a-z]/.test(p) },
-  { label: 'Number', test: (p) => /[0-9]/.test(p) },
-  { label: 'Special character (@$!%*?&)', test: (p) => /[^A-Za-z0-9]/.test(p) },
+const RULE_KEYS = [
+  'common.passwordRuleMinChars',
+  'common.passwordRuleUppercase',
+  'common.passwordRuleLowercase',
+  'common.passwordRuleNumber',
+  'common.passwordRuleSpecial',
 ];
 
-const STRENGTH_LABELS = ['Too weak', 'Weak', 'Fair', 'Good', 'Strong'];
+const STRENGTH_KEYS = [
+  'common.passwordStrengthTooWeak',
+  'common.passwordStrengthWeak',
+  'common.passwordStrengthFair',
+  'common.passwordStrengthGood',
+  'common.passwordStrengthStrong',
+];
 const SEGMENT_COLORS = [
   'bg-status-error',
   'bg-status-error',
@@ -25,7 +33,16 @@ const SEGMENT_COLORS = [
   'bg-status-success',
 ];
 
+const RULES = [
+  { test: (p) => p.length >= 8 },
+  { test: (p) => /[A-Z]/.test(p) },
+  { test: (p) => /[a-z]/.test(p) },
+  { test: (p) => /[0-9]/.test(p) },
+  { test: (p) => /[^A-Za-z0-9]/.test(p) },
+];
+
 export function PasswordStrengthMeter({ password = '' }) {
+  const { t } = useI18n();
   const passed = RULES.filter((r) => r.test(password)).length;
   const strength = password.length === 0 ? 0 : Math.max(1, passed);
 
@@ -54,21 +71,21 @@ export function PasswordStrengthMeter({ password = '' }) {
               : 'text-status-success'
           }`}
         >
-          {STRENGTH_LABELS[strength]}
+          {t(STRENGTH_KEYS[strength])}
         </p>
       )}
 
       {/* Rule checklist */}
       {password.length > 0 && (
         <ul className='space-y-1'>
-          {RULES.map((rule) => {
+          {RULES.map((rule, idx) => {
             const ok = rule.test(password);
             return (
-              <li key={rule.label} className='flex items-center gap-1.5 text-xs'>
+              <li key={RULE_KEYS[idx]} className='flex items-center gap-1.5 text-xs'>
                 <span className={ok ? 'text-status-success' : 'text-neutral-400'}>
                   {ok ? '✓' : '○'}
                 </span>
-                <span className={ok ? 'text-neutral-700' : 'text-neutral-400'}>{rule.label}</span>
+                <span className={ok ? 'text-neutral-700' : 'text-neutral-400'}>{t(RULE_KEYS[idx])}</span>
               </li>
             );
           })}

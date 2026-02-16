@@ -5,6 +5,7 @@
  * so toasts render in a single, predictable place. Mount inside NotificationProvider.
  * The toast manager (lib/utils/toast) will use this container when present.
  */
+import { useI18n } from '@/contexts/I18nContext';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -21,6 +22,7 @@ const TOAST_CONTAINER_STYLE = {
 };
 
 export function NotificationWrapper({ children }) {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function NotificationWrapper({ children }) {
     <div
       id='toast-container'
       role='region'
-      aria-label='Notifications'
+      aria-label={t('common.ariaLabelNotifications')}
       style={TOAST_CONTAINER_STYLE}
     />
   );

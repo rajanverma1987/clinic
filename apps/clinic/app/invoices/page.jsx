@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  EyeIcon,
-  FileDownIcon,
-  PencilIcon,
-  PrinterIcon,
-  TrashIcon,
-} from '@/components/icons';
+import { EyeIcon, FileDownIcon, PencilIcon, PrinterIcon, TrashIcon } from '@/components/icons';
 import { InvoicePrintPreview } from '@/components/invoices/InvoicePrintPreview';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -15,8 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { Table } from '@/components/ui/Table';
 import { PageSearchBar } from '@/components/ui/PageSearchBar';
+import { Table } from '@/components/ui/Table';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
@@ -511,9 +505,9 @@ export default function InvoicesPage() {
                   <option value='all'>{t('invoices.filterAll')}</option>
                   <option value='paid'>{t('invoices.paid')}</option>
                   <option value='pending'>{t('invoices.pending')}</option>
-                <option value='partial'>{t('invoices.partial') || 'Partial'}</option>
-                <option value='overdue'>{t('invoices.overdue')}</option>
-                <option value='draft'>{t('invoices.draft')}</option>
+                  <option value='partial'>{t('invoices.partial') || 'Partial'}</option>
+                  <option value='overdue'>{t('invoices.overdue')}</option>
+                  <option value='draft'>{t('invoices.draft')}</option>
                 </select>
                 <span className='text-sm text-neutral-500 dark:text-neutral-400'>
                   {t('invoices.filterDateRange')}
@@ -597,7 +591,7 @@ export default function InvoicesPage() {
                       step='0.01'
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(e.target.value)}
-                      placeholder='0.00'
+                      placeholder={t('invoices.amountPlaceholder')}
                     />
                   </div>
                   <div>

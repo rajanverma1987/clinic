@@ -1,17 +1,18 @@
 'use client';
 
+import { XIcon } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Button } from '@/components/ui/Button';
-import { XIcon } from '@/components/icons';
 
-const COMMON_REASONS = [
-  'Patient requested cancellation',
-  'Doctor unavailable',
-  'Emergency rescheduling',
-  'Patient no-show',
-  'Scheduling conflict',
-  'Other',
+const REASON_KEYS = [
+  'appointments.cancelReasonPatientRequested',
+  'appointments.cancelReasonDoctorUnavailable',
+  'appointments.cancelReasonEmergencyReschedule',
+  'appointments.cancelReasonNoShow',
+  'appointments.cancelReasonSchedulingConflict',
+  'appointments.cancelReasonOther',
 ];
 
 /**
@@ -26,12 +27,16 @@ const COMMON_REASONS = [
  *   loading {boolean}
  */
 export function CancelAppointmentModal({ isOpen, onClose, onConfirm, patientName, loading }) {
+  const { t } = useI18n();
   const [reason, setReason] = useState('');
   const [custom, setCustom] = useState('');
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef(null);
+  const COMMON_REASONS = REASON_KEYS.map((k) => t(k));
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -43,12 +48,14 @@ export function CancelAppointmentModal({ isOpen, onClose, onConfirm, patientName
 
   useEffect(() => {
     if (!isOpen || loading) return;
-    const handler = (e) => { if (e.key === 'Escape') onClose?.(); };
+    const handler = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [isOpen, loading, onClose]);
 
-  const finalReason = reason === 'Other' ? custom.trim() : reason;
+  const finalReason = reason === t('appointments.cancelReasonOther') ? custom.trim() : reason;
   const canConfirm = finalReason.length > 0;
 
   const handleConfirm = () => {
@@ -80,16 +87,25 @@ export function CancelAppointmentModal({ isOpen, onClose, onConfirm, patientName
             <XIcon className='icon icon-md' aria-hidden />
           </div>
           <h2 id='cancel-appt-title' className='ConfirmationModal-title'>
-            Cancel Appointment{patientName ? ` — ${patientName}` : ''}
+            {t('appointments.cancelAppointmentTitle')}
+            {patientName ? ` — ${patientName}` : ''}
           </h2>
-          <Button variant='ghost' size='xs' iconOnly className='ConfirmationModal-close' onClick={onClose} disabled={loading} aria-label='Close'>
+          <Button
+            variant='ghost'
+            size='xs'
+            iconOnly
+            className='ConfirmationModal-close'
+            onClick={onClose}
+            disabled={loading}
+            aria-label={t('common.ariaLabelClose')}
+          >
             <XIcon className='icon icon-sm' />
           </Button>
         </div>
 
         {/* Body */}
         <div className='ConfirmationModal-content'>
-          <p className='ConfirmationModal-message mb-4'>Please select or enter a reason for cancellation.</p>
+          <p className='ConfirmationModal-message mb-4'>{t('appointments.cancelReasonPrompt')}</p>
 
           {/* Quick-pick reason buttons */}
           <div className='flex flex-wrap gap-2 mb-3'>
@@ -110,12 +126,12 @@ export function CancelAppointmentModal({ isOpen, onClose, onConfirm, patientName
           </div>
 
           {/* Custom reason input (shown when "Other" selected or as fallback) */}
-          {(reason === 'Other' || !COMMON_REASONS.includes(reason)) && (
+          {(reason === t('appointments.cancelReasonOther') || !COMMON_REASONS.includes(reason)) && (
             <textarea
               className='w-full px-3 py-2 text-sm border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-status-error resize-none'
               rows={3}
               maxLength={500}
-              placeholder='Describe the reason…'
+              placeholder={t('appointments.cancelReasonPlaceholder')}
               value={custom}
               onChange={(e) => setCustom(e.target.value)}
             />
@@ -125,10 +141,16 @@ export function CancelAppointmentModal({ isOpen, onClose, onConfirm, patientName
         {/* Footer */}
         <div className='ConfirmationModal-footer'>
           <Button variant='secondary' size='md' onClick={onClose} disabled={loading}>
-            Keep Appointment
+            {t('appointments.keepAppointment')}
           </Button>
-          <Button variant='danger' size='md' onClick={handleConfirm} isLoading={loading} disabled={!canConfirm || loading}>
-            Confirm Cancellation
+          <Button
+            variant='danger'
+            size='md'
+            onClick={handleConfirm}
+            isLoading={loading}
+            disabled={!canConfirm || loading}
+          >
+            {t('appointments.confirmCancellation')}
           </Button>
         </div>
       </div>

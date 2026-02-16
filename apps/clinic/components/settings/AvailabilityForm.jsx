@@ -2,8 +2,10 @@
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function AvailabilityForm({ availabilityForm, setAvailabilityForm }) {
+  const { t } = useI18n();
   return (
     <div className='border-t border-neutral-200' style={{ paddingTop: 'var(--space-8)' }}>
       <h3
@@ -120,7 +122,7 @@ export function AvailabilityForm({ availabilityForm, setAvailabilityForm }) {
                 </label>
                 <Input
                   type='text'
-                  placeholder='e.g., Personal leave, Conference, etc.'
+                  placeholder={t('settings.availabilityReasonPlaceholder')}
                   value={availabilityForm.dayOffReason}
                   onChange={(e) =>
                     setAvailabilityForm({
@@ -220,7 +222,7 @@ export function AvailabilityForm({ availabilityForm, setAvailabilityForm }) {
                 </label>
                 <Input
                   type='text'
-                  placeholder='e.g., Medical emergency, Family emergency, etc.'
+                  placeholder={t('settings.unavailabilityReasonPlaceholder')}
                   value={availabilityForm.emergencyOffReason}
                   onChange={(e) =>
                     setAvailabilityForm({

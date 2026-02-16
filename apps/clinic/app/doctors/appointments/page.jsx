@@ -218,7 +218,9 @@ export default function DoctorAppointmentsPage() {
                         </Card>
                       ))
                     ) : (
-                      <div className='text-sm text-neutral-400 py-2'>No appointments</div>
+                      <div className='text-sm text-neutral-400 py-2'>
+                        {t('doctors.noAppointments')}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -284,7 +286,7 @@ export default function DoctorAppointmentsPage() {
                     </div>
                   ))
                 ) : (
-                  <div className='text-xs text-neutral-400 py-2'>No appointments</div>
+                  <div className='text-xs text-neutral-400 py-2'>{t('doctors.noAppointments')}</div>
                 )}
               </div>
             </div>
@@ -403,7 +405,10 @@ export default function DoctorAppointmentsPage() {
   return (
     <Layout>
       <div style={{ padding: '0 10px' }} className='space-y-6'>
-        <PageHeader title='Appointments Calendar' subtitle='View and manage your appointments' />
+        <PageHeader
+          title={t('doctors.appointmentsCalendarTitle')}
+          subtitle={t('doctors.appointmentsCalendarSubtitle')}
+        />
 
         {/* View Controls – tab design for view mode, icons for date navigation */}
         <Card>
@@ -419,7 +424,7 @@ export default function DoctorAppointmentsPage() {
                   activeTab={viewMode}
                   onChange={(id) => setViewMode(id)}
                   idPrefix='calendar-view'
-                  ariaLabel='Calendar view'
+                  ariaLabel={t('doctors.calendarView')}
                 />
               </div>
 
@@ -427,7 +432,7 @@ export default function DoctorAppointmentsPage() {
                 <button
                   type='button'
                   onClick={() => navigateDate(-1)}
-                  aria-label='Previous'
+                  aria-label={t('common.ariaLabelPrevious')}
                   className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
                 >
                   <ChevronLeftIcon className='icon icon-md' aria-hidden />
@@ -435,7 +440,7 @@ export default function DoctorAppointmentsPage() {
                 <button
                   type='button'
                   onClick={goToToday}
-                  aria-label='Go to today'
+                  aria-label={t('common.ariaLabelGoToToday')}
                   className='inline-flex items-center justify-center min-w-[4rem] h-10 px-3 rounded-lg border border-neutral-200 bg-white text-neutral-700 text-body-sm font-medium hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
                 >
                   Today
@@ -443,7 +448,7 @@ export default function DoctorAppointmentsPage() {
                 <button
                   type='button'
                   onClick={() => navigateDate(1)}
-                  aria-label='Next'
+                  aria-label={t('common.ariaLabelNext')}
                   className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
                 >
                   <ChevronRightIcon className='icon icon-md' aria-hidden />

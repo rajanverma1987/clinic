@@ -3,10 +3,11 @@
  * Updates UI immediately before API calls complete, providing instant feedback.
  */
 
-import { useState, useCallback } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { showSuccess, showError } from '@/lib/utils/toast';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
+import { useCallback, useState } from 'react';
 
 /**
  * Hook for optimistic appointment operations
@@ -14,6 +15,7 @@ import { logger } from '@/lib/utils/logger';
  * @returns {Object} { appointments, setAppointments, createAppointment, updateAppointment, deleteAppointment }
  */
 export function useOptimisticAppointments(initialAppointments = []) {
+  const { t } = useI18n();
   const [appointments, setAppointments] = useState(initialAppointments);
 
   /**
@@ -38,11 +40,9 @@ export function useOptimisticAppointments(initialAppointments = []) {
         const createdAppointment = response.data.data || response.data;
 
         // Replace temp with real data
-        setAppointments((prev) =>
-          prev.map((a) => (a._id === tempId ? createdAppointment : a)),
-        );
+        setAppointments((prev) => prev.map((a) => (a._id === tempId ? createdAppointment : a)));
 
-        showSuccess('Appointment created successfully');
+        showSuccess(t('appointments.createdSuccess'));
         return createdAppointment;
       } else {
         throw new Error(response.error?.message || 'Failed to create appointment');
@@ -51,7 +51,7 @@ export function useOptimisticAppointments(initialAppointments = []) {
       // Rollback on error
       setAppointments((prev) => prev.filter((a) => a._id !== tempId));
       logger.error('Failed to create appointment', error);
-      showError('Failed to create appointment');
+      showError(t('appointments.createFailed'));
       throw error;
     }
   }, []);
@@ -80,11 +80,9 @@ export function useOptimisticAppointments(initialAppointments = []) {
           const updatedAppointment = response.data.data || response.data;
 
           // Replace with server data
-          setAppointments((prev) =>
-            prev.map((a) => (a._id === id ? updatedAppointment : a)),
-          );
+          setAppointments((prev) => prev.map((a) => (a._id === id ? updatedAppointment : a)));
 
-          showSuccess('Appointment updated successfully');
+          showSuccess(t('appointments.updateSuccess'));
           return updatedAppointment;
         } else {
           throw new Error(response.error?.message || 'Failed to update appointment');
@@ -92,12 +90,10 @@ export function useOptimisticAppointments(initialAppointments = []) {
       } catch (error) {
         // Rollback on error
         if (originalAppointment) {
-          setAppointments((prev) =>
-            prev.map((a) => (a._id === id ? originalAppointment : a)),
-          );
+          setAppointments((prev) => prev.map((a) => (a._id === id ? originalAppointment : a)));
         }
         logger.error('Failed to update appointment', error);
-        showError('Failed to update appointment');
+        showError(t('appointments.updateFailed'));
         throw error;
       }
     },
@@ -121,12 +117,12 @@ export function useOptimisticAppointments(initialAppointments = []) {
           throw new Error(response.error?.message || 'Failed to delete appointment');
         }
 
-        showSuccess('Appointment deleted successfully');
+        showSuccess(t('appointments.deleteSuccess'));
       } catch (error) {
         // Rollback on error
         setAppointments(originalAppointments);
         logger.error('Failed to delete appointment', error);
-        showError('Failed to delete appointment');
+        showError(t('appointments.deleteFailed'));
         throw error;
       }
     },

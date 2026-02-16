@@ -62,8 +62,8 @@ export default function SettingsLayout({ children }) {
                 id={`settings-tab-${index}`}
                 className={
                   isActive
-                    ? 'py-1.5 px-1 border-b-2 border-primary-500 text-primary-600 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap'
-                    : 'py-1.5 px-1 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200'
+                    ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-600 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap'
+                    : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200'
                 }
               >
                 {t(labelKey)}

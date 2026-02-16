@@ -244,8 +244,10 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
                   d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
                 />
               </svg>
-              <p className='text-neutral-500 font-medium mb-1'>No appointments today</p>
-              <p className='text-neutral-400 text-sm text-center'>You&apos;re all caught up! 🎉</p>
+              <p className='text-neutral-500 font-medium mb-1'>
+                {t('doctors.noAppointmentsToday')}
+              </p>
+              <p className='text-neutral-400 text-sm text-center'>{t('doctors.allCaughtUp')}</p>
             </div>
           ) : (
             <div className='p-3 space-y-2'>
@@ -309,15 +311,17 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
         {/* Footer */}
         {appointments.length > 0 && (
           <div className='border-t border-neutral-200 p-3 bg-neutral-50'>
-            <button
+            <Button
+              variant='primary'
+              size='sm'
+              className='w-full'
               onClick={() => {
                 router.push('/appointments');
                 onClose();
               }}
-              className='w-full py-2 px-4 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors text-sm'
             >
-              View All Appointments
-            </button>
+              {t('common.viewAllAppointments')}
+            </Button>
           </div>
         )}
       </div>

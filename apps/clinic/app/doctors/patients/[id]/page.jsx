@@ -182,7 +182,7 @@ export default function DoctorPatientRecordsPage() {
     return (
       <Layout>
         <Card className='p-8 text-center'>
-          <p className='text-neutral-500'>Patient not found</p>
+          <p className='text-neutral-500'>{t('patients.patientNotFound')}</p>
         </Card>
       </Layout>
     );
@@ -199,7 +199,7 @@ export default function DoctorPatientRecordsPage() {
         {/* Demographics section */}
         <section aria-labelledby='demographics-heading'>
           <h2 id='demographics-heading' className='sr-only'>
-            Demographics
+            {t('patients.demographics')}
           </h2>
           <Card>
             <div className='p-6'>
@@ -230,13 +230,13 @@ export default function DoctorPatientRecordsPage() {
                     variant='primary'
                     onClick={() => router.push(`/prescriptions/new?patientId=${patientId}`)}
                   >
-                    New Prescription
+                    {t('patients.newPrescription')}
                   </Button>
                   <Button
                     variant='secondary'
                     onClick={() => router.push(`/appointments/new?patientId=${patientId}`)}
                   >
-                    New Appointment
+                    {t('patients.newAppointment')}
                   </Button>
                 </div>
               </div>
@@ -244,27 +244,29 @@ export default function DoctorPatientRecordsPage() {
               {/* Quick Info */}
               <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-neutral-200'>
                 <div>
-                  <p className='text-sm text-neutral-600'>Blood Group</p>
+                  <p className='text-sm text-neutral-600'>{t('patients.bloodGroup')}</p>
                   <p className='font-semibold text-neutral-900'>
                     {patient.bloodGroup || t('patients.notSpecified')}
                   </p>
                 </div>
                 <div>
-                  <p className='text-sm text-neutral-600'>Allergies</p>
+                  <p className='text-sm text-neutral-600'>{t('patients.allergies')}</p>
                   <p className='font-semibold text-neutral-900'>
-                    {patient.allergies?.length > 0 ? patient.allergies.join(', ') : 'None'}
+                    {patient.allergies?.length > 0
+                      ? patient.allergies.join(', ')
+                      : t('common.none')}
                   </p>
                 </div>
                 <div>
-                  <p className='text-sm text-neutral-600'>Total Visits</p>
+                  <p className='text-sm text-neutral-600'>{t('patients.totalVisits')}</p>
                   <p className='font-semibold text-neutral-900'>{appointments.length}</p>
                 </div>
                 <div>
-                  <p className='text-sm text-neutral-600'>Last Visit</p>
+                  <p className='text-sm text-neutral-600'>{t('patients.lastVisit')}</p>
                   <p className='font-semibold text-neutral-900'>
                     {appointments.length > 0
                       ? formatDate(appointments[0].appointmentDate || appointments[0].startTime)
-                      : 'Never'}
+                      : t('common.never')}
                   </p>
                 </div>
               </div>
@@ -274,19 +276,19 @@ export default function DoctorPatientRecordsPage() {
 
         <Tabs
           tabs={[
-            { id: 'timeline', label: 'Timeline' },
-            { id: 'vitals', label: 'Vitals' },
-            { id: 'prescriptions', label: 'Prescriptions' },
-            { id: 'lab-results', label: 'Lab Results' },
-            { id: 'imaging', label: 'Imaging' },
-            { id: 'allergies', label: 'Allergies' },
-            { id: 'conditions', label: 'Conditions' },
-            { id: 'notes', label: 'Notes' },
+            { id: 'timeline', label: t('patients.doctorPatientTimeline') },
+            { id: 'vitals', label: t('patients.doctorPatientVitals') },
+            { id: 'prescriptions', label: t('patients.doctorPatientPrescriptions') },
+            { id: 'lab-results', label: t('patients.doctorPatientLabResults') },
+            { id: 'imaging', label: t('patients.doctorPatientImaging') },
+            { id: 'allergies', label: t('patients.doctorPatientAllergies') },
+            { id: 'conditions', label: t('patients.doctorPatientConditions') },
+            { id: 'notes', label: t('patients.doctorPatientNotes') },
           ]}
           activeTab={activeTab}
           onChange={handleTabChange}
           idPrefix='doctor-patient-tabs'
-          ariaLabel='Patient record'
+          ariaLabel={t('patients.patientRecord')}
         />
 
         <div
@@ -335,7 +337,9 @@ export default function DoctorPatientRecordsPage() {
               return (
                 <Card>
                   <div className='p-6'>
-                    <h3 className='text-lg font-bold text-neutral-900 mb-4'>Timeline</h3>
+                    <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                      {t('patients.doctorPatientTimeline')}
+                    </h3>
                     {timelineItems.length > 0 ? (
                       <ul className='space-y-3'>
                         {timelineItems.map((item) => (
@@ -381,7 +385,9 @@ export default function DoctorPatientRecordsPage() {
                         ))}
                       </ul>
                     ) : (
-                      <p className='text-neutral-500 text-center py-8'>No timeline entries yet.</p>
+                      <p className='text-neutral-500 text-center py-8'>
+                        {t('patients.noTimelineEntries')}
+                      </p>
                     )}
                   </div>
                 </Card>
@@ -392,11 +398,10 @@ export default function DoctorPatientRecordsPage() {
           {activeTab === 'vitals' && (
             <Card>
               <div className='p-6'>
-                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Vitals</h3>
-                <p className='text-neutral-600 text-sm'>
-                  Vital signs (e.g. BP, pulse, temperature) can be displayed here when available
-                  from the vitals API.
-                </p>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('patients.doctorPatientVitals')}
+                </h3>
+                <p className='text-neutral-600 text-sm'>{t('patients.vitalsDescription')}</p>
               </div>
             </Card>
           )}
@@ -406,13 +411,15 @@ export default function DoctorPatientRecordsPage() {
             <Card>
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
-                  <h3 className='text-lg font-bold text-neutral-900'>All Prescriptions</h3>
+                  <h3 className='text-lg font-bold text-neutral-900'>
+                    {t('patients.allPrescriptions')}
+                  </h3>
                   <Button
                     variant='primary'
                     size='sm'
                     onClick={() => router.push(`/prescriptions/new?patientId=${patientId}`)}
                   >
-                    New Prescription
+                    {t('patients.newPrescription')}
                   </Button>
                 </div>
                 {prescriptions.length > 0 ? (
@@ -429,7 +436,8 @@ export default function DoctorPatientRecordsPage() {
                               {pres.prescriptionNumber || pres._id.slice(-8)}
                             </p>
                             <p className='text-sm text-neutral-600'>
-                              {formatDate(pres.createdAt)} • {pres.diagnosis || 'No diagnosis'}
+                              {formatDate(pres.createdAt)} •{' '}
+                              {pres.diagnosis || t('patients.noDiagnosis')}
                             </p>
                           </div>
                           <Tag
@@ -443,20 +451,21 @@ export default function DoctorPatientRecordsPage() {
                           </Tag>
                         </div>
                         <div className='text-sm text-neutral-600'>
-                          {pres.items.length} medicine{pres.items.length !== 1 ? 's' : ''}{' '}
-                          prescribed
+                          {pres.items.length === 1
+                            ? t('patients.medicinesPrescribedOne')
+                            : t('patients.medicinesPrescribedOther', { count: pres.items.length })}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className='text-center py-12'>
-                    <p className='text-neutral-500 mb-4'>No prescriptions found</p>
+                    <p className='text-neutral-500 mb-4'>{t('patients.noPrescriptionsFound')}</p>
                     <Button
                       variant='primary'
                       onClick={() => router.push(`/prescriptions/new?patientId=${patientId}`)}
                     >
-                      Create First Prescription
+                      {t('patients.createFirstPrescription')}
                     </Button>
                   </div>
                 )}
@@ -467,7 +476,9 @@ export default function DoctorPatientRecordsPage() {
           {activeTab === 'lab-results' && (
             <Card>
               <div className='p-6'>
-                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Lab Reports</h3>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('patients.labReports')}
+                </h3>
                 {labReports.length > 0 ? (
                   <div className='space-y-4'>
                     {labReports.map((report) => (
@@ -478,7 +489,7 @@ export default function DoctorPatientRecordsPage() {
                         <div className='flex items-start justify-between mb-2'>
                           <div>
                             <p className='font-semibold text-neutral-900'>
-                              {report.testName || report.name || 'Lab Test'}
+                              {report.testName || report.name || t('patients.labTest')}
                             </p>
                             <p className='text-sm text-neutral-600'>
                               {formatDate(report.date || report.createdAt)}
@@ -491,7 +502,7 @@ export default function DoctorPatientRecordsPage() {
                                 : 'bg-yellow-100 text-yellow-800'
                             }
                           >
-                            {report.status || 'Pending'}
+                            {report.status || t('patients.statusPending')}
                           </Tag>
                         </div>
                         {report.results && report.results.length > 0 && (
@@ -506,14 +517,14 @@ export default function DoctorPatientRecordsPage() {
                                 </span>
                                 {result.normalRange && (
                                   <span className='text-neutral-500 ml-2'>
-                                    (Range: {result.normalRange})
+                                    ({t('patients.range')}: {result.normalRange})
                                   </span>
                                 )}
                               </div>
                             ))}
                             {report.results.length > 3 && (
                               <p className='text-xs text-neutral-500'>
-                                +{report.results.length - 3} more results
+                                {t('patients.moreResults', { count: report.results.length - 3 })}
                               </p>
                             )}
                           </div>
@@ -524,13 +535,15 @@ export default function DoctorPatientRecordsPage() {
                           className='mt-3'
                           onClick={() => router.push(`/lab-results/${report._id}`)}
                         >
-                          View Full Report
+                          {t('patients.viewFullReport')}
                         </Button>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className='text-neutral-500 text-center py-12'>No lab reports found</p>
+                  <p className='text-neutral-500 text-center py-12'>
+                    {t('patients.noLabReportsFound')}
+                  </p>
                 )}
               </div>
             </Card>
@@ -539,10 +552,10 @@ export default function DoctorPatientRecordsPage() {
           {activeTab === 'imaging' && (
             <Card>
               <div className='p-6'>
-                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Imaging</h3>
-                <p className='text-neutral-600 text-sm'>
-                  Imaging studies and reports will be listed here when available.
-                </p>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('patients.doctorPatientImaging')}
+                </h3>
+                <p className='text-neutral-600 text-sm'>{t('patients.imagingDescription')}</p>
               </div>
             </Card>
           )}
@@ -550,7 +563,9 @@ export default function DoctorPatientRecordsPage() {
           {activeTab === 'allergies' && (
             <Card>
               <div className='p-6'>
-                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Allergies</h3>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('patients.doctorPatientAllergies')}
+                </h3>
                 {patient.allergies &&
                 (Array.isArray(patient.allergies) ? patient.allergies : [patient.allergies]).filter(
                   Boolean,
@@ -563,12 +578,12 @@ export default function DoctorPatientRecordsPage() {
                       <Tag key={index} className='bg-red-100 text-red-800'>
                         {typeof allergy === 'string'
                           ? allergy
-                          : allergy?.name || allergy?.substance || 'Unknown'}
+                          : allergy?.name || allergy?.substance || t('patients.unknown')}
                       </Tag>
                     ))}
                   </div>
                 ) : (
-                  <p className='text-neutral-500'>No allergies recorded.</p>
+                  <p className='text-neutral-500'>{t('patients.noAllergiesRecorded')}</p>
                 )}
               </div>
             </Card>
@@ -577,7 +592,9 @@ export default function DoctorPatientRecordsPage() {
           {activeTab === 'conditions' && (
             <Card>
               <div className='p-6'>
-                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Conditions</h3>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('patients.doctorPatientConditions')}
+                </h3>
                 {patient.chronicConditions && patient.chronicConditions.length > 0 ? (
                   <div className='flex flex-wrap gap-2 mb-4'>
                     {patient.chronicConditions.map((condition, index) => (
@@ -589,13 +606,15 @@ export default function DoctorPatientRecordsPage() {
                 ) : null}
                 {patient.medicalHistory && (
                   <div className='mt-4'>
-                    <h4 className='font-semibold text-neutral-900 mb-2'>Medical History</h4>
+                    <h4 className='font-semibold text-neutral-900 mb-2'>
+                      {t('patients.medicalHistory')}
+                    </h4>
                     <p className='text-neutral-700 whitespace-pre-wrap'>{patient.medicalHistory}</p>
                   </div>
                 )}
                 {(!patient.chronicConditions || patient.chronicConditions.length === 0) &&
                   !patient.medicalHistory && (
-                    <p className='text-neutral-500'>No conditions or medical history recorded.</p>
+                    <p className='text-neutral-500'>{t('patients.noConditionsOrMedicalHistory')}</p>
                   )}
               </div>
             </Card>
@@ -604,14 +623,16 @@ export default function DoctorPatientRecordsPage() {
           {activeTab === 'notes' && (
             <Card>
               <div className='p-6'>
-                <h3 className='text-lg font-bold text-neutral-900 mb-4'>Notes</h3>
-                <p className='text-sm text-neutral-600 mb-4'>Private notes visible only to you.</p>
+                <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                  {t('patients.doctorPatientNotes')}
+                </h3>
+                <p className='text-sm text-neutral-600 mb-4'>{t('patients.privateNotesHint')}</p>
                 <textarea
                   className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                   rows={10}
                   value={personalNotes}
                   onChange={(e) => setPersonalNotes(e.target.value)}
-                  placeholder='Enter your personal notes about this patient...'
+                  placeholder={t('doctors.personalNotesPlaceholder')}
                 />
                 <div className='flex justify-end mt-4'>
                   <Button
@@ -626,7 +647,7 @@ export default function DoctorPatientRecordsPage() {
                           },
                         );
                         if (response.success) {
-                          showSuccess(t('doctors.notesSaved') || 'Notes saved');
+                          showSuccess(t('doctors.notesSaved'));
                         } else {
                           showError(t('doctors.notesSaveFailed') || 'Failed to save notes');
                         }

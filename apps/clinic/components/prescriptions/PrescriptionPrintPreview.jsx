@@ -1,14 +1,14 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
 import { Loader } from '@/components/ui/Loader';
+import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger.js';
 import { useEffect, useState } from 'react';
 import { generatePrescriptionPrintHTML } from './PrescriptionPrintTemplate';
-import { logger } from '@/lib/utils/logger.js';
 
 export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
   const { user: currentUser } = useAuth();
@@ -33,7 +33,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
       // Fetch prescription
       const prescriptionResponse = await apiClient.get(`/prescriptions/${prescriptionId}`);
       if (!prescriptionResponse.success || !prescriptionResponse.data) {
-        setError('Prescription not found');
+        setError(t('prescriptions.prescriptionNotFound'));
         setLoading(false);
         return;
       }
@@ -42,7 +42,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
       const patientId = prescription.patientId?._id || prescription.patientId;
 
       if (!patientId) {
-        setError('Patient information not found');
+        setError(t('prescriptions.patientInfoNotFound'));
         setLoading(false);
         return;
       }
@@ -57,7 +57,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
       }
 
       if (!patient) {
-        setError('Patient not found');
+        setError(t('prescriptions.patientNotFound'));
         setLoading(false);
         return;
       }
@@ -79,7 +79,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
       if (appointmentId) {
         try {
           const noteResponse = await apiClient.get(
-            `/clinical-notes?appointmentId=${appointmentId}&limit=1`
+            `/clinical-notes?appointmentId=${appointmentId}&limit=1`,
           );
           if (noteResponse.success && noteResponse.data) {
             const noteData = noteResponse.data?.data || noteResponse.data;
@@ -96,7 +96,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
       const age = patient.dateOfBirth
         ? Math.floor(
             (new Date().getTime() - new Date(patient.dateOfBirth).getTime()) /
-              (365.25 * 24 * 60 * 60 * 1000)
+              (365.25 * 24 * 60 * 60 * 1000),
           )
         : undefined;
 
@@ -115,7 +115,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
               (h) =>
                 `${h.day}: ${h.timeSlots?.[0]?.startTime || ''} - ${
                   h.timeSlots?.[0]?.endTime || ''
-                }`
+                }`,
             )
             .join(', ')
         : '';
@@ -184,10 +184,10 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
                   item.drugName || ''
                 }`.trim()
               : item.itemType === 'lab'
-              ? item.labTestName || ''
-              : item.itemType === 'procedure'
-              ? item.procedureName || ''
-              : item.itemName || '';
+                ? item.labTestName || ''
+                : item.itemType === 'procedure'
+                  ? item.procedureName || ''
+                  : item.itemName || '';
 
           const dosage =
             item.itemType === 'drug' && item.frequency
@@ -195,10 +195,10 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
                   item.takeBeforeMeal
                     ? ' (Before Food)'
                     : item.takeAfterMeal
-                    ? ' (After Food)'
-                    : item.takeWithFood
-                    ? ' (With Food)'
-                    : ''
+                      ? ' (After Food)'
+                      : item.takeWithFood
+                        ? ' (With Food)'
+                        : ''
                 }`
               : '';
 
@@ -241,7 +241,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
       setPrintHtml(html);
     } catch (error) {
       logger.error('Failed to load prescription data:', error);
-      setError('Failed to load prescription data');
+      setError(t('prescriptions.failedToLoadPrescriptionData'));
     } finally {
       setLoading(false);
     }
@@ -274,7 +274,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title='Print Preview' size='print'>
+    <Modal isOpen={isOpen} onClose={onClose} title={t('prescriptions.printPreview')} size='print'>
       <div className='space-y-4'>
         {loading && (
           <div className='flex items-center justify-center py-8'>
@@ -303,9 +303,9 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
 
             <div className='flex justify-end gap-2 pt-4 border-t'>
               <Button variant='secondary' onClick={onClose}>
-                Close
+                {t('common.close')}
               </Button>
-              <Button onClick={handlePrint}>Print</Button>
+              <Button onClick={handlePrint}>{t('prescriptions.print')}</Button>
             </div>
           </>
         )}

@@ -111,7 +111,7 @@ export default function ForgotPasswordPage() {
         <div className='absolute inset-0 w-full h-full'>
           <ImageTransition
             src='/images/login.png'
-            alt='Forgot Password Background'
+            alt={t('common.altForgotPasswordBackground')}
             fill
             className='object-cover opacity-90'
             quality={75}
@@ -133,7 +133,7 @@ export default function ForgotPasswordPage() {
               <div className='flex items-center justify-center group-hover:opacity-90'>
                 <ImageTransition
                   src='/images/logoclinic.png'
-                  alt='Clinic Logo'
+                  alt={t('common.altClinicLogo')}
                   width={128}
                   height={112}
                   className='object-contain drop-shadow-md w-32 max-w-full'
@@ -155,7 +155,7 @@ export default function ForgotPasswordPage() {
                 <div className='flex items-center justify-center group-hover:opacity-90'>
                   <ImageTransition
                     src='/images/logoclinic.png'
-                    alt='Clinic Logo'
+                    alt={t('common.altClinicLogo')}
                     width={128}
                     height={112}
                     className='object-contain drop-shadow-sm w-32 max-w-full'
@@ -388,7 +388,7 @@ export default function ForgotPasswordPage() {
                       type='button'
                       onClick={() => setShowPassword(!showPassword)}
                       className='w-12 shrink-0 flex items-center justify-center text-neutral-500 hover:text-primary-600 transition-colors'
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     >
                       {showPassword ? (
                         <svg
@@ -468,7 +468,9 @@ export default function ForgotPasswordPage() {
                       type='button'
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className='w-12 shrink-0 flex items-center justify-center text-neutral-500 hover:text-primary-600 transition-colors'
-                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      aria-label={
+                        showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')
+                      }
                     >
                       {showConfirmPassword ? (
                         <svg

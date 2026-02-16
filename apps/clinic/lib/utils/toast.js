@@ -7,6 +7,11 @@ class ToastManager {
   constructor() {
     this.container = null;
     this.toasts = new Map();
+    this.closeAriaLabel = 'Close notification';
+  }
+
+  configure({ closeAriaLabel }) {
+    if (closeAriaLabel != null) this.closeAriaLabel = closeAriaLabel;
   }
 
   ensureContainer() {
@@ -219,7 +224,7 @@ class ToastManager {
           "
           onmouseover="this.style.background='var(--color-neutral-100)'; this.style.color='var(--color-neutral-900)';"
           onmouseout="this.style.background='transparent'; this.style.color='var(--color-neutral-500)';"
-          aria-label="Close notification"
+          aria-label="${this.closeAriaLabel}"
         >
           <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -300,6 +305,8 @@ class ToastManager {
 
 // Export singleton instance
 export const toast = new ToastManager();
+
+export const configureToast = (options) => toast.configure(options);
 
 // Convenience exports
 export const showToast = (message, type, duration) => {

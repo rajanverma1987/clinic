@@ -92,10 +92,7 @@ export default function AdminSettingsSecurityPage() {
   if (user?.role !== 'super_admin') return null;
 
   return (
-    <Layout
-      title='Security Settings'
-      subtitle='Session timeout, password policy, 2FA, failed login lockout, IP whitelist, audit log retention'
-    >
+    <Layout title={t('admin.settingsSecurityTitle')} subtitle={t('admin.settingsSecuritySubtitle')}>
       <div className='admin-page-content'>
         <Card className='p-6 max-w-2xl'>
           <form onSubmit={handleSubmit} className='space-y-4'>
@@ -204,10 +201,10 @@ export default function AdminSettingsSecurityPage() {
             </div>
             <div className='flex gap-2 pt-4'>
               <Button type='submit' variant='primary' disabled={saving}>
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </Button>
               <Button type='button' variant='secondary' href='/admin/settings'>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </form>

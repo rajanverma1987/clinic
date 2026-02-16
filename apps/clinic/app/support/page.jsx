@@ -4,11 +4,13 @@ import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export default function SupportPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [openFaqs, setOpenFaqs] = useState({});
 
   const toggleFaq = (categoryIndex, faqIndex) => {
@@ -19,113 +21,56 @@ export default function SupportPage() {
     }));
   };
 
-  const faqs = [
-    {
-      category: 'Getting Started',
-      questions: [
-        {
-          q: 'How do I create an account?',
-          a: 'Click the "Get Started" button on our homepage or visit the registration page. You\'ll need to provide your clinic information and create an admin account. A 14-day free trial is available to get you started.',
-        },
-        {
-          q: 'What information do I need to set up my clinic?',
-          a: "You'll need basic clinic information including name, address, contact details, timezone, currency, and tax settings. You can also configure appointment types, consultation durations, and other clinic-specific settings.",
-        },
-        {
-          q: 'Is there a mobile app?',
-          a: "Currently, Doctor's Clinic is accessible through web browsers on desktop and mobile devices. We are working on native mobile apps for iOS and Android, which will be available in the future.",
-        },
-      ],
-    },
-    {
-      category: 'Features & Functionality',
-      questions: [
-        {
-          q: 'How do I schedule appointments?',
-          a: 'Navigate to the Appointments section, click "New Appointment", and fill in the patient, doctor, date, time, and appointment type. The system will automatically check for conflicts and send reminders.',
-        },
-        {
-          q: 'Can I customize clinical note templates?',
-          a: 'Yes! You can create custom note templates for different specialties, appointment types, or individual doctors. Templates support SOAP format and can include pre-filled sections.',
-        },
-        {
-          q: 'How does prescription management work?',
-          a: 'Prescriptions can be created during appointments, include region-specific drug information, and support refills. The system tracks prescription status (draft, active, dispensed) and maintains a complete audit trail.',
-        },
-        {
-          q: 'What payment methods are supported?',
-          a: 'The billing system supports multiple payment methods including cash, card, UPI, bank transfer, cheque, and insurance. You can track partial payments and payment reconciliation.',
-        },
-        {
-          q: 'How do inventory alerts work?',
-          a: 'The system automatically monitors stock levels and sends alerts when items fall below the reorder point. You can also view expired items and low stock reports.',
-        },
-      ],
-    },
-    {
-      category: 'Security & Compliance',
-      questions: [
-        {
-          q: "Is Doctor's Clinic HIPAA compliant?",
-          a: "Yes, Doctor's Clinic is designed to be HIPAA compliant. We implement encryption for PHI, maintain audit logs, use role-based access control, and execute Business Associate Agreements with healthcare providers.",
-        },
-        {
-          q: 'How is patient data encrypted?',
-          a: 'Protected Health Information (PHI) is encrypted using AES-256-GCM encryption at rest. All data transmission uses TLS/SSL encryption. We never store PHI in logs or include it in notifications.',
-        },
-        {
-          q: 'Can I export my data?',
-          a: "Yes, you can export your data at any time. Contact support to request a data export, and we'll provide your data in a structured format. This is also available for GDPR compliance.",
-        },
-        {
-          q: 'What happens to my data if I cancel?',
-          a: 'We retain your data for a period as required by law and healthcare regulations. You can request data export before cancellation. After the retention period, data is securely deleted or anonymized.',
-        },
-      ],
-    },
-    {
-      category: 'Billing & Pricing',
-      questions: [
-        {
-          q: 'What are the pricing plans?',
-          a: "We offer flexible pricing based on the number of users and features. Contact our sales team for detailed pricing information and to discuss which plan best fits your clinic's needs.",
-        },
-        {
-          q: 'Is there a free trial?',
-          a: 'Yes, we offer a 14-day free trial with full access to all features. No credit card is required to start your trial.',
-        },
-        {
-          q: 'Can I change my plan later?',
-          a: 'Absolutely! You can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle.',
-        },
-        {
-          q: 'What payment methods do you accept?',
-          a: 'We accept major credit cards, debit cards, and bank transfers. Annual plans may be eligible for discounts.',
-        },
-      ],
-    },
-    {
-      category: 'Technical Support',
-      questions: [
-        {
-          q: 'What browsers are supported?',
-          a: "Doctor's Clinic works best on modern browsers including Chrome, Firefox, Safari, and Edge. We recommend using the latest version of your preferred browser for optimal performance.",
-        },
-        {
-          q: 'Do I need to install any software?',
-          a: "No installation is required! Doctor's Clinic is a cloud-based platform accessible through your web browser. Just sign up and start using it immediately.",
-        },
-        {
-          q: 'How do I report a bug or issue?',
-          a: 'You can report issues through the support contact form, email us at support@clinichub.com, or use the in-app feedback feature. We prioritize security and critical issues.',
-        },
-        {
-          q: 'Is there an API available?',
-          a: "Yes, Doctor's Clinic is built API-first to support future integrations and mobile apps. API documentation is available for enterprise customers. Contact us for API access.",
-        },
-      ],
-    },
-  ];
+  const faqs = useMemo(
+    () => [
+      {
+        categoryKey: 'supportCenter.categoryGettingStarted',
+        questions: [
+          { qKey: 'supportCenter.faqQ1', aKey: 'supportCenter.faqA1' },
+          { qKey: 'supportCenter.faqQ2', aKey: 'supportCenter.faqA2' },
+          { qKey: 'supportCenter.faqQ3', aKey: 'supportCenter.faqA3' },
+        ],
+      },
+      {
+        categoryKey: 'supportCenter.categoryFeatures',
+        questions: [
+          { qKey: 'supportCenter.faqQ4', aKey: 'supportCenter.faqA4' },
+          { qKey: 'supportCenter.faqQ5', aKey: 'supportCenter.faqA5' },
+          { qKey: 'supportCenter.faqQ6', aKey: 'supportCenter.faqA6' },
+          { qKey: 'supportCenter.faqQ7', aKey: 'supportCenter.faqA7' },
+          { qKey: 'supportCenter.faqQ8', aKey: 'supportCenter.faqA8' },
+        ],
+      },
+      {
+        categoryKey: 'supportCenter.categorySecurity',
+        questions: [
+          { qKey: 'supportCenter.faqQ9', aKey: 'supportCenter.faqA9' },
+          { qKey: 'supportCenter.faqQ10', aKey: 'supportCenter.faqA10' },
+          { qKey: 'supportCenter.faqQ11', aKey: 'supportCenter.faqA11' },
+          { qKey: 'supportCenter.faqQ12', aKey: 'supportCenter.faqA12' },
+        ],
+      },
+      {
+        categoryKey: 'supportCenter.categoryBilling',
+        questions: [
+          { qKey: 'supportCenter.faqQ13', aKey: 'supportCenter.faqA13' },
+          { qKey: 'supportCenter.faqQ14', aKey: 'supportCenter.faqA14' },
+          { qKey: 'supportCenter.faqQ15', aKey: 'supportCenter.faqA15' },
+          { qKey: 'supportCenter.faqQ16', aKey: 'supportCenter.faqA16' },
+        ],
+      },
+      {
+        categoryKey: 'supportCenter.categoryTechnical',
+        questions: [
+          { qKey: 'supportCenter.faqQ17', aKey: 'supportCenter.faqA17' },
+          { qKey: 'supportCenter.faqQ18', aKey: 'supportCenter.faqA18' },
+          { qKey: 'supportCenter.faqQ19', aKey: 'supportCenter.faqA19' },
+          { qKey: 'supportCenter.faqQ20', aKey: 'supportCenter.faqA20' },
+        ],
+      },
+    ],
+    [],
+  );
 
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
@@ -180,7 +125,7 @@ export default function SupportPage() {
                     clipRule='evenodd'
                   />
                 </svg>
-                <span>24/7 Support Available</span>
+                <span>{t('supportCenter.supportAvailable24_7')}</span>
               </div>
 
               <h1
@@ -193,7 +138,7 @@ export default function SupportPage() {
                   marginBottom: '24px',
                 }}
               >
-                Support Center
+                {t('supportCenter.title')}
               </h1>
               <p
                 className='text-neutral-700 max-w-3xl mx-auto'
@@ -204,7 +149,7 @@ export default function SupportPage() {
                   fontWeight: '400',
                 }}
               >
-                Find answers to common questions or get in touch with our support team
+                {t('supportCenter.subtitle')}
               </p>
             </div>
           </div>
@@ -257,16 +202,16 @@ export default function SupportPage() {
                     className='text-2xl font-bold text-neutral-900 group-hover:text-primary-600'
                     style={{ marginBottom: '12px' }}
                   >
-                    Contact Support
+                    {t('supportCenter.contactSupport')}
                   </h3>
                   <p className='text-neutral-600 text-body-md leading-relaxed'>
-                    Get help from our support team via email or contact form
+                    {t('supportCenter.contactSupportDesc')}
                   </p>
                   <div
                     className='flex items-center text-primary-600 font-semibold group-hover:translate-x-2'
                     style={{ marginTop: '24px' }}
                   >
-                    <span>Get in touch</span>
+                    <span>{t('supportCenter.getInTouch')}</span>
                     <svg
                       className='fill-none stroke-currentColor'
                       fill='none'
@@ -316,16 +261,16 @@ export default function SupportPage() {
                     className='text-2xl font-bold text-neutral-900 group-hover:text-secondary-600'
                     style={{ marginBottom: '12px' }}
                   >
-                    FAQ
+                    {t('supportCenter.faq')}
                   </h3>
                   <p className='text-neutral-600 text-body-md leading-relaxed'>
-                    Browse frequently asked questions and find quick answers
+                    {t('supportCenter.faqDesc')}
                   </p>
                   <div
                     className='flex items-center text-secondary-600 font-semibold group-hover:translate-x-2'
                     style={{ marginTop: '24px' }}
                   >
-                    <span>View FAQs</span>
+                    <span>{t('supportCenter.viewFaqs')}</span>
                     <svg
                       className='fill-none stroke-currentColor'
                       fill='none'
@@ -376,16 +321,16 @@ export default function SupportPage() {
                       className='text-2xl font-bold text-neutral-900 group-hover:text-primary-600'
                       style={{ marginBottom: '12px' }}
                     >
-                      Documentation
+                      {t('supportCenter.documentation')}
                     </h3>
                     <p className='text-neutral-600 text-body-md leading-relaxed'>
-                      Access user guides and API documentation
+                      {t('supportCenter.documentationDesc')}
                     </p>
                     <div
                       className='flex items-center text-primary-600 font-semibold group-hover:translate-x-2'
                       style={{ marginTop: '24px' }}
                     >
-                      <span>View docs</span>
+                      <span>{t('supportCenter.viewDocs')}</span>
                       <svg
                         className='fill-none stroke-currentColor'
                         fill='none'
@@ -431,7 +376,7 @@ export default function SupportPage() {
                   marginBottom: '16px',
                 }}
               >
-                Frequently Asked Questions
+                {t('supportCenter.frequentlyAskedQuestions')}
               </h2>
               <p
                 className='text-neutral-700 max-w-2xl mx-auto'
@@ -442,7 +387,7 @@ export default function SupportPage() {
                   fontWeight: '400',
                 }}
               >
-                Everything you need to know about Doctor&apos;s Clinic
+                {t('supportCenter.faqSubtitle')}
               </p>
             </div>
 
@@ -464,7 +409,7 @@ export default function SupportPage() {
                       paddingBottom: '16px',
                     }}
                   >
-                    {category.category}
+                    {t(category.categoryKey)}
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {category.questions.map((faq, faqIndex) => {
@@ -520,7 +465,7 @@ export default function SupportPage() {
                                   fontWeight: '600',
                                 }}
                               >
-                                {faq.q}
+                                {t(faq.qKey)}
                               </h4>
                             </div>
                           </button>
@@ -548,7 +493,7 @@ export default function SupportPage() {
                                   paddingTop: '8px',
                                 }}
                               >
-                                {faq.a}
+                                {t(faq.aKey)}
                               </div>
                             </div>
                           </div>
@@ -613,7 +558,7 @@ export default function SupportPage() {
                 textShadow: '0 2px 8px rgba(0,0,0,0.4), 0 0 1px rgba(0,0,0,0.5)',
               }}
             >
-              Still Need Help?
+              {t('supportCenter.stillNeedHelp')}
             </h2>
             <p
               className='max-w-2xl mx-auto'
@@ -626,11 +571,11 @@ export default function SupportPage() {
                 color: 'rgba(255,255,255,0.95)',
               }}
             >
-              Our support team is here to help you get the most out of Doctor&apos;s Clinic
+              {t('supportCenter.stillNeedHelpDesc')}
             </p>
             <Link href='/support/contact'>
               <Button variant='secondary' size='md' className='whitespace-nowrap'>
-                Contact Support
+                {t('supportCenter.contactSupport')}
               </Button>
             </Link>
           </div>

@@ -256,7 +256,7 @@ export function HeroSection({ onContactClick }) {
 
               <Image
                 src='/images/bannerhero.png'
-                alt='Clinic Management Platform'
+                alt={t('common.altClinicManagement')}
                 width={900}
                 height={675}
                 className='object-cover w-full h-full'

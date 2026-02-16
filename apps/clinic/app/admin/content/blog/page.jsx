@@ -160,11 +160,11 @@ export default function AdminContentBlogPage() {
               <table className='clinic-table'>
                 <thead>
                   <tr>
-                    <th>Order</th>
-                    <th>Title</th>
-                    <th>Slug</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{t('common.order')}</th>
+                    <th>{t('common.title')}</th>
+                    <th>{t('admin.slug')}</th>
+                    <th>{t('admin.status')}</th>
+                    <th>{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -235,40 +235,48 @@ export default function AdminContentBlogPage() {
                           : form.slug,
                     })
                   }
-                  placeholder='Blog title'
+                  placeholder={t('admin.contentBlogPlaceholderTitle')}
                   required
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1'>Slug</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.contentBlogLabelSlug')}
+                </label>
                 <Input
                   value={form.slug}
                   onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                  placeholder='url-slug'
+                  placeholder={t('admin.contentBlogPlaceholderSlug')}
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1'>Excerpt</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.contentBlogLabelExcerpt')}
+                </label>
                 <textarea
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg'
                   rows={2}
                   value={form.excerpt}
                   onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-                  placeholder='Short summary'
+                  placeholder={t('admin.contentBlogPlaceholderExcerpt')}
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1'>Body</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.contentBlogLabelBody')}
+                </label>
                 <textarea
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg'
                   rows={4}
                   value={form.body}
                   onChange={(e) => setForm({ ...form, body: e.target.value })}
-                  placeholder='Content'
+                  placeholder={t('admin.contentBlogPlaceholderBody')}
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1'>Status</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.contentBlogLabelStatus')}
+                </label>
                 <select
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg'
                   value={form.status}
@@ -296,7 +304,7 @@ export default function AdminContentBlogPage() {
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                 />
                 <label htmlFor='blog-active' className='text-sm text-neutral-700'>
-                  Active
+                  {t('common.active')}
                 </label>
               </div>
               <div className='flex gap-2 justify-end'>

@@ -8,6 +8,7 @@ import { withRequestLogger } from '@/middleware/request-logger';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
 import { createPrescription, listPrescriptions } from '@/services/prescription.service';
+import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 
 /**
  * GET /api/prescriptions
@@ -34,7 +35,20 @@ async function getHandler(req, user) {
     });
   }
 
-  const result = await listPrescriptions(validationResult.data, user.tenantId, user.userId);
+  // Cache dashboard widget query: active prescriptions list (fixed params, 60s TTL)
+  const isDashboardQuery =
+    validationResult.data.status === 'active' &&
+    !validationResult.data.patientId &&
+    !validationResult.data.doctorId &&
+    !validationResult.data.search &&
+    String(validationResult.data.limit || '') === '5';
+  const result = isDashboardQuery
+    ? await optimizedCacheManager.getOrFetch(
+        `prescriptions:active:${user.tenantId}`,
+        () => listPrescriptions(validationResult.data, user.tenantId, user.userId),
+        60000,
+      )
+    : await listPrescriptions(validationResult.data, user.tenantId, user.userId);
 
   return NextResponse.json(successResponse(result));
 }

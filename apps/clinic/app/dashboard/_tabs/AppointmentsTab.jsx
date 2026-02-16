@@ -43,7 +43,7 @@ export function AppointmentsTab({ isActive = false }) {
       const { data, error: err } = await fetchAppointmentsTab(userId);
       if (err) {
         if (!showRevalidating) setError(err?.message || t('common.error'));
-        setAppointments((prev) => prev.length ? prev : []);
+        setAppointments((prev) => (prev.length ? prev : []));
       } else {
         setAppointments(data || []);
         setError(null);
@@ -74,62 +74,73 @@ export function AppointmentsTab({ isActive = false }) {
     };
   }, [isActive, userId, authLoading, user, fetchAndUpdate]);
 
-  const getStatusLabel = useCallback((status) => {
-    const map = {
-      scheduled: t('appointments.scheduled'),
-      confirmed: t('appointments.confirmed'),
-      completed: t('appointments.completed'),
-      cancelled: t('appointments.cancelled'),
-      arrived: t('appointments.arrived'),
-      in_progress: t('appointments.inProgress'),
-    };
-    return map[status] || status;
-  }, [t]);
+  const getStatusLabel = useCallback(
+    (status) => {
+      const map = {
+        scheduled: t('appointments.scheduled'),
+        confirmed: t('appointments.confirmed'),
+        completed: t('appointments.completed'),
+        cancelled: t('appointments.cancelled'),
+        arrived: t('appointments.arrived'),
+        in_progress: t('appointments.inProgress'),
+      };
+      return map[status] || status;
+    },
+    [t],
+  );
 
-  const columns = useMemo(() => [
-    {
-      header: t('appointments.patient'),
-      accessor: (row) =>
-        [row.patientId?.firstName, row.patientId?.lastName].filter(Boolean).join(' ') || '—',
-    },
-    {
-      header: t('appointments.date'),
-      accessor: (row) =>
-        row.appointmentDate ? new Date(row.appointmentDate).toLocaleDateString() : '—',
-    },
-    {
-      header: t('appointments.time'),
-      accessor: (row) =>
-        row.startTime && row.endTime
-          ? `${new Date(row.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(row.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-          : '—',
-    },
-    {
-      header: t('appointments.status'),
-      accessor: (row) => {
-        const variant =
-          row.status === 'completed'
-            ? 'success'
-            : row.status === 'cancelled'
-              ? 'danger'
-              : row.status === 'in_progress' || row.status === 'arrived'
-                ? 'primary'
-                : 'default';
-        return (
-          <Tag variant={variant} size='sm'>
-            {getStatusLabel(row.status)}
-          </Tag>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        header: t('appointments.patient'),
+        accessor: (row) =>
+          [row.patientId?.firstName, row.patientId?.lastName].filter(Boolean).join(' ') || '—',
       },
-    },
-  ], [t, getStatusLabel]);
+      {
+        header: t('appointments.date'),
+        accessor: (row) =>
+          row.appointmentDate ? new Date(row.appointmentDate).toLocaleDateString() : '—',
+      },
+      {
+        header: t('appointments.time'),
+        accessor: (row) =>
+          row.startTime && row.endTime
+            ? `${new Date(row.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(row.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : '—',
+      },
+      {
+        header: t('appointments.status'),
+        accessor: (row) => {
+          const variant =
+            row.status === 'completed'
+              ? 'success'
+              : row.status === 'cancelled'
+                ? 'danger'
+                : row.status === 'in_progress' || row.status === 'arrived'
+                  ? 'primary'
+                  : 'default';
+          return (
+            <Tag variant={variant} size='sm'>
+              {getStatusLabel(row.status)}
+            </Tag>
+          );
+        },
+      },
+    ],
+    [t, getStatusLabel],
+  );
 
-  const stats = useMemo(() => ({
-    total: appointments.length,
-    scheduled: appointments.filter(a => a.status === 'scheduled' || a.status === 'confirmed').length,
-    inProgress: appointments.filter(a => a.status === 'in_progress' || a.status === 'arrived').length,
-    completed: appointments.filter(a => a.status === 'completed').length,
-  }), [appointments]);
+  const stats = useMemo(
+    () => ({
+      total: appointments.length,
+      scheduled: appointments.filter((a) => a.status === 'scheduled' || a.status === 'confirmed')
+        .length,
+      inProgress: appointments.filter((a) => a.status === 'in_progress' || a.status === 'arrived')
+        .length,
+      completed: appointments.filter((a) => a.status === 'completed').length,
+    }),
+    [appointments],
+  );
 
   const cardContent = (
     <>
@@ -144,10 +155,20 @@ export function AppointmentsTab({ isActive = false }) {
           )}
         </div>
         <div className='flex gap-2 ml-auto'>
-          <Button variant='secondary' size='sm' href='/appointments'>
+          <Button
+            variant='secondary'
+            size='sm'
+            href='/appointments'
+            className='section-header-action'
+          >
             {t('dashboard.seeAll')}
           </Button>
-          <Button variant='primary' size='sm' href='/appointments/new'>
+          <Button
+            variant='primary'
+            size='sm'
+            href='/appointments/new'
+            className='section-header-action'
+          >
             {t('appointments.bookAppointment')}
           </Button>
         </div>
@@ -156,19 +177,27 @@ export function AppointmentsTab({ isActive = false }) {
       <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
         <div className='text-center'>
           <div className='text-2xl font-bold text-primary-600'>{stats.total}</div>
-          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('common.total')}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>
+            {t('common.total')}
+          </div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-primary-600'>{stats.scheduled}</div>
-          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('appointments.scheduled')}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>
+            {t('appointments.scheduled')}
+          </div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-secondary-600'>{stats.inProgress}</div>
-          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('appointments.inProgress')}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>
+            {t('appointments.inProgress')}
+          </div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-neutral-600'>{stats.completed}</div>
-          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>{t('appointments.completed')}</div>
+          <div className='text-xs text-neutral-600 dark:text-neutral-400 uppercase tracking-wide'>
+            {t('appointments.completed')}
+          </div>
         </div>
       </div>
 
@@ -208,7 +237,12 @@ export function AppointmentsTab({ isActive = false }) {
         <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col justify-center items-center'>
           <div className='empty-state-icon'>
             <svg className='icon icon-lg' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+              />
             </svg>
           </div>
           <p className='text-status-error text-body-md font-medium mb-4'>{error}</p>

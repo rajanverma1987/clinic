@@ -13,6 +13,7 @@ import {
   getExpiredItems,
 } from '@/services/inventory.service';
 import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
+import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 
 /**
  * GET /api/inventory/items
@@ -27,7 +28,11 @@ async function getHandler(req, user) {
     const expired = searchParams.get('expired') === 'true';
 
     if (lowStock) {
-      const items = await getLowStockItems(user.tenantId, user.userId);
+      const items = await optimizedCacheManager.getOrFetch(
+        `inventory:lowStock:${user.tenantId}`,
+        () => getLowStockItems(user.tenantId, user.userId),
+        60000,
+      );
       return NextResponse.json(successResponse(items));
     }
 

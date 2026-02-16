@@ -156,8 +156,8 @@ export default function AdminFinancialRevenuePage() {
                 <table className='clinic-table'>
                   <thead>
                     <tr>
-                      <th>Doctor</th>
-                      <th className='text-right'>Revenue</th>
+                      <th>{t('common.roleDoctor')}</th>
+                      <th className='text-right'>{t('doctors.revenue')}</th>
                     </tr>
                   </thead>
                   <tbody>

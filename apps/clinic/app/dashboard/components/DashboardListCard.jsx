@@ -94,10 +94,7 @@ function DashboardListCardInner({
                   appointments={data}
                   renderItem={(item, index) =>
                     onRowMouseEnter ? (
-                      <div
-                        onMouseEnter={() => onRowMouseEnter(item)}
-                        style={{ height: '100%' }}
-                      >
+                      <div onMouseEnter={() => onRowMouseEnter(item)} style={{ height: '100%' }}>
                         {renderItem(item, index)}
                       </div>
                     ) : (
@@ -122,9 +119,7 @@ function DashboardListCardInner({
                         layout
                         transition={{ type: 'layout', duration: 0.2 }}
                         className={item._updated ? 'data-row-updated rounded' : ''}
-                        onMouseEnter={
-                          onRowMouseEnter ? () => onRowMouseEnter(item) : undefined
-                        }
+                        onMouseEnter={onRowMouseEnter ? () => onRowMouseEnter(item) : undefined}
                       >
                         {renderItem(item, index)}
                       </motion.div>
@@ -152,7 +147,7 @@ function DashboardListCardInner({
                     window.location.href = seeAllLink;
                   }
                 }}
-                className='w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium group'
+                className='section-header-action w-full inline-flex items-center justify-center gap-1.5 py-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium group'
                 aria-label={t('dashboard.seeAll')}
               >
                 <span>{t('dashboard.seeAll')}</span>

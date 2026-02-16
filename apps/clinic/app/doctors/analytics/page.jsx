@@ -91,7 +91,7 @@ export default function DoctorAnalyticsPage() {
 
       // Fetch appointments
       const appointmentsResponse = await apiClient.get(
-        `/appointments?doctorId=${doctorId}&startDate=${start.toISOString().split('T')[0]}&endDate=${end.toISOString().split('T')[0]}&limit=1000`
+        `/appointments?doctorId=${doctorId}&startDate=${start.toISOString().split('T')[0]}&endDate=${end.toISOString().split('T')[0]}&limit=1000`,
       );
 
       // Fetch patients
@@ -99,7 +99,7 @@ export default function DoctorAnalyticsPage() {
 
       // Fetch revenue
       const revenueResponse = await apiClient.get(
-        `/reports/revenue?doctorId=${doctorId}&startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+        `/reports/revenue?doctorId=${doctorId}&startDate=${start.toISOString()}&endDate=${end.toISOString()}`,
       );
 
       if (appointmentsResponse.success && patientsResponse.success) {
@@ -157,9 +157,7 @@ export default function DoctorAnalyticsPage() {
           appointmentsByDate,
           statusCount,
           completionRate:
-            appointments.length > 0
-              ? (statusCount.completed / appointments.length) * 100
-              : 0,
+            appointments.length > 0 ? (statusCount.completed / appointments.length) * 100 : 0,
         });
       }
     } catch (err) {
@@ -186,10 +184,7 @@ export default function DoctorAnalyticsPage() {
   return (
     <Layout>
       <div style={{ padding: '0 10px' }} className='space-y-6'>
-        <PageHeader
-          title='Analytics & Reports'
-          subtitle='View your practice performance and patient insights'
-        />
+        <PageHeader title={t('doctors.analyticsTitle')} subtitle={t('doctors.analyticsSubtitle')} />
 
         {/* Date Range Selector */}
         <Card>
@@ -239,7 +234,7 @@ export default function DoctorAnalyticsPage() {
                     setStartDate(e.target.value);
                     setDateRange('custom');
                   }}
-                  placeholder='Start Date'
+                  placeholder={t('doctors.startDatePlaceholder')}
                 />
                 <input
                   type='date'
@@ -249,7 +244,7 @@ export default function DoctorAnalyticsPage() {
                     setEndDate(e.target.value);
                     setDateRange('custom');
                   }}
-                  placeholder='End Date'
+                  placeholder={t('doctors.endDatePlaceholder')}
                 />
               </div>
               <Button variant='secondary' size='sm' onClick={() => fetchAnalytics()}>
@@ -263,15 +258,17 @@ export default function DoctorAnalyticsPage() {
         <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
           <Card>
             <div className='p-6'>
-              <h3 className='text-sm font-medium text-neutral-600 mb-2'>Total Patients</h3>
-              <p className='text-3xl font-bold text-neutral-900'>
-                {analytics?.totalPatients || 0}
-              </p>
+              <h3 className='text-sm font-medium text-neutral-600 mb-2'>
+                {t('doctors.totalPatients')}
+              </h3>
+              <p className='text-3xl font-bold text-neutral-900'>{analytics?.totalPatients || 0}</p>
             </div>
           </Card>
           <Card>
             <div className='p-6'>
-              <h3 className='text-sm font-medium text-neutral-600 mb-2'>Total Appointments</h3>
+              <h3 className='text-sm font-medium text-neutral-600 mb-2'>
+                {t('doctors.totalAppointments')}
+              </h3>
               <p className='text-3xl font-bold text-neutral-900'>
                 {analytics?.totalAppointments || 0}
               </p>
@@ -279,7 +276,9 @@ export default function DoctorAnalyticsPage() {
           </Card>
           <Card>
             <div className='p-6'>
-              <h3 className='text-sm font-medium text-neutral-600 mb-2'>Completion Rate</h3>
+              <h3 className='text-sm font-medium text-neutral-600 mb-2'>
+                {t('doctors.completionRate')}
+              </h3>
               <p className='text-3xl font-bold text-primary-600'>
                 {analytics?.completionRate?.toFixed(1) || 0}%
               </p>
@@ -287,7 +286,7 @@ export default function DoctorAnalyticsPage() {
           </Card>
           <Card>
             <div className='p-6'>
-              <h3 className='text-sm font-medium text-neutral-600 mb-2'>Revenue</h3>
+              <h3 className='text-sm font-medium text-neutral-600 mb-2'>{t('doctors.revenue')}</h3>
               <p className='text-3xl font-bold text-green-600'>
                 {formatCurrency(analytics?.revenue || 0)}
               </p>
@@ -300,7 +299,9 @@ export default function DoctorAnalyticsPage() {
           {/* Age Distribution */}
           <Card>
             <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Patient Age Distribution</h3>
+              <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                {t('doctors.patientAgeDistribution')}
+              </h3>
               <div className='space-y-3'>
                 {analytics?.ageGroups &&
                   Object.entries(analytics.ageGroups).map(([ageGroup, count]) => {
@@ -330,7 +331,9 @@ export default function DoctorAnalyticsPage() {
           {/* Gender Distribution */}
           <Card>
             <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Patient Gender Distribution</h3>
+              <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                Patient Gender Distribution
+              </h3>
               <div className='space-y-3'>
                 {analytics?.genderCount &&
                   Object.entries(analytics.genderCount).map(([gender, count]) => {
@@ -360,7 +363,9 @@ export default function DoctorAnalyticsPage() {
           {/* Appointment Status */}
           <Card>
             <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Appointment Status</h3>
+              <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                {t('doctors.appointmentStatus')}
+              </h3>
               <div className='space-y-3'>
                 {analytics?.statusCount &&
                   Object.entries(analytics.statusCount).map(([status, count]) => {
@@ -369,7 +374,9 @@ export default function DoctorAnalyticsPage() {
                     return (
                       <div key={status}>
                         <div className='flex justify-between text-sm mb-1'>
-                          <span className='text-neutral-700 capitalize'>{status.replace('_', ' ')}</span>
+                          <span className='text-neutral-700 capitalize'>
+                            {status.replace('_', ' ')}
+                          </span>
                           <span className='font-medium text-neutral-900'>
                             {count} ({percentage.toFixed(1)}%)
                           </span>
@@ -380,8 +387,8 @@ export default function DoctorAnalyticsPage() {
                               status === 'completed'
                                 ? 'bg-green-600'
                                 : status === 'cancelled'
-                                ? 'bg-red-600'
-                                : 'bg-primary-600'
+                                  ? 'bg-red-600'
+                                  : 'bg-primary-600'
                             }`}
                             style={{ width: `${percentage}%` }}
                           />
@@ -396,15 +403,15 @@ export default function DoctorAnalyticsPage() {
           {/* Appointment Trends */}
           <Card>
             <div className='p-6'>
-              <h3 className='text-lg font-bold text-neutral-900 mb-4'>Appointment Trends</h3>
+              <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+                {t('doctors.appointmentTrends')}
+              </h3>
               <div className='space-y-2'>
                 {analytics?.appointmentsByDate &&
                   Object.entries(analytics.appointmentsByDate)
                     .slice(-7)
                     .map(([date, count]) => {
-                      const maxCount = Math.max(
-                        ...Object.values(analytics.appointmentsByDate)
-                      );
+                      const maxCount = Math.max(...Object.values(analytics.appointmentsByDate));
                       const height = (count / maxCount) * 100;
                       return (
                         <div key={date} className='flex items-end gap-2'>
@@ -415,7 +422,10 @@ export default function DoctorAnalyticsPage() {
                             />
                           </div>
                           <div className='text-xs text-neutral-600 w-20 text-right'>
-                            {new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            {new Date(date).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
                           </div>
                           <div className='text-xs font-medium text-neutral-900 w-8'>{count}</div>
                         </div>
@@ -429,7 +439,9 @@ export default function DoctorAnalyticsPage() {
         {/* Export Options */}
         <Card>
           <div className='p-6'>
-            <h3 className='text-lg font-bold text-neutral-900 mb-4'>Export Reports</h3>
+            <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+              {t('doctors.exportReports')}
+            </h3>
             <div className='flex gap-4'>
               <Button
                 variant='secondary'

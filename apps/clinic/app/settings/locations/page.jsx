@@ -1,6 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api/client';
+import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -57,7 +58,7 @@ export default function LocationsPage() {
     try {
       const response = await apiClient.get('/settings');
       if (!response?.success) {
-        throw new Error(response?.error?.message || 'Failed to load settings');
+        throw new Error(response?.error?.message || t('settings.failedToLoadLocations'));
       }
       const list = response?.data?.settings?.locations;
       setLocations(Array.isArray(list) ? list.map(toLocationRow) : []);
@@ -81,7 +82,7 @@ export default function LocationsPage() {
           settings: { locations: toSettingsPayload(nextLocations) },
         });
         if (!response?.success) {
-          throw new Error(response?.error?.message || 'Failed to save locations');
+          throw new Error(response?.error?.message || t('settings.failedToSaveLocations'));
         }
         setLocations(nextLocations.map(toLocationRow));
         showSuccess(t('settings.locationSaved'));
@@ -187,22 +188,34 @@ export default function LocationsPage() {
     },
     {
       header: t('common.actions'),
-      accessor: (row) => (
-        <div className='flex gap-2'>
-          <Button variant='secondary' size='sm' onClick={() => openEdit(row)}>
-            {t('common.edit')}
-          </Button>
-          {!row.isMain && (
-            <Button
-              variant='secondary'
-              size='sm'
-              onClick={() => (row.isActive ? handleDeactivate(row) : handleActivate(row))}
-            >
-              {row.isActive ? t('settings.deactivate') : t('settings.activate')}
-            </Button>
-          )}
-        </div>
-      ),
+      accessor: (row) => {
+        const items = [
+          {
+            key: 'edit',
+            label: t('common.edit'),
+            onClick: () => openEdit(row),
+          },
+          ...(!row.isMain
+            ? [
+                {
+                  key: row.isActive ? 'deactivate' : 'activate',
+                  label: row.isActive ? t('settings.deactivate') : t('settings.activate'),
+                  onClick: () => (row.isActive ? handleDeactivate(row) : handleActivate(row)),
+                  danger: row.isActive,
+                },
+              ]
+            : []),
+        ];
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <ActionsMenu
+              ariaLabel={t('common.actions')}
+              triggerSize='xs'
+              items={items}
+            />
+          </div>
+        );
+      },
     },
   ];
 

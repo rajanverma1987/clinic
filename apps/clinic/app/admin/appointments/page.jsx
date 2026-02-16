@@ -17,12 +17,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const APPOINTMENT_TYPES = [
-  'consultation',
-  'follow_up',
-  'checkup',
-  'emergency',
-  'procedure',
-  'lab_test',
+  { value: 'consultation', labelKey: 'admin.appointmentTypeConsultation' },
+  { value: 'follow_up', labelKey: 'admin.appointmentTypeFollowUp' },
+  { value: 'checkup', labelKey: 'admin.appointmentTypeCheckup' },
+  { value: 'emergency', labelKey: 'admin.appointmentTypeEmergency' },
+  { value: 'procedure', labelKey: 'admin.appointmentTypeProcedure' },
+  { value: 'lab_test', labelKey: 'admin.appointmentTypeLabTest' },
 ];
 
 export default function AdminAppointmentsPage() {
@@ -219,8 +219,8 @@ export default function AdminAppointmentsPage() {
               >
                 <option value=''>{t('admin.appointmentsType') || 'Type'}</option>
                 {APPOINTMENT_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type.replace('_', ' ')}
+                  <option key={type.value} value={type.value}>
+                    {t(type.labelKey)}
                   </option>
                 ))}
               </select>
@@ -286,13 +286,13 @@ export default function AdminAppointmentsPage() {
                 <table className='clinic-table'>
                   <thead>
                     <tr>
-                      <th>Booking ID</th>
-                      <th>Date / Time</th>
-                      <th>Patient</th>
-                      <th>Doctor</th>
-                      <th>Tenant</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th>{t('admin.appointmentsBookingId')}</th>
+                      <th>{t('admin.appointmentsDateTime')}</th>
+                      <th>{t('admin.appointmentsPatient')}</th>
+                      <th>{t('admin.appointmentsDoctor')}</th>
+                      <th>{t('admin.appointmentsTenant')}</th>
+                      <th>{t('admin.appointmentsStatusLabel')}</th>
+                      <th>{t('admin.appointmentsActions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -356,7 +356,10 @@ export default function AdminAppointmentsPage() {
             {pages > 1 && (
               <div className='mt-4 flex items-center justify-between gap-3'>
                 <div className='text-body-sm text-neutral-600'>
-                  Page {pagination.page} of {pages} ({pagination.total} total)
+                  {t('admin.activityLogsPageOf')
+                    .replace('{{page}}', String(pagination.page))
+                    .replace('{{pages}}', String(pages))
+                    .replace('{{total}}', String(pagination.total))}
                 </div>
                 <div className='flex items-center gap-1'>
                   <Button
@@ -365,7 +368,7 @@ export default function AdminAppointmentsPage() {
                     onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
                     disabled={pagination.page <= 1}
                   >
-                    Previous
+                    {t('common.previous')}
                   </Button>
                   <Button
                     variant='primary'
@@ -373,7 +376,7 @@ export default function AdminAppointmentsPage() {
                     onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
                     disabled={pagination.page >= pages}
                   >
-                    Next
+                    {t('common.next')}
                   </Button>
                 </div>
               </div>

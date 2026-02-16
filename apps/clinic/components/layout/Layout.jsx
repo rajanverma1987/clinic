@@ -116,7 +116,8 @@ export function Layout({
               <button
                 type='button'
                 onClick={() => setSidebarMobileOpen(true)}
-                className='p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 aria-label="Open menu"'
+                className='p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                aria-label={t('common.ariaLabelOpenMenu')}
               >
                 <svg
                   width='24'

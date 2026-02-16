@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronRightIcon } from '@/components/icons';
+import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 
 /**
@@ -10,10 +11,11 @@ import Link from 'next/link';
  * @param {{ items: Array<{ label: string; href?: string; onClick?: () => void }> }} props
  */
 export function Breadcrumb({ items = [] }) {
+  const { t } = useI18n();
   if (!items?.length) return null;
 
   return (
-    <nav className='breadcrumb-bar' aria-label='Breadcrumb'>
+    <nav className='breadcrumb-bar' aria-label={t('common.ariaLabelBreadcrumb')}>
       <ol className='breadcrumb-bar__list'>
         {items.map((item, index) => (
           <li key={index} className='breadcrumb-bar__item'>

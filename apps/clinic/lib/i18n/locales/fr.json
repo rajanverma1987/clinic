@@ -481,6 +481,7 @@
     "female": "Female",
     "other": "Other",
     "select": "Select",
+    "selectAll": "Tout sélectionner",
     "all": "All",
     "export": "Export",
     "import": "Import",
@@ -1073,7 +1074,11 @@
     "cdsNsaidRenal": "AINS : envisager la surveillance de la fonction rénale chez les patients à risque.",
     "cdsPreventiveCare": "Soins préventifs : assurer le suivi selon les recommandations.",
     "orderTest": "Demander un examen",
-    "referral": "Orientation"
+    "referral": "Orientation",
+    "email": "E-mail",
+    "downloadPdf": "Télécharger PDF",
+    "updatePrescription": "Mettre à jour l'ordonnance",
+    "print": "Imprimer"
   },
   "queue": {
     "title": "File d'attente",
@@ -2007,7 +2012,14 @@
     "waitingForPatientToRejoin": "En attente du retour du patient...",
     "waitingRoom": "Salle d'attente",
     "waitingRoomDescription": "Vous êtes en salle d'attente. Le médecin vous admettra en consultation sous peu.",
-    "pleaseWait": "Veuillez patienter..."
+    "pleaseWait": "Veuillez patienter...",
+    "backToSessions": "Retour aux sessions",
+    "consultationSummary": "Résumé de consultation",
+    "sessionDetails": "Détails de la session",
+    "downloadSummary": "Télécharger le résumé",
+    "printSummary": "Imprimer le résumé",
+    "bookFollowUp": "Réserver un suivi",
+    "sessionNotFound": "Session introuvable"
   },
   "errors": {
     "generic": "An unexpected error occurred",

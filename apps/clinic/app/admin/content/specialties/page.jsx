@@ -135,7 +135,7 @@ export default function AdminSpecialtiesPage() {
       <Card>
         <div className='p-6'>
           <h2 className='text-lg font-semibold text-neutral-900 mb-4'>
-            Specialties ({list.length})
+            {t('admin.contentSpecialtiesCount')} ({list.length})
           </h2>
           {authLoading || loading ? (
             <div className='flex items-center justify-center min-h-[200px]' aria-busy='true'>
@@ -148,11 +148,11 @@ export default function AdminSpecialtiesPage() {
               <table className='clinic-table'>
                 <thead>
                   <tr>
-                    <th>Order</th>
-                    <th>Name</th>
-                    <th>Slug</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{t('common.order')}</th>
+                    <th>{t('common.name')}</th>
+                    <th>{t('admin.slug')}</th>
+                    <th>{t('admin.status')}</th>
+                    <th>{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -169,16 +169,16 @@ export default function AdminSpecialtiesPage() {
                               : 'bg-neutral-100 text-neutral-600'
                           }
                         >
-                          {s.isActive ? 'Active' : 'Inactive'}
+                          {s.isActive ? t('common.active') : t('common.inactive')}
                         </Tag>
                       </td>
                       <td>
                         <div className='flex gap-2'>
                           <Button variant='secondary' size='sm' onClick={() => openEdit(s)}>
-                            Edit
+                            {t('common.edit')}
                           </Button>
                           <Button variant='danger' size='sm' onClick={() => handleDelete(s._id)}>
-                            Delete
+                            {t('common.delete')}
                           </Button>
                         </div>
                       </td>
@@ -205,21 +205,23 @@ export default function AdminSpecialtiesPage() {
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder='e.g. Cardiologist'
+                  placeholder={t('admin.contentSpecialtyPlaceholderName')}
                   required
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1'>Slug</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.slug')}
+                </label>
                 <Input
                   value={form.slug}
                   onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                  placeholder='e.g. cardiologist'
+                  placeholder={t('admin.contentSpecialtyPlaceholderSlug')}
                 />
               </div>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                  Description
+                  {t('admin.contentSpecialtyLabelDescription')}
                 </label>
                 <textarea
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg'
@@ -230,12 +232,12 @@ export default function AdminSpecialtiesPage() {
               </div>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                  Icon (URL or name)
+                  {t('admin.contentSpecialtyLabelIcon')}
                 </label>
                 <Input
                   value={form.icon}
                   onChange={(e) => setForm({ ...form, icon: e.target.value })}
-                  placeholder='optional'
+                  placeholder={t('admin.contentSpecialtyPlaceholderOptional')}
                 />
               </div>
               <div>
@@ -256,15 +258,15 @@ export default function AdminSpecialtiesPage() {
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                 />
                 <label htmlFor='active' className='text-sm text-neutral-700'>
-                  Active
+                  {t('common.active')}
                 </label>
               </div>
               <div className='flex gap-2 justify-end'>
                 <Button type='button' variant='secondary' onClick={closeModal}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button type='submit' variant='primary' disabled={saving}>
-                  {saving ? 'Saving…' : 'Save'}
+                  {saving ? t('common.saving') : t('common.save')}
                 </Button>
               </div>
             </form>

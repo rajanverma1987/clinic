@@ -41,7 +41,7 @@ export default function PrescriptionPrintPage() {
       // Fetch prescription
       const prescriptionResponse = await apiClient.get(`/prescriptions/${prescriptionId}`);
       if (!prescriptionResponse.success || !prescriptionResponse.data) {
-        setError('Prescription not found');
+        setError(t('prescriptions.prescriptionNotFound'));
         setLoading(false);
         return;
       }
@@ -50,7 +50,7 @@ export default function PrescriptionPrintPage() {
       const patientId = prescription.patientId?._id || prescription.patientId;
 
       if (!patientId) {
-        setError('Patient information not found');
+        setError(t('patients.patientInfoNotFound'));
         setLoading(false);
         return;
       }
@@ -88,7 +88,7 @@ export default function PrescriptionPrintPage() {
       if (appointmentId) {
         try {
           const noteResponse = await apiClient.get(
-            `/clinical-notes?appointmentId=${appointmentId}&limit=1`
+            `/clinical-notes?appointmentId=${appointmentId}&limit=1`,
           );
           if (noteResponse.success && noteResponse.data) {
             const noteData = noteResponse.data?.data || noteResponse.data;
@@ -105,7 +105,7 @@ export default function PrescriptionPrintPage() {
       const age = patient.dateOfBirth
         ? Math.floor(
             (new Date().getTime() - new Date(patient.dateOfBirth).getTime()) /
-              (365.25 * 24 * 60 * 60 * 1000)
+              (365.25 * 24 * 60 * 60 * 1000),
           )
         : undefined;
 
@@ -124,7 +124,7 @@ export default function PrescriptionPrintPage() {
               (h) =>
                 `${h.day}: ${h.timeSlots?.[0]?.startTime || ''} - ${
                   h.timeSlots?.[0]?.endTime || ''
-                }`
+                }`,
             )
             .join(', ')
         : '';
@@ -191,10 +191,10 @@ export default function PrescriptionPrintPage() {
                   item.drugName || ''
                 }`.trim()
               : item.itemType === 'lab'
-              ? item.labTestName || ''
-              : item.itemType === 'procedure'
-              ? item.procedureName || ''
-              : item.itemName || '';
+                ? item.labTestName || ''
+                : item.itemType === 'procedure'
+                  ? item.procedureName || ''
+                  : item.itemName || '';
 
           const dosage =
             item.itemType === 'drug' && item.frequency
@@ -202,10 +202,10 @@ export default function PrescriptionPrintPage() {
                   item.takeBeforeMeal
                     ? ' (Before Food)'
                     : item.takeAfterMeal
-                    ? ' (After Food)'
-                    : item.takeWithFood
-                    ? ' (With Food)'
-                    : ''
+                      ? ' (After Food)'
+                      : item.takeWithFood
+                        ? ' (With Food)'
+                        : ''
                 }`
               : '';
 

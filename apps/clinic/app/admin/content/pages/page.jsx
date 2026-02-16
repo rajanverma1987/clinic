@@ -164,11 +164,11 @@ export default function AdminContentPagesPage() {
               <table className='clinic-table'>
                 <thead>
                   <tr>
-                    <th>Order</th>
+                    <th>{t('common.order')}</th>
                     <th>{t('admin.pageKeyLabel')}</th>
-                    <th>Title</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>{t('common.title')}</th>
+                    <th>{t('admin.status')}</th>
+                    <th>{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -189,7 +189,7 @@ export default function AdminContentPagesPage() {
                               : 'bg-neutral-100 text-neutral-600'
                           }
                         >
-                          {item.isActive ? 'Active' : 'Inactive'}
+                          {item.isActive ? t('common.active') : t('common.inactive')}
                         </Tag>
                       </td>
                       <td>
@@ -241,18 +241,20 @@ export default function AdminContentPagesPage() {
                 <Input
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder='Page title'
+                  placeholder={t('admin.contentPagePlaceholderTitle')}
                   required
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1'>Body</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  {t('admin.contentPageLabelBody')}
+                </label>
                 <textarea
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg'
                   rows={6}
                   value={form.body}
                   onChange={(e) => setForm({ ...form, body: e.target.value })}
-                  placeholder='Page content'
+                  placeholder={t('admin.contentPagePlaceholderBody')}
                 />
               </div>
               <div>
@@ -273,7 +275,7 @@ export default function AdminContentPagesPage() {
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                 />
                 <label htmlFor='page-active' className='text-sm text-neutral-700'>
-                  Active
+                  {t('common.active')}
                 </label>
               </div>
               <div className='flex gap-2 justify-end'>

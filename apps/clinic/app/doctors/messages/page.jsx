@@ -120,7 +120,7 @@ export default function DoctorMessagesPage() {
   return (
     <Layout>
       <div style={{ padding: '0 10px' }} className='space-y-6'>
-        <PageHeader title='Messages' subtitle='Communicate with patients and staff' />
+        <PageHeader title={t('doctors.messagesTitle')} subtitle={t('doctors.messagesSubtitle')} />
 
         <div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
           {/* Sidebar */}
@@ -181,7 +181,7 @@ export default function DoctorMessagesPage() {
               <div className='p-4 border-b border-neutral-200'>
                 <Input
                   type='text'
-                  placeholder='Search messages...'
+                  placeholder={t('doctors.searchMessagesPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -207,7 +207,7 @@ export default function DoctorMessagesPage() {
                             )}
                           </div>
                           <p className='text-sm font-medium text-neutral-900 mb-1'>
-                            {message.subject || 'No subject'}
+                            {message.subject || t('doctors.noSubject')}
                           </p>
                           <p className='text-sm text-neutral-600 line-clamp-2'>
                             {message.message || message.preview}
@@ -221,7 +221,9 @@ export default function DoctorMessagesPage() {
                   ))
                 ) : (
                   <div className='p-12 text-center'>
-                    <p className='text-neutral-500'>No messages in {activeFolder}</p>
+                    <p className='text-neutral-500'>
+                      {t('doctors.noMessagesInFolder', { folder: activeFolder })}
+                    </p>
                   </div>
                 )}
               </div>
@@ -235,7 +237,9 @@ export default function DoctorMessagesPage() {
             <Card className='w-full max-w-2xl m-4'>
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
-                  <h2 className='text-xl font-bold text-neutral-900'>Compose Message</h2>
+                  <h2 className='text-xl font-bold text-neutral-900'>
+                    {t('doctors.composeMessage')}
+                  </h2>
                   <button
                     onClick={() => setComposeOpen(false)}
                     className='text-neutral-500 hover:text-neutral-900'
@@ -246,14 +250,14 @@ export default function DoctorMessagesPage() {
                 <div className='space-y-4'>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                      To (Patient/Staff)
+                      {t('doctors.toPatientStaff')}
                     </label>
                     <select
                       className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                       value={composeData.to}
                       onChange={(e) => setComposeData({ ...composeData, to: e.target.value })}
                     >
-                      <option value=''>Select recipient</option>
+                      <option value=''>{t('doctors.selectRecipient')}</option>
                       {patients.map((patient) => (
                         <option key={patient._id} value={patient._id}>
                           {patient.firstName} {patient.lastName} - {patient.patientId}
@@ -263,25 +267,25 @@ export default function DoctorMessagesPage() {
                   </div>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                      Subject
+                      {t('doctors.subject')}
                     </label>
                     <Input
                       type='text'
                       value={composeData.subject}
                       onChange={(e) => setComposeData({ ...composeData, subject: e.target.value })}
-                      placeholder='Enter subject'
+                      placeholder={t('doctors.enterSubjectPlaceholder')}
                     />
                   </div>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                      Message
+                      {t('common.message')}
                     </label>
                     <textarea
                       className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                       rows={6}
                       value={composeData.message}
                       onChange={(e) => setComposeData({ ...composeData, message: e.target.value })}
-                      placeholder='Enter your message...'
+                      placeholder={t('doctors.enterMessagePlaceholder')}
                     />
                   </div>
                   <div className='flex justify-end gap-2'>
@@ -305,7 +309,7 @@ export default function DoctorMessagesPage() {
               <div className='p-6'>
                 <div className='flex items-center justify-between mb-4'>
                   <h2 className='text-xl font-bold text-neutral-900'>
-                    {selectedMessage.subject || 'No Subject'}
+                    {selectedMessage.subject || t('doctors.noSubject')}
                   </h2>
                   <button
                     onClick={() => setSelectedMessage(null)}

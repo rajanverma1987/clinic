@@ -164,7 +164,7 @@ export function PrescriptionItemsTable({
                             onUpdateItem(index, updatedItem);
                           }
                         }}
-                        placeholder='Search medicine...'
+                        placeholder={t('prescriptions.searchMedicine')}
                         className={`prescription-form-input ${
                           itemError ? 'border-status-error' : ''
                         }`}
@@ -202,7 +202,7 @@ export function PrescriptionItemsTable({
                         }}
                         required
                       >
-                        <option value=''>Select lab test</option>
+                        <option value=''>{t('prescriptions.selectLabTest')}</option>
                         {labTests.map((test) => (
                           <option key={test.code} value={test.code}>
                             {test.code} - {test.name}
@@ -214,7 +214,7 @@ export function PrescriptionItemsTable({
                       <Input
                         value={item.procedureName || ''}
                         onChange={(e) => onUpdate(index, 'procedureName', e.target.value)}
-                        placeholder='Procedure name'
+                        placeholder={t('prescriptions.procedureName')}
                         className={`text-xs ${itemError ? 'border-status-error' : ''}`}
                         required
                       />
@@ -223,7 +223,7 @@ export function PrescriptionItemsTable({
                       <Input
                         value={item.itemName || ''}
                         onChange={(e) => onUpdate(index, 'itemName', e.target.value)}
-                        placeholder='Item name'
+                        placeholder={t('prescriptions.itemName')}
                         className={`text-xs ${itemError ? 'border-status-error' : ''}`}
                         required
                       />
@@ -387,7 +387,7 @@ export function PrescriptionItemsTable({
                   <Input
                     value={item.instructions || ''}
                     onChange={(e) => onUpdate(index, 'instructions', e.target.value)}
-                    placeholder='Instructions'
+                    placeholder={t('prescriptions.instructionsPlaceholder')}
                     className='prescription-form-input text-body-sm'
                   />
                 </td>

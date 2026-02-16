@@ -542,11 +542,11 @@ export default function AdminPatientsPage() {
                           }}
                         />
                       </th>
-                      <th>Patient</th>
-                      <th>Contact</th>
-                      <th>Tenant</th>
-                      <th>Status</th>
-                      <th>Flag</th>
+                      <th>{t('admin.patientsTablePatient')}</th>
+                      <th>{t('admin.patientsTableContact')}</th>
+                      <th>{t('admin.tenant')}</th>
+                      <th>{t('common.status')}</th>
+                      <th>{t('admin.patientsFlag')}</th>
                       <th>{t('common.actions')}</th>
                     </tr>
                   </thead>

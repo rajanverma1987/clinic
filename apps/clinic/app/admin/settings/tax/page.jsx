@@ -12,7 +12,12 @@ import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const TAX_TYPES = ['NONE', 'GST', 'VAT', 'SALES_TAX'];
+const TAX_TYPES = [
+  { value: 'NONE', labelKey: 'admin.taxTypeNone' },
+  { value: 'GST', labelKey: 'admin.taxTypeGst' },
+  { value: 'VAT', labelKey: 'admin.taxTypeVat' },
+  { value: 'SALES_TAX', labelKey: 'admin.taxTypeSalesTax' },
+];
 
 const defaultValues = {
   defaultTaxType: 'NONE',
@@ -93,8 +98,8 @@ export default function AdminSettingsTaxPage() {
                 onChange={(e) => setForm((f) => ({ ...f, defaultTaxType: e.target.value }))}
               >
                 {TAX_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type.replace('_', ' ')}
+                  <option key={type.value} value={type.value}>
+                    {t(type.labelKey)}
                   </option>
                 ))}
               </select>
@@ -115,7 +120,7 @@ export default function AdminSettingsTaxPage() {
                     defaultTaxRate: e.target.value,
                   }))
                 }
-                placeholder='0'
+                placeholder={t('settings.defaultTaxRatePlaceholder')}
               />
             </div>
             <div>
@@ -126,7 +131,7 @@ export default function AdminSettingsTaxPage() {
                 type='text'
                 value={form.defaultCountry}
                 onChange={(e) => setForm((f) => ({ ...f, defaultCountry: e.target.value }))}
-                placeholder='e.g. US, IN'
+                placeholder={t('settings.defaultCountryPlaceholder')}
               />
             </div>
             <div className='flex gap-2 pt-4'>
