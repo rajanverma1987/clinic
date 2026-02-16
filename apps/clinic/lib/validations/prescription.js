@@ -15,7 +15,9 @@ export const PrescriptionStatus = {
 
 const prescriptionItemSchema = z.object({
   itemType: z.enum(['drug', 'lab', 'procedure', 'other']).optional(),
-  drugId: z.string().min(1, 'Drug ID is required').optional(),
+  drugId: z
+    .preprocess((v) => (v === '' || v == null ? undefined : v), z.string().min(1).optional())
+    .optional(),
   drugName: z.string().optional(),
   genericName: z.string().optional(),
   form: z.string().optional(),
@@ -51,7 +53,12 @@ export const createPrescriptionSchema = z.object({
   diagnosis: z.string().optional(),
   icd10Codes: z.array(z.string()).optional(),
   chiefComplaint: z.string().optional(),
-  followUpDate: z.string().datetime().or(z.date()).optional(),
+  followUpDate: z
+    .preprocess(
+      (v) => (v === '' || v == null ? undefined : v),
+      z.union([z.string(), z.date()]).optional(),
+    )
+    .optional(),
   followUpType: z.enum(['in-person', 'video', 'phone']).optional(),
   followUpAutoSchedule: z.boolean().optional(),
   additionalInstructions: z.string().optional(),

@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { safeTranslate } from '@/lib/utils/error-handler';
 import { AlertCircle, AlertTriangle, Home, RefreshCw } from 'lucide-react';
@@ -33,7 +34,10 @@ export function ErrorDisplay({
 }) {
   const { t } = useI18n();
   const router = useRouter();
+  const { user } = useAuth();
   const st = (key, fallback) => safeTranslate(t, key, fallback);
+
+  const dashboardPath = user?.role === 'super_admin' ? '/admin' : '/dashboard';
 
   const getErrorInfo = () => {
     if (statusCode === 404) {
@@ -47,7 +51,8 @@ export function ErrorDisplay({
     if (statusCode === 403 || statusCode === 401) {
       return {
         title: title || st('errors.unauthorizedTitle', 'Access denied'),
-        message: message || st('errors.unauthorizedMessage', 'You do not have permission to view this.'),
+        message:
+          message || st('errors.unauthorizedMessage', 'You do not have permission to view this.'),
         icon: AlertTriangle,
         iconColor: 'text-status-warning',
       };
@@ -55,14 +60,17 @@ export function ErrorDisplay({
     if (statusCode === 500 || statusCode >= 500) {
       return {
         title: title || st('errors.serverErrorTitle', 'Server error'),
-        message: message || st('errors.serverErrorMessage', 'Something went wrong on our end. Please try again.'),
+        message:
+          message ||
+          st('errors.serverErrorMessage', 'Something went wrong on our end. Please try again.'),
         icon: AlertTriangle,
         iconColor: 'text-status-error',
       };
     }
     return {
       title: title || st('errors.genericTitle', 'Something went wrong'),
-      message: message || st('errors.genericMessage', 'An unexpected error occurred. Please try again.'),
+      message:
+        message || st('errors.genericMessage', 'An unexpected error occurred. Please try again.'),
       icon: AlertTriangle,
       iconColor: 'text-status-error',
     };
@@ -80,7 +88,7 @@ export function ErrorDisplay({
   };
 
   const handleHome = () => {
-    router.push('/dashboard');
+    router.push(dashboardPath);
   };
 
   // Page variant - full screen error

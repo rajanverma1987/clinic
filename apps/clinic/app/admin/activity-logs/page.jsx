@@ -328,25 +328,25 @@ export default function AdminActivityLogsPage() {
                   size='sm'
                   onClick={handleExportCsv}
                   disabled={exporting || logs.length === 0}
-                  iconOnly
                   aria-label={t('admin.activityLogsExportCsv')}
                   title={t('admin.activityLogsExportCsv')}
                 >
                   {exporting ? (
-                    <RefreshCwIcon className='w-4 h-4 animate-spin' aria-hidden />
+                    <RefreshCwIcon className='icon icon-sm mr-1 animate-spin' aria-hidden />
                   ) : (
-                    <FileDownIcon className='w-4 h-4' aria-hidden />
+                    <FileDownIcon className='icon icon-sm mr-1' aria-hidden />
                   )}
+                  {t('admin.activityLogsExportCsv') || 'Export CSV'}
                 </Button>
                 <Button
                   variant='secondary'
                   size='sm'
                   onClick={handleEmailReport}
-                  iconOnly
                   aria-label={t('admin.activityLogsEmailReport')}
                   title={t('admin.activityLogsEmailReport')}
                 >
-                  <MailIcon className='w-4 h-4' aria-hidden />
+                  <MailIcon className='icon icon-sm mr-1' aria-hidden />
+                  {t('admin.activityLogsEmailReport') || 'Email Report'}
                 </Button>
               </div>
             </div>

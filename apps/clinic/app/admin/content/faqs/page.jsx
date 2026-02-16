@@ -71,6 +71,8 @@ export default function AdminContentFaqsPage() {
     setModal('create');
   };
   const openEdit = (item) => {
+    const id = item?.id ?? item?._id;
+    if (!id) return;
     setForm({
       question: item.question || '',
       answer: item.answer || '',
@@ -78,7 +80,7 @@ export default function AdminContentFaqsPage() {
       order: item.order ?? 0,
       isActive: item.isActive !== false,
     });
-    setModal({ type: 'edit', id: item._id });
+    setModal({ type: 'edit', id });
   };
   const closeModal = () => setModal(null);
 
@@ -166,8 +168,8 @@ export default function AdminContentFaqsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {list.map((item) => (
-                    <tr key={item._id}>
+                  {list.map((item, idx) => (
+                    <tr key={item?.id ?? item?._id ?? idx}>
                       <td>{item.order}</td>
                       <td className='font-medium max-w-xs truncate' title={item.question}>
                         {item.question}
@@ -191,7 +193,14 @@ export default function AdminContentFaqsPage() {
                           <Button variant='secondary' size='sm' onClick={() => openEdit(item)}>
                             {t('common.edit')}
                           </Button>
-                          <Button variant='danger' size='sm' onClick={() => handleDelete(item._id)}>
+                          <Button
+                            variant='danger'
+                            size='sm'
+                            onClick={() => {
+                              const id = item?.id ?? item?._id;
+                              if (id) handleDelete(id);
+                            }}
+                          >
                             {t('common.delete')}
                           </Button>
                         </div>

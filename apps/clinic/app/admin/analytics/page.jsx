@@ -60,11 +60,25 @@ export default function AdminAnalyticsPage() {
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       const base = typeof window !== 'undefined' ? window.location.origin : '';
+      const token = apiClient.getToken();
+      const headers = { Accept: 'text/csv' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
       const res = await fetch(`${base}/api/admin/analytics/export?${params.toString()}`, {
         credentials: 'include',
-        headers: { Accept: 'text/csv' },
+        headers,
       });
-      if (!res.ok) throw new Error('Export failed');
+      if (!res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        let errMsg = t('admin.failedToExport');
+        if (contentType.includes('application/json')) {
+          try {
+            const errBody = await res.json();
+            const msg = errBody?.error?.message || errBody?.error;
+            if (msg) errMsg = typeof msg === 'string' ? msg : t('admin.failedToExport');
+          } catch (_) {}
+        }
+        throw new Error(errMsg);
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -74,7 +88,7 @@ export default function AdminAnalyticsPage() {
       URL.revokeObjectURL(url);
       showSuccess(t('admin.exportDownloadedShort'));
     } catch (err) {
-      showError(t('admin.failedToExport'));
+      showError(err instanceof Error ? err.message : t('admin.failedToExport'));
     } finally {
       setExporting(false);
     }

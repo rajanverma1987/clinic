@@ -9,7 +9,10 @@ import { ProfileTab } from '@/components/settings/ProfileTab';
 import { QueueSettingsTab } from '@/components/settings/QueueSettingsTab';
 import { SMTPSettingsTab } from '@/components/settings/SMTPSettingsTab';
 import { TaxSettingsTab } from '@/components/settings/TaxSettingsTab';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
+import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
@@ -54,7 +57,7 @@ function SettingsPageFallback() {
 function SettingsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user: currentUser, loading: authLoading, logout } = useAuth();
+  const { user: currentUser, loading: authLoading, logout, refreshUser } = useAuth();
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -135,6 +138,8 @@ function SettingsPageContent() {
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showHolidayAddForm, setShowHolidayAddForm] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [editProfileForm, setEditProfileForm] = useState({ firstName: '', lastName: '' });
 
   // Who can access settings (and thus admin-only tabs like Clinic info): doctor, clinic_admin
   const canAccessSettings = hasPermission(currentUser?.role, RESOURCES.SETTINGS, ACTIONS.READ);
@@ -582,6 +587,38 @@ function SettingsPageContent() {
     }
   };
 
+  const handleEditProfileClick = () => {
+    setEditProfileForm({
+      firstName: currentUser?.firstName || '',
+      lastName: currentUser?.lastName || '',
+    });
+    setShowEditProfileModal(true);
+  };
+
+  const handleSaveEditProfile = async () => {
+    const userId = currentUser?.id ?? currentUser?._id ?? currentUser?.userId;
+    if (!userId) return;
+    try {
+      setSaving(true);
+      const response = await apiClient.put(`/users/${userId}`, {
+        firstName: editProfileForm.firstName?.trim() || '',
+        lastName: editProfileForm.lastName?.trim() || '',
+      });
+      if (response?.success) {
+        showSuccess(t('settings.profileUpdatedSuccess') || 'Profile updated successfully');
+        setShowEditProfileModal(false);
+        await refreshUser();
+        fetchSettings();
+      } else {
+        showError(response?.error?.message || t('errors.generic') || 'Failed to update profile');
+      }
+    } catch (error) {
+      showError(error?.message || t('errors.generic') || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleToggleMyStatus = async (e) => {
     if (!currentUser) return;
     e?.preventDefault?.();
@@ -664,7 +701,7 @@ function SettingsPageContent() {
                   onToggleStatus={handleToggleMyStatus}
                   availabilityForm={availabilityForm}
                   setAvailabilityForm={setAvailabilityForm}
-                  onEditProfileClick={() => {}}
+                  onEditProfileClick={handleEditProfileClick}
                 />
               </div>
             )}
@@ -754,6 +791,50 @@ function SettingsPageContent() {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={showEditProfileModal}
+        onClose={() => setShowEditProfileModal(false)}
+        title={t('settings.editProfile') || 'Edit Profile'}
+        size='md'
+      >
+        <div className='p-4 space-y-4'>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 mb-2'>
+              {t('auth.firstName')}
+            </label>
+            <Input
+              value={editProfileForm.firstName}
+              onChange={(e) =>
+                setEditProfileForm((prev) => ({ ...prev, firstName: e.target.value }))
+              }
+              placeholder={t('auth.firstName')}
+              aria-label={t('auth.firstName')}
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 mb-2'>
+              {t('auth.lastName')}
+            </label>
+            <Input
+              value={editProfileForm.lastName}
+              onChange={(e) =>
+                setEditProfileForm((prev) => ({ ...prev, lastName: e.target.value }))
+              }
+              placeholder={t('auth.lastName')}
+              aria-label={t('auth.lastName')}
+            />
+          </div>
+          <div className='flex justify-end gap-2 pt-4'>
+            <Button variant='secondary' onClick={() => setShowEditProfileModal(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant='primary' onClick={handleSaveEditProfile} disabled={saving}>
+              {saving ? t('common.saving') : t('common.save')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

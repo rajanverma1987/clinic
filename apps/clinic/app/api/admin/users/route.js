@@ -22,6 +22,7 @@ async function getHandler(req, user) {
     const role = searchParams.get('role');
     const tenantId = searchParams.get('tenantId');
     const isActive = searchParams.get('isActive');
+    const search = searchParams.get('search')?.trim();
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
 
@@ -38,6 +39,15 @@ async function getHandler(req, user) {
 
     if (isActive !== null && isActive !== undefined) {
       query.isActive = isActive === 'true';
+    }
+
+    if (search) {
+      const searchRegex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [
+        { email: searchRegex },
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+      ];
     }
 
     // Get total count

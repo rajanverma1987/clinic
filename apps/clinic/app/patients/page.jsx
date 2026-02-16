@@ -546,7 +546,11 @@ export default function PatientsPage() {
               onClick: () => {
                 const id = row?._id ?? row?.id;
                 if (id) {
-                  router.push(`/patients/${id}/edit`);
+                  router.push(
+                    user.role === 'doctor'
+                      ? `/doctors/patients/${id}`
+                      : `/patients/${id}`,
+                  );
                 }
               },
             },

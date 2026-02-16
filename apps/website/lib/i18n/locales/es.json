@@ -1445,7 +1445,8 @@
     "patients": "pacientes",
     "storage": "de almacenamiento",
     "selectPlan": "Select Plan",
-    "unlimited": "Unlimited"
+    "unlimited": "Unlimited",
+    "unableToLoad": "No se pueden cargar los planes de precios"
   },
   "notifications": {
     "title": "Notifications",

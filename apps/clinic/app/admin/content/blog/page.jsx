@@ -69,6 +69,8 @@ export default function AdminContentBlogPage() {
     setModal('create');
   };
   const openEdit = (item) => {
+    const id = item?.id ?? item?._id;
+    if (!id) return;
     setForm({
       title: item.title || '',
       slug: item.slug || '',
@@ -78,7 +80,7 @@ export default function AdminContentBlogPage() {
       order: item.order ?? 0,
       isActive: item.isActive !== false,
     });
-    setModal({ type: 'edit', id: item._id });
+    setModal({ type: 'edit', id });
   };
   const closeModal = () => setModal(null);
 
@@ -166,8 +168,8 @@ export default function AdminContentBlogPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {list.map((item) => (
-                    <tr key={item._id}>
+                  {list.map((item, idx) => (
+                    <tr key={item?.id ?? item?._id ?? idx}>
                       <td>{item.order}</td>
                       <td className='font-medium'>{item.title}</td>
                       <td className='text-neutral-600'>{item.slug}</td>
@@ -189,7 +191,14 @@ export default function AdminContentBlogPage() {
                           <Button variant='secondary' size='sm' onClick={() => openEdit(item)}>
                             {t('common.edit')}
                           </Button>
-                          <Button variant='danger' size='sm' onClick={() => handleDelete(item._id)}>
+                          <Button
+                            variant='danger'
+                            size='sm'
+                            onClick={() => {
+                              const id = item?.id ?? item?._id;
+                              if (id) handleDelete(id);
+                            }}
+                          >
                             {t('common.delete')}
                           </Button>
                         </div>

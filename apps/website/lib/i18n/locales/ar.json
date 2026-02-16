@@ -1445,7 +1445,8 @@
     "patients": "patients",
     "storage": "storage",
     "selectPlan": "Select Plan",
-    "unlimited": "Unlimited"
+    "unlimited": "Unlimited",
+    "unableToLoad": "تعذر تحميل خطط التسعير"
   },
   "notifications": {
     "title": "Notifications",

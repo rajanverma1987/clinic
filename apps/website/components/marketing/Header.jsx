@@ -48,6 +48,7 @@ export function Header() {
       { href: '/about', label: t('navigation.about') || 'About' },
       { href: '/blog', label: t('navigation.blog') || 'Blog' },
       { href: '/pricing', label: t('navigation.pricing') },
+      { href: '/support', label: t('navigation.support') || 'Support' },
       { href: '/support/contact', label: t('navigation.contact') },
     ],
     [t],

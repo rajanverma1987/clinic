@@ -3199,6 +3199,8 @@ svg.icon.icon-2xl {
   color: var(--color-neutral-900);
   margin: 0;
   line-height: 1.2;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 .dark .admin-stat-card__value {
   color: var(--color-text-primary);
@@ -3381,6 +3383,11 @@ svg.icon.icon-2xl {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
   gap: var(--space-4, 16px);
+  overflow: visible;
+}
+.admin-kpi-grid > * {
+  overflow: visible;
+  min-height: 120px;
 }
 @media (min-width: 640px) {
   .admin-kpi-grid {
@@ -3517,5 +3524,21 @@ svg.icon.icon-2xl {
   .animate-spin-reverse,
   .animate-pulse {
     animation: none;
+  }
+}
+
+/* Print: hide sidebar, nav, and non-content UI so reports/consultation print cleanly */
+@media print {
+  .layout-sidebar,
+  [data-print-hide],
+  .no-print {
+    display: none !important;
+  }
+  .layout-root {
+    display: block !important;
+  }
+  .layout-root > main {
+    flex: none !important;
+    max-width: none !important;
   }
 }

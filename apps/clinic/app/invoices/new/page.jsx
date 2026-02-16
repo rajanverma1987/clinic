@@ -21,7 +21,8 @@ export default function NewInvoicePage() {
   const { user: currentUser, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { currency, locale } = useSettings();
-  const managerLimitedWrite = isManagerPathLimitedWrite(pathname);
+  const managerLimitedWrite =
+    isManagerPathLimitedWrite(pathname) && currentUser?.role === 'manager';
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

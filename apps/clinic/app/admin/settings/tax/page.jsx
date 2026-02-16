@@ -63,6 +63,7 @@ export default function AdminSettingsTaxPage() {
       const response = await apiClient.put('/admin/settings/tax', payload);
       if (response.success) {
         showSuccess(t('admin.settingsSaved'));
+        await fetchSettings();
         if (response.data) setForm((f) => ({ ...f, ...response.data }));
       } else {
         showError(response.error?.message || t('admin.failedToSaveSettings'));

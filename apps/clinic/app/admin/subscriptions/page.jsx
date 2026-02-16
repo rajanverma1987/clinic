@@ -256,6 +256,22 @@ export default function AdminSubscriptionsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (editingPlanId) {
+      openConfirm({
+        title: t('admin.confirmPlanUpdate', 'Confirm Plan Update'),
+        message:
+          t('admin.planUpdateConfirmMessage', 'Are you sure you want to update this subscription plan?') ||
+          'Are you sure you want to update this subscription plan?',
+        variant: 'warning',
+        onConfirm: () => doSubmit(),
+      });
+    } else {
+      doSubmit();
+    }
+  };
+
+  const doSubmit = async () => {
     setSubmitting(true);
 
     try {
@@ -276,16 +292,21 @@ export default function AdminSubscriptionsPage() {
 
       let response;
       if (editingPlanId) {
-        // Update existing plan
         response = await apiClient.put(`/admin/subscription-plans/${editingPlanId}`, payload);
       } else {
-        // Create new plan
         response = await apiClient.post('/admin/subscription-plans', payload);
       }
 
       if (response.success) {
+        showSuccess(
+          editingPlanId
+            ? t('admin.planUpdated', 'Plan updated successfully')
+            : t('admin.planCreated', 'Plan created successfully'),
+        );
         handleCancel();
-        fetchPlans();
+        await fetchPlans();
+      } else {
+        showError(response?.error?.message || t('admin.planUpdateFailed') || t('admin.planCreateFailed'));
       }
     } catch (error) {
       logger.error('Failed to save plan', error);

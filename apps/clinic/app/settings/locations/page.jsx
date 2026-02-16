@@ -1,5 +1,6 @@
 'use client';
 
+import { apiClient } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -54,13 +55,14 @@ export default function LocationsPage() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch('/api/settings');
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error?.message || 'Failed to load settings');
-      const list = json?.data?.settings?.locations;
+      const response = await apiClient.get('/settings');
+      if (!response?.success) {
+        throw new Error(response?.error?.message || 'Failed to load settings');
+      }
+      const list = response?.data?.settings?.locations;
       setLocations(Array.isArray(list) ? list.map(toLocationRow) : []);
     } catch (err) {
-      showError(err.message || t('settings.locationSaveFailed'));
+      showError(err?.message || t('settings.locationSaveFailed'));
       setLocations([]);
     } finally {
       setLoading(false);
@@ -75,18 +77,17 @@ export default function LocationsPage() {
     async (nextLocations) => {
       setSaving(true);
       try {
-        const res = await fetch('/api/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ settings: { locations: toSettingsPayload(nextLocations) } }),
+        const response = await apiClient.put('/settings', {
+          settings: { locations: toSettingsPayload(nextLocations) },
         });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json?.error?.message || 'Failed to save locations');
+        if (!response?.success) {
+          throw new Error(response?.error?.message || 'Failed to save locations');
+        }
         setLocations(nextLocations.map(toLocationRow));
         showSuccess(t('settings.locationSaved'));
         return true;
       } catch (err) {
-        showError(err.message || t('settings.locationSaveFailed'));
+        showError(err?.message || t('settings.locationSaveFailed'));
         return false;
       } finally {
         setSaving(false);

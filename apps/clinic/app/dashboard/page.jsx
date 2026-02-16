@@ -39,25 +39,25 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { CalendarSkeleton, CardSkeleton, ChartSkeleton } from '@/components/skeletons';
 
 const ChartCard = nextDynamic(
-  () => import('./components/ChartCard').then((m) => ({ default: m.ChartCard })),
-  {
-    loading: () => <ChartSkeleton variant='line' />,
-    ssr: false,
-  },
+  () =>
+    import('./components/ChartCard')
+      .then((m) => ({ default: m.ChartCard }))
+      .catch(() => ({ default: () => <ChartSkeleton variant='line' /> })),
+  { loading: () => <ChartSkeleton variant='line' />, ssr: false },
 );
 const CalendarWidget = nextDynamic(
-  () => import('./components/CalendarWidget').then((m) => ({ default: m.CalendarWidget })),
-  {
-    loading: () => <CalendarSkeleton />,
-    ssr: false,
-  },
+  () =>
+    import('./components/CalendarWidget')
+      .then((m) => ({ default: m.CalendarWidget }))
+      .catch(() => ({ default: () => <CalendarSkeleton /> })),
+  { loading: () => <CalendarSkeleton />, ssr: false },
 );
 const CriticalAlerts = nextDynamic(
-  () => import('./components/CriticalAlerts').then((m) => ({ default: m.CriticalAlerts })),
-  {
-    loading: () => <CardSkeleton count={2} />,
-    ssr: false,
-  },
+  () =>
+    import('./components/CriticalAlerts')
+      .then((m) => ({ default: m.CriticalAlerts }))
+      .catch(() => ({ default: () => <CardSkeleton count={2} /> })),
+  { loading: () => <CardSkeleton count={2} />, ssr: false },
 );
 
 // Custom hooks – SWR for clinic (real-time + 30s poll), existing for doctor

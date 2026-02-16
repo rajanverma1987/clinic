@@ -24,7 +24,8 @@ export default function EditInvoicePage() {
   const user = currentUser; // alias for any child or callback that expects `user`
   const { t } = useI18n();
   const { currency, locale } = useSettings();
-  const managerLimitedWrite = isManagerPathLimitedWrite(pathname);
+  const managerLimitedWrite =
+    isManagerPathLimitedWrite(pathname) && currentUser?.role === 'manager';
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

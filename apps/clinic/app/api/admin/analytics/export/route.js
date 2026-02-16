@@ -4,9 +4,8 @@
  * Client can call this with same query as /api/admin/analytics and download CSV.
  */
 
-import { NextResponse } from 'next/server';
-import { withAuth } from '@/middleware/auth';
 import { logger } from '@/lib/utils/logger.js';
+import { NextResponse } from 'next/server';
 
 function escapeCsv(val) {
   if (val == null) return '';
@@ -31,12 +30,18 @@ async function getHandler(req, user) {
     const protocol = origin.includes('localhost') ? 'http' : 'https';
     const base = `${protocol}://${origin.replace(/^https?:\/\//, '').split('/')[0]}`;
     const fetchUrl = `${base}/api/admin/analytics?${params.toString()}`;
-    const res = await fetch(fetchUrl, {
-      headers: { Cookie: req.headers.get('cookie') || '' },
-    });
+    const headers = {};
+    const cookie = req.headers.get('cookie');
+    if (cookie) headers.Cookie = cookie;
+    const auth = req.headers.get('authorization');
+    if (auth) headers.Authorization = auth;
+    const res = await fetch(fetchUrl, { headers });
     const data = await res.json().catch(() => ({}));
     if (!data.success || !data.data) {
-      return NextResponse.json({ success: false, error: 'Failed to fetch analytics' }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: 'Failed to fetch analytics' },
+        { status: 500 },
+      );
     }
     const d = data.data;
     const rows = [];
@@ -64,7 +69,7 @@ async function getHandler(req, user) {
     logger.error('Admin analytics export error:', err);
     return NextResponse.json(
       { success: false, error: err instanceof Error ? err.message : 'Export failed' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

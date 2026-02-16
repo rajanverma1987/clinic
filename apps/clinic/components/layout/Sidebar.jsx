@@ -104,6 +104,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   const IconSubscriptions = () => navIcon(CreditCardIcon);
   const IconSubscription = () => navIcon(BellIcon);
   const IconCreateAdmin = () => navIcon(UserAddIcon);
+  const IconCreateManager = () => navIcon(UsersIcon);
   const IconAllUsers = () => navIcon(UserIcon);
   const IconPaymentHistory = () => navIcon(HistoryIcon);
   const IconEarnings = () => navIcon(TrendingUpIcon);
@@ -334,7 +335,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         />
       )}
       <div
-        className={`text-neutral-900 dark:text-neutral-100 flex flex-col sticky top-0 border-r border-neutral-200 dark:border-neutral-700 relative ${isCollapsed ? 'overflow-visible' : 'overflow-hidden'} bg-gradient-to-br from-white via-neutral-50 to-primary-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[1001] max-md:transition-transform max-md:duration-300 max-md:ease-out ${isMobileOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
+        className={`layout-sidebar text-neutral-900 dark:text-neutral-100 flex flex-col sticky top-0 border-r border-neutral-200 dark:border-neutral-700 relative ${isCollapsed ? 'overflow-visible' : 'overflow-hidden'} bg-gradient-to-br from-white via-neutral-50 to-primary-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[1001] max-md:transition-transform max-md:duration-300 max-md:ease-out ${isMobileOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
         data-collapsed={isCollapsed}
         style={{
           width: isCollapsed ? '5rem' : 'var(--dashboard-sidebar-width, 280px)',
@@ -608,6 +609,36 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                   className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
                 >
                   {t('admin.createAdmin')}
+                </span>
+              </Link>
+              <Link
+                href='/admin/users/create-manager'
+                onClick={handleLinkClick}
+                prefetch={false}
+                onMouseEnter={(e) =>
+                  isCollapsed &&
+                  setTooltip({ anchor: e.currentTarget, label: t('settings.createManager') })
+                }
+                onMouseLeave={() => isCollapsed && setTooltip({ anchor: null, label: '' })}
+                className={`flex items-center ${
+                  isCollapsed ? 'justify-center px-3 py-3 mx-1 rounded-xl' : 'px-6 py-4 rounded-lg'
+                } min-h-[44px] text-body-sm font-medium ${
+                  pathname === '/admin/users/create-manager'
+                    ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 shadow-sm border-l-2 border-primary-500'
+                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-700 hover:text-primary-600 dark:hover:text-primary-400'
+                }`}
+                title={isCollapsed ? undefined : ''}
+                aria-label={isCollapsed ? t('settings.createManager') : undefined}
+              >
+                <span
+                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? '' : 'mr-3'}`}
+                >
+                  <IconCreateManager />
+                </span>
+                <span
+                  className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+                >
+                  {t('settings.createManager')}
                 </span>
               </Link>
               <Link

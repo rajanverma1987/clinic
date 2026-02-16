@@ -36,7 +36,7 @@ export default function PricingPage() {
           ...(response.error || {}),
           message:
             response.error?.message ||
-            t('errors.failedToLoadDashboard', 'Failed to load dashboard data'),
+            t('pricing.unableToLoad', 'Unable to load pricing plans'),
         },
       };
     }
@@ -196,7 +196,7 @@ export default function PricingPage() {
                 </svg>
               </div>
               <h2 className='text-2xl font-bold text-red-900 mb-2'>
-                {t('errors.generic', 'An unexpected error occurred')}
+                {t('pricing.unableToLoad', 'Unable to load pricing plans')}
               </h2>
               <p className='text-red-700 mb-6'>{plansError}</p>
               <Button

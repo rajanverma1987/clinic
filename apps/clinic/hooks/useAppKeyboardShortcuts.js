@@ -28,8 +28,7 @@ export function useAppKeyboardShortcuts({ onOpenSearch }) {
       const isContentEditable = target?.isContentEditable === true;
 
       if (isInput || isContentEditable) {
-        if (e.key === '/') return;
-        if (e.key !== 'g' && e.key !== 'd' && e.key !== 'q' && e.key !== 'a') return;
+        return;
       }
 
       if (e.key === '/') {

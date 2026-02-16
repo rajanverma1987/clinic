@@ -1443,7 +1443,8 @@
     "patients": "patients",
     "storage": "de stockage",
     "selectPlan": "Select Plan",
-    "unlimited": "Unlimited"
+    "unlimited": "Unlimited",
+    "unableToLoad": "Impossible de charger les plans tarifaires"
   },
   "notifications": {
     "title": "Notifications",

@@ -23,7 +23,7 @@ import { extractArrayData, extractPaginationData } from '@/lib/utils/api-respons
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export default function AdminUsersPage() {
   const router = useRouter();
@@ -58,11 +58,39 @@ export default function AdminUsersPage() {
     }
   }, [authLoading, user]);
 
+  const filtersChangedRef = useRef(false);
+  const prevFiltersRef = useRef({
+    debouncedSearchTerm: '',
+    roleFilter: '',
+    activeFilter: '',
+    tenantFilter: '',
+  });
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const filtersChanged =
+      prev.debouncedSearchTerm !== debouncedSearchTerm ||
+      prev.roleFilter !== roleFilter ||
+      prev.activeFilter !== activeFilter ||
+      prev.tenantFilter !== tenantFilter;
+    if (filtersChanged) {
+      prevFiltersRef.current = {
+        debouncedSearchTerm,
+        roleFilter,
+        activeFilter,
+        tenantFilter,
+      };
+      filtersChangedRef.current = true;
+      setPagination((p) => ({ ...p, page: 1 }));
+    }
+  }, [debouncedSearchTerm, roleFilter, activeFilter, tenantFilter]);
+
   useEffect(() => {
     if (user?.role === 'super_admin') {
-      fetchUsers();
+      const pageToUse = filtersChangedRef.current ? 1 : pagination.page;
+      if (filtersChangedRef.current) filtersChangedRef.current = false;
+      fetchUsers(pageToUse);
     }
-  }, [pagination.page, roleFilter, activeFilter, tenantFilter]);
+  }, [pagination.page, roleFilter, activeFilter, tenantFilter, debouncedSearchTerm]);
 
   const fetchTenants = async () => {
     try {
@@ -75,14 +103,16 @@ export default function AdminUsersPage() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (pageOverride) => {
     try {
       setLoading(true);
+      const page = pageOverride ?? pagination.page;
       const params = new URLSearchParams({
-        page: pagination.page.toString(),
+        page: page.toString(),
         limit: pagination.limit.toString(),
       });
 
+      if (debouncedSearchTerm?.trim()) params.append('search', debouncedSearchTerm.trim());
       if (roleFilter) params.append('role', roleFilter);
       if (activeFilter) params.append('isActive', activeFilter);
       if (tenantFilter) params.append('tenantId', tenantFilter);
@@ -99,6 +129,18 @@ export default function AdminUsersPage() {
       setLoading(false);
     }
   };
+
+  /** When API receives search param, backend filters; when not, we still filter locally for consistency. */
+  const filteredUsers = users.filter((u) => {
+    if (!debouncedSearchTerm?.trim()) return true;
+    const search = debouncedSearchTerm.trim().toLowerCase();
+    return (
+      u.email?.toLowerCase().includes(search) ||
+      u.firstName?.toLowerCase().includes(search) ||
+      u.lastName?.toLowerCase().includes(search) ||
+      u.tenantName?.toLowerCase().includes(search)
+    );
+  });
 
   const handleExportCSV = useCallback(() => {
     const headers = [
@@ -176,17 +218,6 @@ export default function AdminUsersPage() {
       showError(t('admin.failedToUpdateUserStatus'));
     }
   };
-
-  const filteredUsers = users.filter((u) => {
-    if (!debouncedSearchTerm) return true;
-    const search = debouncedSearchTerm.toLowerCase();
-    return (
-      u.email?.toLowerCase().includes(search) ||
-      u.firstName?.toLowerCase().includes(search) ||
-      u.lastName?.toLowerCase().includes(search) ||
-      u.tenantName?.toLowerCase().includes(search)
-    );
-  });
 
   if (authLoading || loading) {
     return <Loader type='page' text={t('common.loading')} />;

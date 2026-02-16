@@ -1108,37 +1108,12 @@ function NewPrescriptionPageContent() {
                     <Button
                       type='button'
                       variant='secondary'
-                      onClick={async () => {
-                        // Download prescription as PDF
-                        const selectedPatient = patients.find((p) => p._id === formData.patientId);
-                        if (!selectedPatient) {
-                          showError(
-                            t('prescriptions.selectPatientFirst') ||
-                              'Please select a patient first',
-                          );
-                          return;
-                        }
-                        try {
-                          const response = await apiClient.post('/prescriptions/generate-pdf', {
-                            formData,
-                            items,
-                            patient: selectedPatient,
-                          });
-                          if (response.success && response.data?.pdfUrl) {
-                            window.open(response.data.pdfUrl, '_blank');
-                          } else {
-                            // Fallback: use print preview
-                            handlePrintPreview();
-                          }
-                        } catch (err) {
-                          // Fallback: use print preview
-                          handlePrintPreview();
-                        }
-                      }}
+                      onClick={handlePrintPreview}
                       disabled={submitting || !formData.patientId}
+                      title={t('prescriptions.downloadPdfHint') || 'Open preview to Print or Download PDF'}
                     >
                       <FileDownIcon className='icon icon-sm mr-2' ariaHidden />
-                      Download PDF
+                      {t('prescriptions.downloadPdf') || 'Download PDF'}
                     </Button>
                     <Button
                       type='submit'

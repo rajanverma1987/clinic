@@ -86,6 +86,12 @@
   margin-bottom: var(--space-4);
 }
 
+/* Ensure patient select dropdown is not clipped by stacking context */
+.prescription-form-field select.prescription-form-input {
+  position: relative;
+  z-index: 1;
+}
+
 .prescription-form-field:last-child {
   margin-bottom: 0;
 }
@@ -319,6 +325,12 @@
 }
 
 /* Patient Details Panel Premium Styles */
+/* Form section with patient field: ensure dropdowns are visible above adjacent panels */
+.prescription-form-section:has(select#patientId) {
+  position: relative;
+  z-index: 2;
+}
+
 .patient-details-panel {
   position: relative;
   border-radius: var(--radius-xl);

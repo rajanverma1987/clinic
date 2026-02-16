@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 import { AvailabilityForm } from './AvailabilityForm';
@@ -21,6 +22,18 @@ export function ProfileTab({
   on2FAStatusChange,
 }) {
   const { t } = useI18n();
+  const { open: openConfirm } = useConfirmation();
+
+  const handleLogoutClick = () => {
+    openConfirm({
+      title: t('auth.confirmLogout', 'Confirm Sign Out'),
+      message:
+        t('auth.logoutConfirmMessage') ||
+        'Are you sure you want to sign out? You will need to sign in again to access your account.',
+      variant: 'danger',
+      onConfirm: () => logout(),
+    });
+  };
 
   const getRoleLabel = (role) => {
     const roleKeys = {
@@ -172,7 +185,12 @@ export function ProfileTab({
                   </Button>
                 </Link>
               )}
-              <Button variant='danger' size='md' className='flex-1 lg:flex-none' onClick={logout}>
+              <Button
+                variant='danger'
+                size='md'
+                className='flex-1 lg:flex-none'
+                onClick={handleLogoutClick}
+              >
                 {t('auth.logout')}
               </Button>
             </div>

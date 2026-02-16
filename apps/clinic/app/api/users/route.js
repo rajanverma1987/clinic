@@ -131,15 +131,15 @@ async function postHandler(req, user) {
       );
     }
   } else {
-    // Super admin can create: super_admin, clinic_admin
-    // For other roles, they need to be within a tenant context
+    // Super admin can create: super_admin, clinic_admin, manager (with tenantId)
     if (targetRole === UserRole.SUPER_ADMIN || targetRole === UserRole.CLINIC_ADMIN) {
       // Super admin creating another admin - allowed
-    } else if (!user.tenantId) {
-      // Super admin without tenant context can't create tenant-specific roles
+    } else if (targetRole === UserRole.MANAGER && body.tenantId) {
+      // Super admin creating manager - tenantId from body required
+    } else if (!user.tenantId && !body.tenantId) {
       return NextResponse.json(
         errorResponse(
-          'Super admin must specify a tenant to create clinic users',
+          'Super admin must specify a tenant to create clinic users (manager, staff, etc.)',
           'INVALID_REQUEST',
         ),
         { status: 400 },
@@ -178,6 +178,13 @@ async function postHandler(req, user) {
       // Clinic admin creating another clinic admin - use same tenant
       targetTenantId = user.tenantId;
     }
+  } else if (targetRole === UserRole.MANAGER && user.role === 'super_admin' && body.tenantId) {
+    const Tenant = (await import('@/models/Tenant.js')).default;
+    const tenant = await Tenant.findById(body.tenantId);
+    if (!tenant) {
+      return NextResponse.json(errorResponse('Tenant not found', 'NOT_FOUND'), { status: 404 });
+    }
+    targetTenantId = body.tenantId;
   } else {
     // All other roles use the creator's tenantId
     targetTenantId = user.tenantId;

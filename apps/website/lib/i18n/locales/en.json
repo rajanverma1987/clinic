@@ -1468,7 +1468,8 @@
     "patients": "patients",
     "storage": "storage",
     "selectPlan": "Select Plan",
-    "unlimited": "Unlimited"
+    "unlimited": "Unlimited",
+    "unableToLoad": "Unable to load pricing plans"
   },
   "notifications": {
     "title": "Notifications",

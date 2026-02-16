@@ -30,6 +30,8 @@ export function I18nProvider({ children }) {
         // User's explicit choice in localStorage always wins
         if (storedLocale && supportedLocales.includes(storedLocale)) {
           setLocaleState(storedLocale);
+          document.documentElement.lang = storedLocale === 'ar' ? 'ar' : storedLocale === 'es' ? 'es' : 'en';
+          document.documentElement.dir = storedLocale === 'ar' ? 'rtl' : 'ltr';
           setLoading(false);
           return;
         }
@@ -44,6 +46,8 @@ export function I18nProvider({ children }) {
                 setLocaleState(tenantLocale);
                 if (typeof window !== 'undefined') {
                   localStorage.setItem('locale', tenantLocale);
+                  document.documentElement.lang = tenantLocale === 'ar' ? 'ar' : tenantLocale === 'es' ? 'es' : 'en';
+                  document.documentElement.dir = tenantLocale === 'ar' ? 'rtl' : 'ltr';
                 }
               }
             }
@@ -57,6 +61,8 @@ export function I18nProvider({ children }) {
             if (supportedLocales.includes(browserLocale)) {
               setLocaleState(browserLocale);
               localStorage.setItem('locale', browserLocale);
+              document.documentElement.lang = browserLocale === 'ar' ? 'ar' : browserLocale === 'es' ? 'es' : 'en';
+              document.documentElement.dir = browserLocale === 'ar' ? 'rtl' : 'ltr';
             }
           }
         }
@@ -74,6 +80,8 @@ export function I18nProvider({ children }) {
     setLocaleState(newLocale);
     if (typeof window !== 'undefined') {
       localStorage.setItem('locale', newLocale);
+      document.documentElement.lang = newLocale === 'ar' ? 'ar' : newLocale === 'es' ? 'es' : 'en';
+      document.documentElement.dir = newLocale === 'ar' ? 'rtl' : 'ltr';
     }
 
     // Optionally update tenant settings if user is logged in

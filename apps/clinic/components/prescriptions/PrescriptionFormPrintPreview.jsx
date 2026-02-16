@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Loader } from '@/components/ui/Loader';
+import { loadJsPDF } from '@/lib/utils/dynamic-imports';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
@@ -21,6 +22,7 @@ export function PrescriptionFormPrintPreview({
   const { user: currentUser } = useAuth();
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState('');
   const [printHtml, setPrintHtml] = useState('');
 
@@ -205,6 +207,39 @@ export function PrescriptionFormPrintPreview({
     }
   };
 
+  const handleDownloadPDF = async () => {
+    if (!printHtml) return;
+    setDownloadingPdf(true);
+    let tempDiv = null;
+    try {
+      const { jsPDF } = await loadJsPDF();
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      tempDiv = document.createElement('div');
+      tempDiv.innerHTML = printHtml;
+      tempDiv.style.width = '210mm';
+      tempDiv.style.padding = '10mm';
+      tempDiv.style.fontFamily = 'Arial, sans-serif';
+      tempDiv.style.fontSize = '11px';
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      document.body.appendChild(tempDiv);
+      pdf.html(tempDiv, {
+        x: 10,
+        y: 10,
+        width: 190,
+        callback: (doc) => {
+          if (tempDiv?.parentNode) document.body.removeChild(tempDiv);
+          doc.save(`prescription-${new Date().toISOString().slice(0, 10)}.pdf`);
+          setDownloadingPdf(false);
+        },
+      });
+    } catch (err) {
+      logger.error('Failed to generate PDF:', err);
+      if (tempDiv?.parentNode) document.body.removeChild(tempDiv);
+      setDownloadingPdf(false);
+    }
+  };
+
   const handlePrint = () => {
     // Create a hidden iframe for printing
     const printFrame = document.createElement('iframe');
@@ -263,7 +298,10 @@ export function PrescriptionFormPrintPreview({
               <Button variant='secondary' onClick={onClose}>
                 Close
               </Button>
-              <Button onClick={handlePrint}>Print</Button>
+              <Button variant='secondary' onClick={handleDownloadPDF} disabled={downloadingPdf}>
+                {downloadingPdf ? t('common.loading') : t('prescriptions.downloadPdf') || 'Download PDF'}
+              </Button>
+              <Button onClick={handlePrint}>{t('prescriptions.print') || 'Print'}</Button>
             </div>
           </>
         )}
