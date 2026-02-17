@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { useCallback, useEffect, useState } from 'react';
 import { logger } from '@/lib/utils/logger.js';
 
@@ -109,27 +110,20 @@ export default function AppointmentCalendar({
 
   // Fetch appointments for the selected date to determine availability
   const fetchAvailability = useCallback(async () => {
-    if (!selectedDoctorId) {
-      setAvailableSlots([]);
-      return;
-    }
-
     setLoading(true);
     try {
       const dateKey = formatDateForApi(currentDate);
       const startDate = dateKey;
       const endDate = dateKey;
 
-      // Fetch appointments for the selected date
-      const response = await apiClient.get(
-        `/appointments?doctorId=${selectedDoctorId}&startDate=${startDate}&endDate=${endDate}`
-      );
+      // Fetch appointments for the selected date (with or without doctor filter)
+      const url = selectedDoctorId
+        ? `/appointments?doctorId=${selectedDoctorId}&startDate=${startDate}&endDate=${endDate}`
+        : `/appointments?startDate=${startDate}&endDate=${endDate}&limit=500`;
+      const response = await apiClient.get(url);
 
       if (response.success && response.data) {
-        // Handle both array and paginated response formats
-        const appointmentsData = Array.isArray(response.data)
-          ? response.data
-          : response.data?.data || [];
+        const appointmentsData = extractArrayData(response);
         // Filter appointments to only include active statuses
         // Include 'in_queue' for video consultations that go directly to queue
         const activeStatuses = ['scheduled', 'confirmed', 'arrived', 'in_progress', 'in_queue'];
@@ -464,12 +458,7 @@ export default function AppointmentCalendar({
         </h3>
       </div>
 
-      {!selectedDoctorId ? (
-        <div className='text-center py-8 text-neutral-500 text-sm'>
-          {t('appointments.selectDoctorToViewAvailability') ||
-            'Select a doctor to view availability'}
-        </div>
-      ) : (
+      {(
         <>
           {/* Date Selector */}
           <div className='mb-4 flex items-center gap-2 flex-wrap'>

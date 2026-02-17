@@ -16,6 +16,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useFeatures } from '@/hooks/useFeatures.js';
 import { apiClient } from '@/lib/api/client';
+import * as routeCache from '@/lib/cache/dashboard-cache';
+import { clearCacheByPrefix } from '@/lib/utils/api-cache';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess, showWarning } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -279,6 +281,10 @@ function NewAppointmentPageContent() {
 
       const response = await apiClient.post('/appointments', appointmentData);
       if (response.success) {
+        if (currentUser?.tenantId) {
+          routeCache.clear('route_appointments', currentUser.tenantId);
+        }
+        clearCacheByPrefix('/appointments');
         const appointmentCount = formData.isRecurring ? formData.recurringOccurrences || 4 : 1;
         showSuccess(
           formData.isRecurring
@@ -288,7 +294,7 @@ function NewAppointmentPageContent() {
               : t('appointments.scheduledSuccess'),
         );
         setTimeout(() => {
-          router.push('/appointments');
+          router.push('/appointments?from=book');
         }, 1500);
       } else {
         const errorMsg = response.error?.message || t('errors.failedToCreateAppointment');

@@ -18,6 +18,7 @@ import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
+import { clearCacheByPrefix } from '@/lib/utils/api-cache';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
@@ -48,8 +49,9 @@ export default function AppointmentsPage() {
   useLayoutEffect(() => {
     if (!tenantId) return;
     const cached = routeCache.getData(ROUTE_KEY, tenantId);
-    if (cached && cached.appointments != null) {
-      setAppointments(cached.appointments);
+    const list = cached?.appointments;
+    if (cached && Array.isArray(list) && list.length > 0) {
+      setAppointments(list);
       setCurrentPage(cached.currentPage ?? 1);
       setTotalPages(cached.totalPages ?? 1);
       setLoading(false);
@@ -130,13 +132,48 @@ export default function AppointmentsPage() {
 
   // Set selected doctor to current user by default (for all roles) - only on initial load
   useEffect(() => {
-    if (user && user.userId && !doctorIdInitialized) {
-      // Set logged-in user as default selected doctor on initial load
-      // This applies to all roles: doctor, clinic_admin, super_admin, receptionist
-      setSelectedDoctorId(user.userId);
+    if (user && !doctorIdInitialized) {
+      // Only role "doctor" filters to own schedule; clinic_admin/receptionist/super_admin see all
+      const role = user.role;
+      if (role === 'doctor') {
+        setSelectedDoctorId(user.userId || '');
+      } else {
+        setSelectedDoctorId('');
+      }
       setDoctorIdInitialized(true);
     }
   }, [user, doctorIdInitialized]);
+
+  // After booking: clear doctor filter, clear cache, refetch (no doctor filter), then drop ?from=book
+  const fromBook = searchParams.get('from') === 'book';
+  useEffect(() => {
+    if (!fromBook || !user) return;
+    setSelectedDoctorId('');
+    if (tenantId) routeCache.clear(ROUTE_KEY, tenantId);
+    clearCacheByPrefix('/appointments');
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('from');
+    const newPath = params.toString() ? `/appointments?${params}` : '/appointments';
+    router.replace(newPath, { scroll: false });
+    setLoading(true);
+    const q = new URLSearchParams({ page: '1', limit: '10' });
+    if (selectedStatus) q.append('status', selectedStatus);
+    if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) q.append('date', dateFromUrl);
+    apiClient
+      .get(`/appointments?${q}`)
+      .then((response) => {
+        if (response?.success && response?.data) {
+          const list = extractArrayData(response) || [];
+          setAppointments(Array.isArray(list) ? list : []);
+          setCurrentPage(1);
+          const pages = response.data.pagination?.totalPages ?? 1;
+          setTotalPages(pages);
+          if (tenantId) routeCache.set(ROUTE_KEY, tenantId, { appointments: list, currentPage: 1, totalPages: pages });
+        }
+      })
+      .catch((err) => logger.error('Failed to fetch appointments after book', err))
+      .finally(() => setLoading(false));
+  }, [fromBook, user, tenantId, router, searchParams, selectedStatus, dateFromUrl]);
 
   const formatDateDisplay = useCallback(
     (date, options) => {
@@ -240,10 +277,7 @@ export default function AppointmentsPage() {
         const response = await apiClient.get(`/appointments?${params}`);
         if (response.success && response.data) {
           const appointmentsList = extractArrayData(response);
-          const filteredAppointments = appointmentsList.filter(
-            (apt) => !apt.isTelemedicine && apt.status !== 'arrived',
-          );
-          const list = Array.isArray(filteredAppointments) ? filteredAppointments : [];
+          const list = Array.isArray(appointmentsList) ? appointmentsList : [];
           const pages = response.data.pagination?.totalPages || 1;
           setAppointments(list);
           setTotalPages(pages);
@@ -269,10 +303,11 @@ export default function AppointmentsPage() {
       router.push('/login');
       return;
     }
-    if (!authLoading && user) {
+    if (!authLoading && user && !fromBook) {
+      clearCacheByPrefix('/appointments');
       fetchAppointments();
     }
-  }, [authLoading, user, router, fetchAppointments]);
+  }, [authLoading, user, router, fetchAppointments, fromBook]);
 
   // Setup automatic background refresh every 60 seconds
   useEffect(() => {
@@ -431,11 +466,25 @@ export default function AppointmentsPage() {
   const columns = [
     {
       header: t('appointments.patient'),
-      accessor: (row) => `${row.patientId?.firstName || ''} ${row.patientId?.lastName || ''}`,
+      accessor: (row) => {
+        const p = row.patientId;
+        const name =
+          p && (p.firstName != null || p.lastName != null)
+            ? `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim()
+            : '';
+        return name || (row.patientId?._id ? String(row.patientId._id).slice(-6) : '—');
+      },
     },
     {
       header: t('appointments.doctor'),
-      accessor: (row) => `${row.doctorId?.firstName || ''} ${row.doctorId?.lastName || ''}`,
+      accessor: (row) => {
+        const d = row.doctorId;
+        const name =
+          d && (d.firstName != null || d.lastName != null)
+            ? `${d.firstName ?? ''} ${d.lastName ?? ''}`.trim()
+            : '';
+        return name || (row.doctorId?._id ? `Dr. ${String(row.doctorId._id).slice(-6)}` : '—');
+      },
     },
     {
       header: t('appointments.date'),

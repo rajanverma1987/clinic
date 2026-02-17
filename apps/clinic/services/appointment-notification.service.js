@@ -9,7 +9,6 @@ import { sendEmail } from '@/lib/email/email-service';
 import { sendSMS } from '@/lib/sms/sms-service';
 import { logger } from '@/lib/utils/logger.js';
 import Appointment from '@/models/Appointment';
-import Doctor from '@/models/Doctor';
 import User from '@/models/User';
 import { createNotification } from './notification.service';
 
@@ -34,9 +33,23 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
     const doctor = appointment.doctorId;
     const tenant = appointment.tenantId;
 
-    // Get doctor user details
-    const doctorUser = await User.findById(doctor.userId).lean();
-    const doctorProfile = await Doctor.findOne({ userId: doctorUser._id }).lean();
+    if (!patient || !doctor) {
+      logger.warn('Appointment missing patient or doctor for confirmation', {
+        appointmentId,
+        hasPatient: !!patient,
+        hasDoctor: !!doctor,
+      });
+      return { success: false, skipped: true };
+    }
+
+    // Appointment.doctorId is ref to User (populated = doctor user); use directly for name
+    const doctorUser = doctor && (doctor.firstName != null || doctor.lastName != null)
+      ? doctor
+      : await User.findById(doctor._id).lean();
+    if (!doctorUser) {
+      logger.warn('Doctor user not found for appointment confirmation', { appointmentId });
+      return { success: false, skipped: true };
+    }
 
     // Format appointment date/time
     const appointmentDate = new Date(appointment.appointmentDate || appointment.startTime);
@@ -75,7 +88,7 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
         }
         <p>Please arrive 10 minutes before your appointment time.</p>
         <p>If you need to reschedule or cancel, please contact us at least 24 hours in advance.</p>
-        <p>Thank you for choosing ${tenant.name || 'our clinic'}.</p>
+        <p>Thank you for choosing ${tenant?.name || 'our clinic'}.</p>
       </div>
     `;
 
@@ -94,11 +107,11 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
       ${appointment.type === 'video' ? `Video Call Link: ${(process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '')}/telemedicine/${appointment._id}` : ''}
       
       Please arrive 10 minutes before your appointment time.
-      Thank you for choosing ${tenant.name || 'our clinic'}.
+      Thank you for choosing ${tenant?.name || 'our clinic'}.
     `;
 
     // SMS content
-    const smsText = `Appointment confirmed with Dr. ${doctorUser.firstName} ${doctorUser.lastName} on ${formattedDate} at ${formattedTime}. Appointment #${appointment.appointmentNumber || appointment._id.slice(-8)}. ${tenant.name || 'Clinic'}`;
+    const smsText = `Appointment confirmed with Dr. ${doctorUser.firstName} ${doctorUser.lastName} on ${formattedDate} at ${formattedTime}. Appointment #${appointment.appointmentNumber || appointment._id.slice(-8)}. ${tenant?.name || 'Clinic'}`;
 
     // Send email
     if (patient.email) {
@@ -124,15 +137,17 @@ export async function sendAppointmentConfirmation(appointmentId, tenantId) {
       );
     }
 
-    // Create in-app notification
-    await createNotification({
-      userId: patient.userId,
-      tenantId,
-      title: 'Appointment Confirmed',
-      message: `Your appointment with Dr. ${doctorUser.firstName} ${doctorUser.lastName} on ${formattedDate} has been confirmed.`,
-      type: 'appointment',
-      relatedId: appointment._id,
-    });
+    // Create in-app notification for patient (only if patient has a user account)
+    if (patient.userId) {
+      await createNotification({
+        userId: patient.userId,
+        tenantId,
+        title: 'Appointment Confirmed',
+        message: `Your appointment with Dr. ${doctorUser.firstName} ${doctorUser.lastName} on ${formattedDate} has been confirmed.`,
+        type: 'appointment',
+        relatedId: appointment._id,
+      });
+    }
 
     // Notify doctor
     if (doctorUser._id) {
@@ -174,7 +189,24 @@ export async function sendAppointmentReminder(appointmentId, tenantId) {
     const doctor = appointment.doctorId;
     const tenant = appointment.tenantId;
 
-    const doctorUser = await User.findById(doctor.userId).lean();
+    if (!patient || !doctor) {
+      logger.warn('Appointment missing patient or doctor for reminder', {
+        appointmentId,
+        hasPatient: !!patient,
+        hasDoctor: !!doctor,
+      });
+      return { success: false, skipped: true };
+    }
+
+    // Appointment.doctorId is ref to User (populated = doctor user)
+    const doctorUser =
+      doctor && (doctor.firstName != null || doctor.lastName != null)
+        ? doctor
+        : await User.findById(doctor._id).lean();
+    if (!doctorUser) {
+      logger.warn('Doctor user not found for appointment reminder', { appointmentId });
+      return { success: false, skipped: true };
+    }
 
     const appointmentDate = new Date(appointment.appointmentDate || appointment.startTime);
     const formattedDate = appointmentDate.toLocaleDateString('en-US', {
@@ -201,15 +233,17 @@ export async function sendAppointmentReminder(appointmentId, tenantId) {
       );
     }
 
-    // Create in-app notification
-    await createNotification({
-      userId: patient.userId,
-      tenantId,
-      title: 'Appointment Reminder',
-      message: `Reminder: You have an appointment with Dr. ${doctorUser.firstName} ${doctorUser.lastName} tomorrow at ${formattedTime}.`,
-      type: 'appointment',
-      relatedId: appointment._id,
-    });
+    // Create in-app notification for patient (only if patient has a user account)
+    if (patient.userId) {
+      await createNotification({
+        userId: patient.userId,
+        tenantId,
+        title: 'Appointment Reminder',
+        message: `Reminder: You have an appointment with Dr. ${doctorUser.firstName} ${doctorUser.lastName} tomorrow at ${formattedTime}.`,
+        type: 'appointment',
+        relatedId: appointment._id,
+      });
+    }
 
     return { success: true };
   } catch (error) {

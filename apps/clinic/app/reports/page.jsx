@@ -15,9 +15,10 @@ import { apiClient } from '@/lib/api/client';
 import { canExportData, canViewRevenueAnalytics } from '@/lib/permissions/cursor-md-matrix';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
-import { showError } from '@/lib/utils/toast';
+import { showError, showSuccess } from '@/lib/utils/toast';
+import { loadJsPDF } from '@/lib/utils/dynamic-imports';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 const REPORTS_AUTO_REFRESH_MS = 2 * 60 * 1000; // 2 minutes – silent refresh for current tab
 const ALL_REPORTS_TAB_IDS = ['revenue', 'doctors', 'patients', 'appointments', 'inventory'];
@@ -36,7 +37,7 @@ export default function ReportsPage() {
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
-  const { currency, locale } = useSettings();
+  const { currency, locale, settings } = useSettings();
   const visibleTabIds = useMemo(() => getVisibleTabIds(user?.role), [user?.role]);
   const defaultTab = visibleTabIds[0] || 'patients';
   const tabFromUrl = searchParams.get('tab');
@@ -54,6 +55,7 @@ export default function ReportsPage() {
   const [inventoryReport, setInventoryReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [reportError, setReportError] = useState(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const reportsRefreshIntervalRef = useRef(null);
 
   useEffect(() => {
@@ -266,6 +268,239 @@ export default function ReportsPage() {
   const formatCurrency = (amount) => {
     return formatCurrencyUtil(amount, currency, locale);
   };
+
+  /** Load logo image as base64 for PDF (clinic logo or default). */
+  const loadLogoAsBase64 = useCallback((logoUrl) => {
+    return new Promise((resolve) => {
+      const src = logoUrl || '/images/logoclinic.png';
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          } else resolve(null);
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }, []);
+
+  /** Fill PDF with header (logo + title), divider, and report content in table format. */
+  const fillReportPdf = useCallback(
+    (pdf, overrideData, logoBase64) => {
+      const rev = overrideData && activeTab === 'revenue' ? overrideData : revenueReport;
+      const doc = overrideData && activeTab === 'doctors' ? overrideData : doctorReport;
+      const pat = overrideData && activeTab === 'patients' ? overrideData : patientReport;
+      const apt = overrideData && activeTab === 'appointments' ? overrideData : appointmentReport;
+      const inv = overrideData && activeTab === 'inventory' ? overrideData : inventoryReport;
+
+      const dateRangeStr = `${startDate} to ${endDate}`;
+      const generatedStr = new Date().toLocaleString(locale || 'en-US');
+      const margin = 14;
+      const pageWidth = 210;
+      const contentWidth = pageWidth - margin * 2;
+      let y = 10;
+      const rowHeight = 8;
+      const cellPadding = 2;
+
+      const drawLine = () => {
+        pdf.setDrawColor(180, 180, 180);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 6;
+      };
+
+      // Header: logo + report title
+      if (logoBase64) {
+        try {
+          pdf.addImage(logoBase64, 'PNG', margin, 8, 36, 12);
+        } catch {
+          // ignore if image fails
+        }
+        y = 24;
+      } else {
+        y = 12;
+      }
+
+      let title = t('reports.title');
+      if (activeTab === 'revenue') title = t('reports.revenue');
+      else if (activeTab === 'doctors') title = t('reports.doctorPerformance') || 'Doctor Performance';
+      else if (activeTab === 'patients') title = t('reports.patients');
+      else if (activeTab === 'appointments') title = t('reports.appointments');
+      else if (activeTab === 'inventory') title = t('reports.inventory');
+
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(title, logoBase64 ? 54 : margin, y);
+      pdf.setFont('helvetica', 'normal');
+      y += 6;
+      pdf.setFontSize(9);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text(`${t('reports.dateRange') || 'Date range'}: ${dateRangeStr}  |  ${t('reports.generated') || 'Generated'}: ${generatedStr}`, margin, y);
+      pdf.setTextColor(0, 0, 0);
+      y += 8;
+      drawLine();
+
+      // Helper: draw a 2-column summary table (label | value)
+      const drawSummaryTable = (rows) => {
+        const col1 = margin + cellPadding;
+        const col2 = margin + contentWidth * 0.55;
+        const tableTop = y;
+        pdf.setFillColor(245, 245, 245);
+        pdf.rect(margin, tableTop, contentWidth, rowHeight, 'F');
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(t('reports.metric') || 'Metric', col1, tableTop + 5.5);
+        pdf.text(t('reports.value') || 'Value', col2, tableTop + 5.5);
+        pdf.setFont('helvetica', 'normal');
+        y = tableTop + rowHeight;
+        pdf.setDrawColor(220, 220, 220);
+        pdf.setLineWidth(0.1);
+        rows.forEach(([label, value]) => {
+          pdf.line(margin, y, pageWidth - margin, y);
+          pdf.text(String(label), col1, y + 5.5);
+          pdf.text(String(value), col2, y + 5.5);
+          y += rowHeight;
+        });
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 10;
+      };
+
+      if (activeTab === 'revenue' && rev?.summary) {
+        drawSummaryTable([
+          [t('reports.totalRevenue'), formatCurrency(rev.summary.totalRevenue || 0)],
+          [t('reports.totalPaid'), formatCurrency(rev.summary.totalPaid || 0)],
+          [t('reports.totalPending'), formatCurrency(rev.summary.totalPending || 0)],
+          [t('reports.invoices'), String(rev.summary.invoiceCount || 0)],
+        ]);
+      } else if (activeTab === 'doctors' && doc?.summary) {
+        drawSummaryTable([
+          [t('reports.totalAppointments'), String(doc.summary.totalAppointments || 0)],
+          [t('reports.totalRevenue'), formatCurrency(doc.summary.totalRevenue || 0)],
+          [t('reports.completionRate'), `${Math.round(doc.summary.averageCompletionRate || 0)}%`],
+          [t('reports.totalDoctors') || 'Total Doctors', String(doc.summary.totalDoctors || 0)],
+        ]);
+        if (doc.doctors?.length) {
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(t('reports.doctorPerformance') || 'Doctor Performance', margin, y);
+          y += 8;
+          const colW = [55, 22, 22, 20, 22, 35];
+          const cols = [margin + cellPadding, margin + colW[0], margin + colW[0] + colW[1], margin + colW[0] + colW[1] + colW[2], margin + colW[0] + colW[1] + colW[2] + colW[3], margin + colW[0] + colW[1] + colW[2] + colW[3] + colW[4]];
+          const headers = [t('staff.fullName') || 'Doctor', t('reports.totalAppointments'), t('reports.completed'), t('reports.noShows'), t('reports.completionRate'), t('reports.totalRevenue')];
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(margin, y, contentWidth, rowHeight, 'F');
+          pdf.setFont('helvetica', 'bold');
+          headers.forEach((h, i) => pdf.text(h, cols[i] + 1, y + 5.5));
+          pdf.setFont('helvetica', 'normal');
+          y += rowHeight;
+          pdf.setDrawColor(220, 220, 220);
+          doc.doctors.forEach((r) => {
+            if (y > 275) return;
+            pdf.line(margin, y, pageWidth - margin, y);
+            const doctorName = (r.doctorName || '—').length > 20 ? (r.doctorName || '—').slice(0, 18) + '…' : (r.doctorName || '—');
+            pdf.text(doctorName, cols[0] + 1, y + 5.5);
+            pdf.text(String(r.totalAppointments ?? 0), cols[1] + 1, y + 5.5);
+            pdf.text(String(r.completed ?? 0), cols[2] + 1, y + 5.5);
+            pdf.text(String(r.noShows ?? 0), cols[3] + 1, y + 5.5);
+            pdf.text(`${r.completionRate ?? 0}%`, cols[4] + 1, y + 5.5);
+            pdf.text(formatCurrency(r.totalRevenue || 0), cols[5] + 1, y + 5.5);
+            y += rowHeight;
+          });
+          pdf.line(margin, y, pageWidth - margin, y);
+          y += 8;
+        }
+      } else if (activeTab === 'patients' && pat?.summary) {
+        drawSummaryTable([
+          [t('reports.totalPatients'), String(pat.summary.totalPatients || 0)],
+          [t('reports.newPatients'), String(pat.summary.newPatients || 0)],
+          [t('reports.activePatients'), String(pat.summary.activePatients || 0)],
+        ]);
+      } else if (activeTab === 'appointments' && apt?.summary) {
+        drawSummaryTable([
+          [t('reports.totalAppointments'), String(apt.summary.totalAppointments || 0)],
+          [t('reports.completed'), String(apt.summary.completed || 0)],
+          [t('appointments.scheduled'), String(apt.summary.scheduled || 0)],
+          [t('reports.noShows'), String(apt.summary.noShows || 0)],
+        ]);
+      } else if (activeTab === 'inventory' && inv?.summary) {
+        drawSummaryTable([
+          [t('reports.totalItems'), String(inv.summary.totalItems || 0)],
+          [t('reports.lowStockItems'), String(inv.summary.lowStockCount || 0)],
+          [t('reports.expiredItems'), String(inv.summary.expiredCount || 0)],
+          [t('reports.totalValue'), formatCurrency(inv.summary.totalValue || 0)],
+        ]);
+      } else {
+        pdf.setFontSize(10);
+        pdf.text(t('reports.noData') || 'No report data available. Select a date range and generate the report.', margin, y);
+      }
+    },
+    [
+      activeTab,
+      startDate,
+      endDate,
+      revenueReport,
+      doctorReport,
+      patientReport,
+      appointmentReport,
+      inventoryReport,
+      formatCurrency,
+      t,
+      locale,
+    ],
+  );
+
+  const handleGenerateReportPDF = useCallback(async () => {
+    const getReportData = async () => {
+      const params = new URLSearchParams({
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
+        ...(activeTab === 'revenue' && { includeBreakdown: 'true', groupBy: 'day' }),
+        ...(activeTab === 'patients' && { includeNewPatients: 'true', groupBy: 'day' }),
+        ...(activeTab === 'appointments' && { groupBy: 'day', includeNoShows: 'true' }),
+        ...(activeTab === 'inventory' && { includeLowStock: 'true', includeExpired: 'true' }),
+        ...(activeTab === 'doctors' && { groupBy: 'day' }),
+      });
+      const url = `/reports/${activeTab}?${params}`;
+      const response = await apiClient.get(url);
+      if (response?.success && response?.data) {
+        if (activeTab === 'revenue') setRevenueReport(response.data);
+        else if (activeTab === 'doctors') setDoctorReport(response.data);
+        else if (activeTab === 'patients') setPatientReport(response.data);
+        else if (activeTab === 'appointments') setAppointmentReport(response.data);
+        else if (activeTab === 'inventory') setInventoryReport(response.data);
+        return response.data;
+      }
+      return null;
+    };
+    setGeneratingPdf(true);
+    setReportError(null);
+    try {
+      const data = await getReportData();
+      const logoUrl = settings?.settings?.logo || null;
+      const logoBase64 = await loadLogoAsBase64(logoUrl);
+      const JsPDF = await loadJsPDF();
+      const pdf = new JsPDF('p', 'mm', 'a4');
+      fillReportPdf(pdf, data !== null ? data : undefined, logoBase64);
+      const name = `report-${activeTab}-${startDate}-to-${endDate}.pdf`;
+      pdf.save(name);
+      showSuccess(t('reports.pdfDownloaded') || 'Report downloaded as PDF');
+    } catch (err) {
+      logger.error('Failed to generate report PDF', err);
+      showError(err?.message || t('reports.fetchError'));
+    } finally {
+      setGeneratingPdf(false);
+    }
+  }, [activeTab, startDate, endDate, fillReportPdf, loadLogoAsBase64, settings, t]);
 
   const exportCSV = async (reportType) => {
     try {
@@ -506,17 +741,13 @@ export default function ReportsPage() {
               />
             </div>
             <Button
-              onClick={() => {
-                if (activeTab === 'revenue') fetchRevenueReport();
-                else if (activeTab === 'doctors') fetchDoctorReport();
-                else if (activeTab === 'patients') fetchPatientReport();
-                else if (activeTab === 'appointments') fetchAppointmentReport();
-                else if (activeTab === 'inventory') fetchInventoryReport();
-              }}
-              isLoading={loading}
+              onClick={handleGenerateReportPDF}
+              isLoading={loading || generatingPdf}
+              disabled={generatingPdf}
               className='filter-button'
+              title={t('reports.downloadPdfHint') || 'Generate and download report as PDF'}
             >
-              {t('reports.generateReport')}
+              {generatingPdf ? t('reports.generatingPdf') || 'Generating PDF…' : t('reports.generateReport')}
             </Button>
             <Button
               variant='secondary'

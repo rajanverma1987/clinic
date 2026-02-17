@@ -18,6 +18,7 @@
  * @since 1.0.0
  */
 
+import mongoose from 'mongoose';
 import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import { PRIMARY_900 } from '@/lib/constants/brand-colors';
 import connectDB from '@/lib/db/connection.js';
@@ -563,17 +564,30 @@ export async function listAppointments(query, tenantId, userId) {
     limit: query.limit,
   });
 
+  // Normalize tenantId to ObjectId so filter matches Appointment documents (schema uses ObjectId)
+  const resolvedTenantId =
+    tenantId && typeof tenantId === 'string' && mongoose.Types.ObjectId.isValid(tenantId)
+      ? new mongoose.Types.ObjectId(tenantId)
+      : tenantId;
+
   // Build filter
-  const filter = withTenant(tenantId, {
+  const filter = withTenant(resolvedTenantId, {
     deletedAt: null,
   });
 
+  // Normalize ObjectId filters so string params from API match stored ObjectIds
   if (query.patientId) {
-    filter.patientId = query.patientId;
+    filter.patientId =
+      typeof query.patientId === 'string' && mongoose.Types.ObjectId.isValid(query.patientId)
+        ? new mongoose.Types.ObjectId(query.patientId)
+        : query.patientId;
   }
 
   if (query.doctorId) {
-    filter.doctorId = query.doctorId;
+    filter.doctorId =
+      typeof query.doctorId === 'string' && mongoose.Types.ObjectId.isValid(query.doctorId)
+        ? new mongoose.Types.ObjectId(query.doctorId)
+        : query.doctorId;
   }
 
   if (query.status) {
@@ -595,11 +609,28 @@ export async function listAppointments(query, tenantId, userId) {
 
   // Date filters - check both appointmentDate and startTime to catch all appointments
   if (query.date) {
-    const date = new Date(query.date);
-    const startOfDay = new Date(date);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    // Parse date-only (YYYY-MM-DD) as UTC so stored UTC dates match consistently
+    const dateStr = String(query.date).trim();
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+    const startOfDay = isDateOnly
+      ? new Date(
+          Date.UTC(
+            parseInt(dateStr.slice(0, 4), 10),
+            parseInt(dateStr.slice(5, 7), 10) - 1,
+            parseInt(dateStr.slice(8, 10), 10),
+            0,
+            0,
+            0,
+            0,
+          ),
+        )
+      : new Date(query.date);
+    if (!isDateOnly) {
+      startOfDay.setUTCHours(0, 0, 0, 0);
+    }
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
+    endOfDay.setUTCMilliseconds(-1);
     // Filter by both appointmentDate and startTime to catch all appointments on that date
     filter.$or = [
       { appointmentDate: { $gte: startOfDay, $lte: endOfDay } },
@@ -613,8 +644,23 @@ export async function listAppointments(query, tenantId, userId) {
     });
   } else if (query.startDate || query.endDate) {
     // When filtering by date range, check both appointmentDate and startTime
-    const startDate = query.startDate ? new Date(query.startDate) : null;
-    const endDate = query.endDate ? new Date(query.endDate) : null;
+    let startDate = query.startDate ? new Date(query.startDate) : null;
+    let endDate = query.endDate ? new Date(query.endDate) : null;
+
+    // If endDate is date-only (e.g. "YYYY-MM-DD") or same day as startDate, use end of day so
+    // single-day queries (e.g. calendar) include all appointments that day
+    if (endDate) {
+      const endDateOnly =
+        typeof query.endDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(query.endDate.trim());
+      if (endDateOnly || (startDate && startDate.toDateString() === endDate.toDateString())) {
+        endDate = new Date(endDate);
+        endDate.setUTCHours(23, 59, 59, 999);
+      }
+    }
+    if (startDate && typeof query.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(query.startDate.trim())) {
+      startDate = new Date(startDate);
+      startDate.setUTCHours(0, 0, 0, 0);
+    }
 
     logger.debug('Date filter (range):', {
       startDate: query.startDate,

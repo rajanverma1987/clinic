@@ -135,6 +135,11 @@ async function getHandler(req, user) {
       : await listAppointments(queryData, user.tenantId, user.userId);
 
     // Enhance response with incremental update metadata and normalize pagination format
+    const totalPagesVal = result.pagination
+      ? result.pagination.totalPages ||
+        result.pagination.pages ||
+        Math.ceil((result.pagination.total || 0) / (result.pagination.limit || 50))
+      : 0;
     const enhancedResult = {
       data: result.data || [],
       pagination: result.pagination
@@ -142,16 +147,15 @@ async function getHandler(req, user) {
             total: result.pagination.total,
             page: result.pagination.page,
             limit: result.pagination.limit,
-            pages:
-              result.pagination.totalPages ||
-              result.pagination.pages ||
-              Math.ceil(result.pagination.total / result.pagination.limit),
+            pages: totalPagesVal,
+            totalPages: totalPagesVal,
           }
         : {
             total: 0,
             page: parseInt(queryData.page) || 1,
             limit: parseInt(queryData.limit) || 50,
             pages: 0,
+            totalPages: 0,
           },
       isIncremental,
       timestamp: new Date().toISOString(),

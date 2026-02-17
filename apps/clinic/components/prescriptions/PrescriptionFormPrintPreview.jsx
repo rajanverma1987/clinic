@@ -212,8 +212,8 @@ export function PrescriptionFormPrintPreview({
     setDownloadingPdf(true);
     let tempDiv = null;
     try {
-      const { jsPDF } = await loadJsPDF();
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const JsPDF = await loadJsPDF();
+      const pdf = new JsPDF('p', 'mm', 'a4');
       tempDiv = document.createElement('div');
       tempDiv.innerHTML = printHtml;
       tempDiv.style.width = '210mm';

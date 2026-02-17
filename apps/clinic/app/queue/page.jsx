@@ -43,7 +43,6 @@ export default function QueuePage() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
-  const [resolvedDoctorId, setResolvedDoctorId] = useState(null); // Doctor document _id for doctor role
 
   const isClinicAdmin = user?.role === 'clinic_admin';
   const isDoctor = user?.role === 'doctor';
@@ -71,35 +70,22 @@ export default function QueuePage() {
     });
   };
 
-  // Resolve Doctor document _id when user is a doctor (Queue stores doctorId = Doctor._id, not User._id)
+  // Queue stores doctorId as User _id (ref: 'User'). Use current user's id for doctor role; for clinic_admin use selected doctor's User id from dropdown.
   useEffect(() => {
-    const validUserId = userId && userId !== 'undefined' && String(userId).trim() !== '';
-    if (isDoctor && validUserId) {
-      apiClient.get(`/doctors/user/${encodeURIComponent(userId)}`).then((res) => {
-        if (res.success && res.data?._id) {
-          setResolvedDoctorId(res.data._id);
-        }
-      });
-    } else {
-      setResolvedDoctorId(null);
-    }
-  }, [isDoctor, userId]);
-
-  useEffect(() => {
-    if (isDoctor && resolvedDoctorId) {
-      currentDoctorIdRef.current = resolvedDoctorId;
+    if (isDoctor && userId) {
+      currentDoctorIdRef.current = String(userId);
     } else if (isClinicAdmin) {
       currentDoctorIdRef.current = selectedDoctorId || '';
     } else {
       currentDoctorIdRef.current = '';
     }
-  }, [isDoctor, isClinicAdmin, resolvedDoctorId, selectedDoctorId]);
+  }, [isDoctor, isClinicAdmin, userId, selectedDoctorId]);
 
   useEffect(() => {
     if (isClinicAdmin) {
       apiClient.get('/doctors').then((res) => {
         if (res.success && res.data) {
-          const list = Array.isArray(res.data) ? res.data : res.data.doctors || res.data.data || [];
+          const list = extractArrayData(res) || [];
           setDoctors(list);
         }
       });
@@ -157,10 +143,9 @@ export default function QueuePage() {
     [showCompleted, userId],
   );
 
-  // Effect: Initial fetch and refetch on doctor change. For doctors, wait until resolvedDoctorId is set.
+  // Effect: Initial fetch and refetch on doctor change.
   useEffect(() => {
     if (authLoading || !user) return;
-    if (isDoctor && !resolvedDoctorId) return; // Queue filter needs Doctor _id, not User id
 
     if (isInitialMountRef.current) {
       fetchQueue(true);
@@ -168,14 +153,14 @@ export default function QueuePage() {
     } else {
       fetchQueue(false);
     }
-  }, [authLoading, user, isDoctor, resolvedDoctorId, fetchQueue]);
+  }, [authLoading, user, isDoctor, isClinicAdmin, selectedDoctorId, fetchQueue]);
 
   // Refetch when showCompleted changes
   useEffect(() => {
-    if (!authLoading && user && (!isDoctor || resolvedDoctorId)) {
+    if (!authLoading && user) {
       fetchQueue(false);
     }
-  }, [showCompleted, authLoading, user, isDoctor, resolvedDoctorId, fetchQueue]);
+  }, [showCompleted, authLoading, user, fetchQueue]);
 
   const handleStatusChange = async (queueId, newStatus) => {
     try {
@@ -443,11 +428,17 @@ export default function QueuePage() {
                     aria-label={t('queue.selectDoctor')}
                   >
                     <option value=''>{t('queue.selectDoctor')}</option>
-                    {doctors.map((d) => (
-                      <option key={d._id} value={d._id}>
-                        {d.firstName} {d.lastName}
-                      </option>
-                    ))}
+                    {doctors.map((d) => {
+                      const doctorUserId = d.userId?._id ?? d.userId ?? d._id;
+                      const label = d.userId
+                        ? `${d.userId.firstName || ''} ${d.userId.lastName || ''}`.trim() || d.userId.email || String(doctorUserId).slice(-6)
+                        : `${d.firstName || ''} ${d.lastName || ''}`.trim() || d.email || String(d._id).slice(-6);
+                      return (
+                        <option key={d._id} value={String(doctorUserId)}>
+                          {label}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>,
               ]
