@@ -13,7 +13,9 @@ import { extractArrayData, extractPaginationData } from '@/lib/utils/api-respons
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+const SEARCH_DEBOUNCE_MS = 400;
 
 export default function AdminActivityLogsPage() {
   const router = useRouter();
@@ -22,13 +24,16 @@ export default function AdminActivityLogsPage() {
   const { user, loading: authLoading } = useAuth();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [userIdFilter, setUserIdFilter] = useState(() => searchParams.get('userId') || '');
   const [actionFilter, setActionFilter] = useState('');
   const [resourceFilter, setResourceFilter] = useState('');
   const [ipFilter, setIpFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [searchTermInput, setSearchTermInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const searchDebounceRef = useRef(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, pages: 1 });
   const [exporting, setExporting] = useState(false);
   const [cleanupLoading, setCleanupLoading] = useState(false);
@@ -39,32 +44,23 @@ export default function AdminActivityLogsPage() {
     setUserIdFilter(userId);
   }, [searchParams]);
 
+  // Debounce search input so we don't fetch on every keystroke
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setSearchTerm(searchTermInput);
+      searchDebounceRef.current = null;
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchTermInput]);
+
   useEffect(() => {
     setPagination((p) => ({ ...p, page: 1 }));
   }, [userIdFilter, actionFilter, resourceFilter, ipFilter, startDate, endDate, searchTerm]);
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      if (user.role !== 'super_admin') {
-        router.push('/dashboard');
-        return;
-      }
-      fetchLogs();
-    }
-  }, [
-    authLoading,
-    user,
-    pagination.page,
-    userIdFilter,
-    actionFilter,
-    resourceFilter,
-    ipFilter,
-    startDate,
-    endDate,
-    searchTerm,
-  ]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -95,8 +91,35 @@ export default function AdminActivityLogsPage() {
       showError(t('admin.activityLogsFetchFailed'));
     } finally {
       setLoading(false);
+      setInitialLoadDone(true);
     }
-  };
+  }, [
+    pagination.page,
+    pagination.limit,
+    userIdFilter,
+    actionFilter,
+    resourceFilter,
+    ipFilter,
+    startDate,
+    endDate,
+    searchTerm,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role !== 'super_admin') {
+        router.push('/dashboard');
+        return;
+      }
+      fetchLogs();
+    }
+  }, [
+    authLoading,
+    user,
+    pagination.page,
+    fetchLogs,
+  ]);
 
   const handleExportCsv = () => {
     if (!logs.length) {
@@ -167,7 +190,8 @@ export default function AdminActivityLogsPage() {
     }
   };
 
-  if (authLoading || loading)
+  // Full-page loading only on initial load; refetch (e.g. after debounced search) keeps content visible
+  if (authLoading || (loading && !initialLoadDone))
     return (
       <Layout
         title={t('admin.activityLogs')}
@@ -266,8 +290,8 @@ export default function AdminActivityLogsPage() {
                   placeholder={
                     t('admin.activityLogsSearchPlaceholder') || 'Search action, resource...'
                   }
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchTermInput}
+                  onChange={(e) => setSearchTermInput(e.target.value)}
                   className='form-control-height w-full'
                 />
               </div>
@@ -283,6 +307,7 @@ export default function AdminActivityLogsPage() {
                   setIpFilter('');
                   setStartDate('');
                   setEndDate('');
+                  setSearchTermInput('');
                   setSearchTerm('');
                   setPagination((p) => ({ ...p, page: 1 }));
                   setTimeout(() => fetchLogs(), 0);
@@ -350,7 +375,10 @@ export default function AdminActivityLogsPage() {
                 </Button>
               </div>
             </div>
-            {logs.length === 0 ? (
+            {loading && initialLoadDone && (
+              <p className='text-body-sm text-neutral-500 mb-2'>{t('common.loading')}...</p>
+            )}
+            {logs.length === 0 && !loading ? (
               <p className='text-neutral-500'>{t('admin.activityLogsNotFound')}</p>
             ) : (
               <div className='clinic-table-wrap'>
