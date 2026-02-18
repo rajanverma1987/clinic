@@ -49,10 +49,6 @@ const nextConfig = {
   swcMinify: true,
   // Optimize fonts
   optimizeFonts: true,
-  eslint: {
-    // Disable ESLint during builds
-    ignoreDuringBuilds: true,
-  },
   webpack: (config, { isServer, dev, webpack }) => {
     // Ensure @/ alias resolves to app root (100% reliable for FormTransition, ImageTransition, etc.)
     config.resolve = config.resolve || {};

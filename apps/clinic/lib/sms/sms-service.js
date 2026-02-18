@@ -62,22 +62,36 @@ async function sendViaTwilio(to, message, config) {
   }
 }
 
+/** Valid AWS region identifiers (GHSA-j965-2qgj-vjmq) */
+const VALID_AWS_REGIONS = new Set([
+  'us-east-1', 'us-east-2', 'us-west-1', 'us-west-2', 'af-south-1', 'ap-east-1',
+  'ap-south-1', 'ap-south-2', 'ap-southeast-1', 'ap-southeast-2', 'ap-southeast-3',
+  'ap-northeast-1', 'ap-northeast-2', 'ap-northeast-3', 'ca-central-1', 'ca-west-1',
+  'eu-central-1', 'eu-central-2', 'eu-west-1', 'eu-west-2', 'eu-west-3', 'eu-south-1',
+  'eu-south-2', 'eu-north-1', 'me-south-1', 'me-central-1', 'sa-east-1', 'il-central-1',
+]);
+
 /**
- * Send SMS using AWS SNS
+ * Send SMS using AWS SNS (v3 client – no vulnerable aws-sdk v2)
  */
 async function sendViaAWS(to, message, config) {
   try {
-    const AWS = await import('aws-sdk');
-    const sns = new AWS.SNS({
-      accessKeyId: config.apiKey,
-      secretAccessKey: config.apiSecret,
-      region: process.env.AWS_REGION || 'us-east-1',
+    const rawRegion = process.env.AWS_REGION || 'us-east-1';
+    const region = VALID_AWS_REGIONS.has(String(rawRegion).toLowerCase()) ? rawRegion : 'us-east-1';
+    const { SNSClient, PublishCommand } = await import('@aws-sdk/client-sns');
+    const client = new SNSClient({
+      region,
+      credentials: {
+        accessKeyId: config.apiKey,
+        secretAccessKey: config.apiSecret,
+      },
     });
-
-    const result = await sns.publish({
-      Message: message,
-      PhoneNumber: to,
-    }).promise();
+    const result = await client.send(
+      new PublishCommand({
+        Message: message,
+        PhoneNumber: to,
+      }),
+    );
 
     return {
       success: true,

@@ -17,10 +17,13 @@
     "build:website": "npm run build --workspace=@clinic-saas/website",
     "start": "npm run start --workspace=@clinic-saas/clinic",
     "start:clinic": "npm run start --workspace=@clinic-saas/clinic",
-    "start:website": "npm run start --workspace=@clinic-saas/website",
-    "lint": "npm run lint --workspace=@clinic-saas/clinic"
+    "start:website": "npm run start --workspace=@clinic-saas/website"
   },
   "engines": {
     "node": ">=18"
+  },
+  "overrides": {
+    "glob": "^11.0.0",
+    "fast-xml-parser": "^5.3.6"
   }
 }
