@@ -93,7 +93,8 @@ export default function AdminContentBlogPage() {
         if (res?.success) {
           showSuccess(t('admin.blogCreated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/blog');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.createFailed'));
         }
@@ -102,7 +103,8 @@ export default function AdminContentBlogPage() {
         if (res?.success) {
           showSuccess(t('admin.blogUpdated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/blog');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.updateFailed'));
         }
@@ -124,7 +126,8 @@ export default function AdminContentBlogPage() {
           const res = await apiClient.delete(`/admin/blog/${id}`);
           if (res?.success) {
             showSuccess(t('admin.blogDeleted'));
-            fetchList();
+            await apiClient.clearCacheForEndpoint('/admin/blog');
+            await fetchList();
           } else {
             showError(res?.error?.message || t('admin.deleteFailed'));
           }

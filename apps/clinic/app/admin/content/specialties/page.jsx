@@ -81,7 +81,8 @@ export default function AdminSpecialtiesPage() {
         if (res?.success) {
           showSuccess(t('admin.specialtyCreated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/specialties');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.createFailed'));
         }
@@ -90,7 +91,8 @@ export default function AdminSpecialtiesPage() {
         if (res?.success) {
           showSuccess(t('admin.specialtyUpdated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/specialties');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.updateFailed'));
         }
@@ -112,7 +114,8 @@ export default function AdminSpecialtiesPage() {
           const res = await apiClient.delete(`/admin/specialties/${id}`);
           if (res?.success) {
             showSuccess(t('admin.specialtyDeleted'));
-            fetchList();
+            await apiClient.clearCacheForEndpoint('/admin/specialties');
+            await fetchList();
           } else {
             showError(res?.error?.message || t('admin.deleteFailed'));
           }

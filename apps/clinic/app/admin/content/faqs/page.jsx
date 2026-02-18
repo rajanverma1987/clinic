@@ -93,7 +93,8 @@ export default function AdminContentFaqsPage() {
         if (res?.success) {
           showSuccess(t('admin.faqCreated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/faqs');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.createFailed'));
         }
@@ -102,7 +103,8 @@ export default function AdminContentFaqsPage() {
         if (res?.success) {
           showSuccess(t('admin.faqUpdated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/faqs');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.updateFailed'));
         }
@@ -124,7 +126,8 @@ export default function AdminContentFaqsPage() {
           const res = await apiClient.delete(`/admin/faqs/${id}`);
           if (res?.success) {
             showSuccess(t('admin.faqDeleted'));
-            fetchList();
+            await apiClient.clearCacheForEndpoint('/admin/faqs');
+            await fetchList();
           } else {
             showError(res?.error?.message || t('admin.deleteFailed'));
           }

@@ -104,7 +104,8 @@ export default function AdminContentBannersPage() {
         if (res?.success) {
           showSuccess(t('admin.bannerCreated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/banners');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.createFailed'));
         }
@@ -113,7 +114,8 @@ export default function AdminContentBannersPage() {
         if (res?.success) {
           showSuccess(t('admin.bannerUpdated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/banners');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.updateFailed'));
         }
@@ -135,7 +137,8 @@ export default function AdminContentBannersPage() {
           const res = await apiClient.delete(`/admin/banners/${id}`);
           if (res?.success) {
             showSuccess(t('admin.bannerDeleted'));
-            fetchList();
+            await apiClient.clearCacheForEndpoint('/admin/banners');
+            await fetchList();
           } else {
             showError(res?.error?.message || t('admin.deleteFailed'));
           }

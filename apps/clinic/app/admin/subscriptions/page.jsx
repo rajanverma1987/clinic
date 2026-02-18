@@ -36,9 +36,6 @@ const VIEW_TABLE = 'table';
 const VIEW_CARDS = 'cards';
 const VIEW_COMPARISON = 'comparison';
 
-/** Only real/correct plans per subscription spec */
-const ALLOWED_PLAN_NAMES = ['SOLO', 'CLINIC', 'ENTERPRISE'];
-
 // Available features: { key } for i18n, value is stored in API
 const AVAILABLE_FEATURES = [
   { key: 'planFeaturePatientManagement', value: 'Patient Management' },
@@ -327,8 +324,8 @@ export default function AdminSubscriptionsPage() {
     }).format(price / 100);
   };
 
-  /** Only real plans per spec (SOLO, CLINIC, ENTERPRISE) */
-  const displayPlans = plans.filter((p) => p && p.name && ALLOWED_PLAN_NAMES.includes(p.name));
+  /** All plans with a name (table/cards). Comparison view still uses COMPARISON_TABLE_PLAN_SLUGS for spec columns. */
+  const displayPlans = plans.filter((p) => p && p.name);
 
   /** Clinics count per plan (keyed by plan name) */
   const clinicsPerPlan = displayPlans.reduce((acc, plan) => {

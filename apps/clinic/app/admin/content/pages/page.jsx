@@ -92,7 +92,8 @@ export default function AdminContentPagesPage() {
         if (res?.success) {
           showSuccess(t('admin.pageCreated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/pages');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.createFailed'));
         }
@@ -101,7 +102,8 @@ export default function AdminContentPagesPage() {
         if (res?.success) {
           showSuccess(t('admin.pageUpdated'));
           closeModal();
-          fetchList();
+          await apiClient.clearCacheForEndpoint('/admin/pages');
+          await fetchList();
         } else {
           showError(res?.error?.message || t('admin.updateFailed'));
         }
@@ -123,7 +125,8 @@ export default function AdminContentPagesPage() {
           const res = await apiClient.delete(`/admin/pages/${id}`);
           if (res?.success) {
             showSuccess(t('admin.pageDeleted'));
-            fetchList();
+            await apiClient.clearCacheForEndpoint('/admin/pages');
+            await fetchList();
           } else {
             showError(res?.error?.message || t('admin.deleteFailed'));
           }

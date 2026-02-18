@@ -66,23 +66,23 @@ async function deleteHandler(req, user, id) {
   return NextResponse.json(successResponse({ _id: id, deleted: true }));
 }
 
-async function handlerGET(req, context) {
-  const authResult = await import('@/middleware/auth').then((m) => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
-  const params = await context.params;
-  return getHandler(req, authResult.user, params.id);
+async function handlerGET(req, user, context) {
+  const params = context?.params != null ? await Promise.resolve(context.params) : {};
+  const id = params.id;
+  if (!id) return NextResponse.json(errorResponse('Missing id', 'BAD_REQUEST'), { status: 400 });
+  return getHandler(req, user, id);
 }
-async function handlerPUT(req, context) {
-  const authResult = await import('@/middleware/auth').then((m) => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
-  const params = await context.params;
-  return putHandler(req, authResult.user, params.id);
+async function handlerPUT(req, user, context) {
+  const params = context?.params != null ? await Promise.resolve(context.params) : {};
+  const id = params.id;
+  if (!id) return NextResponse.json(errorResponse('Missing id', 'BAD_REQUEST'), { status: 400 });
+  return putHandler(req, user, id);
 }
-async function handlerDELETE(req, context) {
-  const authResult = await import('@/middleware/auth').then((m) => m.authenticate(req));
-  if ('error' in authResult) return authResult.error;
-  const params = await context.params;
-  return deleteHandler(req, authResult.user, params.id);
+async function handlerDELETE(req, user, context) {
+  const params = context?.params != null ? await Promise.resolve(context.params) : {};
+  const id = params.id;
+  if (!id) return NextResponse.json(errorResponse('Missing id', 'BAD_REQUEST'), { status: 400 });
+  return deleteHandler(req, user, id);
 }
 
 export const GET = withErrorHandler(
