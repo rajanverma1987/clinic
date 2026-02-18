@@ -84,8 +84,8 @@ export default function AdminSettingsCurrencyPage() {
       const response = await apiClient.put('/admin/settings/currency', payload);
       if (response.success) {
         showSuccess(t('admin.settingsSaved'));
+        await apiClient.clearCacheForEndpoint('/admin/settings');
         await fetchSettings();
-        if (response.data) setForm((f) => ({ ...f, ...response.data }));
       } else {
         showError(response.error?.message || t('admin.failedToSaveSettings'));
       }

@@ -219,7 +219,8 @@ export default function AdminSubscriptionsPage() {
           const response = await apiClient.delete(`/admin/subscription-plans/${plan._id}`);
           if (response?.success) {
             showSuccess(t('admin.planDeleted') || 'Plan deleted');
-            fetchPlans();
+            await apiClient.clearCacheForEndpoint('/admin/subscription-plans');
+            await fetchPlans();
           } else {
             showError(
               response?.error?.message || t('admin.planDeleteFailed') || 'Failed to delete plan',
@@ -301,6 +302,7 @@ export default function AdminSubscriptionsPage() {
             : t('admin.planCreated', 'Plan created successfully'),
         );
         handleCancel();
+        await apiClient.clearCacheForEndpoint('/admin/subscription-plans');
         await fetchPlans();
       } else {
         showError(response?.error?.message || t('admin.planUpdateFailed') || t('admin.planCreateFailed'));

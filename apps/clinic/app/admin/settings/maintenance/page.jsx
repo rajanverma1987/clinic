@@ -45,7 +45,8 @@ export default function AdminSettingsMaintenancePage() {
         maintenanceMode: !maintenanceMode,
       });
       if (res.success) {
-        setMaintenanceMode(!maintenanceMode);
+        await apiClient.clearCacheForEndpoint('/admin/settings');
+        await fetchSettings();
         showSuccess(
           !maintenanceMode
             ? t('admin.maintenanceEnabled') || 'Maintenance mode enabled'

@@ -18,6 +18,7 @@
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
+import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger.js';
@@ -34,6 +35,7 @@ const RESULT_TYPES = {
   INVOICE: 'invoice',
   DOCTOR: 'doctor',
   MEDICINE: 'medicine',
+  USER: 'user',
 };
 
 const RESULT_ICONS = {
@@ -43,11 +45,14 @@ const RESULT_ICONS = {
   [RESULT_TYPES.INVOICE]: '💰',
   [RESULT_TYPES.DOCTOR]: '👨‍⚕️',
   [RESULT_TYPES.MEDICINE]: '💉',
+  [RESULT_TYPES.USER]: '👥',
 };
 
 export default function GlobalSearch({ isOpen, onClose }) {
   const { t } = useI18n();
+  const { user } = useAuth();
   const router = useRouter();
+  const isSuperAdmin = user?.role === 'super_admin';
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -164,6 +169,9 @@ export default function GlobalSearch({ isOpen, onClose }) {
       case RESULT_TYPES.MEDICINE:
         path = `/inventory/items/${result.id}`;
         break;
+      case RESULT_TYPES.USER:
+        path = `/admin/users${result.subtitle ? `?search=${encodeURIComponent(result.subtitle)}` : ''}`;
+        break;
       default:
         return;
     }
@@ -201,7 +209,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
             <Input
               ref={inputRef}
               type='text'
-              placeholder={t('search.placeholder')}
+              placeholder={isSuperAdmin ? t('search.placeholderAdmin') : t('search.placeholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className='pr-20'
@@ -272,10 +280,19 @@ export default function GlobalSearch({ isOpen, onClose }) {
             <div className='mt-4 text-sm text-neutral-500 dark:text-neutral-400'>
               <p className='mb-2'>{t('search.quickTips')}</p>
               <ul className='list-disc list-inside space-y-1 text-xs'>
-                <li>{t('search.quickTipPatient')}</li>
-                <li>{t('search.quickTipAppointments')}</li>
-                <li>{t('search.quickTipMedicines')}</li>
-                <li>{t('search.quickTipEnter')}</li>
+                {isSuperAdmin ? (
+                  <>
+                    <li>{t('search.quickTipUsers')}</li>
+                    <li>{t('search.quickTipEnter')}</li>
+                  </>
+                ) : (
+                  <>
+                    <li>{t('search.quickTipPatient')}</li>
+                    <li>{t('search.quickTipAppointments')}</li>
+                    <li>{t('search.quickTipMedicines')}</li>
+                    <li>{t('search.quickTipEnter')}</li>
+                  </>
+                )}
               </ul>
             </div>
           )}

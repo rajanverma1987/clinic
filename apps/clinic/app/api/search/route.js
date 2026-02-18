@@ -25,6 +25,7 @@ import Prescription from '@/models/Prescription.js';
 import Invoice from '@/models/Invoice.js';
 import Doctor from '@/models/Doctor.js';
 import Drug from '@/models/Drug.js';
+import User from '@/models/User.js';
 import { logger } from '@/lib/utils/logger.js';
 
 /**
@@ -46,10 +47,50 @@ async function getHandler(req, user) {
       );
     }
 
-    const searchRegex = new RegExp(query, 'i');
+    const searchRegex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     const results = [];
 
-    // Search Patients
+    // Super Admin: search Users (email, name, tenant) instead of tenant-scoped patients
+    if (user.role === 'super_admin') {
+      try {
+        const userQuery = {
+          role: { $ne: 'super_admin' },
+          $or: [
+            { email: searchRegex },
+            { firstName: searchRegex },
+            { lastName: searchRegex },
+          ],
+        };
+        const users = await User.find(userQuery)
+          .select('email firstName lastName role')
+          .populate('tenantId', 'name slug')
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .lean();
+
+        users.forEach((u) => {
+          const tenantName = u.tenantId?.name || u.tenantId?.slug || '';
+          results.push({
+            type: 'user',
+            id: u._id.toString(),
+            title: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email,
+            subtitle: u.email || '',
+            meta: tenantName ? `${u.role} · ${tenantName}` : u.role,
+          });
+        });
+      } catch (err) {
+        logger.error('User search error (super_admin)', err);
+      }
+      // Return user results only for super_admin so search is user-focused
+      return NextResponse.json(
+        successResponse({
+          results: results.slice(0, 20),
+          total: results.length,
+        })
+      );
+    }
+
+    // Search Patients (tenant-scoped for non–super_admin)
     try {
       const patients = await Patient.find(
         withTenant(tenantId, {

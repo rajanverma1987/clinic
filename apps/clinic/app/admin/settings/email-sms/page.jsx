@@ -79,6 +79,7 @@ export default function AdminSettingsEmailSmsPage() {
       const res = await apiClient.put('/admin/settings/email-sms', payload);
       if (res.success) {
         showSuccess(t('admin.settingsSaved'));
+        await apiClient.clearCacheForEndpoint('/admin/settings');
         await fetchSettings();
       } else {
         showError(res.error?.message || t('admin.failedToSaveSettings'));

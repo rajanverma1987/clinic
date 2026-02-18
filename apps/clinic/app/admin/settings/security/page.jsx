@@ -77,7 +77,8 @@ export default function AdminSettingsSecurityPage() {
       const response = await apiClient.put('/admin/settings/security', payload);
       if (response.success) {
         showSuccess(t('admin.settingsSaved'));
-        if (response.data) setForm((f) => ({ ...f, ...response.data }));
+        await apiClient.clearCacheForEndpoint('/admin/settings');
+        await fetchSettings();
       } else {
         showError(response.error?.message || t('admin.failedToSaveSettings'));
       }

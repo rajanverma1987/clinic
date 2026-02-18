@@ -101,14 +101,16 @@ export default function AdminSettingsTemplatesPage() {
         if (res.success) {
           showSuccess(t('admin.settingsSaved'));
           setShowForm(false);
-          fetchTemplates();
+          await apiClient.clearCacheForEndpoint('/admin/settings');
+          await fetchTemplates();
         } else showError(res.error?.message);
       } else {
         const res = await apiClient.post('/admin/settings/templates', payload);
         if (res.success) {
           showSuccess(t('admin.settingsSaved'));
           setShowForm(false);
-          fetchTemplates();
+          await apiClient.clearCacheForEndpoint('/admin/settings');
+          await fetchTemplates();
         } else showError(res.error?.message);
       }
     } catch (err) {
@@ -126,7 +128,8 @@ export default function AdminSettingsTemplatesPage() {
           const res = await apiClient.delete(`/admin/settings/templates/${template._id}`);
           if (res.success) {
             showSuccess(t('admin.templateDeleted') || 'Template deleted');
-            fetchTemplates();
+            await apiClient.clearCacheForEndpoint('/admin/settings');
+            await fetchTemplates();
           } else showError(res.error?.message);
         } catch (err) {
           showError(err.message);

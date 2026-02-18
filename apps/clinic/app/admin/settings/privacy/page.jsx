@@ -45,6 +45,7 @@ export default function AdminSettingsPrivacyPage() {
       const res = await apiClient.put('/admin/settings/privacy', { content });
       if (res.success) {
         showSuccess(t('admin.settingsSaved'));
+        await apiClient.clearCacheForEndpoint('/admin/settings');
         await fetchSettings();
       } else showError(res.error?.message || t('admin.failedToSaveSettings'));
     } catch (err) {

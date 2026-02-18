@@ -22,16 +22,17 @@ import { apiClient } from '@/lib/api/client';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '');
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [roleFilter, setRoleFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState('');

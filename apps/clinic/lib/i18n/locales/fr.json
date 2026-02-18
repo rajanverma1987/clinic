@@ -430,12 +430,14 @@
   },
   "search": {
     "placeholder": "Search patients, appointments, prescriptions... (Ctrl+K)",
+    "placeholderAdmin": "Search by user email, name, tenant... (Ctrl+K)",
     "noResultsFor": "No results found for \"{{query}}\"",
     "tryDifferentKeywords": "Try different keywords",
     "quickTips": "Quick tips:",
     "quickTipPatient": "Search by patient name, phone, or ID",
     "quickTipAppointments": "Search appointments by date or patient",
     "quickTipMedicines": "Search medicines by name or code",
+    "quickTipUsers": "Search by user email, name, or tenant",
     "quickTipEnter": "Press Enter to open selected result"
   },
   "common": {
