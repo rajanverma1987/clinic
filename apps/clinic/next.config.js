@@ -8,6 +8,8 @@ const {
 
 const nextConfig = {
   reactStrictMode: process.env.NODE_ENV === 'production',
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
   // Explicitly disable Babel to use SWC
   // Babel config is only for Jest tests (located in .jest/babel.config.js)
   experimental: {

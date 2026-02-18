@@ -1111,7 +1111,7 @@ function NewPrescriptionPageContent() {
                       disabled={submitting || !formData.patientId}
                       title={
                         t('prescriptions.downloadPdfHint') ||
-                        {t('prescriptions.openPreviewToPrint')}
+                        t('prescriptions.openPreviewToPrint')
                       }
                     >
                       <FileDownIcon className='icon icon-sm mr-2' ariaHidden />
