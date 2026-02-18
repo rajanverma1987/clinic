@@ -14,7 +14,6 @@ const nextConfig = {
     // Ensure SWC is used instead of Babel
   },
   // Disable Babel completely - use SWC only
-  swcMinify: true,
   compiler: {
     // Remove console logs in production
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
@@ -46,9 +45,10 @@ const nextConfig = {
     ],
   },
   // Enable SWC minification (faster than Terser)
-  swcMinify: true,
-  // Optimize fonts
-  optimizeFonts: true,
+  // Note: `swcMinify` and `optimizeFonts` were removed because Next.js warns
+  // about unrecognized config keys in newer Next.js versions. Minification
+  // and font optimizations are handled by the framework; remove these keys
+  // to avoid warnings.
   webpack: (config, { isServer, dev, webpack }) => {
     // Ensure @/ alias resolves to app root (100% reliable for FormTransition, ImageTransition, etc.)
     config.resolve = config.resolve || {};

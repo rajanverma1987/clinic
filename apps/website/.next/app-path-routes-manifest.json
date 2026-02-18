@@ -1,0 +1,15 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/about/page": "/about",
+  "/api-docs/page": "/api-docs",
+  "/blog/page": "/blog",
+  "/contact/page": "/contact",
+  "/legal/page": "/legal",
+  "/page": "/",
+  "/pricing/page": "/pricing",
+  "/support/contact/page": "/support/contact",
+  "/support/page": "/support",
+  "/blog/[slug]/page": "/blog/[slug]",
+  "/terms/page": "/terms",
+  "/privacy/page": "/privacy"
+}
