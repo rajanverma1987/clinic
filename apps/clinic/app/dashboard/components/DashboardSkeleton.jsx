@@ -2,12 +2,6 @@
 
 import { Card } from '@/components/ui/Card';
 
-/**
- * Full-dashboard skeleton matching real layout (enterprise-style: layout-preserving, shimmer).
- * Clinic: 4 stat cards → 2-col (Today's Appointments | Calendar) → 3-col (Summary, Next Patient, Review).
- * Doctor: 8 stat cards → 2-col → 3-col with more cells.
- * Uses same grid classes as real dashboard to avoid layout shift.
- */
 export function DashboardSkeleton({ isDoctor = false }) {
   const statCount = isDoctor ? 8 : 4;
   const statGridClass = isDoctor

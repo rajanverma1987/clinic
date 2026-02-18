@@ -702,6 +702,7 @@ function SettingsPageContent() {
                   availabilityForm={availabilityForm}
                   setAvailabilityForm={setAvailabilityForm}
                   onEditProfileClick={handleEditProfileClick}
+                  onAvatarUploaded={refreshUser}
                 />
               </div>
             )}

@@ -6,10 +6,53 @@ import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { apiClient } from '@/lib/api/client';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import Link from 'next/link';
+import { useRef, useState } from 'react';
 import { AvailabilityForm } from './AvailabilityForm';
 import { SettingsTabHeader } from './SettingsTabHeader';
 import { TwoFactorSetup } from './TwoFactorSetup';
+
+const AVATAR_MAX_SIZE = 400;
+const AVATAR_JPEG_QUALITY = 0.85;
+const AVATAR_MAX_BYTES = 500 * 1024;
+
+/** Resize image to fit within maxSize and return as JPEG data URL. */
+function resizeImageToDataUrl(file, maxSize = AVATAR_MAX_SIZE, quality = AVATAR_JPEG_QUALITY) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const scale = Math.min(1, maxSize / Math.max(w, h));
+      const cw = Math.round(w * scale);
+      const ch = Math.round(h * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas not supported'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, cw, ch);
+      try {
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image'));
+    };
+    img.src = url;
+  });
+}
 
 export function ProfileTab({
   currentUser,
@@ -20,9 +63,12 @@ export function ProfileTab({
   setAvailabilityForm,
   onEditProfileClick,
   on2FAStatusChange,
+  onAvatarUploaded,
 }) {
   const { t } = useI18n();
   const { open: openConfirm } = useConfirmation();
+  const fileInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const handleLogoutClick = () => {
     openConfirm({
@@ -33,6 +79,38 @@ export function ProfileTab({
       variant: 'danger',
       onConfirm: () => logout(),
     });
+  };
+
+  const handleAvatarFileSelect = async (e) => {
+    const file = e?.target?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      showError(
+        t('settings.uploadPhotoInvalid') || 'Please select an image file (JPEG, PNG, GIF).',
+      );
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showError(t('settings.uploadPhotoTooLarge') || 'Image should be under 5 MB.');
+      return;
+    }
+    const userId = currentUser?.id ?? currentUser?._id ?? currentUser?.userId;
+    if (!userId) return;
+    setUploadingAvatar(true);
+    e.target.value = '';
+    try {
+      const dataUrl = await resizeImageToDataUrl(file);
+      const response = await apiClient.put(`/users/${userId}`, { avatar: dataUrl });
+      if (response?.success) {
+        showSuccess(t('settings.profilePhotoUpdated') || 'Profile photo updated.');
+        onAvatarUploaded?.();
+      } else {
+        showError(response?.error?.message || t('errors.generic') || 'Failed to update photo.');
+      }
+    } catch (err) {
+      showError(err?.message || t('errors.generic') || 'Failed to update photo.');
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const getRoleLabel = (role) => {
@@ -57,8 +135,8 @@ export function ProfileTab({
       <Card elevated={true}>
         <div className='p-6 sm:p-8'>
           <div className='flex flex-col lg:flex-row items-center lg:items-start gap-8'>
-            {/* Large profile picture – 160px / 192px, user avatar or gradient fallback */}
-            <div className='flex-shrink-0'>
+            {/* Large profile picture – 160px / 192px, user avatar or gradient fallback + upload */}
+            <div className='flex-shrink-0 flex flex-col items-center gap-3'>
               <div className='relative' style={{ width: 192, height: 192 }}>
                 <div
                   className='relative w-full h-full rounded-2xl overflow-hidden bg-gradient-to-br from-primary-500 to-primary-700 shadow-xl ring-4 ring-primary-100 flex items-center justify-center'
@@ -99,6 +177,27 @@ export function ProfileTab({
                   <div className='w-2.5 h-2.5 bg-white rounded-full' />
                 </div>
               </div>
+              <input
+                ref={fileInputRef}
+                type='file'
+                accept='image/jpeg,image/png,image/gif,image/webp'
+                className='sr-only'
+                aria-label={t('settings.uploadPhoto') || t('common.uploadPhoto') || 'Upload photo'}
+                onChange={handleAvatarFileSelect}
+              />
+              <Button
+                type='button'
+                variant='secondary'
+                size='sm'
+                disabled={uploadingAvatar || saving}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploadingAvatar
+                  ? t('common.uploading') || 'Uploading…'
+                  : currentUser?.avatar
+                    ? t('settings.changePhoto') || 'Change photo'
+                    : t('settings.uploadPhoto') || t('common.uploadPhoto') || 'Upload photo'}
+              </Button>
             </div>
 
             {/* User Info Section */}

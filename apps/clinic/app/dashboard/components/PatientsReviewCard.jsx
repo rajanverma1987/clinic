@@ -31,10 +31,18 @@ export function PatientsReviewCard({ reviews, loading = false }) {
   }
 
   const reviewItems = [
-    { labelKey: 'dashboard.reviewExcellent', value: reviewData.excellent || 0, color: 'bg-primary-500' },
+    {
+      labelKey: 'dashboard.reviewExcellent',
+      value: reviewData.excellent || 0,
+      color: 'bg-primary-500',
+    },
     { labelKey: 'dashboard.reviewGreat', value: reviewData.great || 0, color: 'bg-primary-400' },
     { labelKey: 'dashboard.reviewGood', value: reviewData.good || 0, color: 'bg-status-warning' },
-    { labelKey: 'dashboard.reviewAverage', value: reviewData.average || 0, color: 'bg-primary-300' },
+    {
+      labelKey: 'dashboard.reviewAverage',
+      value: reviewData.average || 0,
+      color: 'bg-primary-300',
+    },
   ];
 
   return (
@@ -49,10 +57,14 @@ export function PatientsReviewCard({ reviews, loading = false }) {
           {reviewItems.map((item) => (
             <div key={item.labelKey}>
               <div className='flex items-center justify-between mb-1.5'>
-                <span className='text-body-sm font-medium text-neutral-700'>{t(item.labelKey)}</span>
-                <span className='text-body-sm font-semibold text-neutral-900'>{item.value}%</span>
+                <span className='text-body-sm font-medium text-neutral-700 dark:text-neutral-300'>
+                  {t(item.labelKey)}
+                </span>
+                <span className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100'>
+                  {item.value}%
+                </span>
               </div>
-              <div className='w-full bg-neutral-200 rounded-full h-3 overflow-hidden'>
+              <div className='w-full bg-neutral-200 dark:bg-neutral-600 rounded-full h-3 overflow-hidden'>
                 <div
                   className={`${item.color} h-full rounded-full transition-all duration-500 ease-out`}
                   style={{ width: `${item.value}%` }}

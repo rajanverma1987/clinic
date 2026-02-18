@@ -31,12 +31,12 @@ function PatientListItemInner({ patient, onClick }) {
 
           {/* Content */}
           <div className='flex-1 min-w-0'>
-            <h4 className='text-body-sm font-semibold text-neutral-900 mb-1 truncate'>
+            <h4 className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-1 truncate'>
               {patientName}
             </h4>
-            <p className='text-body-xs text-neutral-600 mb-1.5 truncate'>{contactInfo}</p>
+            <p className='text-body-xs text-neutral-600 dark:text-neutral-400 mb-1.5 truncate'>{contactInfo}</p>
             {(age || gender) && (
-              <div className='flex items-center gap-2 text-body-xs text-neutral-500'>
+              <div className='flex items-center gap-2 text-body-xs text-neutral-500 dark:text-neutral-400'>
                 {age && <span>{age} years</span>}
                 {age && gender && <span>•</span>}
                 {gender && <span>{gender}</span>}

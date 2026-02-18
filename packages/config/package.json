@@ -1,0 +1,7 @@
+{
+  "name": "@clinic-saas/config",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "index.js"
+}

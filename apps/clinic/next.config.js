@@ -10,6 +10,8 @@ const nextConfig = {
   reactStrictMode: process.env.NODE_ENV === 'production',
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
+  // Pin the tracing root to the monorepo root to silence the multiple-lockfiles warning
+  outputFileTracingRoot: path.resolve(__dirname, '../..'),
   // Explicitly disable Babel to use SWC
   // Babel config is only for Jest tests (located in .jest/babel.config.js)
   experimental: {
@@ -96,6 +98,7 @@ const nextConfig = {
       config.externals.push({
         twilio: 'commonjs twilio',
         '@sentry/nextjs': 'commonjs @sentry/nextjs',
+        '@aws-sdk/client-sns': 'commonjs @aws-sdk/client-sns',
       });
     }
 
@@ -142,14 +145,19 @@ const nextConfig = {
   },
   // CORS and CSP headers (CSP allows Next.js inline scripts; theme is in /theme-init.js to avoid inline)
   async headers() {
+    const isDev = process.env.NODE_ENV !== 'production';
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // unsafe-eval needed by Next.js SWC runtime in dev; drop it in production
+      isDev ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: https:",
+      "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self'",
+      `connect-src 'self' https://accounts.doctorsclinic.services wss://accounts.doctorsclinic.services`,
       "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
     ].join('; ');
     // Enterprise cache strategy: lib/cache/http-cache-strategy.js. Last matching source wins per header key.
     return [
@@ -163,10 +171,10 @@ const nextConfig = {
             key: 'Access-Control-Allow-Origin',
             value:
               process.env.CORS_ORIGINS ||
-              (process.env.NODE_ENV === 'production'
-                ? process.env.NEXT_PUBLIC_APP_URL || 'https://localhost'
-                : 'http://localhost:5053, http://localhost:3000, http://127.0.0.1:5053, http://127.0.0.1:3000'),
+              process.env.NEXT_PUBLIC_APP_URL ||
+              'https://accounts.doctorsclinic.services',
           },
+          { key: 'Vary', value: 'Origin' },
           { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
           { key: 'Access-Control-Allow-Credentials', value: 'true' },

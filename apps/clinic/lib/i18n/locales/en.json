@@ -143,6 +143,35 @@
     "healthVideo": "Video",
     "healthEmail": "Email",
     "comingSoon": "Coming soon",
+    "appointmentTrend": "Appointment Trend",
+    "backingUp": "Backing up...",
+    "backupCompleted": "Backup completed",
+    "backupDatabase": "Backup Database",
+    "backupDatabaseDesc": "Export database for backup",
+    "backupFailed": "Backup failed",
+    "backupResult": "Backup result",
+    "confirmPlanUpdate": "Confirm plan update",
+    "createManagerSubtitle": "Create a manager account",
+    "disableMaintenance": "Disable Maintenance",
+    "doctorsVerificationStatus": "Doctor verification status",
+    "enableMaintenance": "Enable Maintenance",
+    "failedToCreateManager": "Failed to create manager",
+    "managerAccountCreatedSuccess": "Manager account created successfully",
+    "planCreated": "Plan created",
+    "planUpdateConfirmMessage": "Confirm plan update?",
+    "planUpdated": "Plan updated",
+    "privacyPolicy": "Privacy Policy",
+    "privacyPolicyDesc": "Edit platform privacy policy",
+    "reject": "Reject",
+    "role": "Role",
+    "runBackup": "Run Backup",
+    "selectClinic": "Select clinic",
+    "selectClinicPlaceholder": "Select a clinic",
+    "subscriptionGrowth": "Subscription growth",
+    "tenantRequired": "Tenant is required",
+    "termsConditions": "Terms & Conditions",
+    "termsConditionsDesc": "Edit platform terms and conditions",
+    "verify": "Verify",
     "contentManagement": "Content Management",
     "contentManagementSubtitle": "Manage website content",
     "financialManagement": "Financial Management",
@@ -885,6 +914,7 @@
     "update": "Update",
     "view": "View",
     "search": "Search",
+    "searchPlaceholder": "Search patients, appointments, prescriptions... (Ctrl+K)",
     "filter": "Filter",
     "actions": "Actions",
     "remove": "Remove",
@@ -935,6 +965,18 @@
     "import": "Import",
     "upload": "Upload",
     "download": "Download",
+    "add": "Add",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "apply": "Apply",
+    "clearSelection": "Clear selection",
+    "item": "Item",
+    "items": "Items",
+    "restore": "Restore",
+    "showing": "Showing",
+    "title": "Title",
+    "uploadPhoto": "Upload photo",
+    "uploading": "Uploading…",
     "isRequired": "is required",
     "show": "Show",
     "hide": "Hide",
@@ -959,7 +1001,7 @@
     "closeMenu": "Close menu",
     "userMenu": "User menu",
     "accountMenu": "Account menu",
-    "collapseMenu": "Collapse menu",
+    "collapseMenu": "- Collapse -",
     "day": "day",
     "days": "days",
     "ok": "Ok",
@@ -1037,6 +1079,47 @@
   "sidebar": {
     "subscriptionType": "Plan"
   },
+  "patient": {
+    "checkedIn": "Patient checked in",
+    "updated": "Patient updated"
+  },
+  "payment": {
+    "received": "Payment received"
+  },
+  "prescription": {
+    "ready": "Prescription ready"
+  },
+  "labResult": {
+    "ready": "Lab result ready"
+  },
+  "notification": {
+    "new": "New notification",
+    "updated": "Notification updated"
+  },
+  "patient": {
+    "checkedIn": "Patient checked in",
+    "updated": "Patient updated"
+  },
+  "payment": {
+    "received": "Payment received"
+  },
+  "prescription": {
+    "ready": "Prescription ready"
+  },
+  "labResult": {
+    "ready": "Lab result ready"
+  },
+  "notification": {
+    "new": "New notification",
+    "updated": "Notification updated"
+  },
+  "doctor": {
+    "statusChanged": "Doctor status changed"
+  },
+  "appointment": {
+    "created": "Appointment created",
+    "statusChanged": "Appointment status changed"
+  },
   "auth": {
     "login": "Sign In",
     "logout": "Sign Out",
@@ -1057,6 +1140,7 @@
     "firstName": "First Name",
     "lastName": "Last Name",
     "confirmPassword": "Confirm Password",
+    "newPassword": "New Password",
     "loginFailed": "Login failed. Please check your credentials.",
     "registerFailed": "Registration failed. Please try again.",
     "emailRequired": "Email is required",
@@ -1211,7 +1295,7 @@
     "tabsLabel": "Dashboard section",
     "tabPlaceholder": "{{tab}} content will load here.",
     "loading": "Loading dashboard...",
-    "overview": "Dashboard Overview",
+    "overview": "Overview",
     "welcomeBackDoctor": "Welcome back, Dr. {{name}}",
     "welcome": "Welcome",
     "todayAppointments": "Today's Appointments",
@@ -1289,6 +1373,8 @@
     "calendar": "Calendar",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
+    "calendarDayWithAppointments": "{{count}} appointment(s) on {{date}}",
+    "calendarAppointmentsOnDay": "{{count}} appointment(s)",
     "revenueThisMonth": "Revenue (This Month)",
     "todayAppointmentsLabel": "Today's Appointments",
     "thisWeekAppointments": "This Week",
@@ -1314,7 +1400,16 @@
     "recentActivity": "Recent Activity",
     "noRecentActivity": "No recent activity",
     "tabError": "{{tab}} failed to load. Please try again.",
-    "chartsUnavailable": "Charts temporarily unavailable."
+    "chartsUnavailable": "Charts temporarily unavailable.",
+    "quickStats": "Quick Stats",
+    "keyMetrics": "Key Metrics",
+    "assignStaff": "Assign Staff",
+    "retryFailedPayments": "Retry failed payments",
+    "upcoming": "upcoming",
+    "total": "Total",
+    "todaySchedule": "Today's Schedule",
+    "patientsInQueue": "patients in queue",
+    "lastUpdated": "Last updated"
   },
   "offline": {
     "actionsSynced": "{{count}} action(s) synced successfully."
@@ -1382,6 +1477,9 @@
     "overview": "Overview",
     "visits": "Visits",
     "conditions": "Conditions",
+    "notes": "Notes",
+    "patientDetail": "Patient detail",
+    "patients": "Patients",
     "searchPlaceholder": "Search by name, phone, email, or patient ID...",
     "advancedSearch": "Advanced search",
     "addNewPatient": "Add New Patient",
@@ -1615,6 +1713,18 @@
     "scheduledSuccess": "Appointment scheduled successfully!",
     "loadingSlots": "Loading time slots...",
     "loadingAppointments": "Loading appointments...",
+    "consultationMethod": "Consultation method",
+    "endDateOptional": "End date (optional)",
+    "nextDay": "Next Day",
+    "noDoctorsAvailable": "No doctors available",
+    "optionalDetails": "Optional details",
+    "patientEmailForVideo": "Patient email for video",
+    "previousDay": "Previous Day",
+    "recurring": "Recurring",
+    "selected": "Selected",
+    "statusUpdateFailed": "Failed to update status",
+    "videoConsentNotice": "Video consent notice",
+    "videoDetails": "Video details",
     "loadingDoctors": "Loading doctors...",
     "noteRecurring": "Note: {{count}} appointment(s)",
     "inPersonVisit": "In-Person Visit",
@@ -1666,6 +1776,7 @@
     "noShow": "No Show"
   },
   "invoices": {
+    "print": "Print",
     "title": "Invoices",
     "amountPlaceholder": "0.00",
     "invoiceDetails": "Invoice Details",
@@ -1788,7 +1899,10 @@
     "addDrug": "Add Drug",
     "diagnosisPlaceholder": "Enter diagnosis (e.g., Hypertension, Diabetes)",
     "diagnosisPlaceholderShort": "Enter diagnosis",
+    "diagnosis": "Diagnosis",
     "diagnosisLabel": "Diagnosis",
+    "downloadPdfHint": "Download as PDF",
+    "rxNumber": "Prescription #",
     "instructionsPlaceholder": "Enter additional instructions for the patient",
     "refillsPlaceholder": "0",
     "procedurePlaceholder": "Procedure name",
@@ -1932,7 +2046,13 @@
     "startVideo": "Start Video",
     "showCompleted": "Show Completed",
     "hideCompleted": "Hide Completed",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "completed": "Completed",
+    "doctor": "Doctor",
+    "inPerson": "In-person",
+    "type": "Type",
+    "updated": "Updated",
+    "video": "Video"
   },
   "inventory": {
     "title": "Inventory",
@@ -2074,7 +2194,15 @@
     "print": "Print",
     "doctorPerformance": "Doctor Performance",
     "totalDoctors": "Total Doctors",
-    "noDoctorData": "No doctor performance data available for the selected period"
+    "noDoctorData": "No doctor performance data available for the selected period",
+    "dateRange": "Date range",
+    "downloadPdfHint": "Download as PDF",
+    "generated": "Generated",
+    "generatingPdf": "Generating PDF...",
+    "metric": "Metric",
+    "noData": "No data",
+    "pdfDownloaded": "PDF downloaded",
+    "value": "Value"
   },
   "settings": {
     "title": "Settings",
@@ -2279,6 +2407,17 @@
     "smtpFromPlaceholder": "noreply@yourclinic.com",
     "smtpFromNamePlaceholder": "Your Clinic Name",
     "editProfile": "Edit Profile",
+    "profileUpdatedSuccess": "Profile updated successfully",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "defaultCurrency": "Default currency",
+    "defaultTaxCountry": "Default country",
+    "supportedCurrencies": "Supported currencies",
+    "uploadPhoto": "Upload photo",
+    "changePhoto": "Change photo",
+    "profilePhotoUpdated": "Profile photo updated.",
+    "uploadPhotoInvalid": "Please select an image file (JPEG, PNG, GIF).",
+    "uploadPhotoTooLarge": "Image should be under 5 MB.",
     "managerAccounts": "Manager Accounts",
     "managerAccountsDesc": "Create manager accounts for external use with limited access",
     "createManagerButton": "Create Manager",
@@ -2471,7 +2610,15 @@
     "locations": "Locations",
     "branding": "Branding",
     "whiteLabel": "White Label",
-    "apiDocs": "API Docs"
+    "apiDocs": "API Docs",
+    "sectionMyPractice": "My Practice",
+    "sectionClinical": "Clinical",
+    "sectionBusiness": "Business",
+    "sectionTeam": "Team",
+    "sectionSystem": "System",
+    "sectionManagement": "Management",
+    "sectionContentFinance": "Content & Finance",
+    "sectionAnalytics": "Analytics"
   },
   "doctors": {
     "profile": "Profile",
@@ -2482,6 +2629,13 @@
     "earningsToday": "Earnings Today",
     "quickStats": "Quick Stats",
     "consultations": "consultations",
+    "appointmentStatus": "Appointment status",
+    "appointmentTrends": "Appointment trends",
+    "completionRate": "Completion rate",
+    "exportReports": "Export reports",
+    "patientAgeDistribution": "Patient age distribution",
+    "revenue": "Revenue",
+    "totalAppointments": "Total appointments",
     "avgRating": "Avg. Rating",
     "responseRate": "Response Rate",
     "notesSaved": "Notes saved",
@@ -2867,6 +3021,9 @@
     "confirmUpgradeActionChange": "change",
     "confirmCancel": "Are you sure you want to cancel? Your subscription will remain active until the end of the current billing period.",
     "confirmReactivate": "Your subscription is set to cancel. Do you want to reactivate it?",
+    "afterTrialPlanContinues": "After trial, {{plan}} plan continues",
+    "confirmUpgradeTitle": "Confirm upgrade",
+    "trialEndsOn": "Trial ends on {{date}}",
     "unknownPlan": "Unknown Plan",
     "redirectingToPayPal": "You will be redirected to PayPal to complete your payment.",
     "subscriptionUpdated": "Subscription updated successfully.",
@@ -3026,6 +3183,8 @@
   "notifications": {
     "title": "Notifications",
     "empty": "No notifications",
+    "noNotifications": "No notifications",
+    "tryChangingFilter": "Try changing the filter",
     "caughtUp": "You're all caught up!",
     "viewAll": "View all",
     "viewAllNotifications": "View all notifications",
@@ -3133,6 +3292,19 @@
     "faqA20": "Yes, Doctor's Clinic is built API-first to support future integrations and mobile apps. API documentation is available for enterprise customers. Contact us for API access."
   },
   "telemedicine": {
+    "backToSessions": "Back to sessions",
+    "bookFollowUp": "Book follow-up",
+    "confirmEndConsultation": "Confirm end consultation",
+    "consultationSummary": "Consultation summary",
+    "downloadSummary": "Download summary",
+    "failedToCollectPayment": "Failed to collect payment",
+    "failedToInitiatePayment": "Failed to initiate payment",
+    "linkCopied": "Link copied",
+    "linkSentByEmail": "Link sent by email",
+    "noPatientEmail": "No patient email",
+    "printSummary": "Print summary",
+    "sessionDetails": "Session details",
+    "sessionNotFound": "Session not found",
     "title": "Telemedicine",
     "subtitle": "Virtual consultations and video calls",
     "sessionId": "Session ID",

@@ -4,9 +4,9 @@
  * Separate from telemedicine Socket.IO
  */
 
-import { useEffect, useState, useRef } from 'react';
-import { io } from 'socket.io-client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useRef, useState } from 'react';
+import { io } from 'socket.io-client';
 
 export function useRealtime(options = {}) {
   const { user } = useAuth();
@@ -17,9 +17,11 @@ export function useRealtime(options = {}) {
   useEffect(() => {
     if (!user?.tenantId) return;
 
-    // Connect to real-time namespace (not telemedicine)
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
-    const socket = io(`${socketUrl}/realtime`, {
+    // Connect to real-time namespace (must match server io.of('/realtime'))
+    const baseUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+    const origin =
+      typeof baseUrl === 'string' && baseUrl.includes('://') ? new URL(baseUrl).origin : baseUrl;
+    const socket = io(`${origin}/realtime`, {
       transports: ['websocket', 'polling'],
     });
 

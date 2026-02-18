@@ -130,7 +130,9 @@ function DashboardListCardInner({
             ) : (
               <div className='empty-state'>
                 {EmptyIcon && <div className='empty-state-icon'>{EmptyIcon}</div>}
-                <p className='text-neutral-500 text-body-sm'>{emptyMessage}</p>
+                <p className='text-neutral-500 dark:text-neutral-400 text-body-sm'>
+                  {emptyMessage}
+                </p>
               </div>
             )}
           </div>

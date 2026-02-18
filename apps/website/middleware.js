@@ -1,0 +1,34 @@
+/**
+ * Next.js Middleware — Website (public marketing site)
+ */
+import { NextResponse } from 'next/server';
+
+export function middleware(request) {
+  const response = NextResponse.next();
+
+  // Remove server fingerprinting headers
+  response.headers.delete('x-powered-by');
+
+  // HSTS — tell browsers to always use HTTPS (1 year)
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
+  // Prevent MIME type sniffing
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+
+  // Referrer policy — don't leak full URL to third parties
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Permissions policy — disable unused browser features
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), payment=()',
+  );
+
+  return response;
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+};

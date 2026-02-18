@@ -23,7 +23,7 @@ export function Textarea({
       <div className="relative">
         <textarea
           className={`
-            w-full px-3 py-3 border rounded-lg text-body-md
+            w-full px-3 py-3 border rounded-lg text-body-md transition-[border-color,box-shadow] duration-200 ease-out
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:shadow-focus
             resize-none
             ${error 

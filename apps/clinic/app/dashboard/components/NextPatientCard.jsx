@@ -23,7 +23,8 @@ export function NextPatientCard({
   const patientData = patient || appointment?.patientId;
   const firstName = patientData?.firstName || '';
   const lastName = patientData?.lastName || '';
-  const patientName = patientData?.name || `${firstName} ${lastName}`.trim() || t('common.unknownPatient');
+  const patientName =
+    patientData?.name || `${firstName} ${lastName}`.trim() || t('common.unknownPatient');
   const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
 
   const patientId = patientData?.patientId || patientData?._id?.slice(-12) || 'N/A';
@@ -51,9 +52,9 @@ export function NextPatientCard({
     <Card className='dashboard-next-patient-card'>
       <div className='p-4 h-full flex flex-col overflow-y-auto'>
         {/* Header */}
-        <div className='flex items-center gap-3 mb-4 pb-3 border-b border-neutral-200'>
+        <div className='flex items-center gap-3 mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700'>
           <div className='w-3 h-3 bg-primary-500 rounded-full'></div>
-          <h2 className='text-h4 font-semibold text-neutral-900'>
+          <h2 className='text-h4 font-semibold text-neutral-900 dark:text-neutral-100'>
             {t('dashboard.nextPatientDetails')}
           </h2>
         </div>
@@ -66,44 +67,60 @@ export function NextPatientCard({
                 <span className='text-primary-600 font-semibold text-lg'>{initials}</span>
               </div>
               <div className='flex-1'>
-                <h3 className='text-body-md font-semibold text-neutral-900 mb-1'>{patientName}</h3>
-                <p className='text-body-xs text-neutral-600'>{reason}</p>
+                <h3 className='text-body-md font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
+                  {patientName}
+                </h3>
+                <p className='text-body-xs text-neutral-600 dark:text-neutral-400'>{reason}</p>
               </div>
             </div>
             {/* Patient ID - Right aligned */}
             <div className='text-right flex-shrink-0'>
-              <span className='text-body-xs text-neutral-500 block'>
+              <span className='text-body-xs text-neutral-500 dark:text-neutral-400 block'>
                 {t('dashboard.patientIdLabel')}
               </span>
-              <p className='text-body-xs font-semibold text-neutral-900 mt-0.5'>{patientId}</p>
+              <p className='text-body-xs font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
+                {patientId}
+              </p>
             </div>
           </div>
 
           {/* Patient Details Grid */}
           <div className='grid grid-cols-3 gap-3 text-body-xs'>
             <div>
-              <span className='text-neutral-500'>D.O.B</span>
-              <p className='font-semibold text-neutral-900 mt-0.5'>{dateOfBirth}</p>
+              <span className='text-neutral-500 dark:text-neutral-400'>D.O.B</span>
+              <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
+                {dateOfBirth}
+              </p>
             </div>
             <div>
-              <span className='text-neutral-500'>Sex</span>
-              <p className='font-semibold text-neutral-900 mt-0.5'>{gender}</p>
+              <span className='text-neutral-500 dark:text-neutral-400'>Sex</span>
+              <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
+                {gender}
+              </p>
             </div>
             <div>
-              <span className='text-neutral-500'>Weight</span>
-              <p className='font-semibold text-neutral-900 mt-0.5'>{weight}</p>
+              <span className='text-neutral-500 dark:text-neutral-400'>Weight</span>
+              <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
+                {weight}
+              </p>
             </div>
             <div>
-              <span className='text-neutral-500'>Last Appointment</span>
-              <p className='font-semibold text-neutral-900 mt-0.5'>{lastAppointment}</p>
+              <span className='text-neutral-500 dark:text-neutral-400'>Last Appointment</span>
+              <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
+                {lastAppointment}
+              </p>
             </div>
             <div>
-              <span className='text-neutral-500'>Height</span>
-              <p className='font-semibold text-neutral-900 mt-0.5'>{height}</p>
+              <span className='text-neutral-500 dark:text-neutral-400'>Height</span>
+              <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
+                {height}
+              </p>
             </div>
             <div>
-              <span className='text-neutral-500'>Reg. Date</span>
-              <p className='font-semibold text-neutral-900 mt-0.5'>{regDate}</p>
+              <span className='text-neutral-500 dark:text-neutral-400'>Reg. Date</span>
+              <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
+                {regDate}
+              </p>
             </div>
           </div>
         </div>
@@ -111,32 +128,26 @@ export function NextPatientCard({
         {/* Patient History */}
         {medicalHistory && medicalHistory.length > 0 && (
           <div className='mb-4'>
-            <p className='text-body-sm font-semibold text-neutral-900 mb-2'>
+            <p className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-2'>
               {t('dashboard.patientHistory')}
             </p>
             <div className='flex flex-wrap gap-2'>
-              {medicalHistory.map((condition, index) => {
-                const isActive = index === 1;
-                return (
-                  <Button
-                    key={index}
-                    variant={isActive ? 'primary' : 'outline'}
-                    size='sm'
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewDetails?.();
-                    }}
-                  >
-                    {condition}
-                  </Button>
-                );
-              })}
+              {medicalHistory.map((condition, index) => (
+                <span
+                  key={index}
+                  className='inline-flex items-center px-2.5 py-1 rounded-md text-body-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-neutral-700/50 dark:text-neutral-300 dark:border-neutral-600'
+                >
+                  {typeof condition === 'object' && condition?.condition
+                    ? condition.condition
+                    : condition}
+                </span>
+              ))}
             </div>
           </div>
         )}
 
         {/* Quick Action Buttons – size sm for touch targets */}
-        <div className='flex items-center gap-2 pt-3 border-t border-neutral-200'>
+        <div className='flex items-center gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-700'>
           <Button
             variant='secondary'
             size='sm'
@@ -241,11 +252,13 @@ export function NextPatientCard({
         </div>
 
         {/* Last Prescriptions Section */}
-        <div className='mt-4 pt-3 border-t border-neutral-200'>
-          <p className='text-body-sm font-semibold text-neutral-900 mb-2'>
+        <div className='mt-4 pt-3 border-t border-neutral-200 dark:border-neutral-700'>
+          <p className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-2'>
             {t('dashboard.lastPrescriptions')}
           </p>
-          <p className='text-body-xs text-neutral-500'>{t('dashboard.noPrescriptionsAvailable')}</p>
+          <p className='text-body-xs text-neutral-500 dark:text-neutral-400'>
+            {t('dashboard.noPrescriptionsAvailable')}
+          </p>
         </div>
       </div>
     </Card>

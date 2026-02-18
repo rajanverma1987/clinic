@@ -3,13 +3,29 @@
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
+import { apiClient } from '@/lib/api/client';
 import { formatLocale } from '@/lib/i18n';
-import { useState } from 'react';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
+import { logger } from '@/lib/utils/logger';
+import { useCallback, useEffect, useState } from 'react';
 
-export function CalendarWidget({ onDateSelect, loading = false }) {
+/**
+ * Build date string YYYY-MM-DD from Date
+ */
+function toDateKey(d) {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function CalendarWidget({ onDateSelect, loading = false, doctorId }) {
   const { t, locale: i18nLocale } = useI18n();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
+  const [appointmentCountsByDate, setAppointmentCountsByDate] = useState({});
+  const [countsLoading, setCountsLoading] = useState(false);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -68,6 +84,43 @@ export function CalendarWidget({ onDateSelect, loading = false }) {
     setCurrentDate(new Date(year, month + 1, 1));
   };
 
+  // Fetch appointment counts for visible month
+  const fetchCounts = useCallback(async () => {
+    const start = new Date(year, month, 1);
+    const end = new Date(year, month + 1, 0);
+    const startStr = toDateKey(start);
+    const endStr = toDateKey(end);
+    try {
+      setCountsLoading(true);
+      const params = new URLSearchParams({
+        startDate: startStr,
+        endDate: endStr,
+        limit: '500',
+      });
+      if (doctorId) params.set('doctorId', doctorId);
+      const res = await apiClient.get(`/appointments?${params.toString()}`);
+      const list = extractArrayData(res);
+      const counts = {};
+      for (const apt of list) {
+        const dateSource = apt.schedule?.date || apt.appointmentDate || apt.startTime || apt.date;
+        const d = dateSource ? new Date(dateSource) : null;
+        if (!d || isNaN(d.getTime())) continue;
+        const key = toDateKey(d);
+        if (key) counts[key] = (counts[key] || 0) + 1;
+      }
+      setAppointmentCountsByDate(counts);
+    } catch (err) {
+      logger.error('CalendarWidget: failed to fetch appointment counts', err);
+      setAppointmentCountsByDate({});
+    } finally {
+      setCountsLoading(false);
+    }
+  }, [year, month, doctorId]);
+
+  useEffect(() => {
+    fetchCounts();
+  }, [fetchCounts]);
+
   if (loading) {
     return (
       <Card className='dashboard-list-card dashboard-list-card-primary calendar-widget-card h-full flex flex-col'>
@@ -90,7 +143,7 @@ export function CalendarWidget({ onDateSelect, loading = false }) {
           <div className='accent-bar accent-bar-primary' />
           <h2 className='calendar-widget-title'>{t('dashboard.calendar')}</h2>
           <div className='calendar-widget-month-row'>
-            <span className='text-neutral-900 font-semibold text-xs sm:text-sm'>
+            <span className='text-neutral-900 dark:text-neutral-100 font-semibold text-xs sm:text-sm'>
               {monthName} {year}
             </span>
             <div className='flex items-center gap-0.5'>
@@ -134,17 +187,35 @@ export function CalendarWidget({ onDateSelect, loading = false }) {
           <div className='calendar-days-grid'>
             {daysToShow.map(({ day, isCurrentMonth, date, isToday }, index) => {
               const isSelected = isCurrentMonth && day === selectedDate;
+              const dateKey = date ? toDateKey(date) : '';
+              const count = dateKey ? appointmentCountsByDate[dateKey] || 0 : 0;
               return (
                 <button
                   key={index}
                   type='button'
                   onClick={() => handleDateClick(day, isCurrentMonth, date)}
-                  className={`calendar-day ${!isCurrentMonth ? 'calendar-day-other-month' : ''} ${
+                  className={`calendar-day calendar-day-with-indicator ${!isCurrentMonth ? 'calendar-day-other-month' : ''} ${
                     isToday ? 'calendar-day-today' : ''
                   } ${isSelected ? 'calendar-day-selected' : ''}`}
                   disabled={!isCurrentMonth}
+                  title={
+                    count > 0
+                      ? (
+                          t('dashboard.calendarAppointmentsOnDay') || '{{count}} appointment(s)'
+                        ).replace('{{count}}', String(count))
+                      : undefined
+                  }
                 >
-                  {day}
+                  <span className='calendar-day-num'>{day}</span>
+                  {count > 0 && (
+                    <span className='calendar-day-indicator' aria-hidden>
+                      {count <= 3
+                        ? Array.from({ length: Math.min(count, 3) }).map((_, i) => (
+                            <span key={i} className='calendar-day-dot' />
+                          ))
+                        : count}
+                    </span>
+                  )}
                 </button>
               );
             })}

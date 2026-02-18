@@ -54,8 +54,11 @@ export function Tabs({
     [currentIndex, tabIds, onChange, idPrefix],
   );
 
-  const tabListClass =
-    variant === 'pills'
+  const isDashboard = variant === 'dashboard';
+
+  const tabListClass = isDashboard
+    ? 'flex items-center gap-0 overflow-x-auto scrollbar-hide'
+    : variant === 'pills'
       ? 'w-full flex gap-x-4 gap-y-1 overflow-x-auto scrollbar-hide py-1.5 border-b border-neutral-200 dark:border-neutral-600'
       : 'w-full flex flex-wrap items-center gap-x-4 gap-y-1 overflow-x-auto scrollbar-hide py-1.5';
 
@@ -70,6 +73,42 @@ export function Tabs({
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const tabId = `${idPrefix}-tab-${tab.id}`;
+
+        if (isDashboard) {
+          return (
+            <button
+              type='button'
+              key={tab.id}
+              id={tabId}
+              role='tab'
+              aria-selected={isActive}
+              tabIndex={isActive ? 0 : -1}
+              onClick={() => onChange(tab.id)}
+              onMouseEnter={onTabHover ? () => onTabHover(tab.id) : undefined}
+              className={[
+                'px-4 py-2 rounded-none text-sm whitespace-nowrap transition-all duration-200 ease-out outline-none',
+                'focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1',
+                isActive
+                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200 font-semibold'
+                  : 'font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-primary-50 dark:hover:bg-neutral-800',
+              ].join(' ')}
+            >
+              {tab.label}
+              {tab.count !== undefined && (
+                <span
+                  className={`ml-2 px-2 py-0.5 rounded-full text-xs transition-colors duration-200 ${
+                    isActive
+                      ? 'bg-primary-200/60 dark:bg-primary-700/50 text-primary-800 dark:text-primary-100'
+                      : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        }
+
         return (
           <button
             type='button'
@@ -103,6 +142,10 @@ export function Tabs({
       })}
     </nav>
   );
+
+  if (isDashboard) {
+    return <div className={`w-full ${className}`}>{nav}</div>;
+  }
 
   if (variant === 'pills') {
     return <div className={`w-full ${className}`}>{nav}</div>;

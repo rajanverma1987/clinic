@@ -114,12 +114,7 @@ export default function AdminActivityLogsPage() {
       }
       fetchLogs();
     }
-  }, [
-    authLoading,
-    user,
-    pagination.page,
-    fetchLogs,
-  ]);
+  }, [authLoading, user, pagination.page, fetchLogs]);
 
   const handleExportCsv = () => {
     if (!logs.length) {
@@ -357,9 +352,12 @@ export default function AdminActivityLogsPage() {
                   title={t('admin.activityLogsExportCsv')}
                 >
                   {exporting ? (
-                    <RefreshCwIcon className='icon icon-sm mr-1 animate-spin' aria-hidden />
+                    <RefreshCwIcon
+                      className='icon icon-sm flex-shrink-0 animate-spin'
+                      aria-hidden
+                    />
                   ) : (
-                    <FileDownIcon className='icon icon-sm mr-1' aria-hidden />
+                    <FileDownIcon className='icon icon-sm flex-shrink-0' aria-hidden />
                   )}
                   {t('admin.activityLogsExportCsv') || 'Export CSV'}
                 </Button>
@@ -370,7 +368,7 @@ export default function AdminActivityLogsPage() {
                   aria-label={t('admin.activityLogsEmailReport')}
                   title={t('admin.activityLogsEmailReport')}
                 >
-                  <MailIcon className='icon icon-sm mr-1' aria-hidden />
+                  <MailIcon className='icon icon-sm flex-shrink-0' aria-hidden />
                   {t('admin.activityLogsEmailReport') || 'Email Report'}
                 </Button>
               </div>

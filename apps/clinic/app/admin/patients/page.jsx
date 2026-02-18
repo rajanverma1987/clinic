@@ -620,13 +620,13 @@ export default function AdminPatientsPage() {
                               {
                                 key: 'view',
                                 label: t('admin.patientsView'),
-                                icon: <EyeIcon className='icon' />,
+                                icon: <EyeIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
                                 onClick: () => router.push(`/admin/patients/${p._id}`),
                               },
                               {
                                 key: 'activityLog',
                                 label: t('admin.patientsActivityLog'),
-                                icon: <HistoryIcon className='icon' />,
+                                icon: <HistoryIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
                                 onClick: () =>
                                   router.push(
                                     `/admin/activity-logs?resource=patient&resourceId=${p._id}`,
@@ -653,7 +653,7 @@ export default function AdminPatientsPage() {
                               {
                                 key: 'delete',
                                 label: t('admin.patientsDelete'),
-                                icon: <TrashIcon className='icon' />,
+                                icon: <TrashIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
                                 danger: true,
                                 onClick: () => handleDelete(p._id),
                               },

@@ -43,7 +43,7 @@ export function DashboardHeader({
 
   return (
     <div
-      className='bg-white dark:bg-neutral-800 rounded-[10px] border-2 border-neutral-100 dark:border-neutral-600 relative shadow-lg'
+      className='bg-white dark:bg-neutral-800 rounded-[10px] border-2 border-neutral-100 dark:border-neutral-600 relative shadow-lg transition-[box-shadow,border-color] duration-200 ease-out'
       style={{
         overflow: 'visible',
         padding: '12px 12px 12px 10px',

@@ -24,7 +24,7 @@ function AppointmentListItemInner({
     appointment.appointmentDate ||
       appointment.schedule?.startTime ||
       appointment.startTime ||
-      appointment.date
+      appointment.date,
   );
   const startTime = appointment.startedAt
     ? new Date(appointment.startedAt)
@@ -89,35 +89,41 @@ function AppointmentListItemInner({
       onClick={handleCardClick}
     >
       <div className='flex items-start gap-3'>
-        <div className='w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 border-2 border-primary-200'>
-          <span className='text-primary-600 font-semibold text-sm'>{initials}</span>
+        <div className='w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center flex-shrink-0 border-2 border-primary-200 dark:border-primary-700'>
+          <span className='text-primary-600 dark:text-primary-300 font-semibold text-sm'>
+            {initials}
+          </span>
         </div>
 
         <div className='flex-1 min-w-0'>
-          <h4 className='text-body-sm font-semibold text-neutral-900 mb-0.5 truncate'>
+          <h4 className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-0.5 truncate'>
             {patientName}
           </h4>
           {showActions && (
             <>
               {phone && (
-                <p className='text-body-xs text-neutral-600 flex items-center gap-1 truncate'>
+                <p className='text-body-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-1 truncate'>
                   <PhoneIcon className='icon icon-xs flex-shrink-0' />
                   {phone}
                 </p>
               )}
-              <p className='text-body-xs text-neutral-500 mt-0.5'>
+              <p className='text-body-xs text-neutral-500 dark:text-neutral-400 mt-0.5'>
                 <span className='font-medium'>{t('dashboard.visitType')}:</span> {visitType}
               </p>
-              <p className='text-body-xs text-neutral-600 truncate mt-0.5'>
+              <p className='text-body-xs text-neutral-600 dark:text-neutral-400 truncate mt-0.5'>
                 <span className='font-medium'>{t('dashboard.chiefComplaint')}:</span>{' '}
                 {chiefComplaint}
               </p>
             </>
           )}
-          {!showActions && <p className='text-body-xs text-neutral-600 truncate'>{reason}</p>}
+          {!showActions && (
+            <p className='text-body-xs text-neutral-600 dark:text-neutral-400 truncate'>{reason}</p>
+          )}
         </div>
 
-        <div className={`time-badge ${isOngoing ? 'time-badge-ongoing' : ''} flex-shrink-0`}>
+        <div
+          className={`time-badge ${isOngoing ? 'time-badge-ongoing' : ''} flex-shrink-0 !bg-neutral-100 !text-neutral-700 dark:!bg-neutral-800/60 dark:!text-neutral-200`}
+        >
           {isOngoing ? (
             <div className='flex flex-col items-center gap-0.5'>
               <span className='text-body-xs font-semibold'>{t('dashboard.onGoing')}</span>
@@ -135,7 +141,7 @@ function AppointmentListItemInner({
       </div>
 
       {showActions && (
-        <div className='flex flex-wrap gap-2 mt-3 pt-3 border-t border-neutral-200'>
+        <div className='flex flex-wrap gap-2 mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-600'>
           {onViewHistory && (
             <button
               type='button'
@@ -160,7 +166,7 @@ function AppointmentListItemInner({
             <button
               type='button'
               data-action-button
-              className='text-xs font-medium text-neutral-600 hover:text-neutral-800 hover:underline'
+              className='text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:underline'
               onClick={(e) => handleAction(e, () => onReschedule(appointment))}
             >
               {t('dashboard.reschedule')}

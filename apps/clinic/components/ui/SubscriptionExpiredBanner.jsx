@@ -1,9 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { InfoIcon } from '@/components/icons';
 import { useI18n } from '@/contexts/I18nContext';
 import { logger } from '@/lib/utils/logger.js';
+import { useRouter } from 'next/navigation';
 import { Button } from './Button.jsx';
 
 /**
@@ -43,16 +43,19 @@ export function SubscriptionExpiredBanner({
       .replace('{{days}}', days);
     return (
       <div
-        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-500 dark:border-amber-600 text-neutral-800 dark:text-amber-100"
-        role="alert"
+        className='flex items-start justify-between gap-4 flex-wrap py-3 px-4 sm:px-6 bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-500 dark:border-amber-600 text-neutral-800 dark:text-amber-100'
+        role='alert'
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center" aria-hidden>
-            <InfoIcon className="icon icon-sm text-amber-600 dark:text-amber-400" ariaHidden />
+        <div className='flex items-start gap-3 min-w-0 flex-1'>
+          <span
+            className='flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-amber-100 dark:bg-amber-800/50 flex items-center justify-center'
+            aria-hidden
+          >
+            <InfoIcon className='icon icon-sm text-amber-600 dark:text-amber-400' ariaHidden />
           </span>
-          <p className="text-body-sm font-medium">{message}</p>
+          <p className='text-body-sm font-medium leading-snug break-words min-w-0'>{message}</p>
         </div>
-        <Button variant="warning" size="sm" onClick={goToSubscription}>
+        <Button variant='warning' size='sm' onClick={goToSubscription} className='flex-shrink-0'>
           {t('subscription.upgradeNow')}
         </Button>
       </div>
@@ -60,25 +63,37 @@ export function SubscriptionExpiredBanner({
   }
 
   // Expired, suspended, or cancelled
-  if (subscriptionStatus === 'EXPIRED' || subscriptionStatus === 'SUSPENDED' || subscriptionStatus === 'CANCELLED') {
+  if (
+    subscriptionStatus === 'EXPIRED' ||
+    subscriptionStatus === 'SUSPENDED' ||
+    subscriptionStatus === 'CANCELLED'
+  ) {
     const status = subscriptionStatus.toLowerCase();
     const message = t('subscription.bannerExpired').replace('{{status}}', status);
-    const dateStr = expiryDate ? t('subscription.bannerExpiredOn').replace('{{date}}', new Date(expiryDate).toLocaleDateString()) : '';
+    const dateStr = expiryDate
+      ? t('subscription.bannerExpiredOn').replace(
+          '{{date}}',
+          new Date(expiryDate).toLocaleDateString(),
+        )
+      : '';
     return (
       <div
-        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 dark:border-red-600 text-neutral-800 dark:text-red-100"
-        role="alert"
+        className='flex items-start justify-between gap-4 flex-wrap py-3 px-4 sm:px-6 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 dark:border-red-600 text-neutral-800 dark:text-red-100'
+        role='alert'
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 dark:bg-red-800/50 flex items-center justify-center" aria-hidden>
-            <InfoIcon className="icon icon-sm text-red-600 dark:text-red-400" ariaHidden />
+        <div className='flex items-start gap-3 min-w-0 flex-1'>
+          <span
+            className='flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-red-100 dark:bg-red-800/50 flex items-center justify-center'
+            aria-hidden
+          >
+            <InfoIcon className='icon icon-sm text-red-600 dark:text-red-400' ariaHidden />
           </span>
-          <p className="text-body-sm font-medium">
+          <p className='text-body-sm font-medium leading-snug break-words min-w-0'>
             {message}
             {dateStr && ` ${dateStr}`}
           </p>
         </div>
-        <Button variant="danger" size="sm" onClick={goToSubscription}>
+        <Button variant='danger' size='sm' onClick={goToSubscription} className='flex-shrink-0'>
           {t('subscription.renewNow')}
         </Button>
       </div>
@@ -89,36 +104,51 @@ export function SubscriptionExpiredBanner({
   if (subscriptionStatus === 'PENDING') {
     return (
       <div
-        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-primary-50 dark:bg-primary-900/30 border-l-4 border-primary-500 dark:border-primary-400 text-neutral-800 dark:text-primary-100"
-        role="alert"
+        className='flex items-start justify-between gap-4 flex-wrap py-3 px-4 sm:px-6 bg-primary-50 dark:bg-primary-900/30 border-l-4 border-primary-500 dark:border-primary-400 text-neutral-800 dark:text-primary-100'
+        role='alert'
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-800/50 flex items-center justify-center" aria-hidden>
-            <InfoIcon className="icon icon-sm text-primary-600 dark:text-primary-400" ariaHidden />
+        <div className='flex items-start gap-3 min-w-0 flex-1'>
+          <span
+            className='flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-primary-100 dark:bg-primary-800/50 flex items-center justify-center'
+            aria-hidden
+          >
+            <InfoIcon className='icon icon-sm text-primary-600 dark:text-primary-400' ariaHidden />
           </span>
-          <p className="text-body-sm font-medium">{t('subscription.bannerPending')}</p>
+          <p className='text-body-sm font-medium leading-snug break-words min-w-0'>
+            {t('subscription.bannerPending')}
+          </p>
         </div>
-        <Button variant="primary" size="sm" onClick={handleCompletePayment}>
+        <Button
+          variant='primary'
+          size='sm'
+          onClick={handleCompletePayment}
+          className='flex-shrink-0'
+        >
           {t('subscription.completePayment')}
         </Button>
       </div>
     );
   }
 
-  // No subscription
+  // No subscription – full-width banner, icon aligned to first line, text wraps with padding
   if (!subscriptionStatus) {
     return (
       <div
-        className="flex items-center justify-between gap-4 flex-wrap py-3 px-4 bg-neutral-50 dark:bg-neutral-800/80 border-l-4 border-primary-500 dark:border-primary-400 text-neutral-700 dark:text-neutral-200"
-        role="alert"
+        className='flex items-start justify-between gap-4 flex-wrap py-3 px-4 sm:px-6 bg-neutral-50 dark:bg-neutral-800/80 border-l-4 border-primary-500 dark:border-primary-400 text-neutral-700 dark:text-neutral-200'
+        role='alert'
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-neutral-200 dark:bg-neutral-600 flex items-center justify-center" aria-hidden>
-            <InfoIcon className="icon icon-sm text-neutral-600 dark:text-neutral-300" ariaHidden />
+        <div className='flex items-start gap-3 min-w-0 flex-1'>
+          <span
+            className='flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-neutral-200 dark:bg-neutral-600 flex items-center justify-center'
+            aria-hidden
+          >
+            <InfoIcon className='icon icon-sm text-neutral-600 dark:text-neutral-300' ariaHidden />
           </span>
-          <p className="text-body-sm font-medium">{t('subscription.bannerNoSubscription')}</p>
+          <p className='text-body-sm font-medium leading-snug break-words min-w-0'>
+            {t('subscription.bannerNoSubscription')}
+          </p>
         </div>
-        <Button variant="primary" size="sm" onClick={goToSubscription}>
+        <Button variant='primary' size='sm' onClick={goToSubscription} className='flex-shrink-0'>
           {t('subscription.viewPlans')}
         </Button>
       </div>

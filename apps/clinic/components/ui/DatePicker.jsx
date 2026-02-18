@@ -22,7 +22,7 @@ export function DatePicker({
         <input
           type='date'
           className={`
-            form-control-height ${sizeClass} w-full px-4 py-0 border rounded-lg 
+            form-control-height ${sizeClass} w-full px-4 py-0 border rounded-lg transition-[border-color,box-shadow] duration-200 ease-out
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
             ${error ? 'border-red-500 bg-red-50 dark:bg-red-900/20 dark:border-red-600' : 'border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 hover:border-gray-400 dark:hover:border-neutral-500 text-neutral-900 dark:text-neutral-100'}
             ${className}

@@ -456,6 +456,7 @@
     "createdAt": "Créé",
     "update": "Mettre à jour",
     "search": "Rechercher",
+    "searchPlaceholder": "Rechercher patients, rendez-vous, ordonnances... (Ctrl+K)",
     "filter": "Filtrer",
     "actions": "Actions",
     "remove": "Remove",
@@ -510,7 +511,7 @@
     "message": "Message",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
-    "collapseMenu": "Collapse menu",
+    "collapseMenu": "- Collapse -",
     "day": "jour",
     "days": "jours",
     "ok": "Ok",
@@ -626,7 +627,7 @@
     "tabsLabel": "Section du tableau de bord",
     "tabPlaceholder": "Le contenu de {{tab}} sera chargé ici.",
     "loading": "Chargement du tableau de bord...",
-    "overview": "Dashboard Overview",
+    "overview": "Aperçu",
     "welcomeBackDoctor": "Bienvenue, Dr. {{name}}",
     "welcome": "Bienvenue",
     "todayAppointments": "Rendez-vous d'aujourd'hui",
@@ -728,7 +729,15 @@
     "recentActivity": "Activité récente",
     "noRecentActivity": "Aucune activité récente",
     "tabError": "{{tab}} n'a pas pu être chargé. Veuillez réessayer.",
-    "chartsUnavailable": "Graphiques temporairement indisponibles."
+    "chartsUnavailable": "Graphiques temporairement indisponibles.",
+    "keyMetrics": "Indicateurs clés",
+    "assignStaff": "Assigner du personnel",
+    "retryFailedPayments": "Réessayer les paiements échoués",
+    "upcoming": "à venir",
+    "total": "Total",
+    "todaySchedule": "Agenda du jour",
+    "patientsInQueue": "patients en file d'attente",
+    "lastUpdated": "Dernière mise à jour"
   },
   "offline": {
     "actionsSynced": "{{count}} action(s) synchronisée(s) avec succès."

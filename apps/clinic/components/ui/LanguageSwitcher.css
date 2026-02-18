@@ -595,3 +595,71 @@
 .LanguageSwitcher-item:hover .LanguageSwitcher-item-glow {
   opacity: 1;
 }
+
+/* Header bar context: borderless, no shadow – when used inside page header or sticky header */
+.page-header .LanguageSwitcher-button,
+.page-header .LanguageSwitcher-button--light,
+.page-header .LanguageSwitcher-button--dark,
+.enterprise-header .LanguageSwitcher-button,
+.enterprise-header .LanguageSwitcher-button--light,
+.enterprise-header .LanguageSwitcher-button--dark,
+.sticky-header-bar .LanguageSwitcher-button,
+.sticky-header-bar .LanguageSwitcher-button--light,
+.sticky-header-bar .LanguageSwitcher-button--dark {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.page-header .LanguageSwitcher-button:hover,
+.page-header .LanguageSwitcher-button--light:hover,
+.page-header .LanguageSwitcher-button--dark:hover,
+.page-header .LanguageSwitcher-button--light.is-open,
+.page-header .LanguageSwitcher-button--dark.is-open,
+.enterprise-header .LanguageSwitcher-button:hover,
+.enterprise-header .LanguageSwitcher-button--light:hover,
+.enterprise-header .LanguageSwitcher-button--dark:hover,
+.enterprise-header .LanguageSwitcher-button--light.is-open,
+.enterprise-header .LanguageSwitcher-button--dark.is-open,
+.sticky-header-bar .LanguageSwitcher-button:hover,
+.sticky-header-bar .LanguageSwitcher-button--light:hover,
+.sticky-header-bar .LanguageSwitcher-button--dark:hover,
+.sticky-header-bar .LanguageSwitcher-button--light.is-open,
+.sticky-header-bar .LanguageSwitcher-button--dark.is-open {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  transform: none;
+}
+.page-header .LanguageSwitcher-flag-wrapper,
+.page-header .LanguageSwitcher-button:hover .LanguageSwitcher-flag-wrapper,
+.enterprise-header .LanguageSwitcher-flag-wrapper,
+.enterprise-header .LanguageSwitcher-button:hover .LanguageSwitcher-flag-wrapper,
+.sticky-header-bar .LanguageSwitcher-flag-wrapper,
+.sticky-header-bar .LanguageSwitcher-button:hover .LanguageSwitcher-flag-wrapper {
+  background: transparent;
+  box-shadow: none;
+}
+.dark .page-header .LanguageSwitcher-button,
+.dark .page-header .LanguageSwitcher-button--light,
+.dark .enterprise-header .LanguageSwitcher-button,
+.dark .enterprise-header .LanguageSwitcher-button--light,
+.dark .sticky-header-bar .LanguageSwitcher-button,
+.dark .sticky-header-bar .LanguageSwitcher-button--light {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.dark .page-header .LanguageSwitcher-button:hover,
+.dark .page-header .LanguageSwitcher-button--light.is-open,
+.dark .enterprise-header .LanguageSwitcher-button:hover,
+.dark .enterprise-header .LanguageSwitcher-button--light.is-open,
+.dark .sticky-header-bar .LanguageSwitcher-button:hover,
+.dark .sticky-header-bar .LanguageSwitcher-button--light.is-open {
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  box-shadow: none;
+}

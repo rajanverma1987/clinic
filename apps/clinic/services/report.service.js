@@ -17,6 +17,8 @@ import Invoice, { InvoiceStatus } from '@/models/Invoice.js';
 import Patient from '@/models/Patient.js';
 import Payment, { PaymentStatus } from '@/models/Payment.js';
 import StockTransaction from '@/models/StockTransaction.js';
+// Required so Appointment.populate('doctorId') can resolve ref: 'User' on the default connection
+import '@/models/User.js';
 
 /**
  * Build date filter for queries
@@ -313,7 +315,7 @@ export async function getPatientReport(input, tenantId, userId) {
       allPatients = await Patient.find(filter)
         .select('gender dateOfBirth bloodGroup createdAt')
         .lean();
-      
+
       // If includeNewPatients is true and dateFilter exists, patients are already filtered by MongoDB
       // Otherwise, use all patients
       patients = input.includeNewPatients && dateFilter ? allPatients : allPatients;
@@ -888,10 +890,7 @@ export async function getDashboardStats(tenantId, userId) {
           {
             $match: withTenant(tenantId, {
               deletedAt: null,
-              $or: [
-                { createdAt: { $gte: lastMonth } },
-                { createdAt: { $exists: true } },
-              ],
+              $or: [{ createdAt: { $gte: lastMonth } }, { createdAt: { $exists: true } }],
             }),
           },
           {
@@ -919,7 +918,9 @@ export async function getDashboardStats(tenantId, userId) {
           logger.error('Error fetching patient stats:', err);
           return [{ activePatients: [], newPatientsThisMonth: [], newPatientsLastMonth: [] }];
         })
-      : Promise.resolve([{ activePatients: [], newPatientsThisMonth: [], newPatientsLastMonth: [] }]);
+      : Promise.resolve([
+          { activePatients: [], newPatientsThisMonth: [], newPatientsLastMonth: [] },
+        ]);
 
     const patStats = patientStats[0] || {};
     const activePatients = patStats.activePatients?.[0]?.count || 0;

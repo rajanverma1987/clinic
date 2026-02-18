@@ -39,7 +39,8 @@ export function endApiRequestTiming(markName, endpoint) {
         endpoint === '/auth/login' ||
         endpoint === '/auth/refresh');
     if (entry && entry.duration > API_P95_TARGET_MS && !isAuthEndpoint) {
-      if (typeof console !== 'undefined' && console.warn) {
+      const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
+      if (!isDev && typeof console !== 'undefined' && console.warn) {
         console.warn('[API] Request exceeded P95 target', {
           endpoint,
           durationMs: Math.round(entry.duration),

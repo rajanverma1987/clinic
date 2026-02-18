@@ -1,28 +1,24 @@
 'use client';
 
 import { RefreshCwIcon, SearchIcon } from '@/components/icons';
-import GlobalSearch from '@/components/search/GlobalSearch';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
-import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useI18n } from '@/contexts/I18nContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useBreadcrumbs } from '@/hooks/useBreadcrumbs';
 import { useRouter } from 'next/navigation';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 
-/** Normalize actionButtons to an array so we always render the same way (array or single node). */
+/** Normalize actionButtons to an array so we always render the same way. */
 function toActionsList(actionButtons) {
   if (actionButtons == null) return [];
   return Array.isArray(actionButtons) ? actionButtons : [actionButtons];
 }
 
 /**
- * PageHeader – sticky header for dashboard pages
- * Sticks to top of scroll area, shows elevation shadow when scrolled
- * actionButtons: array of React nodes, or a single node (both supported)
+ * PageHeader – enterprise-level sticky header.
+ * Left: page title + meta inline. Right: search pill (⌘K) | refresh | actions | theme | lang | bell.
+ * onOpenSearch is owned by Layout to keep a single GlobalSearch instance.
  */
 export function PageHeader({
   title,
@@ -30,7 +26,6 @@ export function PageHeader({
   description,
   actionButton,
   actionButtons,
-  breadcrumbs,
   icon,
   notifications = [],
   unreadCount = 0,
@@ -41,24 +36,17 @@ export function PageHeader({
   refreshing = false,
   showNotifications = true,
   onOpenNotifications,
+  onOpenSearch,
   showLanguageSwitcher = true,
   showSearch = true,
   className = '',
+  variant = 'default',
 }) {
   const { t } = useI18n();
   const { isDark } = useTheme();
   const router = useRouter();
-  const [showSearchModal, setShowSearchModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [defaultRefreshing, setDefaultRefreshing] = useState(false);
-  const autoBreadcrumbs = useBreadcrumbs({ currentPageLabel: title });
-  const breadcrumbItems =
-    breadcrumbs && breadcrumbs.length > 0
-      ? breadcrumbs.map((c) => ({ label: c.label, href: c.href, onClick: c.onClick }))
-      : autoBreadcrumbs.length > 0
-        ? autoBreadcrumbs.map((item) => ({ label: item.label, href: item.href }))
-        : [];
-
   const actionsList = toActionsList(actionButtons);
 
   const handleRefresh = useCallback(() => {
@@ -72,18 +60,6 @@ export function PageHeader({
   }, [onRefresh, router]);
 
   const isRefreshing = typeof onRefresh === 'function' ? refreshing : defaultRefreshing;
-  const hasQuickActions = showSearch || actionButton || actionsList.length > 0 || true;
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        setShowSearchModal(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   useEffect(() => {
     const el = document.querySelector('[data-main-scroll]');
@@ -94,117 +70,98 @@ export function PageHeader({
     return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
+  const isDashboard = variant === 'dashboard';
+  const hasActions = actionButton != null || actionsList.length > 0;
+
+  const meta = subtitle || description;
+
   return (
     <header
       role='banner'
-      className={`sticky-header-bar ${scrolled ? 'header-scrolled' : ''} ${className}`}
-      style={{ marginBottom: 'var(--dashboard-element-gap, var(--space-6, 24px))' }}
+      className={`page-header ${isDashboard ? 'page-header--dashboard' : ''} ${
+        scrolled ? 'page-header--scrolled' : ''
+      } ${className}`}
+      style={
+        isDashboard
+          ? { marginBottom: 0 }
+          : { marginBottom: 'var(--dashboard-element-gap, var(--space-6, 24px))' }
+      }
     >
-      <div className='sticky-header-bar__inner'>
-        <div className='sticky-header-bar__left'>
+      <div className='page-header__bar'>
+        <div className='page-header__title-block'>
           {icon && (
-            <div
-              className='text-primary-600 flex items-center justify-center shrink-0'
-              style={{ width: 24, height: 24 }}
-            >
+            <span className='page-header__icon' aria-hidden>
               {icon}
-            </div>
+            </span>
           )}
-          <div className='min-w-0'>
-            <h1 className='sticky-header-bar__title'>{title}</h1>
-            {(subtitle || description) && (
-              <div className='sticky-header-bar__meta'>{subtitle || description}</div>
-            )}
+          <div className='page-header__title-wrap'>
+            <h1 className='page-header__title'>{title}</h1>
+            {meta && <p className='page-header__subtitle'>{meta}</p>}
           </div>
         </div>
 
-        <div className='sticky-header-bar__right'>
-          {/* Quick Action: search + page actions */}
-          <div className='sticky-header-bar__right-group'>
-            {showSearch && (
-              <div className='header-control-box header-control-box--icon'>
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => setShowSearchModal(true)}
-                  title={t('common.ariaLabelSearchCtrlK')}
-                  className='header-search-trigger'
-                  aria-label={t('common.ariaLabelSearch')}
-                >
-                  <SearchIcon className='icon icon-sm' ariaHidden />
-                </Button>
-              </div>
+        <div className='page-header__tools'>
+          {showSearch && (
+            <button
+              type='button'
+              onClick={onOpenSearch}
+              className='page-header__search'
+              aria-label={t('common.ariaLabelSearch')}
+            >
+              <SearchIcon className='page-header__search-icon' ariaHidden />
+              <span className='page-header__search-text'>
+                {t('common.searchPlaceholder') || 'Search...'}
+              </span>
+              <kbd className='page-header__search-kbd'>⌘K</kbd>
+            </button>
+          )}
+
+          <button
+            type='button'
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className='page-header__btn'
+            title={isRefreshing ? t('common.updating') : t('common.refresh')}
+            aria-label={isRefreshing ? t('common.updating') : t('common.refresh')}
+            aria-busy={isRefreshing}
+          >
+            <RefreshCwIcon
+              className={`icon icon-md ${isRefreshing ? 'animate-spin' : ''}`}
+              ariaHidden
+            />
+          </button>
+
+          {hasActions && (
+            <>
+              <span className='page-header__divider' aria-hidden />
+              {actionButton && <div className='page-header__actions'>{actionButton}</div>}
+              {actionsList.map((btn, i) => (
+                <Fragment key={i}>{btn}</Fragment>
+              ))}
+            </>
+          )}
+
+          <span className='page-header__divider' aria-hidden />
+
+          <div className='page-header__utils'>
+            <ThemeToggle size='sm' />
+            {showLanguageSwitcher && (
+              <LanguageSwitcher variant={isDark ? 'dark' : 'light'} size='sm' />
             )}
-            <div className='header-control-box header-control-box--icon'>
-              <Button
-                variant='ghost'
+            {showNotifications && (
+              <NotificationDropdown
+                notifications={notifications}
+                unreadCount={unreadCount}
+                onNotificationClick={onNotificationClick}
+                onMarkAsRead={onMarkAsRead}
+                onMarkAllAsRead={onMarkAllAsRead}
+                onOpenPanel={onOpenNotifications}
                 size='sm'
-                iconOnly
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                title={isRefreshing ? t('common.updating') : t('common.refresh')}
-                aria-label={isRefreshing ? t('common.updating') : t('common.refresh')}
-                aria-busy={isRefreshing}
-              >
-                <RefreshCwIcon
-                  className={`icon icon-sm ${isRefreshing ? 'animate-spin' : ''}`}
-                  ariaHidden
-                />
-              </Button>
-            </div>
-            {(actionButton || actionsList.length > 0) && (
-              <>
-                <span className='sticky-header-bar__pipe' aria-hidden />
-                {actionButton && (
-                  <div className='flex items-center gap-3 min-w-0'>{actionButton}</div>
-                )}
-                {actionsList.length > 0 && (
-                  <div className='flex items-center gap-2'>
-                    {actionsList.map((btn, i) => (
-                      <Fragment key={i}>{btn}</Fragment>
-                    ))}
-                  </div>
-                )}
-              </>
+              />
             )}
           </div>
-          {hasQuickActions || showLanguageSwitcher ? (
-            <span className='sticky-header-bar__pipe' aria-hidden />
-          ) : null}
-          <div className='sticky-header-bar__right-group'>
-            <div className='header-control-box header-control-box--icon'>
-              <ThemeToggle size='sm' />
-            </div>
-          </div>
-          {showLanguageSwitcher && (
-            <div className='sticky-header-bar__right-group'>
-              <div className='header-control-box'>
-                <LanguageSwitcher variant={isDark ? 'dark' : 'light'} size='sm' />
-              </div>
-            </div>
-          )}
-          {showLanguageSwitcher && showNotifications ? (
-            <span className='sticky-header-bar__pipe' aria-hidden />
-          ) : null}
-          {showNotifications && (
-            <div className='sticky-header-bar__right-group'>
-              <div className='header-control-box header-control-box--icon'>
-                <NotificationDropdown
-                  notifications={notifications}
-                  unreadCount={unreadCount}
-                  onNotificationClick={onNotificationClick}
-                  onMarkAsRead={onMarkAsRead}
-                  onMarkAllAsRead={onMarkAllAsRead}
-                  onOpenPanel={onOpenNotifications}
-                  size='sm'
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
-      {breadcrumbItems.length > 0 && <Breadcrumb items={breadcrumbItems} />}
-      <GlobalSearch isOpen={showSearchModal} onClose={() => setShowSearchModal(false)} />
     </header>
   );
 }

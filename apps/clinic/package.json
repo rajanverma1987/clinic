@@ -39,12 +39,15 @@
     "check:buttons:html": "node scripts/check-button-consistency-enterprise.js --html",
     "check:buttons:ci": "CI=true node scripts/check-button-consistency-enterprise.js --json",
     "generate:dashboard-json": "node scripts/generate-dashboard-structure-json.js",
-    "fix:encryption": "node -r dotenv/config scripts/fix-encryption-warnings.js dotenv_config_path=.env.local"
+    "fix:encryption": "node -r dotenv/config scripts/fix-encryption-warnings.js dotenv_config_path=.env.local",
+    "update-dashboard-metrics": "node -r dotenv/config scripts/update-dashboard-metrics.js dotenv_config_path=.env.local"
   },
   "dependencies": {
+    "@clinic-saas/config": "*",
+    "@clinic-saas/dashboard-engine": "0.0.1",
+    "@aws-sdk/client-sns": "^3.992.0",
     "@elastic/elasticsearch": "^9.2.0",
     "@tanstack/react-virtual": "^3.13.18",
-    "@aws-sdk/client-sns": "^3.700.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -366,7 +366,7 @@ export default function InvoicesPage() {
           {
             key: 'view',
             label: t('common.view') || 'View',
-            icon: <EyeIcon className='icon' />,
+            icon: <EyeIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
             onClick: () => router.push(`/invoices/${row._id}`),
           },
           ...(row.status === 'draft'
@@ -374,13 +374,13 @@ export default function InvoicesPage() {
                 {
                   key: 'edit',
                   label: t('common.edit'),
-                  icon: <PencilIcon className='icon' />,
+                  icon: <PencilIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
                   onClick: () => router.push(`/invoices/${row._id}/edit`),
                 },
                 {
                   key: 'delete',
                   label: t('common.delete'),
-                  icon: <TrashIcon className='icon' />,
+                  icon: <TrashIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
                   danger: true,
                   onClick: () => handleDelete(row._id, row.invoiceNumber),
                   disabled: deletingInvoiceId === row._id,
@@ -412,7 +412,7 @@ export default function InvoicesPage() {
           {
             key: 'print',
             label: t('invoices.print') || 'Print',
-            icon: <PrinterIcon className='icon' />,
+            icon: <PrinterIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
             onClick: () => {
               setPrintInvoiceId(row._id);
               setShowPrintPreview(true);
@@ -466,7 +466,7 @@ export default function InvoicesPage() {
                 <span className='animate-pulse'>{t('common.loading')}</span>
               ) : (
                 <>
-                  <FileDownIcon className='icon icon-sm mr-1.5' aria-hidden />
+                  <FileDownIcon className='icon icon-sm flex-shrink-0' aria-hidden />
                   {t('invoices.exportCsv') || 'Export CSV'}
                 </>
               )}

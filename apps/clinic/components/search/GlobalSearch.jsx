@@ -188,7 +188,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
     <div className='fixed inset-0 z-50 flex items-start justify-center pt-20 px-4'>
       {/* Backdrop */}
       <div
-        className='fixed inset-0 bg-neutral-600/25 dark:bg-black/40'
+        className='global-search-backdrop fixed inset-0 bg-neutral-600/25 dark:bg-black/40'
         onClick={onClose}
         role='button'
         tabIndex={0}
@@ -202,7 +202,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
       />
 
       {/* Search Modal */}
-      <Card className='relative z-10 w-full max-w-2xl shadow-2xl'>
+      <Card className='global-search-panel relative z-10 w-full max-w-2xl shadow-2xl'>
         <div className='p-4'>
           {/* Search Input */}
           <div className='relative'>
@@ -237,7 +237,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
                   {results.map((result, index) => (
                     <div
                       key={`${result.type}-${result.id}`}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      className={`p-3 rounded-lg cursor-pointer transition-colors duration-200 ease-out ${
                         index === selectedIndex
                           ? 'bg-primary-50 dark:bg-primary-900/40 border-2 border-primary-300 dark:border-primary-500'
                           : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/50 border-2 border-transparent'

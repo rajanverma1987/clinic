@@ -22,14 +22,7 @@ export function InventoryListItem({ item, onClick }) {
       <div className='flex items-start justify-between gap-3'>
         <div className='flex items-start gap-3 flex-1 min-w-0'>
           {/* Icon */}
-          <div
-            className='w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0'
-            style={{
-              background:
-                'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-            }}
-          >
+          <div className='icon-bg-error w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0'>
             {isCritical ? (
               <WarningIcon className='icon icon-xs text-status-error' />
             ) : (
@@ -39,13 +32,13 @@ export function InventoryListItem({ item, onClick }) {
 
           {/* Content */}
           <div className='flex-1 min-w-0'>
-            <h4 className='text-body-sm font-semibold text-neutral-900 mb-1 truncate'>
+            <h4 className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-1 truncate'>
               {itemName}
             </h4>
-            <p className='text-body-xs text-neutral-600 mb-1.5'>
+            <p className='text-body-xs text-neutral-600 dark:text-neutral-400 mb-1.5'>
               {isCritical ? 'Out of stock' : `Low stock: ${currentStock} ${unit}`}
             </p>
-            <div className='text-body-xs text-neutral-500'>
+            <div className='text-body-xs text-neutral-500 dark:text-neutral-400'>
               Minimum required: {minStock} {unit}
             </div>
           </div>

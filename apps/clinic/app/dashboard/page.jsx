@@ -9,13 +9,14 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { useUpdatesAvailable } from '@/hooks/useUpdatesAvailable';
 import { apiClient } from '@/lib/api/client';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
-import { showError } from '@/lib/utils/toast';
+import { showError, showSuccess, showWarning } from '@/lib/utils/toast';
 import nextDynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -75,6 +76,7 @@ import { OverviewTab } from './_tabs/OverviewTab';
 import { PrescriptionsTab } from './_tabs/PrescriptionsTab';
 import { AppointmentsListWithHook } from './components/AppointmentsList';
 import { useDashboardStats } from './hooks/useDashboardStats';
+import { ActionsSection, AlertsSection, KPISection, TablesSection, TrendsSection } from './sections';
 import { useDoctorDashboardLists } from './hooks/useDoctorDashboardLists';
 import { useDoctorDashboardStats } from './hooks/useDoctorDashboardStats';
 
@@ -86,6 +88,7 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { currency, locale } = useSettings();
+  const { open: openConfirm } = useConfirmation();
   const tenantId = user?.tenantId ?? null;
 
   // Tab state: ?tab=overview|appointments|prescriptions; no redirect. TabBar + TabContent render in-page.
@@ -107,6 +110,15 @@ export default function DashboardPage() {
       setActiveTab(normalizedUrlTab);
     }
   }, [urlTab]);
+
+  // Smooth scroll to top when user changes tab (not on initial load) to avoid jerk
+  const prevTabRef = useRef(activeTab);
+  useEffect(() => {
+    if (prevTabRef.current === activeTab) return;
+    prevTabRef.current = activeTab;
+    const el = document.querySelector('[data-main-scroll]');
+    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
 
   // Measure tab switch time (target <200ms; warn if >500ms)
   useEffect(() => {
@@ -190,6 +202,7 @@ export default function DashboardPage() {
   const performanceStats = performanceDashboardStats.stats
     ? {
         ...performanceDashboardStats.stats,
+        failed_transactions: performanceDashboardStats.stats.failed_transactions ?? 0,
         // Map nested structure to flat structure expected by Dashboard
         todayAppointments: performanceDashboardStats.stats.appointments?.todayTotal || 0,
         todayRevenue: performanceDashboardStats.stats.revenue?.today?.paid || 0,
@@ -208,9 +221,10 @@ export default function DashboardPage() {
   const statsLoading = isDoctor
     ? doctorStats.loading
     : performanceDashboardStats.loading || clinicStatsSWR.loading;
-  const fetchStats = isDoctor
+  // Background/auto-refresh: GET (cache). Manual button: POST (force recalc).
+  const fetchStatsBackground = isDoctor
     ? doctorStats.fetchStats
-    : performanceDashboardStats.refresh || clinicStatsSWR.fetchStats;
+    : (performanceDashboardStats.fetchStats ?? clinicStatsSWR.fetchStats);
   const forceRefresh = isDoctor ? doctorStats.fetchStats : performanceDashboardStats.forceRefresh;
 
   const clinicChartsSWR = useDashboardChartsSWR(clinicTenantId, { enabled: chartsEnabled });
@@ -239,7 +253,7 @@ export default function DashboardPage() {
         doctorStats.fetchStats();
         doctorLists.fetchDashboardLists();
       } else {
-        fetchStats();
+        forceRefresh();
         clinicListsSWR.fetchDashboardLists();
         if (chartsEnabled) clinicChartsSWR.fetchChartData();
       }
@@ -247,7 +261,7 @@ export default function DashboardPage() {
   }, [
     isDoctor,
     startTransition,
-    fetchStats,
+    forceRefresh,
     doctorStats,
     doctorLists,
     clinicListsSWR,
@@ -282,10 +296,14 @@ export default function DashboardPage() {
 
   const refreshIntervalRef = useRef(null);
   const hasFetchedRef = useRef(false);
+  const consecutiveFailsRef = useRef(0);
+  const lastRefreshAtRef = useRef(0);
+  const MIN_REFRESH_INTERVAL_MS = 10000; // 10s min between background refreshes
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setChartsEnabled(true), 200);
-    return () => clearTimeout(t);
+    // Yield one render frame so stats/lists paint first, then start chart fetch immediately
+    const id = requestAnimationFrame(() => setChartsEnabled(true));
+    return () => cancelAnimationFrame(id);
   }, []);
 
   // Mark initial load done once stats + lists have loaded (so auto-refresh interval can start)
@@ -300,9 +318,23 @@ export default function DashboardPage() {
   useEffect(() => {
     if (authLoading || !user || user.role === 'super_admin' || !initialLoadDone) return;
 
+    const onRefreshFail = () => {
+      consecutiveFailsRef.current += 1;
+      if (consecutiveFailsRef.current === 3) {
+        showWarning(t('dashboard.refreshFailed') || 'Data may be outdated. Check your connection.');
+        consecutiveFailsRef.current = 0;
+      }
+    };
+    const onRefreshOk = () => {
+      consecutiveFailsRef.current = 0;
+    };
+
     const runRefresh = () => {
-      fetchStats().catch(() => {});
-      fetchDashboardLists().catch(() => {});
+      const now = Date.now();
+      if (now - lastRefreshAtRef.current < MIN_REFRESH_INTERVAL_MS) return;
+      lastRefreshAtRef.current = now;
+      fetchStatsBackground().then(onRefreshOk).catch(onRefreshFail);
+      fetchDashboardLists().then(onRefreshOk).catch(onRefreshFail);
       if (!isDoctor) fetchChartData().catch(() => {});
     };
 
@@ -325,8 +357,8 @@ export default function DashboardPage() {
     document.addEventListener('visibilitychange', handleVisibility);
 
     const handleFocus = () => {
-      fetchStats().catch(() => {});
-      fetchDashboardLists().catch(() => {});
+      fetchStatsBackground().then(onRefreshOk).catch(onRefreshFail);
+      fetchDashboardLists().then(onRefreshOk).catch(onRefreshFail);
       if (!isDoctor) fetchChartData().catch(() => {});
     };
     window.addEventListener('focus', handleFocus);
@@ -341,7 +373,7 @@ export default function DashboardPage() {
     user,
     initialLoadDone,
     isDoctor,
-    fetchStats,
+    fetchStatsBackground,
     fetchDashboardLists,
     fetchChartData,
   ]);
@@ -402,6 +434,40 @@ export default function DashboardPage() {
     [criticalAlerts, t],
   );
 
+  // QuickActions moved to tab row (right corner)
+
+  // Notification handlers – must be declared before any early return (Rules of Hooks)
+  const handleNotificationClick = useCallback(
+    (notification) => {
+      if (notification.type === 'appointment') {
+        navigate('/appointments');
+      } else if (notification.type === 'invoice') {
+        navigate('/invoices');
+      } else if (notification.type === 'inventory') {
+        navigate('/inventory');
+      } else if (notification.type === 'lot') {
+        navigate('/inventory/lots');
+      }
+    },
+    [navigate],
+  );
+  const handleMarkAsRead = useCallback((_id) => {
+    // Mark individual notification as read
+  }, []);
+
+  const handleMarkAllAsRead = useCallback(() => {
+    openConfirm({
+      title: t('notifications.markAllReadTitle') || 'Mark all as read?',
+      message: t('notifications.markAllReadDesc') || 'All notifications will be marked as read.',
+      variant: 'info',
+      confirmLabel: t('common.markAllRead') || 'Mark all read',
+      onConfirm: async () => {
+        // Future: await apiClient.post('/notifications/mark-all-read');
+        showSuccess(t('notifications.allMarkedRead') || 'All notifications marked as read.');
+      },
+    });
+  }, [openConfirm, t]);
+
   // Loading states - keep Layout visible, only show loading in content area
   // Server and client must match: render same shell until mounted to avoid hydration (e.g. <a> in <div> mismatch)
   if (!mounted) {
@@ -458,27 +524,6 @@ export default function DashboardPage() {
   }
 
   const initialDashboardLoading = statsLoading || listsLoading;
-
-  const handleNotificationClick = (notification) => {
-    if (notification.type === 'appointment') {
-      navigate('/appointments');
-    } else if (notification.type === 'invoice') {
-      navigate('/invoices');
-    } else if (notification.type === 'inventory') {
-      navigate('/inventory');
-    } else if (notification.type === 'lot') {
-      navigate('/inventory/lots');
-    }
-  };
-
-  const handleMarkAsRead = (_id) => {
-    // Mark individual notification as read
-  };
-
-  const handleMarkAllAsRead = () => {
-    // Mark all notifications as read
-  };
-
   const showStaleBanner =
     !isDoctor && clinicListsSWR.error && clinicListsSWR.todayAppointments?.length > 0;
 
@@ -489,45 +534,52 @@ export default function DashboardPage() {
           <StaleDataBanner visible onRetry={() => clinicListsSWR.fetchDashboardLists()} />
         )}
         <div className='dashboard-container'>
-          {/* Page Header – doctor: welcome banner; clinic: overview */}
-          <PageHeader
-            title={
-              isDoctor && user?.firstName
-                ? t('dashboard.welcomeBackDoctor').replace('{{name}}', user.firstName)
-                : t('dashboard.overview')
-            }
-            subtitle={formatDateDisplay()}
-            notifications={notifications}
-            unreadCount={criticalAlerts.length}
-            onNotificationClick={handleNotificationClick}
-            onMarkAsRead={handleMarkAsRead}
-            onMarkAllAsRead={handleMarkAllAsRead}
-            onRefresh={handleManualRefresh || forceRefresh}
-            refreshing={
-              !isDoctor &&
-              (performanceDashboardStats.loading ||
-                clinicStatsSWR.isValidating ||
-                clinicListsSWR.isValidating)
-            }
-            actionButton={
-              <div className='flex items-center gap-3 shrink-0'>
+          {/* Unified header block – same design for Overview, Appointments, Prescriptions tabs */}
+          <div className='dashboard-header-block'>
+            <PageHeader
+              title={
+                isDoctor && user?.firstName
+                  ? t('dashboard.welcomeBackDoctor').replace('{{name}}', user.firstName)
+                  : activeTab === 'overview'
+                    ? t('dashboard.overview')
+                    : activeTab === 'appointments'
+                      ? t('appointments.title')
+                      : t('prescriptions.title')
+              }
+              subtitle={formatDateDisplay()}
+              notifications={notifications}
+              unreadCount={criticalAlerts.length}
+              onNotificationClick={handleNotificationClick}
+              onMarkAsRead={handleMarkAsRead}
+              onMarkAllAsRead={handleMarkAllAsRead}
+              onRefresh={handleManualRefresh || forceRefresh}
+              refreshing={
+                !isDoctor &&
+                (performanceDashboardStats.loading ||
+                  clinicStatsSWR.isValidating ||
+                  clinicListsSWR.isValidating)
+              }
+              variant='dashboard'
+            />
+            <div className='dashboard-header-divider' aria-hidden />
+            <div
+              className='dashboard-tab-row flex items-center justify-between gap-4'
+              style={{ display: initialDashboardLoading ? 'none' : undefined }}
+            >
+              <TabBar
+                className='dashboard-tab-bar flex-1 min-w-0'
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                userId={user?._id || user?.userId}
+              />
+              <div className='flex items-center shrink-0'>
                 <QuickActions onNavigate={navigate} loading={false} userRole={user?.role} />
               </div>
-            }
-          />
-
-          {/* Skeleton shown during initial load; tabs are always mounted so their
-              data fetches start immediately (avoids cold-start latency on first switch) */}
-          {initialDashboardLoading && <DashboardSkeleton isDoctor={isDoctor} />}
-
-          <div style={{ display: initialDashboardLoading ? 'none' : undefined }}>
-            <TabBar
-              className='dashboard-section dashboard-tab-bar'
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              userId={user?._id || user?.userId}
-            />
+            </div>
           </div>
+
+          {/* Skeleton shown during initial load */}
+          {initialDashboardLoading && <DashboardSkeleton isDoctor={isDoctor} />}
 
           <TabContent
             activeTab={activeTab}
@@ -536,8 +588,8 @@ export default function DashboardPage() {
             hidden={initialDashboardLoading}
           >
             <OverviewTab>
-              {/* Critical Alerts / Pending Tasks (Quick Actions moved to header bar) */}
-              <div className='dashboard-section'>
+              {/* Critical Alerts / Pending Tasks – AlertsSection (STEP 5) */}
+              <AlertsSection>
                 <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid'>
                   {/* Critical Alerts - Only for non-doctors */}
                   {!isDoctor && criticalAlerts && criticalAlerts.length > 0 && (
@@ -558,10 +610,10 @@ export default function DashboardPage() {
                   {isDoctor && (
                     <div className='lg:col-span-2'>
                       <Card className='p-6 h-full dashboard-pending-tasks-card'>
-                        <div className='flex items-center justify-between gap-3 mb-4 pb-3 border-b border-neutral-200'>
+                        <div className='flex items-center justify-between gap-3 mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700'>
                           <div className='flex items-center gap-3'>
                             <div className='dashboard-pending-tasks-dot' />
-                            <h3 className='text-lg font-bold text-neutral-900'>
+                            <h3 className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
                               {t('dashboard.pendingTasks')}
                             </h3>
                           </div>
@@ -645,7 +697,7 @@ export default function DashboardPage() {
                             (stats?.labReportsToReview ?? 0) === 0 &&
                             (stats?.newMessages ?? 0) === 0 &&
                             (stats?.prescriptionsToApprove ?? 0) === 0 && (
-                              <p className='text-sm text-neutral-500 text-center py-4'>
+                              <p className='text-sm text-neutral-500 dark:text-neutral-400 text-center py-4'>
                                 {t('dashboard.noPendingTasks')}
                               </p>
                             )}
@@ -654,10 +706,15 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </AlertsSection>
 
-              {/* Key Statistics Cards - Doctor: 8 KPIs; General: 4 */}
-              <div className='dashboard-section'>
+              {/* Dashboard actions – ActionsSection (STEP 5) */}
+              {!isDoctor && (
+                <ActionsSection failedTransactions={stats?.failed_transactions ?? 0} />
+              )}
+
+              {/* Key Statistics – KPISection (STEP 5) */}
+              <KPISection className='dashboard-section-key-metrics'>
                 {/* Section Header */}
                 <div className='section-header mb-4'>
                   <div className='accent-bar accent-bar-primary' />
@@ -796,43 +853,38 @@ export default function DashboardPage() {
                     </>
                   )}
                 </div>
-              </div>
+              </KPISection>
 
-              {/* Main Content – Today's Appointments & Calendar side by side, then 3-col grid */}
+              {/* Trends – TrendsSection with SWR (STEP 6) */}
+              {!isDoctor && clinicTenantId && (
+                <TrendsSection tenantId={clinicTenantId} />
+              )}
+
+              {/* Main Content – Today's Appointments & Calendar – TablesSection lazy load (STEP 6) */}
               {!isDoctor && (
-                <div className='dashboard-section'>
+                <TablesSection>
                   {/* Section Header */}
                   <div className='section-header mb-4'>
                     <div className='accent-bar accent-bar-primary' />
                     <h2 className='section-title'>{t('dashboard.todaySchedule')}</h2>
                   </div>
-                  <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch'>
-                    <div className='dashboard-card-cell'>
-                      {/* Use AppointmentsListWithHook for incremental updates as per spec */}
-                      <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
-                        <div className='section-header mb-4'>
-                          <div className='flex items-center justify-between gap-3'>
-                            <div className='flex items-center gap-3'>
-                              <div className='accent-bar accent-bar-primary' />
-                              <h2 className='section-title'>{t('dashboard.todayAppointments')}</h2>
-                            </div>
-                            <Link
-                              href='/appointments'
-                              className='section-header-action inline-flex items-center justify-center gap-1.5 py-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium shrink-0'
-                              aria-label={t('dashboard.seeAll')}
-                            >
-                              <span className='text-sm'>{t('dashboard.seeAll')}</span>
-                              <ChevronRightIcon className='icon icon-xs' ariaHidden />
-                            </Link>
-                          </div>
-                        </div>
-                        <AppointmentsListWithHook filters={{ status: 'scheduled' }} limit={10} />
+                  <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch dashboard-today-schedule-grid'>
+                    <div className='dashboard-card-cell dashboard-today-schedule-cell'>
+                      <Card className='dashboard-list-card dashboard-list-card-primary dashboard-today-schedule-card p-6 h-full flex flex-col'>
+                        <AppointmentsListWithHook
+                          filters={{ status: 'scheduled' }}
+                          limit={30}
+                          visibleCount={5}
+                          title={t('dashboard.todayAppointments')}
+                          seeAllHref='/appointments'
+                        />
                       </Card>
                     </div>
-                    <div className='dashboard-card-cell'>
+                    <div className='dashboard-card-cell dashboard-today-schedule-cell'>
                       <ErrorBoundary>
                         <CalendarWidget
                           loading={listsLoading}
+                          doctorId={isDoctor ? (user?.id ?? user?._id) : undefined}
                           onDateSelect={(date) => {
                             const y = date.getFullYear();
                             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -843,7 +895,7 @@ export default function DashboardPage() {
                       </ErrorBoundary>
                     </div>
                   </div>
-                </div>
+                </TablesSection>
               )}
 
               {/* Main Content – 3 cards per row: Summary, Next Patient, Patients Review */}
@@ -986,13 +1038,13 @@ export default function DashboardPage() {
                       <div className='dashboard-card-cell'>
                         <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col justify-center'>
                           <div className='text-center'>
-                            <h3 className='text-sm font-medium text-neutral-600 mb-2'>
+                            <h3 className='text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2'>
                               {t('doctors.earningsToday')}
                             </h3>
                             <p className='text-3xl font-bold text-primary-600 mb-1'>
                               {formatCurrency(stats?.earningsToday || 0)}
                             </p>
-                            <p className='text-xs text-neutral-500'>
+                            <p className='text-xs text-neutral-500 dark:text-neutral-400'>
                               {stats?.completedConsultations || 0} {t('doctors.consultations')}
                             </p>
                           </div>
@@ -1000,31 +1052,31 @@ export default function DashboardPage() {
                       </div>
                       <div className='dashboard-card-cell'>
                         <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
-                          <h3 className='text-sm font-medium text-neutral-600 mb-4'>
+                          <h3 className='text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-4'>
                             {t('doctors.quickStats')}
                           </h3>
                           <div className='space-y-3'>
                             <div className='flex justify-between items-center'>
-                              <span className='text-sm text-neutral-600'>
+                              <span className='text-sm text-neutral-600 dark:text-neutral-400'>
                                 {t('doctors.avgRating')}
                               </span>
-                              <span className='text-lg font-bold text-neutral-900'>
+                              <span className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
                                 {stats?.averageRating || 'N/A'}
                               </span>
                             </div>
                             <div className='flex justify-between items-center'>
-                              <span className='text-sm text-neutral-600'>
+                              <span className='text-sm text-neutral-600 dark:text-neutral-400'>
                                 {t('dashboard.totalReviews')}
                               </span>
-                              <span className='text-lg font-bold text-neutral-900'>
+                              <span className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
                                 {stats?.totalReviews || 0}
                               </span>
                             </div>
                             <div className='flex justify-between items-center'>
-                              <span className='text-sm text-neutral-600'>
+                              <span className='text-sm text-neutral-600 dark:text-neutral-400'>
                                 {t('doctors.responseRate')}
                               </span>
-                              <span className='text-lg font-bold text-neutral-900'>
+                              <span className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
                                 {stats?.responseRate || 0}%
                               </span>
                             </div>
@@ -1034,7 +1086,7 @@ export default function DashboardPage() {
 
                       <div className='dashboard-card-cell'>
                         <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
-                          <h3 className='text-sm font-medium text-neutral-600 mb-4'>
+                          <h3 className='text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-4'>
                             {t('dashboard.recentActivity')}
                           </h3>
                           {statsLoading ? (
@@ -1048,10 +1100,10 @@ export default function DashboardPage() {
                               {stats.recentActivity.map((item) => (
                                 <li
                                   key={item._id}
-                                  className='text-body-xs text-neutral-700 flex justify-between gap-2 border-b border-neutral-100 pb-2 last:border-0 last:pb-0'
+                                  className='text-body-xs text-neutral-700 dark:text-neutral-300 flex justify-between gap-2 border-b border-neutral-100 dark:border-neutral-700 pb-2 last:border-0 last:pb-0'
                                 >
                                   <span className='truncate'>{item.label}</span>
-                                  <span className='text-neutral-500 flex-shrink-0'>
+                                  <span className='text-neutral-500 dark:text-neutral-400 flex-shrink-0'>
                                     {item.timestamp
                                       ? new Date(item.timestamp).toLocaleTimeString(undefined, {
                                           hour: '2-digit',
@@ -1063,7 +1115,7 @@ export default function DashboardPage() {
                               ))}
                             </ul>
                           ) : (
-                            <p className='text-sm text-neutral-500 text-center py-4'>
+                            <p className='text-sm text-neutral-500 dark:text-neutral-400 text-center py-4'>
                               {t('dashboard.noRecentActivity')}
                             </p>
                           )}
@@ -1226,6 +1278,7 @@ export default function DashboardPage() {
                         <ErrorBoundary>
                           <CalendarWidget
                             loading={listsLoading}
+                            doctorId={isDoctor ? (user?.id ?? user?._id) : undefined}
                             onDateSelect={(date) => {
                               const y = date.getFullYear();
                               const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -1254,11 +1307,11 @@ export default function DashboardPage() {
                             </div>
                             <div className='space-y-3'>
                               <div className='flex items-center justify-between'>
-                                <span className='text-sm text-neutral-600'>
+                                <span className='text-sm text-neutral-600 dark:text-neutral-400'>
                                   {t('dashboard.averageRating')}
                                 </span>
                                 <div className='flex items-center gap-2'>
-                                  <span className='text-2xl font-bold text-neutral-900'>
+                                  <span className='text-2xl font-bold text-neutral-900 dark:text-neutral-100'>
                                     {stats.averageRating != null
                                       ? Number(stats.averageRating).toFixed(1)
                                       : '—'}
@@ -1269,8 +1322,8 @@ export default function DashboardPage() {
                                         key={star}
                                         className={`icon icon-sm ${
                                           star <= Math.round(stats.averageRating ?? 0)
-                                            ? 'text-yellow-400'
-                                            : 'text-neutral-300'
+                                            ? 'text-yellow-400 dark:text-yellow-500'
+                                            : 'text-neutral-300 dark:text-neutral-500'
                                         }`}
                                         ariaHidden
                                       />
@@ -1279,16 +1332,16 @@ export default function DashboardPage() {
                                 </div>
                               </div>
                               <div className='flex items-center justify-between'>
-                                <span className='text-sm text-neutral-600'>
+                                <span className='text-sm text-neutral-600 dark:text-neutral-400'>
                                   {t('dashboard.totalReviews')}
                                 </span>
-                                <span className='font-semibold text-neutral-900'>
+                                <span className='font-semibold text-neutral-900 dark:text-neutral-100'>
                                   {stats.totalReviews}
                                 </span>
                               </div>
                               {stats.pendingReviews > 0 && (
-                                <div className='mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg'>
-                                  <p className='text-sm text-yellow-800'>
+                                <div className='mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg'>
+                                  <p className='text-sm text-yellow-800 dark:text-yellow-200'>
                                     {stats.pendingReviews} appointment
                                     {stats.pendingReviews > 1 ? 's' : ''}{' '}
                                     {t('dashboard.needReview')}
@@ -1349,7 +1402,7 @@ export default function DashboardPage() {
 
               {/* Last updated timestamp */}
               {!isDoctor && stats?.lastUpdated && (
-                <div className='mt-2 text-center text-sm text-neutral-500'>
+                <div className='mt-2 text-center text-sm text-neutral-500 dark:text-neutral-400'>
                   {t('dashboard.lastUpdated') || 'Last updated'}:{' '}
                   {new Date(stats.lastUpdated).toLocaleString()}
                 </div>

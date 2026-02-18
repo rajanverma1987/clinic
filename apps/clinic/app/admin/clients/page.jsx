@@ -641,7 +641,7 @@ export default function AdminClientsPage() {
             onClick={handleExportCSV}
             aria-label={t('admin.exportCSV')}
           >
-            <FileDownIcon className='icon icon-sm mr-1' />
+            <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
             {t('admin.exportCSV') || 'Export CSV'}
           </Button>
         </div>

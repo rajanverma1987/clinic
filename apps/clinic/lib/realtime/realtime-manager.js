@@ -67,6 +67,15 @@ function initRealtimeManager(socketIOServer) {
       }
     });
 
+    // dashboard-events: new appointment, payment failure, staff assignment (spec: CursorMD/new fix.md)
+    socket.on('subscribe:dashboard-events', () => {
+      const tid = socket.tenantId;
+      if (tid) {
+        socket.join(`dashboard-events:${tid}`);
+        logger.info(`[Realtime] Client ${socket.id} subscribed to dashboard-events: ${tid}`);
+      }
+    });
+
     // Heartbeat: respond to ping so client can detect connection loss
     socket.on('ping', (cb) => {
       if (typeof cb === 'function') cb();
@@ -124,6 +133,10 @@ function emitAppointmentCreated(tenantId, appointment) {
   const room = `tenant:${tenantId}`;
   namespace.to(room).emit('appointment:created', payload);
   namespace.to(room).emit('appointment.created', payload);
+  namespace.to(`dashboard-events:${tenantId}`).emit('dashboard-events', {
+    type: 'new_appointment',
+    payload,
+  });
 }
 
 /**
@@ -221,6 +234,32 @@ function emitLabResultReady(tenantId, labResultId, labResult) {
 }
 
 /**
+ * Emit payment failure (dashboard-events channel)
+ */
+function emitPaymentFailure(tenantId, payload) {
+  if (!io) return;
+  const p = { ...payload, timestamp: new Date().toISOString() };
+  const namespace = io.of('/realtime');
+  namespace.to(`tenant:${tenantId}`).emit('payment:failed', p);
+  namespace.to(`dashboard-events:${tenantId}`).emit('dashboard-events', {
+    type: 'payment_failure',
+    payload: p,
+  });
+}
+
+/**
+ * Emit staff assignment (dashboard-events channel)
+ */
+function emitStaffAssignment(tenantId, payload) {
+  if (!io) return;
+  const p = { ...payload, timestamp: new Date().toISOString() };
+  io.of('/realtime').to(`dashboard-events:${tenantId}`).emit('dashboard-events', {
+    type: 'staff_assignment',
+    payload: p,
+  });
+}
+
+/**
  * Emit payment received (CursorMD/New: payment:received)
  */
 function emitPaymentReceived(tenantId, paymentId, payment) {
@@ -311,6 +350,8 @@ module.exports = {
   initRealtimeManager,
   emitAppointmentStatusChange,
   emitAppointmentCreated,
+  emitPaymentFailure,
+  emitStaffAssignment,
   emitQueueUpdate,
   emitPatientCheckedIn,
   emitPatientUpdated,

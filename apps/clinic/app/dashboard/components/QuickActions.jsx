@@ -84,7 +84,12 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
   }, [open]);
 
   if (loading) {
-    return <div className='h-9 w-32 rounded-lg bg-neutral-100 animate-pulse' aria-hidden />;
+    return (
+      <div
+        className='h-9 w-32 rounded-lg bg-neutral-100 dark:bg-neutral-700 animate-pulse'
+        aria-hidden
+      />
+    );
   }
 
   if (visibleActions.length === 0) return null;
@@ -93,20 +98,19 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
     <div className='relative inline-block' ref={menuRef}>
       <Button
         type='button'
-        variant='ghost'
-        size='md'
-        iconOnly
+        variant='primary'
+        size='sm'
         onClick={() => setOpen((v) => !v)}
-        className='w-10 h-10 border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 transition-all'
         aria-expanded={open}
         aria-haspopup='true'
         aria-label={safeTranslate('dashboard.quickActions')}
         title={safeTranslate('dashboard.quickActions')}
       >
         <PlusIcon
-          className={`icon icon-sm transition-transform duration-200 ${open ? 'rotate-45' : ''}`}
+          className={`icon icon-sm flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-45' : ''}`}
           ariaHidden
         />
+        <span>{safeTranslate('dashboard.quickActions')}</span>
       </Button>
 
       {open && (

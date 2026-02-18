@@ -168,14 +168,14 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
     <>
       {/* Backdrop */}
       <div
-        className='fixed inset-0 bg-black/5 backdrop-blur-sm z-[var(--z-dropdown-backdrop-high,10051)]'
+        className='calendar-popup-backdrop fixed inset-0 bg-black/5 backdrop-blur-sm z-[var(--z-dropdown-backdrop-high,10051)]'
         onClick={onClose}
       />
 
       {/* Calendar Popup */}
       <div
         ref={popupRef}
-        className='fixed bg-white rounded-2xl shadow-2xl border-2 border-neutral-200 overflow-hidden z-[var(--z-dropdown-menu-high,10050)]'
+        className='calendar-popup-panel fixed bg-white rounded-2xl shadow-2xl border-2 border-neutral-200 overflow-hidden z-[var(--z-dropdown-menu-high,10050)]'
         style={{
           width: '380px',
           maxHeight: '500px',
@@ -208,7 +208,7 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
               size='xs'
               iconOnly
               onClick={onClose}
-              className='text-white/80 hover:text-white hover:bg-white/10'
+              className='text-white/80 hover:text-white hover:bg-white/10 transition-colors duration-200 ease-out'
             >
               <svg className='icon icon-sm' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
@@ -258,12 +258,12 @@ export function CalendarPopup({ isOpen, onClose, buttonRef }) {
                     router.push(`/appointments/${appointment._id || appointment.id}`);
                     onClose();
                   }}
-                  className='p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all bg-white hover:border-primary-300 group'
+                  className='p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all duration-200 ease-out bg-white hover:border-primary-300 group'
                 >
                   <div className='flex items-start justify-between gap-3'>
                     <div className='flex-1 min-w-0'>
                       <div className='flex items-center gap-2 mb-1'>
-                        <div className='w-2 h-2 rounded-full bg-primary-500 group-hover:bg-primary-600 transition-colors'></div>
+                        <div className='w-2 h-2 rounded-full bg-primary-500 group-hover:bg-primary-600 transition-colors duration-200 ease-out'></div>
                         <span className='font-semibold text-neutral-900 text-sm'>
                           {formatTime(appointment.startTime)}
                           {appointment.endTime && ` - ${formatTime(appointment.endTime)}`}

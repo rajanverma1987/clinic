@@ -372,7 +372,7 @@ export default function AdminUsersPage() {
           placeholder={t('admin.searchUsersPlaceholder')}
         >
           <Button variant='secondary' size='sm' onClick={handleExportCSV}>
-            <FileDownIcon className='icon icon-sm mr-1' />
+            <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
             {t('admin.exportCSV') || 'Export CSV'}
           </Button>
           <Button
@@ -551,7 +551,7 @@ export default function AdminUsersPage() {
                   size='sm'
                   href={`/admin/activity-logs?userId=${detailsUser._id || detailsUser.id}`}
                 >
-                  <HistoryIcon className='icon icon-sm mr-1' />
+                  <HistoryIcon className='icon icon-sm flex-shrink-0' ariaHidden />
                   {t('admin.viewActivityLog') || 'View activity log'}
                 </Button>
               </div>

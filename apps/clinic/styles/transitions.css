@@ -11,20 +11,22 @@ select,
 textarea,
 .card,
 .clickable {
-  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease-out;
 }
 
-/* Hover effects */
+/* Hover effects – subtle lift for cards and primary buttons */
 button:not(:disabled):hover,
 .card:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-out;
 }
 
 /* Click feedback */
 button:not(:disabled):active,
 .clickable:active {
   transform: scale(0.98);
+  transition: all 0.15s ease-out;
 }
 
 /* Focus rings */

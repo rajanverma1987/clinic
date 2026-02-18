@@ -1,4 +1,7 @@
+import { getClinicSummary, getClinicSummaryFromMetrics } from '@clinic-saas/dashboard-engine';
+import ClinicDashboardMetrics from '@/models/ClinicDashboardMetrics.js';
 import CacheManager from '@/lib/cache/cache-manager.js';
+import { dashboardEngineAdapter } from '@/lib/dashboard-engine-adapter';
 import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { logger } from '@/lib/utils/logger.js';
@@ -14,31 +17,35 @@ const DASHBOARD_CACHE_TTL_MS = DASHBOARD_CACHE_TTL * 1000;
 
 /**
  * GET /api/dashboard/stats
- * Dashboard statistics. Uses pre-computed cache from background job (every 5 min).
- * Falls back to real-time calculation if cache miss.
- * In-memory cache (OptimizedCacheManager) ensures sub-ms hits even when Redis is unavailable.
+ * Dashboard statistics via dashboard-engine only. Uses pre-computed cache from background job (every 5 min).
+ * Falls back to engine.getClinicSummary (adapter uses DB) on cache miss.
  */
 async function getHandler(req, user) {
   try {
     const tenantId = user.tenantId?.toString?.() || user.tenantId;
 
-    // In-memory LRU cache (always available, no Redis dependency)
-    const stats = await optimizedCacheManager.getOrFetch(
-      `dashboard:stats:${tenantId}`,
-      async () => {
-        // Redis cache (populated by background job every 5 min)
-        const cached = await CacheManager.get('dashboard', 'stats', tenantId);
-        if (cached) return cached;
-
-        // On-demand fallback calculation
-        logger.debug('Cache miss - calculating dashboard stats on demand');
-        const dashboardStatsModule = await import('@/jobs/dashboard-stats.js');
-        const computed = await dashboardStatsModule.calculateDashboardStats(tenantId);
-        await CacheManager.set('dashboard', computed, DASHBOARD_CACHE_TTL, 'stats', tenantId);
-        return computed;
-      },
-      DASHBOARD_CACHE_TTL_MS,
-    );
+    // Prefer clinic_dashboard_metrics (aggregated table) – no live queries
+    const metrics = await ClinicDashboardMetrics.findOne({ tenantId }).lean();
+    let stats;
+    if (metrics?.data) {
+      stats = getClinicSummaryFromMetrics(metrics);
+    } else {
+      stats = await optimizedCacheManager.getOrFetch(
+        `dashboard:stats:${tenantId}`,
+        async () => {
+          const cached = await CacheManager.get('dashboard', 'stats', tenantId);
+          if (cached && typeof cached === 'object' && (cached.appointments || cached.revenue)) {
+            const m = { data: cached, updated_at: cached.lastUpdated || new Date() };
+            return getClinicSummaryFromMetrics(m);
+          }
+          logger.debug('Cache miss - fetching clinic summary via dashboard-engine');
+          const computed = await getClinicSummary(tenantId, dashboardEngineAdapter);
+          await CacheManager.set('dashboard', computed, DASHBOARD_CACHE_TTL, 'stats', tenantId);
+          return computed;
+        },
+        DASHBOARD_CACHE_TTL_MS,
+      );
+    }
 
     return NextResponse.json({
       success: true,

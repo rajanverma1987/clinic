@@ -11,7 +11,7 @@ import { logger } from '@/lib/utils/logger';
 const CACHE = new Map();
 const LIMIT = 10;
 const CACHE_TTL_MS = 60000; // 1 min – consider cached data "fresh" within this window
-const REVALIDATE_DELAY_MS = 5000; // 5 sec – delay before fetching fresh data when tab opens
+const REVALIDATE_DELAY_MS = 2000; // 2 sec – delay before fetching fresh data when tab opens
 
 function cacheKey(type, userId) {
   return `${type}-tab-${userId}`;

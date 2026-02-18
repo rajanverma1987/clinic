@@ -7,6 +7,8 @@ import { logger } from '@/lib/utils/logger.js';
 import {
   emitAppointmentStatusChange,
   emitAppointmentCreated,
+  emitPaymentFailure,
+  emitStaffAssignment,
   emitQueueUpdate,
   emitPatientCheckedIn,
   emitPatientUpdated,
@@ -105,6 +107,28 @@ export async function notifyLabResultReady(tenantId, labResultId, labResult) {
     emitLabResultReady(tenantId, labResultId, labResult);
   } catch (error) {
     logger.error('[Realtime] Error emitting labResult.ready:', error);
+  }
+}
+
+/**
+ * Emit payment failure (dashboard-events channel)
+ */
+export async function notifyPaymentFailure(tenantId, payload) {
+  try {
+    emitPaymentFailure(tenantId, payload);
+  } catch (error) {
+    logger.error('[Realtime] Error emitting payment:failed:', error);
+  }
+}
+
+/**
+ * Emit staff assignment (dashboard-events channel)
+ */
+export async function notifyStaffAssignment(tenantId, payload) {
+  try {
+    emitStaffAssignment(tenantId, payload);
+  } catch (error) {
+    logger.error('[Realtime] Error emitting staff_assignment:', error);
   }
 }
 

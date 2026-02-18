@@ -110,33 +110,40 @@ export function SubscriptionOverlay({
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-50 w-[min(22rem,calc(100vw-2rem))] transition-all duration-300 ease-out ${
+      className={`fixed bottom-4 right-4 z-50 w-[min(28rem,calc(100vw-2rem))] transition-all duration-300 ease-out ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
       }`}
       role='alert'
       aria-live='polite'
     >
       <div
-        className={`${bgColor} ${borderColor} ${textColor} rounded-lg shadow-lg border-l-4 px-3 py-2 flex items-center gap-2.5`}
+        className={`${bgColor} ${borderColor} ${textColor} rounded-lg shadow-md border-l-4 px-4 py-3 flex items-start gap-3`}
       >
-        <span className='flex-shrink-0 w-4 h-4' aria-hidden>
-          <InfoIcon className='icon icon-xs text-current' ariaHidden />
+        <span
+          className='flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-neutral-200/80 dark:bg-neutral-600/80 flex items-center justify-center'
+          aria-hidden
+        >
+          <InfoIcon className='icon icon-sm text-current' ariaHidden />
         </span>
-        <p className='text-xs font-medium leading-snug flex-1 min-w-0'>{message}</p>
-        <button
-          type='button'
-          onClick={buttonAction}
-          className='flex-shrink-0 text-xs font-medium px-2.5 py-1 h-7 min-h-0 rounded-[10px] bg-[#15803d] text-white border border-white shadow-[0_0_0_0.5px_#15803d] hover:bg-primary-500 hover:shadow-[0_0_0_0.5px_#3b82f6] active:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 transition-all duration-200'
-        >
-          {buttonText}
-        </button>
-        <button
-          onClick={handleDismiss}
-          className='flex-shrink-0 w-6 h-6 flex items-center justify-center rounded text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50 transition-colors'
-          aria-label={t('common.ariaLabelDismiss')}
-        >
-          ×
-        </button>
+        <p className='text-body-sm font-medium leading-snug flex-1 min-w-0 break-words'>
+          {message}
+        </p>
+        <div className='flex flex-shrink-0 items-center gap-2'>
+          <button
+            type='button'
+            onClick={buttonAction}
+            className='text-xs font-medium px-3 py-1.5 h-8 min-h-0 rounded-lg bg-[#15803d] text-white border border-white shadow-[0_0_0_0.5px_#15803d] hover:bg-primary-500 active:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 transition-all duration-200'
+          >
+            {buttonText}
+          </button>
+          <button
+            onClick={handleDismiss}
+            className='w-7 h-7 flex items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50 transition-colors'
+            aria-label={t('common.ariaLabelDismiss')}
+          >
+            ×
+          </button>
+        </div>
       </div>
     </div>
   );

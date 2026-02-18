@@ -65,6 +65,7 @@ export function TabBar({ className = '', activeTab, onTabChange, userId }) {
         onTabHover={handleTabHover}
         idPrefix='dashboard-tab'
         ariaLabel={t('dashboard.tabsLabel')}
+        variant='dashboard'
       />
     </div>
   );

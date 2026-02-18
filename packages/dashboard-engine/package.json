@@ -1,0 +1,8 @@
+{
+  "name": "@clinic-saas/dashboard-engine",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Dashboard metrics, trends, and actions – pure logic; no DB. Clinic app injects data via adapter.",
+  "main": "index.js",
+  "type": "module"
+}

@@ -1,16 +1,8 @@
 'use client';
 
-import React from 'react';
-
-export function Tag({
-  children,
-  variant = 'default',
-  size = 'md',
-  className = '',
-  onClick,
-}) {
+export function Tag({ children, variant = 'default', size = 'md', className = '', onClick }) {
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-full';
-  
+
   // Variants using theme colors - Primary: Blue, Secondary: White, Success: Green
   const variants = {
     default: 'bg-neutral-100 text-neutral-700',
@@ -26,7 +18,9 @@ export function Tag({
     lg: 'px-4 py-1.5 text-body-md',
   };
 
-  const clickableStyles = onClick ? 'cursor-pointer hover:opacity-80' : '';
+  const clickableStyles = onClick
+    ? 'cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-out'
+    : '';
 
   return (
     <span
@@ -37,4 +31,3 @@ export function Tag({
     </span>
   );
 }
-

@@ -1,9 +1,11 @@
 /**
  * Dashboard Stats Hook with Auto-Refresh
  * Matches ENTERPRISE_DASHBOARD_PERFORMANCE.md spec exactly.
+ * Subscribes to dashboard-events (new appointment, payment failure, staff assignment) to refresh stats.
  */
 
 import { apiClient } from '@/lib/api/client';
+import { onRealtimeEvent } from '@/lib/realtime/realtime-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useDashboardStats({ enabled = true } = {}) {
@@ -16,7 +18,8 @@ export function useDashboardStats({ enabled = true } = {}) {
     try {
       if (showLoading) setLoading(true);
 
-      const response = await apiClient.get('/dashboard/stats');
+      // CursorMD/new fix.md: KPISection uses /api/dashboard/summary – instant from clinic_dashboard_metrics
+      const response = await apiClient.get('/dashboard/summary');
       setStats(response.data.data);
       setError(null);
       setLoading(false);
@@ -52,12 +55,17 @@ export function useDashboardStats({ enabled = true } = {}) {
       }
     }, 60000);
 
+    const unsubDashboard = onRealtimeEvent('dashboard-events', () => fetchStats(false));
+    const unsubPaymentFailed = onRealtimeEvent('payment:failed', () => fetchStats(false));
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      unsubDashboard();
+      unsubPaymentFailed();
     };
   }, [fetchStats, enabled]);
 
-  return { stats, loading, error, refresh, forceRefresh: refresh };
+  return { stats, loading, error, fetchStats, refresh, forceRefresh: refresh };
 }

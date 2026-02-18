@@ -48,7 +48,7 @@ export function PhoneInput({
       {label && <label className='block text-sm font-semibold text-gray-900 mb-2'>{label}</label>}
       <div
         className={`
-        flex items-center border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500
+        flex items-center border rounded-lg transition-[border-color,box-shadow] duration-200 ease-out focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500
         ${error ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}

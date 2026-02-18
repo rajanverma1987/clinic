@@ -51,10 +51,22 @@ app.prepare().then(async () => {
     }
   });
 
+  // Parse allowed origins from env — never fall back to wildcard '*'
+  const getAllowedOrigins = () => {
+    if (process.env.CORS_ORIGINS) {
+      return process.env.CORS_ORIGINS.split(',').map((o) => o.trim());
+    }
+    if (process.env.NEXT_PUBLIC_APP_URL) {
+      return [process.env.NEXT_PUBLIC_APP_URL];
+    }
+    // Dev fallback only
+    return ['http://localhost:5053', 'http://localhost:3000'];
+  };
+
   // Initialize Socket.IO
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.NEXT_PUBLIC_APP_URL || '*',
+      origin: getAllowedOrigins(),
       methods: ['GET', 'POST'],
       credentials: true,
     },

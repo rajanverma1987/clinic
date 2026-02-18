@@ -14,9 +14,12 @@
 const FROM_ENV = typeof process !== 'undefined' && process.env?.TEST_ACCOUNT_EMAIL?.trim();
 export const TEST_ACCOUNT_EMAIL = (FROM_ENV || '706359@gmail.com').toLowerCase();
 
-/** Disabled: test/admin account removed. Set env TEST_ACCOUNT_ENABLED=true to re-enable (dev only). */
+/** Disabled: test/admin account removed. Set env TEST_ACCOUNT_ENABLED=true to re-enable (dev only).
+ *  NEVER activates in production regardless of env var value. */
 export const TEST_ACCOUNT_ENABLED =
-  typeof process !== 'undefined' && process.env?.TEST_ACCOUNT_ENABLED === 'true';
+  typeof process !== 'undefined' &&
+  process.env?.NODE_ENV !== 'production' &&
+  process.env?.TEST_ACCOUNT_ENABLED === 'true';
 
 export const TEST_ACCOUNT_ROLE_OVERRIDE_KEY = 'TEST_ACCOUNT_ROLE_OVERRIDE';
 

@@ -17,7 +17,7 @@ export function StaleDataBanner({ visible = false, onRetry, className = '' }) {
         <button
           type="button"
           onClick={onRetry}
-          className="font-medium underline hover:no-underline"
+          className="font-medium underline hover:no-underline transition-opacity duration-200 ease-out hover:opacity-80"
         >
           Retry
         </button>

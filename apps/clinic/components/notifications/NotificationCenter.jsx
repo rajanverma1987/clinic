@@ -94,12 +94,14 @@ export function NotificationCenter({
     }
   }, [isOpen]);
 
-  // Real-time Socket.IO connection
+  // Real-time Socket.IO connection (namespace /realtime – must match server io.of('/realtime'))
   useEffect(() => {
     if (!user?.tenantId) return;
 
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
-    const socket = io(`${socketUrl}/realtime`, {
+    const baseUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+    const origin =
+      typeof baseUrl === 'string' && baseUrl.includes('://') ? new URL(baseUrl).origin : baseUrl;
+    const socket = io(`${origin}/realtime`, {
       transports: ['websocket', 'polling'],
       autoConnect: true,
       reconnection: true,
@@ -117,7 +119,21 @@ export function NotificationCenter({
     });
 
     socket.on('connect_error', (error) => {
-      logger.warn('[Notifications] Socket connection error', error);
+      const message =
+        error?.message ?? (typeof error === 'string' ? error : 'Unknown socket error');
+      if (message && message.toLowerCase().includes('invalid namespace')) {
+        logger.warn(
+          '[Notifications] Socket namespace not available; real-time notifications disabled',
+          {
+            hint: 'Ensure server has initialized realtime manager (io.of("/realtime")).',
+          },
+        );
+      } else {
+        logger.warn('[Notifications] Socket connection error', {
+          message,
+          description: error?.description,
+        });
+      }
     });
 
     // Listen for new notifications

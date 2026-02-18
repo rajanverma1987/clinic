@@ -69,10 +69,12 @@ export function AppointmentRequestCard({
 
                       {/* Content */}
                       <div className='flex-1 min-w-0'>
-                        <h4 className='text-body-sm font-semibold text-neutral-900 mb-0.5 truncate'>
+                        <h4 className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-0.5 truncate'>
                           {patientName}
                         </h4>
-                        <p className='text-body-xs text-neutral-600 truncate'>{reason}</p>
+                        <p className='text-body-xs text-neutral-600 dark:text-neutral-400 truncate'>
+                          {reason}
+                        </p>
                       </div>
 
                       {/* Action Buttons */}
@@ -124,7 +126,7 @@ export function AppointmentRequestCard({
             </div>
           ) : (
             <div className='empty-state'>
-              <p className='text-neutral-500 text-body-sm'>
+              <p className='text-neutral-500 dark:text-neutral-400 text-body-sm'>
                 {t('dashboard.noAppointmentRequests')}
               </p>
             </div>

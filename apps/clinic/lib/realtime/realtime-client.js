@@ -142,6 +142,7 @@ function connectSocket(tenantId) {
     if (tenantId) {
       socket.emit('join-tenant', tenantId);
       socket.emit('subscribe:appointments');
+      socket.emit('subscribe:dashboard-events');
     }
     if (useSSEFallback) {
       disconnectSSE();
@@ -190,6 +191,8 @@ function connectSocket(tenantId) {
     'notification:broadcast',
     'dashboard:refresh',
     'stats:updated',
+    'dashboard-events',
+    'payment:failed',
   ];
   const legacyEvents = [
     'appointment.created',

@@ -27,7 +27,7 @@ export function BackButton({ onClick, className = '', ariaLabel }) {
       iconOnly
       onClick={handleClick}
       aria-label={ariaLabel || t('common.back')}
-      className={`rounded-lg border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 ${className}`}
+      className={`rounded-lg border border-neutral-200 dark:border-neutral-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 ease-out ${className}`}
     >
       <ChevronLeftIcon className='icon icon-sm' />
     </Button>

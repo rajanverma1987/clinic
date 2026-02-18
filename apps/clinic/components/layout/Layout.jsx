@@ -4,7 +4,7 @@ import { NotificationCenter } from '@/components/notifications/NotificationCente
 import { WelcomeNotification } from '@/components/notifications/WelcomeNotification';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import { Loader } from '@/components/ui/Loader';
-import { SubscriptionOverlay } from '@/components/ui/SubscriptionOverlay.jsx';
+import { SubscriptionExpiredBanner } from '@/components/ui/SubscriptionExpiredBanner.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useFeatures } from '@/contexts/FeatureContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
@@ -97,19 +97,20 @@ export function Layout({
       className='layout-root bg-neutral-50 dark:bg-neutral-900'
       style={{
         display: 'flex',
+        height: '100vh',
         minHeight: '100vh',
+        overflow: 'hidden',
         gap: 0,
       }}
     >
       <Sidebar isMobileOpen={sidebarMobileOpen} onMobileClose={() => setSidebarMobileOpen(false)} />
-      <main className='flex-1 flex flex-col min-w-0' style={{ position: 'relative', zIndex: 0 }}>
+      <main
+        className='flex-1 flex flex-col min-w-0 min-h-0'
+        style={{ position: 'relative', zIndex: 0 }}
+      >
         {/* Welcome Notification - shows after login */}
         <WelcomeNotification />
-        <div
-          className='flex-1 overflow-y-auto overflow-x-hidden'
-          data-main-scroll
-          style={{ minHeight: 0 }}
-        >
+        <div className='flex-1 min-h-0 overflow-y-auto overflow-x-hidden' data-main-scroll>
           <div className='page-shell'>
             {/* Mobile: hamburger to open sidebar (touch target min 44px) */}
             <div className='md:hidden flex items-center h-12 min-h-[44px] px-4 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800'>
@@ -136,6 +137,15 @@ export function Layout({
                 </svg>
               </button>
             </div>
+            {/* Subscription status banner – top of content, full width, no cut-off */}
+            {user && user.role !== 'super_admin' && (
+              <SubscriptionExpiredBanner
+                subscriptionStatus={subscription?.status ?? null}
+                expiryDate={subscription?.currentPeriodEnd}
+                trialDaysRemaining={subscription?.trialDaysRemaining}
+                paypalApprovalUrl={subscription?.paypalApprovalUrl}
+              />
+            )}
             {title != null && title !== '' && (
               <PageHeader
                 title={title}
@@ -144,6 +154,7 @@ export function Layout({
                 showNotifications={true}
                 onOpenNotifications={() => setShowNotifications(true)}
                 unreadCount={unreadNotificationCount}
+                onOpenSearch={() => setShowSearch(true)}
               />
             )}
             {/* Auth or page loading: loader in content area only; sidebar and header stay visible */}
@@ -174,21 +185,7 @@ export function Layout({
         onUnreadCountChange={setUnreadNotificationCount}
       />
 
-      {/* Subscription Overlay - Bottom Right Corner */}
-      {user && user.role !== 'super_admin' && (
-        <>
-          {subscription ? (
-            <SubscriptionOverlay
-              subscriptionStatus={subscription.status}
-              expiryDate={subscription.currentPeriodEnd}
-              trialDaysRemaining={subscription.trialDaysRemaining}
-              paypalApprovalUrl={subscription.paypalApprovalUrl}
-            />
-          ) : (
-            <SubscriptionOverlay subscriptionStatus={null} />
-          )}
-        </>
-      )}
+      {/* Subscription overlay only when banner is not shown (e.g. delayed dismissible toast) – optional; primary placement is inline banner above */}
     </div>
   );
 }

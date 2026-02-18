@@ -31,10 +31,10 @@ export function LotListItem({ lot, onClick }) {
       <div className='flex items-center justify-between gap-3'>
         <div className='flex-1 min-w-0'>
           <div className='flex items-center gap-2 mb-1.5'>
-            <span className='text-body-md font-semibold text-neutral-900 truncate'>{lot.itemName}</span>
-            <span className='text-body-xs text-neutral-500 font-mono px-2 py-0.5 bg-neutral-100 rounded'>{lot.batchNumber}</span>
+            <span className='text-body-md font-semibold text-neutral-900 dark:text-neutral-100 truncate'>{lot.itemName}</span>
+            <span className='text-body-xs text-neutral-500 dark:text-neutral-400 font-mono px-2 py-0.5 bg-neutral-100 dark:bg-neutral-700 rounded'>{lot.batchNumber}</span>
           </div>
-          <div className='flex items-center gap-3 text-body-xs text-neutral-600'>
+          <div className='flex items-center gap-3 text-body-xs text-neutral-600 dark:text-neutral-400'>
             <span>{lot.quantity} {lot.unit}</span>
             <span>•</span>
             <span>{formatDate(lot.expiryDate)}</span>
@@ -44,10 +44,10 @@ export function LotListItem({ lot, onClick }) {
           <span
             className={`px-3 py-1.5 rounded-lg text-body-xs font-semibold ${
               lot.isExpired
-                ? 'bg-red-50 text-red-700 border border-red-200'
+                ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'
                 : lot.isExpiringSoon
-                ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                : 'bg-green-50 text-green-700 border border-green-200'
+                ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800'
+                : 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
             }`}
           >
             {getStatusText()}

@@ -42,7 +42,7 @@ export function Select({
         <select
           className={`
             ${selectWidth} ${sizes[size]}
-            border rounded-lg text-body-md
+            border rounded-lg text-body-md transition-[border-color,box-shadow] duration-200 ease-out
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:shadow-focus
             appearance-none
             bg-white dark:bg-neutral-800 bg-[url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23828282' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")] 

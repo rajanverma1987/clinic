@@ -96,8 +96,12 @@ export function PatientsSummaryChart({ data, loading = false }) {
             {/* Center text */}
             <div className='absolute inset-0 flex items-center justify-center'>
               <div className='text-center'>
-                <div className='text-2xl font-bold text-neutral-900'>{totalPatients}</div>
-                <div className='text-body-xs text-neutral-500'>{t('dashboard.totalLabel')}</div>
+                <div className='text-2xl font-bold text-neutral-900 dark:text-neutral-100'>
+                  {totalPatients}
+                </div>
+                <div className='text-body-xs text-neutral-500 dark:text-neutral-400'>
+                  {t('dashboard.totalLabel')}
+                </div>
               </div>
             </div>
           </div>
@@ -107,29 +111,35 @@ export function PatientsSummaryChart({ data, loading = false }) {
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2'>
                 <div className='w-4 h-4 rounded bg-primary-500' />
-                <span className='text-body-sm text-neutral-700'>
+                <span className='text-body-sm text-neutral-700 dark:text-neutral-300'>
                   {t('dashboard.newPatientsLegend')}
                 </span>
               </div>
-              <span className='text-body-sm font-semibold text-neutral-900'>{newPatients}</span>
+              <span className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100'>
+                {newPatients}
+              </span>
             </div>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2'>
                 <div className='w-4 h-4 rounded bg-status-warning' />
-                <span className='text-body-sm text-neutral-700'>
+                <span className='text-body-sm text-neutral-700 dark:text-neutral-300'>
                   {t('dashboard.oldPatientsLegend')}
                 </span>
               </div>
-              <span className='text-body-sm font-semibold text-neutral-900'>{oldPatients}</span>
+              <span className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100'>
+                {oldPatients}
+              </span>
             </div>
-            <div className='flex items-center justify-between pt-2 border-t border-neutral-200'>
+            <div className='flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-neutral-700'>
               <div className='flex items-center gap-2'>
                 <div className='w-4 h-4 rounded bg-primary-700' />
-                <span className='text-body-sm font-semibold text-neutral-900'>
+                <span className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100'>
                   {t('dashboard.totalPatients')}
                 </span>
               </div>
-              <span className='text-body-sm font-semibold text-neutral-900'>{totalPatients}</span>
+              <span className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100'>
+                {totalPatients}
+              </span>
             </div>
           </div>
         </div>

@@ -1,14 +1,13 @@
 /**
  * GET /api/dashboard/widgets
  *
- * Combined dashboard widgets endpoint — replaces 8 parallel HTTP calls with a
- * single server-side parallel fetch. All DB queries run in one request,
- * share the same auth/middleware stack, and the result is cached 60 s in-memory.
- *
- * Shape matches EMPTY_LISTS_PAYLOAD in hooks/useSWRDashboard.js.
+ * Combined dashboard widgets: lists + critical alerts via dashboard-engine.
+ * Result cached 60 s in-memory. Shape matches EMPTY_LISTS_PAYLOAD in hooks/useSWRDashboard.js.
  */
 
+import { getAlerts } from '@clinic-saas/dashboard-engine';
 import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
+import { dashboardEngineAdapter } from '@/lib/dashboard-engine-adapter';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { logger } from '@/lib/utils/logger.js';
 import { withAuth } from '@/middleware/auth';
@@ -102,46 +101,7 @@ async function getHandler(req, user) {
         : []
       ).slice(0, 5);
 
-      // Critical alerts — computed server-side (previously done client-side)
-      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-      const urgentCount = todayAppointments.filter((apt) => {
-        const t = new Date(apt.appointmentDate || apt.date);
-        return t >= now && t <= oneHourLater;
-      }).length;
-
-      const criticalAlerts = [];
-      if (urgentCount > 0) {
-        criticalAlerts.push({
-          type: 'appointment',
-          severity: 'info',
-          message: `${urgentCount} appointment(s) starting within the next hour`,
-          count: urgentCount,
-        });
-      }
-      if (overdueInvoices.length > 0) {
-        criticalAlerts.push({
-          type: 'invoice',
-          severity: 'warning',
-          message: `${overdueInvoices.length} overdue invoice(s) require attention`,
-          count: overdueInvoices.length,
-        });
-      }
-      if (lowStockList.length > 0) {
-        criticalAlerts.push({
-          type: 'inventory',
-          severity: 'error',
-          message: `${lowStockList.length} item(s) running low on stock`,
-          count: lowStockList.length,
-        });
-      }
-      if (expiringLots.length > 0) {
-        criticalAlerts.push({
-          type: 'lot',
-          severity: 'warning',
-          message: `${expiringLots.length} lot(s) expiring soon`,
-          count: expiringLots.length,
-        });
-      }
+      const criticalAlerts = await getAlerts(tenantId, {}, dashboardEngineAdapter);
 
       // Log any individual service failures at debug level (non-fatal)
       [todayAptsRes, patientsRes, invoicesRes, lowStockRes, prescriptionsRes, queueRes, lotsRes, requestsRes]

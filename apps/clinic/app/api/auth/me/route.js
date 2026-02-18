@@ -19,19 +19,19 @@ async function handler(req, user) {
 
   const userDoc = await User.findById(user.userId).select('-password');
 
-    const noCacheHeaders = {
-      'Cache-Control': 'no-store, no-cache, must-revalidate',
-      Pragma: 'no-cache',
-    };
+  const noCacheHeaders = {
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    Pragma: 'no-cache',
+  };
 
-    if (!userDoc) {
-      return NextResponse.json(errorResponse('User not found', 'NOT_FOUND'), {
-        status: 404,
-        headers: noCacheHeaders,
-      });
-    }
+  if (!userDoc) {
+    return NextResponse.json(errorResponse('User not found', 'NOT_FOUND'), {
+      status: 404,
+      headers: noCacheHeaders,
+    });
+  }
 
-    const userTenantId = userDoc.tenantId ? userDoc.tenantId.toString() : '';
+  const userTenantId = userDoc.tenantId ? userDoc.tenantId.toString() : '';
 
   const tokenTenantId = user.tenantId || '';
   if (
@@ -99,6 +99,7 @@ async function handler(req, user) {
     tenant: tenantData,
     subscriptionPlan,
     isActive: userDoc.isActive,
+    avatar: userDoc.avatar || undefined,
     lastLoginAt: userDoc.lastLoginAt,
     createdAt: userDoc.createdAt,
   };

@@ -28,6 +28,8 @@ export { InventoryIcon } from './InventoryIcon';
 export { LanguagesIcon } from './LanguagesIcon';
 export { LayoutDashboardIcon } from './LayoutDashboardIcon';
 export { ListChecksIcon } from './ListChecksIcon';
+export { PanelLeftCloseIcon } from './PanelLeftCloseIcon';
+export { PanelRightOpenIcon } from './PanelRightOpenIcon';
 export { LogOutIcon } from './LogOutIcon';
 export { MailIcon } from './MailIcon';
 export { MapPinIcon } from './MapPinIcon';

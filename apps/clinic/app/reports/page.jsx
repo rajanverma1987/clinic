@@ -14,9 +14,9 @@ import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { canExportData, canViewRevenueAnalytics } from '@/lib/permissions/cursor-md-matrix';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { loadJsPDF } from '@/lib/utils/dynamic-imports';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { loadJsPDF } from '@/lib/utils/dynamic-imports';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
@@ -333,7 +333,8 @@ export default function ReportsPage() {
 
       let title = t('reports.title');
       if (activeTab === 'revenue') title = t('reports.revenue');
-      else if (activeTab === 'doctors') title = t('reports.doctorPerformance') || 'Doctor Performance';
+      else if (activeTab === 'doctors')
+        title = t('reports.doctorPerformance') || 'Doctor Performance';
       else if (activeTab === 'patients') title = t('reports.patients');
       else if (activeTab === 'appointments') title = t('reports.appointments');
       else if (activeTab === 'inventory') title = t('reports.inventory');
@@ -345,7 +346,11 @@ export default function ReportsPage() {
       y += 6;
       pdf.setFontSize(9);
       pdf.setTextColor(80, 80, 80);
-      pdf.text(`${t('reports.dateRange') || 'Date range'}: ${dateRangeStr}  |  ${t('reports.generated') || 'Generated'}: ${generatedStr}`, margin, y);
+      pdf.text(
+        `${t('reports.dateRange') || 'Date range'}: ${dateRangeStr}  |  ${t('reports.generated') || 'Generated'}: ${generatedStr}`,
+        margin,
+        y,
+      );
       pdf.setTextColor(0, 0, 0);
       y += 8;
       drawLine();
@@ -395,8 +400,22 @@ export default function ReportsPage() {
           pdf.text(t('reports.doctorPerformance') || 'Doctor Performance', margin, y);
           y += 8;
           const colW = [55, 22, 22, 20, 22, 35];
-          const cols = [margin + cellPadding, margin + colW[0], margin + colW[0] + colW[1], margin + colW[0] + colW[1] + colW[2], margin + colW[0] + colW[1] + colW[2] + colW[3], margin + colW[0] + colW[1] + colW[2] + colW[3] + colW[4]];
-          const headers = [t('staff.fullName') || 'Doctor', t('reports.totalAppointments'), t('reports.completed'), t('reports.noShows'), t('reports.completionRate'), t('reports.totalRevenue')];
+          const cols = [
+            margin + cellPadding,
+            margin + colW[0],
+            margin + colW[0] + colW[1],
+            margin + colW[0] + colW[1] + colW[2],
+            margin + colW[0] + colW[1] + colW[2] + colW[3],
+            margin + colW[0] + colW[1] + colW[2] + colW[3] + colW[4],
+          ];
+          const headers = [
+            t('staff.fullName') || 'Doctor',
+            t('reports.totalAppointments'),
+            t('reports.completed'),
+            t('reports.noShows'),
+            t('reports.completionRate'),
+            t('reports.totalRevenue'),
+          ];
           pdf.setFillColor(245, 245, 245);
           pdf.rect(margin, y, contentWidth, rowHeight, 'F');
           pdf.setFont('helvetica', 'bold');
@@ -407,7 +426,10 @@ export default function ReportsPage() {
           doc.doctors.forEach((r) => {
             if (y > 275) return;
             pdf.line(margin, y, pageWidth - margin, y);
-            const doctorName = (r.doctorName || '—').length > 20 ? (r.doctorName || '—').slice(0, 18) + '…' : (r.doctorName || '—');
+            const doctorName =
+              (r.doctorName || '—').length > 20
+                ? (r.doctorName || '—').slice(0, 18) + '…'
+                : r.doctorName || '—';
             pdf.text(doctorName, cols[0] + 1, y + 5.5);
             pdf.text(String(r.totalAppointments ?? 0), cols[1] + 1, y + 5.5);
             pdf.text(String(r.completed ?? 0), cols[2] + 1, y + 5.5);
@@ -441,7 +463,12 @@ export default function ReportsPage() {
         ]);
       } else {
         pdf.setFontSize(10);
-        pdf.text(t('reports.noData') || 'No report data available. Select a date range and generate the report.', margin, y);
+        pdf.text(
+          t('reports.noData') ||
+            'No report data available. Select a date range and generate the report.',
+          margin,
+          y,
+        );
       }
     },
     [
@@ -747,7 +774,9 @@ export default function ReportsPage() {
               className='filter-button'
               title={t('reports.downloadPdfHint') || 'Generate and download report as PDF'}
             >
-              {generatingPdf ? t('reports.generatingPdf') || 'Generating PDF…' : t('reports.generateReport')}
+              {generatingPdf
+                ? t('reports.generatingPdf') || 'Generating PDF…'
+                : t('reports.generateReport')}
             </Button>
             <Button
               variant='secondary'
@@ -756,7 +785,7 @@ export default function ReportsPage() {
               className='filter-button'
               aria-label={t('reports.print')}
             >
-              <PrinterIcon className='icon icon-sm mr-1.5' aria-hidden />
+              <PrinterIcon className='icon icon-sm flex-shrink-0' aria-hidden />
               {t('reports.print') || 'Print'}
             </Button>
           </div>

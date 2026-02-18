@@ -878,6 +878,7 @@
     "update": "Actualizar",
     "view": "View",
     "search": "Buscar",
+    "searchPlaceholder": "Buscar pacientes, citas, recetas... (Ctrl+K)",
     "filter": "Filtrar",
     "actions": "Acciones",
     "remove": "Remove",
@@ -1285,6 +1286,8 @@
     "calendar": "Calendario",
     "previousMonth": "Mes anterior",
     "nextMonth": "Mes siguiente",
+    "calendarDayWithAppointments": "{{count}} appointment(s) on {{date}}",
+    "calendarAppointmentsOnDay": "{{count}} appointment(s)",
     "revenueThisMonth": "Ingresos (Este Mes)",
     "todayAppointmentsLabel": "Citas de Hoy",
     "thisWeekAppointments": "Esta Semana",
@@ -1310,7 +1313,15 @@
     "recentActivity": "Actividad Reciente",
     "noRecentActivity": "Sin actividad reciente",
     "tabError": "{{tab}} no se pudo cargar. Inténtelo de nuevo.",
-    "chartsUnavailable": "Gráficos temporalmente no disponibles."
+    "chartsUnavailable": "Gráficos temporalmente no disponibles.",
+    "keyMetrics": "Métricas clave",
+    "assignStaff": "Asignar personal",
+    "retryFailedPayments": "Reintentar pagos fallidos",
+    "upcoming": "próximos",
+    "total": "Total",
+    "todaySchedule": "Agenda de hoy",
+    "patientsInQueue": "pacientes en cola",
+    "lastUpdated": "Última actualización"
   },
   "offline": {
     "actionsSynced": "{{count}} acción(es) sincronizada(s) correctamente."

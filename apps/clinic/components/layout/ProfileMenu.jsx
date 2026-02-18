@@ -6,22 +6,25 @@
 
 'use client';
 
-import { ChevronDownIcon, ChevronRightIcon, LogOutIcon, SettingsIcon } from '@/components/icons';
-import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
+import {
+  BellIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  HistoryIcon,
+  SettingsIcon,
+} from '@/components/icons';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export function ProfileMenu({ isCollapsed }) {
-  const { user, logout } = useAuth();
+export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
+  const { user } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [avatarError, setAvatarError] = useState(false);
   const userMenuRef = useRef(null);
@@ -30,8 +33,14 @@ export function ProfileMenu({ isCollapsed }) {
   const updateDropdownPosition = useCallback(() => {
     if (!userMenuRef.current) return;
     const rect = userMenuRef.current.getBoundingClientRect();
-    setDropdownPosition({ top: rect.bottom + 8, left: rect.left });
-  }, []);
+    if (isCollapsed) {
+      // Collapsed: open to the RIGHT of the sidebar, at avatar's vertical midpoint
+      setDropdownPosition({ top: rect.top, left: rect.right + 8, mode: 'right' });
+    } else {
+      // Expanded footer: open ABOVE the profile row
+      setDropdownPosition({ top: rect.top, left: rect.left, mode: 'above' });
+    }
+  }, [isCollapsed]);
 
   // Helper function to get translation with fallback
   const getTranslation = useCallback(
@@ -114,19 +123,15 @@ export function ProfileMenu({ isCollapsed }) {
     router.push('/settings');
   }, [router]);
 
-  const handleLogoutClick = useCallback(() => {
+  const handleSubscriptionClick = useCallback(() => {
     setShowUserMenu(false);
-    setShowLogoutConfirm(true);
-  }, []);
+    router.push('/subscription');
+  }, [router]);
 
-  const handleLogout = useCallback(
-    (e) => {
-      e?.stopPropagation?.();
-      setShowLogoutConfirm(false);
-      logout();
-    },
-    [logout],
-  );
+  const handlePaymentHistoryClick = useCallback(() => {
+    setShowUserMenu(false);
+    router.push('/payment-history');
+  }, [router]);
 
   const toggleUserMenu = useCallback(() => {
     setShowUserMenu((prev) => !prev);
@@ -136,30 +141,18 @@ export function ProfileMenu({ isCollapsed }) {
 
   return (
     <>
-      <div className='profile-menu bg-white dark:bg-neutral-800' ref={userMenuRef}>
-        <button
-          type='button'
-          onClick={toggleUserMenu}
-          className={`group w-full flex items-center gap-3 rounded-xl border p-2.5 shadow-sm transition-all duration-200 ${
-            isCollapsed ? 'justify-center px-2.5' : 'px-3'
-          } ${
-            showUserMenu
-              ? 'border-primary-300 bg-white dark:bg-neutral-800 dark:border-primary-500'
-              : 'border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-500 hover:shadow-md'
-          }`}
-          aria-label={t('common.userMenu')}
-          aria-expanded={showUserMenu}
-          aria-haspopup='true'
-        >
-          <div className='relative flex-shrink-0'>
-            <div
-              className='overflow-hidden rounded-full bg-primary-600 flex items-center justify-center text-white font-bold ring-2 ring-white shadow-md'
-              style={{
-                width: isCollapsed ? 40 : 56,
-                height: isCollapsed ? 40 : 56,
-                fontSize: isCollapsed ? 14 : 18,
-              }}
-            >
+      <div ref={userMenuRef}>
+        {isCollapsed ? (
+          /* Collapsed: centered avatar, click opens dropdown to the right */
+          <button
+            type='button'
+            onClick={toggleUserMenu}
+            className='group relative flex items-center justify-center mx-auto w-10 h-10 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 transition-all'
+            aria-label={t('common.userMenu')}
+            aria-expanded={showUserMenu}
+            aria-haspopup='true'
+          >
+            <div className='overflow-hidden rounded-full bg-primary-600 flex items-center justify-center text-white font-bold ring-2 ring-primary-100 dark:ring-primary-900/50 shadow-md w-10 h-10 text-sm group-hover:ring-primary-200 transition-all'>
               {user?.avatar && !avatarError ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -173,38 +166,64 @@ export function ProfileMenu({ isCollapsed }) {
               )}
             </div>
             <span
-              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white rounded-full ${
-                user?.isActive ? 'bg-green-500' : 'bg-red-500'
-              }`}
+              className={`absolute bottom-0 right-0 w-2 h-2 border border-white dark:border-neutral-900 rounded-full ${user?.isActive ? 'bg-green-500' : 'bg-red-500'}`}
               aria-hidden
             />
-          </div>
-          {!isCollapsed && (
+          </button>
+        ) : (
+          /* Expanded: full-width profile block with large avatar + name/role + chevron */
+          <button
+            type='button'
+            onClick={toggleUserMenu}
+            className={[
+              'group w-full flex items-center gap-4 px-3 py-4 rounded-xl transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+              showUserMenu
+                ? 'bg-neutral-100 dark:bg-neutral-800'
+                : 'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+            ].join(' ')}
+            aria-label={t('common.userMenu')}
+            aria-expanded={showUserMenu}
+            aria-haspopup='true'
+          >
+            {/* Large avatar */}
+            <div className='relative flex-shrink-0'>
+              <div className='overflow-hidden rounded-full bg-primary-600 flex items-center justify-center text-white font-bold ring-2 ring-primary-100 dark:ring-primary-900/50 shadow-md w-16 h-16 text-xl group-hover:ring-primary-200 dark:group-hover:ring-primary-800 transition-all duration-150'>
+                {user?.avatar && !avatarError ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatar}
+                    alt={userDisplayName || t('common.altProfile')}
+                    className='w-full h-full object-cover'
+                    onError={() => setAvatarError(true)}
+                  />
+                ) : (
+                  <span aria-hidden>{userInitials}</span>
+                )}
+              </div>
+              <span
+                className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 border-white dark:border-neutral-900 rounded-full ${user?.isActive ? 'bg-green-500' : 'bg-red-500'}`}
+                aria-hidden
+              />
+            </div>
+
+            {/* Name + role */}
             <div className='flex-1 min-w-0 text-left'>
-              <p className='text-neutral-900 dark:text-neutral-100 font-bold truncate text-sm'>
+              <p className='text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate leading-tight'>
                 {userDisplayName}
               </p>
-              <p className='text-neutral-600 dark:text-neutral-300 truncate text-xs font-medium'>
+              <p className='text-xs font-semibold text-primary-600 dark:text-primary-400 truncate leading-tight mt-1'>
                 {userRoleDisplay}
               </p>
-              {user?.subscriptionPlan?.name && (
-                <p
-                  className='text-neutral-500 dark:text-neutral-400 truncate text-xs mt-0.5'
-                  title={user.subscriptionPlan.name}
-                >
-                  {getTranslation('sidebar.subscriptionType', 'Plan')}: {user.subscriptionPlan.name}
-                </p>
-              )}
             </div>
-          )}
-          {!isCollapsed && (
-            <ChevronDownIcon
-              className={`icon icon-xs text-neutral-400 flex-shrink-0 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
-            />
-          )}
-        </button>
 
-        {showUserMenu && !isCollapsed && typeof document !== 'undefined'
+            {/* Chevron — rotates when open */}
+            <ChevronDownIcon
+              className={`w-3.5 h-3.5 text-neutral-400 flex-shrink-0 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`}
+            />
+          </button>
+        )}
+
+        {showUserMenu && typeof document !== 'undefined'
           ? createPortal(
               <div
                 ref={userMenuDropdownRef}
@@ -215,11 +234,50 @@ export function ProfileMenu({ isCollapsed }) {
                   position: 'fixed',
                   top: dropdownPosition.top,
                   left: dropdownPosition.left,
+                  transform:
+                    dropdownPosition.mode === 'above' ? 'translateY(calc(-100% - 8px))' : 'none',
                   zIndex: 10050,
                 }}
               >
                 <div className='profile-dropdown__header'>{t('common.account')}</div>
                 <div className='profile-dropdown__body'>
+                  {showSubscriptionLinks && (
+                    <>
+                      <button
+                        type='button'
+                        className='profile-dropdown__item'
+                        onClick={handleSubscriptionClick}
+                        role='menuitem'
+                      >
+                        <span className='profile-dropdown__item-icon'>
+                          <BellIcon className='icon icon-sm' />
+                        </span>
+                        <span className='profile-dropdown__item-text'>
+                          <span className='profile-dropdown__item-label'>
+                            {getTranslation('subscription.title', 'Subscription')}
+                          </span>
+                        </span>
+                        <ChevronRightIcon className='icon icon-xs text-neutral-400 flex-shrink-0' />
+                      </button>
+                      <button
+                        type='button'
+                        className='profile-dropdown__item'
+                        onClick={handlePaymentHistoryClick}
+                        role='menuitem'
+                      >
+                        <span className='profile-dropdown__item-icon'>
+                          <HistoryIcon className='icon icon-sm' />
+                        </span>
+                        <span className='profile-dropdown__item-text'>
+                          <span className='profile-dropdown__item-label'>
+                            {getTranslation('subscription.paymentHistory', 'Payment History')}
+                          </span>
+                        </span>
+                        <ChevronRightIcon className='icon icon-xs text-neutral-400 flex-shrink-0' />
+                      </button>
+                      <div className='profile-dropdown__divider' />
+                    </>
+                  )}
                   <button
                     type='button'
                     className='profile-dropdown__item'
@@ -239,60 +297,12 @@ export function ProfileMenu({ isCollapsed }) {
                     </span>
                     <ChevronRightIcon className='icon icon-xs text-neutral-400 flex-shrink-0' />
                   </button>
-                  <div className='profile-dropdown__divider' />
-                  <button
-                    type='button'
-                    className='profile-dropdown__item profile-dropdown__item--danger'
-                    onClick={handleLogoutClick}
-                    role='menuitem'
-                  >
-                    <span className='profile-dropdown__item-icon'>
-                      <LogOutIcon className='icon icon-sm' />
-                    </span>
-                    <span className='profile-dropdown__item-text'>
-                      <span className='profile-dropdown__item-label'>
-                        {getTranslation('auth.logout', 'Logout')}
-                      </span>
-                      <span className='profile-dropdown__item-desc'>
-                        {t('auth.signOutDescription')}
-                      </span>
-                    </span>
-                    <ChevronRightIcon className='icon icon-xs text-neutral-400 flex-shrink-0' />
-                  </button>
                 </div>
               </div>,
               document.body,
             )
           : null}
       </div>
-
-      {/* Logout Confirmation Modal */}
-      <Modal
-        isOpen={showLogoutConfirm}
-        onClose={() => setShowLogoutConfirm(false)}
-        title={getTranslation('auth.confirmLogout', 'Confirm Sign Out')}
-        size='sm'
-      >
-        <div className='space-y-4'>
-          <p
-            className='text-neutral-700 dark:text-neutral-300'
-            style={{ fontSize: '16px', lineHeight: '24px' }}
-          >
-            {getTranslation(
-              'auth.logoutConfirmMessage',
-              'Are you sure you want to sign out? You will need to sign in again to access your account.',
-            )}
-          </p>
-          <div className='flex items-center justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-600'>
-            <Button variant='secondary' size='md' onClick={() => setShowLogoutConfirm(false)}>
-              {getTranslation('common.cancel', 'Cancel')}
-            </Button>
-            <Button variant='logout' size='md' onClick={handleLogout} type='button'>
-              {getTranslation('auth.signOut', 'Sign Out')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </>
   );
 }

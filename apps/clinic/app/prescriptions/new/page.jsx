@@ -605,7 +605,8 @@ function NewPrescriptionPageContent() {
         showSuccess(t('prescriptions.signedAndSentSuccess'));
         router.push('/prescriptions');
       } else {
-        const errorMessage = response.error?.message || t('prescriptions.failedToCreatePrescription');
+        const errorMessage =
+          response.error?.message || t('prescriptions.failedToCreatePrescription');
         setError(errorMessage);
         showError(errorMessage);
       }
@@ -770,7 +771,9 @@ function NewPrescriptionPageContent() {
                   />
 
                   <div className='prescription-form-section'>
-                    <h2 className='prescription-form-section-title'>{t('prescriptions.prescriptionDetails')}</h2>
+                    <h2 className='prescription-form-section-title'>
+                      {t('prescriptions.prescriptionDetails')}
+                    </h2>
 
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
                       <div className='prescription-form-field'>
@@ -1052,7 +1055,9 @@ function NewPrescriptionPageContent() {
 
                   <div className='prescription-items-section'>
                     <div className='prescription-items-header'>
-                        <h3 className='prescription-items-title'>{t('prescriptions.prescriptionItems')}</h3>
+                      <h3 className='prescription-items-title'>
+                        {t('prescriptions.prescriptionItems')}
+                      </h3>
                       <Button type='button' variant='secondary' size='sm' onClick={addItem}>
                         + Add Item
                       </Button>
@@ -1101,7 +1106,7 @@ function NewPrescriptionPageContent() {
                       onClick={handlePrintPreview}
                       disabled={submitting || !formData.patientId}
                     >
-                      <PrinterIcon className='icon icon-sm mr-2' ariaHidden />
+                      <PrinterIcon className='icon icon-sm flex-shrink-0' ariaHidden />
                       {t('prescriptions.print')}
                     </Button>
                     <Button
@@ -1110,11 +1115,10 @@ function NewPrescriptionPageContent() {
                       onClick={handlePrintPreview}
                       disabled={submitting || !formData.patientId}
                       title={
-                        t('prescriptions.downloadPdfHint') ||
-                        t('prescriptions.openPreviewToPrint')
+                        t('prescriptions.downloadPdfHint') || t('prescriptions.openPreviewToPrint')
                       }
                     >
-                      <FileDownIcon className='icon icon-sm mr-2' ariaHidden />
+                      <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
                       {t('prescriptions.downloadPdf') || 'Download PDF'}
                     </Button>
                     <Button

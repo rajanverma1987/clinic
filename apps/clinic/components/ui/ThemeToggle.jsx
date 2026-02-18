@@ -20,7 +20,7 @@ export function ThemeToggle({ className = '', size = 'md', ariaLabel }) {
       type='button'
       disabled={!mounted}
       onClick={mounted ? toggleTheme : undefined}
-      className={`inline-flex items-center justify-center rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:text-neutral-100 dark:hover:bg-neutral-700 transition-colors disabled:pointer-events-none ${iconClass} ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:text-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 ease-out disabled:pointer-events-none ${iconClass} ${className}`}
       aria-label={ariaLabel ?? defaultAriaLabel}
     >
       {isDark ? (

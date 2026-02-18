@@ -22,7 +22,7 @@ function AlertItem({ alert, onViewAll, t }) {
               }`}
             />
           </div>
-          <p className='text-body-sm font-medium text-neutral-900 flex-1 truncate'>{message}</p>
+          <p className='text-body-sm font-medium text-neutral-900 dark:text-neutral-100 flex-1 truncate'>{message}</p>
         </div>
         <button
           type='button'
@@ -68,7 +68,7 @@ export function CriticalAlerts({ alerts = [], onViewAll }) {
       {/* Content */}
       <div className='relative z-10 p-4'>
         {/* Header */}
-        <div className='flex items-center gap-2.5 mb-4 pb-3 border-b border-neutral-200'>
+        <div className='flex items-center gap-2.5 mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700'>
           <div className='accent-bar accent-bar-warning' />
           <div className='alert-badge alert-badge-warning'>
             <WarningIcon className='icon icon-xs text-status-warning' />

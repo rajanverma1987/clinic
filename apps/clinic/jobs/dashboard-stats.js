@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 
 // ES modules need to be imported dynamically
 let CacheManager, connectDB, logger;
-let Tenant, Appointment, Invoice, Patient, Queue;
+let Tenant, Appointment, Invoice, Patient, Queue, ClinicDashboardMetrics;
 let InvoiceStatus, AppointmentStatus, QueueStatus;
 
 // Lazy load ES modules
@@ -25,6 +25,8 @@ async function loadModules() {
     // Load models
     const tenantModule = await import('../models/Tenant.js');
     Tenant = tenantModule.default;
+    const metricsModule = await import('../models/ClinicDashboardMetrics.js');
+    ClinicDashboardMetrics = metricsModule.default;
     const appointmentModule = await import('../models/Appointment.js');
     Appointment = appointmentModule.default;
     AppointmentStatus = appointmentModule.AppointmentStatus;
@@ -191,22 +193,57 @@ async function calculateDashboardStats(tenantId) {
 }
 
 /**
- * Update stats for all active tenants
+ * Update stats for all active tenants via dashboard-engine.
  */
 async function updateAllTenantsStats() {
   await loadModules();
+
+  let getClinicSummary;
+  let dashboardEngineAdapter;
+  try {
+    const engine = await import('@clinic-saas/dashboard-engine');
+    getClinicSummary = engine.getClinicSummary;
+    const adapter = await import('../lib/dashboard-engine-adapter.js');
+    dashboardEngineAdapter = adapter.dashboardEngineAdapter;
+  } catch (e) {
+    console.error('Dashboard engine unavailable, falling back to direct calculation:', e?.message);
+  }
 
   try {
     await connectDB();
 
     const tenants = await Tenant.find({ isActive: true }).select('_id').lean();
-
     console.log(`📊 Updating stats for ${tenants.length} tenants...`);
 
     for (const tenant of tenants) {
-      const stats = await calculateDashboardStats(tenant._id);
+      const tenantId = tenant._id?.toString?.() || tenant._id;
+      let stats = null;
+      if (getClinicSummary && dashboardEngineAdapter) {
+        try {
+          stats = await getClinicSummary(tenantId, dashboardEngineAdapter);
+        } catch (err) {
+          console.warn(`Engine stats failed for tenant ${tenantId}, fallback:`, err?.message);
+        }
+      }
+      if (!stats) stats = await calculateDashboardStats(tenant._id);
+
       if (stats) {
         await CacheManager.set('dashboard', stats, 300, 'stats', tenant._id);
+        const metrics = {
+          tenantId,
+          today_patients: stats.patients?.total ?? 0,
+          revenue_today: stats.revenue?.today?.paid ?? stats.revenue?.today?.total ?? 0,
+          failed_transactions: 0,
+          pending_appointments: stats.appointments?.todayTotal ?? 0,
+          active_staff: 0,
+          data: stats,
+          updated_at: new Date(),
+        };
+        await ClinicDashboardMetrics.findOneAndUpdate(
+          { tenantId },
+          { $set: metrics },
+          { upsert: true },
+        );
       }
     }
 

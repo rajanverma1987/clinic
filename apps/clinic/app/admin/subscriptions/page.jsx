@@ -259,8 +259,10 @@ export default function AdminSubscriptionsPage() {
       openConfirm({
         title: t('admin.confirmPlanUpdate', 'Confirm Plan Update'),
         message:
-          t('admin.planUpdateConfirmMessage', 'Are you sure you want to update this subscription plan?') ||
-          'Are you sure you want to update this subscription plan?',
+          t(
+            'admin.planUpdateConfirmMessage',
+            'Are you sure you want to update this subscription plan?',
+          ) || 'Are you sure you want to update this subscription plan?',
         variant: 'warning',
         onConfirm: () => doSubmit(),
       });
@@ -305,7 +307,9 @@ export default function AdminSubscriptionsPage() {
         await apiClient.clearCacheForEndpoint('/admin/subscription-plans');
         await fetchPlans();
       } else {
-        showError(response?.error?.message || t('admin.planUpdateFailed') || t('admin.planCreateFailed'));
+        showError(
+          response?.error?.message || t('admin.planUpdateFailed') || t('admin.planCreateFailed'),
+        );
       }
     } catch (error) {
       logger.error('Failed to save plan', error);
@@ -366,7 +370,10 @@ export default function AdminSubscriptionsPage() {
         <div>
           {formatPrice(row.price, row.currency)}
           <span className='text-neutral-500 text-sm ml-1'>
-            /{row.billingCycle === 'MONTHLY' ? t('admin.billingMonthlyShort') : t('admin.billingYearlyShort')}
+            /
+            {row.billingCycle === 'MONTHLY'
+              ? t('admin.billingMonthlyShort')
+              : t('admin.billingYearlyShort')}
           </span>
         </div>
       ),
@@ -387,13 +394,19 @@ export default function AdminSubscriptionsPage() {
       accessor: (row) => (
         <div className='text-sm text-neutral-600'>
           {row.maxUsers != null && (
-            <div>{t('admin.limitsUsers')}: {row.maxUsers}</div>
+            <div>
+              {t('admin.limitsUsers')}: {row.maxUsers}
+            </div>
           )}
           {row.maxPatients != null && (
-            <div>{t('admin.limitsPatients')}: {Number(row.maxPatients).toLocaleString()}</div>
+            <div>
+              {t('admin.limitsPatients')}: {Number(row.maxPatients).toLocaleString()}
+            </div>
           )}
           {row.maxStorageGB != null && (
-            <div>{t('admin.limitsStorage')}: {row.maxStorageGB}GB</div>
+            <div>
+              {t('admin.limitsStorage')}: {row.maxStorageGB}GB
+            </div>
           )}
           {!row.maxUsers && !row.maxPatients && !row.maxStorageGB && '—'}
         </div>
@@ -645,7 +658,10 @@ export default function AdminSubscriptionsPage() {
                 </div>
                 {formData.features.length > 0 && (
                   <p className='text-sm text-neutral-500 mt-2'>
-                    {t('admin.featuresSelectedCount').replace('{{count}}', String(formData.features.length))}
+                    {t('admin.featuresSelectedCount').replace(
+                      '{{count}}',
+                      String(formData.features.length),
+                    )}
                   </p>
                 )}
               </div>
@@ -702,7 +718,7 @@ export default function AdminSubscriptionsPage() {
           {displayPlans.length === 0 ? (
             <div className='p-8 text-center'>
               <p className='text-neutral-500 mb-4'>{t('admin.noSubscriptionPlans')}</p>
-              <Button onClick={() => fetchPlans(true)} variant='secondary'>
+              <Button onClick={() => fetchPlans(true)} variant='ghost'>
                 {t('common.refresh')}
               </Button>
             </div>
@@ -716,7 +732,7 @@ export default function AdminSubscriptionsPage() {
                   )}
                 </p>
                 <div
-                  className='inline-flex rounded-lg border border-neutral-300 bg-neutral-50 p-0.5'
+                  className='inline-flex rounded-lg border border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 p-0.5'
                   role='tablist'
                   aria-label={t('admin.viewTable')}
                 >
@@ -727,7 +743,7 @@ export default function AdminSubscriptionsPage() {
                     className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       viewMode === VIEW_TABLE
                         ? 'bg-primary-100 text-primary-700 shadow-sm'
-                        : 'text-neutral-600 hover:text-neutral-900'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
                     }`}
                     onClick={() => setViewMode(VIEW_TABLE)}
                   >
@@ -741,7 +757,7 @@ export default function AdminSubscriptionsPage() {
                     className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       viewMode === VIEW_CARDS
                         ? 'bg-primary-100 text-primary-700 shadow-sm'
-                        : 'text-neutral-600 hover:text-neutral-900'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
                     }`}
                     onClick={() => setViewMode(VIEW_CARDS)}
                   >
@@ -755,7 +771,7 @@ export default function AdminSubscriptionsPage() {
                     className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                       viewMode === VIEW_COMPARISON
                         ? 'bg-primary-100 text-primary-700 shadow-sm'
-                        : 'text-neutral-600 hover:text-neutral-900'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
                     }`}
                     onClick={() => setViewMode(VIEW_COMPARISON)}
                   >
@@ -812,11 +828,13 @@ export default function AdminSubscriptionsPage() {
                   {displayPlans.map((plan) => (
                     <div
                       key={plan._id}
-                      className='rounded-lg border border-neutral-200 bg-neutral-50/50 p-4 flex flex-col'
+                      className='rounded-lg border border-neutral-200 dark:border-neutral-600 bg-neutral-50/50 dark:bg-neutral-800/50 p-4 flex flex-col'
                     >
                       <div className='flex items-start justify-between gap-2 mb-2'>
                         <div>
-                          <h3 className='font-semibold text-neutral-900'>{plan.name}</h3>
+                          <h3 className='font-semibold text-neutral-900 dark:text-neutral-100'>
+                            {plan.name}
+                          </h3>
                           <p className='text-xs text-neutral-500 font-mono mt-0.5'>
                             ID: {plan._id}
                           </p>
@@ -851,7 +869,7 @@ export default function AdminSubscriptionsPage() {
                         />
                       </div>
                       <div className='mt-2'>
-                        <p className='text-lg font-bold text-neutral-900'>
+                        <p className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
                           {formatPrice(plan.price, plan.currency)}
                           <span className='text-neutral-500 text-sm font-normal ml-1'>
                             /{plan.billingCycle === 'MONTHLY' ? 'mo' : 'yr'}

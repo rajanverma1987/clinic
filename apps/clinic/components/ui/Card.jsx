@@ -2,7 +2,7 @@
 
 export function Card({ title, children, className = '', actions, elevated = false }) {
   /* Doctor_Dashboard.md: border-radius 12px, padding 20px, box-shadow 0 2px 8px rgba(0,0,0,0.08) */
-  const baseClasses = `bg-neutral-50 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-600`;
+  const baseClasses = `bg-neutral-50 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-600 transition-[border-color,box-shadow,background-color] duration-200 ease-out`;
   const shadowClass = elevated ? 'shadow-lg' : 'shadow-[var(--dashboard-card-shadow)]';
 
   return (

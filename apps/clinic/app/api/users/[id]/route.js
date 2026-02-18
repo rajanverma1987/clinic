@@ -50,6 +50,21 @@ async function putHandler(req, user, id) {
     if (body.role !== undefined) targetUser.role = body.role;
     if (body.isActive !== undefined) targetUser.isActive = body.isActive;
     if (body.password !== undefined) targetUser.password = body.password;
+    if (body.avatar !== undefined) {
+      // User can update own avatar; admins can update any user's avatar
+      const isOwnProfile =
+        (user.userId && user.userId.toString() === id) ||
+        (user.id && user.id.toString() === id) ||
+        (user._id && user._id.toString() === id);
+      if (
+        isOwnProfile ||
+        user.role === 'clinic_admin' ||
+        user.role === 'doctor' ||
+        user.role === 'super_admin'
+      ) {
+        targetUser.avatar = typeof body.avatar === 'string' ? body.avatar.trim() || null : null;
+      }
+    }
 
     await targetUser.save();
 
@@ -61,6 +76,7 @@ async function putHandler(req, user, id) {
         lastName: targetUser.lastName,
         role: targetUser.role,
         isActive: targetUser.isActive,
+        avatar: targetUser.avatar,
         updatedAt: targetUser.updatedAt,
       }),
     );

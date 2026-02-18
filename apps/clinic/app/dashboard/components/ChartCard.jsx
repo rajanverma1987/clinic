@@ -91,9 +91,9 @@ function ChartCardInner({ title, data, colorScheme = 'primary', loading = false 
               {t('dashboard.noDataForPeriod')}
             </div>
           ) : (
-            <div className='flex items-end h-full min-h-[160px] border-b border-l border-neutral-300 pl-8 pr-3 pb-6'>
+            <div className='flex items-end h-full min-h-[160px] border-b border-l border-neutral-300 dark:border-neutral-600 pl-8 pr-3 pb-6'>
               {/* Y-axis labels */}
-              <div className='absolute left-0 top-0 bottom-6 flex flex-col justify-between text-body-xs text-neutral-500 font-medium'>
+              <div className='absolute left-0 top-0 bottom-6 flex flex-col justify-between text-body-xs text-neutral-500 dark:text-neutral-400 font-medium'>
                 {[100, 75, 50, 25, 0].map((percent) => (
                   <span key={percent} className='pr-2' style={{ marginRight: '100%' }}>
                     {Math.round((maxBarValue * percent) / 100)}
@@ -122,12 +122,12 @@ function ChartCardInner({ title, data, colorScheme = 'primary', loading = false 
                         title={`${getItemDate(item).toLocaleDateString()}: ${value}`}
                       />
                       <div
-                        className='absolute -top-8 left-1/2 opacity-0 group-hover:opacity-100 bg-neutral-200 text-neutral-900 border border-neutral-300 text-xs px-2 py-1 rounded-md whitespace-nowrap z-10 shadow-lg transition-opacity duration-200 pointer-events-none'
+                        className='absolute -top-8 left-1/2 opacity-0 group-hover:opacity-100 bg-neutral-800 dark:bg-neutral-700 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap z-10 shadow-lg transition-opacity duration-200 pointer-events-none'
                         style={{ marginLeft: '-50%', transform: 'translateX(-50%)' }}
                       >
                         {value}
                       </div>
-                      <span className='text-body-xs text-neutral-500 mt-2 text-center leading-tight font-medium'>
+                      <span className='text-body-xs text-neutral-500 dark:text-neutral-400 mt-2 text-center leading-tight font-medium'>
                         {(() => {
                           const date = getItemDate(item);
                           if (item.label && chartData.length > 7) return item.label;

@@ -878,6 +878,7 @@
     "update": "تحديث",
     "view": "View",
     "search": "بحث",
+    "searchPlaceholder": "البحث عن المرضى، المواعيد، الوصفات... (Ctrl+K)",
     "filter": "تصفية",
     "actions": "إجراءات",
     "remove": "Remove",
@@ -1285,6 +1286,8 @@
     "calendar": "التقويم",
     "previousMonth": "الشهر السابق",
     "nextMonth": "الشهر التالي",
+    "calendarDayWithAppointments": "{{count}} appointment(s) on {{date}}",
+    "calendarAppointmentsOnDay": "{{count}} appointment(s)",
     "revenueThisMonth": "الإيرادات (هذا الشهر)",
     "todayAppointmentsLabel": "مواعيد اليوم",
     "thisWeekAppointments": "هذا الأسبوع",
@@ -1310,7 +1313,15 @@
     "recentActivity": "النشاط الأخير",
     "noRecentActivity": "لا يوجد نشاط حديث",
     "tabError": "فشل تحميل {{tab}}. يرجى المحاولة مرة أخرى.",
-    "chartsUnavailable": "الرسوم البيانية غير متوفرة مؤقتًا."
+    "chartsUnavailable": "الرسوم البيانية غير متوفرة مؤقتًا.",
+    "keyMetrics": "المقاييس الرئيسية",
+    "assignStaff": "تعيين الموظفين",
+    "retryFailedPayments": "إعادة محاولة المدفوعات الفاشلة",
+    "upcoming": "قادم",
+    "total": "المجموع",
+    "todaySchedule": "جدول اليوم",
+    "patientsInQueue": "مرضى في الانتظار",
+    "lastUpdated": "آخر تحديث"
   },
   "offline": {
     "actionsSynced": "تم مزامنة {{count}} إجراء (إجراءات) بنجاح."
@@ -2456,7 +2467,15 @@
     "locations": "Locations",
     "branding": "Branding",
     "whiteLabel": "White Label",
-    "apiDocs": "API Docs"
+    "apiDocs": "API Docs",
+    "sectionMyPractice": "ممارستي",
+    "sectionClinical": "إكلينيكي",
+    "sectionBusiness": "أعمال",
+    "sectionTeam": "الفريق",
+    "sectionSystem": "النظام",
+    "sectionManagement": "الإدارة",
+    "sectionContentFinance": "المحتوى والمالية",
+    "sectionAnalytics": "التحليلات"
   },
   "doctors": {
     "profile": "الملف الشخصي",

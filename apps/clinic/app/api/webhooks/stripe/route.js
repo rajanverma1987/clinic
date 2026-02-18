@@ -11,7 +11,7 @@ import connectDB from '@/lib/db/connection.js';
 import Invoice from '@/models/Invoice.js';
 import Payment from '@/models/Payment.js';
 import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
-import { notifyPaymentReceived } from '@/lib/realtime/integration-helpers.js';
+import { notifyPaymentReceived, notifyPaymentFailure } from '@/lib/realtime/integration-helpers.js';
 import { logger } from '@/lib/utils/logger.js';
 
 function getStripe() {
@@ -137,11 +137,25 @@ async function handlePaymentSuccess(paymentIntent) {
 async function handlePaymentFailed(paymentIntent) {
   const { metadata } = paymentIntent;
   const invoiceId = metadata?.invoiceId;
+  const tenantId = metadata?.tenantId;
 
   if (invoiceId) {
-    // Log failed payment attempt
     logger.info('❌ Payment failed for invoice:', invoiceId);
-    // Could implement retry mechanism here
+    let tid = tenantId;
+    if (!tid) {
+      const invoice = await Invoice.findById(invoiceId).select('tenantId').lean();
+      tid = invoice?.tenantId?.toString?.();
+    }
+    if (tid) {
+      await notifyPaymentFailure(tid, {
+        paymentIntentId: paymentIntent.id,
+        invoiceId,
+        amount: paymentIntent.amount / 100,
+        currency: paymentIntent.currency,
+        failureCode: paymentIntent.last_payment_error?.code,
+        failureMessage: paymentIntent.last_payment_error?.message,
+      });
+    }
   }
 }
 

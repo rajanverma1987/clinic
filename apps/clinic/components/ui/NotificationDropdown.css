@@ -656,3 +656,78 @@
 .NotificationDropdown-view-all:active {
   transform: translateY(0);
 }
+
+/* Header bar context: borderless, no shadow, compact size – when used inside page header or sticky header */
+.page-header .NotificationDropdown .NotificationDropdown-button,
+.page-header .NotificationDropdown .NotificationDropdown-button--sm,
+.enterprise-header .NotificationDropdown .NotificationDropdown-button,
+.enterprise-header .NotificationDropdown .NotificationDropdown-button--sm,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-button,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-button--sm {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  border-radius: var(--radius-lg, 8px);
+  color: var(--color-neutral-600);
+}
+.page-header .NotificationDropdown .NotificationDropdown-button::before,
+.page-header .NotificationDropdown .NotificationDropdown-button--sm::before,
+.enterprise-header .NotificationDropdown .NotificationDropdown-button::before,
+.enterprise-header .NotificationDropdown .NotificationDropdown-button--sm::before,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-button::before,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-button--sm::before {
+  display: none;
+}
+.page-header .NotificationDropdown .NotificationDropdown-button:hover,
+.page-header .NotificationDropdown .NotificationDropdown-button--sm:hover,
+.enterprise-header .NotificationDropdown .NotificationDropdown-button:hover,
+.enterprise-header .NotificationDropdown .NotificationDropdown-button--sm:hover,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-button:hover,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-button--sm:hover {
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+  border: none;
+  box-shadow: none;
+  transform: none;
+}
+.page-header .NotificationDropdown .NotificationDropdown-button.is-open,
+.page-header .NotificationDropdown .NotificationDropdown-button--sm.is-open,
+.enterprise-header .NotificationDropdown .NotificationDropdown-button.is-open,
+.enterprise-header .NotificationDropdown .NotificationDropdown-button--sm.is-open,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-button.is-open,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-button--sm.is-open {
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+  border: none;
+  box-shadow: none;
+}
+.dark .page-header .NotificationDropdown .NotificationDropdown-button:hover,
+.dark .page-header .NotificationDropdown .NotificationDropdown-button--sm:hover,
+.dark .page-header .NotificationDropdown .NotificationDropdown-button.is-open,
+.dark .page-header .NotificationDropdown .NotificationDropdown-button--sm.is-open,
+.dark .enterprise-header .NotificationDropdown .NotificationDropdown-button:hover,
+.dark .enterprise-header .NotificationDropdown .NotificationDropdown-button--sm:hover,
+.dark .enterprise-header .NotificationDropdown .NotificationDropdown-button.is-open,
+.dark .enterprise-header .NotificationDropdown .NotificationDropdown-button--sm.is-open,
+.dark .sticky-header-bar .NotificationDropdown .NotificationDropdown-button:hover,
+.dark .sticky-header-bar .NotificationDropdown .NotificationDropdown-button--sm:hover,
+.dark .sticky-header-bar .NotificationDropdown .NotificationDropdown-button.is-open,
+.dark .sticky-header-bar .NotificationDropdown .NotificationDropdown-button--sm.is-open {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  border: none;
+  box-shadow: none;
+}
+.page-header .NotificationDropdown .NotificationDropdown-icon,
+.enterprise-header .NotificationDropdown .NotificationDropdown-icon,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-icon {
+  width: 20px;
+  height: 20px;
+  color: inherit;
+}

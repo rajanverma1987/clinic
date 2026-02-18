@@ -1,4 +1,7 @@
+import { getClinicSummary } from '@clinic-saas/dashboard-engine';
 import CacheManager from '@/lib/cache/cache-manager.js';
+import { dashboardEngineAdapter } from '@/lib/dashboard-engine-adapter';
+import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { logger } from '@/lib/utils/logger.js';
 import { withAuth } from '@/middleware/auth';
@@ -7,28 +10,21 @@ import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
 import { NextResponse } from 'next/server';
 
-/** Server-side cache TTL for dashboard stats (seconds). Redis optional; fails gracefully. */
-const DASHBOARD_CACHE_TTL = 300; // 5 minutes - matches background job interval
-
-/**
- * Load calculateDashboardStats from jobs file (CommonJS)
- */
-async function getCalculateDashboardStats() {
-  const dashboardStatsModule = await import('@/jobs/dashboard-stats.js');
-  return dashboardStatsModule.calculateDashboardStats;
-}
+const DASHBOARD_CACHE_TTL = 300;
 
 /**
  * POST /api/reports/dashboard/refresh
- * Force refresh dashboard stats (bypasses cache).
+ * Force refresh dashboard stats via dashboard-engine (bypasses cache).
  */
 async function postHandler(req, user) {
   try {
     const tenantId = user.tenantId?.toString?.() || user.tenantId;
 
-    const calculateDashboardStats = await getCalculateDashboardStats();
-    const stats = await calculateDashboardStats(tenantId);
-    await CacheManager.set('dashboard', stats, DASHBOARD_CACHE_TTL, 'stats', tenantId);
+    const stats = await getClinicSummary(tenantId, dashboardEngineAdapter);
+    if (stats) {
+      await CacheManager.set('dashboard', stats, DASHBOARD_CACHE_TTL, 'stats', tenantId);
+      optimizedCacheManager.set(`dashboard:stats:${tenantId}`, stats, DASHBOARD_CACHE_TTL * 1000);
+    }
 
     return NextResponse.json({
       success: true,
@@ -38,11 +34,7 @@ async function postHandler(req, user) {
   } catch (error) {
     logger.error('Dashboard refresh error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to refresh dashboard statistics',
-        error: error.message,
-      },
+      { success: false, message: 'Failed to refresh dashboard statistics', error: error.message },
       { status: 500 },
     );
   }

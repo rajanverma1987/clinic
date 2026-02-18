@@ -19,7 +19,7 @@ import { CompactLoader } from './Loader';
  * Sizes: xs, sm, md, lg, xl. Shape: rounded (design system radius), pill, square.
  */
 const BASE =
-  'inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-neutral-900 flex-shrink-0 self-center [&_svg]:shrink-0 [&_svg]:text-current [&_svg]:stroke-current [&_svg]:fill-none group relative overflow-hidden';
+  'inline-flex items-center justify-center font-medium whitespace-nowrap transition-colors duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-neutral-900 flex-shrink-0 self-center [&_svg]:shrink-0 [&_svg]:text-current [&_svg]:stroke-current [&_svg]:fill-none group relative overflow-hidden';
 
 /**
  * Primary/secondary match website header (Login = secondary, Get Started = primary).

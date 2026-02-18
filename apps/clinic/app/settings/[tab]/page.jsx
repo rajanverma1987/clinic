@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { SettingsPageContent } from '../page';
 
 const VALID_TABS = [
@@ -18,7 +18,8 @@ const VALID_TABS = [
 
 export default function SettingsTabPage({ params }) {
   const router = useRouter();
-  const tab = params?.tab || 'general';
+  const resolvedParams = React.use(params);
+  const tab = resolvedParams?.tab || 'general';
 
   useEffect(() => {
     if (!VALID_TABS.includes(tab)) {

@@ -141,7 +141,7 @@ export function PrescriptionsTab({ isActive = false }) {
           <div className='accent-bar accent-bar-primary' />
           <h2 className='section-title'>{t('prescriptions.title')}</h2>
           {isRevalidating && (
-            <span className='text-xs text-neutral-500' aria-hidden>
+            <span className='text-xs text-neutral-500 dark:text-neutral-400' aria-hidden>
               {t('common.updating') || 'Updating…'}
             </span>
           )}

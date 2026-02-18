@@ -57,6 +57,7 @@ function normalizeTrend(trend) {
 function StatsCardInner({
   title,
   value,
+  subtitle,
   trend,
   icon = 'calendar',
   colorScheme = 'primary',
@@ -142,6 +143,7 @@ function StatsCardInner({
           <div className='flex-1 min-w-0'>
             {labelBlock}
             {valueBlock}
+            {subtitle && <p className='stat-subtitle'>{subtitle}</p>}
           </div>
         </div>
       </div>
