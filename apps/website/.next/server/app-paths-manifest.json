@@ -9,7 +9,7 @@
   "/pricing/page": "app/pricing/page.js",
   "/support/contact/page": "app/support/contact/page.js",
   "/support/page": "app/support/page.js",
-  "/blog/[slug]/page": "app/blog/[slug]/page.js",
+  "/privacy/page": "app/privacy/page.js",
   "/terms/page": "app/terms/page.js",
-  "/privacy/page": "app/privacy/page.js"
+  "/blog/[slug]/page": "app/blog/[slug]/page.js"
 }

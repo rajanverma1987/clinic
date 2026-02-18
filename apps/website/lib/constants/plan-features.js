@@ -219,12 +219,12 @@ const FEATURES_BY_TIER = [
  * Get full feature list for plan. Tier 0=FREE, 1=SOLO, 2=CLINIC, 3=ENTERPRISE.
  * Returns complete list of included services per Subscriptions.md.
  */
-function getFeaturesForTier(tierIndex) {
+export function getFeaturesForTier(tierIndex) {
   const i = Math.max(0, Math.min(tierIndex, FEATURES_BY_TIER.length - 1));
   return [...FEATURES_BY_TIER[i]];
 }
 
-function getAllFeaturesOrdered() {
+export function getAllFeaturesOrdered() {
   const set = new Set();
   FEATURES_BY_TIER.flat().forEach((f) => set.add(f));
   return Array.from(set);
@@ -234,7 +234,7 @@ function getAllFeaturesOrdered() {
  * Plan-specific feature bullets for subscription/pricing cards (max 8 per plan).
  * Ensures each card shows correct details for SOLO $49, CLINIC $149, ENTERPRISE $499.
  */
-const CARD_FEATURES_BY_PLAN = {
+export const CARD_FEATURES_BY_PLAN = {
   SOLO: [
     '1 doctor + 2 staff (3 team members)',
     'Unlimited patients & appointments',
@@ -267,8 +267,10 @@ const CARD_FEATURES_BY_PLAN = {
   ],
 };
 
-module.exports = {
-  FEATURES_BY_TIER,
+export const FEATURES_BY_TIER_EXPORT = FEATURES_BY_TIER;
+
+export default {
+  FEATURES_BY_TIER: FEATURES_BY_TIER,
   getFeaturesForTier,
   getAllFeaturesOrdered,
   CARD_FEATURES_BY_PLAN,

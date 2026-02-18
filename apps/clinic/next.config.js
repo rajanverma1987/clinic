@@ -195,7 +195,6 @@ const nextConfig = {
   // CDN Configuration
   assetPrefix: process.env.CDN_URL || '',
   // Generate static pages for better CDN caching
-  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
 };
 
 module.exports = nextConfig;

@@ -2,6 +2,7 @@
   "name": "@clinic-saas/website",
   "version": "0.1.0",
   "private": true,
+  "type":"module",
   "description": "Public marketing website only. No dashboard, no auth, no clinic data. Login/Register redirect to clinic app.",
   "scripts": {
     "dev": "next dev -p 5054",

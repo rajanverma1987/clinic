@@ -12,13 +12,13 @@
     ]
   },
   "lib\\api\\client.js -> @/lib/api/offline-queue": {
-    "id": 9099,
+    "id": 2745,
     "files": [
-      "static/chunks/99.ee87f742e71db511.js"
+      "static/chunks/745.241a9abebd60557f.js"
     ]
   },
   "lib\\api\\client.js -> @/lib/utils/api-cache": {
-    "id": 1080,
+    "id": 714,
     "files": []
   }
 }

@@ -9,7 +9,7 @@
   "/pricing/page": "/pricing",
   "/support/contact/page": "/support/contact",
   "/support/page": "/support",
-  "/blog/[slug]/page": "/blog/[slug]",
+  "/privacy/page": "/privacy",
   "/terms/page": "/terms",
-  "/privacy/page": "/privacy"
+  "/blog/[slug]/page": "/blog/[slug]"
 }

@@ -70,7 +70,7 @@ let correlationIdContext = null;
  * @note
  * Correlation ID should be unique per request and passed through all service calls.
  */
-export function setCorrelationId(id) {
+function setCorrelationId(id) {
   correlationIdContext = id;
 }
 
@@ -87,7 +87,7 @@ export function setCorrelationId(id) {
  * const correlationId = getCorrelationId();
  * logger.info('Processing request', { correlationId });
  */
-export function getCorrelationId() {
+function getCorrelationId() {
   return correlationIdContext || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
@@ -156,7 +156,7 @@ function formatLog(level, message, meta = {}) {
  * @property {Function} database - Log database operations
  * @property {Function} api - Log API requests/responses
  */
-export const logger = {
+const logger = {
   /**
    * Log an error-level message with optional error object.
    * 
@@ -370,7 +370,7 @@ export const logger = {
  * IP address is extracted from various headers (x-forwarded-for, x-real-ip, etc.)
  * to support proxy/load balancer configurations.
  */
-export function logRequest(req, user = null) {
+function logRequest(req, user = null) {
   logger.info('API Request', {
     method: req.method,
     url: req.url,
@@ -396,7 +396,7 @@ export function logRequest(req, user = null) {
  * const response = await handler(req);
  * logResponse(req, response.status, Date.now() - start);
  */
-export function logResponse(req, statusCode, duration = null) {
+function logResponse(req, statusCode, duration = null) {
   logger.debug('API Response', {
     method: req.method,
     url: req.url,
@@ -422,7 +422,7 @@ export function logResponse(req, statusCode, duration = null) {
  * const result = await User.find().lean();
  * logDatabase('find', 'users', Date.now() - start, { count: result.length });
  */
-export function logDatabase(operation, collection, duration = null, meta = {}) {
+function logDatabase(operation, collection, duration = null, meta = {}) {
   logger.debug('Database Operation', {
     operation,
     collection,
@@ -468,7 +468,7 @@ export function logDatabase(operation, collection, duration = null, meta = {}) {
  * - HIPAA: Security incident logging
  * - GDPR: Access attempt tracking
  */
-export function logSecurity(event, user = null, meta = {}) {
+function logSecurity(event, user = null, meta = {}) {
   logger.warn('Security Event', {
     event,
     userId: user?.userId || 'unknown',
@@ -476,3 +476,14 @@ export function logSecurity(event, user = null, meta = {}) {
     ...meta,
   });
 }
+
+// CommonJS export for Node runtime compatibility
+module.exports = {
+  logger,
+  setCorrelationId,
+  getCorrelationId,
+  logRequest,
+  logResponse,
+  logDatabase,
+  logSecurity,
+};

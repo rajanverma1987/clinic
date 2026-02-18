@@ -4,9 +4,9 @@
  * Based on NEW-PLANS.md requirements
  */
 
-import { recordCacheOperation } from '../monitoring/metrics.js';
-import { logger } from '../utils/logger.js';
-import { deleteCache, deleteCachePattern, getCache, setCache } from './redis-client.js';
+const { recordCacheOperation } = require('../monitoring/metrics.js');
+const { logger } = require('../utils/logger.js');
+const { deleteCache, deleteCachePattern, getCache, setCache } = require('./redis-client.js');
 
 /**
  * Generate cache key
@@ -18,7 +18,7 @@ function generateKey(prefix, ...parts) {
 /**
  * Cache manager class
  */
-export class CacheManager {
+class CacheManager {
   /**
    * Get cached data with metrics
    */
@@ -117,4 +117,4 @@ export class CacheManager {
   }
 }
 
-export default CacheManager;
+module.exports = CacheManager;

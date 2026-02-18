@@ -1,11 +1,3 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-  compress: true,
-  images: {
-    unoptimized: true,
-    remotePatterns: [{ protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' }],
-  },
-};
+import config from './next.config.cjs';
 
-module.exports = nextConfig;
+export default config;
