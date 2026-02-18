@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+node_modules
 /.pnp
 .pnp.js
 
@@ -13,6 +14,7 @@
 /out/
 website/.next/
 apps/clinic/.next/
+apps/website/.next/
 
 # production
 /build
