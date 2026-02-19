@@ -87,6 +87,15 @@ async function putHandler(req, user) {
       if (body.settings.prescriptionValidityDays !== undefined) {
         tenant.settings.prescriptionValidityDays = body.settings.prescriptionValidityDays;
       }
+      if (body.settings.logo !== undefined) tenant.settings.logo = body.settings.logo;
+      if (body.settings.phone !== undefined) tenant.settings.phone = body.settings.phone;
+      if (body.settings.taxId !== undefined) tenant.settings.taxId = body.settings.taxId;
+      if (body.settings.receiptFooter !== undefined)
+        tenant.settings.receiptFooter = body.settings.receiptFooter;
+      if (body.settings.address !== undefined && body.settings.address !== null) {
+        tenant.settings.address = body.settings.address;
+        tenant.markModified('settings.address');
+      }
 
       // Update nested objects only if they are provided (not undefined or null)
       if (body.settings.taxRules !== undefined && body.settings.taxRules !== null) {

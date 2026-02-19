@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
 import { useI18n } from '@/contexts/I18nContext';
+import { SettingsTabHeader } from './SettingsTabHeader';
 
 export function DoctorsTab({
   isClinicAdmin,
@@ -24,29 +25,19 @@ export function DoctorsTab({
 
   if (!isClinicAdmin) {
     return (
-      <Card className='text-center py-12'>
-        <div className='flex flex-col items-center'>
-          <div className='w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-3'>
-            <svg
-              className='w-8 h-8 text-neutral-400'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
-              />
-            </svg>
+      <div className='w-full max-w-4xl space-y-6 text-left'>
+        <SettingsTabHeader title={t('settings.doctors')} />
+        <Card>
+          <div className='p-6 text-center'>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
+              {t('settings.accessRestricted')}
+            </h3>
+            <p className='text-sm text-neutral-600 dark:text-neutral-400'>
+              {t('settings.onlyClinicAdminDoctors')}
+            </p>
           </div>
-          <h3 className='text-lg font-semibold text-neutral-900 mb-1'>
-            {t('settings.accessRestricted')}
-          </h3>
-          <p className='text-sm text-neutral-600'>{t('settings.onlyClinicAdminDoctors')}</p>
-        </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 
@@ -69,14 +60,14 @@ export function DoctorsTab({
   );
 
   return (
-    <div className='space-y-3 text-left'>
-      {/* Add User Form */}
+    <div className='w-full max-w-4xl space-y-6 text-left'>
+      <SettingsTabHeader title={t('settings.doctors')} />
       {showNewUserForm && (
         <Card>
-          <form onSubmit={onCreateUser} className='p-4 space-y-3'>
-            <h2 className='text-base font-bold text-neutral-900 mb-3'>
+          <form onSubmit={onCreateUser} className='p-5 space-y-4'>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
               {t('settings.addNewUser')}
-            </h2>
+            </h3>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
               <Input
                 label={t('settings.firstNameRequired')}
@@ -98,13 +89,13 @@ export function DoctorsTab({
                 required
               />
               <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                    {t('settings.role')} <span className='text-red-500'>*</span>
-                  </label>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+                  {t('settings.role')} <span className='text-red-500'>*</span>
+                </label>
                 <select
                   value={newUserForm.role}
                   onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-neutral-900 text-sm'
+                  className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
                   required
                 >
                   <option value='doctor'>{t('settings.roleDoctor')}</option>
@@ -115,14 +106,14 @@ export function DoctorsTab({
                   <option value='accountant'>{t('settings.roleAccountant')}</option>
                   <option value='pharmacist'>{t('settings.rolePharmacist')}</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>
+                <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                   {t('settings.adminManagerAccessByPlan')}
                 </p>
               </div>
               <div className='md:col-span-2'>
                 <div className='flex items-start gap-2'>
                   <div className='flex-1'>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                    <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
                       {t('auth.password')} <span className='text-red-500'>*</span>
                     </label>
                     <Input
@@ -143,13 +134,13 @@ export function DoctorsTab({
                       size='sm'
                       onClick={onGeneratePassword}
                     >
-                      Generate
+                      {t('settings.generate')}
                     </Button>
                   </div>
                 </div>
                 {generatedPassword && (
-                  <div className='mt-3 p-3 bg-primary-50 border border-primary-200 rounded-lg'>
-                    <p className='text-primary-700 font-semibold mb-1.5 text-xs'>
+                  <div className='mt-3 p-3 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 rounded-lg'>
+                    <p className='text-primary-700 dark:text-primary-300 font-semibold mb-1.5 text-xs'>
                       {t('settings.generatedPassword')}
                     </p>
                     <p className='font-mono text-primary-900 break-all mb-1.5 text-xs'>
@@ -160,13 +151,14 @@ export function DoctorsTab({
                 )}
               </div>
             </div>
-            <div className='flex gap-2 pt-3 border-t border-neutral-200'>
-              <Button type='submit' className='flex-1'>
+            <div className='flex gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-600'>
+              <Button type='submit' size='sm' className='flex-1'>
                 {t('settings.createUser')}
               </Button>
               <Button
                 type='button'
                 variant='secondary'
+                size='sm'
                 onClick={() => setShowNewUserForm(false)}
                 className='flex-1'
               >
@@ -177,36 +169,20 @@ export function DoctorsTab({
         </Card>
       )}
 
-      {/* Managers and sub-accounts: list excludes current user; all can be activated/deactivated */}
       <Card>
-        <div className='p-4'>
-          <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-3'>
+        <div className='p-5'>
+          <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
+            {t('settings.managersAndSubAccounts')}{' '}
+            <span className='text-sm font-normal text-neutral-500 dark:text-neutral-400'>
+              ({staffList.length})
+            </span>
+          </h3>
+          <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-4'>
             {t('settings.managersAndSubAccountsDescription')}
           </p>
-          <div className='flex items-center gap-2 mb-3'>
-            <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-              <svg
-                className='icon icon-xs text-primary-600'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
-                />
-              </svg>
-            </div>
-            <h2 className='text-lg font-bold text-neutral-900'>
-              {t('settings.managersAndSubAccounts')}
-            </h2>
-            <span className='text-sm text-neutral-500'>({staffList.length})</span>
-          </div>
 
           {staffList.length === 0 ? (
-            <div className='flex flex-col items-center justify-center py-10 text-neutral-400'>
+            <div className='flex flex-col items-center justify-center py-10 text-neutral-400 dark:text-neutral-500'>
               <svg className='w-12 h-12 mb-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
                   strokeLinecap='round'
@@ -218,23 +194,25 @@ export function DoctorsTab({
               <p className='text-sm'>{t('settings.noManagersOrSubAccounts')}</p>
             </div>
           ) : (
-            <div className='space-y-2'>
+            <div className='space-y-2 mt-4'>
               {staffList.map((user) => (
                 <div
                   key={user.id || user._id}
-                  className='flex items-center justify-between p-3 border border-neutral-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all'
+                  className='flex items-center justify-between p-3 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all'
                 >
                   <div className='flex items-center gap-3 flex-1'>
-                    <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center text-xl'>
+                    <div className='w-10 h-10 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex items-center justify-center text-xl'>
                       {getRoleIcon(user.role)}
                     </div>
                     <div className='flex-1 min-w-0'>
-                      <h3 className='font-semibold text-neutral-900 text-sm truncate'>
+                      <h3 className='font-semibold text-neutral-900 dark:text-neutral-100 text-sm truncate'>
                         {user.firstName} {user.lastName}
                       </h3>
-                      <p className='text-xs text-neutral-600 truncate'>{user.email}</p>
+                      <p className='text-xs text-neutral-600 dark:text-neutral-400 truncate'>
+                        {user.email}
+                      </p>
                       <div className='flex flex-wrap items-center gap-1.5 mt-1'>
-                        <span className='px-1.5 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full font-medium'>
+                        <span className='px-1.5 py-0.5 bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs rounded-full font-medium'>
                           {user.role === 'doctor'
                             ? t('settings.roleDoctor')
                             : user.role === 'nurse'
@@ -254,8 +232,8 @@ export function DoctorsTab({
                         <span
                           className={`px-1.5 py-0.5 text-xs rounded-full font-medium ${
                             user.isActive
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
+                              ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                              : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
                           }`}
                         >
                           {user.isActive ? t('common.active') : t('common.inactive')}

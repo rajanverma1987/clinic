@@ -25,7 +25,10 @@ export function generateInvoicePrintHTML(data) {
   const city = clinicAddress.city || '';
   const state = clinicAddress.state || '';
   const zipCode = clinicAddress.zipCode || '';
-  const fullAddress = [addressLine, city, state, zipCode].filter(Boolean).join(', ');
+  const country = clinicAddress.country || '';
+  const fullAddress = [addressLine, city, state, zipCode, country].filter(Boolean).join(', ');
+  const clinicTaxId = clinicSettings.settings?.taxId || '';
+  const receiptFooterText = clinicSettings.settings?.receiptFooter || '';
 
   // Format appointment display
   const formatAppointment = (appointmentId) => {
@@ -263,6 +266,7 @@ export function generateInvoicePrintHTML(data) {
         ${fullAddress ? `<div>${fullAddress}</div>` : ''}
         ${clinicPhone ? `<div>Phone: ${clinicPhone}</div>` : ''}
         ${clinicEmail ? `<div>Email: ${clinicEmail}</div>` : ''}
+        ${clinicTaxId ? `<div>Tax ID: ${clinicTaxId}</div>` : ''}
       </div>
       <div class="invoice-info">
         <div class="invoice-number">INVOICE</div>
@@ -401,7 +405,7 @@ export function generateInvoicePrintHTML(data) {
 
     <!-- Footer -->
     <div class="footer">
-      <div>Thank you for your business!</div>
+      ${receiptFooterText ? `<div>${receiptFooterText}</div>` : '<div>Thank you for your business!</div>'}
       <div style="margin-top: 10px;">
         ${clinicName}${fullAddress ? ' - ' + fullAddress : ''}
       </div>

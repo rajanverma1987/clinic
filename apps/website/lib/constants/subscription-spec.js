@@ -97,7 +97,7 @@ export const WHICH_PLAN = [
 ];
 
 /** Annual 5% off: yearly save (USD) per plan = monthly * 12 * 0.05 */
-export const YEARLY_SAVE = { SOLO: 29, CLINIC: 89, ENTERPRISE: 299 };
+export const YEARLY_SAVE = { SOLO: 29, CLINIC: 59, ENTERPRISE: 299 };
 
 /** Yearly price cents = monthly * 12 * 0.95 (5% off) */
 export function getYearlyPriceCents(monthlyCents) {

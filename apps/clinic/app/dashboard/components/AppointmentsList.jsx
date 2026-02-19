@@ -2,11 +2,14 @@
 
 import { ChevronRightIcon, RefreshCwIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
-import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
 import { useIncrementalAppointments } from '@/hooks/useIncrementalAppointments';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import Link from 'next/link';
+import { useRef } from 'react';
 import { AppointmentListItem } from './AppointmentListItem';
+
+const ITEM_HEIGHT = 80; // px — approximate height of each AppointmentListItem row
 
 /**
  * AppointmentsList component
@@ -25,8 +28,12 @@ export function AppointmentsList({
 
   if (loading && (!appointments || appointments.length === 0)) {
     return (
-      <div className='flex items-center justify-center min-h-[120px] appointments-list-loading'>
-        <Loader type='section' text={t('common.loading')} />
+      <div className='appointments-list appointments-list-loading'>
+        <div className='space-y-2'>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className='skeleton skeleton-list-item rounded-lg' />
+          ))}
+        </div>
       </div>
     );
   }
@@ -70,11 +77,18 @@ export function AppointmentsList({
           </Button>
         </div>
       )}
-      <div className={`space-y-2 ${isScrollable ? 'appointments-list-scroll' : ''}`}>
-        {displayAppointments.map((appointment) => (
-          <AppointmentListItem key={appointment._id || appointment.id} appointment={appointment} />
-        ))}
-      </div>
+      {isScrollable ? (
+        <VirtualAppointmentsList appointments={displayAppointments} visibleCount={visibleCount} />
+      ) : (
+        <div className='space-y-2'>
+          {displayAppointments.map((appointment) => (
+            <AppointmentListItem
+              key={appointment._id || appointment.id}
+              appointment={appointment}
+            />
+          ))}
+        </div>
+      )}
       {appointments.length > limit && (
         <div className='mt-4 text-center'>
           <p className='text-sm text-neutral-500 dark:text-neutral-400'>
@@ -82,6 +96,47 @@ export function AppointmentsList({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Virtualized list for scrollable appointment containers (visibleCount is set). */
+function VirtualAppointmentsList({ appointments, visibleCount }) {
+  const parentRef = useRef(null);
+  const virtualizer = useVirtualizer({
+    count: appointments.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ITEM_HEIGHT,
+    overscan: 3,
+  });
+
+  const containerHeight = visibleCount * ITEM_HEIGHT;
+
+  return (
+    <div
+      ref={parentRef}
+      className='appointments-list-scroll overflow-auto'
+      style={{ height: containerHeight, maxHeight: containerHeight }}
+    >
+      <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+        {virtualizer.getVirtualItems().map((virtualItem) => (
+          <div
+            key={virtualItem.key}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: `${virtualItem.size}px`,
+              transform: `translateY(${virtualItem.start}px)`,
+            }}
+          >
+            <div className='pb-2'>
+              <AppointmentListItem appointment={appointments[virtualItem.index]} />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

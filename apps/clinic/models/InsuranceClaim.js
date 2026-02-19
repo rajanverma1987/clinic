@@ -25,10 +25,9 @@ const InsuranceClaimSchema = new Schema(
       required: true,
       index: true,
     },
-    // Auto-generated claim number (e.g., "CLM001234")
+    // Auto-generated claim number (e.g. CLM-0001); unique per tenant via compound index
     claimNumber: {
       type: String,
-      unique: true,
       uppercase: true,
       index: true,
     },
@@ -136,7 +135,7 @@ const InsuranceClaimSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Compound indexes
@@ -145,4 +144,5 @@ InsuranceClaimSchema.index({ tenantId: 1, invoiceId: 1 });
 InsuranceClaimSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
 InsuranceClaimSchema.index({ tenantId: 1, claimNumber: 1 }, { unique: true });
 
-export default mongoose.models.InsuranceClaim || mongoose.model('InsuranceClaim', InsuranceClaimSchema);
+export default mongoose.models.InsuranceClaim ||
+  mongoose.model('InsuranceClaim', InsuranceClaimSchema);

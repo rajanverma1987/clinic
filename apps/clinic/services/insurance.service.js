@@ -3,13 +3,13 @@
  * Handles all insurance claim-related business logic
  */
 
+import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
 import InsuranceClaim, { ClaimStatus } from '@/models/InsuranceClaim.js';
 import Invoice from '@/models/Invoice.js';
 import Patient from '@/models/Patient.js';
-import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 
 /**
  * Generate claim number
@@ -17,10 +17,7 @@ import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
 async function generateClaimNumber(tenantId) {
   await connectDB();
 
-  const lastClaim = await InsuranceClaim.findOne(
-    withTenant(tenantId, {}),
-    { claimNumber: 1 }
-  )
+  const lastClaim = await InsuranceClaim.findOne(withTenant(tenantId, {}), { claimNumber: 1 })
     .sort({ claimNumber: -1 })
     .lean();
 
@@ -48,7 +45,7 @@ export async function createInsuranceClaim(input, tenantId, userId) {
     withTenant(tenantId, {
       _id: input.invoiceId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!invoice) {
@@ -60,7 +57,7 @@ export async function createInsuranceClaim(input, tenantId, userId) {
     withTenant(tenantId, {
       _id: input.patientId || invoice.patientId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!patient) {
@@ -72,7 +69,7 @@ export async function createInsuranceClaim(input, tenantId, userId) {
     withTenant(tenantId, {
       invoiceId: input.invoiceId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (existingClaim) {
@@ -86,12 +83,14 @@ export async function createInsuranceClaim(input, tenantId, userId) {
   const claimAmount = input.claimAmount || invoice.totalAmount;
   const patientResponsibility = claimAmount - (input.approvedAmount || 0);
 
-  // Create claim
+  // Create claim (patientId: ObjectId from invoice or from input string)
+  const patientId = input.patientId != null ? input.patientId : invoice.patientId;
+
   const claim = await InsuranceClaim.create({
     tenantId,
     claimNumber,
     invoiceId: input.invoiceId,
-    patientId: input.patientId || invoice.patientId.toString(),
+    patientId,
     insuranceProvider: input.insuranceProvider,
     policyNumber: input.policyNumber,
     groupNumber: input.groupNumber || '',
@@ -120,7 +119,7 @@ export async function createInsuranceClaim(input, tenantId, userId) {
     claim._id.toString(),
     userId,
     tenantId,
-    AuditAction.CREATE
+    AuditAction.CREATE,
   );
 
   return claim;
@@ -136,7 +135,7 @@ export async function getInsuranceClaimById(claimId, tenantId, userId) {
     withTenant(tenantId, {
       _id: claimId,
       deletedAt: null,
-    })
+    }),
   )
     .populate('invoiceId', 'invoiceNumber totalAmount status')
     .populate('patientId', 'firstName lastName patientId')
@@ -211,7 +210,7 @@ export async function listInsuranceClaims(query, tenantId, userId) {
     tenantId,
     AuditAction.READ,
     undefined,
-    { count: claims.length, filters: query }
+    { count: claims.length, filters: query },
   );
 
   return createPaginationResult(claims, total, page || 1, limit || 10);
@@ -227,7 +226,7 @@ export async function updateInsuranceClaim(claimId, input, tenantId, userId) {
     withTenant(tenantId, {
       _id: claimId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!existing) {
@@ -244,15 +243,17 @@ export async function updateInsuranceClaim(claimId, input, tenantId, userId) {
 
   // Recalculate patient responsibility if amounts changed
   if (input.approvedAmount !== undefined || input.deniedAmount !== undefined) {
-    const approvedAmount = input.approvedAmount !== undefined ? input.approvedAmount : existing.approvedAmount;
-    const deniedAmount = input.deniedAmount !== undefined ? input.deniedAmount : existing.deniedAmount;
+    const approvedAmount =
+      input.approvedAmount !== undefined ? input.approvedAmount : existing.approvedAmount;
+    const deniedAmount =
+      input.deniedAmount !== undefined ? input.deniedAmount : existing.deniedAmount;
     updateData.patientResponsibility = existing.claimAmount - approvedAmount - deniedAmount;
   }
 
   const claim = await InsuranceClaim.findByIdAndUpdate(
     claimId,
     { $set: updateData },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   )
     .populate('invoiceId', 'invoiceNumber totalAmount')
     .populate('patientId', 'firstName lastName patientId');
@@ -274,7 +275,7 @@ export async function updateInsuranceClaim(claimId, input, tenantId, userId) {
       userId,
       tenantId,
       AuditAction.UPDATE,
-      { before, after: claim.toObject() }
+      { before, after: claim.toObject() },
     );
   }
 
@@ -291,7 +292,7 @@ export async function submitInsuranceClaim(claimId, tenantId, userId) {
     withTenant(tenantId, {
       _id: claimId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!claim) {
@@ -315,7 +316,7 @@ export async function submitInsuranceClaim(claimId, tenantId, userId) {
     tenantId,
     AuditAction.UPDATE,
     { before, after: claim.toObject() },
-    { action: 'submit_claim' }
+    { action: 'submit_claim' },
   );
 
   return claim;
@@ -331,7 +332,7 @@ export async function updateClaimStatus(claimId, status, statusData, tenantId, u
     withTenant(tenantId, {
       _id: claimId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!claim) {
@@ -399,7 +400,7 @@ export async function updateClaimStatus(claimId, status, statusData, tenantId, u
     tenantId,
     AuditAction.UPDATE,
     { before, after: claim.toObject() },
-    { action: 'update_status', status }
+    { action: 'update_status', status },
   );
 
   return claim;
@@ -415,7 +416,7 @@ export async function verifyInsuranceEligibility(patientId, insuranceData, tenan
     withTenant(tenantId, {
       _id: patientId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!patient) {
@@ -451,7 +452,7 @@ export async function verifyInsuranceEligibility(patientId, insuranceData, tenan
     tenantId,
     AuditAction.READ,
     undefined,
-    { verification }
+    { verification },
   );
 
   return verification;
@@ -467,7 +468,7 @@ export async function deleteInsuranceClaim(claimId, tenantId, userId) {
     withTenant(tenantId, {
       _id: claimId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!claim) {
@@ -475,10 +476,7 @@ export async function deleteInsuranceClaim(claimId, tenantId, userId) {
   }
 
   // Don't allow deletion of submitted or processed claims
-  if (
-    claim.status !== ClaimStatus.DRAFT &&
-    claim.status !== ClaimStatus.REJECTED
-  ) {
+  if (claim.status !== ClaimStatus.DRAFT && claim.status !== ClaimStatus.REJECTED) {
     throw new Error('Cannot delete submitted or processed claims');
   }
 
@@ -501,7 +499,7 @@ export async function deleteInsuranceClaim(claimId, tenantId, userId) {
     claim._id.toString(),
     userId,
     tenantId,
-    AuditAction.DELETE
+    AuditAction.DELETE,
   );
 
   return true;

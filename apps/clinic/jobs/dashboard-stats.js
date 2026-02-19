@@ -193,21 +193,12 @@ async function calculateDashboardStats(tenantId) {
 }
 
 /**
- * Update stats for all active tenants via dashboard-engine.
+ * Update stats for all active tenants.
+ * Uses direct calculation only: dashboard-engine + adapter use @/ path aliases that Node does not
+ * resolve when this job runs outside Next.js. API routes still use the engine + adapter.
  */
 async function updateAllTenantsStats() {
   await loadModules();
-
-  let getClinicSummary;
-  let dashboardEngineAdapter;
-  try {
-    const engine = await import('@clinic-saas/dashboard-engine');
-    getClinicSummary = engine.getClinicSummary;
-    const adapter = await import('../lib/dashboard-engine-adapter.js');
-    dashboardEngineAdapter = adapter.dashboardEngineAdapter;
-  } catch (e) {
-    console.error('Dashboard engine unavailable, falling back to direct calculation:', e?.message);
-  }
 
   try {
     await connectDB();
@@ -217,15 +208,7 @@ async function updateAllTenantsStats() {
 
     for (const tenant of tenants) {
       const tenantId = tenant._id?.toString?.() || tenant._id;
-      let stats = null;
-      if (getClinicSummary && dashboardEngineAdapter) {
-        try {
-          stats = await getClinicSummary(tenantId, dashboardEngineAdapter);
-        } catch (err) {
-          console.warn(`Engine stats failed for tenant ${tenantId}, fallback:`, err?.message);
-        }
-      }
-      if (!stats) stats = await calculateDashboardStats(tenant._id);
+      const stats = await calculateDashboardStats(tenant._id);
 
       if (stats) {
         await CacheManager.set('dashboard', stats, 300, 'stats', tenant._id);

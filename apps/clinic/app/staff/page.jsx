@@ -426,6 +426,14 @@ export default function StaffPage() {
         }
       />
       <div style={{ padding: '0 10px' }} className='space-y-6'>
+        <div
+          className='mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-r-lg text-sm text-amber-900 dark:text-amber-200'
+          role='status'
+          aria-label={t('staff.disclaimerTitle')}
+        >
+          <p className='font-semibold mb-1'>{t('staff.disclaimerTitle')}</p>
+          <p className='text-neutral-700 dark:text-neutral-300'>{t('staff.disclaimer')}</p>
+        </div>
         <PageSearchBar
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}

@@ -48,7 +48,7 @@ async function postHandler(req, user, tenantId) {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || '';
   const scheme = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-  const origin = baseUrl.startsWith('http') ? baseUrl : `${scheme}://${baseUrl || 'localhost:3000'}`;
+  const origin = baseUrl.startsWith('http') ? baseUrl : `${scheme}://${baseUrl || 'localhost:5053'}`;
   const redirectUrl = `${origin}/auth/impersonate?token=${token}`;
 
   return NextResponse.json(

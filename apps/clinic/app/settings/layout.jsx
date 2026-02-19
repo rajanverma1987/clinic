@@ -16,7 +16,10 @@ export default function SettingsLayout({ children }) {
   const { user, loading: authLoading } = useAuth();
 
   const canAccessAdminTabs = hasPermission(user?.role, RESOURCES.SETTINGS, ACTIONS.READ);
-  const visibleTabs = SETTINGS_CHILDREN.filter((tab) => !tab.adminOnly || canAccessAdminTabs);
+  // Until auth has loaded, show only non-admin tabs (Profile) to avoid flash of admin tabs for doctor/manager
+  const visibleTabs = authLoading
+    ? SETTINGS_CHILDREN.filter((tab) => !tab.adminOnly)
+    : SETTINGS_CHILDREN.filter((tab) => !tab.adminOnly || canAccessAdminTabs);
 
   const activeTabPath = visibleTabs.find(
     (c) => pathname === c.path || (pathname || '').startsWith(c.path + '/'),

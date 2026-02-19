@@ -6,11 +6,11 @@ import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ClinicalDecisionSupport } from '@/components/prescriptions/ClinicalDecisionSupport';
 import { ICD10SearchInput } from '@/components/prescriptions/ICD10SearchInput';
-import { PatientDetailsPanel } from '@/components/prescriptions/PatientDetailsPanel';
 import { PrescriptionFormPrintPreview } from '@/components/prescriptions/PrescriptionFormPrintPreview';
 import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
 import { PrescriptionPatientHeader } from '@/components/prescriptions/PrescriptionPatientHeader';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { SimpleTextEditor } from '@/components/ui/SimpleTextEditor';
@@ -25,6 +25,7 @@ import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import useSWR from 'swr';
 
 function NewPrescriptionPageContent() {
   const router = useRouter();
@@ -33,7 +34,6 @@ function NewPrescriptionPageContent() {
   const { t } = useI18n();
   const [patients, setPatients] = useState([]);
   const [drugs, setDrugs] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [clinicSettings, setClinicSettings] = useState(null);
@@ -41,6 +41,107 @@ function NewPrescriptionPageContent() {
 
   // Get patientId from URL query parameter if present
   const patientIdFromUrl = searchParams?.get('patientId') || '';
+
+  // Settings: SWR so remounts reuse cache and avoid repeated 3s+ fetches
+  const SETTINGS_KEY = '/api/settings';
+  const settingsFetcher = async () => {
+    const res = await apiClient.get('/settings');
+    if (!res?.success || !res?.data) return null;
+    return res.data;
+  };
+  const { data: settingsFromSWR } = useSWR(SETTINGS_KEY, settingsFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 2 * 60 * 1000,
+  });
+  useEffect(() => {
+    if (settingsFromSWR) {
+      setClinicSettings(settingsFromSWR);
+      const validityDays = settingsFromSWR.settings?.prescriptionValidityDays || 30;
+      const today = new Date();
+      const validUntilDate = new Date(today);
+      validUntilDate.setDate(validUntilDate.getDate() + validityDays);
+      const validUntilStr = validUntilDate.toISOString().split('T')[0];
+      setFormData((prev) => (prev.validUntil ? prev : { ...prev, validUntil: validUntilStr }));
+    }
+  }, [settingsFromSWR]);
+
+  // Medicines list: SWR so remounts/navigations reuse cache and avoid repeated 2s+ fetches
+  const MEDICINES_KEY = '/api/inventory/items?type=medicine&limit=500&lightweight=true';
+  const medicinesFetcher = async () => {
+    const res = await apiClient.get('/inventory/items?type=medicine&limit=500&lightweight=true');
+    if (!res?.success || !res?.data) return [];
+    const raw = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+    return raw
+      .filter((item) => item.type === 'medicine')
+      .map((item) => ({
+        _id: item._id,
+        name: item.name || item.brandName || 'Unknown',
+        genericName: item.genericName,
+        form: item.form || '',
+        strength: item.strength,
+      }));
+  };
+  const { data: medicinesFromSWR, isLoading: medicinesLoading } = useSWR(
+    MEDICINES_KEY,
+    medicinesFetcher,
+    { revalidateOnFocus: false, dedupingInterval: 5 * 60 * 1000 },
+  );
+  useEffect(() => {
+    if (medicinesFromSWR) setDrugs(medicinesFromSWR);
+  }, [medicinesFromSWR]);
+
+  // Appointments and patients: SWR so remounts reuse cache (avoids repeated 5s+ and 2s+ fetches)
+  const appointmentsKey = currentUser?.tenantId
+    ? '/api/appointments?status=in_progress&limit=100'
+    : null;
+  const patientsKey = currentUser?.tenantId ? '/api/patients?limit=100' : null;
+  const appointmentsFetcher = async () => {
+    const res = await apiClient.get('/appointments?status=in_progress&limit=100');
+    if (!res?.success || !res?.data) return [];
+    return Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+  };
+  const patientsFetcher = async () => {
+    const res = await apiClient.get('/patients?limit=100');
+    if (!res?.success || !res?.data) return [];
+    return extractArrayData(res);
+  };
+  const { data: appointmentsFromSWR, isLoading: appointmentsLoading } = useSWR(
+    appointmentsKey,
+    appointmentsFetcher,
+    { revalidateOnFocus: false, dedupingInterval: 2 * 60 * 1000 },
+  );
+  const { data: patientsFromSWR, isLoading: patientsLoading } = useSWR(patientsKey, patientsFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 2 * 60 * 1000,
+  });
+  useEffect(() => {
+    if (appointmentsFromSWR === undefined || patientsFromSWR === undefined) return;
+    const appointmentsData = appointmentsFromSWR ?? [];
+    const allPatients = patientsFromSWR ?? [];
+    const patientIds = [
+      ...new Set(
+        appointmentsData
+          .map((apt) => {
+            if (typeof apt.patientId === 'string') return apt.patientId;
+            if (apt.patientId?._id) return apt.patientId._id;
+            return null;
+          })
+          .filter((id) => id !== null),
+      ),
+    ];
+    let filtered =
+      patientIds.length > 0
+        ? allPatients.filter((p) => patientIds.includes(p._id))
+        : [];
+    if (patientIdFromUrl) {
+      const urlPatient = allPatients.find((p) => p._id === patientIdFromUrl);
+      if (urlPatient && !filtered.find((p) => p._id === patientIdFromUrl)) {
+        filtered = [...filtered, urlPatient];
+      }
+    }
+    setPatients(filtered);
+  }, [appointmentsFromSWR, patientsFromSWR, patientIdFromUrl]);
+
   const [items, setItems] = useState([
     {
       itemType: 'drug',
@@ -138,8 +239,6 @@ function NewPrescriptionPageContent() {
 
   useEffect(() => {
     if (!authLoading && currentUser) {
-      fetchData();
-
       // Load draft if available (but don't override patientId from URL)
       const draft = loadDraft();
       if (draft) {
@@ -276,118 +375,7 @@ function NewPrescriptionPageContent() {
     };
   }, [formData.patientId]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Fetch clinic settings for print and prescription validity
-      try {
-        const settingsResponse = await apiClient.get('/settings');
-        if (settingsResponse.success && settingsResponse.data) {
-          setClinicSettings(settingsResponse.data);
-
-          // Auto-calculate validUntil date based on prescription validity days
-          const validityDays = settingsResponse.data.settings?.prescriptionValidityDays || 30;
-          const today = new Date();
-          const validUntilDate = new Date(today);
-          validUntilDate.setDate(validUntilDate.getDate() + validityDays);
-
-          // Format as YYYY-MM-DD for date input
-          const validUntilStr = validUntilDate.toISOString().split('T')[0];
-
-          // Only set if validUntil is not already set (don't override user input)
-          setFormData((prev) => ({
-            ...prev,
-            validUntil: prev.validUntil || validUntilStr,
-          }));
-        }
-      } catch (err) {
-        logger.error('Failed to fetch clinic settings:', err);
-      }
-
-      // Fetch appointments with in_progress status to get patients
-      const appointmentsResponse = await apiClient.get(
-        '/appointments?status=in_progress&limit=100',
-      );
-
-      // Store appointments for linking
-      let appointmentsData = [];
-      if (appointmentsResponse.success && appointmentsResponse.data) {
-        appointmentsData = Array.isArray(appointmentsResponse.data)
-          ? appointmentsResponse.data
-          : appointmentsResponse.data?.data || [];
-      }
-
-      // Extract unique patient IDs from appointments
-      let patientIds = [];
-      if (appointmentsData.length > 0) {
-        patientIds = [
-          ...new Set(
-            appointmentsData
-              .map((apt) => {
-                if (typeof apt.patientId === 'string') return apt.patientId;
-                if (apt.patientId?._id) return apt.patientId._id;
-                return null;
-              })
-              .filter((id) => id !== null),
-          ),
-        ];
-      }
-
-      // Fetch all patients
-      const allPatientsResponse = await apiClient.get('/patients?limit=100');
-      let allPatients = [];
-
-      if (allPatientsResponse.success && allPatientsResponse.data) {
-        allPatients = extractArrayData(allPatientsResponse);
-      }
-
-      // Filter patients to only include those with in_progress appointments
-      // But also include the patient from URL if provided
-      let filteredPatients = [];
-      if (patientIds.length > 0) {
-        filteredPatients = allPatients.filter((p) => patientIds.includes(p._id));
-      }
-
-      // If patientId is in URL, add that patient to the list if not already included
-      if (patientIdFromUrl) {
-        const urlPatient = allPatients.find((p) => p._id === patientIdFromUrl);
-        if (urlPatient && !filteredPatients.find((p) => p._id === patientIdFromUrl)) {
-          filteredPatients.push(urlPatient);
-        }
-      }
-
-      setPatients(filteredPatients);
-
-      // Fetch drugs from inventory (medications) - use type=medicine (not medication)
-      const drugsResponse = await apiClient.get('/inventory/items?type=medicine&limit=1000');
-      logger.debug('Drugs API Response:', drugsResponse);
-      if (drugsResponse.success && drugsResponse.data) {
-        // Handle pagination structure - API returns { success: true, data: { data: [...], pagination: {...} } }
-        let drugsList = [];
-
-        // Extract drugs data and filter for medicines
-        const allDrugs = extractArrayData(drugsResponse);
-        drugsList = allDrugs
-          .filter((item) => item.type === 'medicine') // Double-check it's a medicine
-          .map((item) => ({
-            _id: item._id,
-            name: item.name || item.brandName || 'Unknown',
-            genericName: item.genericName,
-            form: item.form || '',
-            strength: item.strength,
-          }));
-
-        logger.debug('Extracted drugs list:', drugsList.length, 'drugs found');
-        setDrugs(drugsList);
-      } else {
-        logger.error('Failed to fetch drugs:', drugsResponse.error || 'Unknown error');
-      }
-    } catch (error) {
-      logger.error('Failed to fetch data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Settings, appointments, patients, medicines all come from useSWR — no fetchData
 
   const addItem = () => {
     setItems([
@@ -676,7 +664,10 @@ function NewPrescriptionPageContent() {
     return null;
   }
 
-  if (loading) {
+  // Wait for appointments + patients + medicines (all from SWR) so form and drug dropdown are ready
+  const dataLoading =
+    appointmentsLoading || patientsLoading || (drugs.length === 0 && medicinesLoading);
+  if (dataLoading) {
     return <Loader type='page' text={t('common.loading')} />;
   }
 
@@ -707,21 +698,17 @@ function NewPrescriptionPageContent() {
           notifications={[]}
           unreadCount={0}
         />
-        <div style={{ padding: '0 10px' }}>
-          {/* Two-column layout: Form on left (wider), Patient details on right */}
-          <div className='grid grid-cols-1 lg:grid-cols-4 gap-6'>
-            {/* Left column: Main form */}
-            <div className='lg:col-span-3'>
+        <div className='prescription-new-page'>
+          <div className='prescription-form-grid'>
+            {/* Left: Main form */}
+            <div className='prescription-form-main min-w-0'>
               <div className='prescription-form-card'>
                 <PrescriptionPatientHeader patientId={formData.patientId} />
                 <form onSubmit={handleSubmit} noValidate>
                   {error && (
-                    <div
-                      className='prescription-form-section'
-                      style={{ paddingBottom: 'var(--space-4)' }}
-                    >
-                      <div className='bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex items-center gap-2'>
-                        <span>⚠</span>
+                    <div className='prescription-form-section prescription-form-alert'>
+                      <div className='prescription-form-alert-banner prescription-form-alert-banner--error'>
+                        <span aria-hidden>⚠</span>
                         <span>{error}</span>
                       </div>
                     </div>
@@ -741,12 +728,9 @@ function NewPrescriptionPageContent() {
                               (it.genericName || '').toLowerCase().includes(a),
                           ),
                     ) && (
-                      <div
-                        className='prescription-form-section'
-                        style={{ paddingBottom: 'var(--space-4)' }}
-                      >
-                        <div className='bg-status-warning/10 border-l-4 border-status-warning text-status-warning px-4 py-3 rounded-lg flex items-center gap-2'>
-                          <span>⚠</span>
+                      <div className='prescription-form-section prescription-form-alert'>
+                        <div className='prescription-form-alert-banner prescription-form-alert-banner--warning'>
+                          <span aria-hidden>⚠</span>
                           <span>{t('prescriptions.allergyWarning')}</span>
                         </div>
                       </div>
@@ -823,15 +807,12 @@ function NewPrescriptionPageContent() {
                           <div className='prescription-form-error'>{fieldErrors.patientId}</div>
                         )}
                         {currentAppointment && (
-                          <p
-                            className='prescription-form-help-text'
-                            style={{ color: 'var(--color-secondary-700)' }}
-                          >
+                          <p className='prescription-form-help-text prescription-form-help-text--success'>
                             ✓ {t('prescriptions.linkedToAppointment')}:{' '}
                             {new Date(currentAppointment.appointmentDate).toLocaleDateString()}
                           </p>
                         )}
-                        {patients.length === 0 && !loading && (
+                        {patients.length === 0 && !dataLoading && (
                           <p className='prescription-form-help-text'>
                             {t('prescriptions.onlyPatientsWithAppointments')}
                           </p>
@@ -956,8 +937,7 @@ function NewPrescriptionPageContent() {
                         />
                         <label
                           htmlFor='followUpAutoSchedule'
-                          className='prescription-form-label'
-                          style={{ marginBottom: 0 }}
+                          className='prescription-form-label prescription-form-label--inline'
                         >
                           {t('prescriptions.followUpAutoSchedule')}
                         </label>
@@ -986,10 +966,7 @@ function NewPrescriptionPageContent() {
                       </div>
                     </div>
 
-                    <div
-                      className='prescription-form-field'
-                      style={{ marginTop: 'var(--space-5)' }}
-                    >
+                    <div className='prescription-form-field prescription-form-field-block'>
                       <label className='prescription-form-label'>
                         {t('prescriptions.digitalSignature')}
                       </label>
@@ -1032,10 +1009,7 @@ function NewPrescriptionPageContent() {
                       </p>
                     </div>
 
-                    <div
-                      className='prescription-form-field'
-                      style={{ marginTop: 'var(--space-5)' }}
-                    >
+                    <div className='prescription-form-field prescription-form-field-block'>
                       <label htmlFor='additionalInstructions' className='prescription-form-label'>
                         {t('prescriptions.advicePrecautions')}
                       </label>
@@ -1053,22 +1027,17 @@ function NewPrescriptionPageContent() {
                     </div>
                   </div>
 
-                  <div className='prescription-items-section'>
-                    <div className='prescription-items-header'>
-                      <h3 className='prescription-items-title'>
-                        {t('prescriptions.prescriptionItems')}
-                      </h3>
-                      <Button type='button' variant='secondary' size='sm' onClick={addItem}>
-                        + Add Item
+                  <Card
+                    className='prescription-items-card'
+                    title={t('prescriptions.prescriptionItems')}
+                    actions={
+                      <Button type='button' variant='primary' size='sm' onClick={addItem}>
+                        + {t('prescriptions.addItem') || 'Add Item'}
                       </Button>
-                    </div>
+                    }
+                  >
                     {fieldErrors.items && (
-                      <div
-                        className='prescription-form-error'
-                        style={{ marginBottom: 'var(--space-4)' }}
-                      >
-                        {fieldErrors.items}
-                      </div>
+                      <div className='prescription-form-error mb-4'>{fieldErrors.items}</div>
                     )}
                     <PrescriptionItemsTable
                       items={items}
@@ -1080,7 +1049,7 @@ function NewPrescriptionPageContent() {
                       onAdd={addItem}
                       fieldErrors={fieldErrors}
                     />
-                  </div>
+                  </Card>
 
                   <div className='prescription-form-actions'>
                     <Button
@@ -1131,13 +1100,6 @@ function NewPrescriptionPageContent() {
                     </Button>
                   </div>
                 </form>
-              </div>
-            </div>
-
-            {/* Right column: Patient Details Panel */}
-            <div className='lg:col-span-1 min-w-0'>
-              <div className='sticky top-4'>
-                <PatientDetailsPanel patientId={formData.patientId} />
               </div>
             </div>
           </div>

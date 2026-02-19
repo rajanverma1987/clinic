@@ -21,10 +21,10 @@ export function middleware(request) {
   // Referrer policy — don't leak full URL to third parties
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Permissions policy — disable unused browser features
+  // Permissions policy — camera/mic allowed for self (telemedicine WebRTC)
   response.headers.set(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), payment=()',
+    'camera=(self), microphone=(self), geolocation=(), payment=()',
   );
 
   return response;

@@ -123,9 +123,8 @@ export function HolidayManagementTab({
   }
 
   return (
-    <div className='space-y-3 text-left'>
+    <div className='w-full max-w-4xl space-y-6 text-left'>
       <SettingsTabHeader title={t('settings.holidaysClosures')} />
-      {/* Always show Add New Holiday button (toggle form visibility only) */}
       <div className='flex justify-end'>
         <Button
           onClick={() => setShowAddForm(!showAddForm)}
@@ -136,16 +135,15 @@ export function HolidayManagementTab({
         </Button>
       </div>
 
-      {/* Add Holiday Form */}
       {showAddForm && (
         <Card>
-          <form onSubmit={handleAddHoliday} className='p-4 space-y-3'>
-            <h2 className='text-base font-bold text-neutral-900 mb-3'>
+          <form onSubmit={handleAddHoliday} className='p-5 space-y-4'>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
               {t('settings.addNewHoliday')}
-            </h2>
+            </h3>
             <div className='content-grid-2 content-grid-gap-3'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
                   {t('settings.holidayNameLabel')} <span className='text-red-500'>*</span>
                 </label>
                 <Input
@@ -156,7 +154,7 @@ export function HolidayManagementTab({
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
                   {t('settings.dateLabel')} <span className='text-red-500'>*</span>
                 </label>
                 <DatePicker
@@ -172,11 +170,13 @@ export function HolidayManagementTab({
                 type='checkbox'
                 checked={formData.isRecurring}
                 onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
-                className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded'
+                className='h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 dark:border-neutral-600 rounded'
               />
-              <label className='text-sm text-neutral-700'>{t('settings.recurringEveryYear')}</label>
+              <label className='text-sm text-neutral-700 dark:text-neutral-300'>
+                {t('settings.recurringEveryYear')}
+              </label>
             </div>
-            <div className='flex gap-2 pt-2 border-t border-neutral-200'>
+            <div className='flex gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-600'>
               <Button
                 type='submit'
                 variant='primary'
@@ -207,39 +207,34 @@ export function HolidayManagementTab({
         </Card>
       )}
 
-      {/* Holidays List */}
       <Card>
-        <div className='p-4'>
-          <div className='flex items-center gap-2 mb-3'>
-            <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-              <CalendarIcon className='icon icon-xs text-primary-600' ariaHidden />
-            </div>
-            <h2 className='text-lg font-bold text-neutral-900'>{t('settings.holidaysClosures')}</h2>
-            <span className='text-sm text-neutral-500'>({holidays.length})</span>
-          </div>
+        <div className='p-5'>
+          <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
+            {t('settings.holidaysClosures')}{' '}
+            <span className='text-sm font-normal text-neutral-500 dark:text-neutral-400'>
+              ({holidays.length})
+            </span>
+          </h3>
 
           {holidays.length === 0 ? (
-            <div className='flex flex-col items-center justify-center py-10 text-neutral-400'>
+            <div className='flex flex-col items-center justify-center py-10 text-neutral-400 dark:text-neutral-500'>
               <CalendarIcon className='icon icon-xl mb-2' ariaHidden />
               <p className='text-sm'>{t('settings.noHolidaysConfigured')}</p>
-              <p className='text-xs mt-1'>
-                {t('settings.addHolidaysHint')}
-              </p>
+              <p className='text-xs mt-1'>{t('settings.addHolidaysHint')}</p>
             </div>
           ) : (
             <div className='space-y-2'>
               {holidays.map((holiday) => (
                 <div
                   key={holiday.id}
-                  className='flex items-center justify-between p-3 border border-neutral-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 transition-all'
+                  className='flex items-center justify-between p-3 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all'
                 >
                   <div className='flex items-center gap-3'>
-                    <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-                      <CalendarIcon className='icon icon-xs text-primary-600' ariaHidden />
-                    </div>
                     <div>
-                      <p className='font-semibold text-neutral-900 text-sm'>{holiday.name}</p>
-                      <p className='text-xs text-neutral-600'>
+                      <p className='font-semibold text-neutral-900 dark:text-neutral-100 text-sm'>
+                        {holiday.name}
+                      </p>
+                      <p className='text-xs text-neutral-600 dark:text-neutral-400'>
                         {new Date(holiday.date).toLocaleDateString(undefined, {
                           weekday: 'long',
                           year: 'numeric',
@@ -247,7 +242,7 @@ export function HolidayManagementTab({
                           day: 'numeric',
                         })}
                         {holiday.isRecurring && (
-                          <span className='ml-2 px-1.5 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full'>
+                          <span className='ml-2 px-1.5 py-0.5 bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs rounded-full'>
                             {t('settings.recurring')}
                           </span>
                         )}

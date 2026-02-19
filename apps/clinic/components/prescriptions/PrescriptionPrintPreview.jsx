@@ -131,6 +131,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
       // Prepare print data
       const printData = {
         clinicName: clinicSettings?.name || 'Clinic Name',
+        clinicLogoUrl: clinicSettings?.settings?.logo || '',
         clinicAddress: clinicAddress,
         clinicPhone: clinicSettings?.settings?.phone || '',
         clinicTiming: clinicTiming,

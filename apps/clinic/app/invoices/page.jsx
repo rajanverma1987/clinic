@@ -487,9 +487,19 @@ export default function InvoicesPage() {
           />
         </div>
         {loading ? (
-          <Card>
-            <TableSkeleton rows={10} cols={6} />
-          </Card>
+          <>
+            <Card className='mb-4 p-4'>
+              <div className='filter-row flex flex-wrap items-end gap-3'>
+                <div className='h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-600 animate-pulse' />
+                <div className='h-10 w-32 rounded bg-neutral-200 dark:bg-neutral-600 animate-pulse' />
+                <div className='h-4 w-28 rounded bg-neutral-200 dark:bg-neutral-600 animate-pulse' />
+                <div className='h-10 w-40 rounded bg-neutral-200 dark:bg-neutral-600 animate-pulse' />
+              </div>
+            </Card>
+            <Card>
+              <TableSkeleton rows={10} cols={6} />
+            </Card>
+          </>
         ) : (
           <>
             <Card className='mb-4 p-4'>

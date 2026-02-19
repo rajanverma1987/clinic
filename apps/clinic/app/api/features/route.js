@@ -1,4 +1,5 @@
 import { isTestAccount } from '@/lib/constants/test-account.js';
+import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { withAuth } from '@/middleware/auth';
@@ -9,6 +10,8 @@ import { withRequestLogger } from '@/middleware/request-logger';
 import { getTenantFeatures, getTenantLimits } from '@/services/feature-access.service';
 import { getTenantSubscription } from '@/services/subscription.service';
 import { NextResponse } from 'next/server';
+
+const FEATURES_CACHE_TTL_MS = 60000;
 
 /** TEMPORARY: Premium subscription payload for test account. REMOVE before production. */
 function getTestAccountPremiumPayload() {
@@ -53,38 +56,42 @@ async function getHandler(req, user) {
       });
     }
 
-    const features = await getTenantFeatures(user.tenantId);
-    const limits = await getTenantLimits(user.tenantId);
-    const subscription = await getTenantSubscription(user.tenantId);
-
-    // Calculate trial days remaining if on Free Trial
-    let trialDaysRemaining;
-    const sub = subscription;
-    if (sub && sub.planId && typeof sub.planId === 'object' && 'name' in sub.planId) {
-      const plan = sub.planId;
-      if (plan.name === 'Free Trial' && sub.status === 'ACTIVE') {
-        const now = new Date();
-        const end = new Date(sub.currentPeriodEnd);
-        const daysRemaining = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        trialDaysRemaining = Math.max(0, daysRemaining);
-      }
-    }
-
-    return NextResponse.json(
-      successResponse({
-        features,
-        limits,
-        subscription: sub
-          ? {
-              status: sub.status,
-              currentPeriodEnd: sub.currentPeriodEnd,
-              trialDaysRemaining,
-              paypalApprovalUrl: sub.paypalApprovalUrl,
-            }
-          : null,
-      }),
+    const cacheKey = `features:${user.tenantId}`;
+    const payload = await optimizedCacheManager.getOrFetch(
+      cacheKey,
+      async () => {
+        const features = await getTenantFeatures(user.tenantId);
+        const limits = await getTenantLimits(user.tenantId);
+        const subscription = await getTenantSubscription(user.tenantId);
+        let trialDaysRemaining;
+        const sub = subscription;
+        if (sub && sub.planId && typeof sub.planId === 'object' && 'name' in sub.planId) {
+          const plan = sub.planId;
+          if (plan.name === 'Free Trial' && sub.status === 'ACTIVE') {
+            const now = new Date();
+            const end = new Date(sub.currentPeriodEnd);
+            const daysRemaining = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            trialDaysRemaining = Math.max(0, daysRemaining);
+          }
+        }
+        return {
+          features,
+          limits,
+          subscription: sub
+            ? {
+                status: sub.status,
+                currentPeriodEnd: sub.currentPeriodEnd,
+                trialDaysRemaining,
+                paypalApprovalUrl: sub.paypalApprovalUrl,
+              }
+            : null,
+        };
+      },
+      FEATURES_CACHE_TTL_MS,
     );
-}
+
+    return NextResponse.json(successResponse(payload));
+  }
 
 /**
  * Apply enterprise middleware stack to GET endpoint.

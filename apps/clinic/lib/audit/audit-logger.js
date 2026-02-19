@@ -62,6 +62,8 @@ export async function createAuditLog({
   phiAccessed = false,
   complianceType = 'none',
 }) {
+  // Skip audit for system-level calls with no user context
+  if (!userId || (typeof userId === 'string' && userId.trim() === '')) return;
   try {
     await connectDB();
     const AuditLog = (await import('@/models/AuditLog')).default;

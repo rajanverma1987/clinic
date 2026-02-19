@@ -232,7 +232,7 @@ function getAllFeaturesOrdered() {
 
 /**
  * Plan-specific feature bullets for subscription/pricing cards (max 8 per plan).
- * Ensures each card shows correct details for SOLO $49, CLINIC $149, ENTERPRISE $499.
+ * Ensures each card shows correct details for SOLO $49, CLINIC $99, ENTERPRISE $499.
  */
 const CARD_FEATURES_BY_PLAN = {
   SOLO: [

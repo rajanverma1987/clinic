@@ -86,7 +86,7 @@ export function Tabs({
               onClick={() => onChange(tab.id)}
               onMouseEnter={onTabHover ? () => onTabHover(tab.id) : undefined}
               className={[
-                'px-4 py-2 rounded-none text-sm whitespace-nowrap transition-all duration-200 ease-out outline-none',
+                'px-4 py-2 rounded-none text-sm whitespace-nowrap transition-colors duration-150 outline-none',
                 'focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1',
                 isActive
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200 font-semibold'

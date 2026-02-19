@@ -47,6 +47,7 @@ export const TabContent = memo(function TabContent({
   activeTab,
   children,
   appointmentsContent = null,
+  kpiContent = null,
   prescriptionsContent = null,
   hidden = false,
 }) {
@@ -73,6 +74,27 @@ export const TabContent = memo(function TabContent({
           )}
         >
           {children}
+        </ErrorBoundary>
+      </div>
+
+      {/* KPI Dashboard Tab */}
+      <div
+        className='dashboard-tab-content'
+        style={{ display: normalizedTab === 'kpi' ? 'block' : 'none' }}
+        aria-hidden={normalizedTab !== 'kpi'}
+      >
+        <ErrorBoundary
+          variant='card'
+          name='KPIDashboardTab'
+          fallback={(err, info, reset) => (
+            <TabErrorFallback
+              error={err}
+              resetErrorBoundary={reset}
+              tabLabel={t('dashboard.kpiDashboard')}
+            />
+          )}
+        >
+          {kpiContent ?? <TabPlaceholderMemo tabLabel={t('dashboard.kpiDashboard')} />}
         </ErrorBoundary>
       </div>
 

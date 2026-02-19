@@ -332,7 +332,8 @@ function GenericSkeleton() {
 }
 
 /**
- * Report tab content skeleton – summary cards, chart block, table block. Use when loading any report tab (revenue, patients, appointments, inventory).
+ * Report tab content skeleton – 100% layout match to reports tab (summary cards, chart card, table card).
+ * Same structure as revenue/patients/appointments tabs: content-grid-4, Card chart, Card table.
  */
 export function ReportTabSkeleton() {
   const { t } = useI18n();
@@ -342,23 +343,28 @@ export function ReportTabSkeleton() {
       aria-busy='true'
       aria-label={t('common.ariaLabelLoadingReport')}
     >
+      {/* Summary cards – same as real reports: content-grid-4, Card with p-4 */}
       <div className='content-grid-4'>
         {[...Array(4)].map((_, i) => (
-          <div key={i} className='bg-white dark:bg-neutral-800 rounded-lg p-6 shadow'>
-            <div className={`h-4 ${bg2} rounded w-1/2 mb-3`} />
-            <div className={`h-8 ${bg3} rounded w-3/4 mb-2`} />
-            <div className={`h-3 ${bg2} rounded w-1/3`} />
-          </div>
+          <Card key={i}>
+            <div className='p-4'>
+              <div className={`h-4 ${bg2} rounded w-1/2 mb-3`} />
+              <div className={`h-8 ${bg3} rounded w-3/4 mb-2`} />
+              <div className={`h-3 ${bg2} rounded w-1/3`} />
+            </div>
+          </Card>
         ))}
       </div>
-      <div className={`bg-white dark:bg-neutral-800 rounded-lg p-6 shadow`}>
+      {/* Chart card – same as real: Card, header row (title + button), chart area */}
+      <Card>
         <div className='flex items-center justify-between mb-4'>
           <div className={`h-6 ${bg3} rounded w-1/4`} />
           <div className={`h-9 ${bg2} rounded w-28`} />
         </div>
         <div className={`h-64 ${bg2} rounded`} />
-      </div>
-      <div className={`bg-white dark:bg-neutral-800 rounded-lg shadow overflow-hidden`}>
+      </Card>
+      {/* Table card – same as real: Card, header row, table rows */}
+      <Card className='overflow-hidden'>
         <div className='px-6 py-4 border-b border-neutral-200 dark:border-neutral-600'>
           <div className={`h-6 ${bg3} rounded w-1/3`} />
         </div>
@@ -372,7 +378,7 @@ export function ReportTabSkeleton() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -381,15 +387,17 @@ export function ReportTabSkeleton() {
 const DEFAULT_LIST_PAGE_SIZE = 10;
 
 /**
- * Appointments list skeleton – matches dashboard AppointmentsTab layout (Card p-6, header + stats + table).
- * Row count matches AppointmentsTab LIMIT for minimal CLS.
+ * Appointments list skeleton – 100% layout match to dashboard AppointmentsTab (Card, section header, stats grid, table).
  */
 export function AppointmentsListSkeleton() {
   return (
-    <Card className={`p-6 ${pulse}`} aria-busy='true'>
-      {/* Section Header with Accent Bar */}
-      <div className='flex items-center gap-3 mb-4'>
-        <div className={`w-1 h-4 ${bg3} rounded-full`} />
+    <Card
+      className={`dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col ${pulse}`}
+      aria-busy='true'
+    >
+      {/* Section Header – same as real: accent bar + title + filter/export buttons */}
+      <div className='section-header flex items-center gap-3 mb-4'>
+        <div className={`w-1 h-4 ${bg3} rounded-full flex-shrink-0`} />
         <div className={`h-6 ${bg3} rounded w-32`} />
         <div className='flex gap-2 ml-auto'>
           <div className={`h-10 w-24 ${bg2} rounded`} />
@@ -397,7 +405,7 @@ export function AppointmentsListSkeleton() {
         </div>
       </div>
 
-      {/* Stats Bar */}
+      {/* Stats Bar – same grid as real: grid-cols-2 sm:grid-cols-4 */}
       <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
         {[...Array(4)].map((_, i) => (
           <div key={i} className='text-center'>
@@ -407,7 +415,7 @@ export function AppointmentsListSkeleton() {
         ))}
       </div>
 
-      {/* Table */}
+      {/* Table – same wrapper as real */}
       <div className='flex-1 overflow-auto'>
         <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
       </div>
@@ -416,15 +424,17 @@ export function AppointmentsListSkeleton() {
 }
 
 /**
- * Prescriptions list skeleton – matches dashboard PrescriptionsTab layout (Card p-6, header + stats + table).
- * Row count matches PrescriptionsTab limit for minimal CLS.
+ * Prescriptions list skeleton – 100% layout match to dashboard PrescriptionsTab (Card, section header, stats grid, table).
  */
 export function PrescriptionsListSkeleton() {
   return (
-    <Card className={`p-6 ${pulse}`} aria-busy='true'>
-      {/* Section Header with Accent Bar */}
-      <div className='flex items-center gap-3 mb-4'>
-        <div className={`w-1 h-4 ${bg3} rounded-full`} />
+    <Card
+      className={`dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col ${pulse}`}
+      aria-busy='true'
+    >
+      {/* Section Header – same as real */}
+      <div className='section-header flex items-center gap-3 mb-4'>
+        <div className={`w-1 h-4 ${bg3} rounded-full flex-shrink-0`} />
         <div className={`h-6 ${bg3} rounded w-32`} />
         <div className='flex gap-2 ml-auto'>
           <div className={`h-10 w-24 ${bg2} rounded`} />
@@ -432,7 +442,7 @@ export function PrescriptionsListSkeleton() {
         </div>
       </div>
 
-      {/* Stats Bar */}
+      {/* Stats Bar – same grid as real */}
       <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
         {[...Array(4)].map((_, i) => (
           <div key={i} className='text-center'>
@@ -442,7 +452,7 @@ export function PrescriptionsListSkeleton() {
         ))}
       </div>
 
-      {/* Table */}
+      {/* Table – same wrapper as real */}
       <div className='flex-1 overflow-auto'>
         <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
       </div>

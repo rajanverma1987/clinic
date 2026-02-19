@@ -82,6 +82,16 @@ export function generatePrescriptionPrintHTML(data) {
       text-align: center;
       font-weight: bold;
       font-size: 12pt;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .clinic-logo-img {
+      max-height: 48px;
+      max-width: 180px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
     }
 
     .clinic-info {
@@ -287,7 +297,11 @@ export function generatePrescriptionPrintHTML(data) {
         ${data.doctorPhone ? `<div>Mob. No: ${data.doctorPhone}</div>` : ''}
       </div>
       <div class="clinic-logo">
-        ${data.clinicName || 'CLINIC NAME'}
+        ${
+          data.clinicLogoUrl
+            ? `<img src="${String(data.clinicLogoUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" alt="" class="clinic-logo-img" />`
+            : data.clinicName || 'CLINIC NAME'
+        }
       </div>
       <div class="clinic-info">
         ${data.clinicName ? `<div class="clinic-name">${data.clinicName}</div>` : ''}

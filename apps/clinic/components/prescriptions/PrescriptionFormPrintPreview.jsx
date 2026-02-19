@@ -55,12 +55,25 @@ export function PrescriptionFormPrintPreview({
           )
         : undefined;
 
-      // Format clinic address
-      const clinicAddress = clinicSettings?.settings?.address
-        ? `${clinicSettings.settings.address.street || ''}, ${
-            clinicSettings.settings.address.city || ''
-          } - ${clinicSettings.settings.address.zipCode || ''}.`
-        : '';
+      // Format clinic address: use settings.address (object) or main location from settings.locations
+      let clinicAddress = '';
+      if (clinicSettings?.settings?.address && typeof clinicSettings.settings.address === 'object') {
+        const a = clinicSettings.settings.address;
+        clinicAddress = [a.street, a.city, a.state, a.zipCode, a.country].filter(Boolean).join(', ');
+      } else if (clinicSettings?.settings?.locations?.length) {
+        const main =
+          clinicSettings.settings.locations.find((loc) => loc.isMain) ||
+          clinicSettings.settings.locations[0];
+        if (main?.address) clinicAddress = main.address;
+      }
+
+      // Clinic phone: settings.phone or main location phone
+      const clinicPhone =
+        clinicSettings?.settings?.phone ||
+        (clinicSettings?.settings?.locations?.length &&
+          (clinicSettings.settings.locations.find((loc) => loc.isMain) ||
+            clinicSettings.settings.locations[0])?.phone) ||
+        '';
 
       // Format clinic timing
       const clinicTiming = clinicSettings?.settings?.clinicHours
@@ -96,8 +109,9 @@ export function PrescriptionFormPrintPreview({
       // Prepare print data
       const printData = {
         clinicName: clinicSettings?.name || 'Clinic Name',
+        clinicLogoUrl: clinicSettings?.settings?.logo || '',
         clinicAddress: clinicAddress,
-        clinicPhone: clinicSettings?.settings?.phone || '',
+        clinicPhone: clinicPhone,
         clinicTiming: clinicTiming,
         doctorName: `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim(),
         doctorQualification: '',

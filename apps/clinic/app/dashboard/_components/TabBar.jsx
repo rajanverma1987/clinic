@@ -43,6 +43,7 @@ export function TabBar({ className = '', activeTab, onTabChange, userId }) {
 
   const tabs = [
     { id: 'overview', label: t('dashboard.overview') },
+    { id: 'kpi', label: t('dashboard.kpiDashboard') },
     { id: 'appointments', label: t('appointments.title') },
     { id: 'prescriptions', label: t('prescriptions.title') },
   ];

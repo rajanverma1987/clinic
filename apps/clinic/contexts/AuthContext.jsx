@@ -176,6 +176,7 @@ export function AuthProvider({ children }) {
                 tenantId: userData.tenantId || '',
                 subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
+                avatar: userData.avatar,
               };
               setUser(userInfo);
               if (typeof window !== 'undefined') {
@@ -258,6 +259,7 @@ export function AuthProvider({ children }) {
           tenantId: userData.tenantId || '',
           subscriptionPlan: userData.subscriptionPlan || null,
           isActive: userData.isActive !== undefined ? userData.isActive : true,
+          avatar: userData.avatar,
         };
         setUser(userInfo);
         setCurrentTenantId(userInfo.tenantId || null);
@@ -309,6 +311,7 @@ export function AuthProvider({ children }) {
                 tenantId: userData.tenantId || '',
                 subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
+                avatar: userData.avatar,
               };
               setUser(userInfo);
               if (typeof window !== 'undefined') {
@@ -382,6 +385,7 @@ export function AuthProvider({ children }) {
                 tenantId: userData.tenantId || '',
                 subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
+                avatar: userData.avatar,
               };
               setUser(userInfo);
               if (typeof window !== 'undefined') {

@@ -32,34 +32,35 @@ export function ClinicHoursTab({
   };
 
   return (
-    <div className='space-y-3 text-left'>
+    <div className='w-full max-w-4xl space-y-6 text-left'>
       <SettingsTabHeader title={t('settings.clinicHours')} />
       <form
         onSubmit={(e) => {
           e.preventDefault();
           onSave();
         }}
-        className='space-y-3'
+        className='space-y-6'
       >
         <Card>
-          <div className='p-4'>
+          <div className='p-5'>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
               {clinicHours.map((hour, dayIndex) => (
                 <div
                   key={hour.day}
                   className={`rounded-lg border p-3 transition-all ${
                     hour.isOpen
-                      ? 'border-primary-200 bg-white shadow-sm'
-                      : 'border-neutral-200 bg-neutral-50'
+                      ? 'border-primary-200 bg-white dark:bg-neutral-800/50 dark:border-primary-700 shadow-sm'
+                      : 'border-neutral-200 bg-neutral-50 dark:bg-neutral-800/30 dark:border-neutral-600'
                   }`}
                 >
-                  {/* Day Header */}
-                  <div className='flex items-center justify-between mb-2 pb-2 border-b border-neutral-100'>
+                  <div className='flex items-center justify-between mb-2 pb-2 border-b border-neutral-100 dark:border-neutral-600'>
                     <div className='flex items-center gap-2'>
                       <span className='text-xl'>{getDayIcon(hour.day)}</span>
                       <span
                         className={`font-semibold text-sm ${
-                          hour.isOpen ? 'text-neutral-900' : 'text-neutral-500'
+                          hour.isOpen
+                            ? 'text-neutral-900 dark:text-neutral-100'
+                            : 'text-neutral-500 dark:text-neutral-400'
                         }`}
                       >
                         {hour.day}
@@ -103,11 +104,11 @@ export function ClinicHoursTab({
                           {hour.timeSlots.map((slot, slotIndex) => (
                             <div
                               key={slotIndex}
-                              className='group flex items-end gap-2 p-2 bg-neutral-50 rounded border border-neutral-200 hover:border-primary-200 transition-all'
+                              className='group flex items-end gap-2 p-2 bg-neutral-50 dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-600 hover:border-primary-200 dark:hover:border-primary-600 transition-all'
                             >
                               <div className='flex-1'>
-                                <label className='block text-xs text-neutral-600 mb-1 font-medium'>
-                                  Start <span className='text-red-500'>*</span>
+                                <label className='block text-xs text-neutral-600 dark:text-neutral-400 mb-1 font-medium'>
+                                  {t('settings.startTime')} <span className='text-red-500'>*</span>
                                 </label>
                                 <Input
                                   type='time'
@@ -135,8 +136,8 @@ export function ClinicHoursTab({
                                 </svg>
                               </div>
                               <div className='flex-1'>
-                                <label className='block text-xs text-neutral-600 mb-1 font-medium'>
-                                  End <span className='text-red-500'>*</span>
+                                <label className='block text-xs text-neutral-600 dark:text-neutral-400 mb-1 font-medium'>
+                                  {t('settings.endTime')} <span className='text-red-500'>*</span>
                                 </label>
                                 <Input
                                   type='time'
@@ -193,7 +194,7 @@ export function ClinicHoursTab({
                                 d='M12 4v16m8-8H4'
                               />
                             </svg>
-                            Add Time Slot
+                            {t('settings.addTimeSlot')}
                           </button>
                         </div>
                       )}
@@ -203,8 +204,8 @@ export function ClinicHoursTab({
                   {/* Closed State */}
                   {!hour.isOpen && (
                     <div className='text-center py-3'>
-                      <span className='inline-flex items-center px-2.5 py-1 text-xs font-medium bg-neutral-100 text-neutral-500 rounded'>
-                        Closed
+                      <span className='inline-flex items-center px-2.5 py-1 text-xs font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 rounded'>
+                        {t('settings.closed')}
                       </span>
                     </div>
                   )}
@@ -214,13 +215,19 @@ export function ClinicHoursTab({
           </div>
         </Card>
 
-        <div className='flex justify-end gap-3 pt-4'>
+        <div className='flex justify-end gap-2 pt-4'>
           {onCancel && (
-            <Button type='button' variant='secondary' onClick={onCancel} disabled={saving}>
+            <Button
+              type='button'
+              variant='secondary'
+              size='sm'
+              onClick={onCancel}
+              disabled={saving}
+            >
               {t('common.cancel')}
             </Button>
           )}
-          <Button type='submit' variant='primary' isLoading={saving} disabled={saving}>
+          <Button type='submit' variant='primary' size='sm' isLoading={saving} disabled={saving}>
             {t('common.save')}
           </Button>
         </div>

@@ -350,7 +350,7 @@ export default function SubscriptionPage() {
         </div>
       );
     } catch (error) {
-      console.error('Error rendering addon card:', addon?.key, error);
+      logger.error('Error rendering addon card:', addon?.key, error);
       return null;
     }
   };
@@ -461,11 +461,8 @@ export default function SubscriptionPage() {
       <div className='dashboard-container sub-page-wrap'>
         {fetchError && (
           <div className='dashboard-section'>
-            <div
-              className='rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 flex items-center justify-between gap-4 flex-wrap'
-              role='alert'
-            >
-              <span className='text-sm'>{fetchError}</span>
+            <div className='sub-error-banner' role='alert'>
+              <span>{fetchError}</span>
               <Button
                 variant='secondary'
                 size='sm'
@@ -480,9 +477,9 @@ export default function SubscriptionPage() {
             </div>
           </div>
         )}
-        {/* Space management: half = Current Plan, half = Add-ons (side by side when subscription exists) */}
+        {/* Current plan first, then Add-ons below (same section + card style) */}
         {subscription && subscription.planId && typeof subscription.planId === 'object' ? (
-          <div className='content-grid-2 content-grid-gap-6 sub-half-half'>
+          <>
             <div className='dashboard-section'>
               <h2 className='sub-section-title'>
                 <span className='sub-accent' />
@@ -597,10 +594,14 @@ export default function SubscriptionPage() {
             </div>
 
             <div className='dashboard-section sub-section-compact'>
-              <Card title={t('subscriptionSpec.addOns')}>
+              <h2 className='sub-section-title'>
+                <span className='sub-accent' />
+                {t('subscriptionSpec.addOns')}
+              </h2>
+              <Card className='sub-details-card-inner'>
                 <p
                   className='sub-section-desc'
-                  style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}
+                  style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}
                 >
                   {t('subscriptionSpec.addOnsSubtitle')}
                 </p>
@@ -609,7 +610,7 @@ export default function SubscriptionPage() {
                 </div>
               </Card>
             </div>
-          </div>
+          </>
         ) : (
           <>
             {/* Add-ons catalog – full width when no current plan */}
@@ -668,11 +669,17 @@ export default function SubscriptionPage() {
                     yearlySaveAmount={YEARLY_SAVE[plan.name]}
                     trialDays={plan.trialDays ?? 14}
                     showPaymentMethods={canManageSubscription && isPaid}
-                    onSubscribe={canManageSubscription && isPaid ? () => setPaymentModalPlan(plan) : undefined}
-                    onSelect={canManageSubscription && !isPaid ? () => handleUpgrade(plan._id) : undefined}
+                    onSubscribe={
+                      canManageSubscription && isPaid ? () => setPaymentModalPlan(plan) : undefined
+                    }
+                    onSelect={
+                      canManageSubscription && !isPaid ? () => handleUpgrade(plan._id) : undefined
+                    }
                     ctaText={
                       canManageSubscription
-                        ? (subscription ? t('subscription.switchToPlan') : t('subscription.getStarted'))
+                        ? subscription
+                          ? t('subscription.switchToPlan')
+                          : t('subscription.getStarted')
                         : t('subscription.viewOnly')
                     }
                     ctaDisabled={upgrading || !canManageSubscription}

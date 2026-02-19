@@ -11,9 +11,11 @@ import { Tabs, getTabPanelId, getTabPanelLabelledBy } from '@/components/ui/Tabs
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { ERROR_HANDLING, PATIENT_DETAIL_TABS } from '@/lib/constants/route-security';
 import { hasPermission } from '@/lib/permissions/constants';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -27,6 +29,7 @@ export default function PatientDetailPage() {
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const { currency, locale } = useSettings();
   const [patient, setPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
@@ -1139,31 +1142,45 @@ export default function PatientDetailPage() {
                             <th>{t('patients.date')}</th>
                             <th>{t('patients.amount')}</th>
                             <th>{t('common.status')}</th>
-                            <th>{t('patients.diagnosis')}</th>
+                            <th>{t('patients.provider')}</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {insuranceClaims.map((claim) => (
-                            <tr key={claim._id}>
-                              <td className='font-medium whitespace-nowrap'>
-                                {claim.claimNumber || claim._id?.slice(-8)}
-                              </td>
-                              <td className='whitespace-nowrap'>
-                                {new Date(claim.createdAt).toLocaleDateString()}
-                              </td>
-                              <td className='whitespace-nowrap'>
-                                ${(claim.totalAmount || 0).toFixed(2)}
-                              </td>
-                              <td>
-                                <span
-                                  className={`px-2 py-0.5 text-xs rounded-full ${claim.status === 'approved' ? 'bg-status-success/10 text-status-success' : claim.status === 'rejected' ? 'bg-status-error/10 text-status-error' : 'bg-status-warning/10 text-status-warning'}`}
-                                >
-                                  {claim.status || 'pending'}
-                                </span>
-                              </td>
-                              <td>{claim.diagnosisCode || claim.diagnosis || '-'}</td>
-                            </tr>
-                          ))}
+                          {insuranceClaims.map((claim) => {
+                            const amount =
+                              claim.claimAmount != null
+                                ? claim.claimAmount
+                                : (claim.invoiceId?.totalAmount ?? 0);
+                            const statusClass =
+                              claim.status === 'approved' ||
+                              claim.status === 'paid' ||
+                              claim.status === 'partially_approved'
+                                ? 'bg-status-success/10 text-status-success'
+                                : claim.status === 'denied' || claim.status === 'rejected'
+                                  ? 'bg-status-error/10 text-status-error'
+                                  : 'bg-status-warning/10 text-status-warning';
+                            return (
+                              <tr key={claim._id}>
+                                <td className='font-medium whitespace-nowrap'>
+                                  {claim.claimNumber || claim._id?.slice(-8)}
+                                </td>
+                                <td className='whitespace-nowrap'>
+                                  {new Date(claim.createdAt).toLocaleDateString()}
+                                </td>
+                                <td className='whitespace-nowrap'>
+                                  {formatCurrencyUtil(amount, currency, locale)}
+                                </td>
+                                <td>
+                                  <span
+                                    className={`px-2 py-0.5 text-xs rounded-full ${statusClass}`}
+                                  >
+                                    {claim.status || 'draft'}
+                                  </span>
+                                </td>
+                                <td>{claim.insuranceProvider || claim.notes || '-'}</td>
+                              </tr>
+                            );
+                          })}
                           {insuranceClaims.length === 0 && (
                             <tr data-empty>
                               <td colSpan={5}>{t('common.noDataFound')}</td>

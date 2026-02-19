@@ -14,7 +14,6 @@ import {
   createPayPalPlan,
   createPayPalSubscription,
 } from './paypal.service.js';
-import { cancelStripeSubscription } from './stripe-subscription.service.js';
 
 /**
  * Create subscription plan (Admin only)
@@ -325,10 +324,6 @@ export async function cancelSubscription(subscriptionId, tenantId, cancelAtPerio
 
   if (!subscription) {
     throw new Error('Subscription not found');
-  }
-
-  if (subscription.stripeSubscriptionId) {
-    return cancelStripeSubscription(subscriptionId, tenantId, cancelAtPeriodEnd);
   }
 
   if (!cancelAtPeriodEnd && subscription.paypalSubscriptionId) {

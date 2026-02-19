@@ -11,7 +11,7 @@ import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useAppKeyboardShortcuts } from '@/hooks/useAppKeyboardShortcuts';
 import { apiClient } from '@/lib/api/client';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PageHeader } from './PageHeader';
 import { Sidebar } from './Sidebar.jsx';
 
@@ -39,17 +39,25 @@ export function Layout({
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
+  const maintenanceCheckInFlightRef = useRef(false);
 
   useAppKeyboardShortcuts({ onOpenSearch: () => setShowSearch(true) });
 
   // Maintenance mode: redirect non–super_admin to /maintenance when platform is in maintenance
   useEffect(() => {
     if (authLoading || !user || user.role === 'super_admin' || pathname === '/maintenance') return;
+    if (maintenanceCheckInFlightRef.current) return;
     let cancelled = false;
-    apiClient.get('/maintenance-status', undefined, true).then((res) => {
-      if (cancelled || !res?.success || !res?.maintenanceMode) return;
-      router.replace('/maintenance');
-    });
+    maintenanceCheckInFlightRef.current = true;
+    apiClient
+      .get('/maintenance-status', undefined, true)
+      .then((res) => {
+        if (cancelled || !res?.success || !res?.maintenanceMode) return;
+        router.replace('/maintenance');
+      })
+      .finally(() => {
+        maintenanceCheckInFlightRef.current = false;
+      });
     return () => {
       cancelled = true;
     };

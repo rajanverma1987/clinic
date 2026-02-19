@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
+import { logger } from '@/lib/utils/logger';
 import { useEffect, useRef, useState } from 'react';
 
 const ALL_ACTIONS = [
@@ -60,7 +61,7 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
     try {
       return t && typeof t === 'function' ? t(key) : key;
     } catch (error) {
-      console.error('Translation error:', error);
+      logger.error('Translation error:', error);
       return key;
     }
   };
@@ -127,7 +128,7 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
           >
             {visibleActions.map(({ path, labelKey, Icon }) => {
               if (!Icon || typeof Icon !== 'function') {
-                console.error(`Invalid Icon component for ${labelKey}`);
+                logger.error(`Invalid Icon component for ${labelKey}`);
                 return null;
               }
               return (

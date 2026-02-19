@@ -18,69 +18,40 @@ export function GeneralSettingsTab({
 
   if (!isClinicAdmin) {
     return (
-      <Card className='text-center py-12'>
-        <div className='flex flex-col items-center'>
-          <div className='w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-3'>
-            <svg
-              className='w-8 h-8 text-neutral-400'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
-              />
-            </svg>
+      <div className='w-full max-w-4xl space-y-6 text-left'>
+        <SettingsTabHeader title={t('settings.clinicInfo')} />
+        <Card>
+          <div className='p-6 text-center'>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
+              {t('settings.accessRestricted')}
+            </h3>
+            <p className='text-sm text-neutral-600 dark:text-neutral-400'>
+              {t('settings.onlyClinicAdminManage')}
+            </p>
           </div>
-          <h3 className='text-lg font-semibold text-neutral-900 mb-1'>
-            {t('settings.accessRestricted')}
-          </h3>
-          <p className='text-sm text-neutral-600'>{t('settings.onlyClinicAdminManage')}</p>
-        </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className='space-y-3 text-left'>
+    <div className='w-full max-w-4xl space-y-6 text-left'>
       <SettingsTabHeader title={t('settings.clinicInfo')} />
       <form
         onSubmit={(e) => {
           e.preventDefault();
           onSave();
         }}
-        className='space-y-3'
+        className='space-y-6'
       >
-        {/* Basic Information Section */}
         <Card>
-          <div className='p-4'>
-            <div className='flex items-center gap-2 mb-3'>
-              <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-                <svg
-                  className='icon icon-xs text-primary-600'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
-                  />
-                </svg>
-              </div>
-              <h2 className='text-lg font-bold text-neutral-900'>
-                {t('settings.basicInformation')}
-              </h2>
-            </div>
-
+          <div className='p-5'>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
+              {t('settings.basicInformation')}
+            </h3>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
                   {t('settings.clinicName')} <span className='text-red-500'>*</span>
                 </label>
                 <Input
@@ -89,13 +60,13 @@ export function GeneralSettingsTab({
                   placeholder={t('settings.clinicNamePlaceholder')}
                   required
                 />
-                <p className='text-xs text-neutral-500 mt-1'>
+                <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                   {t('settings.appearsOnInvoices')}
                 </p>
               </div>
 
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
                   {t('settings.region')} <span className='text-red-500'>*</span>
                 </label>
                 <select
@@ -112,34 +83,19 @@ export function GeneralSettingsTab({
                   <option value='APAC'>Asia Pacific</option>
                   <option value='ME'>Middle East</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>{t('settings.primaryOperatingRegion')}</p>
+                <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
+                  {t('settings.primaryOperatingRegion')}
+                </p>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Regional Settings Section */}
         <Card>
           <div className='p-5'>
-            <div className='flex items-center gap-2 mb-5'>
-              <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-                <svg
-                  className='icon icon-xs text-primary-600'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-                  />
-                </svg>
-              </div>
-              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.regionalSettings')}</h2>
-            </div>
-
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
+              {t('settings.regionalSettings')}
+            </h3>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
@@ -175,7 +131,9 @@ export function GeneralSettingsTab({
                   <option value='es-ES'>Español</option>
                   <option value='ar-SA'>العربية</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>{t('settings.languageAndDateFormat')}</p>
+                <p className='text-xs text-neutral-500 mt-1'>
+                  {t('settings.languageAndDateFormat')}
+                </p>
               </div>
 
               <div className='md:col-span-2'>
@@ -200,38 +158,160 @@ export function GeneralSettingsTab({
                   <option value='Asia/Kolkata'>India - Asia/Kolkata</option>
                   <option value='Australia/Sydney'>Sydney - Australia/Sydney</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>{t('settings.forAppointmentsScheduling')}</p>
+                <p className='text-xs text-neutral-500 mt-1'>
+                  {t('settings.forAppointmentsScheduling')}
+                </p>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Prescription Settings Section */}
         <Card>
           <div className='p-5'>
-            <div className='flex items-center gap-2 mb-5'>
-              <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-                <svg
-                  className='icon icon-xs text-primary-600'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
-                  />
-                </svg>
-              </div>
-              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.prescriptionSettings')}</h2>
-            </div>
-
-            <div>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
+              {t('settings.letterheadSection')}
+            </h3>
+            <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-4'>
+              {t('settings.appearsOnPrescriptionAndReceipt')}
+            </p>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div className='md:col-span-2'>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  {t('settings.prescriptionValidityDays')} <span className='text-red-500'>*</span>
+                  {t('settings.logoUrl')}
                 </label>
+                <Input
+                  value={clinicForm.logo || ''}
+                  onChange={(e) => setClinicForm({ ...clinicForm, logo: e.target.value })}
+                  placeholder='https://…'
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  {t('settings.clinicPhone')}
+                </label>
+                <Input
+                  value={clinicForm.phone || ''}
+                  onChange={(e) => setClinicForm({ ...clinicForm, phone: e.target.value })}
+                  placeholder={t('settings.clinicPhonePlaceholder')}
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  {t('settings.addressStreet')}
+                </label>
+                <Input
+                  value={clinicForm.address?.street || ''}
+                  onChange={(e) =>
+                    setClinicForm({
+                      ...clinicForm,
+                      address: { ...(clinicForm.address || {}), street: e.target.value },
+                    })
+                  }
+                  placeholder={t('settings.addressStreetPlaceholder')}
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  {t('settings.addressCity')}
+                </label>
+                <Input
+                  value={clinicForm.address?.city || ''}
+                  onChange={(e) =>
+                    setClinicForm({
+                      ...clinicForm,
+                      address: { ...(clinicForm.address || {}), city: e.target.value },
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  {t('settings.addressState')}
+                </label>
+                <Input
+                  value={clinicForm.address?.state || ''}
+                  onChange={(e) =>
+                    setClinicForm({
+                      ...clinicForm,
+                      address: { ...(clinicForm.address || {}), state: e.target.value },
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  {t('settings.addressZipCode')}
+                </label>
+                <Input
+                  value={clinicForm.address?.zipCode || ''}
+                  onChange={(e) =>
+                    setClinicForm({
+                      ...clinicForm,
+                      address: { ...(clinicForm.address || {}), zipCode: e.target.value },
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  {t('settings.addressCountry')}
+                </label>
+                <Input
+                  value={clinicForm.address?.country || ''}
+                  onChange={(e) =>
+                    setClinicForm({
+                      ...clinicForm,
+                      address: { ...(clinicForm.address || {}), country: e.target.value },
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className='p-5'>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
+              {t('settings.paymentReceiptSection')}
+            </h3>
+            <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-4'>
+              {t('settings.paymentRecordsNote')}
+            </p>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  {t('settings.receiptTaxId')}
+                </label>
+                <Input
+                  value={clinicForm.taxId || ''}
+                  onChange={(e) => setClinicForm({ ...clinicForm, taxId: e.target.value })}
+                  placeholder={t('settings.receiptTaxIdPlaceholder')}
+                />
+              </div>
+              <div className='md:col-span-2'>
+                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  {t('settings.receiptFooter')}
+                </label>
+                <Input
+                  value={clinicForm.receiptFooter || ''}
+                  onChange={(e) => setClinicForm({ ...clinicForm, receiptFooter: e.target.value })}
+                  placeholder={t('settings.receiptFooterPlaceholder')}
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className='p-5'>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
+              {t('settings.prescriptionSettings')}
+            </h3>
+            <div>
+              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                {t('settings.prescriptionValidityDays')} <span className='text-red-500'>*</span>
+              </label>
               <Input
                 type='number'
                 min='1'
@@ -265,13 +345,19 @@ export function GeneralSettingsTab({
           </div>
         </Card>
 
-        <div className='flex justify-end gap-3 pt-4'>
+        <div className='flex justify-end gap-2'>
           {onCancel && (
-            <Button type='button' variant='secondary' onClick={onCancel} disabled={saving}>
+            <Button
+              type='button'
+              variant='secondary'
+              size='sm'
+              onClick={onCancel}
+              disabled={saving}
+            >
               {t('common.cancel')}
             </Button>
           )}
-          <Button type='submit' variant='primary' isLoading={saving} disabled={saving}>
+          <Button type='submit' variant='primary' size='sm' isLoading={saving} disabled={saving}>
             {t('common.save')}
           </Button>
         </div>

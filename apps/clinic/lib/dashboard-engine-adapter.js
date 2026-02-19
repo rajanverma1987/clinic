@@ -1,18 +1,20 @@
 /**
  * Dashboard-engine adapter: implements all data access for metrics, trends, and actions.
  * Clinic UI never touches DB directly; API routes call dashboard-engine with this adapter.
+ * Uses relative imports so the adapter resolves when loaded from API routes or from jobs
+ * (monorepo @/ resolves only inside the app; jobs may load this file in a context without @/).
  */
 
-import connectDB from '@/lib/db/connection';
-import { getDoctorDashboardData } from '@/services/dashboard-doctor.service';
-import { getDashboardStats } from '@/services/report.service';
-import { listAppointments } from '@/services/appointment.service';
-import { getLowStockItems, getAllLots } from '@/services/inventory.service';
-import Invoice from '@/models/Invoice';
+import Invoice from '../models/Invoice.js';
+import { listAppointments } from '../services/appointment.service.js';
+import { getDoctorDashboardData } from '../services/dashboard-doctor.service.js';
+import { getAllLots, getLowStockItems } from '../services/inventory.service.js';
+import { getDashboardStats } from '../services/report.service.js';
+import connectDB from './db/connection.js';
 
 /** Raw clinic stats (appointments, revenue, patients, queue) for getClinicSummary. */
 async function getClinicStats(tenantId) {
-  const { calculateDashboardStats } = await import('@/jobs/dashboard-stats.js');
+  const { calculateDashboardStats } = await import('../jobs/dashboard-stats.js');
   return calculateDashboardStats(tenantId);
 }
 
@@ -33,11 +35,18 @@ async function getAlertsRaw(tenantId, options = {}) {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
 
+  const uid = options.userId || null;
   const [todayAppointments, overdueInvoices, lowStock, expiringLots] = await Promise.all([
-    listAppointments({ date: today, limit: '20' }, tenantId, null).then((r) => (r?.data ?? []).slice(0, 20)),
+    listAppointments({ date: today, limit: '20' }, tenantId, uid).then((r) =>
+      (r?.data ?? []).slice(0, 20),
+    ),
     getOverdueInvoices(tenantId),
-    getLowStockItems(tenantId, null).then((arr) => (Array.isArray(arr) ? arr : []).slice(0, 10)),
-    getAllLots(tenantId, null, { expiringSoon: true }).then((arr) => (Array.isArray(arr) ? arr : []).slice(0, 10)),
+    getLowStockItems(tenantId, uid).then((arr) => (Array.isArray(arr) ? arr : []).slice(0, 10)),
+    uid
+      ? getAllLots(tenantId, uid, { expiringSoon: true })
+          .then((arr) => (Array.isArray(arr) ? arr : []).slice(0, 10))
+          .catch(() => [])
+      : Promise.resolve([]),
   ]);
 
   const urgentAppointments = (todayAppointments || []).filter((apt) => {
@@ -49,7 +58,8 @@ async function getAlertsRaw(tenantId, options = {}) {
     overdueInvoices,
     lowStock,
     expiringLots,
-    expiringLotsMessage: expiringLots.length > 0 ? `${expiringLots.length} lot(s) expiring soon` : undefined,
+    expiringLotsMessage:
+      expiringLots.length > 0 ? `${expiringLots.length} lot(s) expiring soon` : undefined,
     urgentAppointments,
   };
 }
@@ -71,7 +81,7 @@ async function getOverdueInvoices(tenantId) {
 
 /** Revenue trend raw: current and previous period, derived from report stats. */
 async function getRevenueTrendRaw(tenantId, options = {}) {
-  const stats = await getReportDashboardStats(tenantId, '');
+  const stats = await getReportDashboardStats(tenantId, options.userId || null);
   if (!stats) return { current: 0, previous: 0, period: options.period || 'day' };
   const current = stats.todayRevenue ?? 0;
   const trend = stats.revenueTrend ?? 0;
@@ -81,8 +91,9 @@ async function getRevenueTrendRaw(tenantId, options = {}) {
 
 /** Patient flow raw: new/active patients, derived from report stats. */
 async function getPatientFlowRaw(tenantId, options = {}) {
-  const stats = await getReportDashboardStats(tenantId, '');
-  if (!stats) return { newPatients: 0, previousNew: 0, activePatients: 0, period: options.period || 'month' };
+  const stats = await getReportDashboardStats(tenantId, options.userId || null);
+  if (!stats)
+    return { newPatients: 0, previousNew: 0, activePatients: 0, period: options.period || 'month' };
   const newPatients = stats.newPatientsThisMonth ?? 0;
   const trend = stats.patientsTrend ?? stats.newPatientsTrend ?? 0;
   const previousNew = trend !== 0 ? newPatients / (1 + trend / 100) : 0;
@@ -97,7 +108,7 @@ async function getPatientFlowRaw(tenantId, options = {}) {
 /** Assign staff to role/clinic. Delegates to user service when available. */
 async function assignStaff(tenantId, payload) {
   try {
-    const { updateUserRole } = await import('@/services/user.service').catch(() => ({}));
+    const { updateUserRole } = await import('../services/user.service.js').catch(() => ({}));
     if (typeof updateUserRole === 'function') {
       await updateUserRole({ tenantId, ...payload });
       return { success: true };
@@ -111,7 +122,7 @@ async function assignStaff(tenantId, payload) {
 /** Retry failed payment via PayPal service. */
 async function retryPayment(tenantId, payload) {
   try {
-    const { retryPayPalPayment } = await import('@/services/paypal.service');
+    const { retryPayPalPayment } = await import('../services/paypal.service.js');
     const subscriptionId = payload?.subscriptionId;
     const maxRetries = payload?.maxRetries ?? 3;
     if (!subscriptionId) return { success: false, error: 'subscriptionId required' };

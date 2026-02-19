@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useRef, useState, useMemo } from 'react';
 
 const CHART_HEIGHT = 160;
 
@@ -25,20 +25,46 @@ const COLOR_CLASSES = {
 
 function ChartCardInner({ title, data, colorScheme = 'primary', loading = false }) {
   const { t } = useI18n();
+  const containerRef = useRef(null);
+  const [inView, setInView] = useState(false);
 
-  if (loading || data === null || data === undefined) {
+  // Only render chart content when the card enters the viewport.
+  // This avoids painting bars for charts that are scrolled off-screen on load.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setInView(true);
+      return;
+    }
+    if (inView) return; // already triggered — no need to re-observe
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.05 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [inView]);
+
+  if (loading || data === null || data === undefined || !inView) {
     return (
-      <Card
-        className={`chart-card chart-card-${colorScheme} dashboard-card-gradient h-full flex flex-col`}
-      >
-        <div className='relative z-10 p-4 flex-1 flex flex-col min-h-0'>
-          <div className='flex items-center gap-2 mb-4'>
-            <div className='skeleton w-1 h-4 rounded-full shrink-0' />
-            <div className='skeleton skeleton-text w-40' />
+      <div ref={containerRef} className='h-full'>
+        <Card
+          className={`chart-card chart-card-${colorScheme} dashboard-card-gradient h-full flex flex-col`}
+        >
+          <div className='relative z-10 p-4 flex-1 flex flex-col min-h-0'>
+            <div className='flex items-center gap-2 mb-4'>
+              <div className='skeleton w-1 h-4 rounded-full shrink-0' />
+              <div className='skeleton skeleton-text w-40' />
+            </div>
+            <div className='skeleton skeleton-chart flex-1' />
           </div>
-          <div className='skeleton skeleton-chart flex-1' />
-        </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 

@@ -1,9 +1,16 @@
 /**
  * Enterprise real-time client: WebSocket (Socket.IO) with heartbeat, auto-reconnect,
  * and SSE fallback when WebSocket is unavailable.
+ *
+ * socket.io-client is lazy-loaded on first connection so it is NOT bundled
+ * into the main JS chunk for pages that never open a socket (e.g. login, public pages).
  */
 
-import { io } from 'socket.io-client';
+let _ioLoader = null;
+function loadIo() {
+  if (!_ioLoader) _ioLoader = import('socket.io-client').then((m) => m.io);
+  return _ioLoader;
+}
 
 const HEARTBEAT_INTERVAL_MS = 25000;
 const HEARTBEAT_TIMEOUT_MS = 10000;
@@ -117,12 +124,13 @@ function disconnectSSE() {
   }
 }
 
-function connectSocket(tenantId) {
+async function connectSocket(tenantId) {
   if (socketInstance) {
     socketInstance.removeAllListeners();
     socketInstance.disconnect();
     socketInstance = null;
   }
+  const io = await loadIo();
   const url = getSocketUrl();
   const socket = io(`${url}/realtime`, {
     transports: ['websocket', 'polling'],

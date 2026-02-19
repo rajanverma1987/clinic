@@ -271,7 +271,9 @@ export default function EditPrescriptionPage() {
       setPatients(allPatients);
 
       // Fetch drugs from inventory (medications)
-      const drugsResponse = await apiClient.get('/inventory/items?type=medicine&limit=1000');
+      const drugsResponse = await apiClient.get(
+        '/inventory/items?type=medicine&limit=500&lightweight=true',
+      );
       if (drugsResponse.success && drugsResponse.data) {
         let drugsList = [];
 

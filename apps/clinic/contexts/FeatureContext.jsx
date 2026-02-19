@@ -3,7 +3,15 @@
 import { apiClient } from '@/lib/api/client.js';
 import { isTestAccount } from '@/lib/constants/test-account.js';
 import { createContext, useContext, useEffect, useState } from 'react';
+import useSWR from 'swr';
 import { useAuth } from './AuthContext.jsx';
+
+const FEATURES_KEY = '/api/features';
+const featuresFetcher = async () => {
+  const res = await apiClient.get('/features');
+  if (!res?.success || !res?.data) throw new Error('Features fetch failed');
+  return res.data;
+};
 
 const FeatureContext = createContext(undefined);
 
@@ -30,18 +38,31 @@ export function FeatureProvider({ children }) {
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchFeatures = async () => {
-    if (!user || user.role === 'super_admin') {
-      // Super admin = company account: full access, no subscription/plan gating
+  const swrKey =
+    user?.tenantId && user?.role !== 'super_admin' && !isTestAccount(user?.email)
+      ? FEATURES_KEY
+      : null;
+  const { data: featuresData, isLoading: featuresLoading, mutate } = useSWR(swrKey, featuresFetcher, {
+    revalidateOnFocus: true,
+    dedupingInterval: 2 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setFeatures([]);
+      setLimits({});
+      setSubscription(null);
+      setLoading(false);
+      return;
+    }
+    if (!authLoading && user?.role === 'super_admin') {
       setFeatures(['*']);
       setLimits({});
       setSubscription(null);
       setLoading(false);
       return;
     }
-
-    // TEMPORARY: Test account gets premium access (client-side fallback). REMOVE before production.
-    if (isTestAccount(user.email)) {
+    if (!authLoading && user && isTestAccount(user.email)) {
       const premium = getTestAccountPremiumState();
       setFeatures(premium.features);
       setLimits(premium.limits);
@@ -49,44 +70,31 @@ export function FeatureProvider({ children }) {
       setLoading(false);
       return;
     }
-
-    try {
-      setLoading(true);
-      // Doctor and all clinic roles: plan-wise access (tenant subscription features)
-      const response = await apiClient.get('/features');
-
-      if (response.success && response.data) {
-        setFeatures(response.data.features || []);
-        setLimits(response.data.limits || {});
-        setSubscription(response.data.subscription || null);
+    if (!authLoading && user && swrKey) {
+      setLoading(featuresLoading);
+      if (featuresData) {
+        setFeatures(featuresData.features || []);
+        setLimits(featuresData.limits || {});
+        setSubscription(featuresData.subscription ?? null);
+      } else if (!featuresLoading) {
+        setFeatures([]);
+        setLimits({});
+        setSubscription(null);
       }
-    } catch (_error) {
-      setFeatures([]);
-      setLimits({});
-      setSubscription(null);
-    } finally {
-      setLoading(false);
     }
+  }, [authLoading, user, swrKey, featuresData, featuresLoading]);
+
+  const fetchFeatures = async () => {
+    if (swrKey) await mutate();
   };
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      fetchFeatures();
-    } else if (!authLoading && !user) {
-      setFeatures([]);
-      setLimits({});
-      setSubscription(null);
-      setLoading(false);
-    }
-  }, [authLoading, user]);
-
-  // Refetch subscription when user returns (e.g. from PayPal or pricing) so purchase syncs to account
+  // Refetch subscription when user returns (e.g. from PayPal or pricing); SWR deduping avoids hammering API
   useEffect(() => {
     if (!user || user.role === 'super_admin') return;
-    const onFocus = () => fetchFeatures();
+    const onFocus = () => mutate();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [user]);
+  }, [user, mutate]);
 
   const hasFeature = (featureName) => {
     if (features.includes('*')) return true; // Super admin

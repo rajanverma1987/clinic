@@ -20,12 +20,48 @@ const { getFeaturesForTier } = require('../lib/constants/plan-features.js');
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Plans: SOLO $49, CLINIC $149, ENTERPRISE $499. Annual 5% off on all. Price in CENTS.
+// Plans: SOLO $49, CLINIC $99, ENTERPRISE $499. Annual 5% off on all. Price in CENTS.
 const PLAN_TIERS = [
-  { name: 'FREE', priceCents: 0, tierIndex: 0, description: 'Solo doctors testing the system or very small practice', maxUsers: 1, maxPatients: 25, maxStorageGB: 0, isHidden: true },
-  { name: 'SOLO', priceCents: 4900, tierIndex: 1, description: 'Individual doctors, solo practitioners. First 14 days free with card; then $49/mo until you cancel.', maxUsers: 3, maxPatients: 999999, maxStorageGB: 5, trialDays: 14 },
-  { name: 'CLINIC', priceCents: 14900, tierIndex: 2, description: 'Small to medium clinics with multiple doctors', maxUsers: 10, maxPatients: 999999, maxStorageGB: 50, isPopular: true },
-  { name: 'ENTERPRISE', priceCents: 49900, tierIndex: 3, description: 'Large clinics, multi-specialty centers, hospitals', maxUsers: 999, maxPatients: 999999, maxStorageGB: 9999 },
+  {
+    name: 'FREE',
+    priceCents: 0,
+    tierIndex: 0,
+    description: 'Solo doctors testing the system or very small practice',
+    maxUsers: 1,
+    maxPatients: 25,
+    maxStorageGB: 0,
+    isHidden: true,
+  },
+  {
+    name: 'SOLO',
+    priceCents: 4900,
+    tierIndex: 1,
+    description:
+      'Individual doctors, solo practitioners. First 14 days free with card; then $49/mo until you cancel.',
+    maxUsers: 3,
+    maxPatients: 999999,
+    maxStorageGB: 5,
+    trialDays: 14,
+  },
+  {
+    name: 'CLINIC',
+    priceCents: 9900,
+    tierIndex: 2,
+    description: 'Small to medium clinics with multiple doctors',
+    maxUsers: 10,
+    maxPatients: 999999,
+    maxStorageGB: 50,
+    isPopular: true,
+  },
+  {
+    name: 'ENTERPRISE',
+    priceCents: 49900,
+    tierIndex: 3,
+    description: 'Large clinics, multi-specialty centers, hospitals',
+    maxUsers: 999,
+    maxPatients: 999999,
+    maxStorageGB: 9999,
+  },
 ];
 
 if (!MONGODB_URI) {
@@ -34,7 +70,7 @@ if (!MONGODB_URI) {
 }
 
 /**
- * Seed subscription plans: SOLO $49, CLINIC $149, ENTERPRISE $499. Annual 5% off. Billing MONTHLY.
+ * Seed subscription plans: SOLO $49, CLINIC $99, ENTERPRISE $499. Annual 5% off. Billing MONTHLY.
  */
 async function seedSubscriptionPlans() {
   console.log('📦 Seeding subscription plans...');
@@ -58,7 +94,9 @@ async function seedSubscriptionPlans() {
     };
     if (!existing) {
       await SubscriptionPlan.create(planData);
-      console.log(`  ✅ Created plan: ${tier.name} ($${(tier.priceCents / 100).toFixed(2)}/mo, ${features.length} features)`);
+      console.log(
+        `  ✅ Created plan: ${tier.name} ($${(tier.priceCents / 100).toFixed(2)}/mo, ${features.length} features)`,
+      );
     } else {
       await SubscriptionPlan.updateOne(
         { name: tier.name },
@@ -73,7 +111,7 @@ async function seedSubscriptionPlans() {
             isHidden: tier.isHidden ?? false,
             trialDays: tier.trialDays ?? undefined,
           },
-        }
+        },
       );
       console.log(`  🔄 Updated plan: ${tier.name} (${features.length} features per doc)`);
     }
@@ -239,7 +277,7 @@ async function seedDemoData() {
       status: 'active',
     });
     console.log(
-      '  ✅ Created super admin (email: superadmin@clinic.com, password: SuperAdmin123!)'
+      '  ✅ Created super admin (email: superadmin@clinic.com, password: SuperAdmin123!)',
     );
   } else {
     console.log('  ⏭️  Super admin already exists');

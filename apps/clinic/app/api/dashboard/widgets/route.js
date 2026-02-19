@@ -101,7 +101,7 @@ async function getHandler(req, user) {
         : []
       ).slice(0, 5);
 
-      const criticalAlerts = await getAlerts(tenantId, {}, dashboardEngineAdapter);
+      const criticalAlerts = await getAlerts(tenantId, { userId }, dashboardEngineAdapter);
 
       // Log any individual service failures at debug level (non-fatal)
       [todayAptsRes, patientsRes, invoicesRes, lowStockRes, prescriptionsRes, queueRes, lotsRes, requestsRes]

@@ -7,9 +7,7 @@ const {
 } = require('./lib/cache/http-cache-strategy.js');
 
 const nextConfig = {
-  reactStrictMode: process.env.NODE_ENV === 'production',
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
+  reactStrictMode: true,
   // Pin the tracing root to the monorepo root to silence the multiple-lockfiles warning
   outputFileTracingRoot: path.resolve(__dirname, '../..'),
   // Explicitly disable Babel to use SWC

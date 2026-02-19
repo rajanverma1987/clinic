@@ -1377,7 +1377,7 @@ export const API_ROUTE_GROUPS = [
   {
     path: '/api/subscriptions',
     methods: ['GET', 'PUT'],
-    description: 'Subscription; [id], [id]/addons; features; stripe-complete',
+    description: 'Subscription; [id], [id]/addons; features',
   },
   { path: '/api/subscription-plans', methods: ['GET'], description: 'Plans (clinic)' },
   { path: '/api/features', methods: ['GET'], description: 'Tenant feature flags' },
@@ -1410,7 +1410,6 @@ export const API_ROUTE_GROUPS = [
     description: 'Mobile recent prescriptions',
   },
   { path: '/api/mobile/sync', methods: ['GET'], description: 'Mobile sync' },
-  { path: '/api/webhooks/stripe', methods: ['POST'], description: 'Stripe webhook' },
   { path: '/api/webhooks/paypal', methods: ['POST'], description: 'PayPal webhook' },
   {
     path: '/api/whatsapp/conversations',

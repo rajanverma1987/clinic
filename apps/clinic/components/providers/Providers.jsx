@@ -23,7 +23,7 @@ function swrRetryWithBackoff(err, _key, _config, revalidate, { retryCount }) {
 }
 
 const swrOptions = {
-  revalidateOnFocus: true,
+  revalidateOnFocus: false,
   revalidateOnReconnect: true,
   dedupingInterval: 30000,
   errorRetryCount: 3,

@@ -73,7 +73,7 @@ export async function POST(
       'CREATE',
       { messageSent: true, encrypted: encrypted || false },
       { action: 'send_chat_message' }
-    ).catch(console.error);
+    ).catch((err) => logger.error('AuditLogger failed:', err));
 
     return NextResponse.json(successResponse({
       message: 'Message sent successfully',

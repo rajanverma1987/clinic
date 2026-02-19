@@ -19,111 +19,87 @@ export function ComplianceTab({
 
   if (!isClinicAdmin) {
     return (
-      <Card className='text-center py-12'>
-        <div className='flex flex-col items-center'>
-          <div className='w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-3'>
-            <svg
-              className='w-8 h-8 text-neutral-400'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
-              />
-            </svg>
+      <div className='w-full max-w-4xl space-y-6 text-left'>
+        <SettingsTabHeader title={t('settings.compliance')} />
+        <Card>
+          <div className='p-6 text-center'>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
+              {t('settings.accessRestricted')}
+            </h3>
+            <p className='text-sm text-neutral-600 dark:text-neutral-400'>
+              {t('settings.onlyClinicAdminCompliance')}
+            </p>
           </div>
-          <h3 className='text-lg font-semibold text-neutral-900 mb-1'>
-            {t('settings.accessRestricted')}
-          </h3>
-          <p className='text-sm text-neutral-600'>{t('settings.onlyClinicAdminCompliance')}</p>
-        </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 
   const complianceOptions = [
-    { key: 'hipaa', titleKey: 'settings.hipaaTitle', regionKey: 'settings.hipaaRegion', descKey: 'settings.hipaaDesc' },
-    { key: 'gdpr', titleKey: 'settings.gdprTitle', regionKey: 'settings.gdprRegion', descKey: 'settings.gdprDesc' },
-    { key: 'pipeda', titleKey: 'settings.pipedaTitle', regionKey: 'settings.pipedaRegion', descKey: 'settings.pipedaDesc' },
-    { key: 'privacyAct', titleKey: 'settings.privacyActTitle', regionKey: 'settings.privacyActRegion', descKey: 'settings.privacyActDesc' },
+    {
+      key: 'hipaa',
+      titleKey: 'settings.hipaaTitle',
+      regionKey: 'settings.hipaaRegion',
+      descKey: 'settings.hipaaDesc',
+    },
+    {
+      key: 'gdpr',
+      titleKey: 'settings.gdprTitle',
+      regionKey: 'settings.gdprRegion',
+      descKey: 'settings.gdprDesc',
+    },
+    {
+      key: 'pipeda',
+      titleKey: 'settings.pipedaTitle',
+      regionKey: 'settings.pipedaRegion',
+      descKey: 'settings.pipedaDesc',
+    },
+    {
+      key: 'privacyAct',
+      titleKey: 'settings.privacyActTitle',
+      regionKey: 'settings.privacyActRegion',
+      descKey: 'settings.privacyActDesc',
+    },
   ];
 
   return (
-    <div className='space-y-3 text-left'>
+    <div className='w-full max-w-4xl space-y-6 text-left'>
       <SettingsTabHeader title={t('settings.compliance')} />
       <form
         onSubmit={(e) => {
           e.preventDefault();
           onSave();
         }}
-        className='space-y-3'
+        className='space-y-6'
       >
-        {/* Compliance Standards */}
         <Card>
-          <div className='p-4'>
-            <div className='flex items-center gap-2 mb-3'>
-              <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-                <svg
-                  className='icon icon-xs text-primary-600'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
-                  />
-                </svg>
-              </div>
-              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.complianceStandards')}</h2>
-            </div>
-
+          <div className='p-5'>
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
+              {t('settings.complianceStandards')}
+            </h3>
             <div className='space-y-2'>
               {complianceOptions.map((option) => (
                 <div
                   key={option.key}
                   className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
                     complianceForm[option.key]
-                      ? 'border-primary-300 bg-primary-50/50'
-                      : 'border-neutral-200 bg-white hover:border-neutral-300'
+                      ? 'border-primary-300 bg-primary-50/50 dark:bg-primary-900/20 dark:border-primary-700'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300 dark:bg-neutral-800/50 dark:border-neutral-600 dark:hover:border-neutral-500'
                   }`}
                 >
                   <div className='flex items-start gap-3 flex-1'>
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        complianceForm[option.key] ? 'bg-primary-100' : 'bg-neutral-100'
-                      }`}
-                    >
-                      <svg
-                        className={`icon icon-xs ${
-                          complianceForm[option.key] ? 'text-primary-600' : 'text-neutral-400'
-                        }`}
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
-                        />
-                      </svg>
-                    </div>
                     <div className='flex-1'>
                       <div className='flex items-center gap-2 mb-0.5'>
-                        <h3 className='font-semibold text-neutral-900 text-sm'>{t(option.titleKey)}</h3>
-                        <span className='px-1.5 py-0.5 bg-neutral-100 text-neutral-600 text-xs rounded'>
+                        <h3 className='font-semibold text-neutral-900 dark:text-neutral-100 text-sm'>
+                          {t(option.titleKey)}
+                        </h3>
+                        <span className='px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 text-xs rounded'>
                           {t(option.regionKey)}
                         </span>
                       </div>
-                      <p className='text-xs text-neutral-600'>{t(option.descKey)}</p>
+                      <p className='text-xs text-neutral-600 dark:text-neutral-400'>
+                        {t(option.descKey)}
+                      </p>
                     </div>
                   </div>
                   <Toggle
@@ -138,30 +114,13 @@ export function ComplianceTab({
           </div>
         </Card>
 
-        {/* Data Retention */}
         <Card>
           <div className='p-5'>
-            <div className='flex items-center gap-2 mb-5'>
-              <div className='w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center'>
-                <svg
-                  className='icon icon-xs text-primary-600'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
-                  />
-                </svg>
-              </div>
-              <h2 className='text-lg font-bold text-neutral-900'>{t('settings.dataRetention')}</h2>
-            </div>
-
+            <h3 className='text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
+              {t('settings.dataRetention')}
+            </h3>
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+              <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
                 {t('settings.dataRetentionYears')} <span className='text-red-500'>*</span>
               </label>
               <Input
@@ -179,8 +138,8 @@ export function ComplianceTab({
                 required
                 className='max-w-xs'
               />
-              <div className='mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg'>
-                <p className='text-xs text-amber-800'>
+              <div className='mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg'>
+                <p className='text-xs text-amber-800 dark:text-amber-200'>
                   <strong>{t('common.note')}:</strong> {t('settings.dataRetentionNote')}
                 </p>
               </div>
@@ -188,13 +147,19 @@ export function ComplianceTab({
           </div>
         </Card>
 
-        <div className='flex justify-end gap-3 pt-4'>
+        <div className='flex justify-end gap-2 pt-4'>
           {onCancel && (
-            <Button type='button' variant='secondary' onClick={onCancel} disabled={saving}>
+            <Button
+              type='button'
+              variant='secondary'
+              size='sm'
+              onClick={onCancel}
+              disabled={saving}
+            >
               {t('common.cancel')}
             </Button>
           )}
-          <Button type='submit' variant='primary' isLoading={saving} disabled={saving}>
+          <Button type='submit' variant='primary' size='sm' isLoading={saving} disabled={saving}>
             {t('common.save')}
           </Button>
         </div>

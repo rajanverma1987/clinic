@@ -56,54 +56,19 @@ export function PrescriptionPatientHeader({ patientId }) {
   const currentMeds = patient.currentMedications ?? '';
 
   return (
-    <div
-      className='prescription-patient-header'
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-3)',
-        padding: 'var(--space-4)',
-        background: 'var(--color-neutral-50)',
-        border: '1px solid var(--color-neutral-200)',
-        borderRadius: 'var(--radius-md)',
-        marginBottom: 'var(--space-4)',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: 'var(--space-2)',
-        }}
-      >
-        <span style={{ fontWeight: 600, color: 'var(--color-neutral-900)', fontSize: 'var(--text-body-md)' }}>
-          {name}
-        </span>
+    <div className='prescription-patient-header'>
+      <div className='prescription-patient-header__row'>
+        <span className='prescription-patient-header__name'>{name}</span>
         {age != null && (
-          <span
-            style={{
-              fontWeight: 400,
-              color: 'var(--color-neutral-600)',
-              fontSize: 'var(--text-body-sm)',
-            }}
-          >
+          <span className='prescription-patient-header__meta'>
             · {t('prescriptions.patientAge', { age })}
           </span>
         )}
       </div>
       {(allergies || currentMeds) && (
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 'var(--space-4)',
-            fontSize: 'var(--text-body-sm)',
-            lineHeight: 1.5,
-          }}
-        >
+        <div className='prescription-patient-header__details'>
           {allergies && (
-            <span style={{ color: 'var(--color-status-error)', fontWeight: 500 }}>
+            <span className='prescription-patient-header__allergies'>
               {t('prescriptions.allergies')}:{' '}
               {typeof allergies === 'string'
                 ? allergies
@@ -113,7 +78,7 @@ export function PrescriptionPatientHeader({ patientId }) {
             </span>
           )}
           {currentMeds && (
-            <span style={{ color: 'var(--color-neutral-700)' }}>
+            <span className='prescription-patient-header__meds'>
               {t('prescriptions.currentMeds')}:{' '}
               {typeof currentMeds === 'string'
                 ? currentMeds

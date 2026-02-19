@@ -217,7 +217,7 @@ export function AppointmentsTab({ isActive = false }) {
 
   if (authLoading || !user) {
     return (
-      <div className='dashboard-section'>
+      <div className='dashboard-section dashboard-tab-content-inner'>
         <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col justify-center'>
           <Loader type='section' text={t('common.loading')} />
         </Card>
@@ -227,7 +227,7 @@ export function AppointmentsTab({ isActive = false }) {
 
   if (loading && appointments.length === 0) {
     return (
-      <div className='dashboard-section'>
+      <div className='dashboard-section dashboard-tab-content-inner'>
         <AppointmentsListSkeleton />
       </div>
     );
@@ -235,7 +235,7 @@ export function AppointmentsTab({ isActive = false }) {
 
   if (error && appointments.length === 0) {
     return (
-      <div className='dashboard-section'>
+      <div className='dashboard-section dashboard-tab-content-inner'>
         <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col justify-center items-center'>
           <div className='empty-state-icon'>
             <svg className='icon icon-lg' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
@@ -257,7 +257,7 @@ export function AppointmentsTab({ isActive = false }) {
   }
 
   return (
-    <div className='dashboard-section'>
+    <div className='dashboard-section dashboard-tab-content-inner'>
       <Card className='dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col'>
         {cardContent}
       </Card>

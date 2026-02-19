@@ -22,6 +22,7 @@ import { showError, showSuccess } from '@/lib/utils/toast';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+/** Settings tabs: clinic-related only (profile = current user; rest = clinic config). */
 const SETTINGS_TAB_IDS = [
   'profile',
   'general',
@@ -72,6 +73,11 @@ function SettingsPageContent() {
     locale: 'en-US',
     timezone: 'America/New_York',
     prescriptionValidityDays: 30,
+    logo: '',
+    phone: '',
+    address: { street: '', city: '', state: '', zipCode: '', country: '' },
+    taxId: '',
+    receiptFooter: '',
   });
 
   const [complianceForm, setComplianceForm] = useState({
@@ -207,6 +213,19 @@ function SettingsPageContent() {
           locale: data.settings.locale,
           timezone: data.settings.timezone,
           prescriptionValidityDays: data.settings.prescriptionValidityDays || 30,
+          logo: data.settings.logo || '',
+          phone: data.settings.phone || '',
+          address: data.settings.address
+            ? {
+                street: data.settings.address.street || '',
+                city: data.settings.address.city || '',
+                state: data.settings.address.state || '',
+                zipCode: data.settings.address.zipCode || '',
+                country: data.settings.address.country || '',
+              }
+            : { street: '', city: '', state: '', zipCode: '', country: '' },
+          taxId: data.settings.taxId || '',
+          receiptFooter: data.settings.receiptFooter || '',
         });
         setComplianceForm({
           hipaa: data.settings.complianceSettings?.hipaa || false,
@@ -332,6 +351,11 @@ function SettingsPageContent() {
           locale: clinicForm.locale,
           timezone: clinicForm.timezone,
           prescriptionValidityDays: clinicForm.prescriptionValidityDays,
+          logo: clinicForm.logo,
+          phone: clinicForm.phone,
+          address: clinicForm.address,
+          taxId: clinicForm.taxId,
+          receiptFooter: clinicForm.receiptFooter,
         },
       });
       if (response.success) {
@@ -638,10 +662,7 @@ function SettingsPageContent() {
         showSuccess(
           t('errors.statusUpdated', { status: t(newStatus ? 'common.active' : 'common.inactive') }),
         );
-        // Refresh user data
-        setTimeout(() => {
-          window.location.reload(); // Simple refresh to update user context
-        }, 500);
+        await refreshUser();
       } else {
         const errorMessage =
           typeof response.error === 'string'

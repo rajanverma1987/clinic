@@ -24,35 +24,41 @@ export const createInsuranceClaimSchema = z.object({
   claimAmount: z.number().min(0).optional(),
   submittedAmount: z.number().min(0).optional(),
   approvedAmount: z.number().min(0).optional(),
-  priorAuthorization: z.object({
-    required: z.boolean().optional(),
-    authorizationNumber: z.string().optional(),
-    authorizedAmount: z.number().min(0).optional(),
-    authorizedUntil: z.string().datetime().or(z.date()).optional(),
-  }).optional(),
+  priorAuthorization: z
+    .object({
+      required: z.boolean().optional(),
+      authorizationNumber: z.string().optional(),
+      authorizedAmount: z.number().min(0).optional(),
+      authorizedUntil: z.string().datetime().or(z.date()).optional(),
+    })
+    .optional(),
   notes: z.string().max(1000).optional(),
 });
 
 export const updateInsuranceClaimSchema = createInsuranceClaimSchema.partial().extend({
   invoiceId: z.string().optional(), // Invoice shouldn't be changed
-  status: z.enum([
-    ClaimStatus.DRAFT,
-    ClaimStatus.SUBMITTED,
-    ClaimStatus.UNDER_REVIEW,
-    ClaimStatus.APPROVED,
-    ClaimStatus.PARTIALLY_APPROVED,
-    ClaimStatus.DENIED,
-    ClaimStatus.PAID,
-    ClaimStatus.REJECTED,
-  ]).optional(),
+  status: z
+    .enum([
+      ClaimStatus.DRAFT,
+      ClaimStatus.SUBMITTED,
+      ClaimStatus.UNDER_REVIEW,
+      ClaimStatus.APPROVED,
+      ClaimStatus.PARTIALLY_APPROVED,
+      ClaimStatus.DENIED,
+      ClaimStatus.PAID,
+      ClaimStatus.REJECTED,
+    ])
+    .optional(),
   approvedAmount: z.number().min(0).optional(),
   deniedAmount: z.number().min(0).optional(),
   denialReason: z.string().optional(),
-  eob: z.object({
-    receivedAt: z.string().datetime().or(z.date()).optional(),
-    eobNumber: z.string().optional(),
-    eobUrl: z.string().url().optional(),
-  }).optional(),
+  eob: z
+    .object({
+      receivedAt: z.string().datetime().or(z.date()).optional(),
+      eobNumber: z.string().optional(),
+      eobUrl: z.string().url().optional(),
+    })
+    .optional(),
 });
 
 export const insuranceClaimQuerySchema = z.object({
@@ -60,19 +66,21 @@ export const insuranceClaimQuerySchema = z.object({
   limit: z.string().optional(),
   patientId: z.string().optional(),
   invoiceId: z.string().optional(),
-  status: z.enum([
-    ClaimStatus.DRAFT,
-    ClaimStatus.SUBMITTED,
-    ClaimStatus.UNDER_REVIEW,
-    ClaimStatus.APPROVED,
-    ClaimStatus.PARTIALLY_APPROVED,
-    ClaimStatus.DENIED,
-    ClaimStatus.PAID,
-    ClaimStatus.REJECTED,
-  ]).optional(),
+  status: z
+    .enum([
+      ClaimStatus.DRAFT,
+      ClaimStatus.SUBMITTED,
+      ClaimStatus.UNDER_REVIEW,
+      ClaimStatus.APPROVED,
+      ClaimStatus.PARTIALLY_APPROVED,
+      ClaimStatus.DENIED,
+      ClaimStatus.PAID,
+      ClaimStatus.REJECTED,
+    ])
+    .optional(),
   insuranceProvider: z.string().optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
 });
 
 export const verifyInsuranceSchema = z.object({
@@ -93,9 +101,11 @@ export const updateClaimStatusSchema = z.object({
   approvedAmount: z.number().min(0).optional(),
   deniedAmount: z.number().min(0).optional(),
   denialReason: z.string().optional(),
-  eob: z.object({
-    receivedAt: z.string().datetime().or(z.date()).optional(),
-    eobNumber: z.string().optional(),
-    eobUrl: z.string().url().optional(),
-  }).optional(),
+  eob: z
+    .object({
+      receivedAt: z.string().datetime().or(z.date()).optional(),
+      eobNumber: z.string().optional(),
+      eobUrl: z.string().url().optional(),
+    })
+    .optional(),
 });

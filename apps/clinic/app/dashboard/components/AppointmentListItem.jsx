@@ -51,6 +51,17 @@ function AppointmentListItemInner({
   const status = appointment.status || 'scheduled';
   const isOngoing = status === 'in_progress' || status === 'arrived';
 
+  const statusLabelMap = {
+    scheduled: t('appointments.scheduled'),
+    confirmed: t('appointments.confirmed'),
+    completed: t('appointments.completed'),
+    cancelled: t('appointments.cancelled'),
+    arrived: t('appointments.arrived'),
+    in_progress: t('appointments.inProgress'),
+    declined: t('appointments.cancelled'),
+  };
+  const statusLabel = statusLabelMap[status] || status;
+
   const showActions = [onViewHistory, onStart, onReschedule, onCancel].some(Boolean);
 
   const computeElapsed = useCallback(() => {
@@ -101,8 +112,12 @@ function AppointmentListItemInner({
           </h4>
           {showActions && (
             <>
+              <p className='text-body-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-1 mt-0.5'>
+                <ClockIcon className='icon icon-xs flex-shrink-0' />
+                {timeStr}
+              </p>
               {phone && (
-                <p className='text-body-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-1 truncate'>
+                <p className='text-body-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-1 truncate mt-0.5'>
                   <PhoneIcon className='icon icon-xs flex-shrink-0' />
                   {phone}
                 </p>
@@ -117,7 +132,10 @@ function AppointmentListItemInner({
             </>
           )}
           {!showActions && (
-            <p className='text-body-xs text-neutral-600 dark:text-neutral-400 truncate'>{reason}</p>
+            <p className='text-body-xs text-neutral-600 dark:text-neutral-400 flex items-center gap-1 truncate mt-0.5'>
+              <ClockIcon className='icon icon-xs flex-shrink-0' />
+              {timeStr}
+            </p>
           )}
         </div>
 
@@ -126,16 +144,13 @@ function AppointmentListItemInner({
         >
           {isOngoing ? (
             <div className='flex flex-col items-center gap-0.5'>
-              <span className='text-body-xs font-semibold'>{t('dashboard.onGoing')}</span>
+              <span className='text-body-xs font-semibold'>{statusLabel}</span>
               <span className='text-body-xs opacity-90' title={t('dashboard.elapsed')}>
                 {formatElapsed(elapsedSeconds)}
               </span>
             </div>
           ) : (
-            <div className='flex items-center gap-1'>
-              <ClockIcon className='icon icon-xs' />
-              <span className='text-body-xs font-semibold'>{timeStr}</span>
-            </div>
+            <span className='text-body-xs font-semibold'>{statusLabel}</span>
           )}
         </div>
       </div>

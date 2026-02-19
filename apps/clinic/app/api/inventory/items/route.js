@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
+import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
+import { errorResponse, successResponse, validationErrorResponse } from '@/lib/utils/api-response';
+import { createInventoryItemSchema, inventoryItemQuerySchema } from '@/lib/validations/inventory';
 import { withAuth } from '@/middleware/auth';
 import { withErrorHandler } from '@/middleware/error-handler';
-import { withRequestLogger } from '@/middleware/request-logger';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
-import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
-import { createInventoryItemSchema, inventoryItemQuerySchema } from '@/lib/validations/inventory';
+import { withRequestLogger } from '@/middleware/request-logger';
 import {
   createInventoryItem,
-  listInventoryItems,
-  getLowStockItems,
   getExpiredItems,
+  getLowStockItems,
+  listInventoryItems,
 } from '@/services/inventory.service';
-import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
+import { NextResponse } from 'next/server';
 
 /**
  * GET /api/inventory/items
@@ -41,6 +41,22 @@ async function getHandler(req, user) {
       return NextResponse.json(successResponse(items));
     }
 
+    const lightweight = searchParams.get('lightweight') === 'true';
+    const type = searchParams.get('type');
+    if (lightweight && type) {
+      const cacheKey = `inventory:lightweight:${type}:${user.tenantId}`;
+      const result = await optimizedCacheManager.getOrFetch(
+        cacheKey,
+        () =>
+          listInventoryItems(
+            { type, limit: searchParams.get('limit') || '500', lightweight: true },
+            user.tenantId,
+            user.userId,
+          ),
+        60000,
+      );
+      return NextResponse.json(successResponse(result));
+    }
     const queryParams = {
       page: searchParams.get('page') || undefined,
       limit: searchParams.get('limit') || undefined,
@@ -49,17 +65,21 @@ async function getHandler(req, user) {
       lowStock: searchParams.get('lowStock') || undefined,
       expired: searchParams.get('expired') || undefined,
       isActive: searchParams.get('isActive') || undefined,
+      lightweight: lightweight ? true : undefined,
     };
 
     const validationResult = inventoryItemQuerySchema.safeParse(queryParams);
     if (!validationResult.success) {
-      return NextResponse.json(
-        validationErrorResponse(validationResult.error.errors),
-        { status: 400 }
-      );
+      return NextResponse.json(validationErrorResponse(validationResult.error.errors), {
+        status: 400,
+      });
     }
 
-    const result = await listInventoryItems(validationResult.data, user.tenantId, user.userId);
+    const result = await listInventoryItems(
+      { ...validationResult.data, lightweight: queryParams.lightweight },
+      user.tenantId,
+      user.userId,
+    );
 
     return NextResponse.json(successResponse(result));
   } catch (error) {
@@ -67,10 +87,9 @@ async function getHandler(req, user) {
       return NextResponse.json(handleMongoError(error), { status: 400 });
     }
 
-    return NextResponse.json(
-      errorResponse('Failed to fetch inventory items', 'INTERNAL_ERROR'),
-      { status: 500 }
-    );
+    return NextResponse.json(errorResponse('Failed to fetch inventory items', 'INTERNAL_ERROR'), {
+      status: 500,
+    });
   }
 }
 
@@ -84,10 +103,9 @@ async function postHandler(req, user) {
 
     const validationResult = createInventoryItemSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        validationErrorResponse(validationResult.error.errors),
-        { status: 400 }
-      );
+      return NextResponse.json(validationErrorResponse(validationResult.error.errors), {
+        status: 400,
+      });
     }
 
     const item = await createInventoryItem(validationResult.data, user.tenantId, user.userId);
@@ -103,7 +121,7 @@ async function postHandler(req, user) {
         unit: item.unit,
         createdAt: item.createdAt,
       }),
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     // Error handling is done by withErrorHandler middleware
@@ -124,12 +142,8 @@ async function postHandler(req, user) {
  */
 export const GET = withErrorHandler(
   withRequestLogger(
-    apiRateLimit(
-      withAuth(
-        requirePermission(RESOURCES.INVENTORY, ACTIONS.READ)(getHandler)
-      )
-    )
-  )
+    apiRateLimit(withAuth(requirePermission(RESOURCES.INVENTORY, ACTIONS.READ)(getHandler))),
+  ),
 );
 
 /**
@@ -145,11 +159,6 @@ export const GET = withErrorHandler(
  */
 export const POST = withErrorHandler(
   withRequestLogger(
-    apiRateLimit(
-      withAuth(
-        requirePermission(RESOURCES.INVENTORY, ACTIONS.CREATE)(postHandler)
-      )
-    )
-  )
+    apiRateLimit(withAuth(requirePermission(RESOURCES.INVENTORY, ACTIONS.CREATE)(postHandler))),
+  ),
 );
-

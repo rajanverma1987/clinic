@@ -1,544 +1,656 @@
-# Full Platform Point-to-Point Report
+# Enterprise Dashboard Plan
 
-**Document version:** 1.0  
-**Scope:** Clinic Management Platform (Clinic App + Website)  
-**Source of truth:** CursorMD/New (clinic-complete-specification.md, clinic-dashboard-architecture.mermaid, database-schema.mermaid, realtime-caching-strategy.md)
+> Based on actual code analysis. Every fix targets a confirmed real problem.
 
 ---
 
-## 1. Executive Summary
+## WHAT'S ACTUALLY WRONG (root cause analysis)
 
-The platform is a **multi-tenant clinic management system** with two main applications:
+### Problem 1 — 9 HTTP requests on every dashboard mount
 
-| Application    | Purpose                                                                                                                                                                           | Users                                                        |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Clinic App** | Dashboard for clinic staff (Super Admin, Doctor, Admin, Manager, staff roles). Appointments, patients, prescriptions, billing, inventory, reports, queue, telemedicine, settings. | Clinic staff only (no patient self-service in current scope) |
-| **Website**    | Marketing site: About, Contact, Pricing, Blog, Legal (Terms, Privacy), Support.                                                                                                   | Public + clinic staff (login/register links)                 |
+Your dashboard page calls two hooks:
 
-**Key characteristics:**
+- `useDashboardStats` → 1 request to `/dashboard/summary`
+- `useDashboardLists` → 8 requests via `Promise.allSettled`
 
-- **Multi-tenant:** All data scoped by `tenantId` (except platform-level entities like Specialty, BlogPost, FAQ, Banner, ContentPage).
-- **Role-based access:** Super Admin (full system), Doctor (clinic owner), Admin (full clinic operations), Manager (limited), plus Nurse, Receptionist, Accountant, Pharmacist.
-- **API-first:** All features exposed via REST APIs; future mobile apps can consume the same APIs.
-- **Real-time:** Socket.IO + Redis pub/sub for live updates (queue, appointments, notifications).
-- **Compliance:** HIPAA/GDPR-aware; PHI encrypted; audit logs; no PHI in logs/URLs/notifications.
+**Total: 9 requests fired simultaneously on every mount.**
+Even though `Promise.allSettled` runs them in parallel client-side, the server handles 9 separate DB queries per user per page load.
+
+### Problem 2 — Your batch route is slower than direct calls
+
+`/api/batch` receives a POST, then makes **HTTP fetch calls from the Next.js server back to itself** (same process). This adds: one extra HTTP parse, one extra TCP round-trip, auth header forwarding overhead. It's slower than calling DB directly.
+
+### Problem 3 — `useDashboardStats` has zero caching
+
+`useDashboardLists` has `dashboardCache` (cache-first on return visit). `useDashboardStats` has nothing — every mount, every tab switch, every navigation back to dashboard hits `/dashboard/summary` cold.
+
+### Problem 4 — SWR config is wasted
+
+`Providers.jsx` has a well-configured SWR setup with deduplication, retry backoff, etc. Neither dashboard hook uses SWR. You get zero benefit from that config for the dashboard.
+
+### Problem 5 — `preloadCriticalData` in layout + hooks both fetch = duplicate requests
+
+`DashboardLayout` calls `preloadCriticalData` on mount. Then the dashboard page mounts and both hooks also fetch. If preload and hook fetches aren't deduplicated (and they aren't — different call sites, different timing), you get double fetches.
+
+### Problem 6 — `revalidateOnFocus: true` in SWR config
+
+For a clinic dashboard, refetching everything when a user switches browser tabs is wrong. A doctor switching to Gmail and back shouldn't hammer your DB.
+
+### Problem 7 — `useDashboardLists` fetches 8 endpoints every 60s (inherited from stats polling)
+
+Stats polls every 60s. But lists don't poll — they only fetch on mount and manual refresh. However the polling in stats triggers re-renders that can cause downstream effects. More importantly: 8 separate DB queries for lists means your MongoDB gets hit with 8 queries per user per page load with no aggregation.
 
 ---
 
-## 2. System Context Diagram
+## THE ENTERPRISE FIX — 3 layers
 
-```mermaid
-flowchart TB
-    subgraph EXTERNAL
-        PATIENT[Patient / Public]
-        PAYMENT_GW[Payment Gateways<br/>Stripe, PayPal]
-        SMS_PROVIDER[SMS Provider]
-        EMAIL_PROVIDER[Email / SMTP]
-    end
-
-    subgraph PLATFORM["Clinic Platform"]
-        subgraph APPS["Applications"]
-            CLINIC_APP[Clinic App<br/>Next.js App Router]
-            WEBSITE[Website<br/>Next.js Marketing]
-        end
-
-        subgraph BACKEND["Backend"]
-            API[REST API<br/>Next.js Route Handlers]
-            WS[WebSocket Server<br/>Socket.IO]
-            REDIS[(Redis<br/>Cache + Pub/Sub)]
-            MONGODB[(MongoDB<br/>Primary Data Store)]
-            STORAGE[File Storage]
-        end
-    end
-
-    PATIENT --> WEBSITE
-    PATIENT --> CLINIC_APP
-    CLINIC_APP --> API
-    CLINIC_APP --> WS
-    API --> MONGODB
-    API --> REDIS
-    API --> STORAGE
-    API --> PAYMENT_GW
-    API --> SMS_PROVIDER
-    API --> EMAIL_PROVIDER
-    WS --> REDIS
-    WS --> MONGODB
+```
+Layer 1: Server  — Single aggregated MongoDB query replaces 8 separate queries
+Layer 2: API     — New /api/dashboard/all endpoint returns everything in one response
+Layer 3: Client  — Single unified hook with SWR, proper caching, smart revalidation
 ```
 
 ---
 
-## 3. High-Level Architecture
+## FIX 1 — Create a single dashboard aggregation API endpoint
 
-```mermaid
-flowchart TB
-    subgraph ROLES["User Roles"]
-        SA[Super Admin]
-        DOC[Doctor]
-        ADM[Admin]
-        MGR[Manager]
-        STAFF[Staff: Nurse, Receptionist, Accountant, Pharmacist]
-    end
+**Create file:** `apps/clinic/app/api/dashboard/all/route.js`
 
-    subgraph CLINIC_APP["Clinic App (Next.js)"]
-        PAGES[Pages / App Router]
-        LAYOUT[Layout + Sidebar]
-        AUTH[Auth Context]
-        FEATURES[Feature Context]
-        PERMS[Permission Matrix]
-    end
+This replaces all 8 list fetches AND the stats fetch with one endpoint that runs everything in parallel at the DB level — not the HTTP level.
 
-    subgraph API_LAYER["API Layer"]
-        AUTH_API[/api/auth]
-        CLINIC_API[/api/patients, appointments, prescriptions, invoices, ...]
-        ADMIN_API[/api/admin/*]
-        SETTINGS_API[/api/settings]
-        REPORTS_API[/api/reports]
-    end
+```js
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth/middleware';
+import { connectDB } from '@/lib/db/mongoose';
+import { getTenantId } from '@/lib/auth/tenant';
 
-    subgraph DATA["Data & Real-Time"]
-        MONGO[(MongoDB)]
-        REDIS[(Redis)]
-        SOCKET[Socket.IO]
-    end
+// Import your existing service/model functions
+// Adjust these imports to match your actual lib structure
+async function getDashboardAll(tenantId, userId, role) {
+  await connectDB();
 
-    ROLES --> PAGES
-    PAGES --> LAYOUT
-    AUTH --> PERMS
-    FEATURES --> PERMS
-    PAGES --> API_LAYER
-    API_LAYER --> MONGO
-    API_LAYER --> REDIS
-    SOCKET --> REDIS
-    CLINIC_APP --> SOCKET
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart.getTime() + 86400000);
+  const oneHourLater = new Date(now.getTime() + 3600000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+
+  // Run ALL queries in parallel at the DB level — one connection, many queries
+  // Replace these with your actual Mongoose model imports and queries
+  const [
+    statsResult,
+    todayAppointments,
+    recentPatients,
+    overdueInvoices,
+    lowStock,
+    queueItems,
+    expiringLots,
+    pendingRequests,
+    chartRevenue,
+    chartAppointments,
+    chartPatients,
+  ] = await Promise.allSettled([
+    // Stats — your existing /dashboard/summary logic
+    import('@/models/Appointment').then(({ default: Appt }) =>
+      Promise.all([
+        Appt.countDocuments({ tenantId, appointmentDate: { $gte: todayStart, $lt: todayEnd } }),
+        Appt.countDocuments({
+          tenantId,
+          status: 'completed',
+          appointmentDate: { $gte: todayStart, $lt: todayEnd },
+        }),
+        Appt.countDocuments({ tenantId, status: 'pending' }),
+      ]),
+    ),
+    // Today appointments
+    import('@/models/Appointment').then(({ default: Appt }) =>
+      Appt.find({ tenantId, appointmentDate: { $gte: todayStart, $lt: todayEnd } })
+        .limit(10)
+        .sort({ startTime: 1 })
+        .lean(),
+    ),
+    // Recent patients
+    import('@/models/Patient').then(({ default: Patient }) =>
+      Patient.find({ tenantId }).sort({ createdAt: -1 }).limit(5).lean(),
+    ),
+    // Overdue invoices
+    import('@/models/Invoice').then(({ default: Invoice }) =>
+      Invoice.find({ tenantId, status: 'pending', dueDate: { $lt: now } })
+        .limit(5)
+        .sort({ dueDate: 1 })
+        .lean(),
+    ),
+    // Low stock
+    import('@/models/InventoryItem').then(({ default: Item }) =>
+      Item.find({ tenantId, $expr: { $lte: ['$quantity', '$reorderPoint'] } })
+        .limit(5)
+        .lean(),
+    ),
+    // Queue
+    import('@/models/Queue').then(({ default: Queue }) =>
+      Queue.find({ tenantId, status: { $in: ['waiting', 'in_progress'] } })
+        .limit(100)
+        .lean(),
+    ),
+    // Expiring lots
+    import('@/models/InventoryLot').then(({ default: Lot }) => {
+      const thirtyDaysFromNow = new Date(now.getTime() + 30 * 86400000);
+      return Lot.find({ tenantId, expiryDate: { $lte: thirtyDaysFromNow, $gte: now } })
+        .limit(5)
+        .lean();
+    }),
+    // Pending appointment requests
+    import('@/models/Appointment').then(({ default: Appt }) =>
+      Appt.find({ tenantId, status: 'pending' }).limit(5).sort({ createdAt: -1 }).lean(),
+    ),
+    // Chart: revenue last 14 days — aggregate
+    import('@/models/Invoice').then(({ default: Invoice }) =>
+      Invoice.aggregate([
+        { $match: { tenantId, status: 'paid', createdAt: { $gte: thirtyDaysAgo } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            value: { $sum: '$total' },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+    ),
+    // Chart: appointments last 14 days
+    import('@/models/Appointment').then(({ default: Appt }) =>
+      Appt.aggregate([
+        { $match: { tenantId, createdAt: { $gte: thirtyDaysAgo } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            value: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+    ),
+    // Chart: new patients last 14 days
+    import('@/models/Patient').then(({ default: Patient }) =>
+      Patient.aggregate([
+        { $match: { tenantId, createdAt: { $gte: thirtyDaysAgo } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            value: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+    ),
+  ]);
+
+  // Helper: safely extract value or return fallback
+  const val = (result, fallback) => (result.status === 'fulfilled' ? result.value : fallback);
+
+  // Build stats
+  const [todayCount, completedToday, pendingCount] = val(statsResult, [0, 0, 0]);
+  const queue = val(queueItems, []);
+
+  return {
+    stats: {
+      todayAppointments: todayCount,
+      completedToday,
+      pendingAppointments: pendingCount,
+      queueActive: queue.filter((q) => q.status === 'waiting' || q.status === 'in_progress').length,
+      queueWaiting: queue.filter((q) => q.status === 'waiting').length,
+      lastUpdated: now.toISOString(),
+    },
+    lists: {
+      todayAppointments: val(todayAppointments, []),
+      recentPatients: val(recentPatients, []),
+      overdueInvoices: val(overdueInvoices, []),
+      lowStockItems: val(lowStock, []),
+      queueStatus: {
+        active: queue.filter((q) => q.status === 'waiting' || q.status === 'in_progress').length,
+        waiting: queue.filter((q) => q.status === 'waiting').length,
+        inProgress: queue.filter((q) => q.status === 'in_progress').length,
+      },
+      expiringLots: val(expiringLots, []),
+      appointmentRequests: val(pendingRequests, []),
+    },
+    charts: {
+      revenue: val(chartRevenue, []),
+      appointments: val(chartAppointments, []),
+      patients: val(chartPatients, []),
+    },
+    meta: {
+      fetchedAt: now.toISOString(),
+      role,
+    },
+  };
+}
+
+export const GET = withAuth(async (req, { user }) => {
+  try {
+    const tenantId = getTenantId(user);
+    const data = await getDashboardAll(tenantId, user.userId, user.role);
+
+    return NextResponse.json(
+      { success: true, data },
+      {
+        headers: {
+          // Private cache — CDN won't cache, but browser will for 30s
+          'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+        },
+      },
+    );
+  } catch (err) {
+    console.error('Dashboard all endpoint error:', err);
+    return NextResponse.json(
+      { success: false, error: { message: 'Failed to load dashboard' } },
+      { status: 500 },
+    );
+  }
+});
+```
+
+> **Note:** Replace model import paths (`@/models/Appointment` etc.) with your actual model paths. Run `find apps/clinic/models -name "*.js" | sort` to see your real model files.
+
+---
+
+## FIX 2 — Replace both hooks with one unified SWR hook
+
+**Create file:** `apps/clinic/app/dashboard/hooks/useDashboard.js`
+
+This replaces `useDashboardStats.js` AND `useDashboardLists.js` entirely.
+
+```js
+/**
+ * useDashboard — single unified dashboard hook
+ * - One HTTP request replaces 9
+ * - SWR handles caching, deduplication, background revalidation
+ * - Realtime socket events trigger targeted revalidation
+ * - Cache-first on return navigation (keepPreviousData)
+ */
+import { apiClient } from '@/lib/api/client';
+import { onRealtimeEvent } from '@/lib/realtime/realtime-client';
+import { useEffect } from 'react';
+import useSWR from 'swr';
+
+const fetcher = () =>
+  apiClient.get('/dashboard/all').then((res) => {
+    if (!res.data?.success) throw new Error('Dashboard fetch failed');
+    return res.data.data;
+  });
+
+// Events that should trigger a background revalidation (not a loading state)
+const REVALIDATE_EVENTS = [
+  'appointment:created',
+  'appointment:updated',
+  'appointment:cancelled',
+  'payment:received',
+  'payment:failed',
+  'queue:updated',
+  'patient:created',
+  'dashboard-events',
+];
+
+export function useDashboard({ enabled = true } = {}) {
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    enabled ? '/api/dashboard/all' : null,
+    fetcher,
+    {
+      // Show stale data immediately on return navigation — zero loading flash
+      keepPreviousData: true,
+
+      // Background refresh every 90s — only when tab is visible
+      refreshInterval: (data) => (document.hidden ? 0 : 90000),
+
+      // Don't refetch just because user switched browser tabs
+      revalidateOnFocus: false,
+
+      // Do revalidate when network reconnects (doctor was offline)
+      revalidateOnReconnect: true,
+
+      // Deduplicate — if two components call this hook, only one fetch fires
+      dedupingInterval: 15000,
+
+      // Don't retry on auth errors
+      shouldRetryOnError: (err) => err?.status !== 401 && err?.status !== 403,
+    },
+  );
+
+  // Subscribe to realtime events — trigger silent background revalidation
+  useEffect(() => {
+    if (!enabled) return;
+
+    const unsubs = REVALIDATE_EVENTS.map((event) =>
+      onRealtimeEvent(event, () => {
+        // mutate() with no args = background revalidate, no loading spinner
+        mutate();
+      }),
+    );
+
+    return () => unsubs.forEach((fn) => fn());
+  }, [enabled, mutate]);
+
+  // Convenience: optimistic queue removal (instant UI, no waiting for server)
+  const removeFromQueue = (id) => {
+    mutate(
+      (current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          lists: {
+            ...current.lists,
+            queueStatus: {
+              ...current.lists.queueStatus,
+              waiting: Math.max(0, current.lists.queueStatus.waiting - 1),
+              active: Math.max(0, current.lists.queueStatus.active - 1),
+            },
+          },
+        };
+      },
+      { revalidate: false }, // don't refetch, just update local state
+    );
+  };
+
+  return {
+    // Stats (previously from useDashboardStats)
+    stats: data?.stats ?? null,
+    statsLoading: isLoading,
+
+    // Lists (previously from useDashboardLists)
+    todayAppointments: data?.lists?.todayAppointments ?? [],
+    recentPatients: data?.lists?.recentPatients ?? [],
+    overdueInvoices: data?.lists?.overdueInvoices ?? [],
+    lowStockList: data?.lists?.lowStockItems ?? [],
+    queueStatus: data?.lists?.queueStatus ?? { active: 0, waiting: 0, inProgress: 0 },
+    expiringLots: data?.lists?.expiringLots ?? [],
+    appointmentRequests: data?.lists?.appointmentRequests ?? [],
+
+    // Charts (previously from useDashboardCharts)
+    chartData: data?.charts ?? { revenue: [], appointments: [], patients: [] },
+    chartsLoading: isLoading,
+
+    // Unified loading/error state
+    loading: isLoading,
+    isRefreshing: isValidating && !isLoading, // background refresh, not initial load
+    error,
+
+    // Actions
+    refresh: () => mutate(),
+    removeFromQueue,
+  };
+}
 ```
 
 ---
 
-## 4. Application Structure
+## FIX 3 — Update `apps/clinic/app/dashboard/page.jsx`
 
-### 4.1 Monorepo Layout
+Replace the two hook calls at the top of the dashboard page:
 
-```
-clinic/
-├── apps/
-│   ├── clinic/          # Clinic dashboard (staff-only)
-│   │   ├── app/         # Next.js App Router
-│   │   ├── components/
-│   │   ├── contexts/
-│   │   ├── lib/
-│   │   ├── models/
-│   │   ├── services/
-│   │   ├── middleware/
-│   │   └── public/
-│   └── website/         # Marketing website
-│       ├── app/
-│       └── components/
-├── packages/            # Shared (if any)
-└── CursorMD/            # Specs & docs
+```js
+// BEFORE — delete these two lines
+const { stats, loading: statsLoading, error: statsError } = useDashboardStats();
+const { todayAppointments, recentPatients, ... loading: listsLoading } = useDashboardLists();
+
+// AFTER — one line replaces both
+const {
+  stats, statsLoading,
+  todayAppointments, recentPatients, overdueInvoices, lowStockList,
+  queueStatus, expiringLots, appointmentRequests,
+  chartData, chartsLoading,
+  loading, isRefreshing, error,
+  refresh,
+} = useDashboard();
 ```
 
-### 4.2 Clinic App – Route Structure
+Then update all `listsLoading` references → `loading`, and `chartsLoading` stays as-is.
 
-| Segment                                                       | Purpose                                                                                       |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `/`                                                           | Landing / redirect (e.g. to login or dashboard)                                               |
-| `/login`, `/register`                                         | Auth                                                                                          |
-| `/dashboard`                                                  | Main dashboard (role-specific widgets)                                                        |
-| `/appointments`, `/appointments/new`, `/appointments/[id]`    | Appointments                                                                                  |
-| `/patients`, `/patients/[id]`                                 | Patient management                                                                            |
-| `/prescriptions`, `/prescriptions/new`, `/prescriptions/[id]` | Prescriptions                                                                                 |
-| `/invoices`, `/invoices/new`, `/invoices/[id]`                | Invoicing                                                                                     |
-| `/queue`                                                      | Patient queue                                                                                 |
-| `/inventory`, `/inventory/items`, `/inventory/lots`           | Inventory                                                                                     |
-| `/reports`                                                    | Reports & analytics                                                                           |
-| `/staff`                                                      | Staff management                                                                              |
-| `/settings`                                                   | Clinic settings (tabs: general, compliance, doctors, hours, queue, tax, SMTP, holidays, etc.) |
-| `/subscription`                                               | Tenant subscription (plans, return, cancel)                                                   |
-| `/telemedicine`, `/telemedicine/[id]`                         | Video consultations                                                                           |
-| `/admin`                                                      | **Super Admin only:** system dashboard                                                        |
-| `/admin/clients`                                              | Tenant management                                                                             |
-| `/admin/subscriptions`                                        | Subscription plans                                                                            |
-| `/admin/users`                                                | All users                                                                                     |
-| `/admin/content`                                              | **Tabs:** Specialties, Blog, FAQs, Static Pages, Banners                                      |
-| `/admin/financial`                                            | **Tabs:** Revenue, Disputes, Settlements, Commission, Invoicing                               |
-| `/admin/patients`, `/admin/appointments`, `/admin/doctors`    | Admin views                                                                                   |
-| `/admin/reports`, `/admin/analytics`, `/admin/activity-logs`  | Admin reports & logs                                                                          |
-| `/admin/settings`, `/admin/create-admin`                      | Admin settings & create admin                                                                 |
+Add a subtle refresh indicator for background revalidation:
 
-### 4.3 Website – Route Structure
-
-| Route                          | Purpose        |
-| ------------------------------ | -------------- |
-| `/`                            | Home           |
-| `/about`, `/contact`           | Static pages   |
-| `/pricing`                     | Pricing plans  |
-| `/blog`, `/blog/[slug]`        | Blog           |
-| `/legal`                       | Legal hub      |
-| `/terms`, `/privacy`           | Terms, Privacy |
-| `/support`, `/support/contact` | Support        |
-
----
-
-## 5. Role & Permission Matrix (Summary)
-
-| Role                     | Scope         | Key Capabilities                                                                                     |
-| ------------------------ | ------------- | ---------------------------------------------------------------------------------------------------- |
-| **Super Admin**          | Platform-wide | All clinics, subscriptions, system logs, admin content/financial, create admin                       |
-| **Doctor**               | Single tenant | Full clinic: appointments, patients, prescriptions, billing, staff, settings, assign Admin/Manager   |
-| **Admin (Clinic Admin)** | Single tenant | Full clinic operations; edit settings, billing, staff (add/edit/delete); cannot assign Admin/Manager |
-| **Manager**              | Single tenant | View appointments, add/edit patients, book, basic billing, view reports, reception tasks             |
-| **Staff**                | Single tenant | Nurse, Receptionist, Accountant, Pharmacist – permissions per clinic-complete-specification.md       |
-
-Permission checks use `lib/permissions/constants.js` (RESOURCES, ACTIONS, PERMISSIONS) and `lib/permissions/cursor-md-matrix.js` (e.g. `canEditClinicSettings`, `canAssignAdminManager`). All API routes enforce auth and role/resource checks.
-
----
-
-## 6. Data Model (Entities)
-
-```mermaid
-erDiagram
-    Tenant ||--o{ User : "has"
-    Tenant ||--o{ Patient : "has"
-    Tenant ||--o{ Appointment : "schedules"
-    Tenant ||--o{ Invoice : "billing"
-    Tenant ||--o{ Prescription : "prescribes"
-    Tenant ||--o{ Queue : "manages"
-    Tenant ||--o{ Subscription : "subscribes"
-
-    User ||--o{ Appointment : "doctor"
-    Patient ||--o{ Appointment : "books"
-    Appointment ||--o{ ClinicalNote : "generates"
-    Appointment ||--o{ Invoice : "billing"
-
-    Patient ||--o{ Prescription : "receives"
-    Patient ||--o{ Invoice : "receives"
-    Invoice ||--o{ Payment : "receives"
-
-    Tenant {
-        ObjectId _id PK
-        string name
-        string slug
-        string region
-        json settings
-        boolean isActive
-    }
-
-    User {
-        ObjectId _id PK
-        ObjectId tenantId FK
-        string email UK
-        string role
-        string firstName
-        string lastName
-        boolean isActive
-    }
-
-    Patient {
-        ObjectId _id PK
-        ObjectId tenantId FK
-        string name
-        string phone
-        string email
-        date dob
-        json medicalHistory
-    }
-
-    Appointment {
-        ObjectId _id PK
-        ObjectId tenantId FK
-        ObjectId patientId FK
-        ObjectId doctorId FK
-        datetime start
-        string status
-    }
-
-    Invoice {
-        ObjectId _id PK
-        ObjectId tenantId FK
-        ObjectId patientId FK
-        string invoiceNumber
-        decimal totalAmount
-        string status
-    }
-
-    Prescription {
-        ObjectId _id PK
-        ObjectId tenantId FK
-        ObjectId patientId FK
-        ObjectId doctorId FK
-        date prescribedDate
-    }
-
-    Queue {
-        ObjectId _id PK
-        ObjectId tenantId FK
-        ObjectId appointmentId FK
-        string status
-        number order
-    }
-```
-
-**Platform-level (no tenantId):** Specialty, BlogPost, FAQ, Banner, ContentPage, SubscriptionPlan, SystemSettings.  
-**Tenant-scoped (tenantId required):** User, Patient, Appointment, Invoice, Payment, Prescription, ClinicalNote, Queue, InventoryItem, LabOrder, Referral, TelemedicineSession, Subscription, etc.
-
----
-
-## 7. Point-to-Point Flows
-
-### 7.1 Authentication Flow
-
-```mermaid
-sequenceDiagram
-    participant U as User (Browser)
-    participant C as Clinic App
-    participant API as /api/auth/login
-    participant DB as MongoDB
-    participant JWT as JWT
-
-    U->>C: Enter email/password
-    C->>API: POST /api/auth/login { email, password }
-    API->>DB: Find user by email
-    DB-->>API: User + tenant
-    API->>API: Verify password (bcrypt)
-    API->>JWT: Sign access + refresh tokens
-    API-->>C: { success, data: { user, accessToken, refreshToken } }
-    C->>C: Store tokens, set user in AuthContext
-    C->>C: Redirect to /dashboard (or intended URL)
-```
-
-**Related APIs:** `/api/auth/login`, `/api/auth/refresh`, `/api/auth/me`, `/api/auth/logout`, `/api/auth/register`, `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/auth/change-password`, `/api/auth/2fa/*`, `/api/auth/oauth/*`.
-
----
-
-### 7.2 Appointment Lifecycle (Create → Check-in → Complete)
-
-```mermaid
-sequenceDiagram
-    participant Staff as Staff (Clinic App)
-    participant API as /api/appointments
-    participant DB as MongoDB
-    participant Queue as /api/queue
-    participant WS as Socket.IO
-
-    Staff->>API: POST /api/appointments { patientId, doctorId, start, ... }
-    API->>DB: Validate tenantId, create Appointment
-    DB-->>API: Appointment
-    API->>WS: Publish appointment:created (tenantId)
-    API-->>Staff: 201 { appointment }
-    Staff->>Queue: POST /api/queue { appointmentId } (when adding to queue)
-    Queue->>DB: Create/update Queue entry
-    Queue->>WS: Publish queue update
-    Staff->>API: PUT /api/appointments/[id]/status { status: checked_in }
-    API->>DB: Update status
-    API->>WS: Publish appointment:updated
-    Staff->>API: PUT /api/appointments/[id]/status { status: completed }
-    API->>DB: Update status
-    API->>WS: Publish appointment:completed
-```
-
-**APIs:** `GET/POST /api/appointments`, `GET/PUT /api/appointments/[id]`, `PUT /api/appointments/[id]/status`, `GET /api/appointments/slots`, `GET/POST/PUT /api/queue`, `GET/PUT /api/queue/[id]/status`.
-
----
-
-### 7.3 Billing Flow (Invoice → Payment)
-
-```mermaid
-sequenceDiagram
-    participant Staff as Staff
-    participant API as /api/invoices, /api/payments
-    participant DB as MongoDB
-    participant GW as Payment Gateway (Stripe/PayPal)
-
-    Staff->>API: POST /api/invoices { patientId, items, ... }
-    API->>DB: Create Invoice (tenantId)
-    API-->>Staff: 201 { invoice }
-    Staff->>API: POST /api/payments { invoiceId, amount, method }
-    alt method = card / online
-        API->>GW: Create payment intent
-        GW-->>API: Client secret / redirect
-        API-->>Staff: Payment pending (client completes on frontend)
-        Staff->>API: Webhook or confirm (Stripe/PayPal)
-    else method = cash / UPI
-        API->>DB: Create Payment, update Invoice balance
-        API-->>Staff: 201 { payment }
-    end
-    API->>DB: Update invoice status (paid/partial)
-```
-
-**APIs:** `GET/POST/PUT /api/invoices`, `GET/PUT /api/invoices/[id]`, `GET/POST /api/payments`, `POST /api/webhooks/stripe`, `POST /api/webhooks/paypal`.
-
----
-
-### 7.4 Prescription Flow
-
-```mermaid
-sequenceDiagram
-    participant Doctor as Doctor
-    participant API as /api/prescriptions
-    participant DB as MongoDB
-
-    Doctor->>API: POST /api/prescriptions { patientId, items[], ... }
-    API->>DB: Validate patient, create Prescription + items
-    API-->>Doctor: 201 { prescription }
-    Doctor->>API: PUT /api/prescriptions/[id]/sign (e-sign)
-    API->>DB: Mark signed
-    Doctor->>API: GET /api/prescriptions/[id]/print (PDF)
-```
-
-**APIs:** `GET/POST/PUT /api/prescriptions`, `GET/PUT /api/prescriptions/[id]`, `PUT /api/prescriptions/[id]/activate`, `PUT /api/prescriptions/[id]/sign`, `PUT /api/prescriptions/[id]/dispense`, `POST /api/prescriptions/check-interactions`.
-
----
-
-### 7.5 Super Admin – Content Management Flow
-
-```mermaid
-sequenceDiagram
-    participant SA as Super Admin
-    participant Content as /admin/content (tabs)
-    participant API as /api/admin/blog, faqs, banners, pages, specialties
-    participant DB as MongoDB
-
-    SA->>Content: Open Content tab (e.g. Blog)
-    Content->>API: GET /api/admin/blog
-    API->>DB: BlogPost.find() (no tenantId)
-    API-->>Content: { data: [posts] }
-    Content-->>SA: List + Add/Edit/Delete buttons
-    SA->>Content: Click Add / Edit
-    Content->>API: POST /api/admin/blog or PUT /api/admin/blog/[id]
-    API->>DB: Create/update BlogPost
-    API-->>Content: 201 / 200
-    Content->>API: GET /api/admin/blog (refetch list)
-```
-
-**Content tabs:** Specialties, Blog, FAQs, Static Pages, Banners. Each has list + create/update/delete via `/api/admin/specialties`, `/api/admin/blog`, `/api/admin/faqs`, `/api/admin/banners`, `/api/admin/pages`.
-
----
-
-### 7.6 Queue Flow
-
-```mermaid
-sequenceDiagram
-    participant Staff as Staff
-    participant App as Queue Page
-    participant API as /api/queue
-    participant WS as Socket.IO
-
-    Staff->>API: GET /api/queue (list by tenantId)
-    API-->>App: Queue entries
-    App->>App: Display list (call next, update status)
-    Staff->>API: PUT /api/queue/[id]/status { status: called }
-    API->>WS: Publish queue update
-    WS-->>App: Live update (other tabs/clients)
-```
-
-**APIs:** `GET/POST/PUT /api/queue`, `GET/PUT /api/queue/[id]`, `PUT /api/queue/[id]/status`.
-
----
-
-### 7.7 Dashboard Data Flow
-
-```mermaid
-sequenceDiagram
-    participant User as User
-    participant Dashboard as Dashboard Page
-    participant API as /api/dashboard/stats, /api/reports/*
-    participant Features as /api/features
-
-    User->>Dashboard: Open /dashboard
-    Dashboard->>Features: GET /api/features (tenantId)
-    Features-->>Dashboard: { features[] }
-    Dashboard->>Dashboard: Gate widgets by feature
-    Dashboard->>API: GET /api/dashboard/stats
-    API->>API: Aggregate (appointments, patients, revenue, ...)
-    API-->>Dashboard: Stats
-    Dashboard->>API: GET /api/reports/dashboard, /api/reports/revenue, ...
-    API-->>Dashboard: Charts & lists
-    Dashboard-->>User: Render widgets (overview, appointments, prescriptions, invoices, etc.)
+```jsx
+{
+  /* Add near the top of your dashboard JSX */
+}
+{
+  isRefreshing && (
+    <div
+      className='fixed top-4 right-4 z-50 flex items-center gap-2
+    bg-white dark:bg-slate-800 shadow-lg rounded-full px-3 py-1.5
+    text-xs text-slate-500 border border-slate-100 dark:border-slate-700'
+    >
+      <RefreshCwIcon className='icon icon-xs animate-spin' />
+      Syncing...
+    </div>
+  );
+}
 ```
 
 ---
 
-## 8. API Structure (Grouped)
+## FIX 4 — Fix SWR global config in `Providers.jsx`
 
-| Group                   | Path prefix                                                                                                      | Description                                                                                                                                                                                                    |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Auth**                | `/api/auth/*`                                                                                                    | login, logout, refresh, me, register, forgot-password, reset-password, change-password, 2fa, oauth                                                                                                             |
-| **Clinic core**         | `/api/patients`, `/api/appointments`, `/api/prescriptions`, `/api/invoices`, `/api/payments`                     | CRUD + nested routes                                                                                                                                                                                           |
-| **Queue**               | `/api/queue`                                                                                                     | List, create, update, status                                                                                                                                                                                   |
-| **Inventory**           | `/api/inventory/items`, `lots`, `batches`, `suppliers`, `transactions`                                           | Items, lots, batches, suppliers                                                                                                                                                                                |
-| **Reports**             | `/api/reports/dashboard`, `revenue`, `patients`, `appointments`, `departments`, `doctors`, `inventory`           | Analytics                                                                                                                                                                                                      |
-| **Settings**            | `/api/settings`                                                                                                  | GET/PUT tenant settings                                                                                                                                                                                        |
-| **Users & staff**       | `/api/users`, `/api/doctors`, `/api/departments`                                                                 | Staff management                                                                                                                                                                                               |
-| **Clinical**            | `/api/clinical-notes`, `/api/lab-orders`, `/api/lab-results`, `/api/lab-tests`, `/api/imaging`, `/api/referrals` | Clinical data                                                                                                                                                                                                  |
-| **Notifications**       | `/api/notifications`, `/api/notification-templates`, `/api/messages`                                             | Notifications & templates                                                                                                                                                                                      |
-| **Telemedicine**        | `/api/telemedicine/sessions`, `signaling`                                                                        | Video sessions & signaling                                                                                                                                                                                     |
-| **Subscription**        | `/api/subscriptions`, `/api/subscription-plans`, `/api/features`                                                 | Tenant subscription & feature flags                                                                                                                                                                            |
-| **Admin (Super Admin)** | `/api/admin/*`                                                                                                   | stats, clients, users, patients, appointments, doctors, content (blog, faqs, banners, pages, specialties), financial (revenue, disputes), analytics, activity-logs, settings, subscription-plans, ip-whitelist |
-| **GDPR**                | `/api/gdpr/export`, `delete`, `anonymize`, `rectify`                                                             | Data subject requests                                                                                                                                                                                          |
-| **Other**               | `/api/health`, `/api/search`, `/api/batch`, `/api/socket`, `/api/sse`, `/api/reminders/process`                  | Health, search, batch, real-time, reminders                                                                                                                                                                    |
+Change `revalidateOnFocus: true` → `false`. This is the single most impactful SWR config change for a clinic dashboard:
 
-All tenant-scoped APIs validate `tenantId` from the authenticated user; admin APIs enforce `role === 'super_admin'` where required.
+```js
+// apps/clinic/components/providers/Providers.jsx
+const swrOptions = {
+  revalidateOnFocus: false, // ← change from true to false
+  revalidateOnReconnect: true, // keep — good for offline recovery
+  dedupingInterval: 30000,
+  errorRetryCount: 3,
+  errorRetryInterval: 5000,
+  shouldRetryOnError: (err) => err?.status !== 401 && err?.status !== 403,
+  onErrorRetry: swrRetryWithBackoff,
+};
+```
+
+**Why:** With `revalidateOnFocus: true`, every time a doctor opens a patient chart, writes a prescription, or reads an email and comes back to the dashboard tab — it fires ALL SWR requests again. In a clinical setting, doctors switch tabs constantly.
 
 ---
 
-## 9. Real-Time & Caching
+## FIX 5 — Fix `DashboardLayout` preload to use SWR cache
 
-- **Socket.IO:** Authenticated connection; client subscribes by `tenantId` (and optionally entity). Server publishes events (e.g. `appointment:created`, `queue:updated`) via Redis pub/sub so all server instances receive them.
-- **Redis:** Cache for hot data (e.g. feature flags, session); pub/sub for Socket.IO scaling.
-- **Events (examples):** `appointment:created|updated|cancelled`, `patient:registered|updated`, `payment:received`, `queue:updated`, `notification:new`, `dashboard:refresh`.
+**File:** `apps/clinic/app/dashboard/layout.jsx`
 
-See `CursorMD/New/realtime-caching-strategy.md` for full event list and cache keys.
+The preload currently fetches but stores in a separate cache that SWR doesn't know about. Fix: use SWR's `mutate` to prime the cache.
+
+```js
+'use client';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { OfflineBanner } from '@/components/OfflineBanner';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@/lib/api/client';
+import { useEffect } from 'react';
+import { mutate } from 'swr';
+import './styles/dashboard.css';
+
+export default function DashboardLayout({ children }) {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user?.tenantId) return;
+
+    // Prime the SWR cache before the dashboard page mounts
+    // When dashboard page mounts and calls useDashboard(), SWR finds data already
+    // in cache → renders immediately with no loading state
+    mutate('/api/dashboard/all', () => apiClient.get('/dashboard/all').then((r) => r.data.data), {
+      revalidate: false, // don't re-fetch after priming
+      populateCache: true, // store result in SWR cache
+    });
+  }, [user?.tenantId]);
+
+  return (
+    <>
+      <OfflineBanner />
+      <ErrorBoundary>{children}</ErrorBoundary>
+    </>
+  );
+}
+```
+
+**Result:** Dashboard page mounts, calls `useDashboard()`, SWR cache already has data → **zero loading state on navigation to dashboard**.
 
 ---
 
-## 10. Security & Compliance
+## FIX 6 — Doctor-specific dashboard (avoids fetching clinic-only data)
 
-| Area                 | Implementation                                                                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Auth**             | JWT access + refresh; optional 2FA; OAuth (Google); magic link; rate limiting on auth routes                                                |
-| **Tenant isolation** | All queries filter by `tenantId`; admin APIs for Super Admin only                                                                           |
-| **PHI**              | No PHI in logs, URLs, or notifications; encrypt sensitive fields where required; audit logs for create/update/delete on sensitive resources |
-| **Input**            | Validation (e.g. Zod/Joi) on API inputs; sanitization to prevent injection                                                                  |
-| **RBAC**             | Permission matrix (RESOURCES × ACTIONS) per role; `requirePermission` and capability helpers (`canEditClinicSettings`, etc.) on API and UI  |
-| **GDPR**             | Export, delete, anonymize, rectify via `/api/gdpr/*`; consent tracking where applicable                                                     |
+Your dashboard has `isDoctor` checks. The new `/api/dashboard/all` endpoint should respect role:
 
----
+```js
+// In /api/dashboard/all/route.js — add role check
+const isDoctor = role === 'doctor';
 
-## 11. Tech Stack & Deployment
+// Only run these for non-doctors
+const [overdueInvoices, chartRevenue, chartAppointments, chartPatients] = isDoctor
+  ? [
+      Promise.resolve({ status: 'fulfilled', value: [] }),
+      Promise.resolve({ status: 'fulfilled', value: [] }),
+      Promise.resolve({ status: 'fulfilled', value: [] }),
+      Promise.resolve({ status: 'fulfilled', value: [] }),
+    ]
+  : await Promise.allSettled([
+      // ... invoice/chart queries
+    ]);
+```
 
-| Layer               | Technology                                                    |
-| ------------------- | ------------------------------------------------------------- |
-| **Frontend**        | Next.js (App Router), React, Tailwind CSS, Framer Motion      |
-| **Backend**         | Next.js Route Handlers (API routes), Node.js server           |
-| **Database**        | MongoDB (Mongoose models)                                     |
-| **Cache / Pub-Sub** | Redis                                                         |
-| **Real-time**       | Socket.IO                                                     |
-| **Auth**            | JWT, bcrypt, optional Passport/OAuth                          |
-| **File storage**    | Configurable (local or cloud)                                 |
-| **Payments**        | Stripe, PayPal (webhooks)                                     |
-| **i18n**            | Context-based; locales in `lib/i18n/locales` (en, ar, es, fr) |
-
-**Deployment:** Next.js app can be deployed to Vercel, Node server, or Docker; MongoDB and Redis as managed or self-hosted services.
+For doctors, pass `userId` filter to appointment queries so they only see their own patients.
 
 ---
 
-## 12. Document Index
+## FIX 7 — Add MongoDB indexes for dashboard queries
 
-| Section | Content                                                                                          |
-| ------- | ------------------------------------------------------------------------------------------------ |
-| §1      | Executive summary                                                                                |
-| §2      | System context diagram                                                                           |
-| §3      | High-level architecture                                                                          |
-| §4      | Application structure (monorepo, clinic routes, website routes)                                  |
-| §5      | Role & permission matrix summary                                                                 |
-| §6      | Data model (entities + diagram)                                                                  |
-| §7      | Point-to-point flows (auth, appointment, billing, prescription, admin content, queue, dashboard) |
-| §8      | API structure (grouped)                                                                          |
-| §9      | Real-time & caching                                                                              |
-| §10     | Security & compliance                                                                            |
-| §11     | Tech stack & deployment                                                                          |
+Run once in your MongoDB shell or as a migration script:
 
-For detailed permission matrix and feature specs, see **CursorMD/New/clinic-complete-specification.md**.  
-For dashboard and module architecture, see **CursorMD/New/clinic-dashboard-architecture.mermaid**.  
-For database schema, see **CursorMD/New/database-schema.mermaid**.  
-For real-time events and cache strategy, see **CursorMD/New/realtime-caching-strategy.md**.
+```js
+// apps/clinic/scripts/add-dashboard-indexes.js
+// Run: node apps/clinic/scripts/add-dashboard-indexes.js
+
+const mongoose = require('mongoose');
+require('dotenv').config({ path: 'apps/clinic/.env.local' });
+
+async function addIndexes() {
+  await mongoose.connect(process.env.MONGODB_URI);
+  const db = mongoose.connection.db;
+
+  // Appointments — most queried collection
+  await db
+    .collection('appointments')
+    .createIndex(
+      { tenantId: 1, appointmentDate: 1, status: 1 },
+      { background: true, name: 'dashboard_appt_date_status' },
+    );
+  await db
+    .collection('appointments')
+    .createIndex(
+      { tenantId: 1, status: 1, createdAt: -1 },
+      { background: true, name: 'dashboard_appt_status_created' },
+    );
+
+  // Invoices
+  await db
+    .collection('invoices')
+    .createIndex(
+      { tenantId: 1, status: 1, dueDate: 1 },
+      { background: true, name: 'dashboard_invoice_status_due' },
+    );
+
+  // Patients
+  await db
+    .collection('patients')
+    .createIndex(
+      { tenantId: 1, createdAt: -1 },
+      { background: true, name: 'dashboard_patient_created' },
+    );
+
+  // Queue
+  await db
+    .collection('queues')
+    .createIndex({ tenantId: 1, status: 1 }, { background: true, name: 'dashboard_queue_status' });
+
+  // Inventory
+  await db
+    .collection('inventoryitems')
+    .createIndex(
+      { tenantId: 1, quantity: 1, reorderPoint: 1 },
+      { background: true, name: 'dashboard_inventory_stock' },
+    );
+
+  console.log('✅ Dashboard indexes created');
+  await mongoose.disconnect();
+}
+
+addIndexes().catch(console.error);
+```
+
+---
+
+## FIX 8 — Delete the now-redundant old hooks
+
+After the new `useDashboard.js` is working and dashboard page is updated:
+
+```bash
+# These are now replaced by useDashboard.js
+# Only delete after confirming dashboard works with new hook
+rm apps/clinic/app/dashboard/hooks/useDashboardStats.js
+rm apps/clinic/app/dashboard/hooks/useDashboardLists.js
+# Keep useDashboardCharts.js only if used elsewhere, otherwise delete it too
+# Keep useDoctorDashboardStats.js and useDoctorDashboardLists.js until doctor dashboard is migrated
+```
+
+---
+
+## EXECUTION ORDER
+
+```
+Day 1 — Backend
+  1. Run: find apps/clinic/models -name "*.js" | sort
+     → Get your actual model file names
+  2. Create /api/dashboard/all/route.js with correct model imports
+  3. Test: curl -H "Authorization: Bearer <token>" http://localhost:5053/api/dashboard/all
+     → Should return { success: true, data: { stats, lists, charts } } in < 200ms
+
+Day 2 — Hook migration
+  4. Create useDashboard.js
+  5. Update dashboard/page.jsx to use useDashboard()
+  6. Update dashboard/layout.jsx to use SWR mutate for preload
+  7. Test: Open dashboard → Network tab → should see ONE request to /api/dashboard/all
+     → Navigate away → come back → should see ZERO requests (SWR cache hit)
+
+Day 3 — Config + cleanup
+  8. Fix SWR revalidateOnFocus in Providers.jsx
+  9. Run MongoDB index migration script
+  10. Delete old hooks after confirming everything works
+
+Day 4 — Verify
+  11. Open Chrome DevTools → Performance tab
+      Record dashboard load → should see < 3 network requests total
+  12. Check MongoDB slow query log: no query should take > 50ms
+  13. Navigate between pages 10x → dashboard should load instantly from cache
+```
+
+---
+
+## EXPECTED RESULTS
+
+| Metric                          | Before       | After                          |
+| ------------------------------- | ------------ | ------------------------------ |
+| HTTP requests on dashboard load | 9            | 1                              |
+| Requests on return navigation   | 9            | 0 (cache hit)                  |
+| DB queries per load             | 8–11         | 11 (parallel, same connection) |
+| Background tab revalidation     | Every focus  | Never                          |
+| Network tab switches wasted     | Every switch | None                           |
+| Dashboard load time (cold)      | ~800–1500ms  | ~150–300ms                     |
+| Dashboard load time (warm)      | ~800–1500ms  | ~0ms (instant)                 |
+
+---
+
+## IMPORTANT NOTES
+
+1. **Adjust model import paths** — the route file uses `@/models/Appointment` etc. Run `find apps/clinic/models -name "*.js"` to get your real paths and update accordingly.
+
+2. **Keep old hooks temporarily** — don't delete `useDashboardStats.js` and `useDashboardLists.js` until the new hook is confirmed working in production. You can run both in parallel during testing.
+
+3. **Doctor dashboard** — `useDoctorDashboardStats.js` and `useDoctorDashboardLists.js` are separate and should be migrated similarly after the clinic dashboard is done.
+
+4. **`withAuth` middleware** — use whatever auth wrapper your other route files use. Check `apps/clinic/app/api/appointments/route.js` for the pattern.
+
+5. **`getTenantId`** — use whatever function your other routes use to extract tenantId from the user object.

@@ -39,6 +39,19 @@ const TenantSchema = new Schema(
         type: Number,
         default: 30, // days
       },
+      /** Letterhead for prescriptions and payment receipts: logo URL, phone, structured address */
+      logo: { type: String, trim: true },
+      phone: { type: String, trim: true },
+      address: {
+        street: String,
+        city: String,
+        state: String,
+        zipCode: String,
+        country: String,
+      },
+      /** Payment receipt: optional tax ID and footer text (letterhead uses logo, name, address, phone) */
+      taxId: { type: String, trim: true },
+      receiptFooter: { type: String, trim: true },
       taxRules: {
         country: String,
         taxType: {

@@ -96,7 +96,6 @@ export const CACHE_STRATEGY = {
 // ─── 17. Webhook / Integration Routes ─────────────────────────────────────
 export const INTEGRATION_ROUTES = {
   inbound: [
-    { path: '/webhooks/stripe', provider: 'stripe', auth: 'signature' },
     { path: '/webhooks/twilio', provider: 'twilio', auth: 'basic' },
     { path: '/api/fhir/r4', standard: 'FHIR', auth: 'oauth2' },
   ],
@@ -277,7 +276,7 @@ export const COST_ALLOCATION = {
 // ─── 34. Dependency Health Checks ─────────────────────────────────────────
 export const HEALTH_CHECKS = {
   '/api/health/dependencies': {
-    checks: ['mongodb', 'redis', 'stripe', 'twilio', 'dicom-server'],
+    checks: ['mongodb', 'redis', 'twilio', 'dicom-server'],
     timeout: 5000,
     criticalDependencies: ['mongodb', 'redis'],
   },

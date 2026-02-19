@@ -59,28 +59,30 @@ export function NextPatientCard({
           </h2>
         </div>
 
-        {/* Patient Info */}
+        {/* Patient Info — gradient hero header */}
         <div className='mb-4'>
-          <div className='flex items-center justify-between gap-3 mb-4'>
-            <div className='flex items-center gap-3 flex-1'>
-              <div className='w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 border-2 border-primary-200'>
-                <span className='text-primary-600 font-semibold text-lg'>{initials}</span>
+          <div className='relative -mx-4 -mt-4 mb-4 px-4 pt-4 pb-4 rounded-t-xl overflow-hidden bg-gradient-to-br from-primary-600 to-indigo-700'>
+            {/* Decorative orb */}
+            <div className='absolute top-0 right-0 w-28 h-28 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none' />
+            <div className='relative flex items-center justify-between gap-3'>
+              <div className='flex items-center gap-3 flex-1 min-w-0'>
+                <div className='w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border-2 border-white/30 shadow-lg'>
+                  <span className='text-white font-bold text-lg'>{initials}</span>
+                </div>
+                <div className='flex-1 min-w-0'>
+                  <h3 className='text-base font-semibold text-white leading-tight truncate'>
+                    {patientName}
+                  </h3>
+                  <p className='text-primary-200 text-xs mt-0.5 truncate'>{reason}</p>
+                </div>
               </div>
-              <div className='flex-1'>
-                <h3 className='text-body-md font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
-                  {patientName}
-                </h3>
-                <p className='text-body-xs text-neutral-600 dark:text-neutral-400'>{reason}</p>
+              {/* Patient ID */}
+              <div className='text-right flex-shrink-0'>
+                <span className='text-primary-200 text-[10px] uppercase tracking-wider block'>
+                  {t('dashboard.patientIdLabel')}
+                </span>
+                <p className='text-white text-xs font-semibold font-mono mt-0.5'>{patientId}</p>
               </div>
-            </div>
-            {/* Patient ID - Right aligned */}
-            <div className='text-right flex-shrink-0'>
-              <span className='text-body-xs text-neutral-500 dark:text-neutral-400 block'>
-                {t('dashboard.patientIdLabel')}
-              </span>
-              <p className='text-body-xs font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
-                {patientId}
-              </p>
             </div>
           </div>
 

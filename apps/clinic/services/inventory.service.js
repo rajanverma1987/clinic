@@ -250,6 +250,17 @@ export async function listInventoryItems(query, tenantId, userId) {
     ];
   }
 
+  // Lightweight list: no $lookup, minimal fields, cap 500 — for dropdowns (e.g. prescription medicines)
+  if (query.lightweight) {
+    const cap = Math.min(500, parseInt(query.limit, 10) || 500);
+    const items = await InventoryItem.find(filter)
+      .select('_id name brandName genericName form strength type')
+      .sort({ name: 1 })
+      .limit(cap)
+      .lean();
+    return createPaginationResult(items, items.length, 1, items.length);
+  }
+
   // Early return optimization: Quick check if any items exist
   const hasItems = await InventoryItem.countDocuments(filter);
   if (hasItems === 0) {

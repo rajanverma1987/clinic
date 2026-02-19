@@ -85,7 +85,8 @@ export default function AdminPatientsPage() {
       if (res.success) {
         setDoctors(extractArrayData(res) || []);
       }
-    } catch (_) {
+    } catch (err) {
+      logger.warn('Failed to fetch doctors list:', err);
       setDoctors([]);
     }
   }, []);

@@ -124,7 +124,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const prefetchOnHover = useCallback((href) => () => router.prefetch(href), [router]);
   const { t } = useI18n();
@@ -361,7 +361,12 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
     return item.requiredFeature === null || featuresLoading || hasFeature(item.requiredFeature);
   };
 
-  const visibleClinicItems = user?.role === 'super_admin' ? [] : allClinicItems.filter(canShowItem);
+  // Until auth has loaded, show only Dashboard to avoid flash of tabs that disappear for doctor/manager
+  const visibleClinicItems = authLoading
+    ? allClinicItems.filter((item) => item.href === '/dashboard')
+    : user?.role === 'super_admin'
+      ? []
+      : allClinicItems.filter(canShowItem);
 
   const itemsBySection = (section) => visibleClinicItems.filter((item) => item.section === section);
 

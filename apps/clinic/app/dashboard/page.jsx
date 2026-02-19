@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckIcon, ChevronRightIcon, StarIcon, XIcon } from '@/components/icons';
+import { CheckIcon, ChevronRightIcon, RefreshCwIcon, StarIcon, XIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProfilerWrapper } from '@/components/ProfilerWrapper';
@@ -16,6 +16,7 @@ import { useUpdatesAvailable } from '@/hooks/useUpdatesAvailable';
 import { apiClient } from '@/lib/api/client';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess, showWarning } from '@/lib/utils/toast';
 import nextDynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -61,24 +62,26 @@ const CriticalAlerts = nextDynamic(
   { loading: () => <CardSkeleton count={2} />, ssr: false },
 );
 
-// Custom hooks – SWR for clinic (real-time + 30s poll), existing for doctor
+// Clinic: single useDashboard() → /api/dashboard/all. Doctor: useDoctorDashboardStats/Lists.
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
-import {
-  useDashboardChartsSWR,
-  useDashboardListsSWR,
-  useDashboardStatsSWR,
-} from '@/hooks/useSWRDashboard';
 import { canViewRevenueReports } from '@/lib/permissions/cursor-md-matrix';
 import { TabBar } from './_components/TabBar';
 import { TabContent } from './_components/TabContent';
 import { AppointmentsTab } from './_tabs/AppointmentsTab';
+import { KPIDashboardTab } from './_tabs/KPIDashboardTab';
 import { OverviewTab } from './_tabs/OverviewTab';
 import { PrescriptionsTab } from './_tabs/PrescriptionsTab';
 import { AppointmentsListWithHook } from './components/AppointmentsList';
-import { useDashboardStats } from './hooks/useDashboardStats';
-import { ActionsSection, AlertsSection, KPISection, TablesSection, TrendsSection } from './sections';
+import { useDashboard } from './hooks/useDashboard';
 import { useDoctorDashboardLists } from './hooks/useDoctorDashboardLists';
 import { useDoctorDashboardStats } from './hooks/useDoctorDashboardStats';
+import {
+  ActionsSection,
+  AlertsSection,
+  KPISection,
+  TablesSection,
+  TrendsSection,
+} from './sections';
 
 /* Dashboard styles loaded by app/dashboard/layout.jsx for reliable load on client nav */
 
@@ -91,11 +94,14 @@ export default function DashboardPage() {
   const { open: openConfirm } = useConfirmation();
   const tenantId = user?.tenantId ?? null;
 
-  // Tab state: ?tab=overview|appointments|prescriptions; no redirect. TabBar + TabContent render in-page.
+  // Tab state: ?tab=overview|kpi|appointments|prescriptions; no redirect. TabBar + TabContent render in-page.
   // Use local state for instant switching, sync with URL
   const urlTab = searchParams?.get('tab') || 'overview';
   const [activeTab, setActiveTab] = useState(
-    urlTab === 'overview' || urlTab === 'appointments' || urlTab === 'prescriptions'
+    urlTab === 'overview' ||
+      urlTab === 'kpi' ||
+      urlTab === 'appointments' ||
+      urlTab === 'prescriptions'
       ? urlTab
       : 'overview',
   );
@@ -103,22 +109,16 @@ export default function DashboardPage() {
   // Sync local state with URL changes (e.g., browser back/forward)
   useEffect(() => {
     const normalizedUrlTab =
-      urlTab === 'overview' || urlTab === 'appointments' || urlTab === 'prescriptions'
+      urlTab === 'overview' ||
+      urlTab === 'kpi' ||
+      urlTab === 'appointments' ||
+      urlTab === 'prescriptions'
         ? urlTab
         : 'overview';
     if (normalizedUrlTab !== activeTab) {
       setActiveTab(normalizedUrlTab);
     }
   }, [urlTab]);
-
-  // Smooth scroll to top when user changes tab (not on initial load) to avoid jerk
-  const prevTabRef = useRef(activeTab);
-  useEffect(() => {
-    if (prevTabRef.current === activeTab) return;
-    prevTabRef.current = activeTab;
-    const el = document.querySelector('[data-main-scroll]');
-    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [activeTab]);
 
   // Measure tab switch time (target <200ms; warn if >500ms)
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function DashboardPage() {
       if (last?.duration != null) {
         const duration = Math.round(last.duration);
         if (duration > 500) {
-          console.warn(`[Dashboard] Slow tab switch: ${duration}ms (target <200ms)`);
+          logger.warn(`[Dashboard] Slow tab switch: ${duration}ms (target <200ms)`);
         }
       }
     } finally {
@@ -145,7 +145,7 @@ export default function DashboardPage() {
   const isDoctor = user?.role === 'doctor';
   const clinicTenantId = isDoctor ? null : tenantId;
 
-  // Defer charts so stats + lists load first (faster first paint); must be declared before useDashboardChartsSWR
+  // Defer charts so stats + lists paint first (faster first paint)
   const [chartsEnabled, setChartsEnabled] = useState(false);
   // Avoid hydration mismatch: server and client must render same shell (no <a> in main until mounted)
   const [mounted, setMounted] = useState(false);
@@ -189,58 +189,27 @@ export default function DashboardPage() {
     [t],
   );
 
-  // Stats hook: clinic uses /dashboard/stats, doctor uses useDoctorDashboardStats()
-  const performanceDashboardStats = useDashboardStats({ enabled: !isDoctor });
-
-  // Stats SWR is disabled for all users – performanceDashboardStats covers clinic, doctorStats covers doctors.
-  // Passing null prevents an extra /reports/dashboard fetch that would duplicate /dashboard/stats.
-  const clinicStatsSWR = useDashboardStatsSWR(null);
+  // Clinic: one request to /api/dashboard/all (stats + lists + charts). Doctor: separate hooks.
+  const dashboardAll = useDashboard({ enabled: !isDoctor });
   const doctorStats = useDoctorDashboardStats();
+  const doctorLists = useDoctorDashboardLists();
 
-  // Use performance hooks for clinic, SWR/doctor hooks for doctors
-  // Map performance hook stats structure to match Dashboard expectations
-  const performanceStats = performanceDashboardStats.stats
-    ? {
-        ...performanceDashboardStats.stats,
-        failed_transactions: performanceDashboardStats.stats.failed_transactions ?? 0,
-        // Map nested structure to flat structure expected by Dashboard
-        todayAppointments: performanceDashboardStats.stats.appointments?.todayTotal || 0,
-        todayRevenue: performanceDashboardStats.stats.revenue?.today?.paid || 0,
-        monthRevenue: performanceDashboardStats.stats.revenue?.thisMonth?.total || 0,
-        activePatients: performanceDashboardStats.stats.patients?.active || 0,
-        totalPatients: performanceDashboardStats.stats.patients?.total || 0,
-        newPatientsThisMonth: 0, // Not in performance stats, use 0
-        pendingInvoices: 0, // Not in performance stats, use 0
-        completedToday: performanceDashboardStats.stats.appointments?.today?.completed || 0,
-        queue: performanceDashboardStats.stats.queue || {},
-        lastUpdated: performanceDashboardStats.stats.lastUpdated,
-      }
-    : null;
+  const stats = isDoctor ? doctorStats.stats : dashboardAll.stats;
+  const statsLoading = isDoctor ? doctorStats.loading : dashboardAll.loading;
+  const fetchStatsBackground = isDoctor ? doctorStats.fetchStats : dashboardAll.refresh;
+  const forceRefresh = isDoctor ? doctorStats.fetchStats : dashboardAll.refresh;
 
-  const stats = isDoctor ? doctorStats.stats : performanceStats || clinicStatsSWR.stats;
-  const statsLoading = isDoctor
-    ? doctorStats.loading
-    : performanceDashboardStats.loading || clinicStatsSWR.loading;
-  // Background/auto-refresh: GET (cache). Manual button: POST (force recalc).
-  const fetchStatsBackground = isDoctor
-    ? doctorStats.fetchStats
-    : (performanceDashboardStats.fetchStats ?? clinicStatsSWR.fetchStats);
-  const forceRefresh = isDoctor ? doctorStats.fetchStats : performanceDashboardStats.forceRefresh;
-
-  const clinicChartsSWR = useDashboardChartsSWR(clinicTenantId, { enabled: chartsEnabled });
   const chartData = isDoctor
     ? { revenue: [], appointments: [], patients: [] }
-    : (clinicChartsSWR.chartData ?? { revenue: [], appointments: [], patients: [] });
-  const chartsLoading = isDoctor ? false : clinicChartsSWR.loading;
-  const fetchChartData = isDoctor ? () => Promise.resolve() : clinicChartsSWR.fetchChartData;
+    : (dashboardAll.chartData ?? { revenue: [], appointments: [], patients: [] });
+  const chartsLoading = isDoctor ? false : dashboardAll.chartsLoading;
+  const fetchChartData = isDoctor ? () => Promise.resolve() : dashboardAll.refresh;
 
-  const clinicListsSWR = useDashboardListsSWR(clinicTenantId);
-  const doctorLists = useDoctorDashboardLists();
-  const generalLists = isDoctor ? doctorLists : clinicListsSWR;
+  const generalLists = isDoctor ? doctorLists : dashboardAll;
   const { updatesAvailable, applyUpdates } = useUpdatesAvailable(
-    clinicListsSWR.listsData,
-    clinicListsSWR.isValidating,
-    clinicListsSWR.fetchDashboardLists,
+    isDoctor ? doctorLists : dashboardAll,
+    isDoctor ? doctorLists.loading : dashboardAll.isRefreshing,
+    isDoctor ? doctorLists.fetchDashboardLists : dashboardAll.refresh,
   );
   const [isPending, startTransition] = useTransition();
   const { prefetchAppointment, prefetchPatient } = usePrefetchDetail();
@@ -253,21 +222,10 @@ export default function DashboardPage() {
         doctorStats.fetchStats();
         doctorLists.fetchDashboardLists();
       } else {
-        forceRefresh();
-        clinicListsSWR.fetchDashboardLists();
-        if (chartsEnabled) clinicChartsSWR.fetchChartData();
+        dashboardAll.refresh();
       }
     });
-  }, [
-    isDoctor,
-    startTransition,
-    forceRefresh,
-    doctorStats,
-    doctorLists,
-    clinicListsSWR,
-    clinicChartsSWR,
-    chartsEnabled,
-  ]);
+  }, [isDoctor, startTransition, doctorStats, doctorLists, dashboardAll]);
 
   // Use doctor-specific lists if doctor, otherwise SWR lists (AppointmentsListWithHook in the
   // Today's Schedule card handles its own incremental fetching for the live list display).
@@ -418,6 +376,7 @@ export default function DashboardPage() {
     () => <PrescriptionsTab isActive={activeTab === 'prescriptions'} />,
     [activeTab],
   );
+  const kpiContent = useMemo(() => <KPIDashboardTab isActive={activeTab === 'kpi'} />, [activeTab]);
 
   // Prepare notifications for PageHeader - memoized to prevent recreation on every render
   // Must be called unconditionally (before any early returns) to follow Rules of Hooks
@@ -468,21 +427,22 @@ export default function DashboardPage() {
     });
   }, [openConfirm, t]);
 
-  // Loading states - keep Layout visible, only show loading in content area
+  // Loading states – show dashboard skeleton (layout-shaped placeholders) instead of logo+bar loader
   // Server and client must match: render same shell until mounted to avoid hydration (e.g. <a> in <div> mismatch)
   if (!mounted) {
     return (
       <Layout>
         <div className='dashboard-container'>
-          <PageHeader
-            title={t('dashboard.overview')}
-            subtitle={formatDateDisplay()}
-            notifications={[]}
-            unreadCount={0}
-          />
-          <div className='flex items-center justify-center min-h-[400px]'>
-            <Loader type='section' text={t('dashboard.loading')} />
+          <div className='dashboard-header-block'>
+            <PageHeader
+              title={t('dashboard.overview')}
+              subtitle={formatDateDisplay()}
+              notifications={[]}
+              unreadCount={0}
+              variant='dashboard'
+            />
           </div>
+          <DashboardSkeleton isDoctor={false} />
         </div>
       </Layout>
     );
@@ -491,15 +451,16 @@ export default function DashboardPage() {
     return (
       <Layout>
         <div className='dashboard-container'>
-          <PageHeader
-            title={t('dashboard.overview')}
-            subtitle={formatDateDisplay()}
-            notifications={[]}
-            unreadCount={0}
-          />
-          <div className='flex items-center justify-center min-h-[400px]'>
-            <Loader type='section' text={t('common.loading')} />
+          <div className='dashboard-header-block'>
+            <PageHeader
+              title={t('dashboard.overview')}
+              subtitle={formatDateDisplay()}
+              notifications={[]}
+              unreadCount={0}
+              variant='dashboard'
+            />
           </div>
+          <DashboardSkeleton isDoctor={false} />
         </div>
       </Layout>
     );
@@ -509,13 +470,16 @@ export default function DashboardPage() {
     return (
       <Layout>
         <div className='dashboard-container'>
-          <PageHeader
-            title={t('dashboard.overview')}
-            subtitle={formatDateDisplay()}
-            notifications={[]}
-            unreadCount={0}
-          />
-          <div className='flex items-center justify-center min-h-[400px]'>
+          <div className='dashboard-header-block'>
+            <PageHeader
+              title={t('dashboard.overview')}
+              subtitle={formatDateDisplay()}
+              notifications={[]}
+              unreadCount={0}
+              variant='dashboard'
+            />
+          </div>
+          <div className='dashboard-skeleton-root flex items-center justify-center min-h-[300px]' role='status' aria-label={t('auth.redirectingToLogin')}>
             <Loader type='section' text={t('auth.redirectingToLogin')} />
           </div>
         </div>
@@ -525,26 +489,41 @@ export default function DashboardPage() {
 
   const initialDashboardLoading = statsLoading || listsLoading;
   const showStaleBanner =
-    !isDoctor && clinicListsSWR.error && clinicListsSWR.todayAppointments?.length > 0;
+    !isDoctor && dashboardAll.error && dashboardAll.todayAppointments?.length > 0;
 
   return (
     <Layout>
       <ProfilerWrapper id='dashboard'>
         {showStaleBanner && (
-          <StaleDataBanner visible onRetry={() => clinicListsSWR.fetchDashboardLists()} />
+          <StaleDataBanner
+            visible
+            onRetry={() => (isDoctor ? doctorLists.fetchDashboardLists() : dashboardAll.refresh())}
+          />
+        )}
+        {!isDoctor && dashboardAll.isRefreshing && (
+          <div
+            className='fixed top-4 right-4 z-50 flex items-center gap-2 bg-white dark:bg-slate-800 shadow-lg rounded-full px-3 py-1.5 text-xs text-slate-500 border border-slate-100 dark:border-slate-700'
+            role='status'
+            aria-live='polite'
+          >
+            <RefreshCwIcon className='icon icon-xs animate-spin' aria-hidden />
+            {t('dashboard.syncing') || 'Syncing...'}
+          </div>
         )}
         <div className='dashboard-container'>
           {/* Unified header block – same design for Overview, Appointments, Prescriptions tabs */}
           <div className='dashboard-header-block'>
             <PageHeader
               title={
-                isDoctor && user?.firstName
+                isDoctor && user?.firstName && activeTab === 'overview'
                   ? t('dashboard.welcomeBackDoctor').replace('{{name}}', user.firstName)
                   : activeTab === 'overview'
                     ? t('dashboard.overview')
-                    : activeTab === 'appointments'
-                      ? t('appointments.title')
-                      : t('prescriptions.title')
+                    : activeTab === 'kpi'
+                      ? t('dashboard.kpiDashboard')
+                      : activeTab === 'appointments'
+                        ? t('appointments.title')
+                        : t('prescriptions.title')
               }
               subtitle={formatDateDisplay()}
               notifications={notifications}
@@ -553,18 +532,16 @@ export default function DashboardPage() {
               onMarkAsRead={handleMarkAsRead}
               onMarkAllAsRead={handleMarkAllAsRead}
               onRefresh={handleManualRefresh || forceRefresh}
-              refreshing={
-                !isDoctor &&
-                (performanceDashboardStats.loading ||
-                  clinicStatsSWR.isValidating ||
-                  clinicListsSWR.isValidating)
-              }
+              refreshing={!isDoctor && dashboardAll.isRefreshing}
               variant='dashboard'
             />
             <div className='dashboard-header-divider' aria-hidden />
             <div
               className='dashboard-tab-row flex items-center justify-between gap-4'
-              style={{ display: initialDashboardLoading ? 'none' : undefined }}
+              style={{
+                /* Show tab row for doctors even while loading so KPI tab is visible; clinic can keep hiding until ready */
+                display: isDoctor ? undefined : initialDashboardLoading ? 'none' : undefined,
+              }}
             >
               <TabBar
                 className='dashboard-tab-bar flex-1 min-w-0'
@@ -584,6 +561,7 @@ export default function DashboardPage() {
           <TabContent
             activeTab={activeTab}
             appointmentsContent={appointmentsContent}
+            kpiContent={kpiContent}
             prescriptionsContent={prescriptionsContent}
             hidden={initialDashboardLoading}
           >
@@ -709,9 +687,7 @@ export default function DashboardPage() {
               </AlertsSection>
 
               {/* Dashboard actions – ActionsSection (STEP 5) */}
-              {!isDoctor && (
-                <ActionsSection failedTransactions={stats?.failed_transactions ?? 0} />
-              )}
+              {!isDoctor && <ActionsSection failedTransactions={stats?.failed_transactions ?? 0} />}
 
               {/* Key Statistics – KPISection (STEP 5) */}
               <KPISection className='dashboard-section-key-metrics'>
@@ -855,9 +831,9 @@ export default function DashboardPage() {
                 </div>
               </KPISection>
 
-              {/* Trends – TrendsSection with SWR (STEP 6) */}
+              {/* Trends – from /api/dashboard/all when clinic; no extra request */}
               {!isDoctor && clinicTenantId && (
-                <TrendsSection tenantId={clinicTenantId} />
+                <TrendsSection tenantId={clinicTenantId} trends={dashboardAll.trends} />
               )}
 
               {/* Main Content – Today's Appointments & Calendar – TablesSection lazy load (STEP 6) */}
@@ -1361,7 +1337,7 @@ export default function DashboardPage() {
               {!isDoctor && (
                 <div className='dashboard-section'>
                   <ErrorBoundary>
-                    {clinicChartsSWR?.error ? (
+                    {dashboardAll.error ? (
                       <Card className='dashboard-list-card dashboard-list-card-primary p-6 lg:col-span-3'>
                         <p className='text-neutral-600 dark:text-neutral-400 text-center mb-4'>
                           {t('dashboard.chartsUnavailable') || 'Charts temporarily unavailable.'}
@@ -1369,7 +1345,7 @@ export default function DashboardPage() {
                         <Button
                           variant='secondary'
                           size='sm'
-                          onClick={() => clinicChartsSWR?.fetchChartData?.()}
+                          onClick={() => dashboardAll.refresh()}
                         >
                           {t('common.retry')}
                         </Button>
