@@ -20,8 +20,8 @@ const nextConfig = {
     // Remove console logs in production
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
-  // Explicitly tell Next.js not to use Babel
-  transpilePackages: [],
+  // Resolve and transpile monorepo workspace packages
+  transpilePackages: ['@clinic-saas/dashboard-engine', '@clinic-saas/config'],
   // Enable compression
   compress: true,
   // Optimize images
@@ -54,9 +54,13 @@ const nextConfig = {
   webpack: (config, { isServer, dev, webpack }) => {
     // Ensure @/ alias resolves to app root (100% reliable for FormTransition, ImageTransition, etc.)
     config.resolve = config.resolve || {};
+    const monorepoRoot = path.resolve(__dirname, '../..');
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': path.resolve(__dirname, '.'),
+      // Resolve workspace packages so Next.js finds them when running from apps/clinic
+      '@clinic-saas/dashboard-engine': path.resolve(monorepoRoot, 'packages/dashboard-engine'),
+      '@clinic-saas/config': path.resolve(monorepoRoot, 'packages/config'),
     };
 
     // Explicitly prevent Next.js from using Babel - force SWC only

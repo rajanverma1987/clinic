@@ -251,8 +251,8 @@ export function CalendarSkeleton() {
         </div>
       </div>
       <div className='grid grid-cols-7 gap-2 mb-4'>
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
-          <div key={d} className={`h-8 ${bg2} rounded text-center`} />
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+          <div key={`day-${i}`} className={`h-8 ${bg2} rounded text-center`} />
         ))}
       </div>
       <div className='grid grid-cols-7 gap-2'>

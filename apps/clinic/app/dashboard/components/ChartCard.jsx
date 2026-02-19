@@ -50,6 +50,15 @@ function ChartCardInner({ title, data, colorScheme = 'primary', loading = false 
     return () => observer.disconnect();
   }, [inView]);
 
+  // Hooks must run unconditionally (before any early return).
+  const chartData = useMemo(() => (Array.isArray(data) ? data.slice(-14) : []), [data]);
+  const hasData = chartData.length > 0;
+  const maxBarValue = useMemo(
+    () => Math.max(...chartData.map((d) => d.value || d.total || d.count || 0), 1),
+    [chartData],
+  );
+  const colorClasses = COLOR_CLASSES;
+
   if (loading || data === null || data === undefined || !inView) {
     return (
       <div ref={containerRef} className='h-full'>
@@ -67,14 +76,6 @@ function ChartCardInner({ title, data, colorScheme = 'primary', loading = false 
       </div>
     );
   }
-
-  const chartData = useMemo(() => (Array.isArray(data) ? data.slice(-14) : []), [data]);
-  const hasData = chartData.length > 0;
-  const maxBarValue = useMemo(
-    () => Math.max(...chartData.map((d) => d.value || d.total || d.count || 0), 1),
-    [chartData],
-  );
-  const colorClasses = COLOR_CLASSES;
   return (
     <Card
       elevated={true}

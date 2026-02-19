@@ -13,6 +13,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import { logger } from '@/lib/utils/logger';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const ALL_ACTIONS = [
   {
@@ -54,7 +55,19 @@ const ALL_ACTIONS = [
 export function QuickActions({ onNavigate, loading = false, userRole }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const menuRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  // When dropdown opens, position it below the trigger so it appears above the navbar (portal)
+  useEffect(() => {
+    if (!open || !menuRef.current) return;
+    const rect = menuRef.current.getBoundingClientRect();
+    setDropdownPosition({
+      top: rect.bottom + 6,
+      right: window.innerWidth - rect.right,
+    });
+  }, [open]);
 
   // Safety check for translation function
   const safeTranslate = (key) => {
@@ -74,9 +87,9 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpen(false);
-      }
+      const insideTrigger = menuRef.current?.contains(e.target);
+      const insideDropdown = dropdownRef.current?.contains(e.target);
+      if (!insideTrigger && !insideDropdown) setOpen(false);
     };
     if (open) {
       document.addEventListener('mousedown', handleClickOutside);
@@ -101,7 +114,10 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
         type='button'
         variant='primary'
         size='sm'
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
         aria-expanded={open}
         aria-haspopup='true'
         aria-label={safeTranslate('dashboard.quickActions')}
@@ -114,17 +130,19 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
         <span>{safeTranslate('dashboard.quickActions')}</span>
       </Button>
 
-      {open && (
-        <>
+      {open &&
+        typeof document !== 'undefined' &&
+        createPortal(
           <div
-            className='fixed inset-0 z-[10040]'
-            aria-hidden='true'
-            onClick={() => setOpen(false)}
-          />
-          <div
-            className='dropdown-menu-unified absolute right-0 top-full mt-1.5'
+            ref={dropdownRef}
+            className='dropdown-menu-unified fixed z-[10050]'
             data-wide
             role='menu'
+            style={{
+              top: dropdownPosition.top,
+              right: dropdownPosition.right,
+              left: 'auto',
+            }}
           >
             {visibleActions.map(({ path, labelKey, Icon }) => {
               if (!Icon || typeof Icon !== 'function') {
@@ -153,9 +171,9 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
                 </Button>
               );
             })}
-          </div>
-        </>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

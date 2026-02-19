@@ -360,8 +360,9 @@ export default function AppointmentsPage() {
         invalidateLists();
         invalidateStats();
         showSuccess(t('appointments.cancelledFor', { name: name || 'patient' }));
-        fetchAppointments();
-        fetchStats();
+        await apiClient.clearCacheForEndpoint('/appointments');
+        await fetchAppointments();
+        await fetchStats();
       } else {
         showError(response.error?.message || 'Failed to cancel appointment');
       }
@@ -384,33 +385,30 @@ export default function AppointmentsPage() {
       if (response.success) {
         invalidateLists();
         invalidateStats();
+        await apiClient.clearCacheForEndpoint('/appointments');
         // Show success message based on status
         if (newStatus === 'arrived') {
           showSuccess(t('appointments.markedArrivedQueue', { name: patientName || 'Patient' }));
-          // Refresh both appointments and stats
-          // Small delay to ensure backend processing is complete
-          setTimeout(() => {
-            fetchAppointments();
-            fetchStats();
-            setLoadingAppointmentId(null);
-          }, 500);
+          await fetchAppointments();
+          await fetchStats();
+          setLoadingAppointmentId(null);
         } else if (newStatus === 'in_progress') {
           showSuccess(t('appointments.startedFor', { name: patientName || 'patient' }));
-          fetchAppointments();
+          await fetchAppointments();
           setLoadingAppointmentId(null);
         } else if (newStatus === 'completed') {
           showSuccess(t('appointments.completedFor', { name: patientName || 'patient' }));
-          fetchAppointments();
-          fetchStats();
+          await fetchAppointments();
+          await fetchStats();
           setLoadingAppointmentId(null);
         } else if (newStatus === 'cancelled') {
           showSuccess(t('appointments.cancelledFor', { name: patientName || 'patient' }));
-          fetchAppointments();
-          fetchStats();
+          await fetchAppointments();
+          await fetchStats();
           setLoadingAppointmentId(null);
         } else {
           showSuccess(t('appointments.statusUpdatedSuccess'));
-          fetchAppointments();
+          await fetchAppointments();
           setLoadingAppointmentId(null);
         }
       } else {
@@ -419,11 +417,10 @@ export default function AppointmentsPage() {
         // If it's a duplicate queue error but appointment was updated, show success
         if (errorMessage.includes('duplicate') && errorMessage.includes('queue')) {
           showSuccess(t('appointments.markedArrivedAlready', { name: patientName || 'Patient' }));
-          setTimeout(() => {
-            fetchAppointments();
-            fetchStats();
-            setLoadingAppointmentId(null);
-          }, 500);
+          await apiClient.clearCacheForEndpoint('/appointments');
+          await fetchAppointments();
+          await fetchStats();
+          setLoadingAppointmentId(null);
         } else {
           showError(errorMessage);
           setLoadingAppointmentId(null);
@@ -439,11 +436,10 @@ export default function AppointmentsPage() {
       // If it's a duplicate queue error, show a more user-friendly message
       if (errorMessage.includes('duplicate') && errorMessage.includes('queue')) {
         showSuccess(t('appointments.alreadyInQueue', { name: patientName || 'Patient' }));
-        setTimeout(() => {
-          fetchAppointments();
-          fetchStats();
-          setLoadingAppointmentId(null);
-        }, 500);
+        await apiClient.clearCacheForEndpoint('/appointments');
+        await fetchAppointments();
+        await fetchStats();
+        setLoadingAppointmentId(null);
       } else {
         showError(errorMessage);
         setLoadingAppointmentId(null);

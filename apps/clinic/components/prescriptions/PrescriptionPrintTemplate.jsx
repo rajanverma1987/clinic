@@ -249,6 +249,15 @@ export function generatePrescriptionPrintHTML(data) {
       margin-bottom: 4px;
     }
 
+    .valid-until-disclaimer {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid #ccc;
+      font-size: 9pt;
+      color: #444;
+      text-align: left;
+    }
+
     /* Block sections (notes, diagnosis, etc.) */
     .block-section {
       margin-bottom: 16px;
@@ -564,6 +573,15 @@ export function generatePrescriptionPrintHTML(data) {
           }</div>
         </div>
       </div>
+      ${
+        data.followUp
+          ? `
+      <div class="valid-until-disclaimer">
+        Disclaimer: Valid until : ${data.followUp}
+      </div>
+      `
+          : ''
+      }
     </div>
   </div>
 </body>
