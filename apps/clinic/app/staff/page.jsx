@@ -17,8 +17,6 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { apiClient } from '@/lib/api/client';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { getRolePermissions } from '@/lib/permissions/constants';
-import { extractArrayData } from '@/lib/utils/api-response-extractor';
-import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -82,22 +80,10 @@ export default function StaffPage() {
   const atUserLimit = maxUsers != null && currentUserCount >= maxUsers;
 
   const fetchStaff = useCallback(async (silentRefresh = false) => {
-    try {
-      if (!silentRefresh) setLoading(true);
-      const res = await apiClient.get('/users');
-      if (res?.success && res?.data) {
-        const data = res.data?.data ?? res.data;
-        setStaff(extractArrayData({ data }) ?? []);
-      } else {
-        setStaff([]);
-      }
-    } catch (err) {
-      logger.error('Failed to fetch staff', err);
-      setStaff([]);
-    } finally {
-      if (!silentRefresh) setLoading(false);
-      setRefreshing(false);
-    }
+    if (!silentRefresh) setLoading(true);
+    setStaff([]);
+    if (!silentRefresh) setLoading(false);
+    setRefreshing(false);
   }, []);
 
   useEffect(() => {

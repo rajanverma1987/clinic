@@ -473,13 +473,13 @@ export default function EditPrescriptionPage() {
 
   // Redirect if not authenticated (non-blocking)
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !currentUser) {
       router.push('/login');
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, currentUser, router]);
 
   // Show empty state while redirecting
-  if (!user) {
+  if (!currentUser) {
     return null;
   }
 

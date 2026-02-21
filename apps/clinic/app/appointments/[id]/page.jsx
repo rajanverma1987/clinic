@@ -15,27 +15,38 @@ import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
 import { apiClient } from '@/lib/api/client';
 import { appointmentKey, DASHBOARD_LISTS_KEY } from '@/lib/swr/dashboard-keys';
 import { showError, showSuccess } from '@/lib/utils/toast';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 
-const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
+const formatDate = (value) => {
+  if (value == null || value === '') return '—';
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+};
 
-const formatTime = (value) =>
-  value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+const formatTime = (value) => {
+  if (value == null || value === '') return '—';
+  const d = new Date(value);
+  return Number.isNaN(d.getTime())
+    ? '—'
+    : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
-export default function AppointmentDetailsPage({ params }) {
+export default function AppointmentDetailsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const id = params?.id ?? null;
   const { t } = useI18n();
   const { user } = useAuth();
   const { open: openConfirm } = useConfirmation();
   const { invalidateLists, invalidateStats } = useInvalidateDashboard();
   const { mutate } = useSWRConfig();
   const isDoctor = user?.role === 'doctor';
-  const appointmentKeyVal = params?.id ? appointmentKey(params.id) : null;
-  const fetcher = () =>
-    apiClient.get(`/appointments/${params.id}`).then((r) => {
+  const appointmentKeyVal = id ? appointmentKey(id) : null;
+  const fetcher = (appointmentId) =>
+    apiClient.get(`/appointments/${appointmentId}`).then((r) => {
       if (r.success && r.data) return r.data;
       const err = new Error(r.error?.message || t('appointments.notFound'));
       err.info = r.error;
@@ -46,7 +57,7 @@ export default function AppointmentDetailsPage({ params }) {
     error: swrError,
     isLoading: swrLoading,
     mutate: mutateAppointment,
-  } = useSWR(appointmentKeyVal, () => fetcher(params.id), {
+  } = useSWR(appointmentKeyVal, () => (id ? fetcher(id) : Promise.resolve(null)), {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
   });
@@ -104,13 +115,13 @@ export default function AppointmentDetailsPage({ params }) {
             return {
               ...current,
               todayAppointments: current.todayAppointments.map((apt) =>
-                apt._id === params.id ? { ...apt, status: statusParam } : apt,
+                apt._id === id ? { ...apt, status: statusParam } : apt,
               ),
             };
           },
           { revalidate: false },
         );
-        const response = await apiClient.put(`/appointments/${params.id}/status`, {
+        const response = await apiClient.put(`/appointments/${id}/status`, {
           status: statusParam,
         });
         if (response.success) {
@@ -120,7 +131,7 @@ export default function AppointmentDetailsPage({ params }) {
           showSuccess(t('appointments.statusUpdated') || 'Appointment status updated');
           invalidateLists();
           invalidateStats();
-          router.replace(`/appointments/${params.id}`);
+          router.replace(`/appointments/${id}`);
         } else {
           if (dashboardListsRollbackRef.current != null) {
             mutate(DASHBOARD_LISTS_KEY, dashboardListsRollbackRef.current, { revalidate: false });
@@ -144,13 +155,14 @@ export default function AppointmentDetailsPage({ params }) {
   }, [
     appointment,
     loading,
-    params.id,
+    id,
     searchParams,
     router,
     t,
     invalidateLists,
     invalidateStats,
     mutate,
+    mutateAppointment,
   ]);
 
   const patientFullName = useMemo(
@@ -182,13 +194,13 @@ export default function AppointmentDetailsPage({ params }) {
           return {
             ...current,
             todayAppointments: current.todayAppointments.map((apt) =>
-              apt._id === params.id ? { ...apt, status } : apt,
+              apt._id === id ? { ...apt, status } : apt,
             ),
           };
         },
         { revalidate: false },
       );
-      const response = await apiClient.put(`/appointments/${params.id}/status`, { status });
+      const response = await apiClient.put(`/appointments/${id}/status`, { status });
       if (response.success) {
         showSuccess(t('appointments.statusUpdated'));
         mutateAppointment({ ...appointment, status }, { revalidate: false });
@@ -215,7 +227,7 @@ export default function AppointmentDetailsPage({ params }) {
     try {
       setSaving(true);
       const response = await apiClient.post(`/clinical-notes`, {
-        appointmentId: params.id,
+        appointmentId: id,
         patientId: appointment.patientId?._id || appointment.patientId,
         notes: consultationNotes,
         diagnosis: diagnosis,
@@ -268,7 +280,7 @@ export default function AppointmentDetailsPage({ params }) {
             {isDoctor && (
               <select
                 className='px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm'
-                value={appointment.status}
+                value={appointment.status ?? ''}
                 onChange={(e) => handleStatusChange(e.target.value)}
                 disabled={saving}
               >
@@ -310,7 +322,7 @@ export default function AppointmentDetailsPage({ params }) {
                     variant='primary'
                     onClick={() => {
                       handleStatusChange('in_progress');
-                      router.push(`/appointments/${params.id}?startConsultation=true`);
+                      router.push(`/appointments/${id}?startConsultation=true`);
                     }}
                   >
                     <PlayIcon className='icon icon-sm' />
@@ -344,7 +356,7 @@ export default function AppointmentDetailsPage({ params }) {
                 <>
                   <Button
                     variant='secondary'
-                    onClick={() => router.push(`/appointments/${params.id}/edit`)}
+                    onClick={() => router.push(`/appointments/${id}/edit`)}
                   >
                     <CalendarIcon className='icon icon-sm' />
                     {t('appointments.reschedule')}

@@ -760,11 +760,11 @@ export default function PatientDetailPage() {
                               <span
                                 className={`px-2 py-1 text-xs rounded-full ${
                                   apt.status === 'completed'
-                                    ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
+                                    ? 'bg-success-100 text-success-700 dark:bg-green-800 dark:text-green-100'
                                     : apt.status === 'in_progress'
-                                      ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
+                                      ? 'bg-primary-100 text-primary-700 dark:bg-blue-800 dark:text-blue-100'
                                       : apt.status === 'cancelled'
-                                        ? 'bg-status-error/10 dark:bg-status-error/20 text-status-error'
+                                        ? 'bg-status-error/10 dark:bg-red-900/60 text-status-error dark:text-red-200'
                                         : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
                                 }`}
                               >
@@ -909,9 +909,9 @@ export default function PatientDetailPage() {
                               <span
                                 className={`px-2 py-1 text-xs rounded-full ${
                                   inv.status === 'paid'
-                                    ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
+                                    ? 'bg-success-100 text-success-700 dark:bg-green-800 dark:text-green-100'
                                     : inv.status === 'pending'
-                                      ? 'bg-status-warning/10 dark:bg-status-warning/20 text-status-warning'
+                                      ? 'bg-status-warning/10 text-status-warning dark:bg-amber-900/60 dark:text-amber-200'
                                       : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
                                 }`}
                               >

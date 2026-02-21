@@ -30,8 +30,23 @@ export default function AppointmentCalendar({
   // Get slot duration from Queue Settings (Average Consultation Time), default to 30 minutes
   const slotDuration = settings?.queueSettings?.averageConsultationTime || 30; // minutes
 
+  /** YYYY-MM-DD in local time — use for date input value/min so the calendar shows the correct day. */
+  const formatDateLocal = useCallback((date) => {
+    if (!date || !(date instanceof Date) || Number.isNaN(date.getTime())) {
+      const fallback = new Date();
+      date = fallback;
+    }
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, []);
+
   const formatDateForApi = useCallback(
     (date) => {
+      if (!date || !(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return formatDateLocal(new Date());
+      }
       try {
         return new Intl.DateTimeFormat('en-CA', {
           timeZone: settings?.timezone || 'UTC',
@@ -40,10 +55,10 @@ export default function AppointmentCalendar({
           day: '2-digit',
         }).format(date);
       } catch {
-        return date.toISOString().split('T')[0];
+        return formatDateLocal(date);
       }
     },
-    [settings?.timezone]
+    [settings?.timezone, formatDateLocal]
   );
 
   const formatDateDisplay = useCallback(
@@ -79,11 +94,17 @@ export default function AppointmentCalendar({
     [settings?.locale, settings?.timezone]
   );
 
-  // Update currentDate when selectedDate prop changes
+  // Update currentDate when selectedDate prop changes (parse YYYY-MM-DD as local date to avoid UTC-offset)
   useEffect(() => {
-    if (selectedDate) {
-      setCurrentDate(new Date(selectedDate));
+    if (!selectedDate) return;
+    if (typeof selectedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+      const [y, m, d] = selectedDate.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      if (!Number.isNaN(date.getTime())) setCurrentDate(date);
+      return;
     }
+    const date = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+    if (!Number.isNaN(date.getTime())) setCurrentDate(date);
   }, [selectedDate]);
 
   // Generate time slots for a day
@@ -417,7 +438,16 @@ export default function AppointmentCalendar({
   };
 
   const handleDateChange = (e) => {
-    const newDate = new Date(e.target.value);
+    const value = e.target.value;
+    if (!value) {
+      setCurrentDate(new Date());
+      setSelectedSlot(null);
+      return;
+    }
+    const [y, m, d] = value.split('-').map(Number);
+    if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return;
+    const newDate = new Date(y, m - 1, d);
+    if (Number.isNaN(newDate.getTime())) return;
     setCurrentDate(newDate);
     setSelectedSlot(null);
   };
@@ -474,9 +504,9 @@ export default function AppointmentCalendar({
             </Button>
             <input
               type='date'
-              value={formatDateForApi(currentDate)}
+              value={formatDateLocal(currentDate)}
               onChange={handleDateChange}
-              min={formatDateForApi(today)}
+              min={formatDateLocal(today)}
               className='px-3 py-1.5 text-sm border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
             />
             <Button

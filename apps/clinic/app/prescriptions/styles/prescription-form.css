@@ -550,6 +550,10 @@
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
+.dark .patient-details-panel {
+  background: var(--color-surface-elevated, var(--color-neutral-800));
+  border-color: var(--color-border);
+}
 
 .patient-details-tabs {
   display: flex;
@@ -557,6 +561,10 @@
   padding: var(--space-2);
   border-bottom: 1px solid var(--color-neutral-100);
   background: var(--color-neutral-50);
+}
+.dark .patient-details-tabs {
+  border-bottom-color: var(--color-border);
+  background: var(--color-neutral-800);
 }
 
 .patient-details-tab {
@@ -571,6 +579,13 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
+}
+.dark .patient-details-tab {
+  color: var(--color-neutral-300);
+}
+.dark .patient-details-tab:hover {
+  color: var(--color-primary-200);
+  background: var(--color-primary-900);
 }
 
 .patient-details-tab:hover {
@@ -587,6 +602,11 @@
   );
   box-shadow: 0 2px 4px color-mix(in srgb, var(--color-primary-500) 10%, transparent);
 }
+.dark .patient-details-tab-active {
+  color: var(--color-primary-100);
+  background: var(--color-primary-800);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
 
 .patient-details-content {
   padding: var(--space-5);
@@ -602,11 +622,17 @@
   color: var(--color-neutral-600);
   margin-bottom: var(--space-1);
 }
+.dark .patient-details-label {
+  color: var(--color-neutral-400);
+}
 
 .patient-details-value {
   font-size: var(--text-body-sm);
   color: var(--color-neutral-900);
   font-weight: 500;
+}
+.dark .patient-details-value {
+  color: var(--color-text-primary);
 }
 
 .patient-details-section {
@@ -614,12 +640,18 @@
   margin-top: var(--space-4);
   border-top: 1px solid var(--color-neutral-100);
 }
+.dark .patient-details-section {
+  border-top-color: var(--color-border);
+}
 
 .patient-details-section-title {
   font-size: var(--text-body-sm);
   font-weight: 600;
   color: var(--color-neutral-900);
   margin-bottom: var(--space-2);
+}
+.dark .patient-details-section-title {
+  color: var(--color-text-primary);
 }
 
 /* Responsive adjustments */

@@ -20,6 +20,7 @@ import icd10Common from '@/data/icd10-common.json';
 import { useFormAutoSave } from '@/hooks/useFormAutoSave.js';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
+import * as routeCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -590,6 +591,7 @@ function NewPrescriptionPageContent() {
       const response = await apiClient.post('/prescriptions', prescriptionData);
       if (response.success) {
         clearDraft();
+        routeCache.clear('route_prescriptions', currentUser?.tenantId ?? undefined);
         showSuccess(t('prescriptions.signedAndSentSuccess'));
         router.push('/prescriptions');
       } else {
@@ -625,6 +627,7 @@ function NewPrescriptionPageContent() {
       const response = await apiClient.post('/prescriptions', prescriptionData);
       if (response.success) {
         clearDraft();
+        routeCache.clear('route_prescriptions', currentUser?.tenantId ?? undefined);
         showSuccess(t('prescriptions.savedAsDraftSuccess'));
       } else {
         const errorMessage = response.error?.message || t('prescriptions.failedToSaveDraft');

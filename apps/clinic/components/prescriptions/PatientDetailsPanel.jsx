@@ -66,7 +66,7 @@ export function PatientDetailsPanel({ patientId }) {
           className='patient-details-content'
           style={{ textAlign: 'center', padding: 'var(--space-8)' }}
         >
-          <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-neutral-500)' }}>
+          <p className='text-sm text-neutral-500 dark:text-neutral-400'>
             Select a patient to view details
           </p>
         </div>
@@ -94,7 +94,7 @@ export function PatientDetailsPanel({ patientId }) {
           className='patient-details-content'
           style={{ textAlign: 'center', padding: 'var(--space-8)' }}
         >
-          <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--color-status-error)' }}>
+          <p className='text-sm text-status-error dark:text-red-300'>
             Failed to load patient details
           </p>
         </div>
@@ -147,14 +147,7 @@ export function PatientDetailsPanel({ patientId }) {
       {activeTab === 'details' && (
         <div className='patient-details-content'>
           <div>
-            <h3
-              style={{
-                fontSize: 'var(--text-body-md)',
-                fontWeight: 700,
-                color: 'var(--color-neutral-900)',
-                marginBottom: 'var(--space-4)',
-              }}
-            >
+            <h3 className='text-base font-bold text-neutral-900 dark:text-neutral-100 mb-4'>
               {patient.firstName} {patient.lastName}
             </h3>
             <div className='space-y-2'>
@@ -206,13 +199,10 @@ export function PatientDetailsPanel({ patientId }) {
 
           {patient.allergies && (
             <div className='patient-details-section'>
-              <p
-                className='patient-details-section-title'
-                style={{ color: 'var(--color-status-error)' }}
-              >
+              <p className='patient-details-section-title text-status-error dark:text-red-300'>
                 Allergies
               </p>
-              <p style={{ fontSize: 'var(--text-body-xs)', color: 'var(--color-neutral-600)' }}>
+              <p className='text-xs text-neutral-600 dark:text-neutral-300'>
                 {patient.allergies}
               </p>
             </div>
@@ -221,7 +211,7 @@ export function PatientDetailsPanel({ patientId }) {
           {patient.currentMedications && (
             <div className='patient-details-section'>
               <p className='patient-details-section-title'>Current Medications</p>
-              <p style={{ fontSize: 'var(--text-body-xs)', color: 'var(--color-neutral-600)' }}>
+              <p className='text-xs text-neutral-600 dark:text-neutral-300'>
                 {patient.currentMedications}
               </p>
             </div>
@@ -235,26 +225,12 @@ export function PatientDetailsPanel({ patientId }) {
           {patient.medicalHistory ? (
             <div>
               <p className='patient-details-section-title'>Medical History</p>
-              <p
-                style={{
-                  fontSize: 'var(--text-body-xs)',
-                  color: 'var(--color-neutral-600)',
-                  whiteSpace: 'pre-wrap',
-                  lineHeight: 'var(--text-body-sm-line-height)',
-                }}
-              >
+              <p className='text-xs text-neutral-600 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed'>
                 {patient.medicalHistory}
               </p>
             </div>
           ) : (
-            <p
-              style={{
-                fontSize: 'var(--text-body-sm)',
-                color: 'var(--color-neutral-500)',
-                textAlign: 'center',
-                padding: 'var(--space-4)',
-              }}
-            >
+            <p className='text-sm text-neutral-500 dark:text-neutral-400 text-center py-4'>
               No medical history recorded
             </p>
           )}
@@ -274,31 +250,15 @@ export function PatientDetailsPanel({ patientId }) {
                 {prescriptions.map((pres) => (
                   <div
                     key={pres._id}
-                    style={{
-                      padding: 'var(--space-3)',
-                      background: 'var(--color-neutral-50)',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-neutral-200)',
-                    }}
+                    className='p-3 rounded-lg bg-neutral-50 dark:bg-neutral-700/60 border border-neutral-200 dark:border-neutral-600'
                   >
-                    <p
-                      style={{
-                        fontSize: 'var(--text-body-xs)',
-                        fontWeight: 600,
-                        color: 'var(--color-neutral-900)',
-                        marginBottom: 'var(--space-1)',
-                      }}
-                    >
+                    <p className='text-xs font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
                       {pres.prescriptionNumber}
                     </p>
-                    <p
-                      style={{ fontSize: 'var(--text-body-xs)', color: 'var(--color-neutral-600)' }}
-                    >
+                    <p className='text-xs text-neutral-600 dark:text-neutral-300'>
                       {new Date(pres.createdAt).toLocaleDateString()} - {pres.status}
                     </p>
-                    <p
-                      style={{ fontSize: 'var(--text-body-xs)', color: 'var(--color-neutral-500)' }}
-                    >
+                    <p className='text-xs text-neutral-500 dark:text-neutral-400'>
                       {pres.items?.length || 0} items
                     </p>
                   </div>
@@ -317,72 +277,30 @@ export function PatientDetailsPanel({ patientId }) {
               {appointments.map((apt) => (
                 <div
                   key={apt._id}
-                  style={{
-                    padding: 'var(--space-3)',
-                    background: 'var(--color-neutral-50)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-neutral-200)',
-                  }}
+                  className='p-3 rounded-lg bg-neutral-50 dark:bg-neutral-700/60 border border-neutral-200 dark:border-neutral-600'
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'start',
-                    }}
-                  >
+                  <div className='flex justify-between items-start'>
                     <div>
-                      <p
-                        style={{
-                          fontSize: 'var(--text-body-sm)',
-                          fontWeight: 600,
-                          color: 'var(--color-neutral-900)',
-                          marginBottom: 'var(--space-1)',
-                        }}
-                      >
+                      <p className='text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
                         {new Date(apt.appointmentDate).toLocaleDateString()}
                       </p>
-                      <p
-                        style={{
-                          fontSize: 'var(--text-body-xs)',
-                          color: 'var(--color-neutral-600)',
-                        }}
-                      >
+                      <p className='text-xs text-neutral-600 dark:text-neutral-300'>
                         {apt.type}
                       </p>
                       {apt.reason && (
-                        <p
-                          style={{
-                            fontSize: 'var(--text-body-xs)',
-                            color: 'var(--color-neutral-500)',
-                            marginTop: 'var(--space-1)',
-                          }}
-                        >
+                        <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                           {apt.reason}
                         </p>
                       )}
                     </div>
                     <span
-                      style={{
-                        padding: 'var(--space-1) var(--space-2)',
-                        fontSize: 'var(--text-body-xs)',
-                        borderRadius: 'var(--radius-md)',
-                        fontWeight: 600,
-                        ...(apt.status === 'completed'
-                          ? {
-                              background: 'var(--color-secondary-100)',
-                              color: 'var(--color-secondary-700)',
-                            }
+                      className={`px-2 py-1 text-xs font-semibold rounded-md ${
+                        apt.status === 'completed'
+                          ? 'bg-secondary-100 text-secondary-700 dark:bg-green-800 dark:text-green-100'
                           : apt.status === 'in_progress'
-                          ? {
-                              background: 'var(--color-primary-100)',
-                              color: 'var(--color-primary-700)',
-                            }
-                          : {
-                              background: 'var(--color-neutral-100)',
-                              color: 'var(--color-neutral-700)',
-                            }),
-                      }}
+                            ? 'bg-primary-100 text-primary-700 dark:bg-blue-800 dark:text-blue-100'
+                            : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-600 dark:text-neutral-200'
+                      }`}
                     >
                       {apt.status}
                     </span>
@@ -391,14 +309,7 @@ export function PatientDetailsPanel({ patientId }) {
               ))}
             </div>
           ) : (
-            <p
-              style={{
-                fontSize: 'var(--text-body-sm)',
-                color: 'var(--color-neutral-500)',
-                textAlign: 'center',
-                padding: 'var(--space-4)',
-              }}
-            >
+            <p className='text-sm text-neutral-500 dark:text-neutral-400 text-center py-4'>
               No previous visits
             </p>
           )}

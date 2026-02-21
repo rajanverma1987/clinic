@@ -116,8 +116,8 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
           <span
             className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${
               is2FAEnabled
-                ? 'bg-status-success/10 text-status-success border border-status-success/20'
-                : 'bg-neutral-100 text-neutral-500 border border-neutral-200'
+                ? 'bg-status-success/10 text-status-success border border-status-success/20 dark:bg-green-800/60 dark:text-green-100 dark:border-green-600/50'
+                : 'bg-neutral-100 text-neutral-500 border border-neutral-200 dark:bg-neutral-600 dark:text-neutral-200 dark:border-neutral-500'
             }`}
           >
             {is2FAEnabled ? t('auth.twoFactorEnabled') : t('auth.twoFactorDisabled')}

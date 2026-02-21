@@ -131,21 +131,21 @@ export default function CreateManagerPage() {
     <div className='tab-content-standard-width-left mt-3'>
       <Card>
         <div className='p-6'>
-          <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
-            <h3 className='font-semibold text-blue-900 mb-2'>{t('settings.managerAccessTitle')}</h3>
-            <p className='text-sm text-blue-800'>{t('settings.managerAccessDescription')}</p>
+          <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/30 dark:border-blue-700'>
+            <h3 className='font-semibold text-blue-900 dark:text-blue-100 mb-2'>{t('settings.managerAccessTitle')}</h3>
+            <p className='text-sm text-blue-800 dark:text-blue-200'>{t('settings.managerAccessDescription')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className='space-y-6'>
             {error && (
-              <div className='p-4 bg-red-50 border border-red-200 rounded-lg text-red-700'>
+              <div className='p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/30 dark:border-red-700 dark:text-red-200'>
                 {error}
               </div>
             )}
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
                   {t('settings.firstNameRequired')}
                 </label>
                 <Input
@@ -157,7 +157,7 @@ export default function CreateManagerPage() {
               </div>
 
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
                   {t('settings.lastNameRequired')}
                 </label>
                 <Input
@@ -169,8 +169,8 @@ export default function CreateManagerPage() {
               </div>
             </div>
 
-            <div className='border border-neutral-200 rounded-lg p-4 bg-neutral-50/50'>
-              <h4 className='text-sm font-medium text-neutral-800 mb-3'>
+            <div className='border border-neutral-200 rounded-lg p-4 bg-neutral-50/50 dark:bg-neutral-800/50 dark:border-neutral-600'>
+              <h4 className='text-sm font-medium text-neutral-800 dark:text-neutral-200 mb-3'>
                 {t('settings.managerAccessTitle')}
               </h4>
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
@@ -189,14 +189,14 @@ export default function CreateManagerPage() {
                       }}
                       aria-label={t(opt.labelKey)}
                     />
-                    <span className='text-sm text-neutral-700'>{t(opt.labelKey)}</span>
+                    <span className='text-sm text-neutral-700 dark:text-neutral-300'>{t(opt.labelKey)}</span>
                   </label>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>{t('settings.emailRequired')}</label>
+              <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>{t('settings.emailRequired')}</label>
               <Input
                 type='email'
                 value={formData.email}
@@ -206,7 +206,7 @@ export default function CreateManagerPage() {
             </div>
 
             <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>{t('settings.passwordRequired')}</label>
+              <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>{t('settings.passwordRequired')}</label>
               <div className='relative'>
                 <Input
                   type={showPassword ? 'text' : 'password'}
@@ -218,16 +218,16 @@ export default function CreateManagerPage() {
                 <button
                   type='button'
                   onClick={() => setShowPassword(!showPassword)}
-                  className='absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-neutral-700'
+                  className='absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
                 >
                   {showPassword ? t('common.hide') : t('common.show')}
                 </button>
               </div>
-              <p className='text-sm text-neutral-500 mt-1'>{t('settings.minimumChars')}</p>
+              <p className='text-sm text-neutral-500 dark:text-neutral-400 mt-1'>{t('settings.minimumChars')}</p>
             </div>
 
             <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
                 {t('settings.confirmPasswordRequired')}
               </label>
               <Input

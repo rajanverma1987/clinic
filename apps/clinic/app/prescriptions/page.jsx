@@ -61,7 +61,10 @@ export default function PrescriptionsPage() {
     try {
       const response = await apiClient.get('/prescriptions');
       if (response.success && response.data) {
-        const prescriptionsList = extractArrayData(response);
+        const data = response.data;
+        let prescriptionsList =
+          Array.isArray(data) ? data : data?.data ?? data?.prescriptions ?? extractArrayData(response);
+        if (!Array.isArray(prescriptionsList)) prescriptionsList = [];
         setPrescriptions(prescriptionsList);
         if (tenantId) routeCache.set(ROUTE_KEY, tenantId, { prescriptions: prescriptionsList });
       } else {
@@ -175,14 +178,14 @@ export default function PrescriptionsPage() {
           <span
             className={`px-2 py-1 rounded-full text-body-xs font-medium ${
               row.status === 'active'
-                ? 'bg-secondary-100 text-secondary-700'
+                ? 'bg-secondary-100 text-secondary-700 dark:bg-green-800 dark:text-green-100'
                 : row.status === 'dispensed'
-                  ? 'bg-primary-100 text-primary-700'
+                  ? 'bg-primary-100 text-primary-700 dark:bg-blue-800 dark:text-blue-100'
                   : row.status === 'draft'
-                    ? 'bg-status-warning/20 text-status-warning'
+                    ? 'bg-status-warning/20 text-status-warning dark:bg-amber-900/60 dark:text-amber-200'
                     : row.status === 'cancelled'
-                      ? 'bg-status-error/20 text-status-error'
-                      : 'bg-neutral-100 text-neutral-700'
+                      ? 'bg-status-error/20 text-status-error dark:bg-red-900/60 dark:text-red-200'
+                      : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-600 dark:text-neutral-200'
             }`}
           >
             {getStatusLabel(row.status)}

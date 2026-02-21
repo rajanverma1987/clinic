@@ -316,20 +316,20 @@ export default function InventoryPage() {
   const getLotStatusBadge = (lot) => {
     if (lot.isExpired) {
       return (
-        <span className='px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-700'>
+        <span className='px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-200'>
           {t('inventory.expired')}
         </span>
       );
     }
     if (lot.isExpiringSoon) {
       return (
-        <span className='px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-700'>
+        <span className='px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-amber-900/60 dark:text-amber-200'>
           {t('inventory.expiringSoon')} ({lot.daysUntilExpiry} {t('common.days')})
         </span>
       );
     }
     return (
-      <span className='px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-700'>
+      <span className='px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100'>
         {t('common.active')}
       </span>
     );

@@ -297,13 +297,15 @@ export function PrescriptionFormPrintPreview({
 
         {printHtml && !loading && (
           <>
-            <div className='border rounded-lg overflow-hidden bg-white'>
+            <div className='prescription-print-preview-wrapper border rounded-lg overflow-hidden bg-white'>
               <div
                 className='print-preview p-4 bg-white'
                 dangerouslySetInnerHTML={{ __html: printHtml }}
                 style={{
                   maxHeight: '70vh',
                   overflowY: 'auto',
+                  backgroundColor: '#ffffff',
+                  color: '#000000',
                 }}
               />
             </div>
@@ -324,11 +326,28 @@ export function PrescriptionFormPrintPreview({
       </div>
 
       <style jsx global>{`
+        /* Force light theme for prescription print preview so it's readable in dark mode */
+        .prescription-print-preview-wrapper {
+          background: #ffffff !important;
+          color: #000000 !important;
+        }
+        .prescription-print-preview-wrapper .print-preview {
+          background: #ffffff !important;
+          color: #000000 !important;
+        }
         .print-preview {
           font-family: Arial, sans-serif;
+          background: #ffffff !important;
+          color: #000000 !important;
         }
         .print-preview * {
           max-width: 100%;
+          color: inherit;
+        }
+        .print-preview body,
+        .print-preview .prescription-container {
+          background: #ffffff !important;
+          color: #000000 !important;
         }
         @media print {
           body * {
@@ -343,6 +362,8 @@ export function PrescriptionFormPrintPreview({
             left: 0;
             top: 0;
             width: 100%;
+            background: #ffffff !important;
+            color: #000000 !important;
           }
         }
       `}</style>

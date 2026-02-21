@@ -272,10 +272,10 @@ export default function QueuePage() {
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
             row.priority === 'urgent'
-              ? 'bg-status-error/10 text-status-error'
+              ? 'bg-status-error/10 text-status-error dark:bg-red-900/60 dark:text-red-200'
               : row.priority === 'high'
-                ? 'bg-status-warning/10 text-status-warning'
-                : 'bg-neutral-100 text-neutral-700'
+                ? 'bg-status-warning/10 text-status-warning dark:bg-amber-900/60 dark:text-amber-200'
+                : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-600 dark:text-neutral-200'
           }`}
         >
           {row.priority}

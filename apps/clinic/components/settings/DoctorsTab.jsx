@@ -198,21 +198,21 @@ export function DoctorsTab({
               {staffList.map((user) => (
                 <div
                   key={user.id || user._id}
-                  className='flex items-center justify-between p-3 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all'
+                  className='flex items-center justify-between p-3 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-neutral-700/50 transition-all'
                 >
                   <div className='flex items-center gap-3 flex-1'>
-                    <div className='w-10 h-10 bg-primary-100 dark:bg-primary-900/40 rounded-lg flex items-center justify-center text-xl'>
+                    <div className='w-10 h-10 bg-primary-100 dark:bg-neutral-600 rounded-lg flex items-center justify-center text-xl'>
                       {getRoleIcon(user.role)}
                     </div>
                     <div className='flex-1 min-w-0'>
                       <h3 className='font-semibold text-neutral-900 dark:text-neutral-100 text-sm truncate'>
                         {user.firstName} {user.lastName}
                       </h3>
-                      <p className='text-xs text-neutral-600 dark:text-neutral-400 truncate'>
+                      <p className='text-xs text-neutral-600 dark:text-neutral-300 truncate'>
                         {user.email}
                       </p>
                       <div className='flex flex-wrap items-center gap-1.5 mt-1'>
-                        <span className='px-1.5 py-0.5 bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs rounded-full font-medium'>
+                        <span className='px-1.5 py-0.5 bg-primary-100 dark:bg-blue-800 text-primary-700 dark:text-blue-100 text-xs rounded-full font-medium'>
                           {user.role === 'doctor'
                             ? t('settings.roleDoctor')
                             : user.role === 'nurse'
@@ -232,8 +232,8 @@ export function DoctorsTab({
                         <span
                           className={`px-1.5 py-0.5 text-xs rounded-full font-medium ${
                             user.isActive
-                              ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
-                              : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-200'
                           }`}
                         >
                           {user.isActive ? t('common.active') : t('common.inactive')}

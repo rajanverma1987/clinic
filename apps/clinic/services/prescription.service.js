@@ -19,6 +19,7 @@
  * @since 1.0.0
  */
 
+import mongoose from 'mongoose';
 import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
@@ -420,17 +421,29 @@ export async function listPrescriptions(query, tenantId, userId) {
     limit: query.limit,
   });
 
+  // Normalize tenantId to ObjectId so filter matches Prescription documents (schema uses ObjectId)
+  const resolvedTenantId =
+    tenantId && typeof tenantId === 'string' && mongoose.Types.ObjectId.isValid(tenantId)
+      ? new mongoose.Types.ObjectId(tenantId)
+      : tenantId;
+
   // Build filter
-  const filter = withTenant(tenantId, {
+  const filter = withTenant(resolvedTenantId, {
     deletedAt: null,
   });
 
   if (query.patientId) {
-    filter.patientId = query.patientId;
+    filter.patientId =
+      typeof query.patientId === 'string' && mongoose.Types.ObjectId.isValid(query.patientId)
+        ? new mongoose.Types.ObjectId(query.patientId)
+        : query.patientId;
   }
 
   if (query.doctorId) {
-    filter.doctorId = query.doctorId;
+    filter.doctorId =
+      typeof query.doctorId === 'string' && mongoose.Types.ObjectId.isValid(query.doctorId)
+        ? new mongoose.Types.ObjectId(query.doctorId)
+        : query.doctorId;
   }
 
   if (query.status) {
