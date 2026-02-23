@@ -4,6 +4,7 @@ import { RefreshCwIcon, SearchIcon } from '@/components/icons';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useAppNotifications } from '@/contexts/AppNotificationsContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
@@ -27,11 +28,11 @@ export function PageHeader({
   actionButton,
   actionButtons,
   icon,
-  notifications = [],
-  unreadCount = 0,
-  onNotificationClick,
-  onMarkAsRead,
-  onMarkAllAsRead,
+  notifications: notificationsProp = [],
+  unreadCount: unreadCountProp = 0,
+  onNotificationClick: onNotificationClickProp,
+  onMarkAsRead: onMarkAsReadProp,
+  onMarkAllAsRead: onMarkAllAsReadProp,
   onRefresh,
   refreshing = false,
   showNotifications = true,
@@ -48,6 +49,25 @@ export function PageHeader({
   const [scrolled, setScrolled] = useState(false);
   const [defaultRefreshing, setDefaultRefreshing] = useState(false);
   const actionsList = toActionsList(actionButtons);
+
+  // Use context notifications if props are empty
+  const appNotifications = useAppNotifications();
+  const useContextNotifications = notificationsProp.length === 0 && unreadCountProp === 0;
+  
+  const notifications = useContextNotifications ? appNotifications.notifications : notificationsProp;
+  const unreadCount = useContextNotifications ? appNotifications.unreadCount : unreadCountProp;
+  const onNotificationClick = onNotificationClickProp || ((notification) => {
+    if (notification.type === 'appointment') {
+      router.push('/appointments');
+    } else if (notification.type === 'inventory') {
+      router.push('/inventory');
+    }
+    if (useContextNotifications) {
+      appNotifications.markAsRead(notification.id);
+    }
+  });
+  const onMarkAsRead = onMarkAsReadProp || (useContextNotifications ? appNotifications.markAsRead : undefined);
+  const onMarkAllAsRead = onMarkAllAsReadProp || (useContextNotifications ? appNotifications.markAllAsRead : undefined);
 
   const handleRefresh = useCallback(() => {
     if (typeof onRefresh === 'function') {

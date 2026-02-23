@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
+import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Tag } from '@/components/ui/Tag';
 import { Textarea } from '@/components/ui/Textarea';
@@ -34,6 +35,16 @@ export default function InventoryItemDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({});
+  const [showAddStockModal, setShowAddStockModal] = useState(false);
+  const [addingStock, setAddingStock] = useState(false);
+  const [stockFormData, setStockFormData] = useState({
+    batchNumber: '',
+    quantity: '',
+    expiryDate: '',
+    purchaseDate: '',
+    costPrice: '',
+    supplier: '',
+  });
 
   useEffect(() => {
     if (!authLoading && user && params.id) {
@@ -71,6 +82,14 @@ export default function InventoryItemDetailPage() {
         unit: formData.unit,
         lowStockThreshold: formData.lowStockThreshold || 0,
       };
+
+      // Include stock quantities
+      if (formData.totalQuantity !== undefined) {
+        payload.totalQuantity = formData.totalQuantity;
+      }
+      if (formData.availableQuantity !== undefined) {
+        payload.availableQuantity = formData.availableQuantity;
+      }
 
       // Include optional fields only if they have values
       if (formData.code) {
@@ -117,6 +136,58 @@ export default function InventoryItemDetailPage() {
   const formatCurrency = (amount) => {
     if (!amount) return 'N/A';
     return formatCurrencyUtil(amount, currency, locale);
+  };
+
+  const handleAddStock = async () => {
+    if (!stockFormData.batchNumber || !stockFormData.quantity) {
+      setError('Batch number and quantity are required');
+      return;
+    }
+
+    setAddingStock(true);
+    setError('');
+
+    try {
+      const payload = {
+        batchNumber: stockFormData.batchNumber,
+        quantity: parseInt(stockFormData.quantity, 10),
+      };
+
+      if (stockFormData.expiryDate) {
+        payload.expiryDate = stockFormData.expiryDate;
+      }
+      if (stockFormData.purchaseDate) {
+        payload.purchaseDate = stockFormData.purchaseDate;
+      }
+      if (stockFormData.costPrice) {
+        payload.costPrice = Math.round(parseFloat(stockFormData.costPrice) * 100);
+      }
+      if (stockFormData.supplier) {
+        payload.supplier = stockFormData.supplier;
+      }
+
+      const response = await apiClient.post(`/inventory/items/${params.id}/stock`, payload);
+
+      if (response.success) {
+        setShowAddStockModal(false);
+        setStockFormData({
+          batchNumber: '',
+          quantity: '',
+          expiryDate: '',
+          purchaseDate: '',
+          costPrice: '',
+          supplier: '',
+        });
+        fetchItem();
+      } else {
+        setError(response.error?.message || 'Failed to add stock');
+      }
+    } catch (err) {
+      logger.error('Failed to add stock:', err);
+      setError(err.message || 'Failed to add stock');
+    } finally {
+      setAddingStock(false);
+    }
   };
 
   const getStockStatus = () => {
@@ -180,8 +251,17 @@ export default function InventoryItemDetailPage() {
         unreadCount={0}
         actionButtons={
           <>
-            {!managerReadOnly && !isEditing && (
-              <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>
+            {!(user?.role === 'manager' && managerReadOnly) && !isEditing && (
+              <>
+                <Button
+                  variant='secondary'
+                  onClick={() => setShowAddStockModal(true)}
+                  className='mr-2'
+                >
+                  + {t('inventory.addStock') || 'Add Stock'}
+                </Button>
+                <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>
+              </>
             )}
           </>
         }
@@ -246,13 +326,13 @@ export default function InventoryItemDetailPage() {
               {!isEditing && (
                 <>
                   <div>
-                    <label className='block text-sm font-semibold text-neutral-900 mb-2'>
+                    <label className='block text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-2'>
                       {t('inventory.currentStock')}
                     </label>
-                    <p className='text-lg font-medium text-neutral-900'>
+                    <p className='text-lg font-medium text-neutral-900 dark:text-neutral-100'>
                       {item.totalQuantity} {item.unit}
                       {item.availableQuantity !== item.totalQuantity && (
-                        <span className='text-neutral-500 ml-2'>
+                        <span className='text-neutral-500 dark:text-neutral-400 ml-2'>
                           ({item.availableQuantity} available)
                         </span>
                       )}
@@ -260,10 +340,10 @@ export default function InventoryItemDetailPage() {
                   </div>
 
                   <div>
-                    <label className='block text-sm font-semibold text-neutral-900 mb-2'>
+                    <label className='block text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-2'>
                       {t('inventory.lowStockThreshold')}
                     </label>
-                    <p className='text-lg font-medium text-neutral-900'>
+                    <p className='text-lg font-medium text-neutral-900 dark:text-neutral-100'>
                       {item.lowStockThreshold} {item.unit}
                     </p>
                   </div>
@@ -272,6 +352,16 @@ export default function InventoryItemDetailPage() {
 
               {isEditing && (
                 <>
+                  <Input
+                    label={t('inventory.currentStock')}
+                    type='number'
+                    value={formData.totalQuantity?.toString() || ''}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 0;
+                      setFormData({ ...formData, totalQuantity: val, availableQuantity: val });
+                    }}
+                    min='0'
+                  />
                   <Input
                     label={t('inventory.lowStockThreshold')}
                     type='number'
@@ -396,7 +486,145 @@ export default function InventoryItemDetailPage() {
             )}
           </form>
         </Card>
+
+        {/* Stock Batches Section */}
+        {item.batches && item.batches.length > 0 && (
+          <Card className='mt-6'>
+            <h3 className='text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
+              {t('inventory.stockBatches') || 'Stock Batches'}
+            </h3>
+            <div className='overflow-x-auto'>
+              <table className='w-full text-sm'>
+                <thead>
+                  <tr className='border-b border-neutral-200 dark:border-neutral-700'>
+                    <th className='text-left py-2 px-3 font-medium text-neutral-600 dark:text-neutral-400'>
+                      {t('inventory.batchNumber') || 'Batch Number'}
+                    </th>
+                    <th className='text-left py-2 px-3 font-medium text-neutral-600 dark:text-neutral-400'>
+                      {t('inventory.quantity') || 'Quantity'}
+                    </th>
+                    <th className='text-left py-2 px-3 font-medium text-neutral-600 dark:text-neutral-400'>
+                      {t('inventory.expiryDate') || 'Expiry Date'}
+                    </th>
+                    <th className='text-left py-2 px-3 font-medium text-neutral-600 dark:text-neutral-400'>
+                      {t('inventory.purchaseDate') || 'Purchase Date'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {item.batches.map((batch, index) => (
+                    <tr
+                      key={batch._id || index}
+                      className='border-b border-neutral-100 dark:border-neutral-800'
+                    >
+                      <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
+                        {batch.batchNumber}
+                      </td>
+                      <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
+                        {batch.quantity} {item.unit}
+                      </td>
+                      <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
+                        {batch.expiryDate
+                          ? new Date(batch.expiryDate).toLocaleDateString()
+                          : 'N/A'}
+                      </td>
+                      <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
+                        {batch.purchaseDate
+                          ? new Date(batch.purchaseDate).toLocaleDateString()
+                          : 'N/A'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
       </div>
+
+      {/* Add Stock Modal */}
+      <Modal
+        isOpen={showAddStockModal}
+        onClose={() => setShowAddStockModal(false)}
+        title={t('inventory.addStock') || 'Add Stock'}
+      >
+        <div className='space-y-4'>
+          <Input
+            label={t('inventory.batchNumber') || 'Batch Number'}
+            value={stockFormData.batchNumber}
+            onChange={(e) =>
+              setStockFormData({ ...stockFormData, batchNumber: e.target.value })
+            }
+            placeholder='e.g., BATCH-001'
+            required
+          />
+
+          <Input
+            label={t('inventory.quantity') || 'Quantity'}
+            type='number'
+            value={stockFormData.quantity}
+            onChange={(e) =>
+              setStockFormData({ ...stockFormData, quantity: e.target.value })
+            }
+            placeholder='Enter quantity'
+            min='1'
+            required
+          />
+
+          <DatePicker
+            label={t('inventory.expiryDate') || 'Expiry Date'}
+            value={stockFormData.expiryDate}
+            onChange={(e) =>
+              setStockFormData({ ...stockFormData, expiryDate: e.target.value })
+            }
+          />
+
+          <DatePicker
+            label={t('inventory.purchaseDate') || 'Purchase Date'}
+            value={stockFormData.purchaseDate}
+            onChange={(e) =>
+              setStockFormData({ ...stockFormData, purchaseDate: e.target.value })
+            }
+          />
+
+          <Input
+            label={t('inventory.costPrice') || 'Cost Price'}
+            type='number'
+            step='0.01'
+            value={stockFormData.costPrice}
+            onChange={(e) =>
+              setStockFormData({ ...stockFormData, costPrice: e.target.value })
+            }
+            placeholder='Enter cost price'
+          />
+
+          <Input
+            label={t('inventory.supplier') || 'Supplier'}
+            value={stockFormData.supplier}
+            onChange={(e) =>
+              setStockFormData({ ...stockFormData, supplier: e.target.value })
+            }
+            placeholder='Enter supplier name'
+          />
+
+          <div className='flex gap-4 pt-4'>
+            <Button
+              onClick={handleAddStock}
+              isLoading={addingStock}
+              disabled={addingStock}
+            >
+              {t('inventory.addStock') || 'Add Stock'}
+            </Button>
+            <Button
+              variant='secondary'
+              onClick={() => setShowAddStockModal(false)}
+              disabled={addingStock}
+            >
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 }

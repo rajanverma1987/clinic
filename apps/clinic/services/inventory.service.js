@@ -569,6 +569,45 @@ export async function listStockTransactions(tenantId, userId, options = {}) {
 }
 
 /**
+ * Generate the next item code for a tenant
+ * Returns a unique code in format MED-XXX
+ */
+export async function generateNextItemCode(tenantId) {
+  await connectDB();
+
+  // Count total items for this tenant (including deleted ones to ensure uniqueness)
+  const totalItems = await InventoryItem.countDocuments({
+    tenantId: typeof tenantId === 'string' ? new mongoose.Types.ObjectId(tenantId) : tenantId,
+  });
+
+  // Find the highest existing MED-XXX code to avoid conflicts
+  const existingCodes = await InventoryItem.find(
+    {
+      tenantId: typeof tenantId === 'string' ? new mongoose.Types.ObjectId(tenantId) : tenantId,
+      code: { $regex: /^MED-\d+$/ },
+    },
+    { code: 1 }
+  ).lean();
+
+  let maxNumber = 0;
+  for (const item of existingCodes) {
+    const match = item.code.match(/^MED-(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxNumber) {
+        maxNumber = num;
+      }
+    }
+  }
+
+  // Use the higher of totalItems or maxNumber + 1
+  const nextNumber = Math.max(totalItems + 1, maxNumber + 1);
+  const code = `MED-${String(nextNumber).padStart(3, '0')}`;
+
+  return code;
+}
+
+/**
  * Update inventory item
  */
 export async function updateInventoryItem(itemId, input, tenantId, userId) {
@@ -617,6 +656,88 @@ export async function updateInventoryItem(itemId, input, tenantId, userId) {
 }
 
 /**
+ * Add stock/batch to an existing inventory item
+ * Creates a new batch entry and updates total/available quantities
+ */
+export async function addStockToItem(itemId, batchData, tenantId, userId) {
+  await connectDB();
+
+  const item = await InventoryItem.findOne(
+    withTenant(tenantId, {
+      _id: itemId,
+      deletedAt: null,
+    }),
+  );
+
+  if (!item) {
+    return null;
+  }
+
+  const before = item.toObject();
+
+  // Create the new batch entry
+  const newBatch = {
+    batchNumber: batchData.batchNumber,
+    expiryDate: batchData.expiryDate ? new Date(batchData.expiryDate) : new Date(),
+    quantity: batchData.quantity || 0,
+    purchasePrice: batchData.purchasePrice,
+    purchaseDate: batchData.purchaseDate ? new Date(batchData.purchaseDate) : new Date(),
+    supplierId: batchData.supplierId,
+  };
+
+  // Add batch to the batches array
+  item.batches.push(newBatch);
+
+  // Update total and available quantities
+  item.totalQuantity = (item.totalQuantity || 0) + (batchData.quantity || 0);
+  item.availableQuantity = (item.availableQuantity || 0) + (batchData.quantity || 0);
+
+  // Update top-level batch info if this is the first batch or user wants to update it
+  if (!item.batchNumber || batchData.updateTopLevel) {
+    item.batchNumber = batchData.batchNumber;
+    item.expiryDate = newBatch.expiryDate;
+    if (batchData.supplier) {
+      item.supplier = batchData.supplier;
+    }
+  }
+
+  // Update cost price if provided
+  if (batchData.costPrice !== undefined) {
+    item.costPrice = batchData.costPrice;
+  }
+
+  await item.save();
+
+  // Check for low stock and send notification if needed
+  if (item.totalQuantity <= item.lowStockThreshold) {
+    try {
+      await notifyStockLow(tenantId, item._id.toString(), item.name, item.totalQuantity);
+    } catch (notifyError) {
+      logger.error('Failed to send low stock notification:', notifyError);
+    }
+  }
+
+  // Notify stock update
+  try {
+    await notifyStockUpdated(tenantId, item._id.toString(), item.name, item.totalQuantity);
+  } catch (notifyError) {
+    logger.error('Failed to send stock update notification:', notifyError);
+  }
+
+  await AuditLogger.auditWrite(
+    'inventory_item',
+    item._id.toString(),
+    userId,
+    tenantId,
+    AuditAction.UPDATE,
+    { before, after: item.toObject() },
+    { action: 'add_stock', batchData },
+  );
+
+  return item;
+}
+
+/**
  * Soft delete inventory item
  */
 export async function deleteInventoryItem(itemId, tenantId, userId) {
@@ -646,6 +767,85 @@ export async function deleteInventoryItem(itemId, tenantId, userId) {
   );
 
   return true;
+}
+
+/**
+ * Remove a specific batch from an inventory item
+ * Updates total/available quantities accordingly
+ */
+export async function removeBatchFromItem(itemId, batchNumber, tenantId, userId) {
+  await connectDB();
+
+  const item = await InventoryItem.findOne(
+    withTenant(tenantId, {
+      _id: itemId,
+      deletedAt: null,
+    }),
+  );
+
+  if (!item) {
+    return null;
+  }
+
+  const before = item.toObject();
+
+  // Find the batch to remove
+  const batchIndex = item.batches.findIndex(
+    (b) => b.batchNumber === batchNumber
+  );
+
+  if (batchIndex === -1) {
+    // Batch not found - might be a top-level only item (no batches array)
+    // In this case, clear the top-level batch info
+    if (item.batchNumber === batchNumber) {
+      item.batchNumber = '';
+      item.expiryDate = null;
+      await item.save();
+
+      await AuditLogger.auditWrite(
+        'inventory_item',
+        item._id.toString(),
+        userId,
+        tenantId,
+        AuditAction.UPDATE,
+        { before, after: item.toObject() },
+        { action: 'remove_batch', batchNumber },
+      );
+
+      return item;
+    }
+    return null;
+  }
+
+  // Get the quantity of the batch being removed
+  const batchQuantity = item.batches[batchIndex].quantity || 0;
+
+  // Remove the batch from the array
+  item.batches.splice(batchIndex, 1);
+
+  // Update total and available quantities
+  item.totalQuantity = Math.max(0, (item.totalQuantity || 0) - batchQuantity);
+  item.availableQuantity = Math.max(0, (item.availableQuantity || 0) - batchQuantity);
+
+  // If this was the last batch, clear top-level batch info
+  if (item.batches.length === 0) {
+    item.batchNumber = '';
+    item.expiryDate = null;
+  }
+
+  await item.save();
+
+  await AuditLogger.auditWrite(
+    'inventory_item',
+    item._id.toString(),
+    userId,
+    tenantId,
+    AuditAction.UPDATE,
+    { before, after: item.toObject() },
+    { action: 'remove_batch', batchNumber, quantityRemoved: batchQuantity },
+  );
+
+  return item;
 }
 
 /**

@@ -1,6 +1,6 @@
 'use client';
 
-import { EyeIcon, FileDownIcon } from '@/components/icons';
+import { EyeIcon, FileDownIcon, TrashIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Loader } from '@/components/ui/Loader';
+import { Modal } from '@/components/ui/Modal';
 import { PageSearchBar } from '@/components/ui/PageSearchBar';
 import { Table } from '@/components/ui/Table';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
@@ -73,6 +74,10 @@ export default function InventoryPage() {
 
   const [transactions, setTransactions] = useState([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
+
+  const [deleteItemModal, setDeleteItemModal] = useState({ open: false, item: null });
+  const [deleteBatchModal, setDeleteBatchModal] = useState({ open: false, lot: null });
+  const [deleting, setDeleting] = useState(false);
 
   useLayoutEffect(() => {
     if (!tenantId) return;
@@ -201,6 +206,49 @@ export default function InventoryPage() {
     }).format(amount / 100);
   };
 
+  const handleDeleteItem = async () => {
+    if (!deleteItemModal.item) return;
+    setDeleting(true);
+    try {
+      const response = await apiClient.delete(`/inventory/items/${deleteItemModal.item._id}`);
+      if (response.success) {
+        showSuccess(t('inventory.itemDeleted') || 'Item deleted successfully');
+        setDeleteItemModal({ open: false, item: null });
+        fetchItems();
+      } else {
+        showError(response.error?.message || t('inventory.deleteItemFailed') || 'Failed to delete item');
+      }
+    } catch (err) {
+      logger.error('Failed to delete inventory item:', err);
+      showError(err.message || t('inventory.deleteItemFailed') || 'Failed to delete item');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteBatch = async () => {
+    if (!deleteBatchModal.lot) return;
+    setDeleting(true);
+    try {
+      const { itemId, batchNumber } = deleteBatchModal.lot;
+      const response = await apiClient.delete(
+        `/inventory/items/${itemId}/batch?batchNumber=${encodeURIComponent(batchNumber)}`
+      );
+      if (response.success) {
+        showSuccess(t('inventory.batchDeleted') || 'Batch deleted successfully');
+        setDeleteBatchModal({ open: false, lot: null });
+        fetchLots();
+      } else {
+        showError(response.error?.message || t('inventory.deleteBatchFailed') || 'Failed to delete batch');
+      }
+    } catch (err) {
+      logger.error('Failed to delete batch:', err);
+      showError(err.message || t('inventory.deleteBatchFailed') || 'Failed to delete batch');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const columns = [
     { header: t('inventory.itemName'), accessor: 'name' },
     { header: t('inventory.code'), accessor: 'code' },
@@ -225,6 +273,34 @@ export default function InventoryPage() {
     {
       header: t('inventory.sellingPrice'),
       accessor: (row) => formatCurrency(row.sellingPrice),
+    },
+    {
+      header: t('common.actions'),
+      accessor: (row) => (
+        <ActionsMenu
+          ariaLabel={t('common.actions')}
+          triggerSize='xs'
+          items={[
+            {
+              key: 'view',
+              label: t('inventory.viewItem') || 'View Details',
+              icon: <EyeIcon className='icon icon-sm' />,
+              onClick: () => router.push(`/inventory/items/${row._id}`),
+            },
+            ...((!(user?.role === 'manager' && managerReadOnly))
+              ? [
+                  {
+                    key: 'delete',
+                    label: t('common.delete'),
+                    icon: <TrashIcon className='icon icon-sm' />,
+                    onClick: () => setDeleteItemModal({ open: true, item: row }),
+                    variant: 'danger',
+                  },
+                ]
+              : []),
+          ]}
+        />
+      ),
     },
   ];
 
@@ -368,7 +444,7 @@ export default function InventoryPage() {
         onRefresh={activeTab === 'items' ? handleManualRefresh : undefined}
         refreshing={activeTab === 'items' && refreshing}
         actionButton={
-          activeTab === 'items' && !managerReadOnly ? (
+          activeTab === 'items' && !(user?.role === 'manager' && managerReadOnly) ? (
             <Button
               href='/inventory/items/new'
               variant='primary'
@@ -425,7 +501,7 @@ export default function InventoryPage() {
                         </option>
                       ))}
                     </select>
-                    {!managerReadOnly && (
+                    {!(user?.role === 'manager' && managerReadOnly) && (
                       <Button
                         variant='ghost'
                         size='md'
@@ -553,10 +629,25 @@ export default function InventoryPage() {
                                 items={[
                                   {
                                     key: 'view',
-                                    label: t('inventory.viewItem'),
+                                    label: t('inventory.viewItem') || 'View Item',
                                     icon: <EyeIcon className='icon icon-sm' />,
                                     onClick: () => router.push(`/inventory/items/${lot.itemId}`),
                                   },
+                                  ...((!(user?.role === 'manager' && managerReadOnly))
+                                    ? [
+                                        {
+                                          key: 'delete',
+                                          label: t('inventory.deleteBatch') || 'Delete Batch',
+                                          icon: <TrashIcon className='icon icon-sm' />,
+                                          onClick: () =>
+                                            setDeleteBatchModal({
+                                              open: true,
+                                              lot: lot,
+                                            }),
+                                          variant: 'danger',
+                                        },
+                                      ]
+                                    : []),
                                 ]}
                               />
                             </td>
@@ -672,6 +763,86 @@ export default function InventoryPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Item Confirmation Modal */}
+      <Modal
+        isOpen={deleteItemModal.open}
+        onClose={() => setDeleteItemModal({ open: false, item: null })}
+        title={t('inventory.deleteItem') || 'Delete Item'}
+      >
+        <div className='space-y-4'>
+          <p className='text-neutral-700 dark:text-neutral-300'>
+            {t('inventory.confirmDeleteItem') ||
+              'Are you sure you want to delete this item? This action cannot be undone.'}
+          </p>
+          {deleteItemModal.item && (
+            <p className='font-medium text-neutral-900 dark:text-neutral-100'>
+              {deleteItemModal.item.name}
+            </p>
+          )}
+          <div className='flex gap-4 pt-4'>
+            <Button
+              variant='danger'
+              onClick={handleDeleteItem}
+              isLoading={deleting}
+              disabled={deleting}
+            >
+              {t('common.delete')}
+            </Button>
+            <Button
+              variant='secondary'
+              onClick={() => setDeleteItemModal({ open: false, item: null })}
+              disabled={deleting}
+            >
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Batch Confirmation Modal */}
+      <Modal
+        isOpen={deleteBatchModal.open}
+        onClose={() => setDeleteBatchModal({ open: false, lot: null })}
+        title={t('inventory.deleteBatch') || 'Delete Batch'}
+      >
+        <div className='space-y-4'>
+          <p className='text-neutral-700 dark:text-neutral-300'>
+            {t('inventory.confirmDeleteBatch') ||
+              'Are you sure you want to delete this batch? The stock quantity will be reduced accordingly.'}
+          </p>
+          {deleteBatchModal.lot && (
+            <div className='bg-neutral-100 dark:bg-neutral-800 p-3 rounded-lg'>
+              <p className='font-medium text-neutral-900 dark:text-neutral-100'>
+                {deleteBatchModal.lot.itemName}
+              </p>
+              <p className='text-sm text-neutral-600 dark:text-neutral-400'>
+                {t('inventory.batchNumber')}: {deleteBatchModal.lot.batchNumber}
+              </p>
+              <p className='text-sm text-neutral-600 dark:text-neutral-400'>
+                {t('inventory.quantity')}: {deleteBatchModal.lot.quantity} {deleteBatchModal.lot.unit}
+              </p>
+            </div>
+          )}
+          <div className='flex gap-4 pt-4'>
+            <Button
+              variant='danger'
+              onClick={handleDeleteBatch}
+              isLoading={deleting}
+              disabled={deleting}
+            >
+              {t('inventory.deleteBatch') || 'Delete Batch'}
+            </Button>
+            <Button
+              variant='secondary'
+              onClick={() => setDeleteBatchModal({ open: false, lot: null })}
+              disabled={deleting}
+            >
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 }

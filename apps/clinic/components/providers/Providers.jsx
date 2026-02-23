@@ -5,6 +5,7 @@ import { DocumentLocale } from '@/components/DocumentLocale';
 import { OfflineReplay } from '@/components/OfflineReplay';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { NotificationWrapper } from '@/components/notifications/NotificationWrapper';
+import { AppNotificationsProvider } from '@/contexts/AppNotificationsContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ConfirmationProvider } from '@/contexts/ConfirmationContext';
 import { FeatureProvider } from '@/contexts/FeatureContext';
@@ -44,11 +45,13 @@ export function Providers({ children }) {
               <DocumentLocale />
               <FeatureProvider>
                 <NotificationProvider>
-                  <NotificationWrapper>
-                    <ConfirmationProvider>
-                      <PageTransition>{children}</PageTransition>
-                    </ConfirmationProvider>
-                  </NotificationWrapper>
+                  <AppNotificationsProvider>
+                    <NotificationWrapper>
+                      <ConfirmationProvider>
+                        <PageTransition>{children}</PageTransition>
+                      </ConfirmationProvider>
+                    </NotificationWrapper>
+                  </AppNotificationsProvider>
                 </NotificationProvider>
               </FeatureProvider>
             </I18nProvider>
