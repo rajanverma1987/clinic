@@ -853,6 +853,8 @@ export default function DashboardPage() {
                           visibleCount={5}
                           title={t('dashboard.todayAppointments')}
                           seeAllHref='/appointments'
+                          date={new Date().toISOString().split('T')[0]}
+                          showCompletedIfEmpty
                         />
                       </Card>
                     </div>

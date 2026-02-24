@@ -4,6 +4,9 @@
   position: relative;
   display: inline-block;
   overflow: visible;
+  /* Extra padding to prevent badge cutoff */
+  padding: 6px;
+  margin: -6px;
 }
 
 /* Button - Ultra Premium */
@@ -25,7 +28,7 @@
     var(--shadow-md),
     0 0 0 1px color-mix(in srgb, var(--color-neutral-50) 50%, transparent) inset;
   outline: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .NotificationDropdown-button::before {
@@ -730,4 +733,24 @@
   width: 20px;
   height: 20px;
   color: inherit;
+}
+
+/* Ensure badge is visible in page header context */
+.page-header .NotificationDropdown,
+.enterprise-header .NotificationDropdown,
+.sticky-header-bar .NotificationDropdown {
+  overflow: visible;
+  padding: 8px;
+  margin: -8px;
+}
+
+.page-header .NotificationDropdown .NotificationDropdown-badge,
+.enterprise-header .NotificationDropdown .NotificationDropdown-badge,
+.sticky-header-bar .NotificationDropdown .NotificationDropdown-badge {
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px;
+  padding: 0 4px;
 }

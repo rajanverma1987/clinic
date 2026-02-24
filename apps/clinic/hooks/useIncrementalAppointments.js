@@ -6,13 +6,13 @@
 import { apiClient } from '@/lib/api/client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export function useIncrementalAppointments({ limit, status } = {}) {
+export function useIncrementalAppointments({ limit, status, date, showCompletedIfEmpty = false } = {}) {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const lastUpdateRef = useRef(null);
 
-  // Use primitive deps (limit, status) instead of the filters object so the
+  // Use primitive deps (limit, status, date) instead of the filters object so the
   // callback is only recreated when values actually change, not on every parent render.
   const fetchAppointments = useCallback(
     async (isIncremental = false) => {
@@ -20,6 +20,7 @@ export function useIncrementalAppointments({ limit, status } = {}) {
         const params = {};
         if (limit != null) params.limit = limit;
         if (status != null) params.status = status;
+        if (date != null) params.date = date;
 
         if (isIncremental && lastUpdateRef.current) {
           params.since = lastUpdateRef.current;
@@ -28,16 +29,27 @@ export function useIncrementalAppointments({ limit, status } = {}) {
         const response = await apiClient.get('/appointments', { params });
         const { data, isIncremental: wasIncremental, timestamp } = response.data;
 
+        let resultData = data || [];
+
         if (wasIncremental) {
           setAppointments((prev) => {
             const map = new Map(prev.map((a) => [a._id, a]));
-            data.forEach((item) => map.set(item._id, item));
+            resultData.forEach((item) => map.set(item._id, item));
             return Array.from(map.values()).sort(
-              (a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate),
+              (a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate),
             );
           });
         } else {
-          setAppointments(data);
+          // If no appointments found and showCompletedIfEmpty is true, fetch completed ones
+          if (resultData.length === 0 && showCompletedIfEmpty && date) {
+            const completedParams = { ...params, status: 'completed' };
+            delete completedParams.since;
+            const completedRes = await apiClient.get('/appointments', { params: completedParams });
+            resultData = completedRes.data?.data || [];
+          }
+          // Sort by appointment time (earliest first for today's schedule)
+          resultData.sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate));
+          setAppointments(resultData);
         }
 
         lastUpdateRef.current = timestamp;
@@ -49,7 +61,7 @@ export function useIncrementalAppointments({ limit, status } = {}) {
         setLoading(false);
       }
     },
-    [limit, status],
+    [limit, status, date, showCompletedIfEmpty],
   );
 
   const refresh = useCallback(() => {

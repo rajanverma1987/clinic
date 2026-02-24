@@ -154,11 +154,15 @@ export function AppointmentsListWithHook({
   title,
   seeAllHref,
   cardClassName,
+  date,
+  showCompletedIfEmpty = false,
 }) {
   const { appointments, loading, error, refresh } = useIncrementalAppointments({
     ...filters,
     limit,
     status: filters.status || 'scheduled',
+    date,
+    showCompletedIfEmpty,
   });
 
   const { t } = useI18n();

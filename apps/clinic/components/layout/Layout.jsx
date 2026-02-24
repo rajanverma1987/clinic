@@ -100,6 +100,11 @@ export function Layout({
     };
   }, []);
 
+  // Show full-screen loader during initial auth loading (covers everything)
+  if (authLoading) {
+    return <Loader fullScreen size='lg' />;
+  }
+
   return (
     <div
       className='layout-root bg-neutral-50 dark:bg-neutral-900'
@@ -165,8 +170,8 @@ export function Layout({
                 onOpenSearch={() => setShowSearch(true)}
               />
             )}
-            {/* Auth or page loading: loader in content area only; sidebar and header stay visible */}
-            {authLoading || loading ? (
+            {/* Page-specific loading: loader in content area only */}
+            {loading ? (
               <div
                 className='flex items-center justify-center min-h-[calc(100vh-12rem)]'
                 role='status'

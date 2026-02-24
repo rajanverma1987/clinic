@@ -20,16 +20,17 @@ function AppointmentListItemInner({
   const { t } = useI18n();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  // Priority: startTime (actual time slot) > schedule.startTime > appointmentDate (date only)
   const appointmentTime = new Date(
-    appointment.appointmentDate ||
+    appointment.startTime ||
       appointment.schedule?.startTime ||
-      appointment.startTime ||
+      appointment.appointmentDate ||
       appointment.date,
   );
   const startTime = appointment.startedAt
     ? new Date(appointment.startedAt)
-    : new Date(appointment.schedule?.startTime || appointment.startTime || appointmentTime);
-  const endTime = new Date(appointment.schedule?.endTime || appointment.endTime || appointmentTime);
+    : new Date(appointment.startTime || appointment.schedule?.startTime || appointmentTime);
+  const endTime = new Date(appointment.endTime || appointment.schedule?.endTime || appointmentTime);
   const timeStr = appointmentTime.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',

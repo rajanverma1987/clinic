@@ -98,8 +98,23 @@ class ApiClient {
       performance.mark(apiMarkName);
     }
 
+    // Build URL with query parameters if provided
+    let url = `${this.baseUrl}${endpoint}`;
+    if (options.params && typeof options.params === 'object') {
+      const searchParams = new URLSearchParams();
+      Object.entries(options.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      });
+      const queryString = searchParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+    }
+
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, fetchOptions);
+      const response = await fetch(url, fetchOptions);
 
       const text = await response.text();
       let data;

@@ -19,6 +19,7 @@ import Invoice from '@/models/Invoice.js';
 import Patient from '@/models/Patient.js';
 import Queue from '@/models/Queue.js';
 import { getPatientFlow, getRevenueTrend } from '@clinic-saas/dashboard-engine';
+import mongoose from 'mongoose';
 import { NextResponse } from 'next/server';
 
 const val = (result, fallback) => (result?.status === 'fulfilled' ? result.value : fallback);
@@ -29,10 +30,34 @@ async function getDashboardAll(tenantId, userId, role) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 86400000 - 1);
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
   const thirtyDaysFromNow = new Date(now.getTime() + 30 * 86400000);
   const isDoctor = role === 'doctor';
-  const tenantObj = tenantId;
+  // Convert tenantId to ObjectId for aggregation queries
+  const tenantObj = typeof tenantId === 'string' && mongoose.Types.ObjectId.isValid(tenantId)
+    ? new mongoose.Types.ObjectId(tenantId)
+    : tenantId;
+
+  // Helper to generate last 14 days date strings
+  const generateLast14Days = () => {
+    const dates = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    return dates;
+  };
+
+  // Helper to fill missing days with zero values
+  const fillMissingDays = (aggregatedData) => {
+    const last14Days = generateLast14Days();
+    const dataMap = new Map(aggregatedData.map((item) => [item._id, item.value]));
+    return last14Days.map((date) => ({
+      _id: date,
+      value: dataMap.get(date) || 0,
+    }));
+  };
 
   const apptMatch = { tenantId: tenantObj, deletedAt: null };
   const apptMatchToday = {
@@ -190,7 +215,7 @@ async function getDashboardAll(tenantId, userId, role) {
             $match: {
               tenantId: tenantObj,
               status: 'paid',
-              createdAt: { $gte: thirtyDaysAgo },
+              createdAt: { $gte: fourteenDaysAgo },
             },
           },
           {
@@ -202,17 +227,31 @@ async function getDashboardAll(tenantId, userId, role) {
           { $sort: { _id: 1 } },
         ]),
     Appointment.aggregate([
-      { $match: { tenantId: tenantObj, createdAt: { $gte: thirtyDaysAgo } } },
+      {
+        $match: {
+          tenantId: tenantObj,
+          deletedAt: null,
+          $or: [
+            { appointmentDate: { $gte: fourteenDaysAgo } },
+            { startTime: { $gte: fourteenDaysAgo } },
+          ],
+        },
+      },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          _id: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: { $ifNull: ['$startTime', '$appointmentDate'] },
+            },
+          },
           value: { $sum: 1 },
         },
       },
       { $sort: { _id: 1 } },
     ]),
     Patient.aggregate([
-      { $match: { tenantId: tenantObj, createdAt: { $gte: thirtyDaysAgo } } },
+      { $match: { tenantId: tenantObj, createdAt: { $gte: fourteenDaysAgo } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -317,9 +356,9 @@ async function getDashboardAll(tenantId, userId, role) {
       criticalAlerts,
     },
     charts: {
-      revenue: val(chartRevenue, []),
-      appointments: val(chartAppointments, []),
-      patients: val(chartPatients, []),
+      revenue: fillMissingDays(val(chartRevenue, [])),
+      appointments: fillMissingDays(val(chartAppointments, [])),
+      patients: fillMissingDays(val(chartPatients, [])),
     },
     trends: val(trendsResult, { revenue: null, patientFlow: null }),
     meta: {

@@ -6,8 +6,10 @@ import { memo, useEffect, useRef, useState, useMemo } from 'react';
 
 const CHART_HEIGHT = 160;
 
-/** Resolve display date from item: supports period, date (reports), or key "YYYY-MM" (admin). */
+/** Resolve display date from item: supports _id (MongoDB aggregation), period, date (reports), or key "YYYY-MM" (admin). */
 function getItemDate(item) {
+  // MongoDB aggregation returns _id as "YYYY-MM-DD" string
+  if (item._id && /^\d{4}-\d{2}-\d{2}$/.test(String(item._id))) return new Date(item._id);
   if (item.period) return new Date(item.period);
   if (item.date) return new Date(item.date);
   if (item.key && /^\d{4}-\d{2}$/.test(String(item.key))) return new Date(String(item.key) + '-01');
@@ -51,7 +53,11 @@ function ChartCardInner({ title, data, colorScheme = 'primary', loading = false 
   }, [inView]);
 
   // Hooks must run unconditionally (before any early return).
-  const chartData = useMemo(() => (Array.isArray(data) ? data.slice(-14) : []), [data]);
+  // Handle both array data and nested data.data structure
+  const chartData = useMemo(() => {
+    const rawData = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+    return rawData.slice(-14);
+  }, [data]);
   const hasData = chartData.length > 0;
   const maxBarValue = useMemo(
     () => Math.max(...chartData.map((d) => d.value || d.total || d.count || 0), 1),
@@ -158,6 +164,20 @@ function ChartCardInner({ title, data, colorScheme = 'primary', loading = false 
                         {(() => {
                           const date = getItemDate(item);
                           if (item.label && chartData.length > 7) return item.label;
+                          // For 14-day charts, show day number (e.g., "10", "11")
+                          // Show month abbreviation on first item or first day of month
+                          if (chartData.length > 7 && chartData.length <= 14) {
+                            const day = date.getDate();
+                            const isFirstItem = index === 0;
+                            const isFirstOfMonth = day === 1;
+                            if (isFirstItem || isFirstOfMonth) {
+                              return date.toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                              });
+                            }
+                            return day.toString();
+                          }
                           if (chartData.length <= 7) {
                             return date.toLocaleDateString(undefined, {
                               month: 'short',
