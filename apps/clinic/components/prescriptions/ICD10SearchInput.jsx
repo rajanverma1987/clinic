@@ -96,22 +96,7 @@ export function ICD10SearchInput({
           ref={listRef}
           role='listbox'
           onMouseDown={(e) => e.preventDefault()}
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: '100%',
-            margin: 0,
-            padding: 0,
-            listStyle: 'none',
-            background: 'var(--color-neutral-0)',
-            border: '1px solid var(--color-neutral-200)',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: 'var(--shadow-md)',
-            zIndex: 10070,
-            maxHeight: 240,
-            overflowY: 'auto',
-          }}
+          className='absolute left-0 right-0 top-full mt-1 m-0 p-0 list-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-lg shadow-lg z-[10070] max-h-60 overflow-y-auto'
         >
           {filtered.map((item, i) => (
             <li
@@ -124,18 +109,15 @@ export function ICD10SearchInput({
                 handleSelect(item);
               }}
               onClick={() => handleSelect(item)}
-              style={{
-                padding: 'var(--space-2) var(--space-3)',
-                cursor: 'pointer',
-                fontSize: 'var(--text-body-sm)',
-                background: i === selectedIndex ? 'var(--color-primary-50)' : 'transparent',
-                color:
-                  i === selectedIndex ? 'var(--color-primary-900)' : 'var(--color-neutral-800)',
-              }}
+              className={`px-3 py-2 cursor-pointer text-sm ${
+                i === selectedIndex
+                  ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-900 dark:text-primary-100'
+                  : 'text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700'
+              }`}
             >
-              <span style={{ fontWeight: 600 }}>{item.code}</span>
+              <span className='font-semibold text-neutral-900 dark:text-neutral-100'>{item.code}</span>
               {item.title && (
-                <span style={{ marginLeft: 'var(--space-2)', color: 'var(--color-neutral-600)' }}>
+                <span className='ml-2 text-neutral-600 dark:text-neutral-400'>
                   {item.title}
                 </span>
               )}

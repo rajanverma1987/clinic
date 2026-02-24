@@ -126,13 +126,13 @@ export default function AdminFinancialDisputesPage() {
     <>
       <Card className='mb-6'>
         <div className='p-6'>
-          <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-            <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+          <div className='flex flex-col sm:flex-row sm:items-end gap-4'>
+            <div className='flex-1 sm:max-w-[200px]'>
+              <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
                 {t('admin.disputeStatusLabel')}
               </label>
               <select
-                className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
+                className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100'
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
@@ -146,7 +146,7 @@ export default function AdminFinancialDisputesPage() {
                 ))}
               </select>
             </div>
-            <div className='flex items-end'>
+            <div className='flex-shrink-0'>
               <Button variant='primary' onClick={() => fetchDisputes()}>
                 {t('admin.activityLogsApply')}
               </Button>

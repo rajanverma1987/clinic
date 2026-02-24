@@ -33,7 +33,7 @@ export function Layout({
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useI18n();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, loggingOut } = useAuth();
   const { subscription } = useFeatures();
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -100,9 +100,9 @@ export function Layout({
     };
   }, []);
 
-  // Show full-screen loader during initial auth loading (covers everything)
-  if (authLoading) {
-    return <Loader fullScreen size='lg' />;
+  // Show full-screen loader during initial auth loading or logout (covers everything including sidebar/header)
+  if (authLoading || loggingOut) {
+    return <Loader fullScreen size='lg' text={loggingOut ? t('auth.signingOut') : undefined} />;
   }
 
   return (

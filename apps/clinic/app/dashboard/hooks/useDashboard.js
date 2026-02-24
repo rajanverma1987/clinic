@@ -86,6 +86,7 @@ export function useDashboard({ enabled = true } = {}) {
     appointmentRequests: data?.lists?.appointmentRequests ?? [],
     prescriptionRefills: data?.lists?.prescriptionRefills ?? [],
     criticalAlerts: data?.lists?.criticalAlerts ?? [],
+    latestActivePrescription: data?.lists?.latestActivePrescription ?? null,
     chartData: data?.charts ?? emptyCharts,
     trends: data?.trends ?? { revenue: null, patientFlow: null },
     chartsLoading: isLoading,

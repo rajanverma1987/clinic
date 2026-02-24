@@ -83,7 +83,7 @@ export default function AdminDashboardPage() {
     return new Intl.NumberFormat(locale || 'en-US').format(num || 0);
   };
 
-  // Redirect handled in useEffect above
+  // Auth loading and role check handled by admin layout
   if (!user) {
     return null;
   }

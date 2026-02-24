@@ -17,6 +17,7 @@ import ClinicDashboardMetrics from '@/models/ClinicDashboardMetrics.js';
 import InventoryItem from '@/models/InventoryItem.js';
 import Invoice from '@/models/Invoice.js';
 import Patient from '@/models/Patient.js';
+import Prescription from '@/models/Prescription.js';
 import Queue from '@/models/Queue.js';
 import { getPatientFlow, getRevenueTrend } from '@clinic-saas/dashboard-engine';
 import mongoose from 'mongoose';
@@ -98,6 +99,7 @@ async function getDashboardAll(tenantId, userId, role) {
     chartPatients,
     trendsResult,
     failedTxResult,
+    latestActivePrescription,
   ] = await Promise.allSettled([
     Promise.all([
       Appointment.countDocuments({ ...apptMatchToday }),
@@ -156,7 +158,11 @@ async function getDashboardAll(tenantId, userId, role) {
           status: { $in: ['pending', 'partial'] },
           deletedAt: null,
         }),
-    Appointment.find(apptMatchToday).limit(10).sort({ startTime: 1 }).lean(),
+    Appointment.find(apptMatchToday)
+      .limit(10)
+      .sort({ startTime: 1 })
+      .populate('patientId', 'firstName lastName phone dateOfBirth gender bloodGroup createdAt medicalHistory chronicConditions allergies patientId _id')
+      .lean(),
     Patient.find({ tenantId: tenantObj }).sort({ createdAt: -1 }).limit(5).lean(),
     isDoctor
       ? []
@@ -169,13 +175,29 @@ async function getDashboardAll(tenantId, userId, role) {
           .limit(5)
           .sort({ dueDate: 1 })
           .lean(),
-    InventoryItem.find({
-      tenantId: tenantObj,
-      deletedAt: null,
-      $expr: { $lte: ['$availableQuantity', '$reorderPoint'] },
-    })
-      .limit(5)
-      .lean(),
+    InventoryItem.aggregate([
+      {
+        $match: {
+          tenantId: tenantObj,
+          deletedAt: null,
+          isActive: { $ne: false },
+        },
+      },
+      {
+        $addFields: {
+          threshold: {
+            $ifNull: ['$lowStockThreshold', { $ifNull: ['$reorderPoint', 10] }],
+          },
+        },
+      },
+      {
+        $match: {
+          $expr: { $lte: ['$availableQuantity', '$threshold'] },
+        },
+      },
+      { $sort: { availableQuantity: 1 } },
+      { $limit: 5 },
+    ]),
     Queue.find({
       tenantId: tenantObj,
       status: { $in: ['waiting', 'in_progress'] },
@@ -267,6 +289,15 @@ async function getDashboardAll(tenantId, userId, role) {
           .select('failed_transactions')
           .lean()
           .then((d) => d?.failed_transactions ?? 0),
+    // Latest active prescription with patient data for Next Patient card fallback
+    Prescription.findOne({
+      tenantId: tenantObj,
+      status: 'active',
+      deletedAt: null,
+    })
+      .sort({ createdAt: -1 })
+      .populate('patientId', 'firstName lastName phone dateOfBirth gender bloodGroup createdAt medicalHistory chronicConditions allergies patientId _id')
+      .lean(),
   ]);
 
   const [todayCount, completedToday, pendingCount] = val(statsResult, [0, 0, 0]);
@@ -354,6 +385,7 @@ async function getDashboardAll(tenantId, userId, role) {
       expiringLots: expiringLotsList,
       appointmentRequests: val(pendingRequests, []),
       criticalAlerts,
+      latestActivePrescription: val(latestActivePrescription, null),
     },
     charts: {
       revenue: fillMissingDays(val(chartRevenue, [])),

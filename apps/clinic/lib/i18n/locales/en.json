@@ -956,6 +956,7 @@
     "other": "Other",
     "unknownPatient": "Unknown Patient",
     "unknownDoctor": "Unknown Doctor",
+    "notMentioned": "Not mentioned",
     "generalConsultation": "General Consultation",
     "days": "days",
     "select": "Select",
@@ -1123,6 +1124,7 @@
   "auth": {
     "login": "Sign In",
     "logout": "Sign Out",
+    "signingOut": "Signing out...",
     "register": "Register",
     "forgotPassword": "Forgot Password?",
     "resetPassword": "Reset Password",

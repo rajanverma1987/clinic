@@ -236,6 +236,7 @@ export default function DashboardPage() {
   const overdueInvoices = isDoctor ? [] : generalLists.overdueInvoices;
   const lowStockList = isDoctor ? [] : generalLists.lowStockList;
   const prescriptionRefills = isDoctor ? [] : generalLists.prescriptionRefills;
+  const latestActivePrescription = isDoctor ? null : generalLists.latestActivePrescription;
   const queueStatus = isDoctor
     ? { active: 0, waiting: 0, inProgress: 0 }
     : generalLists.queueStatus;
@@ -921,6 +922,30 @@ export default function DashboardPage() {
                               }
                             }}
                             onStartVideo={handleStartVideo}
+                          />
+                        </div>
+                      ) : latestActivePrescription?.patientId ? (
+                        <div className='dashboard-card-cell'>
+                          <NextPatientCard
+                            patient={latestActivePrescription.patientId}
+                            appointment={{
+                              reason: latestActivePrescription.diagnosis || t('prescriptions.activePrescription'),
+                              type: 'prescription',
+                            }}
+                            onCall={() => {
+                              const phone = latestActivePrescription.patientId?.phone;
+                              if (phone) window.location.href = `tel:${phone}`;
+                            }}
+                            onViewDetails={() => {
+                              if (latestActivePrescription.patientId?._id) {
+                                navigate(`/patients/${latestActivePrescription.patientId._id}`);
+                              }
+                            }}
+                            onChat={() => {
+                              if (latestActivePrescription._id) {
+                                navigate(`/prescriptions/${latestActivePrescription._id}`);
+                              }
+                            }}
                           />
                         </div>
                       ) : null}

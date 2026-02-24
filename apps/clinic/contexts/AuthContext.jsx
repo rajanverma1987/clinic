@@ -24,6 +24,7 @@ const TOKEN_REFRESH_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
   const lastActivityRef = React.useRef(Date.now());
   const idleTimeoutRef = React.useRef(null);
   const tokenRefreshIntervalRef = React.useRef(null);
@@ -569,6 +570,9 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    // Set logging out state immediately to show full-screen loader
+    setLoggingOut(true);
+    
     if (typeof window !== 'undefined') clearTestAccountRoleOverride();
     // Clear all timeouts and intervals
     if (idleTimeoutRef.current) {
@@ -718,6 +722,7 @@ export function AuthProvider({ children }) {
       value={{
         user,
         loading,
+        loggingOut,
         login,
         verify2FA,
         logout,

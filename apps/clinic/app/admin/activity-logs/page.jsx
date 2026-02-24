@@ -1,6 +1,6 @@
 'use client';
 
-import { FileDownIcon, MailIcon, RefreshCwIcon } from '@/components/icons';
+import { FileDownIcon, MailIcon, RefreshCwIcon, TrashIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -333,43 +333,42 @@ export default function AdminActivityLogsPage() {
                 <Button
                   variant='secondary'
                   size='sm'
+                  iconOnly
                   onClick={handleCleanup}
                   disabled={cleanupLoading}
+                  aria-label={t('admin.activityLogsCleanupNow') || 'Cleanup old logs'}
                   title={t('admin.activityLogsCleanupNow') || 'Cleanup old logs'}
                 >
                   {cleanupLoading ? (
-                    <RefreshCwIcon className='w-4 h-4 animate-spin' aria-hidden />
+                    <RefreshCwIcon className='icon icon-sm animate-spin' aria-hidden />
                   ) : (
-                    t('admin.activityLogsCleanupNow') || 'Cleanup'
+                    <TrashIcon className='icon icon-sm' aria-hidden />
                   )}
                 </Button>
                 <Button
                   variant='secondary'
                   size='sm'
+                  iconOnly
                   onClick={handleExportCsv}
                   disabled={exporting || logs.length === 0}
-                  aria-label={t('admin.activityLogsExportCsv')}
-                  title={t('admin.activityLogsExportCsv')}
+                  aria-label={t('admin.activityLogsExportCsv') || 'Export CSV'}
+                  title={t('admin.activityLogsExportCsv') || 'Export CSV'}
                 >
                   {exporting ? (
-                    <RefreshCwIcon
-                      className='icon icon-sm flex-shrink-0 animate-spin'
-                      aria-hidden
-                    />
+                    <RefreshCwIcon className='icon icon-sm animate-spin' aria-hidden />
                   ) : (
-                    <FileDownIcon className='icon icon-sm flex-shrink-0' aria-hidden />
+                    <FileDownIcon className='icon icon-sm' aria-hidden />
                   )}
-                  {t('admin.activityLogsExportCsv') || 'Export CSV'}
                 </Button>
                 <Button
                   variant='secondary'
                   size='sm'
+                  iconOnly
                   onClick={handleEmailReport}
-                  aria-label={t('admin.activityLogsEmailReport')}
-                  title={t('admin.activityLogsEmailReport')}
+                  aria-label={t('admin.activityLogsEmailReport') || 'Email Report'}
+                  title={t('admin.activityLogsEmailReport') || 'Email Report'}
                 >
-                  <MailIcon className='icon icon-sm flex-shrink-0' aria-hidden />
-                  {t('admin.activityLogsEmailReport') || 'Email Report'}
+                  <MailIcon className='icon icon-sm' aria-hidden />
                 </Button>
               </div>
             </div>

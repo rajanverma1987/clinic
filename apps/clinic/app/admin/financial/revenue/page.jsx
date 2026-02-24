@@ -67,20 +67,20 @@ export default function AdminFinancialRevenuePage() {
     <>
       <Card className='mb-6'>
         <div className='p-6'>
-          <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
-            <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+          <div className='flex flex-col sm:flex-row sm:items-end gap-4'>
+            <div className='flex-1 sm:max-w-[200px]'>
+              <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
                 {t('admin.revenueFromDate')}
               </label>
               <Input type='date' value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
-            <div>
-              <label className='block text-sm font-medium text-neutral-700 mb-2'>
+            <div className='flex-1 sm:max-w-[200px]'>
+              <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
                 {t('admin.revenueToDate')}
               </label>
               <Input type='date' value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
-            <div className='flex items-end'>
+            <div className='flex-shrink-0'>
               <Button variant='primary' onClick={fetchRevenue}>
                 {t('admin.activityLogsApply')}
               </Button>

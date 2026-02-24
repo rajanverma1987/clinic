@@ -45,8 +45,23 @@ export function NextPatientCard({
 
   const reason = appointment?.reason || appointment?.type || t('common.generalConsultation');
 
-  // Mock medical history - in real app, this would come from patient data
-  const medicalHistory = patientData?.medicalHistory || ['Asthma', 'Hypertension'];
+  // Parse medical history from patient data (can be string, array, or object)
+  const parseMedicalInfo = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'string') {
+      // Split by common delimiters (comma, semicolon, newline)
+      return data.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+    }
+    return [];
+  };
+  
+  // Combine medicalHistory, chronicConditions, and allergies for display
+  const medicalHistory = [
+    ...parseMedicalInfo(patientData?.chronicConditions),
+    ...parseMedicalInfo(patientData?.medicalHistory),
+    ...parseMedicalInfo(patientData?.allergies).map(a => `Allergy: ${a}`),
+  ].filter(Boolean);
 
   return (
     <Card className='dashboard-next-patient-card'>
@@ -128,11 +143,11 @@ export function NextPatientCard({
         </div>
 
         {/* Patient History */}
-        {medicalHistory && medicalHistory.length > 0 && (
-          <div className='mb-4'>
-            <p className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-2'>
-              {t('dashboard.patientHistory')}
-            </p>
+        <div className='mb-4'>
+          <p className='text-body-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-2'>
+            {t('dashboard.patientHistory')}
+          </p>
+          {medicalHistory && medicalHistory.length > 0 ? (
             <div className='flex flex-wrap gap-2'>
               {medicalHistory.map((condition, index) => (
                 <span
@@ -145,11 +160,15 @@ export function NextPatientCard({
                 </span>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <p className='text-body-sm text-neutral-500 dark:text-neutral-400 italic'>
+              {t('common.notMentioned') || 'Not mentioned'}
+            </p>
+          )}
+        </div>
 
         {/* Quick Action Buttons – size sm for touch targets */}
-        <div className='flex items-center gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-700'>
+        <div className='flex items-center gap-2 pt-3 border-t border-neutral-200 dark:border-neutral-700 overflow-visible'>
           <Button
             variant='secondary'
             size='sm'
@@ -158,10 +177,10 @@ export function NextPatientCard({
               onCall?.();
             }}
             title={t('dashboard.call')}
-            className='flex-1'
+            className='flex-1 min-w-fit !overflow-visible gap-1.5'
           >
-            <PhoneIcon className='icon icon-sm' />
-            <span className='text-body-sm font-semibold'>{phone}</span>
+            <PhoneIcon className='icon icon-sm flex-shrink-0' />
+            <span className='text-body-sm font-semibold whitespace-nowrap'>{phone}</span>
           </Button>
           <Button
             variant='secondary'
