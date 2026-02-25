@@ -29,7 +29,7 @@ export default function WhiteLabelPage() {
     try {
       // API for saving white label settings not yet implemented; avoid showing fake success
       const { showInfo } = await import('@/lib/utils/toast');
-      showInfo(t('settings.saveNotYetAvailable') || 'Save is not yet available.');
+      showInfo(t('settings.saveNotYetAvailable'));
     } catch (error) {
       showError(t('settings.whiteLabelSaveFailed'));
     } finally {

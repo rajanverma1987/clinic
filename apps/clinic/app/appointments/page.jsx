@@ -557,7 +557,7 @@ export default function AppointmentsPage() {
         const menuItems = [
           {
             key: 'view',
-            label: t('common.view') || 'View',
+            label: t('common.view'),
             icon: <EyeIcon className='icon icon-sm' />,
             onClick: () => router.push(`/appointments/${row._id}`),
           },
@@ -565,13 +565,13 @@ export default function AppointmentsPage() {
             ? [
                 {
                   key: 'markArrived',
-                  label: t('appointments.markArrived') || 'Mark Arrived',
+                  label: t('appointments.markArrived'),
                   onClick: () => handleStatusChange(row._id, 'arrived', patientName),
                   disabled: loadingAppointmentId === row._id,
                 },
                 {
                   key: 'cancel',
-                  label: t('appointments.cancelAppointment') || 'Cancel Appointment',
+                  label: t('appointments.cancelAppointment'),
                   icon: <XIcon className='icon icon-sm' />,
                   onClick: () => setCancelTarget({ id: row._id, patientName }),
                   disabled: loadingAppointmentId === row._id,
@@ -583,7 +583,7 @@ export default function AppointmentsPage() {
         return (
           <div onClick={(e) => e.stopPropagation()}>
             <ActionsMenu
-              ariaLabel={t('common.actions') || 'Actions'}
+              ariaLabel={t('common.actions')}
               triggerSize='xs'
               items={menuItems}
             />
@@ -679,10 +679,10 @@ export default function AppointmentsPage() {
                         setCurrentPage(1);
                       }}
                       className='filter-select'
-                      aria-label={t('appointments.filterByDoctor') || 'Filter by Doctor'}
+                      aria-label={t('appointments.filterByDoctor')}
                     >
                       <option value=''>
-                        {t('appointments.filterByDoctor') || 'Filter by Doctor'}
+                        {t('appointments.filterByDoctor')}
                       </option>
                       {doctors && Array.isArray(doctors) && doctors.length > 0 ? (
                         doctors.map((doctor) => {
@@ -702,7 +702,7 @@ export default function AppointmentsPage() {
                         <option value='' disabled>
                           {doctors === null || doctors === undefined
                             ? t('appointments.loadingDoctors')
-                            : t('appointments.noDoctorsAvailable') || 'No doctors available'}
+                            : t('appointments.noDoctorsAvailable')}
                         </option>
                       )}
                     </select>
@@ -718,10 +718,10 @@ export default function AppointmentsPage() {
                       setCurrentPage(1);
                     }}
                     className='filter-select'
-                    aria-label={t('appointments.filterByStatus') || 'Filter by Status'}
+                    aria-label={t('appointments.filterByStatus')}
                   >
                     <option value=''>
-                      {t('appointments.filterByStatus') || 'Filter by Status'}
+                      {t('appointments.filterByStatus')}
                     </option>
                     <option value='scheduled'>{t('appointments.scheduled')}</option>
                     <option value='confirmed'>{t('appointments.confirmed')}</option>

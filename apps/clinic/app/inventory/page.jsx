@@ -55,11 +55,11 @@ export default function InventoryPage() {
   const [exporting, setExporting] = useState(false);
 
   const CATEGORIES = [
-    { value: 'all', label: t('inventory.filterAll') || 'All' },
-    { value: 'medicine', label: t('inventory.medicine') || 'Medicine' },
-    { value: 'medical_supply', label: t('inventory.medicalSupply') || 'Medical Supply' },
-    { value: 'equipment', label: t('inventory.equipment') || 'Equipment' },
-    { value: 'consumable', label: t('inventory.consumable') || 'Consumable' },
+    { value: 'all', label: t('inventory.filterAll') },
+    { value: 'medicine', label: t('inventory.medicine') },
+    { value: 'medical_supply', label: t('inventory.medicalSupply') },
+    { value: 'equipment', label: t('inventory.equipment') },
+    { value: 'consumable', label: t('inventory.consumable') },
     { value: 'other', label: t('common.other') },
   ];
   const [refreshing, setRefreshing] = useState(false);
@@ -212,15 +212,15 @@ export default function InventoryPage() {
     try {
       const response = await apiClient.delete(`/inventory/items/${deleteItemModal.item._id}`);
       if (response.success) {
-        showSuccess(t('inventory.itemDeleted') || 'Item deleted successfully');
+        showSuccess(t('inventory.itemDeleted'));
         setDeleteItemModal({ open: false, item: null });
         fetchItems();
       } else {
-        showError(response.error?.message || t('inventory.deleteItemFailed') || 'Failed to delete item');
+        showError(response.error?.message || t('inventory.deleteItemFailed'));
       }
     } catch (err) {
       logger.error('Failed to delete inventory item:', err);
-      showError(err.message || t('inventory.deleteItemFailed') || 'Failed to delete item');
+      showError(err.message || t('inventory.deleteItemFailed'));
     } finally {
       setDeleting(false);
     }
@@ -235,15 +235,15 @@ export default function InventoryPage() {
         `/inventory/items/${itemId}/batch?batchNumber=${encodeURIComponent(batchNumber)}`
       );
       if (response.success) {
-        showSuccess(t('inventory.batchDeleted') || 'Batch deleted successfully');
+        showSuccess(t('inventory.batchDeleted'));
         setDeleteBatchModal({ open: false, lot: null });
         fetchLots();
       } else {
-        showError(response.error?.message || t('inventory.deleteBatchFailed') || 'Failed to delete batch');
+        showError(response.error?.message || t('inventory.deleteBatchFailed'));
       }
     } catch (err) {
       logger.error('Failed to delete batch:', err);
-      showError(err.message || t('inventory.deleteBatchFailed') || 'Failed to delete batch');
+      showError(err.message || t('inventory.deleteBatchFailed'));
     } finally {
       setDeleting(false);
     }
@@ -283,7 +283,7 @@ export default function InventoryPage() {
           items={[
             {
               key: 'view',
-              label: t('inventory.viewItem') || 'View Details',
+              label: t('inventory.viewItem'),
               icon: <EyeIcon className='icon icon-sm' />,
               onClick: () => router.push(`/inventory/items/${row._id}`),
             },
@@ -637,7 +637,7 @@ export default function InventoryPage() {
                                     ? [
                                         {
                                           key: 'delete',
-                                          label: t('inventory.deleteBatch') || 'Delete Batch',
+                                          label: t('inventory.deleteBatch'),
                                           icon: <TrashIcon className='icon icon-sm' />,
                                           onClick: () =>
                                             setDeleteBatchModal({
@@ -768,12 +768,11 @@ export default function InventoryPage() {
       <Modal
         isOpen={deleteItemModal.open}
         onClose={() => setDeleteItemModal({ open: false, item: null })}
-        title={t('inventory.deleteItem') || 'Delete Item'}
+        title={t('inventory.deleteItem')}
       >
         <div className='space-y-4'>
           <p className='text-neutral-700 dark:text-neutral-300'>
-            {t('inventory.confirmDeleteItem') ||
-              'Are you sure you want to delete this item? This action cannot be undone.'}
+            {t('inventory.confirmDeleteItem')}
           </p>
           {deleteItemModal.item && (
             <p className='font-medium text-neutral-900 dark:text-neutral-100'>
@@ -804,12 +803,11 @@ export default function InventoryPage() {
       <Modal
         isOpen={deleteBatchModal.open}
         onClose={() => setDeleteBatchModal({ open: false, lot: null })}
-        title={t('inventory.deleteBatch') || 'Delete Batch'}
+        title={t('inventory.deleteBatch')}
       >
         <div className='space-y-4'>
           <p className='text-neutral-700 dark:text-neutral-300'>
-            {t('inventory.confirmDeleteBatch') ||
-              'Are you sure you want to delete this batch? The stock quantity will be reduced accordingly.'}
+            {t('inventory.confirmDeleteBatch')}
           </p>
           {deleteBatchModal.lot && (
             <div className='bg-neutral-100 dark:bg-neutral-800 p-3 rounded-lg'>
@@ -831,7 +829,7 @@ export default function InventoryPage() {
               isLoading={deleting}
               disabled={deleting}
             >
-              {t('inventory.deleteBatch') || 'Delete Batch'}
+              {t('inventory.deleteBatch')}
             </Button>
             <Button
               variant='secondary'

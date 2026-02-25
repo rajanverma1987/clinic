@@ -42,7 +42,7 @@ export function TrendsSection({ tenantId, trends: trendsProp, children, classNam
           <Card className='p-4'>
             <div className='flex items-center gap-2 mb-2'>
               <CurrencyIcon className='icon icon-sm text-primary-500' aria-hidden />
-              <span className='font-medium'>{t('admin.revenueTrend') || 'Revenue Trend'}</span>
+              <span className='font-medium'>{t('admin.revenueTrend')}</span>
             </div>
             {loading && <div className='skeleton skeleton-text w-20 h-8' />}
             {!loading && revenue && (
@@ -58,7 +58,7 @@ export function TrendsSection({ tenantId, trends: trendsProp, children, classNam
             )}
             {!loading && error && (
               <span className='text-body-sm text-status-error'>
-                {t('errors.loadFailed') || 'Load failed'}
+                {t('errors.loadFailed')}
               </span>
             )}
           </Card>
@@ -66,7 +66,7 @@ export function TrendsSection({ tenantId, trends: trendsProp, children, classNam
             <div className='flex items-center gap-2 mb-2'>
               <UsersIcon className='icon icon-sm text-primary-500' aria-hidden />
               <span className='font-medium'>
-                {t('dashboard.patientsSummary') || 'Patient Flow'}
+                {t('dashboard.patientsSummary')}
               </span>
             </div>
             {loading && <div className='skeleton skeleton-text w-20 h-8' />}
@@ -81,7 +81,7 @@ export function TrendsSection({ tenantId, trends: trendsProp, children, classNam
             )}
             {!loading && error && (
               <span className='text-body-sm text-status-error'>
-                {t('errors.loadFailed') || 'Load failed'}
+                {t('errors.loadFailed')}
               </span>
             )}
           </Card>

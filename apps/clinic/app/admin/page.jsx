@@ -646,7 +646,7 @@ export default function AdminDashboardPage() {
                 >
                   <span className='text-amber-700 dark:text-amber-400 font-medium'>
                     {formatNumber(stats.subscriptions.expiringIn7Days)}{' '}
-                    {t('admin.subscriptionExpiringIn7Days') || 'subscription(s) expiring in 7 days'}
+                    {t('admin.subscriptionExpiringIn7Days')}
                   </span>
                   <Button
                     variant='secondary'

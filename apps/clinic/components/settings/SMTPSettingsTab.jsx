@@ -11,7 +11,7 @@ export function SMTPSettingsTab({ smtpForm, setSmtpForm, saving, onSave, onCance
   const { t } = useI18n();
   return (
     <div className='w-full max-w-4xl space-y-6 text-left'>
-      <SettingsTabHeader title={t('settings.emailSettings') || 'Email Settings'} />
+      <SettingsTabHeader title={t('settings.emailSettings')} />
       <form
         onSubmit={(e) => {
           e.preventDefault();

@@ -175,12 +175,12 @@ export default function AdminUsersPage() {
     a.download = `users-export-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showSuccess(t('admin.exportSuccessful') || 'Export successful');
+    showSuccess(t('admin.exportSuccessful'));
   }, [filteredUsers, t]);
 
   const handleResetPassword = async () => {
     if (!resetPasswordUser || !resetPasswordValue?.trim() || resetPasswordValue.length < 8) {
-      showError(t('admin.passwordMinLength') || 'Password must be at least 8 characters');
+      showError(t('admin.passwordMinLength'));
       return;
     }
     const userId = resetPasswordUser._id || resetPasswordUser.id;
@@ -191,7 +191,7 @@ export default function AdminUsersPage() {
         newPassword: resetPasswordValue.trim(),
       });
       if (response?.success) {
-        showSuccess(t('admin.passwordResetSuccess') || 'Password reset successfully');
+        showSuccess(t('admin.passwordResetSuccess'));
         setResetPasswordUser(null);
         setResetPasswordValue('');
       } else {
@@ -199,7 +199,7 @@ export default function AdminUsersPage() {
       }
     } catch (err) {
       logger.error('Reset password failed', err);
-      showError(t('admin.passwordResetFailed') || 'Failed to reset password');
+      showError(t('admin.passwordResetFailed'));
     } finally {
       setResettingPassword(false);
     }
@@ -209,10 +209,10 @@ export default function AdminUsersPage() {
     try {
       const response = await apiClient.put(`/admin/users/${userId}`, { isActive: !currentStatus });
       if (response?.success) {
-        showSuccess(currentStatus ? 'User deactivated' : 'User activated');
+        showSuccess(currentStatus ? t('admin.userDeactivated') : t('admin.userActivated'));
         fetchUsers();
       } else {
-        showError(response?.error?.message || 'Failed to update user status');
+        showError(response?.error?.message || t('admin.failedToUpdateUserStatus'));
       }
     } catch (error) {
       logger.error('Failed to toggle user status:', error);
@@ -252,7 +252,7 @@ export default function AdminUsersPage() {
       header: t('admin.tenant'),
       accessor: (row) => (
         <div>
-          <div className='font-medium text-neutral-900'>{row.tenantName || 'N/A'}</div>
+          <div className='font-medium text-neutral-900'>{row.tenantName || t('common.na')}</div>
           {row.tenantSlug && <div className='text-sm text-neutral-500'>{row.tenantSlug}</div>}
         </div>
       ),
@@ -306,8 +306,8 @@ export default function AdminUsersPage() {
             variant='ghost'
             size='xs'
             href={`/admin/activity-logs?userId=${row._id || row.id}`}
-            aria-label={t('admin.viewActivityLog') || 'View activity log'}
-            title={t('admin.viewActivityLog') || 'View activity log'}
+            aria-label={t('admin.viewActivityLog')}
+            title={t('admin.viewActivityLog')}
           >
             <HistoryIcon className='icon icon-xs' />
           </Button>
@@ -322,7 +322,7 @@ export default function AdminUsersPage() {
             aria-label={t('admin.resetPassword')}
             title={t('admin.resetPassword')}
           >
-            {t('admin.resetPassword') || 'Reset'}
+            {t('admin.resetPassword')}
           </Button>
           <Button
             variant={row.isActive ? 'danger' : 'primary'}
@@ -334,13 +334,13 @@ export default function AdminUsersPage() {
             }}
             aria-label={
               row.isActive
-                ? t('admin.deactivate') || 'Deactivate'
-                : t('admin.activate') || 'Activate'
+                ? t('admin.deactivate')
+                : t('admin.activate')
             }
             title={
               row.isActive
-                ? t('admin.deactivate') || 'Deactivate'
-                : t('admin.activate') || 'Activate'
+                ? t('admin.deactivate')
+                : t('admin.activate')
             }
           >
             {row.isActive ? (
@@ -373,7 +373,7 @@ export default function AdminUsersPage() {
         >
           <Button variant='secondary' size='sm' onClick={handleExportCSV}>
             <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-            {t('admin.exportCSV') || 'Export CSV'}
+            {t('admin.exportCSV')}
           </Button>
           <Button
             variant='secondary'
@@ -399,7 +399,7 @@ export default function AdminUsersPage() {
         >
           <div className='search-modal-grid'>
             <div className='search-modal-field'>
-              <label>{t('admin.role') || 'Role'}</label>
+              <label>{t('admin.role')}</label>
               <select
                 className='filter-select w-full'
                 value={advancedRole}
@@ -415,7 +415,7 @@ export default function AdminUsersPage() {
               </select>
             </div>
             <div className='search-modal-field'>
-              <label>{t('common.status') || 'Status'}</label>
+              <label>{t('common.status')}</label>
               <select
                 className='filter-select w-full'
                 value={advancedActive}
@@ -427,7 +427,7 @@ export default function AdminUsersPage() {
               </select>
             </div>
             <div className='search-modal-field full-width'>
-              <label>{t('admin.tenant') || 'Tenant'}</label>
+              <label>{t('admin.tenant')}</label>
               <select
                 className='filter-select w-full'
                 value={advancedTenant}
@@ -510,7 +510,7 @@ export default function AdminUsersPage() {
           <Modal
             isOpen={!!detailsUser}
             onClose={() => setDetailsUser(null)}
-            title={t('admin.userDetails') || 'User Details'}
+            title={t('admin.userDetails')}
           >
             <div className='space-y-3 text-sm'>
               <div>
@@ -527,7 +527,7 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <span className='font-medium text-neutral-500'>{t('admin.tenant')}: </span>
-                {detailsUser.tenantName || 'N/A'}
+                {detailsUser.tenantName || t('common.na')}
               </div>
               <div>
                 <span className='font-medium text-neutral-500'>{t('admin.status')}: </span>
@@ -535,7 +535,7 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <span className='font-medium text-neutral-500'>
-                  {t('admin.lastLogin') || 'Last Login'}:{' '}
+                  {t('admin.lastLogin')}:{' '}
                 </span>
                 {detailsUser.lastLoginAt
                   ? new Date(detailsUser.lastLoginAt).toLocaleString()
@@ -552,7 +552,7 @@ export default function AdminUsersPage() {
                   href={`/admin/activity-logs?userId=${detailsUser._id || detailsUser.id}`}
                 >
                   <HistoryIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-                  {t('admin.viewActivityLog') || 'View activity log'}
+                  {t('admin.viewActivityLog')}
                 </Button>
               </div>
             </div>
@@ -567,22 +567,22 @@ export default function AdminUsersPage() {
               setResetPasswordUser(null);
               setResetPasswordValue('');
             }}
-            title={t('admin.resetPassword') || 'Reset Password'}
+            title={t('admin.resetPassword')}
           >
             <div className='space-y-4'>
               <p className='text-sm text-neutral-600'>
-                {t('admin.resetPasswordFor') || 'Reset password for'}:{' '}
+                {t('admin.resetPasswordFor')}:{' '}
                 <strong>{resetPasswordUser.email}</strong>
               </p>
               <div>
                 <label className='block text-sm font-medium mb-1'>
-                  {t('admin.newPassword') || 'New Password'}
+                  {t('admin.newPassword')}
                 </label>
                 <input
                   type='password'
                   value={resetPasswordValue}
                   onChange={(e) => setResetPasswordValue(e.target.value)}
-                  placeholder={t('admin.passwordMinLength') || 'Min 8 characters'}
+                  placeholder={t('admin.passwordMinLength')}
                   className='form-control-height w-full border rounded-lg px-3'
                   minLength={8}
                 />

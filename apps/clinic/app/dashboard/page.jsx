@@ -274,7 +274,7 @@ export default function DashboardPage() {
     const onRefreshFail = () => {
       consecutiveFailsRef.current += 1;
       if (consecutiveFailsRef.current === 3) {
-        showWarning(t('dashboard.refreshFailed') || 'Data may be outdated. Check your connection.');
+        showWarning(t('dashboard.refreshFailed'));
         consecutiveFailsRef.current = 0;
       }
     };
@@ -411,13 +411,13 @@ export default function DashboardPage() {
 
   const handleMarkAllAsRead = useCallback(() => {
     openConfirm({
-      title: t('notifications.markAllReadTitle') || 'Mark all as read?',
-      message: t('notifications.markAllReadDesc') || 'All notifications will be marked as read.',
+      title: t('notifications.markAllReadTitle'),
+      message: t('notifications.markAllReadDesc'),
       variant: 'info',
-      confirmLabel: t('common.markAllRead') || 'Mark all read',
+      confirmLabel: t('common.markAllRead'),
       onConfirm: async () => {
         // Future: await apiClient.post('/notifications/mark-all-read');
-        showSuccess(t('notifications.allMarkedRead') || 'All notifications marked as read.');
+        showSuccess(t('notifications.allMarkedRead'));
       },
     });
   }, [openConfirm, t]);
@@ -502,7 +502,7 @@ export default function DashboardPage() {
             aria-live='polite'
           >
             <RefreshCwIcon className='icon icon-xs animate-spin' aria-hidden />
-            {t('dashboard.syncing') || 'Syncing...'}
+            {t('dashboard.syncing')}
           </div>
         )}
         <div className='dashboard-container'>
@@ -788,7 +788,7 @@ export default function DashboardPage() {
                       <StatsCard
                         title={t('dashboard.todayAppointmentsLabel')}
                         value={stats?.todayAppointments || stats?.appointments?.todayTotal || 0}
-                        subtitle={`${stats?.appointments?.upcoming || 0} ${t('dashboard.upcoming') || 'upcoming'}`}
+                        subtitle={`${stats?.appointments?.upcoming || 0} ${t('dashboard.upcoming')}`}
                         trend={stats?.appointmentsTrend}
                         icon='calendar'
                         colorScheme='primary'
@@ -802,7 +802,7 @@ export default function DashboardPage() {
                           value={formatCurrency(
                             stats?.todayRevenue || stats?.revenue?.today?.paid || 0,
                           )}
-                          subtitle={`${t('dashboard.total') || 'Total'}: ${formatCurrency(stats?.revenue?.today?.total || 0)}`}
+                          subtitle={`${t('dashboard.total')}: ${formatCurrency(stats?.revenue?.today?.total || 0)}`}
                           trend={stats?.revenueTrend}
                           icon='currency-dollar'
                           colorScheme='success'
@@ -812,9 +812,9 @@ export default function DashboardPage() {
                         />
                       )}
                       <StatsCard
-                        title={t('dashboard.queueStatus') || 'Queue Status'}
+                        title={t('dashboard.queueStatus')}
                         value={Object.values(stats?.queue || {}).reduce((a, b) => a + b, 0)}
-                        subtitle={t('dashboard.patientsInQueue') || 'patients in queue'}
+                        subtitle={t('dashboard.patientsInQueue')}
                         icon='queue'
                         colorScheme='warning'
                         layout='compact'
@@ -1361,7 +1361,7 @@ export default function DashboardPage() {
                     {dashboardAll.error ? (
                       <Card className='dashboard-list-card dashboard-list-card-primary p-6 lg:col-span-3'>
                         <p className='text-neutral-600 dark:text-neutral-400 text-center mb-4'>
-                          {t('dashboard.chartsUnavailable') || 'Charts temporarily unavailable.'}
+                          {t('dashboard.chartsUnavailable')}
                         </p>
                         <Button
                           variant='secondary'
@@ -1400,7 +1400,7 @@ export default function DashboardPage() {
               {/* Last updated timestamp */}
               {!isDoctor && stats?.lastUpdated && (
                 <div className='mt-2 text-center text-sm text-neutral-500 dark:text-neutral-400'>
-                  {t('dashboard.lastUpdated') || 'Last updated'}:{' '}
+                  {t('dashboard.lastUpdated')}:{' '}
                   {new Date(stats.lastUpdated).toLocaleString()}
                 </div>
               )}

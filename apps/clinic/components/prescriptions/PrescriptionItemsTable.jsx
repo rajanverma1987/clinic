@@ -362,7 +362,7 @@ export function PrescriptionItemsTable({
                     size='sm'
                     onClick={() => onRemove(index)}
                     className='prescription-items-remove-btn'
-                    aria-label={t('prescriptions.remove') || 'Remove'}
+                    aria-label={t('prescriptions.remove')}
                   >
                     {t('prescriptions.remove') || 'Remove'}
                   </Button>

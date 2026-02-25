@@ -4,14 +4,20 @@ import { apiClient } from '@/lib/api/client.js';
 import { extractLocale, formatLocale, getTranslation, supportedLocales } from '@/lib/i18n/index.js';
 import { logger } from '@/lib/utils/logger.js';
 import { configureToast } from '@/lib/utils/toast.js';
-import { useRouter } from 'next/navigation';
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext.jsx';
 
 const I18nContext = createContext(undefined);
 
+const LOCALE_COOKIE = 'NEXT_LOCALE';
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+
+function setLocaleCookie(locale) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+}
+
 export function I18nProvider({ children }) {
-  const router = useRouter();
   const { user } = useAuth();
   const [locale, setLocaleState] = useState('en');
   const [loading, setLoading] = useState(true);
@@ -33,6 +39,7 @@ export function I18nProvider({ children }) {
         // User's explicit choice in localStorage always wins
         if (storedLocale && supportedLocales.includes(storedLocale)) {
           setLocaleState(storedLocale);
+          setLocaleCookie(storedLocale);
           setLoading(false);
           return;
         }
@@ -47,6 +54,7 @@ export function I18nProvider({ children }) {
                 setLocaleState(tenantLocale);
                 if (typeof window !== 'undefined') {
                   localStorage.setItem('locale', tenantLocale);
+                  setLocaleCookie(tenantLocale);
                 }
               }
             }
@@ -60,6 +68,7 @@ export function I18nProvider({ children }) {
             if (supportedLocales.includes(browserLocale)) {
               setLocaleState(browserLocale);
               localStorage.setItem('locale', browserLocale);
+              setLocaleCookie(browserLocale);
             }
           }
         }
@@ -73,28 +82,32 @@ export function I18nProvider({ children }) {
     loadLocale();
   }, [user, mounted]);
 
-  const setLocale = (newLocale) => {
-    const normalized = extractLocale(newLocale);
-    setLocaleState(normalized);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('locale', normalized);
-    }
-    router.refresh();
+  const setLocale = useCallback(
+    (newLocale) => {
+      const normalized = extractLocale(newLocale);
+      if (!supportedLocales.includes(normalized)) return;
+      setLocaleState(normalized);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('locale', normalized);
+        setLocaleCookie(normalized);
+      }
+      // No router.refresh() – DocumentLocale updates lang/dir; key={locale} remounts tree so UI updates instantly
 
-    // Optionally update tenant settings if user is logged in
-    if (user) {
-      // This is async and we don't need to wait for it
-      apiClient
-        .put('/settings', {
-          settings: {
-            locale: formatLocale(normalized),
-          },
-        })
-        .catch((error) => {
-          logger.error('Failed to update tenant locale', error);
-        });
-    }
-  };
+      // Optionally update tenant settings if user is logged in
+      if (user) {
+        apiClient
+          .put('/settings', {
+            settings: {
+              locale: formatLocale(normalized),
+            },
+          })
+          .catch((error) => {
+            logger.error('Failed to update tenant locale', error);
+          });
+      }
+    },
+    [user],
+  );
 
   const t = (key, params) => {
     let translation = getTranslation(key, locale);
@@ -120,7 +133,8 @@ export function I18nProvider({ children }) {
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, t, loading }}>
-      {children}
+      {/* key forces full re-render when locale changes so every translated string updates */}
+      <React.Fragment key={locale}>{children}</React.Fragment>
     </I18nContext.Provider>
   );
 }

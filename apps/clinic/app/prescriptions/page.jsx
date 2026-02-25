@@ -152,7 +152,7 @@ export default function PrescriptionsPage() {
         try {
           const response = await apiClient.post(`/prescriptions/${prescriptionId}/activate`);
           if (response.success) {
-            showSuccess(t('prescriptions.activated') || 'Prescription activated successfully');
+            showSuccess(t('prescriptions.activated'));
             fetchPrescriptions();
           } else {
             showError(response.error?.message || 'Failed to activate prescription');
@@ -202,13 +202,13 @@ export default function PrescriptionsPage() {
           const menuItems = [
             {
               key: 'view',
-              label: t('common.view') || 'View',
+              label: t('common.view'),
               icon: <EyeIcon className='icon icon-sm' />,
               onClick: () => router.push(`/prescriptions/${row._id}`),
             },
             {
               key: 'edit',
-              label: t('common.edit') || 'Edit',
+              label: t('common.edit'),
               icon: <PencilIcon className='icon icon-sm' />,
               onClick: () => handleEdit(row._id),
             },
@@ -216,7 +216,7 @@ export default function PrescriptionsPage() {
               ? [
                   {
                     key: 'activate',
-                    label: t('prescriptions.activate') || 'Activate',
+                    label: t('prescriptions.activate'),
                     icon: <CheckIcon className='icon icon-sm' />,
                     onClick: () => handleActivate(row._id),
                   },
@@ -224,7 +224,7 @@ export default function PrescriptionsPage() {
               : []),
             {
               key: 'print',
-              label: t('prescriptions.print') || 'Print',
+              label: t('prescriptions.print'),
               icon: <PrinterIcon className='icon icon-sm' />,
               onClick: () => handlePrint(row._id),
             },
@@ -232,7 +232,7 @@ export default function PrescriptionsPage() {
           return (
             <div onClick={(e) => e.stopPropagation()}>
               <ActionsMenu
-                ariaLabel={t('common.actions') || 'Actions'}
+                ariaLabel={t('common.actions')}
                 triggerSize='xs'
                 items={menuItems}
               />

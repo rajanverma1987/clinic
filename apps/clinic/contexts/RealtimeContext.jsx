@@ -7,6 +7,7 @@
  */
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import {
   disconnectRealtimeClient,
   initRealtimeClient,
@@ -32,6 +33,7 @@ const RealtimeContext = createContext(undefined);
 
 export function RealtimeProvider({ children }) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const tenantId = user?.tenantId ?? null;
   const [connected, setConnected] = useState(false);
   const { mutate: globalMutate } = useSWRConfig();
@@ -82,9 +84,9 @@ export function RealtimeProvider({ children }) {
     );
     globalMutate(DASHBOARD_STATS_KEY);
     if (items.some((i) => i.type === 'appointment.created')) {
-      showToast('New appointment added', 'success');
+      showToast(t('notifications.newAppointmentAdded'), 'success');
     }
-  }, [globalMutate]);
+  }, [globalMutate, t]);
 
   useEffect(() => {
     if (!tenantId) {

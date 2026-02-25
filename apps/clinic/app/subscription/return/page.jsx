@@ -123,6 +123,7 @@ function SubscriptionReturnContent() {
 }
 
 export default function SubscriptionReturnPage() {
+  const { t } = useI18n();
   return (
     <Layout>
       <Suspense
@@ -130,7 +131,7 @@ export default function SubscriptionReturnPage() {
           <div className='flex items-center justify-center min-h-[60vh]'>
             <Card className='max-w-md w-full text-center'>
               <div className='py-12'>
-                <Loader type='page' text='Loading...' />
+                <Loader type='page' text={t('common.loading')} />
               </div>
             </Card>
           </div>

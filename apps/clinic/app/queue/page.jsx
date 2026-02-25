@@ -302,7 +302,7 @@ export default function QueuePage() {
         if (row.appointmentId?._id) {
           menuItems.push({
             key: 'view',
-            label: t('common.view') || 'View',
+            label: t('common.view'),
             icon: <EyeIcon className='icon icon-sm' />,
             onClick: () => router.push(`/appointments/${row.appointmentId._id}`),
           });
@@ -313,13 +313,13 @@ export default function QueuePage() {
           if (row.appointmentId?.isTelemedicine) {
             menuItems.push({
               key: 'startVideo',
-              label: t('queue.startVideo') || 'Start Video',
+              label: t('queue.startVideo'),
               icon: <VideoIcon className='icon icon-sm' />,
               onClick: async () => await handleStartVideo(row.appointmentId),
             });
             menuItems.push({
               key: 'startAppointment',
-              label: t('appointments.startAppointment') || 'Start Appointment',
+              label: t('appointments.startAppointment'),
               icon: <PlayIcon className='icon icon-sm' />,
               onClick: () => {
                 if (patientId) {
@@ -332,13 +332,13 @@ export default function QueuePage() {
           }
           menuItems.push({
             key: 'markComplete',
-            label: t('queue.markComplete') || 'Mark Complete',
+            label: t('queue.markComplete'),
             icon: <CheckIcon className='icon icon-sm' />,
             onClick: () => {
               openConfirm({
                 title: t('queue.confirmComplete'),
                 message:
-                  t('queue.confirmCompleteDescription') || t('common.confirmationDescription'),
+                  t('queue.confirmCompleteDescription'),
                 variant: 'danger',
                 onConfirm: () => handleStatusChange(row._id, 'completed'),
               });
@@ -349,13 +349,13 @@ export default function QueuePage() {
           if (row.appointmentId?.isTelemedicine) {
             menuItems.push({
               key: 'startVideo',
-              label: t('queue.startVideo') || 'Start Video',
+              label: t('queue.startVideo'),
               icon: <VideoIcon className='icon icon-sm' />,
               onClick: async () => await handleStartVideo(row.appointmentId),
             });
             menuItems.push({
               key: 'startAppointment',
-              label: t('appointments.startAppointment') || 'Start Appointment',
+              label: t('appointments.startAppointment'),
               icon: <PlayIcon className='icon icon-sm' />,
               onClick: async () => {
                 await handleStatusChange(row._id, 'in_progress');
@@ -369,7 +369,7 @@ export default function QueuePage() {
           } else {
             menuItems.push({
               key: 'startAppointment',
-              label: t('appointments.startAppointment') || 'Start Appointment',
+              label: t('appointments.startAppointment'),
               icon: <PlayIcon className='icon icon-sm' />,
               onClick: async () => {
                 await handleStatusChange(row._id, 'in_progress');
@@ -386,7 +386,7 @@ export default function QueuePage() {
         return (
           <div onClick={(e) => e.stopPropagation()}>
             <ActionsMenu
-              ariaLabel={t('common.actions') || 'Actions'}
+              ariaLabel={t('common.actions')}
               triggerSize='xs'
               items={menuItems}
             />

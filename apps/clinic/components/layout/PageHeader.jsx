@@ -136,7 +136,7 @@ export function PageHeader({
             >
               <SearchIcon className='page-header__search-icon' ariaHidden />
               <span className='page-header__search-text'>
-                {t('common.searchPlaceholder') || 'Search...'}
+                {t('common.searchPlaceholder')}
               </span>
               <kbd className='page-header__search-kbd'>⌘K</kbd>
             </button>

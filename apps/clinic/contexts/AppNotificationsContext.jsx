@@ -7,6 +7,7 @@
  */
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
@@ -16,6 +17,7 @@ const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 export function AppNotificationsProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState(null);
@@ -35,11 +37,17 @@ export function AppNotificationsProvider({ children }) {
           : lowStockRes.data.data || [];
         
         lowStockItems.forEach((item, index) => {
+          const qty = item.availableQuantity || 0;
+          const unit = item.unit || t('common.units');
           notifs.push({
             id: `low-stock-${item._id || index}`,
             type: 'inventory',
-            title: 'Low Stock Alert',
-            message: `${item.name} is running low (${item.availableQuantity || 0} ${item.unit || 'units'} remaining)`,
+            title: t('notifications.lowStockAlert'),
+            message: t('notifications.lowStockMessage', {
+              name: item.name,
+              quantity: qty,
+              unit,
+            }),
             unread: true,
             createdAt: new Date().toISOString(),
             data: { itemId: item._id },
@@ -68,13 +76,12 @@ export function AppNotificationsProvider({ children }) {
         upcomingAppointments.forEach((apt, index) => {
           const aptTime = new Date(apt.appointmentDate || apt.date);
           const timeStr = aptTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          const patientName = apt.patient?.name || apt.patientName || 'Patient';
-          
+          const patientName = apt.patient?.name || apt.patientName || t('common.patient');
           notifs.push({
             id: `appointment-${apt._id || index}`,
             type: 'appointment',
-            title: 'Upcoming Appointment',
-            message: `${patientName} at ${timeStr}`,
+            title: t('notifications.upcomingAppointment'),
+            message: t('notifications.appointmentAt', { name: patientName, time: timeStr }),
             unread: true,
             createdAt: new Date().toISOString(),
             data: { appointmentId: apt._id },
@@ -91,8 +98,8 @@ export function AppNotificationsProvider({ children }) {
             notifs.unshift({
               id: 'today-appointments-summary',
               type: 'appointment',
-              title: "Today's Appointments",
-              message: `You have ${pendingCount} appointment${pendingCount > 1 ? 's' : ''} scheduled for today`,
+              title: t('notifications.todaysAppointments'),
+              message: t('notifications.appointmentsScheduledToday', { count: pendingCount }),
               unread: true,
               createdAt: new Date().toISOString(),
               data: { count: pendingCount },
@@ -108,7 +115,7 @@ export function AppNotificationsProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, t]);
 
   // Initial fetch when user is authenticated
   useEffect(() => {

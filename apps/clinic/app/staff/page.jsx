@@ -391,9 +391,9 @@ export default function StaffPage() {
             {maxUsers != null && (
               <span
                 className='text-sm text-neutral-600'
-                title={t('staff.userLimitDesc') || 'Users used vs plan limit'}
+                title={t('staff.userLimitDesc')}
               >
-                {currentUserCount}/{maxUsers} {t('staff.usersUsed') || 'users'}
+                {currentUserCount}/{maxUsers} {t('staff.usersUsed')}
               </span>
             )}
             <Button
@@ -402,7 +402,7 @@ export default function StaffPage() {
               disabled={atUserLimit}
               title={
                 atUserLimit
-                  ? t('staff.upgradeToAddMore') || 'Upgrade plan to add more users'
+                  ? t('staff.upgradeToAddMore')
                   : undefined
               }
             >
@@ -502,14 +502,14 @@ export default function StaffPage() {
               <h2 className='text-lg font-bold text-neutral-900 mb-4'>{t('staff.addStaff')}</h2>
               {atUserLimit && (
                 <div className='mb-4 p-3 bg-status-warning/10 border border-status-warning/30 rounded-lg text-sm text-neutral-700'>
-                  {t('staff.userLimitReached') || 'User limit reached.'}{' '}
+                  {t('staff.userLimitReached')}{' '}
                   <Link
                     href='/subscription'
                     className='text-primary-600 hover:underline font-medium'
                   >
-                    {t('staff.upgradePlan') || 'Upgrade plan'}
+                    {t('staff.upgradePlan')}
                   </Link>{' '}
-                  {t('staff.toAddMoreUsers') || 'to add more users.'}
+                  {t('staff.toAddMoreUsers')}
                 </div>
               )}
               <form onSubmit={handleAddSubmit} className='space-y-4'>

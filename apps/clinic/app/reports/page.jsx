@@ -334,7 +334,7 @@ export default function ReportsPage() {
       let title = t('reports.title');
       if (activeTab === 'revenue') title = t('reports.revenue');
       else if (activeTab === 'doctors')
-        title = t('reports.doctorPerformance') || 'Doctor Performance';
+        title = t('reports.doctorPerformance');
       else if (activeTab === 'patients') title = t('reports.patients');
       else if (activeTab === 'appointments') title = t('reports.appointments');
       else if (activeTab === 'inventory') title = t('reports.inventory');
@@ -347,7 +347,7 @@ export default function ReportsPage() {
       pdf.setFontSize(9);
       pdf.setTextColor(80, 80, 80);
       pdf.text(
-        `${t('reports.dateRange') || 'Date range'}: ${dateRangeStr}  |  ${t('reports.generated') || 'Generated'}: ${generatedStr}`,
+        `${t('reports.dateRange')}: ${dateRangeStr}  |  ${t('reports.generated')}: ${generatedStr}`,
         margin,
         y,
       );
@@ -364,8 +364,8 @@ export default function ReportsPage() {
         pdf.rect(margin, tableTop, contentWidth, rowHeight, 'F');
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'bold');
-        pdf.text(t('reports.metric') || 'Metric', col1, tableTop + 5.5);
-        pdf.text(t('reports.value') || 'Value', col2, tableTop + 5.5);
+        pdf.text(t('reports.metric'), col1, tableTop + 5.5);
+        pdf.text(t('reports.value'), col2, tableTop + 5.5);
         pdf.setFont('helvetica', 'normal');
         y = tableTop + rowHeight;
         pdf.setDrawColor(220, 220, 220);
@@ -392,12 +392,12 @@ export default function ReportsPage() {
           [t('reports.totalAppointments'), String(doc.summary.totalAppointments || 0)],
           [t('reports.totalRevenue'), formatCurrency(doc.summary.totalRevenue || 0)],
           [t('reports.completionRate'), `${Math.round(doc.summary.averageCompletionRate || 0)}%`],
-          [t('reports.totalDoctors') || 'Total Doctors', String(doc.summary.totalDoctors || 0)],
+          [t('reports.totalDoctors'), String(doc.summary.totalDoctors || 0)],
         ]);
         if (doc.doctors?.length) {
           pdf.setFontSize(10);
           pdf.setFont('helvetica', 'bold');
-          pdf.text(t('reports.doctorPerformance') || 'Doctor Performance', margin, y);
+          pdf.text(t('reports.doctorPerformance'), margin, y);
           y += 8;
           const colW = [55, 22, 22, 20, 22, 35];
           const cols = [
@@ -464,8 +464,7 @@ export default function ReportsPage() {
       } else {
         pdf.setFontSize(10);
         pdf.text(
-          t('reports.noData') ||
-            'No report data available. Select a date range and generate the report.',
+          t('reports.noData'),
           margin,
           y,
         );
@@ -520,7 +519,7 @@ export default function ReportsPage() {
       fillReportPdf(pdf, data !== null ? data : undefined, logoBase64);
       const name = `report-${activeTab}-${startDate}-to-${endDate}.pdf`;
       pdf.save(name);
-      showSuccess(t('reports.pdfDownloaded') || 'Report downloaded as PDF');
+      showSuccess(t('reports.pdfDownloaded'));
     } catch (err) {
       logger.error('Failed to generate report PDF', err);
       showError(err?.message || t('reports.fetchError'));
@@ -772,10 +771,10 @@ export default function ReportsPage() {
               isLoading={loading || generatingPdf}
               disabled={generatingPdf}
               className='filter-button'
-              title={t('reports.downloadPdfHint') || 'Generate and download report as PDF'}
+              title={t('reports.downloadPdfHint')}
             >
               {generatingPdf
-                ? t('reports.generatingPdf') || 'Generating PDF…'
+                ? t('reports.generatingPdf')
                 : t('reports.generateReport')}
             </Button>
             <Button
@@ -786,7 +785,7 @@ export default function ReportsPage() {
               aria-label={t('reports.print')}
             >
               <PrinterIcon className='icon icon-sm flex-shrink-0' aria-hidden />
-              {t('reports.print') || 'Print'}
+              {t('reports.print')}
             </Button>
           </div>
 
@@ -795,7 +794,7 @@ export default function ReportsPage() {
               visibleTabIds.includes('revenue') && { id: 'revenue', label: t('reports.revenue') },
               visibleTabIds.includes('doctors') && {
                 id: 'doctors',
-                label: t('reports.doctorPerformance') || 'Doctor Performance',
+                label: t('reports.doctorPerformance'),
               },
               { id: 'patients', label: t('reports.patients') },
               { id: 'appointments', label: t('reports.appointments') },
@@ -933,7 +932,7 @@ export default function ReportsPage() {
                   <Card>
                     <div className='p-4'>
                       <p className='text-sm text-neutral-600 mb-1'>
-                        {t('reports.totalDoctors') || 'Total Doctors'}
+                        {t('reports.totalDoctors')}
                       </p>
                       <p className='text-3xl font-bold text-neutral-800'>
                         {doctorReport.summary.totalDoctors || 0}
@@ -945,7 +944,7 @@ export default function ReportsPage() {
                   <Card>
                     <div className='flex items-center justify-between mb-4'>
                       <h2 className='text-xl font-semibold'>
-                        {t('reports.doctorPerformance') || 'Doctor Performance'}
+                        {t('reports.doctorPerformance')}
                       </h2>
                       {canExportData(user?.role) && (
                         <Button variant='secondary' size='md' onClick={() => exportCSV('doctors')}>
@@ -955,7 +954,7 @@ export default function ReportsPage() {
                     </div>
                     <Table
                       columns={[
-                        { header: t('staff.fullName') || 'Doctor', accessor: 'doctorName' },
+                        { header: t('staff.fullName'), accessor: 'doctorName' },
                         { header: t('reports.totalAppointments'), accessor: 'totalAppointments' },
                         { header: t('reports.completed'), accessor: 'completed' },
                         { header: t('reports.noShows'), accessor: 'noShows' },

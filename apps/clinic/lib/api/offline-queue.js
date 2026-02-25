@@ -5,9 +5,17 @@
 
 import { addOfflineMutation, getOfflineMutations, removeOfflineMutation } from '@/lib/cache/indexed-db-cache';
 
-const BASE = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_API_URL
-  ? process.env.NEXT_PUBLIC_API_URL
-  : '/api';
+function getApiBase() {
+  const configured = process.env.NEXT_PUBLIC_API_URL || '';
+  const isLocalhost = /localhost|127\.0\.0\.1/.test(configured);
+  if (typeof window !== 'undefined' && isLocalhost) {
+    const onDeployedSite = !/localhost|127\.0\.0\.1/.test(window.location?.hostname || '');
+    if (onDeployedSite) return '/api';
+  }
+  return configured && configured.trim() ? configured.replace(/\/$/, '') : '/api';
+}
+
+const BASE = getApiBase();
 
 function getToken() {
   if (typeof window === 'undefined') return null;

@@ -208,11 +208,11 @@ export default function PatientDetailPage() {
         invalidateLists();
         fetchAllData();
       } else {
-        setError(response.error?.message || 'Failed to update patient');
+        setError(response.error?.message || t('patients.failedToUpdatePatient'));
       }
     } catch (error) {
       logger.error('Failed to update patient:', error);
-      setError(error.message || 'Failed to update patient');
+      setError(error.message || t('patients.failedToUpdatePatient'));
     } finally {
       setSaving(false);
     }
@@ -802,10 +802,10 @@ export default function PatientDetailPage() {
                     <table className='clinic-table'>
                       <thead>
                         <tr>
-                          <th>{t('prescriptions.rxNumber') || 'Rx #'}</th>
+                          <th>{t('prescriptions.rxNumber')}</th>
                           <th>{t('appointments.date')}</th>
                           <th>{t('prescriptions.diagnosis')}</th>
-                          <th>{t('common.items') || 'Items'}</th>
+                          <th>{t('common.items')}</th>
                           <th>{t('appointments.status')}</th>
                           <th>{t('common.actions')}</th>
                         </tr>
@@ -881,10 +881,10 @@ export default function PatientDetailPage() {
                     <table className='clinic-table'>
                       <thead>
                         <tr>
-                          <th>{t('invoices.invoiceNumber') || 'Invoice #'}</th>
+                          <th>{t('invoices.invoiceNumber')}</th>
                           <th>{t('appointments.date')}</th>
-                          <th>{t('common.items') || 'Items'}</th>
-                          <th>{t('invoices.amount') || 'Amount'}</th>
+                          <th>{t('common.items')}</th>
+                          <th>{t('invoices.amount')}</th>
                           <th>{t('appointments.status')}</th>
                           <th>{t('common.actions')}</th>
                         </tr>
@@ -900,7 +900,7 @@ export default function PatientDetailPage() {
                               {inv.items.length}{' '}
                               {inv.items.length !== 1
                                 ? t('common.items')
-                                : t('common.item') || 'item'}
+                                : t('common.item')}
                             </td>
                             <td className='whitespace-nowrap font-medium'>
                               ${inv.totalAmount.toFixed(2)}
@@ -949,11 +949,11 @@ export default function PatientDetailPage() {
                     <table className='clinic-table'>
                       <thead>
                         <tr>
-                          <th>{t('lab.testName') || 'Test Name'}</th>
-                          <th>{t('lab.testCode') || 'Test Code'}</th>
+                          <th>{t('lab.testName')}</th>
+                          <th>{t('lab.testCode')}</th>
                           <th>{t('appointments.date')}</th>
                           <th>{t('appointments.status')}</th>
-                          <th>{t('lab.results') || 'Results'}</th>
+                          <th>{t('lab.results')}</th>
                         </tr>
                       </thead>
                       <tbody>
