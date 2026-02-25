@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
+import { findSessionByParamId } from '@/services/telemedicine.service.js';
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
@@ -50,7 +51,7 @@ export async function POST(
     }
 
     await connectDB();
-    const session = await TelemedicineSession.findOne({ sessionId }).lean();
+    const session = await findSessionByParamId(sessionId);
 
     if (!session) {
       return NextResponse.json(
@@ -73,7 +74,7 @@ export async function POST(
     };
 
     await TelemedicineSession.updateOne(
-      { sessionId },
+      { _id: session._id },
       { $push: { sharedFiles: fileData } }
     );
 
@@ -81,7 +82,7 @@ export async function POST(
     if (uploadedBy) {
       await AuditLogger.auditWrite(
         'telemedicine_session',
-        sessionId,
+        session._id.toString(),
         uploadedBy,
         session.tenantId,
         'CREATE',
@@ -129,7 +130,7 @@ export async function GET(
     logger.info('[Files API] Fetching files for session:', sessionId);
 
     await connectDB();
-    const session = await TelemedicineSession.findOne({ sessionId }).lean();
+    const session = await findSessionByParamId(sessionId);
 
     if (!session) {
       logger.error('[Files API] Session not found:', sessionId);

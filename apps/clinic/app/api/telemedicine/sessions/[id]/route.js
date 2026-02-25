@@ -3,6 +3,7 @@ import { withAuth } from '@/middleware/auth';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import {
   getSessionById,
+  findSessionByParamId,
   startSession,
   endSession,
 } from '@/services/telemedicine.service';
@@ -71,8 +72,15 @@ async function putHandler(
     // Update session with any additional fields
     if (body && Object.keys(body).length > 0) {
       await connectDB();
+      const existing = await findSessionByParamId(params.id, user.tenantId);
+      if (!existing) {
+        return NextResponse.json(
+          errorResponse('Session not found', 'NOT_FOUND'),
+          { status: 404 }
+        );
+      }
       const session = await TelemedicineSession.findOne(
-        withTenant(user.tenantId, { _id: params.id })
+        withTenant(user.tenantId, { _id: existing._id })
       );
       if (!session) {
         return NextResponse.json(

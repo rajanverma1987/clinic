@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@/middleware/auth';
 import { withErrorHandler } from '@/middleware/error-handler';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
+import { findSessionByParamId } from '@/services/telemedicine.service.js';
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
 import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
@@ -30,7 +31,7 @@ async function getHandler(req, user, context) {
     }
 
     await connectDB();
-    const session = await TelemedicineSession.findOne({ sessionId }).lean();
+    const session = await findSessionByParamId(sessionId, user.tenantId);
 
     if (!session) {
       return NextResponse.json(
@@ -52,7 +53,7 @@ async function getHandler(req, user, context) {
 
     await AuditLogger.auditWrite(
       'telemedicine_session',
-      sessionId,
+      session._id.toString(),
       user.userId,
       user.tenantId || 'system',
       AuditAction.READ,
