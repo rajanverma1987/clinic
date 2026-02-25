@@ -149,7 +149,7 @@ export default function SubscriptionPage() {
       .replace('{{planName}}', plan.name);
 
     openConfirm({
-      title: t('subscription.confirmUpgradeTitle') || 'Confirm',
+      title: t('subscription.confirmUpgradeTitle'),
       message: msg,
       confirmLabel: t('common.confirm'),
       cancelLabel: t('common.cancel'),

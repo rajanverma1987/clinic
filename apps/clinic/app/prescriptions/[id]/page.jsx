@@ -156,11 +156,11 @@ export default function PrescriptionDetailPage() {
                     );
                   else
                     showError(
-                      t('prescriptions.emailSendFailed') || 'Failed to send prescription via email',
+                      t('prescriptions.emailSendFailed'),
                     );
                 } catch (err) {
                   showError(
-                    t('prescriptions.emailSendFailed') || 'Failed to send prescription via email',
+                    t('prescriptions.emailSendFailed'),
                   );
                 }
               }}

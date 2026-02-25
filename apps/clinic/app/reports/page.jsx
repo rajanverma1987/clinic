@@ -409,7 +409,7 @@ export default function ReportsPage() {
             margin + colW[0] + colW[1] + colW[2] + colW[3] + colW[4],
           ];
           const headers = [
-            t('staff.fullName') || 'Doctor',
+            t('staff.fullName'),
             t('reports.totalAppointments'),
             t('reports.completed'),
             t('reports.noShows'),

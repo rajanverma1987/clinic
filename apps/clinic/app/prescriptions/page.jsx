@@ -155,11 +155,11 @@ export default function PrescriptionsPage() {
             showSuccess(t('prescriptions.activated'));
             fetchPrescriptions();
           } else {
-            showError(response.error?.message || 'Failed to activate prescription');
+            showError(response.error?.message || t('prescriptions.failedToActivate'));
           }
         } catch (error) {
           logger.error('Failed to activate prescription:', error);
-          showError(error.message || 'Failed to activate prescription');
+          showError(error.message || t('prescriptions.failedToActivate'));
         }
       },
     });

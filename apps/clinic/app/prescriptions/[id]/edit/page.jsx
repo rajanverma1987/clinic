@@ -457,11 +457,11 @@ export default function EditPrescriptionPage() {
         invalidateLists();
         router.push('/prescriptions');
       } else {
-        setError(response.error?.message || 'Failed to update prescription');
+        setError(response.error?.message || t('prescriptions.failedToUpdatePrescription'));
       }
     } catch (error) {
       logger.error('Failed to update prescription:', error);
-      setError(error.message || 'Failed to update prescription');
+      setError(error.message || t('prescriptions.failedToUpdatePrescription'));
     } finally {
       setSubmitting(false);
     }

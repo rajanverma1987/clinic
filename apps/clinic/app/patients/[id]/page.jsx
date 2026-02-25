@@ -944,7 +944,7 @@ export default function PatientDetailPage() {
               )}
 
               {activeTab === 'lab-tests' && (
-                <Card title={t('lab.labTests') || 'Lab Tests'}>
+                <Card title={t('lab.labTests')}>
                   <div className='clinic-table-wrap'>
                     <table className='clinic-table'>
                       <thead>

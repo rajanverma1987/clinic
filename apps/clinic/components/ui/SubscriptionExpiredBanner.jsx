@@ -37,7 +37,7 @@ export function SubscriptionExpiredBanner({
 
   // Trial expiring soon
   if (subscriptionStatus === 'ACTIVE' && trialDaysRemaining != null && trialDaysRemaining <= 3) {
-    const days = trialDaysRemaining === 1 ? t('common.day') || 'day' : t('common.days') || 'days';
+    const days = trialDaysRemaining === 1 ? t('common.day') : t('common.days');
     const message = t('subscription.bannerTrialExpiring')
       .replace('{{count}}', String(trialDaysRemaining))
       .replace('{{days}}', days);

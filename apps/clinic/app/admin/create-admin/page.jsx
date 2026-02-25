@@ -263,10 +263,10 @@ export default function CreateAdminPage() {
 
               <div className='flex gap-4'>
                 <Button type='submit' variant='primary' disabled={isLoading}>
-                  {isLoading ? t('common.creating') : 'Create Admin Account'}
+                  {isLoading ? t('common.creating') : t('admin.createAdminAccountButton')}
                 </Button>
                 <Button type='button' variant='secondary' href='/admin'>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </form>

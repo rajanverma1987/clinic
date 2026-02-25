@@ -261,7 +261,7 @@ export default function InventoryPage() {
         const isLow = available <= threshold;
         return (
           <span className={isLow ? 'text-status-error font-medium' : 'text-neutral-900'}>
-            {row.totalQuantity} / {row.availableQuantity} available
+            {row.totalQuantity} / {row.availableQuantity} {t('inventory.available')}
           </span>
         );
       },
@@ -620,7 +620,7 @@ export default function InventoryPage() {
                               {lot.quantity} {lot.unit}
                             </td>
                             <td>{formatLotsDate(lot.expiryDate)}</td>
-                            <td className='text-neutral-600'>{lot.supplierName || 'N/A'}</td>
+                            <td className='text-neutral-600'>{lot.supplierName || t('common.na')}</td>
                             <td>{getLotStatusBadge(lot)}</td>
                             <td>
                               <ActionsMenu
@@ -629,7 +629,7 @@ export default function InventoryPage() {
                                 items={[
                                   {
                                     key: 'view',
-                                    label: t('inventory.viewItem') || 'View Item',
+                                    label: t('inventory.viewItem'),
                                     icon: <EyeIcon className='icon icon-sm' />,
                                     onClick: () => router.push(`/inventory/items/${lot.itemId}`),
                                   },
@@ -745,11 +745,39 @@ export default function InventoryPage() {
                               </div>
                             </td>
                             <td>
-                              <span className='capitalize'>{tx.type}</span>
+                              <span className='capitalize'>
+                                {t(
+                                  `inventory.${
+                                    {
+                                      in: 'typeIn',
+                                      IN: 'typeIn',
+                                      out: 'typeOut',
+                                      OUT: 'typeOut',
+                                      adjustment: 'typeAdjustment',
+                                      ADJUSTMENT: 'typeAdjustment',
+                                    }[tx.type] || 'typeIn'
+                                  }`
+                                )}
+                              </span>
                             </td>
                             <td>{tx.quantity}</td>
                             <td>
-                              <span className='capitalize'>{tx.status}</span>
+                              <span className='capitalize'>
+                                {t(
+                                  `inventory.${
+                                    {
+                                      completed: 'statusCompleted',
+                                      COMPLETED: 'statusCompleted',
+                                      pending: 'statusPending',
+                                      PENDING: 'statusPending',
+                                      failed: 'statusFailed',
+                                      FAILED: 'statusFailed',
+                                      cancelled: 'statusCancelled',
+                                      CANCELLED: 'statusCancelled',
+                                    }[tx.status] || 'statusPending'
+                                  }`
+                                )}
+                              </span>
                             </td>
                             <td>{formatLotsDate(tx.createdAt || tx.timestamp)}</td>
                           </tr>

@@ -52,6 +52,22 @@ export default function TelemedicinePage() {
     return colors[status] || 'default';
   };
 
+  const getSessionTypeKey = (sessionType) => {
+    const normalized = (sessionType || '').toUpperCase();
+    if (normalized === 'CHAT') return 'typeChat';
+    return 'typeVideo'; // VIDEO, video_consultation, or unknown
+  };
+
+  const getStatusKey = (status) => {
+    const map = {
+      SCHEDULED: 'statusScheduled',
+      IN_PROGRESS: 'statusInProgress',
+      COMPLETED: 'statusCompleted',
+      CANCELLED: 'statusCancelled',
+    };
+    return map[status] || 'statusScheduled';
+  };
+
   const handleJoinSession = (sessionId) => {
     router.push(`/telemedicine/${sessionId}`);
   };
@@ -72,7 +88,9 @@ export default function TelemedicinePage() {
     },
     {
       header: t('telemedicine.type'),
-      accessor: (row) => <Tag variant='default'>{row.sessionType}</Tag>,
+      accessor: (row) => (
+        <Tag variant='default'>{t(`telemedicine.${getSessionTypeKey(row.sessionType)}`)}</Tag>
+      ),
     },
     {
       header: t('telemedicine.scheduledTime'),
@@ -80,7 +98,11 @@ export default function TelemedicinePage() {
     },
     {
       header: t('telemedicine.status'),
-      accessor: (row) => <Tag variant={getStatusColor(row.status)}>{row.status}</Tag>,
+      accessor: (row) => (
+        <Tag variant={getStatusColor(row.status)}>
+          {t(`telemedicine.${getStatusKey(row.status)}`)}
+        </Tag>
+      ),
     },
     {
       header: t('common.actions'),

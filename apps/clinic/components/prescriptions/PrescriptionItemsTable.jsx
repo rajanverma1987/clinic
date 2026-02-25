@@ -364,7 +364,7 @@ export function PrescriptionItemsTable({
                     className='prescription-items-remove-btn'
                     aria-label={t('prescriptions.remove')}
                   >
-                    {t('prescriptions.remove') || 'Remove'}
+                    {t('prescriptions.remove')}
                   </Button>
                 </td>
               </tr>
@@ -374,8 +374,7 @@ export function PrescriptionItemsTable({
       </table>
       {items.length === 0 && (
         <div className='prescription-items-empty'>
-          {t('prescriptions.noItemsAddItem') ||
-            'No items added. Click "Add Item" to add prescription items.'}
+          {t('prescriptions.noItemsAddItem')}
         </div>
       )}
     </div>

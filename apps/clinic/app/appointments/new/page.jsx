@@ -755,8 +755,7 @@ function NewAppointmentPageContent() {
                         className='mt-0.5'
                       />
                       <span className='text-sm text-neutral-700 dark:text-neutral-300'>
-                        {t('appointments.videoConsentNotice') ||
-                          'Patient consents to video consultation and understands HIPAA/GDPR rights.'}{' '}
+                        {t('appointments.videoConsentNotice')}{' '}
                         *
                       </span>
                     </label>

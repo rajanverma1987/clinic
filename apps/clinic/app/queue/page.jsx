@@ -176,11 +176,11 @@ export default function QueuePage() {
   };
 
   const formatWaitTime = (minutes) => {
-    if (!minutes) return 'N/A';
+    if (!minutes) return t('common.na');
     if (minutes < 60) return `${minutes} ${t('queue.minutes')}`;
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
+    return `${hours}${t('queue.hours')} ${mins}${t('queue.minutesShort')}`;
   };
 
   const handleStartVideo = async (appointment) => {
@@ -268,19 +268,30 @@ export default function QueuePage() {
     },
     {
       header: t('queue.priority'),
-      accessor: (row) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.priority === 'urgent'
-              ? 'bg-status-error/10 text-status-error dark:bg-red-900/60 dark:text-red-200'
-              : row.priority === 'high'
-                ? 'bg-status-warning/10 text-status-warning dark:bg-amber-900/60 dark:text-amber-200'
-                : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-600 dark:text-neutral-200'
-          }`}
-        >
-          {row.priority}
-        </span>
-      ),
+      accessor: (row) => {
+        const p = (row.priority || 'normal').toLowerCase();
+        const priorityLabel =
+          p === 'urgent'
+            ? t('queue.priorityUrgent')
+            : p === 'high'
+              ? t('queue.priorityHigh')
+              : p === 'low'
+                ? t('queue.priorityLow')
+                : t('queue.priorityNormal');
+        return (
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              p === 'urgent'
+                ? 'bg-status-error/10 text-status-error dark:bg-red-900/60 dark:text-red-200'
+                : p === 'high'
+                  ? 'bg-status-warning/10 text-status-warning dark:bg-amber-900/60 dark:text-amber-200'
+                  : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-600 dark:text-neutral-200'
+            }`}
+          >
+            {priorityLabel}
+          </span>
+        );
+      },
     },
     {
       header: t('queue.estimatedWait'),

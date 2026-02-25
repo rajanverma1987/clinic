@@ -134,7 +134,7 @@ export default function InventoryItemDetailPage() {
   };
 
   const formatCurrency = (amount) => {
-    if (!amount) return 'N/A';
+    if (!amount) return t('common.na');
     return formatCurrencyUtil(amount, currency, locale);
   };
 
@@ -239,11 +239,15 @@ export default function InventoryItemDetailPage() {
         title={item.name}
         subtitle={
           <>
-            {item.code && <span className='mr-4'>Code: {item.code}</span>}
+            {item.code && (
+              <span className='mr-4'>
+                {t('inventory.code')}: {item.code}
+              </span>
+            )}
             <Tag variant={getStockStatus()} size='sm' className='ml-2'>
               {(item.availableQuantity ?? 0) <= (item.lowStockThreshold ?? 0)
-                ? 'Low Stock'
-                : 'In Stock'}
+                ? t('inventory.lowStock')
+                : t('inventory.inStock')}
             </Tag>
           </>
         }
@@ -307,10 +311,10 @@ export default function InventoryItemDetailPage() {
                 disabled={!isEditing}
                 required
                 options={[
-                  { value: 'medicine', label: 'Medicine' },
-                  { value: 'equipment', label: 'Equipment' },
-                  { value: 'supply', label: 'Supply' },
-                  { value: 'consumable', label: 'Consumable' },
+                  { value: 'medicine', label: t('inventory.medicine') },
+                  { value: 'equipment', label: t('inventory.equipment') },
+                  { value: 'supply', label: t('inventory.supply') },
+                  { value: 'consumable', label: t('inventory.consumable') },
                   { value: 'other', label: t('common.other') },
                 ]}
               />
@@ -333,7 +337,7 @@ export default function InventoryItemDetailPage() {
                       {item.totalQuantity} {item.unit}
                       {item.availableQuantity !== item.totalQuantity && (
                         <span className='text-neutral-500 dark:text-neutral-400 ml-2'>
-                          ({item.availableQuantity} available)
+                          ({item.availableQuantity} {t('inventory.available')})
                         </span>
                       )}
                     </p>

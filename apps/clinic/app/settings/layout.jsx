@@ -25,7 +25,7 @@ export default function SettingsLayout({ children }) {
     (c) => pathname === c.path || (pathname || '').startsWith(c.path + '/'),
   );
   const pageTitle = activeTabPath ? t(activeTabPath.labelKey) : t('settings.title');
-  const pageSubtitle = t('settings.description') || 'Manage your clinic settings and preferences';
+  const pageSubtitle = t('settings.description');
 
   useEffect(() => {
     if (!authLoading && user && !canAccessAdminTabs) {
@@ -43,7 +43,7 @@ export default function SettingsLayout({ children }) {
       <div className='admin-page-content'>
         <nav
           role='tablist'
-          aria-label={t('settings.title') || 'Settings'}
+          aria-label={t('settings.title')}
           className='w-full flex flex-wrap items-center gap-x-4 gap-y-1 overflow-x-auto scrollbar-hide py-1.5 border-b border-neutral-200 dark:border-neutral-600 mb-4'
         >
           {visibleTabs.map(({ path, labelKey }, index) => {

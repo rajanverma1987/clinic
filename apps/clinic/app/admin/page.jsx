@@ -399,10 +399,10 @@ export default function AdminDashboardPage() {
                     {formatNumber(stats?.tenants?.total || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatNumber(stats?.tenants?.active || 0)} active,{' '}
-                    {formatNumber(stats?.tenants?.inactive || 0)} inactive
+                    {formatNumber(stats?.tenants?.active || 0)} {t('common.active').toLowerCase()},{' '}
+                    {formatNumber(stats?.tenants?.inactive || 0)} {t('common.inactive').toLowerCase()}
                     {(stats?.tenants?.suspended || 0) > 0 &&
-                      `, ${formatNumber(stats?.tenants?.suspended || 0)} suspended`}
+                      `, ${formatNumber(stats?.tenants?.suspended || 0)} ${t('admin.suspended').toLowerCase()}`}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-primary-100'>
@@ -428,8 +428,8 @@ export default function AdminDashboardPage() {
                   <p className='admin-stat-card__label'>{t('admin.totalUsers')}</p>
                   <p className='admin-stat-card__value'>{formatNumber(stats?.users?.total || 0)}</p>
                   <p className='admin-stat-card__sub'>
-                    {formatNumber(stats?.users?.active || 0)} active,{' '}
-                    {formatNumber(stats?.users?.superAdmins || 0)} super admins
+                    {formatNumber(stats?.users?.active || 0)} {t('common.active').toLowerCase()},{' '}
+                    {formatNumber(stats?.users?.superAdmins || 0)} {t('admin.superAdmins')}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-primary-100'>
@@ -457,7 +457,7 @@ export default function AdminDashboardPage() {
                     {formatNumber(stats?.patients?.total || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatNumber(stats?.patients?.thisMonth || 0)} added this month
+                    {formatNumber(stats?.patients?.thisMonth || 0)} {t('admin.addedThisMonth')}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-purple-100'>
@@ -485,8 +485,8 @@ export default function AdminDashboardPage() {
                     {formatNumber(stats?.appointments?.total || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatNumber(stats?.appointments?.today || 0)} today,{' '}
-                    {formatNumber(stats?.appointments?.thisMonth || 0)} this month
+                    {formatNumber(stats?.appointments?.today || 0)} {t('admin.today')},{' '}
+                    {formatNumber(stats?.appointments?.thisMonth || 0)} {t('admin.thisMonth')}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-orange-100'>
@@ -524,9 +524,9 @@ export default function AdminDashboardPage() {
                     {formatCurrency(stats?.revenue?.total || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatCurrency(stats?.revenue?.today || 0)} today,{' '}
-                    {formatCurrency(stats?.revenue?.thisMonth || 0)} this month,{' '}
-                    {formatCurrency(stats?.revenue?.thisYear || 0)} this year
+                    {formatCurrency(stats?.revenue?.today || 0)} {t('admin.today')},{' '}
+                    {formatCurrency(stats?.revenue?.thisMonth || 0)} {t('admin.thisMonth')},{' '}
+                    {formatCurrency(stats?.revenue?.thisYear || 0)} {t('admin.thisYear')}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-green-100'>
@@ -554,7 +554,7 @@ export default function AdminDashboardPage() {
                     {formatCurrency(stats?.revenue?.mrr || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    From {formatNumber(stats?.subscriptions?.active || 0)} active subscriptions
+                    {t('admin.fromActiveSubscriptions').replace('{{count}}', formatNumber(stats?.subscriptions?.active || 0))}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-blue-100'>
@@ -582,8 +582,8 @@ export default function AdminDashboardPage() {
                     {formatNumber(stats?.invoices?.total || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatNumber(stats?.invoices?.pending || 0)} pending,{' '}
-                    {formatNumber(stats?.invoices?.paid || 0)} paid
+                    {formatNumber(stats?.invoices?.pending || 0)} {t('admin.pending')},{' '}
+                    {formatNumber(stats?.invoices?.paid || 0)} {t('admin.paid')}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-yellow-100'>
@@ -611,7 +611,7 @@ export default function AdminDashboardPage() {
                     {formatCurrency(stats?.payments?.totalAmount || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatNumber(stats?.payments?.total || 0)} transactions
+                    {formatNumber(stats?.payments?.total || 0)} {t('admin.transactions')}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-indigo-100'>
@@ -664,8 +664,7 @@ export default function AdminDashboardPage() {
                 >
                   <span className='text-blue-700 dark:text-blue-400 font-medium'>
                     {formatNumber(stats.subscriptions.renewalAlerts)}{' '}
-                    {t('admin.subscriptionRenewalAlerts') ||
-                      'subscription(s) set to cancel at period end'}
+                    {t('admin.subscriptionRenewalAlerts')}
                   </span>
                   <Button
                     variant='secondary'
@@ -695,8 +694,8 @@ export default function AdminDashboardPage() {
                     {formatNumber(stats?.subscriptions?.active || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatNumber(stats?.subscriptions?.total || 0)} total,{' '}
-                    {formatNumber(stats?.subscriptions?.cancelled || 0)} cancelled
+                    {formatNumber(stats?.subscriptions?.total || 0)} {t('common.total').toLowerCase()},{' '}
+                    {formatNumber(stats?.subscriptions?.cancelled || 0)} {t('admin.cancelled')}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-secondary-100'>
@@ -752,9 +751,9 @@ export default function AdminDashboardPage() {
                   <p className='admin-stat-card__sub'>
                     {t('admin.requiresAttention')}
                     {(stats?.subscriptions?.expiringIn7Days || 0) > 0 &&
-                      ` • ${formatNumber(stats.subscriptions.expiringIn7Days)} expiring in 7 days`}
+                      ` • ${formatNumber(stats.subscriptions.expiringIn7Days)} ${t('admin.expiringIn7Days')}`}
                     {(stats?.subscriptions?.renewalAlerts || 0) > 0 &&
-                      ` • ${formatNumber(stats.subscriptions.renewalAlerts)} renewal alerts`}
+                      ` • ${formatNumber(stats.subscriptions.renewalAlerts)} ${t('admin.renewalAlerts')}`}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-red-100'>
@@ -849,8 +848,8 @@ export default function AdminDashboardPage() {
                     {formatNumber(stats?.prescriptions?.total || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatNumber(stats?.prescriptions?.active || 0)} active,{' '}
-                    {formatNumber(stats?.prescriptions?.pending || 0)} pending
+                    {formatNumber(stats?.prescriptions?.active || 0)} {t('common.active').toLowerCase()},{' '}
+                    {formatNumber(stats?.prescriptions?.pending || 0)} {t('admin.pending')}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-blue-100'>
@@ -878,8 +877,8 @@ export default function AdminDashboardPage() {
                     {formatNumber(stats?.inventory?.total || 0)}
                   </p>
                   <p className='admin-stat-card__sub'>
-                    {formatNumber(stats?.inventory?.active || 0)} active,{' '}
-                    {formatNumber(stats?.inventory?.lowStock || 0)} low stock
+                    {formatNumber(stats?.inventory?.active || 0)} {t('common.active').toLowerCase()},{' '}
+                    {formatNumber(stats?.inventory?.lowStock || 0)} {t('admin.lowStock')}
                   </p>
                 </div>
                 <div className='admin-stat-card__icon bg-teal-100'>
@@ -1119,7 +1118,7 @@ export default function AdminDashboardPage() {
                       <span className='text-sm font-medium text-neutral-700'>{item.label}</span>
                       <span className='inline-flex items-center gap-1.5 text-sm text-green-700'>
                         <span className='w-2 h-2 rounded-full bg-green-500' aria-hidden />
-                        OK
+                        {t('admin.healthOk')}
                       </span>
                     </div>
                   ))}
@@ -1150,7 +1149,7 @@ export default function AdminDashboardPage() {
                           <div
                             className='bg-primary-600 rounded-t w-full transition-all'
                             style={{ height: `${percentage}%` }}
-                            title={`${hour}:00 - ${count} bookings`}
+                            title={`${hour}:00 - ${count} ${t('admin.bookings')}`}
                           />
                         </div>
                         <p className='text-xs text-neutral-600'>{hour}:00</p>
@@ -1176,7 +1175,7 @@ export default function AdminDashboardPage() {
                   {chartData.geographicDistribution.map((region, index) => (
                     <div key={index} className='text-center p-4 bg-neutral-50 rounded-lg'>
                       <p className='text-sm font-medium text-neutral-600'>
-                        {region.region || region._id || 'Unknown'}
+                        {region.region || region._id || t('common.unknown')}
                       </p>
                       <p className='text-2xl font-bold text-neutral-900 mt-2'>
                         {formatNumber(region.count || region.value || 0)}
@@ -1202,7 +1201,7 @@ export default function AdminDashboardPage() {
                   {stats.tenants.byRegion.map((region) => (
                     <div key={region._id} className='text-center p-4 bg-neutral-50 rounded-lg'>
                       <p className='text-sm font-medium text-neutral-600'>
-                        {region._id || 'Unknown'}
+                        {region._id || t('common.unknown')}
                       </p>
                       <p className='text-2xl font-bold text-neutral-900 mt-2'>
                         {formatNumber(region.count)}
@@ -1227,7 +1226,7 @@ export default function AdminDashboardPage() {
                   {stats.users.byRole.map((role) => (
                     <div key={role._id} className='text-center p-4 bg-neutral-50 rounded-lg'>
                       <p className='text-sm font-medium text-neutral-600 capitalize'>
-                        {role._id?.replace('_', ' ') || 'Unknown'}
+                        {role._id?.replace('_', ' ') || t('common.unknown')}
                       </p>
                       <p className='text-2xl font-bold text-neutral-900 mt-2'>
                         {formatNumber(role.count)}

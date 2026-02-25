@@ -150,7 +150,7 @@ export function AppointmentsTab({ isActive = false }) {
           <h2 className='section-title'>{t('appointments.title')}</h2>
           {isRevalidating && (
             <span className='text-xs text-neutral-500 dark:text-neutral-400' aria-hidden>
-              {t('common.updating') || 'Updating…'}
+              {t('common.updating')}
             </span>
           )}
         </div>
