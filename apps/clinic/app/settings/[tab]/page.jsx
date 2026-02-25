@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
-import { SettingsPageContent } from '../page';
+import { SettingsPageContent } from '../SettingsPageContent';
 
 const VALID_TABS = [
   'profile',

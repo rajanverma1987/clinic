@@ -90,13 +90,13 @@ export default function TelemedicinePage() {
           items.push({
             key: 'join',
             label: t('telemedicine.joinSession'),
-            onClick: () => handleJoinSession(row._id),
+            onClick: () => handleJoinSession(row._id ?? row.sessionId),
           });
         } else {
           items.push({
             key: 'summary',
             label: t('telemedicine.viewSummary'),
-            onClick: () => router.push(`/telemedicine/${row._id}/summary`),
+            onClick: () => router.push(`/telemedicine/${row._id ?? row.sessionId}/summary`),
           });
         }
         return (

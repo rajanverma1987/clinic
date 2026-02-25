@@ -92,11 +92,17 @@ export function Layout({
       setShowNotifications(true);
     };
 
+    const handleOpenSearch = () => {
+      setShowSearch(true);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('openNotifications', handleOpenNotifications);
+    window.addEventListener('openSearch', handleOpenSearch);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('openNotifications', handleOpenNotifications);
+      window.removeEventListener('openSearch', handleOpenSearch);
     };
   }, []);
 

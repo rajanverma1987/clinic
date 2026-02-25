@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/utils/api-response';
+import { findSessionByParamId } from '@/services/telemedicine.service.js';
 import connectDB from '@/lib/db/connection.js';
 import TelemedicineSession from '@/models/TelemedicineSession.js';
 import { AuditLogger } from '@/lib/audit/audit-logger.js';
@@ -40,7 +41,7 @@ export async function POST(
     }
 
     await connectDB();
-    const session = await TelemedicineSession.findOne({ sessionId }).lean();
+    const session = await findSessionByParamId(sessionId);
 
     if (!session) {
       return NextResponse.json(
@@ -60,14 +61,14 @@ export async function POST(
     };
 
     await TelemedicineSession.updateOne(
-      { sessionId },
+      { _id: session._id },
       { $push: { chatMessages: message } }
     );
 
     // Audit log (without message content for privacy)
     await AuditLogger.auditWrite(
       'telemedicine_session',
-      sessionId,
+      session._id.toString(),
       senderId,
       session.tenantId,
       'CREATE',
@@ -111,7 +112,7 @@ export async function GET(
     }
 
     await connectDB();
-    const session = await TelemedicineSession.findOne({ sessionId }).lean();
+    const session = await findSessionByParamId(sessionId);
 
     if (!session) {
       return NextResponse.json(

@@ -230,6 +230,14 @@
 .dashboard-today-schedule-card .appointments-list-empty {
   min-height: 140px;
 }
+/* Skeleton loader: match list scroll area height so card doesn’t grow */
+.dashboard-today-schedule-card .appointments-list-loading {
+  max-height: 320px;
+  overflow: hidden;
+}
+.dashboard-today-schedule-card .appointments-list-loading .skeleton-list-item {
+  height: 56px;
+}
 .dashboard-today-schedule-card .appointments-list .appointments-list-scroll {
   max-height: 320px;
   overflow-y: auto;
@@ -257,9 +265,18 @@
   margin-bottom: 0;
 }
 
-/* Key Metrics: reduce top gap so it sits closer to Critical Alerts / Pending Tasks */
+/* Key Metrics: reduce top gap; uniform stat card height for even content */
 .dashboard-section-key-metrics {
   margin-top: calc(-1 * var(--space-4, 16px));
+}
+.dashboard-section-key-metrics .stat-card {
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-section-key-metrics .stat-card .stat-card-inner {
+  flex: 1;
+  display: flex;
 }
 
 /* Tab bar – theme tokens; match button padding (--space-5 = 20px) for consistency */
@@ -1119,12 +1136,18 @@
   );
 }
 
-.chart-card-primary:hover {
-  box-shadow:
-    0 8px 20px color-mix(in srgb, var(--color-primary-500) 15%, transparent),
-    0 4px 8px color-mix(in srgb, var(--color-primary-500) 10%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+/* Hover: match patient summary card (dashboard-list-card) – same border and shadow */
+.chart-card-primary:hover,
+.chart-card-secondary:hover,
+.chart-card-warning:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-neutral-300);
+}
+.dark .chart-card-primary:hover,
+.dark .chart-card-secondary:hover,
+.dark .chart-card-warning:hover {
+  border-color: var(--color-neutral-500);
+  box-shadow: var(--shadow-md);
 }
 
 .chart-card-secondary {
@@ -1136,14 +1159,6 @@
   );
 }
 
-.chart-card-secondary:hover {
-  box-shadow:
-    0 12px 24px color-mix(in srgb, var(--color-primary-500) 12%, transparent),
-    0 4px 8px color-mix(in srgb, var(--color-primary-500) 8%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
-}
-
 .chart-card-warning {
   border-color: color-mix(in srgb, var(--color-status-warning) 20%, transparent);
   background: linear-gradient(
@@ -1151,14 +1166,6 @@
     var(--color-neutral-50) 0%,
     color-mix(in srgb, var(--color-status-warning) 2%, transparent) 100%
   );
-}
-
-.chart-card-warning:hover {
-  box-shadow:
-    0 12px 24px color-mix(in srgb, var(--color-status-warning) 12%, transparent),
-    0 4px 8px color-mix(in srgb, var(--color-status-warning) 8%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--color-status-warning) 15%, transparent);
-  border-color: color-mix(in srgb, var(--color-status-warning) 30%, transparent);
 }
 
 /* Section Header – extends globals .section-header; dashboard-specific gap/mb */

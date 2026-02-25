@@ -101,22 +101,41 @@ export async function createTelemedicineSession(tenantId, userId, data) {
   return session;
 }
 
+/** True if string looks like a MongoDB ObjectId (24 hex chars) */
+function isMongoId(str) {
+  return typeof str === 'string' && /^[a-fA-F0-9]{24}$/.test(str);
+}
+
 /**
- * Get session by ID
- * @param {string} sessionId - Session ID
+ * Get session by ID (MongoDB _id or string sessionId e.g. TM-0001)
+ * @param {string} id - Session ID (ObjectId string or sessionId)
  * @param {string} tenantId - Optional tenant ID (for authenticated access)
  */
-export async function getSessionById(sessionId, tenantId = null) {
+export async function getSessionById(id, tenantId = null) {
   await connectDB();
 
-  const query = tenantId
-    ? withTenant(tenantId, { _id: sessionId })
-    : { _id: sessionId };
+  const byMongoId = isMongoId(id);
+  const query = byMongoId
+    ? (tenantId ? withTenant(tenantId, { _id: id }) : { _id: id })
+    : (tenantId ? withTenant(tenantId, { sessionId: id }) : { sessionId: id });
 
   return await TelemedicineSession.findOne(query)
     .populate('patientId', 'firstName lastName patientId email')
     .populate('doctorId', 'firstName lastName')
     .lean();
+}
+
+/**
+ * Find session by URL param (MongoDB _id or sessionId string). Returns lean doc without populate.
+ * Use for routes that only need to resolve session (waiting-room, chat, admit, reject, files).
+ */
+export async function findSessionByParamId(id, tenantId = null) {
+  await connectDB();
+  const byMongoId = isMongoId(id);
+  const query = byMongoId
+    ? (tenantId ? withTenant(tenantId, { _id: id }) : { _id: id })
+    : (tenantId ? withTenant(tenantId, { sessionId: id }) : { sessionId: id });
+  return await TelemedicineSession.findOne(query).lean();
 }
 
 /**
@@ -145,14 +164,17 @@ export async function listSessions(tenantId, filters) {
 
 /**
  * Start session
+ * @param {string} id - Session ID (MongoDB _id or sessionId string)
  */
-export async function startSession(sessionId, tenantId, userId, roomId) {
+export async function startSession(id, tenantId, userId, roomId) {
   await connectDB();
 
-  const session = await TelemedicineSession.findOne(
-    withTenant(tenantId, { _id: sessionId })
-  );
+  const existing = await findSessionByParamId(id, tenantId);
+  if (!existing) return null;
 
+  const session = await TelemedicineSession.findOne(
+    withTenant(tenantId, { _id: existing._id })
+  );
   if (!session) return null;
 
   session.status = SessionStatus.IN_PROGRESS;
@@ -177,14 +199,17 @@ export async function startSession(sessionId, tenantId, userId, roomId) {
 
 /**
  * End session
+ * @param {string} id - Session ID (MongoDB _id or sessionId string)
  */
-export async function endSession(sessionId, tenantId, userId, data) {
+export async function endSession(id, tenantId, userId, data) {
   await connectDB();
 
-  const session = await TelemedicineSession.findOne(
-    withTenant(tenantId, { _id: sessionId })
-  );
+  const existing = await findSessionByParamId(id, tenantId);
+  if (!existing) return null;
 
+  const session = await TelemedicineSession.findOne(
+    withTenant(tenantId, { _id: existing._id })
+  );
   if (!session) return null;
 
   session.status = SessionStatus.COMPLETED;

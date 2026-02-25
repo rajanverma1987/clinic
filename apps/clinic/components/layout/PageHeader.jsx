@@ -124,7 +124,13 @@ export function PageHeader({
           {showSearch && (
             <button
               type='button'
-              onClick={onOpenSearch}
+              onClick={() => {
+                if (typeof onOpenSearch === 'function') {
+                  onOpenSearch();
+                } else {
+                  window.dispatchEvent(new CustomEvent('openSearch'));
+                }
+              }}
               className='page-header__search'
               aria-label={t('common.ariaLabelSearch')}
             >

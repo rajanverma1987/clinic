@@ -32,13 +32,14 @@ import { InvoiceListItem } from './components/InvoiceListItem';
 import { NextPatientCard } from './components/NextPatientCard';
 import { PatientListItem } from './components/PatientListItem';
 import { PatientsReviewCard } from './components/PatientsReviewCard';
+import { CalendarWidget } from './components/CalendarWidget';
 import { PatientsSummaryChart } from './components/PatientsSummaryChart';
 import { QuickActions } from './components/QuickActions';
 import { StatsCard } from './components/StatsCard';
 
 // Code splitting: dynamic load heavy dashboard sections with skeleton fallbacks
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { CalendarSkeleton, CardSkeleton, ChartSkeleton } from '@/components/skeletons';
+import { CardSkeleton, ChartSkeleton } from '@/components/skeletons';
 
 const ChartCard = nextDynamic(
   () =>
@@ -46,13 +47,6 @@ const ChartCard = nextDynamic(
       .then((m) => ({ default: m.ChartCard }))
       .catch(() => ({ default: () => <ChartSkeleton variant='line' /> })),
   { loading: () => <ChartSkeleton variant='line' />, ssr: false },
-);
-const CalendarWidget = nextDynamic(
-  () =>
-    import('./components/CalendarWidget')
-      .then((m) => ({ default: m.CalendarWidget }))
-      .catch(() => ({ default: () => <CalendarSkeleton /> })),
-  { loading: () => <CalendarSkeleton />, ssr: false },
 );
 const CriticalAlerts = nextDynamic(
   () =>
@@ -787,7 +781,7 @@ export default function DashboardPage() {
                         trend={stats?.patientsTrend}
                         icon='patients'
                         colorScheme='primary'
-                        layout='default'
+                        layout='compact'
                         onClick={() => navigate('/patients')}
                         loading={statsLoading}
                       />
@@ -812,7 +806,7 @@ export default function DashboardPage() {
                           trend={stats?.revenueTrend}
                           icon='currency-dollar'
                           colorScheme='success'
-                          layout='stacked'
+                          layout='compact'
                           onClick={() => navigate('/invoices')}
                           loading={statsLoading}
                         />
@@ -823,7 +817,7 @@ export default function DashboardPage() {
                         subtitle={t('dashboard.patientsInQueue') || 'patients in queue'}
                         icon='queue'
                         colorScheme='warning'
-                        layout='minimal'
+                        layout='compact'
                         onClick={() => navigate('/queue')}
                         loading={statsLoading}
                       />
@@ -837,7 +831,7 @@ export default function DashboardPage() {
                 <TrendsSection tenantId={clinicTenantId} trends={dashboardAll.trends} />
               )}
 
-              {/* Main Content – Today's Appointments & Calendar – TablesSection lazy load (STEP 6) */}
+              {/* Main Content – Today's Schedule: Today's Appointments card + Calendar card side by side */}
               {!isDoctor && (
                 <TablesSection>
                   {/* Section Header */}
@@ -845,8 +839,9 @@ export default function DashboardPage() {
                     <div className='accent-bar accent-bar-primary' />
                     <h2 className='section-title'>{t('dashboard.todaySchedule')}</h2>
                   </div>
-                  <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch dashboard-today-schedule-grid'>
-                    <div className='dashboard-card-cell dashboard-today-schedule-cell'>
+                  <div className='grid grid-cols-1 md:grid-cols-2 dashboard-grid items-stretch gap-4 md:gap-6 dashboard-today-schedule-grid'>
+                    {/* Today's Appointments card */}
+                    <div className='dashboard-card-cell dashboard-today-schedule-cell min-w-0'>
                       <Card className='dashboard-list-card dashboard-list-card-primary dashboard-today-schedule-card p-6 h-full flex flex-col'>
                         <AppointmentsListWithHook
                           filters={{ status: 'scheduled' }}
@@ -859,10 +854,10 @@ export default function DashboardPage() {
                         />
                       </Card>
                     </div>
-                    <div className='dashboard-card-cell dashboard-today-schedule-cell'>
+                    {/* Calendar card – beside Today's Appointments */}
+                    <div className='dashboard-card-cell dashboard-today-schedule-cell min-w-0'>
                       <ErrorBoundary>
                         <CalendarWidget
-                          loading={listsLoading}
                           doctorId={isDoctor ? (user?.id ?? user?._id) : undefined}
                           onDateSelect={(date) => {
                             const y = date.getFullYear();
@@ -1280,7 +1275,6 @@ export default function DashboardPage() {
                       <div className='dashboard-card-cell'>
                         <ErrorBoundary>
                           <CalendarWidget
-                            loading={listsLoading}
                             doctorId={isDoctor ? (user?.id ?? user?._id) : undefined}
                             onDateSelect={(date) => {
                               const y = date.getFullYear();
