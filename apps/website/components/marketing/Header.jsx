@@ -45,10 +45,10 @@ export function Header() {
   const navigationLinks = useMemo(
     () => [
       { href: '/#features', label: t('navigation.features') },
-      { href: '/about', label: t('navigation.about') || 'About' },
-      { href: '/blog', label: t('navigation.blog') || 'Blog' },
+      { href: '/about', label: t('navigation.about') },
+      { href: '/blog', label: t('navigation.blog') },
       { href: '/pricing', label: t('navigation.pricing') },
-      { href: '/support', label: t('navigation.support') || 'Support' },
+      { href: '/support', label: t('navigation.support') },
       { href: '/support/contact', label: t('navigation.contact') },
     ],
     [t],
@@ -82,7 +82,7 @@ export function Header() {
               >
                 <Image
                   src='/images/logoclinic.png'
-                  alt='Clinic Logo'
+                  alt={t('common.altClinicLogo')}
                   width={180}
                   height={50}
                   className='object-contain'
@@ -178,14 +178,14 @@ export function Header() {
                         }}
                       >
                         {user.role === 'super_admin'
-                          ? 'Super Admin'
+                          ? t('common.roleSuperAdmin')
                           : user.role === 'clinic_admin'
-                            ? 'Clinic Admin'
+                            ? t('common.roleClinicAdmin')
                             : user.role === 'doctor'
-                              ? 'Doctor'
+                              ? t('common.roleDoctor')
                               : user.role === 'staff'
-                                ? 'Staff'
-                                : user.role || 'User'}
+                                ? t('common.roleStaff')
+                                : t('common.user')}
                       </p>
                     </div>
                   </div>
@@ -259,7 +259,7 @@ export function Header() {
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className='lg:hidden rounded-xl text-neutral-700 hover:bg-neutral-100'
-              aria-label='Toggle menu'
+              aria-label={t('navigation.toggleMenu')}
               style={{ padding: '8px' }}
             >
               {mobileMenuOpen ? (
@@ -370,7 +370,7 @@ export function Header() {
                               width: 'var(--space-3)',
                               height: 'var(--space-3)',
                             }}
-                            title={user?.isActive ? 'Active' : 'Inactive'}
+                            title={user?.isActive ? t('common.active') : t('common.inactive')}
                           ></div>
                         </div>
                         {/* User Info */}
@@ -394,14 +394,14 @@ export function Header() {
                             }}
                           >
                             {user.role === 'super_admin'
-                              ? 'Super Admin'
+                              ? t('common.roleSuperAdmin')
                               : user.role === 'clinic_admin'
-                                ? 'Clinic Admin'
+                                ? t('common.roleClinicAdmin')
                                 : user.role === 'doctor'
-                                  ? 'Doctor'
+                                  ? t('common.roleDoctor')
                                   : user.role === 'staff'
-                                    ? 'Staff'
-                                    : user.role || 'User'}
+                                    ? t('common.roleStaff')
+                                    : t('common.user')}
                           </p>
                         </div>
                       </div>

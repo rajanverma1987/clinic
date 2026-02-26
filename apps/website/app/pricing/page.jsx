@@ -269,7 +269,7 @@ export default function PricingPage() {
                     clipRule='evenodd'
                   />
                 </svg>
-                <span>Flexible Pricing Plans</span>
+                <span>{t('pricing.flexiblePlans')}</span>
               </div>
 
               <h1

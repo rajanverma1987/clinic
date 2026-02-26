@@ -77,10 +77,10 @@ function FooterComponent() {
                   }}
                 >
                   {[
-                    { href: '/#features', label: t('footer.features') || 'Features', external: false },
-                    { href: '/about', label: t('footer.about') || 'About', external: false },
-                    { href: '/pricing', label: t('navigation.pricing') || 'Pricing', external: false },
-                    { href: `${clinicAppUrl}/register`, label: t('footer.getStarted') || 'Get Started', external: true },
+                    { href: '/#features', label: t('footer.features'), external: false },
+                    { href: '/about', label: t('footer.about'), external: false },
+                    { href: '/pricing', label: t('navigation.pricing'), external: false },
+                    { href: `${clinicAppUrl}/register`, label: t('footer.getStarted'), external: true },
                   ].map((link) => (
                     <li key={link.href}>
                       {link.external ? (
@@ -129,9 +129,9 @@ function FooterComponent() {
                 >
                   {[
                     { href: '/legal', label: t('footer.legalInfo') },
-                    { href: '/privacy', label: t('footer.privacyPolicy') || 'Privacy Policy' },
-                    { href: '/terms', label: t('footer.termsOfService') || 'Terms of Service' },
-                    { href: '/support/contact', label: t('footer.contactUs') || 'Contact Us' },
+                    { href: '/privacy', label: t('footer.privacyPolicy') },
+                    { href: '/terms', label: t('footer.termsOfService') },
+                    { href: '/support/contact', label: t('footer.contactUs') },
                   ].map((link) => (
                     <li key={link.href}>
                       <Link
@@ -158,7 +158,7 @@ function FooterComponent() {
                     textAlign: 'left',
                   }}
                 >
-                  Contact
+                  {t('footer.contact')}
                 </h4>
                 <ul
                   style={{
@@ -189,7 +189,7 @@ function FooterComponent() {
                   >
                     <Image
                       src='/images/logoclinic.png'
-                      alt='Clinic Logo'
+                      alt={t('common.altClinicLogo')}
                       width={160}
                       height={45}
                       className='object-contain'
@@ -209,8 +209,7 @@ function FooterComponent() {
                     textAlign: 'left',
                   }}
                 >
-                  {t('footer.description') ||
-                    'Comprehensive clinic management solution for modern healthcare providers.'}
+                  {t('footer.description')}
                 </p>
                 {/* Trust Badge */}
                 <div
@@ -243,7 +242,7 @@ function FooterComponent() {
                     className='text-primary-700 font-semibold'
                     style={{ fontSize: '11px', fontWeight: '600' }}
                   >
-                    HIPAA Compliant
+                    {t('footer.hipaaCompliant')}
                   </span>
                 </div>
               </div>

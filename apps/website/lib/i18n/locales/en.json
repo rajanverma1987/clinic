@@ -227,7 +227,9 @@
     "areYouSure": "Are you sure?",
     "confirmationDescription": "This action cannot be undone.",
     "updatesAvailable": "Updates available",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "altClinicLogo": "Clinic Logo",
+    "home": "Home"
   },
   "sidebar": {
     "subscriptionType": "Plan"
@@ -1269,7 +1271,8 @@
     "getStarted": "Get Started",
     "pricing": "Pricing",
     "goToDashboard": "Go to Dashboard",
-    "forDoctors": "For Doctors"
+    "forDoctors": "For Doctors",
+    "toggleMenu": "Toggle menu"
   },
   "blog": {
     "title": "Blog & Resources",
@@ -1450,6 +1453,7 @@
   "pricing": {
     "title": "Simple, Transparent Pricing",
     "description": "Choose the perfect plan for your clinic",
+    "flexiblePlans": "Flexible Pricing Plans",
     "monthly": "Monthly",
     "yearly": "Yearly",
     "save20": "Save 5%",
@@ -1513,7 +1517,74 @@
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
     "contactUs": "Contact Us",
-    "allRightsReserved": "All rights reserved"
+    "contact": "Contact",
+    "allRightsReserved": "All rights reserved",
+    "hipaaCompliant": "HIPAA Compliant"
+  },
+  "about": {
+    "title": "About",
+    "description": "We build software to help clinics and healthcare professionals manage appointments, patients, prescriptions, and billing — securely and in one place.",
+    "ourMission": "Our Mission",
+    "missionText": "We are dedicated to providing healthcare professionals with powerful, secure, and intuitive tools to manage their clinics efficiently. Our platform helps you focus on what matters most—delivering excellent patient care.",
+    "whyChooseUs": "Why Choose Us",
+    "bullet1": "Enterprise-grade security with HIPAA and GDPR compliance",
+    "bullet2": "Comprehensive clinic management in one unified platform",
+    "bullet3": "Designed for healthcare professionals, by healthcare professionals",
+    "bullet4": "Scalable solution that grows with your practice",
+    "bullet5": "24/7 support and regular feature updates",
+    "hipaaGdprBadge": "HIPAA & GDPR Compliant"
+  },
+  "support": {
+    "badge24_7": "24/7 Support Available",
+    "title": "Support Center",
+    "subtitle": "Find answers to common questions or get in touch with our support team",
+    "contactSupport": "Contact Support",
+    "contactSupportDesc": "Get help from our support team via email or contact form",
+    "getInTouch": "Get in touch",
+    "visitKnowledgeBase": "Visit Knowledge Base",
+    "visitKnowledgeBaseDesc": "Browse articles and guides for self-service help",
+    "visitFaq": "FAQ",
+    "visitFaqDesc": "Quick answers to the most common questions",
+    "categoryGettingStarted": "Getting Started",
+    "categoryFeatures": "Features & Functionality",
+    "categorySecurity": "Security & Compliance",
+    "categoryBilling": "Billing & Pricing",
+    "categoryTechnical": "Technical Support",
+    "faqTitle": "Frequently Asked Questions",
+    "faqSubtitle": "Everything you need to know about Doctor's Clinic",
+    "viewFaqs": "View FAQs",
+    "faqCardDesc": "Browse frequently asked questions and find quick answers",
+    "documentation": "Documentation",
+    "documentationDesc": "Access user guides and API documentation",
+    "viewDocs": "View docs",
+    "ctaMessage": "Our support team is here to help you get the most out of Doctor's Clinic"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "breadcrumbSupport": "Support",
+    "breadcrumbContact": "Contact",
+    "badgeHereToHelp": "We're Here to Help",
+    "subtitle": "Have a question or need help? We're here to assist you.",
+    "getInTouch": "Get in Touch",
+    "email": "Email",
+    "phone": "Phone",
+    "contactInformation": "Contact Information",
+    "supportEmail": "Support Email",
+    "sendMessage": "Send us a message",
+    "name": "Name",
+    "subject": "Subject",
+    "message": "Message",
+    "category": "Category",
+    "general": "General Inquiry",
+    "technical": "Technical Support",
+    "billing": "Billing",
+    "submit": "Submit",
+    "sending": "Sending...",
+    "successMessage": "Thank you! Your message has been sent.",
+    "other": "Other",
+    "featureRequest": "Feature Request",
+    "securityConcern": "Security Concern",
+    "errorMessage": "There was an error submitting your message. Please try again."
   },
   "telemedicine": {
     "title": "Telemedicine",

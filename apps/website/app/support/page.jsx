@@ -3,10 +3,12 @@
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 import { useState } from 'react';
 
 export default function SupportPage() {
+  const { t } = useI18n();
   const [openFaqs, setOpenFaqs] = useState({});
 
   const toggleFaq = (categoryIndex, faqIndex) => {
@@ -19,6 +21,7 @@ export default function SupportPage() {
 
   const faqs = [
     {
+      categoryKey: 'support.categoryGettingStarted',
       category: 'Getting Started',
       questions: [
         {
@@ -36,6 +39,7 @@ export default function SupportPage() {
       ],
     },
     {
+      categoryKey: 'support.categoryFeatures',
       category: 'Features & Functionality',
       questions: [
         {
@@ -61,6 +65,7 @@ export default function SupportPage() {
       ],
     },
     {
+      categoryKey: 'support.categorySecurity',
       category: 'Security & Compliance',
       questions: [
         {
@@ -82,6 +87,7 @@ export default function SupportPage() {
       ],
     },
     {
+      categoryKey: 'support.categoryBilling',
       category: 'Billing & Pricing',
       questions: [
         {
@@ -103,6 +109,7 @@ export default function SupportPage() {
       ],
     },
     {
+      categoryKey: 'support.categoryTechnical',
       category: 'Technical Support',
       questions: [
         {
@@ -178,7 +185,7 @@ export default function SupportPage() {
                     clipRule='evenodd'
                   />
                 </svg>
-                <span>24/7 Support Available</span>
+                <span>{t('support.badge24_7')}</span>
               </div>
 
               <h1
@@ -191,7 +198,7 @@ export default function SupportPage() {
                   marginBottom: '24px',
                 }}
               >
-                Support Center
+                {t('support.title')}
               </h1>
               <p
                 className='text-neutral-700 max-w-3xl mx-auto'
@@ -202,7 +209,7 @@ export default function SupportPage() {
                   fontWeight: '400',
                 }}
               >
-                Find answers to common questions or get in touch with our support team
+                {t('support.subtitle')}
               </p>
             </div>
           </div>
@@ -255,16 +262,16 @@ export default function SupportPage() {
                     className='text-2xl font-bold text-neutral-900 group-hover:text-primary-600'
                     style={{ marginBottom: '12px' }}
                   >
-                    Contact Support
+                    {t('support.contactSupport')}
                   </h3>
                   <p className='text-neutral-600 text-body-md leading-relaxed'>
-                    Get help from our support team via email or contact form
+                    {t('support.contactSupportDesc')}
                   </p>
                   <div
                     className='flex items-center text-primary-600 font-semibold group-hover:translate-x-2'
                     style={{ marginTop: '24px' }}
                   >
-                    <span>Get in touch</span>
+                    <span>{t('support.getInTouch')}</span>
                     <svg
                       className='fill-none stroke-currentColor'
                       fill='none'
@@ -314,16 +321,16 @@ export default function SupportPage() {
                     className='text-2xl font-bold text-neutral-900 group-hover:text-secondary-600'
                     style={{ marginBottom: '12px' }}
                   >
-                    FAQ
+                    {t('subscriptionSpec.faq')}
                   </h3>
                   <p className='text-neutral-600 text-body-md leading-relaxed'>
-                    Browse frequently asked questions and find quick answers
+                    {t('support.faqCardDesc')}
                   </p>
                   <div
                     className='flex items-center text-secondary-600 font-semibold group-hover:translate-x-2'
                     style={{ marginTop: '24px' }}
                   >
-                    <span>View FAQs</span>
+                    <span>{t('support.viewFaqs')}</span>
                     <svg
                       className='fill-none stroke-currentColor'
                       fill='none'
@@ -373,16 +380,16 @@ export default function SupportPage() {
                     className='text-2xl font-bold text-neutral-900 group-hover:text-primary-600'
                     style={{ marginBottom: '12px' }}
                   >
-                    Documentation
+                    {t('support.documentation')}
                   </h3>
                   <p className='text-neutral-600 text-body-md leading-relaxed'>
-                    Access user guides and API documentation
+                    {t('support.documentationDesc')}
                   </p>
                   <div
                     className='flex items-center text-primary-600 font-semibold group-hover:translate-x-2'
                     style={{ marginTop: '24px' }}
                   >
-                    <span>View docs</span>
+                    <span>{t('support.viewDocs')}</span>
                     <svg
                       className='fill-none stroke-currentColor'
                       fill='none'
@@ -427,7 +434,7 @@ export default function SupportPage() {
                   marginBottom: '16px',
                 }}
               >
-                Frequently Asked Questions
+                {t('support.faqTitle')}
               </h2>
               <p
                 className='text-neutral-700 max-w-2xl mx-auto'
@@ -438,7 +445,7 @@ export default function SupportPage() {
                   fontWeight: '400',
                 }}
               >
-                Everything you need to know about Doctor&apos;s Clinic
+                {t('support.faqSubtitle')}
               </p>
             </div>
 
@@ -460,7 +467,7 @@ export default function SupportPage() {
                       paddingBottom: '16px',
                     }}
                   >
-                    {category.category}
+                    {category.categoryKey ? t(category.categoryKey) : category.category}
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {category.questions.map((faq, faqIndex) => {
@@ -621,11 +628,11 @@ export default function SupportPage() {
                 color: 'rgba(255,255,255,0.95)',
               }}
             >
-              Our support team is here to help you get the most out of Doctor&apos;s Clinic
+              {t('support.ctaMessage')}
             </p>
             <Link href='/support/contact'>
               <Button variant='secondary' size='md' className='whitespace-nowrap'>
-                Contact Support
+                {t('support.contactSupport')}
               </Button>
             </Link>
           </div>

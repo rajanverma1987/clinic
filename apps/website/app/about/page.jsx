@@ -15,7 +15,7 @@ export default function AboutPage() {
           className='max-w-4xl mx-auto'
           style={{ paddingLeft: '32px', paddingRight: '32px', paddingBottom: '64px' }}
         >
-          <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
+          <Breadcrumb items={[{ label: t('common.home'), href: '/' }, { label: t('navigation.about') }]} />
 
           {/* Header Section */}
           <div className='mb-12'>
@@ -28,7 +28,7 @@ export default function AboutPage() {
                 fontWeight: '700',
               }}
             >
-              {t('about.title') || 'About'}
+              {t('about.title')}
             </h1>
             <div className='flex items-center gap-3 flex-wrap'>
               <div className='flex items-center gap-2 bg-primary-100 px-3 py-1 rounded-full'>
@@ -46,7 +46,7 @@ export default function AboutPage() {
                   />
                 </svg>
                 <span className='text-primary-700 font-semibold text-xs'>
-                  HIPAA & GDPR Compliant
+                  {t('about.hipaaGdprBadge')}
                 </span>
               </div>
             </div>
@@ -55,8 +55,7 @@ export default function AboutPage() {
           {/* Content */}
           <div className='bg-white rounded-xl border border-neutral-200 shadow-sm p-8 md:p-12'>
             <p className='text-neutral-700 mb-6 text-base leading-relaxed'>
-              {t('about.description') ||
-                'We build software to help clinics and healthcare professionals manage appointments, patients, prescriptions, and billing — securely and in one place.'}
+              {t('about.description')}
             </p>
 
             <div className='mt-8 pt-8 border-t border-neutral-200'>
@@ -69,12 +68,10 @@ export default function AboutPage() {
                   fontWeight: '600',
                 }}
               >
-                Our Mission
+                {t('about.ourMission')}
               </h2>
               <p className='text-neutral-700 mb-4 text-base leading-relaxed'>
-                We are dedicated to providing healthcare professionals with powerful, secure, and
-                intuitive tools to manage their clinics efficiently. Our platform helps you focus on
-                what matters most—delivering excellent patient care.
+                {t('about.missionText')}
               </p>
             </div>
 
@@ -88,14 +85,14 @@ export default function AboutPage() {
                   fontWeight: '600',
                 }}
               >
-                Why Choose Us
+                {t('about.whyChooseUs')}
               </h2>
               <ul className='list-disc pl-6 text-neutral-700 space-y-2 text-base'>
-                <li>Enterprise-grade security with HIPAA and GDPR compliance</li>
-                <li>Comprehensive clinic management in one unified platform</li>
-                <li>Designed for healthcare professionals, by healthcare professionals</li>
-                <li>Scalable solution that grows with your practice</li>
-                <li>24/7 support and regular feature updates</li>
+                <li>{t('about.bullet1')}</li>
+                <li>{t('about.bullet2')}</li>
+                <li>{t('about.bullet3')}</li>
+                <li>{t('about.bullet4')}</li>
+                <li>{t('about.bullet5')}</li>
               </ul>
             </div>
           </div>

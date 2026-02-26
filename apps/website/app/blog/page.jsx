@@ -127,7 +127,7 @@ export default function BlogPage() {
                   marginBottom: '24px',
                 }}
               >
-                Blog & Resources
+                {t('blog.title')}
               </h1>
               <p 
                 className='text-neutral-600 max-w-2xl mx-auto'
@@ -137,8 +137,7 @@ export default function BlogPage() {
                   fontWeight: '400',
                 }}
               >
-                Learn about clinic management, best practices, and how Doctor&apos;s Clinic can transform
-                your practice
+                {t('blog.subtitle')}
               </p>
             </div>
           </div>

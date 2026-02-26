@@ -225,7 +225,9 @@
     "areYouSure": "Are you sure?",
     "confirmationDescription": "This action cannot be undone.",
     "updatesAvailable": "Actualizaciones disponibles",
-    "refresh": "Actualizar"
+    "refresh": "Actualizar",
+    "altClinicLogo": "Logo de la clínica",
+    "home": "Inicio"
   },
   "sidebar": {
     "subscriptionType": "Plan"
@@ -1246,7 +1248,8 @@
     "getStarted": "Comenzar",
     "pricing": "Pricing",
     "goToDashboard": "Go to Dashboard",
-    "forDoctors": "Para Médicos"
+    "forDoctors": "Para Médicos",
+    "toggleMenu": "Abrir/cerrar menú"
   },
   "blog": {
     "title": "Blog & Resources",
@@ -1427,6 +1430,7 @@
   "pricing": {
     "title": "Precios Simples y Transparentes",
     "description": "Elige el plan perfecto para tu clínica",
+    "flexiblePlans": "Planes de precios flexibles",
     "monthly": "Mensual",
     "yearly": "Anual",
     "save20": "Ahorra 5%",
@@ -1490,7 +1494,74 @@
     "privacyPolicy": "Política de Privacidad",
     "termsOfService": "Términos de Servicio",
     "contactUs": "Contáctanos",
-    "allRightsReserved": "Todos los derechos reservados"
+    "allRightsReserved": "Todos los derechos reservados",
+    "contact": "Contacto",
+    "hipaaCompliant": "Cumple con HIPAA"
+  },
+  "about": {
+    "title": "Nosotros",
+    "description": "Desarrollamos software para ayudar a clínicas y profesionales de la salud a gestionar citas, pacientes, recetas y facturación de forma segura y en un solo lugar.",
+    "ourMission": "Nuestra misión",
+    "missionText": "Estamos dedicados a proporcionar a los profesionales de la salud herramientas potentes, seguras e intuitivas para gestionar sus clínicas con eficacia. Nuestra plataforma le ayuda a centrarse en lo que más importa: ofrecer una atención al paciente excelente.",
+    "whyChooseUs": "Por qué elegirnos",
+    "bullet1": "Seguridad de nivel empresarial con cumplimiento HIPAA y GDPR",
+    "bullet2": "Gestión integral de la clínica en una única plataforma",
+    "bullet3": "Diseñado por y para profesionales de la salud",
+    "bullet4": "Solución escalable que crece con su práctica",
+    "bullet5": "Soporte 24/7 y actualizaciones regulares",
+    "hipaaGdprBadge": "Cumple con HIPAA y GDPR"
+  },
+  "support": {
+    "badge24_7": "Soporte disponible 24/7",
+    "title": "Centro de soporte",
+    "subtitle": "Encuentre respuestas a preguntas frecuentes o contacte con nuestro equipo de soporte",
+    "contactSupport": "Contactar soporte",
+    "contactSupportDesc": "Obtenga ayuda de nuestro equipo por correo o formulario de contacto",
+    "getInTouch": "Contactar",
+    "visitKnowledgeBase": "Base de conocimiento",
+    "visitKnowledgeBaseDesc": "Consulte artículos y guías de autoayuda",
+    "visitFaq": "Preguntas frecuentes",
+    "visitFaqDesc": "Respuestas rápidas a las preguntas más comunes",
+    "categoryGettingStarted": "Primeros pasos",
+    "categoryFeatures": "Funciones y uso",
+    "categorySecurity": "Seguridad y cumplimiento",
+    "categoryBilling": "Facturación y precios",
+    "categoryTechnical": "Soporte técnico",
+    "faqTitle": "Preguntas frecuentes",
+    "faqSubtitle": "Todo lo que necesita saber sobre Doctor's Clinic",
+    "viewFaqs": "Ver preguntas frecuentes",
+    "faqCardDesc": "Consulte las preguntas frecuentes y encuentre respuestas rápidas",
+    "documentation": "Documentación",
+    "documentationDesc": "Acceda a guías de usuario y documentación API",
+    "viewDocs": "Ver documentación",
+    "ctaMessage": "Nuestro equipo de soporte está aquí para ayudarle a sacar el máximo partido a Doctor's Clinic"
+  },
+  "contact": {
+    "title": "Contáctenos",
+    "breadcrumbSupport": "Soporte",
+    "breadcrumbContact": "Contacto",
+    "badgeHereToHelp": "Estamos aquí para ayudar",
+    "subtitle": "¿Tiene alguna pregunta o necesita ayuda? Estamos aquí para asistirle.",
+    "getInTouch": "Contáctenos",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "contactInformation": "Información de contacto",
+    "supportEmail": "Correo de soporte",
+    "sendMessage": "Envíenos un mensaje",
+    "name": "Nombre",
+    "subject": "Asunto",
+    "message": "Mensaje",
+    "category": "Categoría",
+    "general": "Consulta general",
+    "technical": "Soporte técnico",
+    "billing": "Facturación",
+    "submit": "Enviar",
+    "sending": "Enviando...",
+    "successMessage": "¡Gracias! Su mensaje ha sido enviado.",
+    "other": "Otro",
+    "featureRequest": "Solicitud de función",
+    "securityConcern": "Problema de seguridad",
+    "errorMessage": "Hubo un error al enviar su mensaje. Por favor, inténtelo de nuevo."
   },
   "telemedicine": {
     "title": "Telemedicine",

@@ -4,9 +4,11 @@ import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 import { useState } from 'react';
 
 export default function ContactPage() {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -71,9 +73,9 @@ export default function ContactPage() {
           <div className='max-w-7xl mx-auto relative z-10'>
             <Breadcrumb
               items={[
-                { label: 'Home', href: '/' },
-                { label: 'Support', href: '/support' },
-                { label: 'Contact' },
+                { label: t('common.home'), href: '/' },
+                { label: t('contact.breadcrumbSupport'), href: '/support' },
+                { label: t('contact.breadcrumbContact') },
               ]}
             />
 
@@ -105,7 +107,7 @@ export default function ContactPage() {
                     clipRule='evenodd'
                   />
                 </svg>
-                <span>We&apos;re Here to Help</span>
+                <span>{t('contact.badgeHereToHelp')}</span>
               </div>
 
               <h1
@@ -118,7 +120,7 @@ export default function ContactPage() {
                   marginBottom: '24px',
                 }}
               >
-                Contact Us
+                {t('contact.title')}
               </h1>
               <p
                 className='text-neutral-700 max-w-3xl mx-auto'
@@ -129,7 +131,7 @@ export default function ContactPage() {
                   fontWeight: '400',
                 }}
               >
-                Have a question or need help? We&apos;re here to assist you.
+                {t('contact.subtitle')}
               </p>
             </div>
           </div>
@@ -163,7 +165,7 @@ export default function ContactPage() {
                       marginBottom: '24px',
                     }}
                   >
-                    Get in Touch
+                    {t('contact.getInTouch')}
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div className='flex items-start group'>
@@ -191,7 +193,7 @@ export default function ContactPage() {
                           className='font-semibold text-neutral-900'
                           style={{ marginBottom: '4px' }}
                         >
-                          Email
+                          {t('contact.email')}
                         </p>
                         <a
                           href='mailto:support@doctorsclinic.services'
@@ -228,7 +230,7 @@ export default function ContactPage() {
                           className='font-semibold text-neutral-900'
                           style={{ marginBottom: '4px' }}
                         >
-                          Phone
+                          {t('contact.phone')}
                         </p>
                         <a
                           href='tel:+1-800-CLINIC'
@@ -325,7 +327,7 @@ export default function ContactPage() {
                       marginBottom: '32px',
                     }}
                   >
-                    Send us a Message
+                    {t('contact.sendMessage')}
                   </h2>
                   <form
                     onSubmit={handleSubmit}
@@ -338,7 +340,7 @@ export default function ContactPage() {
                           className='block font-semibold text-neutral-900'
                           style={{ marginBottom: '8px', fontSize: '14px', lineHeight: '20px' }}
                         >
-                          Name *
+                          {t('contact.name')} *
                         </label>
                         <input
                           type='text'
@@ -365,7 +367,7 @@ export default function ContactPage() {
                           className='block font-semibold text-neutral-900'
                           style={{ marginBottom: '8px', fontSize: '14px', lineHeight: '20px' }}
                         >
-                          Email *
+                          {t('contact.email')} *
                         </label>
                         <input
                           type='email'
@@ -393,7 +395,7 @@ export default function ContactPage() {
                         className='block font-semibold text-neutral-900'
                         style={{ marginBottom: '8px', fontSize: '14px', lineHeight: '20px' }}
                       >
-                        Category *
+                        {t('contact.category')} *
                       </label>
                       <select
                         id='category'
@@ -411,12 +413,12 @@ export default function ContactPage() {
                           lineHeight: '24px',
                         }}
                       >
-                        <option value='general'>General Inquiry</option>
-                        <option value='technical'>Technical Support</option>
-                        <option value='billing'>Billing Question</option>
-                        <option value='feature'>Feature Request</option>
-                        <option value='security'>Security Concern</option>
-                        <option value='other'>Other</option>
+                        <option value='general'>{t('contact.general')}</option>
+                        <option value='technical'>{t('contact.technical')}</option>
+                        <option value='billing'>{t('contact.billing')}</option>
+                        <option value='feature'>{t('contact.featureRequest')}</option>
+                        <option value='security'>{t('contact.securityConcern')}</option>
+                        <option value='other'>{t('contact.other')}</option>
                       </select>
                     </div>
 
@@ -426,7 +428,7 @@ export default function ContactPage() {
                         className='block font-semibold text-neutral-900'
                         style={{ marginBottom: '8px', fontSize: '14px', lineHeight: '20px' }}
                       >
-                        Subject *
+                        {t('contact.subject')} *
                       </label>
                       <input
                         type='text'
@@ -453,7 +455,7 @@ export default function ContactPage() {
                         className='block font-semibold text-neutral-900'
                         style={{ marginBottom: '8px', fontSize: '14px', lineHeight: '20px' }}
                       >
-                        Message *
+                        {t('contact.message')} *
                       </label>
                       <textarea
                         id='message'
@@ -484,7 +486,7 @@ export default function ContactPage() {
                           paddingBottom: '12px',
                         }}
                       >
-                        Thank you for your message! We&apos;ll get back to you soon.
+                        {t('contact.successMessage')}
                       </div>
                     )}
 
@@ -498,7 +500,7 @@ export default function ContactPage() {
                           paddingBottom: '12px',
                         }}
                       >
-                        There was an error submitting your message. Please try again.
+                        {t('contact.errorMessage')}
                       </div>
                     )}
 
@@ -510,7 +512,7 @@ export default function ContactPage() {
                       disabled={isSubmitting}
                       className='w-full'
                     >
-                      Send Message
+                      {t('contact.submit')}
                     </Button>
                   </form>
                 </div>
