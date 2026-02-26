@@ -13,89 +13,56 @@ function FooterComponent() {
 
   return (
     <footer
-      className='relative overflow-hidden bg-neutral-50 border-t border-neutral-200'
+      className='relative overflow-hidden bg-neutral-100 border-t border-neutral-200'
       dir='ltr'
     >
-      {/* Subtle Background Accents */}
-      <div className='absolute inset-0'>
-        {/* Subtle gradient accents */}
-        <div
-          className='absolute top-0 right-0 bg-primary-100/30 rounded-full mix-blend-multiply filter opacity-40'
-          style={{
-            width: '400px',
-            height: '400px',
-            filter: 'blur(80px)',
-            top: '-120px',
-            right: '-120px',
-          }}
-        ></div>
-        <div
-          className='absolute bottom-0 left-0 bg-primary-100/30 rounded-full mix-blend-multiply filter opacity-40'
-          style={{
-            width: '400px',
-            height: '400px',
-            filter: 'blur(80px)',
-            bottom: '-120px',
-            left: '-120px',
-          }}
-        ></div>
+      {/* Subtle background accents */}
+      <div className='absolute inset-0 pointer-events-none'>
+        <div className='absolute -top-[120px] -right-[120px] w-[400px] h-[400px] bg-primary-100/30 rounded-full blur-[80px] mix-blend-multiply opacity-40' />
+        <div className='absolute -bottom-[120px] -left-[120px] w-[400px] h-[400px] bg-primary-100/30 rounded-full blur-[80px] mix-blend-multiply opacity-40' />
       </div>
 
-      {/* Main Content - Extra Compact Design */}
+      {/* Main content */}
       <div className='relative z-10' dir='ltr'>
-        {/* Compact Links Section */}
-        <div
-          style={{
-            paddingTop: '32px',
-            paddingBottom: '32px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <div className='section-padding-x section-padding-y'>
           <div className='max-w-7xl mx-auto'>
             <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'>
               {/* Product */}
               <div dir='ltr'>
-                <h4
-                  className='text-neutral-900 font-semibold mb-3'
-                  style={{
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    letterSpacing: '-0.01em',
-                    fontWeight: '600',
-                    textAlign: 'left',
-                  }}
-                >
+                <h4 className='text-neutral-900 font-semibold mb-3 text-body-sm tracking-tight text-left'>
                   {t('footer.product') || 'Product'}
                 </h4>
-                <ul
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    textAlign: 'left',
-                  }}
-                >
+                <ul className='flex flex-col gap-2 text-left'>
                   {[
-                    { href: '/#features', label: t('footer.features') || 'Features', external: false },
+                    {
+                      href: '/features',
+                      label: t('footer.features') || 'Features',
+                      external: false,
+                    },
                     { href: '/about', label: t('footer.about') || 'About', external: false },
-                    { href: '/pricing', label: t('navigation.pricing') || 'Pricing', external: false },
-                    { href: `${clinicAppUrl}/register`, label: t('footer.getStarted') || 'Get Started', external: true },
+                    {
+                      href: '/pricing',
+                      label: t('navigation.pricing') || 'Pricing',
+                      external: false,
+                    },
+                    {
+                      href: `${clinicAppUrl}/register`,
+                      label: t('footer.getStarted') || 'Get Started',
+                      external: true,
+                    },
                   ].map((link) => (
                     <li key={link.href}>
                       {link.external ? (
                         <a
                           href={link.href}
-                          className='text-neutral-600 hover:text-primary-600'
-                          style={{ fontSize: '14px', lineHeight: '20px' }}
+                          className='text-neutral-600 hover:text-primary-600 text-body-sm transition-smooth-fast'
                         >
                           {link.label}
                         </a>
                       ) : (
                         <Link
                           href={link.href}
-                          className='text-neutral-600 hover:text-primary-600'
-                          style={{ fontSize: '14px', lineHeight: '20px' }}
+                          className='text-neutral-600 hover:text-primary-600 text-body-sm transition-smooth-fast'
                         >
                           {link.label}
                         </Link>
@@ -105,28 +72,12 @@ function FooterComponent() {
                 </ul>
               </div>
 
-              {/* Legal */}
+              {/* Resources – Terms, Privacy, Legal, Contact */}
               <div dir='ltr'>
-                <h4
-                  className='text-neutral-900 font-semibold mb-3'
-                  style={{
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    letterSpacing: '-0.01em',
-                    fontWeight: '600',
-                    textAlign: 'left',
-                  }}
-                >
-                  {t('footer.legal') || 'Legal'}
+                <h4 className='text-neutral-900 font-semibold mb-3 text-body-sm tracking-tight text-left'>
+                  {t('footer.resources') || 'Resources'}
                 </h4>
-                <ul
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    textAlign: 'left',
-                  }}
-                >
+                <ul className='flex flex-col gap-2 text-left'>
                   {[
                     { href: '/legal', label: t('footer.legalInfo') },
                     { href: '/privacy', label: t('footer.privacyPolicy') || 'Privacy Policy' },
@@ -136,8 +87,7 @@ function FooterComponent() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className='text-neutral-600 hover:text-primary-600'
-                        style={{ fontSize: '14px', lineHeight: '20px' }}
+                        className='text-neutral-600 hover:text-primary-600 text-body-sm transition-smooth-fast'
                       >
                         {link.label}
                       </Link>
@@ -148,31 +98,14 @@ function FooterComponent() {
 
               {/* Contact */}
               <div dir='ltr'>
-                <h4
-                  className='text-neutral-900 font-semibold mb-3'
-                  style={{
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    letterSpacing: '-0.01em',
-                    fontWeight: '600',
-                    textAlign: 'left',
-                  }}
-                >
-                  Contact
+                <h4 className='text-neutral-900 font-semibold mb-3 text-body-sm tracking-tight text-left'>
+                  {t('footer.contact') || t('footer.contactUs')}
                 </h4>
-                <ul
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    textAlign: 'left',
-                  }}
-                >
+                <ul className='flex flex-col gap-2 text-left'>
                   <li>
                     <a
                       href='mailto:support@doctorsclinic.services'
-                      className='text-neutral-600 hover:text-primary-600'
-                      style={{ fontSize: '14px', lineHeight: '20px' }}
+                      className='text-neutral-600 hover:text-primary-600 text-body-sm transition-smooth-fast'
                     >
                       support@doctorsclinic.services
                     </a>
@@ -182,52 +115,31 @@ function FooterComponent() {
 
               {/* Brand & Trust */}
               <div dir='ltr'>
-                <div style={{ marginBottom: '12px' }}>
-                  <div
-                    className='relative flex items-center'
-                    style={{ width: '160px', height: '45px' }}
-                  >
+                <div className='mb-3'>
+                  <div className='relative flex items-center w-[160px] h-[45px]'>
                     <Image
                       src='/images/logoclinic.png'
                       alt='Clinic Logo'
                       width={160}
                       height={45}
-                      className='object-contain'
+                      className='object-contain w-full h-auto max-h-[45px]'
                       quality={90}
                       sizes='160px'
-                      style={{ width: '100%', height: 'auto', maxHeight: '45px' }}
                       priority
                     />
                   </div>
                 </div>
-                <p
-                  className='text-neutral-600 mb-3'
-                  style={{
-                    fontSize: '12px',
-                    lineHeight: '18px',
-                    maxWidth: '220px',
-                    textAlign: 'left',
-                  }}
-                >
+                <p className='text-neutral-600 mb-3 text-body-xs max-w-[220px] text-left'>
                   {t('footer.description') ||
                     'Comprehensive clinic management solution for modern healthcare providers.'}
                 </p>
                 {/* Trust Badge */}
                 <div
-                  className='flex items-center bg-primary-100 border border-primary-300 rounded-lg'
-                  style={{
-                    gap: '6px',
-                    paddingLeft: '10px',
-                    paddingRight: '10px',
-                    paddingTop: '6px',
-                    paddingBottom: '6px',
-                    width: 'fit-content',
-                    direction: 'ltr',
-                  }}
+                  className='flex items-center gap-1.5 px-2.5 py-1.5 w-fit bg-primary-100 border border-primary-300 rounded-lg'
+                  dir='ltr'
                 >
                   <svg
-                    style={{ width: '14px', height: '14px' }}
-                    className='text-primary-600'
+                    className='w-3.5 h-3.5 text-primary-600 shrink-0'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -239,10 +151,7 @@ function FooterComponent() {
                       d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
                     />
                   </svg>
-                  <span
-                    className='text-primary-700 font-semibold'
-                    style={{ fontSize: '11px', fontWeight: '600' }}
-                  >
+                  <span className='text-primary-700 font-semibold text-[11px]'>
                     HIPAA Compliant
                   </span>
                 </div>
@@ -251,25 +160,11 @@ function FooterComponent() {
           </div>
         </div>
 
-        {/* Bottom Bar - Extra Compact */}
+        {/* Bottom bar */}
         <div className='border-t border-neutral-200'>
-          <div
-            className='max-w-7xl mx-auto'
-            style={{
-              paddingLeft: '32px',
-              paddingRight: '32px',
-              paddingTop: '16px',
-              paddingBottom: '16px',
-            }}
-          >
-            <div
-              className='flex flex-col sm:flex-row justify-between items-center'
-              style={{ gap: '12px' }}
-            >
-              <p
-                className='text-neutral-600 text-center sm:text-left'
-                style={{ fontSize: '10px', lineHeight: '14px' }}
-              >
+          <div className='max-w-7xl mx-auto section-padding-x py-4'>
+            <div className='flex flex-col sm:flex-row justify-between items-center gap-3'>
+              <p className='text-neutral-600 text-center sm:text-left text-[10px] leading-[14px]'>
                 &copy; {currentYear} {t('footer.allRightsReserved') || 'All rights reserved'}.
               </p>
             </div>

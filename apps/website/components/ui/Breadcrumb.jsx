@@ -10,11 +10,8 @@ export function Breadcrumb({ items = [] }) {
   if (!items?.length) return null;
 
   return (
-    <nav className='mb-8' aria-label='Breadcrumb'>
-      <ol
-        className='flex flex-wrap items-center gap-x-2 text-sm text-neutral-600'
-        style={{ gap: '0 8px' }}
-      >
+    <nav className='mb-6' aria-label='Breadcrumb'>
+      <ol className='flex flex-wrap items-center gap-x-2 text-sm text-neutral-600'>
         {items.map((item, index) => (
           <li key={index} className='flex items-center gap-2'>
             {index > 0 && (

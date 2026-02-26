@@ -17,6 +17,7 @@
  */
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Tabs } from '@/components/ui/Tabs';
@@ -423,30 +424,38 @@ export default function EnhancedCalendarView({
         </div>
 
         <div className='flex items-center gap-2'>
-          <button
+          <Button
             type='button'
+            variant='secondary'
+            size='sm'
+            iconOnly
             onClick={goToPrevious}
             aria-label={t('common.ariaLabelPrevious')}
-            className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
+            className='w-10 h-10 min-w-0'
           >
             <ChevronLeftIcon className='icon icon-md' />
-          </button>
-          <button
+          </Button>
+          <Button
             type='button'
+            variant='secondary'
+            size='sm'
             onClick={goToToday}
             aria-label={t('common.ariaLabelGoToToday')}
-            className='inline-flex items-center justify-center min-w-[4rem] h-10 px-3 rounded-lg border border-neutral-200 bg-white text-neutral-700 text-body-sm font-medium hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
+            className='min-w-[4rem]'
           >
             Today
-          </button>
-          <button
+          </Button>
+          <Button
             type='button'
+            variant='secondary'
+            size='sm'
+            iconOnly
             onClick={goToNext}
             aria-label={t('common.ariaLabelNext')}
-            className='inline-flex items-center justify-center w-10 h-10 rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1'
+            className='w-10 h-10 min-w-0'
           >
             <ChevronRightIcon className='icon icon-md' />
-          </button>
+          </Button>
           <span className='text-lg font-semibold text-neutral-900 ml-2'>
             {viewMode === VIEW_MODES.DAY &&
               currentDate.toLocaleDateString(undefined, {

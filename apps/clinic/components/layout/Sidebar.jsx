@@ -1,18 +1,19 @@
 'use client';
 
+import { DASHBOARD_ALL_KEY, DASHBOARD_SUMMARY_KEY } from '@/app/dashboard/hooks/useDashboard';
 import {
   BarChart2Icon,
+  BellIcon,
   Building2Icon,
   CalendarIcon,
   ChatIcon,
   ChevronRightIcon,
   ClockIcon,
-  CodeIcon,
   CreditCardIcon,
+  DocumentIcon,
   InventoryIcon,
   LayoutDashboardIcon,
   LogOutIcon,
-  PaletteIcon,
   PanelLeftCloseIcon,
   PrescriptionIcon,
   QueueIcon,
@@ -26,6 +27,7 @@ import {
   UserIcon,
   UsersIcon,
   VideoIcon,
+  WarningIcon,
   XIcon,
   ZapIcon,
 } from '@/components/icons';
@@ -34,13 +36,17 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useFeatures } from '@/contexts/FeatureContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
+import { apiClient } from '@/lib/api/client';
+import { ADMIN_TABS, isAdminTabActive } from '@/lib/constants/admin-tabs';
 import { isManagerPathForbidden } from '@/lib/constants/route-security.js';
+import { prefetchAppointmentsTab, prefetchPrescriptionsTab } from '@/lib/dashboard-tab-cache';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants.js';
 import { logger } from '@/lib/utils/logger.js';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { mutate } from 'swr';
 import { ProfileMenu } from './ProfileMenu.jsx';
 
 /* ─── NavItem ───────────────────────────────────────────────────────────── */
@@ -54,8 +60,10 @@ function NavItem({
   prefetchItem = false,
   onFlyoutShow,
   onFlyoutHide,
+  onNavMouseEnter,
 }) {
   const handleMouseEnter = (e) => {
+    if (onNavMouseEnter) onNavMouseEnter();
     if (isCollapsed && onFlyoutShow) {
       const rect = e.currentTarget.getBoundingClientRect();
       onFlyoutShow(label, rect);
@@ -127,6 +135,22 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   const { user, logout, loading: authLoading } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const prefetchOnHover = useCallback((href) => () => router.prefetch(href), [router]);
+
+  const prefetchDashboard = useCallback(() => {
+    if (!user) return;
+    const summaryFetcher = () =>
+      apiClient.get('/dashboard/summary').then((res) => (res?.success ? res.data : undefined));
+    const allFetcher = () =>
+      apiClient.get('/dashboard/all').then((res) => (res?.success ? res.data : undefined));
+    mutate(DASHBOARD_SUMMARY_KEY, summaryFetcher, { revalidate: false, populateCache: true });
+    mutate(DASHBOARD_ALL_KEY, allFetcher, { revalidate: false, populateCache: true });
+    const uid = user?._id || user?.userId;
+    if (uid) {
+      prefetchAppointmentsTab(uid);
+      prefetchPrescriptionsTab(uid);
+    }
+  }, [user]);
+
   const { t } = useI18n();
   const { hasFeature, loading: featuresLoading } = useFeatures();
 
@@ -370,122 +394,34 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
 
   const itemsBySection = (section) => visibleClinicItems.filter((item) => item.section === section);
 
-  /* ─── Super admin nav sections (data-driven) ──────────────────── */
+  /* ─── Super admin: single "Overview" in sidebar; 15-tab bar is primary nav (per spec) ─── */
+  /* Super_Admin.md: all options on sidebar. Distinct icon per tab. */
+  const adminTabIconMap = {
+    overview: LayoutDashboardIcon,
+    clinicManagement: Building2Icon,
+    subscriptionBilling: CreditCardIcon,
+    userGovernance: UsersIcon,
+    featureControl: ZapIcon,
+    deploymentControl: SettingsIcon,
+    analytics: BarChart2Icon,
+    auditCompliance: RefreshCwIcon,
+    supportIntervention: ChatIcon,
+    dataManagement: DocumentIcon,
+    roleManagement: UserIcon,
+    featureRollout: StarIcon,
+    security: ShieldIcon,
+    emergencyControl: WarningIcon,
+    notifications: BellIcon,
+  };
   const superAdminSections = [
     {
       label: null,
-      items: [
-        {
-          href: '/admin',
-          label: t('admin.dashboard'),
-          icon: ShieldIcon,
-          match: (p) => p === '/admin',
-        },
-      ],
-    },
-    {
-      labelKey: 'nav.sectionManagement',
-      items: [
-        {
-          href: '/admin/clients',
-          label: t('admin.clients'),
-          icon: Building2Icon,
-          match: (p) => p === '/admin/clients',
-        },
-        {
-          href: '/admin/subscriptions',
-          label: t('admin.subscriptions'),
-          icon: CreditCardIcon,
-          match: (p) => p === '/admin/subscriptions',
-        },
-        {
-          href: '/admin/users',
-          label: t('admin.allUsers'),
-          icon: UserIcon,
-          match: (p) => p === '/admin/users',
-        },
-        {
-          href: '/admin/doctors',
-          label: t('admin.doctors'),
-          icon: VideoIcon,
-          match: (p) => p === '/admin/doctors' || p?.startsWith('/admin/doctors/'),
-        },
-        {
-          href: '/admin/create-admin',
-          label: t('admin.createAdmin'),
-          icon: UserAddIcon,
-          match: (p) => p === '/admin/create-admin',
-        },
-        {
-          href: '/admin/users/create-manager',
-          label: t('settings.createManager'),
-          icon: UsersIcon,
-          match: (p) => p === '/admin/users/create-manager',
-        },
-      ],
-    },
-    {
-      labelKey: 'nav.sectionContentFinance',
-      items: [
-        {
-          href: '/admin/content',
-          label: t('admin.content'),
-          icon: PaletteIcon,
-          match: (p) => p?.startsWith('/admin/content'),
-        },
-        {
-          href: '/admin/financial',
-          label: t('admin.financial'),
-          icon: ReceiptIcon,
-          match: (p) => p?.startsWith('/admin/financial'),
-        },
-      ],
-    },
-    {
-      labelKey: 'nav.sectionAnalytics',
-      items: [
-        {
-          href: '/admin/reports',
-          label: t('admin.reports'),
-          icon: BarChart2Icon,
-          match: (p) => p?.startsWith('/admin/reports'),
-        },
-        {
-          href: '/admin/analytics',
-          label: t('admin.analytics') || 'Analytics',
-          icon: ZapIcon,
-          match: (p) => p?.startsWith('/admin/analytics'),
-        },
-        {
-          href: '/admin/activity-logs',
-          label: t('admin.activityLogs'),
-          icon: RefreshCwIcon,
-          match: (p) => p?.startsWith('/admin/activity-logs'),
-        },
-      ],
-    },
-    {
-      labelKey: 'nav.sectionSystem',
-      items: [
-        {
-          href: '/admin/support',
-          label: t('admin.supportTickets') || 'Support',
-          icon: ChatIcon,
-          match: (p) => p?.startsWith('/admin/support'),
-        },
-        {
-          href: '/api-docs',
-          label: t('nav.apiDocs'),
-          icon: CodeIcon,
-          match: (p) => p === '/api-docs',
-        },
-        {
-          href: '/admin/settings',
-          label: t('admin.settings'),
-          icon: SettingsIcon,
-          match: (p) => p?.startsWith('/admin/settings'),
-        },
-      ],
+      items: ADMIN_TABS.map((tab) => ({
+        href: tab.path,
+        label: t(tab.labelKey),
+        icon: adminTabIconMap[tab.iconKey] || ShieldIcon,
+        match: (p) => isAdminTabActive(tab, p),
+      })),
     },
   ];
 
@@ -511,6 +447,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         icon={item.icon}
         isActive={getIsActive(item)}
         prefetchItem
+        onNavMouseEnter={item.href === '/dashboard' ? prefetchDashboard : undefined}
         {...navItemProps({
           onClick: () => {
             prefetchOnHover(item.href)();
@@ -525,10 +462,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
     <>
       {/* Mobile backdrop */}
       {isMobileOpen && typeof onMobileClose === 'function' && (
-        <button
+        <Button
           type='button'
+          variant='ghost'
           aria-label={t('common.closeMenu')}
-          className='md:hidden fixed inset-0 bg-neutral-900/30 backdrop-blur-[2px] z-[1000]'
+          className='md:hidden fixed inset-0 bg-neutral-900/30 backdrop-blur-[2px] z-[1000] min-w-0 rounded-none'
           onClick={onMobileClose}
         />
       )}
@@ -536,10 +474,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       <div
         data-collapsed={isCollapsed}
         className={[
-          'layout-sidebar flex flex-col sticky top-0',
+          'layout-sidebar flex flex-col sticky top-0 relative',
           'bg-white dark:bg-neutral-900',
           'border-r border-neutral-200 dark:border-neutral-800',
-          isCollapsed ? 'overflow-visible' : 'overflow-hidden',
+          isCollapsed ? 'overflow-visible' : 'overflow-visible max-md:overflow-hidden',
           'max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[1001]',
           'max-md:transition-transform max-md:duration-300 max-md:ease-out',
           isMobileOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full',
@@ -560,14 +498,17 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         {/* Mobile close button */}
         {typeof onMobileClose === 'function' && (
           <div className='md:hidden absolute top-3 right-3 z-20'>
-            <button
+            <Button
               type='button'
+              variant='ghost'
+              size='sm'
+              iconOnly
               onClick={onMobileClose}
-              className='w-9 h-9 flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors'
+              className='w-9 h-9 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800'
               aria-label={t('common.closeMenu')}
             >
               <XIcon className='icon icon-sm' ariaHidden />
-            </button>
+            </Button>
           </div>
         )}
 
@@ -576,7 +517,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
           className={[
             'flex-shrink-0 flex items-center justify-center overflow-hidden',
             'border-b border-neutral-200 dark:border-neutral-800',
-            isCollapsed ? 'h-[90px] px-2 py-4' : 'h-[101px] px-4 py-7',
+            isCollapsed ? 'h-[90px] px-2 py-3' : 'min-h-[100px] px-3 py-4',
           ].join(' ')}
         >
           <Link
@@ -587,14 +528,14 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             aria-label={t('dashboard.title')}
           >
             <img
-              src='/images/logoclinic.png'
+              src={isCollapsed ? '/images/faviocn.png' : '/images/logoclinic.png'}
               alt={t('common.altClinicLogo')}
               className='block object-contain flex-shrink-0'
               style={{
-                height: isCollapsed ? 28 : 34,
-                width: isCollapsed ? 28 : 'auto',
-                maxWidth: isCollapsed ? 28 : 140,
-                maxHeight: isCollapsed ? 28 : 40,
+                height: isCollapsed ? 44 : 56,
+                width: isCollapsed ? 44 : 'auto',
+                maxWidth: isCollapsed ? 44 : 200,
+                maxHeight: isCollapsed ? 44 : 64,
                 transition: 'height 0.3s ease, width 0.3s ease, max-width 0.3s ease',
               }}
             />
@@ -624,7 +565,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
                     label={item.label}
                     icon={item.icon}
                     isActive={item.match(pathname)}
-                    prefetchItem={false}
+                    prefetchItem={true}
                     {...navItemProps()}
                   />
                 ))}
@@ -677,58 +618,60 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             <ProfileMenu isCollapsed={isCollapsed} showSubscriptionLinks={showSubscriptionFooter} />
           </div>
 
-          {/* Collapse + Logout row */}
+          {/* Collapse + Logout row — consistent height and alignment */}
           <div
             className={[
               'border-t border-neutral-100 dark:border-neutral-800 pt-2 pb-3 shrink-0',
-              isCollapsed ? 'px-2 flex flex-col items-center gap-1.5' : 'px-3 flex flex-row gap-2',
+              isCollapsed
+                ? 'px-2 flex flex-col items-center gap-2'
+                : 'px-3 flex flex-row items-center gap-2',
             ].join(' ')}
           >
-            {/* Collapse toggle */}
-            <button
+            {/* Collapse toggle — icon only, neutral style with primary hover (ghost base so colors apply) */}
+            <Button
               type='button'
+              variant='ghost'
+              iconOnly
+              size='sm'
               onClick={handleToggle}
               aria-label={isCollapsed ? t('common.expandSidebar') : t('common.collapseSidebar')}
               className={[
-                'group flex items-center gap-2 rounded-lg transition-all duration-150',
-                'border border-neutral-200 dark:border-neutral-700',
-                'bg-white dark:bg-neutral-800/60 text-neutral-500 dark:text-neutral-400',
-                'hover:border-primary-400 hover:bg-primary-50 hover:text-primary-600',
-                'dark:hover:border-primary-500 dark:hover:bg-primary-900/20 dark:hover:text-primary-400',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
-                isCollapsed ? 'justify-center w-9 h-9 px-0' : 'flex-1 min-w-0 px-2.5 py-1.5',
+                'shrink-0 !border !border-neutral-200 dark:!border-neutral-700',
+                '!bg-white dark:!bg-neutral-800/60 !text-neutral-600 dark:!text-neutral-400',
+                'hover:!border-primary-400 hover:!bg-primary-50 hover:!text-primary-600',
+                'dark:hover:!border-primary-500 dark:hover:!bg-primary-900/20 dark:hover:!text-primary-400',
+                'w-9 h-9 min-w-9 min-h-9 p-0',
               ].join(' ')}
             >
               {isCollapsed ? (
-                <ChevronRightIcon className='icon icon-sm flex-shrink-0' ariaHidden />
+                <ChevronRightIcon className='icon icon-sm' aria-hidden='true' />
               ) : (
-                <>
-                  <PanelLeftCloseIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-                  <span className='text-[11px] font-medium truncate'>
-                    {t('common.collapseMenu')}
-                  </span>
-                </>
+                <PanelLeftCloseIcon className='icon icon-sm' aria-hidden='true' />
               )}
-            </button>
+            </Button>
 
-            {/* Logout – theme standard (status-error) */}
-            <button
+            {/* Logout — same design as collapse: neutral border + hover to red (sign out) */}
+            <Button
               type='button'
+              variant='ghost'
               onClick={() => setShowLogoutConfirm(true)}
               aria-label={t('auth.logout')}
               className={[
-                'group flex items-center justify-center gap-2 rounded-lg transition-all duration-200 ease-out',
-                'bg-status-error text-white border border-status-error shadow-sm',
-                'hover:opacity-90 active:opacity-80',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-status-error focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus:ring-offset-neutral-900',
-                isCollapsed ? 'w-9 h-9 px-0' : 'px-2.5 py-1.5 min-h-[2.25rem]',
+                'inline-flex items-center gap-2 border border-neutral-200 dark:border-neutral-700 !border-neutral-200 dark:!border-neutral-700',
+                'bg-white dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400',
+                'hover:border-status-error/50 hover:bg-status-error/10 hover:text-status-error',
+                'dark:hover:border-status-error/50 dark:hover:bg-status-error/10 dark:hover:text-status-error',
+                'min-h-[2.25rem] h-[2.25rem]',
+                isCollapsed
+                  ? 'justify-center w-9 h-9 px-0 min-w-0 shrink-0'
+                  : 'px-2.5 flex-1 min-w-0',
               ].join(' ')}
             >
-              <LogOutIcon className='icon icon-sm flex-shrink-0' ariaHidden />
+              <LogOutIcon className='icon icon-sm shrink-0' aria-hidden='true' />
               {!isCollapsed && (
-                <span className='text-[11px] font-medium truncate'>{t('auth.logout')}</span>
+                <span className='truncate text-xs font-medium'>{t('auth.logout')}</span>
               )}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -757,7 +700,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
               {t('auth.logoutConfirmMessage')}
             </p>
             <div className='flex items-center justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-600'>
-              <Button variant='secondary' size='md' onClick={() => setShowLogoutConfirm(false)}>
+              <Button variant='ghost' size='md' onClick={() => setShowLogoutConfirm(false)}>
                 {t('common.cancel')}
               </Button>
               <Button

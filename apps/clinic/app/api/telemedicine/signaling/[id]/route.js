@@ -4,57 +4,67 @@
  * HIPAA-compliant: Only signaling data, no media content
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { successResponse, errorResponse } from '@/lib/utils/api-response';
 import connectDB from '@/lib/db/connection.js';
-import TelemedicineSession from '@/models/TelemedicineSession.js';
-import { withTenant } from '@/lib/db/tenant-helper.js';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { logger } from '@/lib/utils/logger.js';
+import TelemedicineSession from '@/models/TelemedicineSession.js';
+import { NextResponse } from 'next/server';
 
-// In-memory signaling storage (use Redis in production)
-// Structure: { [sessionId]: { [userId]: [{ id, from, to, signal, timestamp }] } }
-const signalingStore = new Map();
+// In-memory signaling storage (use Redis in production).
+// Attach to globalThis so the same store survives hot reloads / route recompiles in dev.
+const SIGNALING_STORE_KEY = '__telemedicineSignalingStore';
+const SIGNALING_CLEANUP_KEY = '__telemedicineSignalingCleanupDone';
 
-// Cleanup old signals (older than 5 minutes)
-setInterval(() => {
-  const now = Date.now();
-  const maxAge = 5 * 60 * 1000; // 5 minutes
+const signalingStore = (() => {
+  if (typeof globalThis !== 'undefined' && globalThis[SIGNALING_STORE_KEY]) {
+    return globalThis[SIGNALING_STORE_KEY];
+  }
+  const store = new Map();
+  if (typeof globalThis !== 'undefined') {
+    globalThis[SIGNALING_STORE_KEY] = store;
+  }
+  return store;
+})();
 
-  for (const [sessionId, userSignals] of signalingStore.entries()) {
-    for (const [userId, signals] of userSignals.entries()) {
-      const filtered = signals.filter(s => now - s.timestamp < maxAge);
-      if (filtered.length === 0) {
-        userSignals.delete(userId);
-      } else {
-        userSignals.set(userId, filtered);
+// Cleanup old signals (older than 5 minutes), once per process
+if (typeof globalThis !== 'undefined' && !globalThis[SIGNALING_CLEANUP_KEY]) {
+  globalThis[SIGNALING_CLEANUP_KEY] = true;
+  setInterval(() => {
+    const store = globalThis[SIGNALING_STORE_KEY];
+    if (!store) return;
+    const now = Date.now();
+    const maxAge = 5 * 60 * 1000; // 5 minutes
+    for (const [sessionId, userSignals] of store.entries()) {
+      for (const [userId, signals] of userSignals.entries()) {
+        const filtered = signals.filter((s) => now - s.timestamp < maxAge);
+        if (filtered.length === 0) {
+          userSignals.delete(userId);
+        } else {
+          userSignals.set(userId, filtered);
+        }
+      }
+      if (userSignals.size === 0) {
+        store.delete(sessionId);
       }
     }
-
-    if (userSignals.size === 0) {
-      signalingStore.delete(sessionId);
-    }
-  }
-}, 60000); // Run cleanup every minute
+  }, 60000);
+}
 
 /**
  * POST /api/telemedicine/signaling/:id
  * Send signaling data (SDP offer/answer or ICE candidate)
  * Public endpoint (patients may not be authenticated)
  */
-export async function POST(
-  req,
-  context
-) {
+export async function POST(req, context) {
   try {
     const params = await context.params;
     const sessionId = params.id;
     const body = await req.json();
 
     if (!sessionId) {
-      return NextResponse.json(
-        errorResponse('Session ID is required', 'VALIDATION_ERROR'),
-        { status: 400 }
-      );
+      return NextResponse.json(errorResponse('Session ID is required', 'VALIDATION_ERROR'), {
+        status: 400,
+      });
     }
 
     const { from, to, signal } = body;
@@ -62,7 +72,7 @@ export async function POST(
     if (!from || !to || !signal) {
       return NextResponse.json(
         errorResponse('from, to, and signal are required', 'VALIDATION_ERROR'),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -71,10 +81,7 @@ export async function POST(
     const session = await TelemedicineSession.findById(sessionId).lean();
 
     if (!session) {
-      return NextResponse.json(
-        errorResponse('Session not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('Session not found', 'NOT_FOUND'), { status: 404 });
     }
 
     // Initialize session store if needed
@@ -84,9 +91,12 @@ export async function POST(
 
     const sessionStore = signalingStore.get(sessionId);
 
-    // Initialize user store if needed
+    // Ensure both sender and recipient have a queue (so GET pollers find themselves in session)
     if (!sessionStore.has(to)) {
       sessionStore.set(to, []);
+    }
+    if (!sessionStore.has(from)) {
+      sessionStore.set(from, []);
     }
 
     // Add signal to recipient's queue
@@ -96,7 +106,7 @@ export async function POST(
       from,
       to,
       signal,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     sessionStore.get(to).push(signalData);
@@ -111,25 +121,30 @@ export async function POST(
       allUsersInSession: allUserIds,
       recipientHasQueue: sessionStore.has(to),
       recipientQueueSize: recipientQueue.length,
-      latestSignalInQueue: recipientQueue.length > 0 ? {
-        id: recipientQueue[recipientQueue.length - 1].id,
-        type: recipientQueue[recipientQueue.length - 1].signal?.type || 'unknown',
-        from: recipientQueue[recipientQueue.length - 1].from
-      } : null
+      latestSignalInQueue:
+        recipientQueue.length > 0
+          ? {
+              id: recipientQueue[recipientQueue.length - 1].id,
+              type: recipientQueue[recipientQueue.length - 1].signal?.type || 'unknown',
+              from: recipientQueue[recipientQueue.length - 1].from,
+            }
+          : null,
     });
 
-    return NextResponse.json(successResponse({
-      id: signalId,
-      sent: true
-    }));
+    return NextResponse.json(
+      successResponse({
+        id: signalId,
+        sent: true,
+      }),
+    );
   } catch (error) {
     logger.error('Error in POST /api/telemedicine/signaling/[id]:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to send signal',
-        'SIGNALING_ERROR'
+        'SIGNALING_ERROR',
       ),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -139,10 +154,7 @@ export async function POST(
  * Poll for incoming signals
  * Public endpoint (patients may not be authenticated)
  */
-export async function GET(
-  req,
-  context
-) {
+export async function GET(req, context) {
   try {
     const params = await context.params;
     const sessionId = params.id;
@@ -153,7 +165,7 @@ export async function GET(
     if (!sessionId || !userId) {
       return NextResponse.json(
         errorResponse('Session ID and userId are required', 'VALIDATION_ERROR'),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -162,10 +174,7 @@ export async function GET(
     const session = await TelemedicineSession.findById(sessionId).lean();
 
     if (!session) {
-      return NextResponse.json(
-        errorResponse('Session not found', 'NOT_FOUND'),
-        { status: 404 }
-      );
+      return NextResponse.json(errorResponse('Session not found', 'NOT_FOUND'), { status: 404 });
     }
 
     // Get signals for this user
@@ -181,7 +190,10 @@ export async function GET(
 
       // Check if requesting user exists in session
       if (!sessionStore.has(userId)) {
-        logger.warn(`[Signaling API] ⚠️ User ${userId} not found in session store. Available users:`, allUserIds);
+        logger.warn(
+          `[Signaling API] ⚠️ User ${userId} not found in session store. Available users:`,
+          allUserIds,
+        );
       }
 
       // Log signals for all users (for debugging)
@@ -189,33 +201,40 @@ export async function GET(
       for (const [uid, signals] of sessionStore.entries()) {
         totalSignalsInSession += signals.length;
         if (signals.length > 0) {
-          logger.info(`[Signaling API] User ${uid} has ${signals.length} signal(s):`, signals.map(s => ({
-            id: s.id,
-            from: s.from,
-            to: s.to,
-            type: s.signal?.type || 'unknown',
-            timestamp: new Date(s.timestamp).toISOString()
-          })));
+          logger.info(
+            `[Signaling API] User ${uid} has ${signals.length} signal(s):`,
+            signals.map((s) => ({
+              id: s.id,
+              from: s.from,
+              to: s.to,
+              type: s.signal?.type || 'unknown',
+              timestamp: new Date(s.timestamp).toISOString(),
+            })),
+          );
         }
       }
 
       if (totalSignalsInSession === 0) {
-        logger.warn(`[Signaling API] ⚠️ No signals in session ${sessionId} for any user. Doctor may not have connected yet.`);
+        logger.warn(
+          `[Signaling API] ⚠️ No signals in session ${sessionId} for any user. Doctor may not have connected yet.`,
+        );
       }
     } else {
-      logger.warn(`[Signaling API] ⚠️ Session store not found for ${sessionId}. This is normal if no signals have been sent yet.`);
+      logger.warn(
+        `[Signaling API] ⚠️ Session store not found for ${sessionId}. This is normal if no signals have been sent yet.`,
+      );
     }
 
     logger.info(`[Signaling API] GET ${sessionId} for userId ${userId}:`, {
       totalSignals: userSignals.length,
       lastSignalId,
-      allSignalIds: userSignals.map(s => s.id)
+      allSignalIds: userSignals.map((s) => s.id),
     });
 
     // Filter signals after lastSignalId
     let signals = userSignals;
     if (lastSignalId) {
-      const lastIndex = userSignals.findIndex(s => s.id === lastSignalId);
+      const lastIndex = userSignals.findIndex((s) => s.id === lastSignalId);
       if (lastIndex >= 0) {
         signals = userSignals.slice(lastIndex + 1);
       }
@@ -231,21 +250,23 @@ export async function GET(
       }
     }
 
-    return NextResponse.json(successResponse({
-      signals: signals.map(s => ({
-        id: s.id,
-        from: s.from,
-        signal: s.signal
-      }))
-    }));
+    return NextResponse.json(
+      successResponse({
+        signals: signals.map((s) => ({
+          id: s.id,
+          from: s.from,
+          signal: s.signal,
+        })),
+      }),
+    );
   } catch (error) {
     logger.error('Error in GET /api/telemedicine/signaling/[id]:', error);
     return NextResponse.json(
       errorResponse(
         error instanceof Error ? error.message : 'Failed to fetch signals',
-        'SIGNALING_ERROR'
+        'SIGNALING_ERROR',
       ),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

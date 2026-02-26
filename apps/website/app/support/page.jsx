@@ -128,49 +128,28 @@ export default function SupportPage() {
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1'>
+      <main className='flex-1 page-main'>
         {/* Hero Section */}
-        <section
-          className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
-          style={{
-            paddingTop: '120px',
-            paddingBottom: '80px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <section className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden py-12 px-8'>
           {/* Background accents */}
           <div
-            className='absolute top-0 right-0 bg-primary-100 rounded-full mix-blend-multiply filter opacity-30'
-            style={{ width: '400px', height: '400px', filter: 'blur(100px)' }}
-          ></div>
+            className='absolute top-0 right-0 w-[400px] h-[400px] bg-primary-100 rounded-full mix-blend-multiply opacity-30 blur-[100px]'
+            aria-hidden
+          />
           <div
-            className='absolute bottom-0 left-0 bg-secondary-100 rounded-full mix-blend-multiply filter opacity-30'
-            style={{ width: '400px', height: '400px', filter: 'blur(100px)' }}
-          ></div>
+            className='absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary-100 rounded-full mix-blend-multiply opacity-30 blur-[100px]'
+            aria-hidden
+          />
 
           <div className='max-w-7xl mx-auto relative z-10'>
             <div className='text-center'>
               {/* Premium badge */}
-              <div
-                className='inline-flex items-center bg-white border border-neutral-200 text-primary-700 rounded-lg font-medium'
-                style={{
-                  paddingLeft: '20px',
-                  paddingRight: '20px',
-                  paddingTop: '10px',
-                  paddingBottom: '10px',
-                  marginBottom: '32px',
-                  gap: '10px',
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  letterSpacing: '0.01em',
-                  fontWeight: '500',
-                }}
-              >
+              <div className='inline-flex items-center gap-2.5 px-5 py-2.5 mb-6 text-body-sm font-medium bg-white border border-neutral-200 text-primary-700 rounded-lg transition-smooth hover-scale-subtle'>
                 <svg
-                  style={{ width: '18px', height: '18px' }}
+                  className='w-[18px] h-[18px] shrink-0'
                   fill='currentColor'
                   viewBox='0 0 20 20'
+                  aria-hidden
                 >
                   <path
                     fillRule='evenodd'
@@ -181,27 +160,8 @@ export default function SupportPage() {
                 <span>24/7 Support Available</span>
               </div>
 
-              <h1
-                className='text-neutral-900'
-                style={{
-                  fontSize: '32px',
-                  lineHeight: '40px',
-                  letterSpacing: '-0.02em',
-                  fontWeight: '700',
-                  marginBottom: '24px',
-                }}
-              >
-                Support Center
-              </h1>
-              <p
-                className='text-neutral-700 max-w-3xl mx-auto'
-                style={{
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  letterSpacing: '-0.01em',
-                  fontWeight: '400',
-                }}
-              >
+              <h1 className='text-h1 text-neutral-900 mb-4'>Support Center</h1>
+              <p className='text-body-lg text-neutral-700 max-w-3xl mx-auto'>
                 Find answers to common questions or get in touch with our support team
               </p>
             </div>
@@ -209,39 +169,24 @@ export default function SupportPage() {
         </section>
 
         {/* Quick Links Section */}
-        <section
-          className='bg-white'
-          style={{
-            paddingTop: '80px',
-            paddingBottom: '80px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <section className='bg-white py-12 px-8'>
           <div className='max-w-7xl mx-auto'>
-            <div
-              className='grid grid-cols-1 md:grid-cols-3'
-              style={{ gap: '24px', marginBottom: '64px' }}
-            >
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-10'>
               <Link
                 href='/support/contact'
-                className='group relative bg-white border-2 border-neutral-200 rounded-2xl hover:border-primary-300 hover:shadow-xl overflow-hidden'
-                style={{ padding: '32px' }}
+                className='group relative p-8 bg-white border-2 border-neutral-200 rounded-2xl hover:border-primary-300 hover:shadow-lg overflow-hidden transition-smooth hover-lift'
               >
                 {/* Gradient overlay on hover */}
                 <div className='absolute inset-0 bg-gradient-to-br from-primary-50 to-transparent opacity-0 group-hover:opacity-100'></div>
 
                 <div className='relative z-10'>
-                  <div
-                    className='bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 shadow-lg'
-                    style={{ width: '64px', height: '64px', marginBottom: '24px' }}
-                  >
+                  <div className='w-16 h-16 mb-6 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 shadow-lg'>
                     <svg
-                      className='text-white'
+                      className='text-white w-8 h-8 shrink-0'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
-                      style={{ width: '32px', height: '32px' }}
+                      aria-hidden
                     >
                       <path
                         strokeLinecap='round'
@@ -251,26 +196,18 @@ export default function SupportPage() {
                       />
                     </svg>
                   </div>
-                  <h3
-                    className='text-2xl font-bold text-neutral-900 group-hover:text-primary-600'
-                    style={{ marginBottom: '12px' }}
-                  >
+                  <h3 className='text-h2 text-neutral-900 mb-3 group-hover:text-primary-600'>
                     Contact Support
                   </h3>
                   <p className='text-neutral-600 text-body-md leading-relaxed'>
                     Get help from our support team via email or contact form
                   </p>
-                  <div
-                    className='flex items-center text-primary-600 font-semibold group-hover:translate-x-2'
-                    style={{ marginTop: '24px' }}
-                  >
+                  <div className='flex items-center mt-6 text-primary-600 font-semibold group-hover:translate-x-2'>
                     <span>Get in touch</span>
                     <svg
-                      className='fill-none stroke-currentColor'
-                      fill='none'
-                      stroke='currentColor'
+                      className='w-5 h-5 ml-2 shrink-0 fill-none stroke-currentColor'
                       viewBox='0 0 24 24'
-                      style={{ width: '20px', height: '20px', marginLeft: '8px' }}
+                      aria-hidden
                     >
                       <path
                         strokeLinecap='round'
@@ -285,22 +222,18 @@ export default function SupportPage() {
 
               <Link
                 href='/support#faq'
-                className='group relative bg-white border-2 border-neutral-200 rounded-2xl hover:border-secondary-300 hover:shadow-xl overflow-hidden'
-                style={{ padding: '32px' }}
+                className='group relative p-8 bg-white border-2 border-neutral-200 rounded-2xl hover:border-secondary-300 hover:shadow-lg overflow-hidden transition-smooth hover-lift'
               >
                 <div className='absolute inset-0 bg-gradient-to-br from-secondary-50 to-transparent opacity-0 group-hover:opacity-100'></div>
 
                 <div className='relative z-10'>
-                  <div
-                    className='bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 shadow-lg'
-                    style={{ width: '64px', height: '64px', marginBottom: '24px' }}
-                  >
+                  <div className='w-16 h-16 mb-6 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 shadow-lg'>
                     <svg
-                      className='text-white'
+                      className='text-white w-8 h-8 shrink-0'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
-                      style={{ width: '32px', height: '32px' }}
+                      aria-hidden
                     >
                       <path
                         strokeLinecap='round'
@@ -310,26 +243,18 @@ export default function SupportPage() {
                       />
                     </svg>
                   </div>
-                  <h3
-                    className='text-2xl font-bold text-neutral-900 group-hover:text-secondary-600'
-                    style={{ marginBottom: '12px' }}
-                  >
+                  <h3 className='text-h2 text-neutral-900 mb-3 group-hover:text-secondary-600'>
                     FAQ
                   </h3>
                   <p className='text-neutral-600 text-body-md leading-relaxed'>
                     Browse frequently asked questions and find quick answers
                   </p>
-                  <div
-                    className='flex items-center text-secondary-600 font-semibold group-hover:translate-x-2'
-                    style={{ marginTop: '24px' }}
-                  >
+                  <div className='flex items-center mt-6 text-secondary-600 font-semibold group-hover:translate-x-2'>
                     <span>View FAQs</span>
                     <svg
-                      className='fill-none stroke-currentColor'
-                      fill='none'
-                      stroke='currentColor'
+                      className='w-5 h-5 ml-2 shrink-0 fill-none stroke-currentColor'
                       viewBox='0 0 24 24'
-                      style={{ width: '20px', height: '20px', marginLeft: '8px' }}
+                      aria-hidden
                     >
                       <path
                         strokeLinecap='round'
@@ -344,22 +269,18 @@ export default function SupportPage() {
 
               <Link
                 href='/api-docs'
-                className='group relative bg-white border-2 border-neutral-200 rounded-2xl hover:border-primary-300 hover:shadow-xl overflow-hidden'
-                style={{ padding: '32px' }}
+                className='group relative p-8 bg-white border-2 border-neutral-200 rounded-2xl hover:border-primary-300 hover:shadow-lg overflow-hidden transition-smooth hover-lift'
               >
                 <div className='absolute inset-0 bg-gradient-to-br from-primary-50 to-transparent opacity-0 group-hover:opacity-100'></div>
 
                 <div className='relative z-10'>
-                  <div
-                    className='bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 shadow-lg'
-                    style={{ width: '64px', height: '64px', marginBottom: '24px' }}
-                  >
+                  <div className='w-16 h-16 mb-6 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 shadow-lg'>
                     <svg
-                      className='text-white'
+                      className='text-white w-8 h-8 shrink-0'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
-                      style={{ width: '32px', height: '32px' }}
+                      aria-hidden
                     >
                       <path
                         strokeLinecap='round'
@@ -369,26 +290,18 @@ export default function SupportPage() {
                       />
                     </svg>
                   </div>
-                  <h3
-                    className='text-2xl font-bold text-neutral-900 group-hover:text-primary-600'
-                    style={{ marginBottom: '12px' }}
-                  >
+                  <h3 className='text-h2 text-neutral-900 mb-3 group-hover:text-primary-600'>
                     Documentation
                   </h3>
                   <p className='text-neutral-600 text-body-md leading-relaxed'>
                     Access user guides and API documentation
                   </p>
-                  <div
-                    className='flex items-center text-primary-600 font-semibold group-hover:translate-x-2'
-                    style={{ marginTop: '24px' }}
-                  >
+                  <div className='flex items-center mt-6 text-primary-600 font-semibold group-hover:translate-x-2'>
                     <span>View docs</span>
                     <svg
-                      className='fill-none stroke-currentColor'
-                      fill='none'
-                      stroke='currentColor'
+                      className='w-5 h-5 ml-2 shrink-0 fill-none stroke-currentColor'
                       viewBox='0 0 24 24'
-                      style={{ width: '20px', height: '20px', marginLeft: '8px' }}
+                      aria-hidden
                     >
                       <path
                         strokeLinecap='round'
@@ -405,64 +318,27 @@ export default function SupportPage() {
         </section>
 
         {/* FAQ Section */}
-        <section
-          id='faq'
-          className='bg-neutral-50'
-          style={{
-            paddingTop: '80px',
-            paddingBottom: '80px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <section id='faq' className='bg-neutral-50 py-12 px-8'>
           <div className='max-w-7xl mx-auto'>
-            <div className='text-center' style={{ marginBottom: '64px' }}>
-              <h2
-                className='text-neutral-900'
-                style={{
-                  fontSize: '48px',
-                  lineHeight: '56px',
-                  letterSpacing: '-0.02em',
-                  fontWeight: '700',
-                  marginBottom: '16px',
-                }}
-              >
+            <div className='text-center mb-10'>
+              <h2 className='text-section-title text-neutral-900 mb-4'>
                 Frequently Asked Questions
               </h2>
-              <p
-                className='text-neutral-700 max-w-2xl mx-auto'
-                style={{
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  letterSpacing: '-0.01em',
-                  fontWeight: '400',
-                }}
-              >
+              <p className='text-body-lg text-neutral-700 max-w-2xl mx-auto'>
                 Everything you need to know about Doctor&apos;s Clinic
               </p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            <div className='flex flex-col gap-8'>
               {faqs.map((category, categoryIndex) => (
                 <div
                   key={categoryIndex}
-                  className='bg-white rounded-2xl border border-neutral-200 shadow-sm hover:shadow-md'
-                  style={{ padding: '32px' }}
+                  className='p-8 bg-white rounded-2xl border border-neutral-200 shadow-sm hover:shadow-md'
                 >
-                  <h3
-                    className='text-neutral-900 border-b border-neutral-200'
-                    style={{
-                      fontSize: '28px',
-                      lineHeight: '36px',
-                      letterSpacing: '-0.01em',
-                      fontWeight: '700',
-                      marginBottom: '24px',
-                      paddingBottom: '16px',
-                    }}
-                  >
+                  <h3 className='text-section-heading text-neutral-900 border-b border-neutral-200 pb-4 mb-6'>
                     {category.category}
                   </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className='flex flex-col gap-4'>
                     {category.questions.map((faq, faqIndex) => {
                       const key = `${categoryIndex}-${faqIndex}`;
                       const isOpen = openFaqs[key];
@@ -470,34 +346,20 @@ export default function SupportPage() {
                       return (
                         <div
                           key={faqIndex}
-                          className='border border-neutral-200 rounded-xl overflow-hidden hover:border-primary-300'
+                          className='border border-neutral-200 rounded-xl overflow-hidden hover:border-primary-300 transition-smooth'
                         >
                           <button
                             onClick={() => toggleFaq(categoryIndex, faqIndex)}
-                            className='w-full text-left flex items-center justify-between group hover:bg-neutral-50'
-                            style={{
-                              paddingLeft: '24px',
-                              paddingRight: '24px',
-                              paddingTop: '20px',
-                              paddingBottom: '20px',
-                            }}
+                            className='w-full text-left flex items-center justify-between group hover:bg-neutral-50 px-6 py-5 transition-smooth-fast'
                           >
                             <div className='flex items-start flex-1'>
-                              <div
-                                className='rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-200'
-                                style={{
-                                  width: '24px',
-                                  height: '24px',
-                                  marginRight: '16px',
-                                  marginTop: '2px',
-                                }}
-                              >
+                              <div className='w-6 h-6 mr-4 mt-0.5 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-200 transition-smooth-fast'>
                                 <svg
-                                  className={`text-primary-600 ${isOpen ? 'rotate-180' : ''}`}
+                                  className={`text-primary-600 w-4 h-4 shrink-0 transition-smooth ${isOpen ? 'rotate-180' : ''}`}
                                   fill='none'
                                   stroke='currentColor'
                                   viewBox='0 0 24 24'
-                                  style={{ width: '16px', height: '16px' }}
+                                  aria-hidden
                                 >
                                   <path
                                     strokeLinecap='round'
@@ -507,15 +369,7 @@ export default function SupportPage() {
                                   />
                                 </svg>
                               </div>
-                              <h4
-                                className='text-neutral-900 font-semibold flex-1 group-hover:text-primary-600'
-                                style={{
-                                  fontSize: '18px',
-                                  lineHeight: '28px',
-                                  letterSpacing: '-0.01em',
-                                  fontWeight: '600',
-                                }}
-                              >
+                              <h4 className='text-body-lg font-semibold text-neutral-900 flex-1 group-hover:text-primary-600'>
                                 {faq.q}
                               </h4>
                             </div>
@@ -523,27 +377,12 @@ export default function SupportPage() {
 
                           {/* Answer Content - Collapsible */}
                           <div
-                            className={` ${
+                            className={`accordion-content overflow-hidden ${
                               isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-                            } overflow-hidden`}
+                            }`}
                           >
-                            <div
-                              style={{
-                                paddingLeft: '64px',
-                                paddingRight: '24px',
-                                paddingBottom: '24px',
-                              }}
-                            >
-                              <div
-                                className='text-neutral-700 border-t border-neutral-100'
-                                style={{
-                                  fontSize: '16px',
-                                  lineHeight: '26px',
-                                  letterSpacing: '-0.01em',
-                                  fontWeight: '400',
-                                  paddingTop: '8px',
-                                }}
-                              >
+                            <div className='pl-16 pr-6 pb-6'>
+                              <div className='text-body-md text-neutral-700 border-t border-neutral-100 pt-2'>
                                 {faq.a}
                               </div>
                             </div>
@@ -559,34 +398,24 @@ export default function SupportPage() {
         </section>
 
         {/* Still Need Help CTA */}
-        <section
-          className='bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 relative overflow-hidden'
-          style={{
-            paddingTop: '80px',
-            paddingBottom: '80px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <section className='bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 relative overflow-hidden py-12 px-8'>
           {/* Background pattern */}
           <div
-            className='absolute inset-0 opacity-10'
+            className='absolute inset-0 opacity-10 bg-[length:60px_60px]'
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
             }}
-          ></div>
+            aria-hidden
+          />
 
           <div className='max-w-4xl mx-auto text-center relative z-10'>
-            <div
-              className='inline-flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-2xl'
-              style={{ width: '80px', height: '80px', marginBottom: '24px' }}
-            >
+            <div className='w-20 h-20 mb-6 inline-flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-2xl'>
               <svg
-                className='text-white'
+                className='text-white w-10 h-10 shrink-0'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
-                style={{ width: '40px', height: '40px' }}
+                aria-hidden
               >
                 <path
                   strokeLinecap='round'
@@ -596,31 +425,8 @@ export default function SupportPage() {
                 />
               </svg>
             </div>
-            <h2
-              className='text-white'
-              style={{
-                fontSize: '40px',
-                lineHeight: '48px',
-                letterSpacing: '-0.02em',
-                fontWeight: '700',
-                marginBottom: '16px',
-                color: '#ffffff',
-                textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-              }}
-            >
-              Still Need Help?
-            </h2>
-            <p
-              className='max-w-2xl mx-auto'
-              style={{
-                fontSize: '18px',
-                lineHeight: '28px',
-                letterSpacing: '-0.01em',
-                fontWeight: '400',
-                marginBottom: '32px',
-                color: 'rgba(255,255,255,0.95)',
-              }}
-            >
+            <h2 className='text-hero text-white mb-4 drop-shadow-sm'>Still Need Help?</h2>
+            <p className='text-body-lg max-w-2xl mx-auto mb-6 text-white/95'>
               Our support team is here to help you get the most out of Doctor&apos;s Clinic
             </p>
             <Link href='/support/contact'>

@@ -19,7 +19,6 @@
  * @since 1.0.0
  */
 
-import mongoose from 'mongoose';
 import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
@@ -33,8 +32,12 @@ import InventoryItem from '@/models/InventoryItem.js';
 import Patient from '@/models/Patient.js';
 import Prescription, { PrescriptionStatus } from '@/models/Prescription.js';
 import Queue, { QueueStatus } from '@/models/Queue.js';
+import { TransactionType } from '@/models/StockTransaction.js';
 import Tenant from '@/models/Tenant.js';
 import User from '@/models/User.js';
+import mongoose from 'mongoose';
+import { createStockTransaction } from './inventory.service.js';
+import { recordPrescriptionVersion } from './prescription-version.service.js';
 import { recalculatePositions } from './queue.service.js';
 
 /**
@@ -246,6 +249,8 @@ export async function createPrescription(input, tenantId, userId) {
     tenantId,
     AuditAction.CREATE,
   );
+
+  await recordPrescriptionVersion(prescription._id.toString(), 'create', tenantId, userId, null);
 
   // Auto-complete queue entry if prescription is created for an in-progress queue entry
   // Improved error handling to prevent silent failures
@@ -467,7 +472,7 @@ export async function listPrescriptions(query, tenantId, userId) {
 
   // Get total count (removed redundant early check to reduce connection pool usage)
   const total = await Prescription.countDocuments(filter);
-  
+
   if (total === 0) {
     // No prescriptions exist - return empty result immediately
     await AuditLogger.auditWrite(
@@ -660,6 +665,15 @@ export async function updatePrescription(prescriptionId, input, tenantId, userId
       { before, after: prescription.toObject() },
     );
 
+    const action = prescription.status === PrescriptionStatus.CANCELLED ? 'void' : 'update';
+    await recordPrescriptionVersion(
+      prescriptionId,
+      action,
+      tenantId,
+      userId,
+      input.reason || undefined,
+    );
+
     // Convert to plain object and decrypt item instructions
     const prescriptionObj = prescription.toObject();
     return decryptPrescriptionItems(prescriptionObj);
@@ -778,7 +792,47 @@ export async function dispensePrescription(prescriptionId, input, tenantId, user
     { action: 'dispensed' },
   );
 
-  // Convert to plain object and decrypt item instructions
+  // D4: Stock deduction for each drug item linked to inventory
+  const items = prescription.items || [];
+  for (const item of items) {
+    if (item.itemType !== 'drug' || !item.drugId || !(item.quantity > 0)) continue;
+    try {
+      const inventoryItem = await InventoryItem.findOne(
+        withTenant(tenantId, {
+          drugId: item.drugId,
+          deletedAt: null,
+        }),
+      ).lean();
+      if (!inventoryItem || inventoryItem.availableQuantity < item.quantity) {
+        if (inventoryItem && inventoryItem.availableQuantity < item.quantity) {
+          logger.warn(
+            `Dispense: insufficient stock for drug ${item.drugId}, available ${inventoryItem.availableQuantity}, required ${item.quantity}`,
+          );
+        }
+        continue;
+      }
+      await createStockTransaction(
+        {
+          inventoryItemId: inventoryItem._id,
+          type: TransactionType.SALE,
+          quantity: -item.quantity,
+          prescriptionId: prescription._id.toString(),
+          referenceNumber: prescription.prescriptionNumber,
+          notes: `Dispensed via prescription ${prescription.prescriptionNumber}`,
+        },
+        tenantId,
+        userId,
+      );
+    } catch (err) {
+      logger.error('Dispense stock deduction failed for item', {
+        drugId: item.drugId,
+        prescriptionId: prescription._id,
+        err: err.message,
+      });
+      // Don't fail entire dispense; audit is already written
+    }
+  }
+
   const prescriptionObj = prescription.toObject();
   return decryptPrescriptionItems(prescriptionObj);
 }

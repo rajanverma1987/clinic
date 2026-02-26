@@ -730,8 +730,10 @@
 .page-header .NotificationDropdown .NotificationDropdown-icon,
 .enterprise-header .NotificationDropdown .NotificationDropdown-icon,
 .sticky-header-bar .NotificationDropdown .NotificationDropdown-icon {
-  width: 20px;
-  height: 20px;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  min-width: var(--icon-size-sm);
+  min-height: var(--icon-size-sm);
   color: inherit;
 }
 
@@ -749,8 +751,8 @@
 .sticky-header-bar .NotificationDropdown .NotificationDropdown-badge {
   top: -4px;
   right: -4px;
-  min-width: 18px;
-  height: 18px;
+  min-width: var(--icon-size-menu);
+  height: var(--icon-size-menu);
   font-size: 10px;
   padding: 0 4px;
 }

@@ -189,9 +189,13 @@ export function FileTransfer({
                   </p>
                 </div>
               </div>
-              <button
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                iconOnly
                 onClick={() => handleDownload(file)}
-                className='ml-2 p-2 text-primary-600 hover:text-primary-700'
+                className='ml-2 p-2 min-w-0 text-primary-600 hover:text-primary-700'
                 title={t('telemedicine.downloadFile')}
               >
                 <svg
@@ -208,7 +212,7 @@ export function FileTransfer({
                     d='M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4'
                   />
                 </svg>
-              </button>
+              </Button>
             </div>
           ))
         )}

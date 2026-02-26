@@ -1,9 +1,10 @@
 /**
  * Dashboard Stats Hook with Auto-Refresh
- * Matches ENTERPRISE_DASHBOARD_PERFORMANCE.md spec exactly.
+ * Enterprise: logger for errors (no console), safe error messages (no PHI).
  */
 
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useDashboardStats() {
@@ -15,24 +16,38 @@ export function useDashboardStats() {
   const fetchStats = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
+      setError(null);
 
       const response = await apiClient.get('/dashboard/stats');
-      setStats(response.data.data);
-      setError(null);
-      setLoading(false);
+      if (response?.success === false) {
+        const msg = response?.error?.message || 'Failed to load dashboard stats';
+        logger.error('useDashboardStats fetch failed', { message: msg });
+        setError(msg);
+        return;
+      }
+      setStats(response?.data?.data ?? response?.data ?? null);
     } catch (err) {
-      console.error('Failed to fetch stats:', err);
-      setError(err.message);
+      logger.error('useDashboardStats fetch failed', { message: err?.message });
+      setError(err?.message || err?.error?.message || 'Failed to load dashboard stats');
+    } finally {
       setLoading(false);
     }
   }, []);
 
   const refresh = useCallback(async () => {
     try {
+      setError(null);
       const response = await apiClient.post('/dashboard/stats/refresh');
-      setStats(response.data.data);
+      if (response?.success === false) {
+        const msg = response?.error?.message || 'Failed to refresh stats';
+        logger.error('useDashboardStats refresh failed', { message: msg });
+        setError(msg);
+        return;
+      }
+      setStats(response?.data?.data ?? response?.data ?? null);
     } catch (err) {
-      console.error('Failed to refresh stats:', err);
+      logger.error('useDashboardStats refresh failed', { message: err?.message });
+      setError(err?.message || err?.error?.message || 'Failed to refresh stats');
     }
   }, []);
 

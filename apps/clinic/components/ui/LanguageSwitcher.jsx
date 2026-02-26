@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext.jsx';
 import { supportedLocales } from '@/lib/i18n/index.js';
 
@@ -167,9 +168,12 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
                 .join(' ');
 
               return (
-                <button
+                <Button
                   key={loc}
                   type='button'
+                  variant='ghost'
+                  fullWidth
+                  align='start'
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -204,7 +208,7 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
                     </div>
                   )}
                   <span className='LanguageSwitcher-item-glow'></span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -215,8 +219,9 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
   return (
     <>
       <div className='LanguageSwitcher' ref={dropdownRef} style={{ position: 'relative' }}>
-        <button
+        <Button
           type='button'
+          variant='ghost'
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -262,7 +267,7 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
             </div>
           </div>
           <span className='LanguageSwitcher-ripple'></span>
-        </button>
+        </Button>
       </div>
 
       {/* Render dropdown via portal to document.body */}

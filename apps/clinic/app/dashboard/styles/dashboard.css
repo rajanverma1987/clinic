@@ -160,11 +160,12 @@
   outline-offset: 2px;
 }
 
-/* Section – no inline padding here; parent .dashboard-tab-content or .dashboard-skeleton-root provides single inset (avoids double padding). */
-.dashboard-section {
-  width: 100%;
-  margin-bottom: var(--dashboard-section-gap);
-  box-sizing: border-box;
+/* Section: base .dashboard-section and .dashboard-section:last-child live in globals.css (single source). */
+
+/* Below-the-fold sections: browser can skip painting until near viewport (lightning-fast LCP). */
+.dashboard-section--defer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
 }
 
 /* All dashboard grids use consistent gap */
@@ -251,10 +252,6 @@
   .appointments-list
   .appointments-list-scroll::-webkit-scrollbar-thumb {
   background: var(--color-neutral-600);
-}
-
-.dashboard-section:last-child {
-  margin-bottom: 0;
 }
 
 /* Key Metrics: reduce top gap so it sits closer to Critical Alerts / Pending Tasks */
@@ -914,7 +911,7 @@
   stroke: var(--color-neutral-50);
   fill: var(--color-neutral-50);
   color: var(--color-neutral-50);
-  filter: none !important;
+  filter: none;
   flex-shrink: 0;
 }
 
@@ -1453,18 +1450,18 @@
   }
 }
 
-/* Calendar Widget – fill card height, no empty bottom */
+/* Calendar Widget – fill card height; content padding controlled by .calendar-widget-card-body (no override) */
 .calendar-widget-card {
   display: flex;
   flex-direction: column;
 }
-.calendar-widget-card > div {
+.calendar-widget-card-body {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 0 !important; /* inner .calendar-widget-inner controls padding */
+  padding: 0;
 }
 .calendar-widget-inner {
   flex: 1;
@@ -1725,10 +1722,12 @@
   }
 }
 
-/* Tab Content – smooth fade-in on switch; single inline padding (page-shell + container no longer double). */
+/* Tab Content – short fade for instant-feel switch; single inline padding (page-shell + container no longer double). */
 .dashboard-tab-content {
-  animation: tabFadeIn 0.08s ease-out forwards;
+  animation: tabFadeIn 0.04s ease-out forwards;
   padding-inline: var(--page-shell-padding-x);
+  /* Contain layout so hidden tab doesn't block paint when switching */
+  contain: layout style;
 }
 
 /* Inner wrapper for tab body – consistent spacing between sections (KPI, list tabs). */

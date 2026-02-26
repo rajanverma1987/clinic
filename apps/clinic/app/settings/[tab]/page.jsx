@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
-import { SettingsPageContent } from '../page';
 
 const VALID_TABS = [
   'profile',
@@ -14,8 +13,13 @@ const VALID_TABS = [
   'tax',
   'smtp',
   'holidays',
+  'consent',
 ];
 
+/**
+ * Content for these tabs is rendered by settings layout (SettingsPageContent) so it stays
+ * mounted when switching tabs = fast. This page returns null to avoid double-render.
+ */
 export default function SettingsTabPage({ params }) {
   const router = useRouter();
   const resolvedParams = React.use(params);
@@ -31,5 +35,5 @@ export default function SettingsTabPage({ params }) {
     return null;
   }
 
-  return <SettingsPageContent />;
+  return null;
 }

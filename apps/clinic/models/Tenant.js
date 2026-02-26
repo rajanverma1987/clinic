@@ -160,6 +160,12 @@ const TenantSchema = new Schema(
     /** Suspended by super_admin (blocks login; separate from isActive) */
     suspended: { type: Boolean, default: false },
     suspendReason: { type: String, trim: true },
+    /** Deployment: clinic template (e.g. general_opd, dental). */
+    template: { type: String, trim: true },
+    /** Workflow type (e.g. general_opd, dental). */
+    workflowType: { type: String, trim: true },
+    /** Beta/feature flags enabled for this clinic (SA9 – Super Admin rollout). */
+    betaFeatures: { type: [String], default: [] },
   },
   {
     timestamps: true,

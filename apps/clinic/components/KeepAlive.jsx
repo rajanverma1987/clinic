@@ -5,6 +5,7 @@
  * Uses visibility + pointer-events instead of unmounting.
  */
 
+import { Button } from '@/components/ui/Button';
 import { useRef, useState, useCallback, createContext, useContext } from 'react';
 
 const KeepAliveContext = createContext(null);
@@ -51,13 +52,14 @@ export function KeepAliveTab({ id, children, className = '', activeClassName = '
   const { activeId, setActiveId } = useKeepAlive();
   const isActive = activeId === id;
   return (
-    <button
-      type="button"
+    <Button
+      type='button'
+      variant='ghost'
       className={isActive ? `${className} ${activeClassName}`.trim() : className}
       onClick={() => setActiveId(id)}
       aria-selected={isActive}
     >
       {children}
-    </button>
+    </Button>
   );
 }

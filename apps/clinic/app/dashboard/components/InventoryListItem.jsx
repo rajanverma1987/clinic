@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { ChevronRightIcon, InventoryIcon, WarningIcon } from '@/components/icons';
 
 export function InventoryListItem({ item, onClick }) {
@@ -13,9 +14,13 @@ export function InventoryListItem({ item, onClick }) {
   const isLow = currentStock > 0 && currentStock <= minStock;
 
   return (
-    <button
+    <Button
       type='button'
-      className='dashboard-list-item dashboard-list-item-error group w-full text-left cursor-pointer border-0 bg-transparent p-0'
+      variant='ghost'
+      size='listRow'
+      fullWidth
+      align='start'
+      className='dashboard-list-item dashboard-list-item-error group border-0 bg-transparent'
       onClick={onClick}
       aria-label={`${itemName}, ${isCritical ? 'Out of stock' : `Low stock: ${currentStock} ${unit}`}`}
     >
@@ -47,6 +52,6 @@ export function InventoryListItem({ item, onClick }) {
         {/* Arrow */}
         <ChevronRightIcon className='icon icon-sm text-neutral-400 group-hover:text-status-error transition-colors flex-shrink-0' />
       </div>
-    </button>
+    </Button>
   );
 }

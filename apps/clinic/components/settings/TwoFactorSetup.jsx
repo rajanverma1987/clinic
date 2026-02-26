@@ -124,11 +124,11 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
           </span>
         </div>
         {is2FAEnabled ? (
-          <Button variant='danger' size='sm' onClick={() => setStep('disable')}>
+          <Button variant='ghost' size='sm' onClick={() => setStep('disable')}>
             {t('auth.disable2fa')}
           </Button>
         ) : (
-          <Button variant='secondary' size='sm' onClick={handleSetup} disabled={loading}>
+          <Button variant='primary' size='sm' onClick={handleSetup} disabled={loading}>
             {loading ? t('auth.settingUp') : t('auth.enable2fa')}
           </Button>
         )}

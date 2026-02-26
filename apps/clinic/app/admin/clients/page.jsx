@@ -1,7 +1,9 @@
 'use client';
 
+import { AdminToolbar } from '@/components/admin/AdminToolbar';
 import {
   BellIcon,
+  ClockIcon,
   EyeIcon,
   FileDownIcon,
   PencilIcon,
@@ -56,12 +58,33 @@ export default function AdminClientsPage() {
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [suspendClient, setSuspendClient] = useState(null);
   const [suspendReason, setSuspendReason] = useState('');
+  const [suspendConfirmText, setSuspendConfirmText] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteClient, setDeleteClient] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyClient, setNotifyClient] = useState(null);
   const [notifyTitle, setNotifyTitle] = useState('');
   const [notifyMessage, setNotifyMessage] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkBar, setShowBulkBar] = useState(false);
+  const [betaFeaturesInput, setBetaFeaturesInput] = useState('');
+  const [savingBetaFeatures, setSavingBetaFeatures] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [createSlug, setCreateSlug] = useState('');
+  const [createRegion, setCreateRegion] = useState('US');
+  const [createCity, setCreateCity] = useState('');
+  const [createState, setCreateState] = useState('');
+  const [createZipCode, setCreateZipCode] = useState('');
+  const [createStreet, setCreateStreet] = useState('');
+  const [createCountry, setCreateCountry] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [showExtendTrialModal, setShowExtendTrialModal] = useState(false);
+  const [extendTrialClient, setExtendTrialClient] = useState(null);
+  const [extendTrialDays, setExtendTrialDays] = useState(14);
+  const [extendingTrial, setExtendingTrial] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -128,11 +151,15 @@ export default function AdminClientsPage() {
     }
   };
 
-  const formatCurrency = (amount) => {
+  /** Plan prices are USD only. Format in dollars. */
+  const formatPlanPriceUSD = (amountMinor) => {
+    const major = (amountMinor || 0) / 100;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount / 100);
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(major);
   };
 
   const handleUpdateSubscription = (client) => {
@@ -189,6 +216,12 @@ export default function AdminClientsPage() {
     if (statusFilter === 'active') list = list.filter((c) => c.isActive === true && !c.suspended);
     else if (statusFilter === 'inactive') list = list.filter((c) => c.isActive === false);
     else if (statusFilter === 'suspended') list = list.filter((c) => c.suspended === true);
+    else if (statusFilter === 'trial') {
+      const now = new Date();
+      list = list.filter(
+        (c) => c.subscription?.trialEnd && new Date(c.subscription.trialEnd) > now,
+      );
+    }
     if (regionFilter) list = list.filter((c) => c.region === regionFilter);
     if (planFilter)
       list = list.filter(
@@ -210,6 +243,7 @@ export default function AdminClientsPage() {
 
   const handleViewDetails = async (client) => {
     setDetailsClient(client);
+    setBetaFeaturesInput((client.betaFeatures || []).join(', '));
     setShowDetailsModal(true);
     setUsageStats(null);
     try {
@@ -223,27 +257,66 @@ export default function AdminClientsPage() {
   const handleSuspend = (client) => {
     setSuspendClient(client);
     setSuspendReason(client.suspendReason || '');
+    setSuspendConfirmText('');
     setShowSuspendModal(true);
   };
 
+  /** Super_Admin.md: Suspend requires typing clinic name to confirm */
+  const suspendRequiredText = suspendClient ? suspendClient.name || suspendClient.slug || '' : '';
+
   const handleSubmitSuspend = async () => {
-    if (!suspendClient) return;
+    if (!suspendClient || suspendConfirmText.trim() !== suspendRequiredText) return;
     try {
       const res = await apiClient.put(`/admin/clients/${suspendClient._id}`, {
         suspended: true,
         suspendReason: suspendReason.trim() || undefined,
       });
       if (res.success) {
-        showSuccess(t('admin.clinicSuspended') || 'Clinic suspended successfully');
+        showSuccess(
+          `${t('admin.clinicSuspended') || 'Clinic suspended successfully'} ${t('admin.actionLogged') || 'Action logged.'}`,
+        );
         setShowSuspendModal(false);
         setSuspendClient(null);
         setSuspendReason('');
+        setSuspendConfirmText('');
         fetchClients();
       } else {
         showError(res.error?.message || t('admin.suspendFailed'));
       }
     } catch (err) {
       showError(err.message || t('admin.suspendFailed'));
+    }
+  };
+
+  const handleDelete = (client) => {
+    setDeleteClient(client);
+    setDeleteConfirmText('');
+    setShowDeleteModal(true);
+  };
+
+  /** Super_Admin.md: Delete requires typing "DELETE [clinic name]" to confirm */
+  const deleteRequiredText = deleteClient
+    ? `DELETE ${deleteClient.name || deleteClient.slug || deleteClient._id}`
+    : '';
+
+  const handleSubmitDelete = async () => {
+    if (!deleteClient || deleteConfirmText.trim() !== deleteRequiredText) return;
+    setDeleting(true);
+    try {
+      const res = await apiClient.delete(`/admin/clients/${deleteClient._id}`);
+      if (res?.success) {
+        showSuccess(t('admin.clinicDeleted') || 'Clinic deleted. Audit logged.');
+        setShowDeleteModal(false);
+        setDeleteClient(null);
+        setDeleteConfirmText('');
+        fetchClients();
+      } else {
+        showError(res?.error?.message || t('admin.deleteFailed') || 'Delete failed');
+      }
+    } catch (err) {
+      showError(err?.message || t('admin.deleteFailed') || 'Delete failed');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -258,7 +331,9 @@ export default function AdminClientsPage() {
             suspended: false,
           });
           if (res.success) {
-            showSuccess(t('admin.clinicUnsuspended') || 'Clinic unsuspended successfully');
+            showSuccess(
+              `${t('admin.clinicUnsuspended') || 'Clinic unsuspended successfully'} ${t('admin.actionLogged') || 'Action logged.'}`,
+            );
             fetchClients();
           } else {
             showError(res.error?.message || 'Failed');
@@ -308,6 +383,99 @@ export default function AdminClientsPage() {
       }
     } catch (err) {
       showError(err.message || 'Failed');
+    }
+  };
+
+  const handleCreateClinic = () => {
+    setCreateName('');
+    setCreateSlug('');
+    setCreateRegion('US');
+    setCreateCity('');
+    setCreateState('');
+    setCreateZipCode('');
+    setCreateStreet('');
+    setCreateCountry('');
+    setShowCreateModal(true);
+  };
+
+  const handleSubmitCreateClinic = async () => {
+    const name = createName.trim();
+    const slug = createSlug.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!name || !slug) {
+      showError(t('admin.createClinicNameSlugRequired') || 'Name and slug are required');
+      return;
+    }
+    setCreating(true);
+    try {
+      const address =
+        createStreet.trim() ||
+        createCity.trim() ||
+        createState.trim() ||
+        createZipCode.trim() ||
+        createCountry.trim()
+          ? {
+              street: createStreet.trim() || undefined,
+              city: createCity.trim() || undefined,
+              state: createState.trim() || undefined,
+              zipCode: createZipCode.trim() || undefined,
+              country: createCountry.trim() || undefined,
+            }
+          : undefined;
+      const res = await apiClient.post('/admin/clients', {
+        name,
+        slug,
+        region: createRegion,
+        address,
+      });
+      if (res.success) {
+        showSuccess(
+          t('admin.createClinicSuccess') || 'Clinic created. Assign a plan from this page.',
+        );
+        setShowCreateModal(false);
+        fetchClients();
+      } else {
+        const msg =
+          res.error?.code === 'DUPLICATE_CLINIC'
+            ? t('admin.duplicateClinicMessage') ||
+              'A clinic with this name and location already exists. To add a branch, use a different city/address.'
+            : res.error?.code === 'BRANCH_LOCATION_REQUIRED'
+              ? t('admin.branchLocationRequired') ||
+                'A clinic with this name already exists. To add a branch, enter a different branch location (city and/or address).'
+              : res.error?.message || 'Failed to create clinic';
+        showError(msg);
+      }
+    } catch (err) {
+      showError(err?.message || 'Failed to create clinic');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleExtendTrial = (client) => {
+    setExtendTrialClient(client);
+    setExtendTrialDays(14);
+    setShowExtendTrialModal(true);
+  };
+
+  const handleSubmitExtendTrial = async () => {
+    if (!extendTrialClient || extendTrialDays < 1 || extendTrialDays > 365) return;
+    setExtendingTrial(true);
+    try {
+      const res = await apiClient.put(`/admin/clients/${extendTrialClient._id}`, {
+        extendTrialDays: Number(extendTrialDays),
+      });
+      if (res.success) {
+        showSuccess(t('admin.extendTrialSuccess') || 'Trial extended');
+        setShowExtendTrialModal(false);
+        setExtendTrialClient(null);
+        fetchClients();
+      } else {
+        showError(res.error?.message || 'Failed');
+      }
+    } catch (err) {
+      showError(err?.message || 'Failed');
+    } finally {
+      setExtendingTrial(false);
     }
   };
 
@@ -470,7 +638,7 @@ export default function AdminClientsPage() {
           <div>
             <div className='font-medium'>{row.subscription.planId.name}</div>
             <div className='text-sm text-neutral-500'>
-              {formatCurrency(row.subscription.planId.price)}/
+              {formatPlanPriceUSD(row.subscription.planId.price)}/
               {row.subscription.planId.billingCycle === 'MONTHLY'
                 ? t('admin.billingMonthlyShort')
                 : t('admin.billingYearlyShort')}
@@ -534,6 +702,12 @@ export default function AdminClientsPage() {
               onClick: () => handleUpdateSubscription(row),
             },
             {
+              key: 'extendTrial',
+              label: t('admin.extendTrial') || 'Extend trial',
+              icon: <ClockIcon className='icon icon-sm' />,
+              onClick: () => handleExtendTrial(row),
+            },
+            {
               key: 'impersonate',
               label: t('admin.loginAsClinic') || 'Login as clinic',
               icon: <UserIcon className='icon icon-sm' />,
@@ -562,6 +736,13 @@ export default function AdminClientsPage() {
                     onClick: () => handleSuspend(row),
                   },
                 ]),
+            {
+              key: 'delete',
+              label: t('admin.deleteClinic') || 'Delete clinic',
+              icon: <TrashIcon className='icon icon-sm' />,
+              onClick: () => handleDelete(row),
+              danger: true,
+            },
             {
               key: 'toggle',
               label: row.isActive
@@ -597,54 +778,78 @@ export default function AdminClientsPage() {
   return (
     <Layout title={t('admin.clients')} subtitle={t('admin.clientsManagementSubtitle')}>
       <div className='admin-page-content'>
-        <div className='flex flex-col sm:flex-row gap-4 mb-4'>
-          <div className='flex-1 flex flex-wrap gap-2'>
-            <Input
-              placeholder={t('admin.searchClientsPlaceholder') || 'Search by name, slug, region...'}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className='max-w-xs'
-            />
+        <AdminToolbar
+          intro={
+            t('admin.clinicManagementIntro') ||
+            'Full lifecycle: Create clinic, Activate/Suspend, Deactivate (remove access), Assign plan, Extend trial. View: clinic profile, assigned users, storage usage, last login via details and User Governance.'
+          }
+          searchValue={searchTerm}
+          onSearchChange={(e) => setSearchTerm(e.target.value)}
+          searchPlaceholder={
+            t('admin.searchClientsPlaceholder') || 'Search by name, slug, region...'
+          }
+          searchAriaLabel={t('admin.searchClientsPlaceholder') || 'Search clinics'}
+          filters={[
             <Select
+              key='status'
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               width='fit'
+              size='sm'
               options={[
                 { value: '', label: t('admin.allStatuses') || 'All statuses' },
                 { value: 'active', label: t('admin.active') || 'Active' },
-                { value: 'inactive', label: t('admin.inactive') || 'Inactive' },
+                { value: 'trial', label: t('admin.trial') || 'Trial' },
                 { value: 'suspended', label: t('admin.suspended') || 'Suspended' },
+                { value: 'inactive', label: t('admin.inactive') || 'Inactive' },
               ]}
-            />
+            />,
             <Select
+              key='region'
               value={regionFilter}
               onChange={(e) => setRegionFilter(e.target.value)}
               width='fit'
+              size='sm'
               options={[
                 { value: '', label: t('admin.allRegions') || 'All regions' },
                 ...regions.map((r) => ({ value: r, label: r })),
               ]}
-            />
+            />,
             <Select
+              key='plan'
               value={planFilter}
               onChange={(e) => setPlanFilter(e.target.value)}
               width='fit'
+              size='sm'
               options={[
                 { value: '', label: t('admin.allPlans') || 'All plans' },
                 ...planNames.map((p) => ({ value: p, label: p })),
               ]}
-            />
-          </div>
-          <Button
-            variant='secondary'
-            size='sm'
-            onClick={handleExportCSV}
-            aria-label={t('admin.exportCSV')}
-          >
-            <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-            {t('admin.exportCSV') || 'Export CSV'}
-          </Button>
-        </div>
+            />,
+          ]}
+          actions={
+            <>
+              <Button
+                variant='primary'
+                size='sm'
+                onClick={handleCreateClinic}
+                aria-label={t('admin.createClinic') || 'Create clinic'}
+              >
+                <UserAddIcon className='icon icon-sm flex-shrink-0' ariaHidden />
+                {t('admin.createClinic') || 'Create clinic'}
+              </Button>
+              <Button
+                variant='secondary'
+                size='sm'
+                onClick={handleExportCSV}
+                aria-label={t('admin.exportCSV')}
+              >
+                <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
+                {t('admin.exportCSV') || 'Export CSV'}
+              </Button>
+            </>
+          }
+        />
         {selectedIds.size > 0 && (
           <div className='mb-4 flex items-center gap-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4'>
             <span className='text-sm font-medium'>
@@ -739,6 +944,12 @@ export default function AdminClientsPage() {
                       {t('admin.appointments') || 'Appointments'}: {usageStats.appointmentsCount}
                     </span>
                   </div>
+                  {usageStats.lastActivity && (
+                    <p className='mt-2 text-sm text-neutral-600'>
+                      {t('admin.lastActivity') || 'Last activity'}:{' '}
+                      {new Date(usageStats.lastActivity).toLocaleString()}
+                    </p>
+                  )}
                 </div>
               )}
               {detailsClient.subscription && (
@@ -749,7 +960,7 @@ export default function AdminClientsPage() {
                     </p>
                     <p>{detailsClient.subscription.planId?.name || '-'}</p>
                     <p className='text-sm text-neutral-500'>
-                      {formatCurrency(detailsClient.subscription.planId?.price || 0)}/
+                      {formatPlanPriceUSD(detailsClient.subscription.planId?.price || 0)}/
                       {detailsClient.subscription.planId?.billingCycle === 'MONTHLY'
                         ? 'month'
                         : 'year'}
@@ -795,6 +1006,71 @@ export default function AdminClientsPage() {
                     : '-'}
                 </p>
               </div>
+              <div className='pt-2 border-t border-neutral-200 dark:border-neutral-600'>
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    router.push(`/admin/users?tenantId=${detailsClient._id}`);
+                  }}
+                >
+                  <UsersIcon className='icon icon-sm mr-1' />
+                  {t('admin.viewUsersAtClinic') || 'View users at this clinic'}
+                </Button>
+              </div>
+              <div>
+                <p className='text-sm font-medium text-neutral-500'>
+                  {t('admin.betaFeatures') || 'Beta features'}
+                </p>
+                <div className='flex flex-wrap gap-1 mt-1'>
+                  {(detailsClient.betaFeatures || []).map((f) => (
+                    <Tag key={f} variant='default'>
+                      {f}
+                    </Tag>
+                  ))}
+                  {(!detailsClient.betaFeatures || detailsClient.betaFeatures.length === 0) && (
+                    <span className='text-sm text-neutral-500'>{t('common.none') || 'None'}</span>
+                  )}
+                </div>
+                <div className='flex gap-2 mt-2'>
+                  <Input
+                    className='flex-1'
+                    placeholder='e.g. ai_assistance, advanced_automation'
+                    value={betaFeaturesInput}
+                    onChange={(e) => setBetaFeaturesInput(e.target.value)}
+                  />
+                  <Button
+                    size='sm'
+                    disabled={savingBetaFeatures}
+                    onClick={async () => {
+                      const list = betaFeaturesInput
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      setSavingBetaFeatures(true);
+                      try {
+                        const res = await apiClient.put(`/admin/clients/${detailsClient._id}`, {
+                          betaFeatures: list,
+                        });
+                        if (res?.success) {
+                          showSuccess(t('admin.settingsSaved') || 'Saved');
+                          setDetailsClient((c) => (c ? { ...c, betaFeatures: list } : c));
+                          fetchClients();
+                        } else {
+                          showError(res?.error?.message || 'Failed to save');
+                        }
+                      } catch (err) {
+                        showError(err?.message || 'Failed to save');
+                      } finally {
+                        setSavingBetaFeatures(false);
+                      }
+                    }}
+                  >
+                    {savingBetaFeatures ? t('common.saving') || 'Saving...' : t('common.save')}
+                  </Button>
+                </div>
+              </div>
             </div>
           </Modal>
         )}
@@ -826,7 +1102,7 @@ export default function AdminClientsPage() {
                         }
                         return planList.map((plan) => ({
                           value: plan._id,
-                          label: `${plan.name} - ${formatCurrency(plan.price)}/${
+                          label: `${plan.name} - ${formatPlanPriceUSD(plan.price)}/${
                             plan.billingCycle === 'MONTHLY'
                               ? t('common.monthly').toLowerCase()
                               : t('common.yearly').toLowerCase()
@@ -862,7 +1138,7 @@ export default function AdminClientsPage() {
           </div>
         )}
 
-        {/* Suspend clinic modal */}
+        {/* Suspend clinic modal – Super_Admin.md: type clinic name to confirm */}
         {showSuspendModal && suspendClient && (
           <Modal
             isOpen={showSuspendModal}
@@ -870,6 +1146,7 @@ export default function AdminClientsPage() {
               setShowSuspendModal(false);
               setSuspendClient(null);
               setSuspendReason('');
+              setSuspendConfirmText('');
             }}
             title={t('admin.suspendClinic') || 'Suspend clinic'}
           >
@@ -879,6 +1156,18 @@ export default function AdminClientsPage() {
                   'Suspending will block all users from logging in.'}{' '}
                 {suspendClient.name}
               </p>
+              <p className='text-sm font-medium text-neutral-700 dark:text-neutral-300'>
+                {t('admin.typeClinicNameToConfirm') || 'Type the clinic name to confirm'}:{' '}
+                <span className='font-mono bg-neutral-100 dark:bg-neutral-700 px-1 rounded'>
+                  {suspendRequiredText}
+                </span>
+              </p>
+              <Input
+                value={suspendConfirmText}
+                onChange={(e) => setSuspendConfirmText(e.target.value)}
+                placeholder={suspendRequiredText}
+                className='font-mono'
+              />
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-1'>
                   {t('admin.reason') || 'Reason'} ({t('common.optional') || 'optional'})
@@ -890,7 +1179,11 @@ export default function AdminClientsPage() {
                 />
               </div>
               <div className='flex gap-2'>
-                <Button variant='danger' onClick={handleSubmitSuspend}>
+                <Button
+                  variant='danger'
+                  onClick={handleSubmitSuspend}
+                  disabled={suspendConfirmText.trim() !== suspendRequiredText}
+                >
                   {t('admin.suspend') || 'Suspend'}
                 </Button>
                 <Button
@@ -899,7 +1192,61 @@ export default function AdminClientsPage() {
                     setShowSuspendModal(false);
                     setSuspendClient(null);
                     setSuspendReason('');
+                    setSuspendConfirmText('');
                   }}
+                >
+                  {t('common.cancel') || 'Cancel'}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Delete clinic modal – Super_Admin.md: type "DELETE [clinic name]" to confirm */}
+        {showDeleteModal && deleteClient && (
+          <Modal
+            isOpen={showDeleteModal}
+            onClose={() => {
+              setShowDeleteModal(false);
+              setDeleteClient(null);
+              setDeleteConfirmText('');
+            }}
+            title={t('admin.deleteClinic') || 'Delete clinic'}
+          >
+            <div className='space-y-4'>
+              <p className='text-sm text-neutral-600'>
+                {t('admin.deleteClinicConfirm') ||
+                  'This will remove access and deactivate the clinic. Type the exact text below to confirm.'}
+              </p>
+              <p className='text-sm font-medium text-neutral-700 dark:text-neutral-300'>
+                {t('admin.typeToConfirm') || 'Type to confirm'}:{' '}
+                <span className='font-mono bg-neutral-100 dark:bg-neutral-700 px-1 rounded'>
+                  {deleteRequiredText}
+                </span>
+              </p>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={deleteRequiredText}
+                className='font-mono'
+              />
+              <div className='flex gap-2'>
+                <Button
+                  variant='danger'
+                  onClick={handleSubmitDelete}
+                  disabled={deleteConfirmText.trim() !== deleteRequiredText || deleting}
+                  isLoading={deleting}
+                >
+                  {t('admin.deleteClinic') || 'Delete clinic'}
+                </Button>
+                <Button
+                  variant='secondary'
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteClient(null);
+                    setDeleteConfirmText('');
+                  }}
+                  disabled={deleting}
                 >
                   {t('common.cancel') || 'Cancel'}
                 </Button>
@@ -1044,6 +1391,138 @@ export default function AdminClientsPage() {
               </div>
             </Card>
           </div>
+        )}
+
+        {/* Create clinic modal */}
+        {showCreateModal && (
+          <Modal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            title={t('admin.createClinic') || 'Create clinic'}
+          >
+            <div className='space-y-4'>
+              <Input
+                label={t('admin.clientName')}
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                placeholder={t('admin.placeholderClinicName') || 'Clinic name'}
+              />
+              <Input
+                label={t('admin.slug')}
+                value={createSlug}
+                onChange={(e) => setCreateSlug(e.target.value)}
+                placeholder='my-clinic'
+              />
+              <Select
+                label={t('admin.region')}
+                value={createRegion}
+                onChange={(e) => setCreateRegion(e.target.value)}
+                options={[
+                  { value: 'US', label: 'US' },
+                  { value: 'EU', label: 'EU' },
+                  { value: 'APAC', label: 'APAC' },
+                  { value: 'IN', label: 'IN' },
+                  { value: 'ME', label: 'ME' },
+                  { value: 'CA', label: 'CA' },
+                  { value: 'AU', label: 'AU' },
+                ]}
+              />
+              <p className='text-body-xs text-neutral-500 dark:text-neutral-400'>
+                {t('admin.branchLocationHint') ||
+                  'If a clinic with this name already exists, enter a different city/address to create a branch. Same name + same location is not allowed.'}
+              </p>
+              <Input
+                label={t('admin.city') || 'City'}
+                value={createCity}
+                onChange={(e) => setCreateCity(e.target.value)}
+                placeholder={t('admin.placeholderCity') || 'City'}
+              />
+              <Input
+                label={t('admin.state') || 'State / Province'}
+                value={createState}
+                onChange={(e) => setCreateState(e.target.value)}
+                placeholder={t('admin.placeholderState') || 'State / Province'}
+              />
+              <Input
+                label={t('admin.zipCode') || 'ZIP / Postal code'}
+                value={createZipCode}
+                onChange={(e) => setCreateZipCode(e.target.value)}
+                placeholder={t('admin.placeholderZipCode') || 'ZIP / Postal code'}
+              />
+              <Input
+                label={t('admin.street') || 'Street (optional)'}
+                value={createStreet}
+                onChange={(e) => setCreateStreet(e.target.value)}
+                placeholder={t('admin.placeholderStreet') || 'Street address'}
+              />
+              <Input
+                label={t('admin.country') || 'Country (optional)'}
+                value={createCountry}
+                onChange={(e) => setCreateCountry(e.target.value)}
+                placeholder={t('admin.placeholderCountry') || 'Country'}
+              />
+            </div>
+            <div className='flex gap-2 mt-6'>
+              <Button
+                variant='primary'
+                onClick={handleSubmitCreateClinic}
+                disabled={!createName.trim() || !createSlug.trim() || creating}
+                isLoading={creating}
+              >
+                {t('admin.createClinic') || 'Create clinic'}
+              </Button>
+              <Button variant='secondary' onClick={() => setShowCreateModal(false)}>
+                {t('common.cancel') || 'Cancel'}
+              </Button>
+            </div>
+          </Modal>
+        )}
+
+        {/* Extend trial modal */}
+        {showExtendTrialModal && extendTrialClient && (
+          <Modal
+            isOpen={showExtendTrialModal}
+            onClose={() => {
+              setShowExtendTrialModal(false);
+              setExtendTrialClient(null);
+            }}
+            title={t('admin.extendTrial') || 'Extend trial'}
+          >
+            <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-2'>
+              {t('admin.extendTrialFor') || 'Extend trial for'}:{' '}
+              <strong>{extendTrialClient.name}</strong>
+            </p>
+            <Input
+              type='number'
+              label={t('admin.extendTrialDays') || 'Days'}
+              value={extendTrialDays}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                setExtendTrialDays(Number.isNaN(v) ? 14 : Math.min(365, Math.max(1, v)));
+              }}
+              min={1}
+              max={365}
+            />
+            <div className='flex gap-2 mt-6'>
+              <Button
+                variant='primary'
+                onClick={handleSubmitExtendTrial}
+                disabled={extendTrialDays < 1 || extendTrialDays > 365 || extendingTrial}
+                isLoading={extendingTrial}
+              >
+                {t('admin.extendTrial') || 'Extend trial'}
+              </Button>
+              <Button
+                variant='secondary'
+                onClick={() => {
+                  setShowExtendTrialModal(false);
+                  setExtendTrialClient(null);
+                }}
+              >
+                {t('common.cancel') || 'Cancel'}
+              </Button>
+            </div>
+          </Modal>
         )}
       </div>
     </Layout>

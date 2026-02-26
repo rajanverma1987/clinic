@@ -8,11 +8,11 @@ import { Toggle } from '@/components/ui/Toggle';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { getAvatarPlaceholder } from '@/lib/utils/avatars';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AvailabilityForm } from './AvailabilityForm';
-import { SettingsTabHeader } from './SettingsTabHeader';
 import { TwoFactorSetup } from './TwoFactorSetup';
 
 const AVATAR_MAX_SIZE = 400;
@@ -339,8 +339,7 @@ export function ProfileTab({
 
   return (
     <div className='w-full max-w-4xl space-y-6 text-left'>
-      <SettingsTabHeader title={t('settings.profile')} />
-
+      {/* No section heading: page title and tab already show "Profile" */}
       {/* Profile overview card – avatar, name, role, status, actions in a single clear row */}
       <Card>
         <div className='p-6'>
@@ -359,33 +358,36 @@ export function ProfileTab({
                     className='w-full h-full object-cover'
                   />
                 ) : (
-                  <div className='w-full h-full flex items-center justify-center text-neutral-500 dark:text-neutral-400'>
-                    <svg
-                      className='w-12 h-12'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
-                      />
-                    </svg>
-                  </div>
+                  (() => {
+                    const displayName =
+                      `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() ||
+                      currentUser?.email ||
+                      '';
+                    const { initials, color } = getAvatarPlaceholder(displayName);
+                    return (
+                      <div
+                        className={`w-full h-full flex items-center justify-center text-2xl font-semibold text-white ${color}`}
+                        aria-hidden
+                      >
+                        {initials}
+                      </div>
+                    );
+                  })()
                 )}
-                <button
+                <Button
                   type='button'
+                  variant='secondary'
+                  size='sm'
+                  iconOnly
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAvatar || saving}
-                  className='absolute top-1.5 right-1.5 w-8 h-8 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 shadow-sm flex items-center justify-center text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-50 disabled:pointer-events-none'
+                  className='absolute top-1.5 right-1.5 w-8 h-8 min-w-0 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 shadow-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700'
                   aria-label={
                     t('settings.uploadPhoto') || t('common.uploadPhoto') || 'Upload photo'
                   }
                 >
                   <PencilIcon className='icon icon-xs' ariaHidden />
-                </button>
+                </Button>
                 <div
                   className={`absolute bottom-1 right-1 w-3 h-3 rounded-full border-2 border-white dark:border-neutral-800 ${
                     currentUser?.isActive ? 'bg-status-success' : 'bg-status-error'
@@ -444,22 +446,27 @@ export function ProfileTab({
               <div className='mt-4 flex flex-wrap items-center justify-center sm:justify-start gap-2'>
                 {currentUser?.role === 'doctor' ? (
                   <Link href='/doctors/profile'>
-                    <Button variant='secondary' size='sm'>
+                    <Button variant='primary' size='sm'>
                       {t('settings.editProfile')}
                     </Button>
                   </Link>
                 ) : onEditProfileClick ? (
-                  <Button variant='secondary' size='sm' onClick={onEditProfileClick}>
+                  <Button variant='primary' size='sm' onClick={onEditProfileClick}>
                     {t('settings.editProfile')}
                   </Button>
                 ) : (
                   <Link href='/settings?tab=profile'>
-                    <Button variant='secondary' size='sm'>
+                    <Button variant='primary' size='sm'>
                       {t('settings.editProfile')}
                     </Button>
                   </Link>
                 )}
-                <Button variant='danger' size='sm' onClick={handleLogoutClick}>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={handleLogoutClick}
+                  className='border border-neutral-200 dark:border-neutral-700 !border-neutral-200 dark:!border-neutral-700 bg-white dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 hover:border-status-error/50 hover:bg-status-error/10 hover:text-status-error dark:hover:border-status-error/50 dark:hover:bg-status-error/10 dark:hover:text-status-error'
+                >
                   {t('auth.logout')}
                 </Button>
               </div>
@@ -510,7 +517,7 @@ export function ProfileTab({
             )}
           </div>
           <div className='flex justify-end gap-2 mt-6'>
-            <Button variant='secondary' onClick={handleCloseCropModal}>
+            <Button variant='ghost' onClick={handleCloseCropModal}>
               {t('common.cancel')}
             </Button>
             <Button
@@ -590,7 +597,7 @@ export function ProfileTab({
                   {t('settings.changePasswordHint')}
                 </p>
                 <Link href='/change-password' className='inline-block mt-2'>
-                  <Button variant='secondary' size='sm'>
+                  <Button variant='primary' size='sm'>
                     {t('settings.changePasswordLabel')}
                   </Button>
                 </Link>

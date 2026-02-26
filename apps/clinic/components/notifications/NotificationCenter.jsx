@@ -296,41 +296,50 @@ export function NotificationCenter({
 
           {/* Filters */}
           <div className='p-3 border-b border-neutral-200 dark:border-neutral-600 flex gap-2 overflow-x-auto'>
-            <button
-              className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+            <Button
+              type='button'
+              variant={filter === 'all' ? 'primary' : 'ghost'}
+              size='xs'
+              className={`rounded-full whitespace-nowrap ${
                 filter === 'all'
-                  ? 'bg-primary-600 text-white'
+                  ? ''
                   : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
               }`}
               onClick={() => setFilter('all')}
             >
               All
-            </button>
-            <button
-              className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+            </Button>
+            <Button
+              type='button'
+              variant={filter === 'unread' ? 'primary' : 'ghost'}
+              size='xs'
+              className={`rounded-full whitespace-nowrap ${
                 filter === 'unread'
-                  ? 'bg-primary-600 text-white'
+                  ? ''
                   : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
               }`}
               onClick={() => setFilter('unread')}
             >
               Unread ({unreadCount})
-            </button>
+            </Button>
             {Object.values(NOTIFICATION_TYPES).map((type) => {
               const count = notifications.filter((n) => n.type === type).length;
               if (count === 0) return null;
               return (
-                <button
+                <Button
                   key={type}
-                  className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+                  type='button'
+                  variant={filter === type ? 'primary' : 'ghost'}
+                  size='xs'
+                  className={`rounded-full whitespace-nowrap ${
                     filter === type
-                      ? 'bg-primary-600 text-white'
+                      ? ''
                       : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
                   }`}
                   onClick={() => setFilter(type)}
                 >
                   {TYPE_ICONS[type]} {type.replace('_', ' ')} ({count})
-                </button>
+                </Button>
               );
             })}
           </div>

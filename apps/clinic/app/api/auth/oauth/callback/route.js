@@ -1,58 +1,64 @@
 /**
  * OAuth Callback Handler
- * Handles OAuth callbacks from Google, Apple, etc.
+ * Exchanges code for tokens, sets cookies, redirects to app so social login completes.
  */
 
 import { NextResponse } from 'next/server';
 import { handleOAuthCallback } from '@/lib/auth/oauth.js';
-import { successResponse, errorResponse } from '@/lib/utils/api-response.js';
+
+const OAUTH_ACCESS_COOKIE = 'oauth_at';
+const OAUTH_ACCESS_MAX_AGE = 60; // 1 min for client to read and clear
 
 /**
  * GET /api/auth/oauth/callback
- * Handle OAuth callback
+ * Handle OAuth callback from Google (or provider). Redirect to login with token in cookie.
  */
 export async function GET(req) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (req.headers.get('x-forwarded-proto') && req.headers.get('host')
+      ? `${req.headers.get('x-forwarded-proto')}://${req.headers.get('host')}`
+      : 'http://localhost:3000');
+  const loginUrl = `${baseUrl.replace(/\/$/, '')}/login`;
+
   try {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
-    const state = searchParams.get('state');
     const provider = searchParams.get('provider') || 'google';
     const error = searchParams.get('error');
 
     if (error) {
-      return NextResponse.json(
-        errorResponse(`OAuth error: ${error}`, 'OAUTH_ERROR'),
-        { status: 400 }
-      );
+      const errMsg = searchParams.get('error_description') || error;
+      return NextResponse.redirect(`${loginUrl}?oauth_error=${encodeURIComponent(errMsg)}`);
     }
 
     if (!code) {
-      return NextResponse.json(
-        errorResponse('Authorization code is required', 'OAUTH_ERROR'),
-        { status: 400 }
-      );
+      return NextResponse.redirect(`${loginUrl}?oauth_error=${encodeURIComponent('Missing authorization code')}`);
     }
 
-    const result = await handleOAuthCallback(provider, code, state);
+    const result = await handleOAuthCallback(provider, code, searchParams.get('state') || '');
 
-    // Set refresh token in httpOnly cookie
-    const response = NextResponse.json(successResponse({
-      user: result.user,
-      accessToken: result.accessToken,
-    }));
+    const redirect = NextResponse.redirect(`${loginUrl}?oauth=success`, 302);
 
-    response.cookies.set('refreshToken', result.refreshToken, {
+    redirect.cookies.set('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
     });
 
-    return response;
-  } catch (error) {
-    return NextResponse.json(
-      errorResponse(error.message, 'OAUTH_ERROR'),
-      { status: 500 }
-    );
+    redirect.cookies.set(OAUTH_ACCESS_COOKIE, result.accessToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: OAUTH_ACCESS_MAX_AGE,
+    });
+
+    return redirect;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'OAuth failed';
+    return NextResponse.redirect(`${loginUrl}?oauth_error=${encodeURIComponent(message)}`);
   }
 }

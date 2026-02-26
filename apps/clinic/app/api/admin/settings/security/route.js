@@ -27,7 +27,17 @@ async function getHandler(req, user) {
     doc = await SystemSettings.create({ slug: SLUG });
     doc = doc.toObject();
   }
-  return NextResponse.json(successResponse(doc.security || {}));
+  const security = doc.security || {};
+  return NextResponse.json(
+    successResponse({
+      ...security,
+      emergencyLock: doc.emergencyLock === true,
+      superAdminIpWhitelistEnabled: security.superAdminIpWhitelistEnabled === true,
+      superAdminIpWhitelist: Array.isArray(security.superAdminIpWhitelist)
+        ? security.superAdminIpWhitelist
+        : [],
+    }),
+  );
 }
 
 async function putHandler(req, user) {
@@ -68,13 +78,31 @@ async function putHandler(req, user) {
     ...(typeof body.auditLogRetentionDays === 'number' && {
       auditLogRetentionDays: body.auditLogRetentionDays,
     }),
+    ...(typeof body.superAdminIpWhitelistEnabled === 'boolean' && {
+      superAdminIpWhitelistEnabled: body.superAdminIpWhitelistEnabled,
+    }),
+    ...(Array.isArray(body.superAdminIpWhitelist) && {
+      superAdminIpWhitelist: body.superAdminIpWhitelist.map((ip) => String(ip).trim()).filter(Boolean),
+    }),
   };
+  const updateFields = { security, updatedAt: new Date() };
+  if (typeof body.emergencyLock === 'boolean') {
+    updateFields.emergencyLock = body.emergencyLock;
+  }
   const updated = await SystemSettings.findOneAndUpdate(
     { slug: SLUG },
-    { $set: { security, updatedAt: new Date() } },
+    { $set: updateFields },
     { new: true },
   ).lean();
-  return NextResponse.json(successResponse(updated.security || {}));
+  const out = updated.security || {};
+  return NextResponse.json(
+    successResponse({
+      ...out,
+      emergencyLock: updated.emergencyLock === true,
+      superAdminIpWhitelistEnabled: out.superAdminIpWhitelistEnabled === true,
+      superAdminIpWhitelist: Array.isArray(out.superAdminIpWhitelist) ? out.superAdminIpWhitelist : [],
+    }),
+  );
 }
 
 /**

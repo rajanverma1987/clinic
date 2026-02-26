@@ -110,18 +110,20 @@ export function CancelAppointmentModal({ isOpen, onClose, onConfirm, patientName
           {/* Quick-pick reason buttons */}
           <div className='flex flex-wrap gap-2 mb-3'>
             {COMMON_REASONS.map((r) => (
-              <button
+              <Button
                 key={r}
                 type='button'
+                variant={reason === r ? 'danger' : 'secondary'}
+                size='xs'
                 onClick={() => setReason(r)}
-                className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                className={
                   reason === r
-                    ? 'bg-status-error text-white border-status-error'
+                    ? ''
                     : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-600 hover:border-status-error hover:text-status-error'
-                }`}
+                }
               >
                 {r}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -140,7 +142,7 @@ export function CancelAppointmentModal({ isOpen, onClose, onConfirm, patientName
 
         {/* Footer */}
         <div className='ConfirmationModal-footer'>
-          <Button variant='secondary' size='md' onClick={onClose} disabled={loading}>
+          <Button variant='ghost' size='md' onClick={onClose} disabled={loading}>
             {t('appointments.keepAppointment')}
           </Button>
           <Button

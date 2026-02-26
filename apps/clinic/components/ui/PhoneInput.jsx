@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
 
 const COUNTRY_CODES = [
@@ -55,11 +56,15 @@ export function PhoneInput({
       >
         {/* Country Code Dropdown */}
         <div className='relative'>
-          <button
+          <Button
             type='button'
+            variant='ghost'
+            size='sm'
             onClick={() => !disabled && setShowDropdown(!showDropdown)}
             disabled={disabled}
-            className='flex items-center px-3 py-2.5 border-r border-gray-300 hover:bg-gray-50 rounded-l-lg'
+            aria-expanded={showDropdown}
+            aria-haspopup='listbox'
+            className='flex items-center px-3 py-2.5 border-r border-gray-300 hover:bg-gray-50 rounded-l-lg min-w-0 rounded-r-none'
           >
             <span className='text-gray-700 font-medium mr-1'>{countryCode}</span>
             <svg
@@ -75,7 +80,7 @@ export function PhoneInput({
                 d='M19 9l-7 7-7-7'
               />
             </svg>
-          </button>
+          </Button>
 
           {/* Dropdown Menu */}
           {showDropdown && (
@@ -90,17 +95,20 @@ export function PhoneInput({
                 style={{ zIndex: 10060 }}
               >
                 {COUNTRY_CODES.map((item) => (
-                  <button
+                  <Button
                     key={item.code}
                     type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
                     onClick={() => handleCountryCodeChange(item.code)}
-                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 ${
+                    className={`px-4 py-2 hover:bg-gray-50 ${
                       countryCode === item.code ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                     }`}
                   >
                     <span className='font-medium'>{item.code}</span>
                     <span className='ml-2 text-gray-500 text-sm'>{item.country}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </>

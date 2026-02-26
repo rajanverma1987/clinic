@@ -1,4 +1,4 @@
-/** @type {import('tailwindcss').Config} – match clinic tool theme 100% */
+/** @type {import('tailwindcss').Config} – match clinic tool theme 100%. .cjs so it loads as CommonJS when package has "type": "module" */
 module.exports = {
   darkMode: 'class',
   content: ['./app/**/*.{js,jsx}', './components/**/*.{js,jsx}'],

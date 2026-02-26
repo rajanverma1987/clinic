@@ -135,8 +135,12 @@ export default function DoctorMessagesPage() {
                   Compose Message
                 </Button>
                 <div className='space-y-2'>
-                  <button
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
+                    className={`px-3 py-2 rounded-lg transition-colors ${
                       activeFolder === 'inbox'
                         ? 'bg-primary-100 text-primary-700 font-medium'
                         : 'text-neutral-600 hover:bg-neutral-100'
@@ -149,9 +153,13 @@ export default function DoctorMessagesPage() {
                         {messages.filter((m) => !m.read).length}
                       </span>
                     )}
-                  </button>
-                  <button
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
+                    className={`px-3 py-2 rounded-lg transition-colors ${
                       activeFolder === 'sent'
                         ? 'bg-primary-100 text-primary-700 font-medium'
                         : 'text-neutral-600 hover:bg-neutral-100'
@@ -159,9 +167,13 @@ export default function DoctorMessagesPage() {
                     onClick={() => setActiveFolder('sent')}
                   >
                     Sent
-                  </button>
-                  <button
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
+                    className={`px-3 py-2 rounded-lg transition-colors ${
                       activeFolder === 'archive'
                         ? 'bg-primary-100 text-primary-700 font-medium'
                         : 'text-neutral-600 hover:bg-neutral-100'
@@ -169,7 +181,7 @@ export default function DoctorMessagesPage() {
                     onClick={() => setActiveFolder('archive')}
                   >
                     Archive
-                  </button>
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -240,12 +252,16 @@ export default function DoctorMessagesPage() {
                   <h2 className='text-xl font-bold text-neutral-900'>
                     {t('doctors.composeMessage')}
                   </h2>
-                  <button
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    iconOnly
                     onClick={() => setComposeOpen(false)}
-                    className='text-neutral-500 hover:text-neutral-900'
+                    className='text-neutral-500 hover:text-neutral-900 min-w-0'
                   >
                     ✕
-                  </button>
+                  </Button>
                 </div>
                 <div className='space-y-4'>
                   <div>
@@ -311,12 +327,16 @@ export default function DoctorMessagesPage() {
                   <h2 className='text-xl font-bold text-neutral-900'>
                     {selectedMessage.subject || t('doctors.noSubject')}
                   </h2>
-                  <button
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    iconOnly
                     onClick={() => setSelectedMessage(null)}
-                    className='text-neutral-500 hover:text-neutral-900'
+                    className='text-neutral-500 hover:text-neutral-900 min-w-0'
                   >
                     ✕
-                  </button>
+                  </Button>
                 </div>
                 <div className='space-y-4'>
                   <div>

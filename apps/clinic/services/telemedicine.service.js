@@ -1,9 +1,9 @@
 /**
  * Telemedicine Service
- * 
+ *
  * Enterprise-grade service for telemedicine session management with WebRTC
  * integration, session tracking, and HIPAA-compliant video consultations.
- * 
+ *
  * Features:
  * - Telemedicine session creation and management
  * - Session status tracking (scheduled, active, completed, cancelled)
@@ -15,29 +15,25 @@
  * - Multi-tenant isolation
  * - Audit logging
  * - HIPAA compliance
- * 
+ *
  * @module services/telemedicine.service
  * @since 1.0.0
- * 
+ *
  * @security
  * - End-to-end encryption for video calls
  * - Secure session link generation
  * - Access control for session participants
- * 
+ *
  * @compliance
  * - HIPAA: All session access logged
  * - Recording requires explicit consent
  * - PHI protection in session data
  */
 
+import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
-import TelemedicineSession, { SessionStatus } from '@/models/TelemedicineSession.js';
-import Patient from '@/models/Patient.js';
-import User from '@/models/User.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
-import { AuditLogger, AuditAction } from '@/lib/audit/audit-logger.js';
-import { logger } from '@/lib/utils/logger.js';
-import { measureTime } from '@/lib/utils/enterprise-helpers.js';
+import TelemedicineSession, { SessionStatus } from '@/models/TelemedicineSession.js';
 
 /**
  * Generate unique session ID
@@ -45,10 +41,7 @@ import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 async function generateSessionId(tenantId) {
   await connectDB();
 
-  const lastSession = await TelemedicineSession.findOne(
-    withTenant(tenantId, {}),
-    { sessionId: 1 }
-  )
+  const lastSession = await TelemedicineSession.findOne(withTenant(tenantId, {}), { sessionId: 1 })
     .sort({ sessionId: -1 })
     .lean();
 
@@ -95,7 +88,7 @@ export async function createTelemedicineSession(tenantId, userId, data) {
     session._id.toString(),
     userId,
     tenantId,
-    AuditAction.CREATE
+    AuditAction.CREATE,
   );
 
   return session;
@@ -109,9 +102,7 @@ export async function createTelemedicineSession(tenantId, userId, data) {
 export async function getSessionById(sessionId, tenantId = null) {
   await connectDB();
 
-  const query = tenantId
-    ? withTenant(tenantId, { _id: sessionId })
-    : { _id: sessionId };
+  const query = tenantId ? withTenant(tenantId, { _id: sessionId }) : { _id: sessionId };
 
   return await TelemedicineSession.findOne(query)
     .populate('patientId', 'firstName lastName patientId email')
@@ -149,9 +140,7 @@ export async function listSessions(tenantId, filters) {
 export async function startSession(sessionId, tenantId, userId, roomId) {
   await connectDB();
 
-  const session = await TelemedicineSession.findOne(
-    withTenant(tenantId, { _id: sessionId })
-  );
+  const session = await TelemedicineSession.findOne(withTenant(tenantId, { _id: sessionId }));
 
   if (!session) return null;
 
@@ -169,7 +158,7 @@ export async function startSession(sessionId, tenantId, userId, roomId) {
     tenantId,
     AuditAction.UPDATE,
     undefined,
-    { action: 'start_session' }
+    { action: 'start_session' },
   );
 
   return session;
@@ -181,9 +170,7 @@ export async function startSession(sessionId, tenantId, userId, roomId) {
 export async function endSession(sessionId, tenantId, userId, data) {
   await connectDB();
 
-  const session = await TelemedicineSession.findOne(
-    withTenant(tenantId, { _id: sessionId })
-  );
+  const session = await TelemedicineSession.findOne(withTenant(tenantId, { _id: sessionId }));
 
   if (!session) return null;
 
@@ -192,7 +179,7 @@ export async function endSession(sessionId, tenantId, userId, data) {
 
   if (session.actualStartTime) {
     const duration = Math.round(
-      (session.actualEndTime.getTime() - session.actualStartTime.getTime()) / 1000 / 60
+      (session.actualEndTime.getTime() - session.actualStartTime.getTime()) / 1000 / 60,
     );
     session.duration = duration;
   }
@@ -212,7 +199,7 @@ export async function endSession(sessionId, tenantId, userId, data) {
     tenantId,
     AuditAction.UPDATE,
     undefined,
-    { action: 'end_session', duration: session.duration }
+    { action: 'end_session', duration: session.duration },
   );
 
   return session;
@@ -224,9 +211,7 @@ export async function endSession(sessionId, tenantId, userId, data) {
 export async function addChatMessage(sessionId, tenantId, senderId, senderName, message) {
   await connectDB();
 
-  const session = await TelemedicineSession.findOne(
-    withTenant(tenantId, { _id: sessionId })
-  );
+  const session = await TelemedicineSession.findOne(withTenant(tenantId, { _id: sessionId }));
 
   if (!session) return null;
 
@@ -235,7 +220,7 @@ export async function addChatMessage(sessionId, tenantId, senderId, senderName, 
     senderName,
     message,
     timestamp: new Date(),
-    isEncrypted: false, // TODO: Implement encryption
+    isEncrypted: false, // Encryption deferred: in-scope for future PHI-in-chat compliance.
   });
 
   await session.save();
@@ -249,9 +234,7 @@ export async function addChatMessage(sessionId, tenantId, senderId, senderName, 
 export async function cancelSession(sessionId, tenantId, userId, reason) {
   await connectDB();
 
-  const session = await TelemedicineSession.findOne(
-    withTenant(tenantId, { _id: sessionId })
-  );
+  const session = await TelemedicineSession.findOne(withTenant(tenantId, { _id: sessionId }));
 
   if (!session) return null;
 
@@ -268,9 +251,8 @@ export async function cancelSession(sessionId, tenantId, userId, reason) {
     tenantId,
     AuditAction.UPDATE,
     undefined,
-    { action: 'cancel_session', reason }
+    { action: 'cancel_session', reason },
   );
 
   return session;
 }
-

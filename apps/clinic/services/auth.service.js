@@ -11,6 +11,7 @@ import connectDB from '@/lib/db/connection.js';
 import { logger } from '@/lib/utils/logger.js';
 import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
 import SubscriptionPlan, { PlanStatus } from '@/models/SubscriptionPlan.js';
+import SystemSettings from '@/models/SystemSettings.js';
 import Tenant from '@/models/Tenant.js';
 import User, { UserRole } from '@/models/User.js';
 import speakeasy from 'speakeasy';
@@ -43,9 +44,10 @@ export async function registerUser(input) {
   }
 
   let tenantId = input.tenantId;
+  let isPrimaryAccount = false;
 
-  // For clinic_admin registration (new tenant creation), check email globally first
-  if (!tenantId && role === UserRole.CLINIC_ADMIN) {
+  // For clinic founder registration (new tenant creation): clinic_admin (default) or doctor (solo practitioner)
+  if (!tenantId && (role === UserRole.CLINIC_ADMIN || role === UserRole.DOCTOR)) {
     // Check if email already exists globally (across all tenants)
     const existingUser = await User.findOne({
       email: input.email.toLowerCase(),
@@ -89,25 +91,63 @@ export async function registerUser(input) {
       counter++;
     }
 
+    // Duplicate = same name + same location. Same name + different location = branch (allowed).
+    const reg = input.region || 'US';
+    const locationKey = (r, addr) => {
+      const c = ((addr && addr.city) || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const s = ((addr && addr.state) || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const z = ((addr && addr.zipCode) || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      return `${r || ''}|${c}|${s}|${z}`;
+    };
+    const newAddr = {
+      street: input.address?.trim?.(),
+      city: input.city?.trim?.(),
+      state: input.state?.trim?.(),
+      zipCode: input.zipCode?.trim?.(),
+      country: input.country?.trim?.(),
+    };
+    const newLoc = locationKey(reg, newAddr);
+    const nameRegex = new RegExp(
+      `^${input.clinicName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+      'i',
+    );
+    const existingWithSameName = await Tenant.find({ name: nameRegex })
+      .select('region settings.address')
+      .lean();
+    const isDuplicate = existingWithSameName.some((t) => locationKey(t.region, t.settings?.address) === newLoc);
+    if (isDuplicate) {
+      throw new Error(
+        'A clinic with this name and location already exists. If this is a branch, please provide a different branch address (different city/address).',
+      );
+    }
+
     // Format locale properly if provided
     let formattedLocale = input.locale || 'en-US';
     if (formattedLocale && !formattedLocale.includes('-')) {
       formattedLocale = formatLocale(formattedLocale);
     }
 
-    // Create a new tenant for the clinic with all provided information
+    // Create a new tenant for the clinic with all provided information (primary account registration)
     const tenant = await Tenant.create({
       name: input.clinicName.trim(),
       slug: slug,
-      region: input.region || 'US',
+      region: reg,
       isActive: true,
       settings: {
         locale: formattedLocale,
         timezone: input.timezone || 'America/New_York',
         currency: input.currency || 'USD',
+        address: {
+          street: input.address?.trim?.() || undefined,
+          city: input.city?.trim?.() || undefined,
+          state: input.state?.trim?.() || undefined,
+          zipCode: input.zipCode?.trim?.() || undefined,
+          country: input.country?.trim?.() || undefined,
+        },
       },
     });
     tenantId = tenant._id;
+    isPrimaryAccount = true; // Only the account that registered with full clinic details can purchase subscription
 
     // Auto-assign Free Trial subscription to new clinic (trialDays from try-for-free flow, default 15)
     const trialDays = input.trialDays && input.trialDays > 0 ? input.trialDays : 15;
@@ -147,8 +187,9 @@ export async function registerUser(input) {
         tenantId: tenant._id.toString(),
       });
     }
-  } else if (tenantId) {
-    // Validate tenant exists if provided
+  }
+  if (tenantId) {
+    // Validate tenant exists if provided (existing tenant: invited/created users are not primary)
     const tenant = await Tenant.findById(tenantId);
     if (!tenant) {
       throw new Error('Tenant not found');
@@ -179,7 +220,7 @@ export async function registerUser(input) {
     }
   }
 
-  // Create user
+  // Create user (isPrimaryAccount true only when we just created the tenant above)
   const user = await User.create({
     email: input.email.toLowerCase(),
     password: input.password,
@@ -187,6 +228,7 @@ export async function registerUser(input) {
     lastName: input.lastName,
     role: role,
     tenantId: tenantId,
+    isPrimaryAccount,
   });
 
   // Audit log
@@ -289,6 +331,27 @@ export async function loginUser(input, options = {}) {
     throw new Error('Invalid email or password');
   }
 
+  // Emergency lock (SA11): only super_admin can log in when enabled
+  const platformSettings = await SystemSettings.findOne({ slug: 'platform' })
+    .select('emergencyLock security')
+    .lean();
+  if (platformSettings?.emergencyLock && user.role !== UserRole.SUPER_ADMIN) {
+    throw new Error('System is in security lock. Only Super Admin can log in.');
+  }
+  // Super Admin IP whitelist (SA6)
+  if (
+    user.role === UserRole.SUPER_ADMIN &&
+    platformSettings?.security?.superAdminIpWhitelistEnabled &&
+    Array.isArray(platformSettings.security.superAdminIpWhitelist) &&
+    platformSettings.security.superAdminIpWhitelist.length > 0
+  ) {
+    const allowed = platformSettings.security.superAdminIpWhitelist.map((ip) => ip?.trim()).filter(Boolean);
+    const clientIPNormalized = (clientIP || '').trim();
+    if (!allowed.some((ip) => ip === clientIPNormalized)) {
+      throw new Error('Access denied: your IP is not allowed for Super Admin login.');
+    }
+  }
+
   // Validate tenant is active and not suspended (skip for super_admin and testing account)
   if (!isTestAccount(user.email) && user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
     const tenant = await Tenant.findById(user.tenantId).select('isActive suspended').lean();
@@ -348,6 +411,7 @@ export async function loginUser(input, options = {}) {
       role: user.role,
       tenantId: tenantId,
       forcePasswordChange: !user.passwordChangedAt,
+      isPrimaryAccount: !!user.isPrimaryAccount,
     },
     accessToken,
     refreshToken,
@@ -464,6 +528,7 @@ export async function verify2FA(input, options = {}) {
       role: user.role,
       tenantId: tenantIdString,
       forcePasswordChange: !user.passwordChangedAt,
+      isPrimaryAccount: !!user.isPrimaryAccount,
     },
     accessToken,
     refreshToken,

@@ -273,10 +273,12 @@ function ChangePasswordContent() {
                       autoComplete='current-password'
                       className='pl-10 pr-10'
                     />
-                    <button
+                    <Button
                       type='button'
+                      variant='ghost'
+                      size='xs'
+                      className='absolute inset-y-0 right-0 pr-3 min-w-0 text-primary-500 hover:text-primary-600'
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
                     >
                       {showCurrentPassword ? (
                         <svg
@@ -313,7 +315,7 @@ function ChangePasswordContent() {
                           />
                         </svg>
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -351,10 +353,12 @@ function ChangePasswordContent() {
                     autoComplete='new-password'
                     className='pl-10 pr-10'
                   />
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
+                    size='xs'
+                    className='absolute inset-y-0 right-0 pr-3 min-w-0 text-primary-500 hover:text-primary-600'
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
                   >
                     {showNewPassword ? (
                       <svg
@@ -391,7 +395,7 @@ function ChangePasswordContent() {
                         />
                       </svg>
                     )}
-                  </button>
+                  </Button>
                 </div>
                 <p className='text-xs text-neutral-500 mt-1'>
                   Must be at least 8 characters with uppercase, lowercase, number, and special
@@ -432,10 +436,12 @@ function ChangePasswordContent() {
                     autoComplete='new-password'
                     className='pl-10 pr-10'
                   />
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
+                    size='xs'
+                    className='absolute inset-y-0 right-0 pr-3 min-w-0 text-primary-500 hover:text-primary-600'
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
                   >
                     {showConfirmPassword ? (
                       <svg
@@ -472,7 +478,7 @@ function ChangePasswordContent() {
                         />
                       </svg>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </div>
 

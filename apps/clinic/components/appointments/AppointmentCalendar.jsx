@@ -5,8 +5,8 @@ import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
-import { useCallback, useEffect, useState } from 'react';
 import { logger } from '@/lib/utils/logger.js';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Compact calendar component showing available appointment slots for a selected date
@@ -58,7 +58,7 @@ export default function AppointmentCalendar({
         return formatDateLocal(date);
       }
     },
-    [settings?.timezone, formatDateLocal]
+    [settings?.timezone, formatDateLocal],
   );
 
   const formatDateDisplay = useCallback(
@@ -75,7 +75,7 @@ export default function AppointmentCalendar({
         return date.toLocaleDateString();
       }
     },
-    [settings?.locale, settings?.timezone]
+    [settings?.locale, settings?.timezone],
   );
 
   const formatTimeDisplay = useCallback(
@@ -91,7 +91,7 @@ export default function AppointmentCalendar({
         return date.toLocaleTimeString();
       }
     },
-    [settings?.locale, settings?.timezone]
+    [settings?.locale, settings?.timezone],
   );
 
   // Update currentDate when selectedDate prop changes (parse YYYY-MM-DD as local date to avoid UTC-offset)
@@ -149,7 +149,7 @@ export default function AppointmentCalendar({
         // Include 'in_queue' for video consultations that go directly to queue
         const activeStatuses = ['scheduled', 'confirmed', 'arrived', 'in_progress', 'in_queue'];
         const allAppointments = appointmentsData.filter((apt) =>
-          activeStatuses.includes(apt.status)
+          activeStatuses.includes(apt.status),
         );
 
         // Filter appointments to only those on the selected date
@@ -196,10 +196,10 @@ export default function AppointmentCalendar({
 
           // Get hours/minutes in clinic timezone
           const aptStartInClinicTz = new Date(
-            aptStart.toLocaleString('en-US', { timeZone: clinicTimezone })
+            aptStart.toLocaleString('en-US', { timeZone: clinicTimezone }),
           );
           const aptEndInClinicTz = new Date(
-            aptEnd.toLocaleString('en-US', { timeZone: clinicTimezone })
+            aptEnd.toLocaleString('en-US', { timeZone: clinicTimezone }),
           );
 
           // Use the original date but extract time in clinic timezone
@@ -208,26 +208,26 @@ export default function AppointmentCalendar({
               timeZone: clinicTimezone,
               hour: 'numeric',
               hour12: false,
-            }).format(aptStart)
+            }).format(aptStart),
           );
           const aptStartMinutes = parseInt(
             new Intl.DateTimeFormat('en-US', {
               timeZone: clinicTimezone,
               minute: 'numeric',
-            }).format(aptStart)
+            }).format(aptStart),
           );
           const aptEndHours = parseInt(
             new Intl.DateTimeFormat('en-US', {
               timeZone: clinicTimezone,
               hour: 'numeric',
               hour12: false,
-            }).format(aptEnd)
+            }).format(aptEnd),
           );
           const aptEndMinutes = parseInt(
             new Intl.DateTimeFormat('en-US', {
               timeZone: clinicTimezone,
               minute: 'numeric',
-            }).format(aptEnd)
+            }).format(aptEnd),
           );
 
           const aptStartTimeMinutes = aptStartHours * 60 + aptStartMinutes;
@@ -244,26 +244,26 @@ export default function AppointmentCalendar({
                 timeZone: clinicTimezone,
                 hour: 'numeric',
                 hour12: false,
-              }).format(slot.start)
+              }).format(slot.start),
             );
             const slotStartMinutes = parseInt(
               new Intl.DateTimeFormat('en-US', {
                 timeZone: clinicTimezone,
                 minute: 'numeric',
-              }).format(slot.start)
+              }).format(slot.start),
             );
             const slotEndHours = parseInt(
               new Intl.DateTimeFormat('en-US', {
                 timeZone: clinicTimezone,
                 hour: 'numeric',
                 hour12: false,
-              }).format(slot.end)
+              }).format(slot.end),
             );
             const slotEndMinutes = parseInt(
               new Intl.DateTimeFormat('en-US', {
                 timeZone: clinicTimezone,
                 minute: 'numeric',
-              }).format(slot.end)
+              }).format(slot.end),
             );
 
             const slotStartTimeMinutes = slotStartHours * 60 + slotStartMinutes;
@@ -488,17 +488,17 @@ export default function AppointmentCalendar({
         </h3>
       </div>
 
-      {(
+      {
         <>
           {/* Date Selector */}
           <div className='mb-4 flex items-center gap-2 flex-wrap'>
             <Button
               variant='secondary'
-              size='sm'
+              size='lg'
               iconOnly
               onClick={goToPreviousDay}
               title={t('appointments.previousDay') || 'Previous Day'}
-              className='!min-w-[44px] !w-11 !h-11'
+              aria-label={t('appointments.previousDay') || 'Previous Day'}
             >
               ←
             </Button>
@@ -511,20 +511,16 @@ export default function AppointmentCalendar({
             />
             <Button
               variant='primary'
-              size='sm'
+              size='lg'
               iconOnly
               onClick={goToNextDay}
               title={t('appointments.nextDay') || 'Next Day'}
-              className='!min-w-[44px] !w-11 !h-11'
+              aria-label={t('appointments.nextDay') || 'Next Day'}
             >
               →
             </Button>
             {!isToday && (
-              <Button
-                variant='secondary'
-                size='xs'
-                onClick={goToToday}
-              >
+              <Button variant='secondary' size='xs' onClick={goToToday}>
                 {t('appointments.today') || 'Today'}
               </Button>
             )}
@@ -584,7 +580,8 @@ export default function AppointmentCalendar({
                     slotTitle = `${timeStr} - ${t('appointments.booked') || 'Booked'}`;
                     slotIcon = '●';
                   } else if (isPastSlot) {
-                    slotClass = 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed';
+                    slotClass =
+                      'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed';
                     slotTitle = `${timeStr} - ${t('appointments.past') || 'Past'}`;
                     slotIcon = '—';
                   } else if (isAvailable) {
@@ -599,18 +596,22 @@ export default function AppointmentCalendar({
                   }
 
                   return (
-                    <button
+                    <Button
                       key={idx}
+                      type='button'
+                      variant='ghost'
+                      size='xs'
                       onClick={() => handleSlotClick(slot)}
                       disabled={isBooked || !isAvailable || isPastSlot}
                       className={`py-2 px-3 text-xs rounded border font-medium ${slotClass}`}
                       title={slotTitle}
+                      aria-label={slotTitle}
                     >
                       <div className='flex flex-col items-center'>
                         <span className='text-xs font-semibold'>{timeStr}</span>
                         <span className='text-base mt-0.5'>{slotIcon}</span>
                       </div>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -637,7 +638,7 @@ export default function AppointmentCalendar({
             </>
           )}
         </>
-      )}
+      }
     </Card>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { AdminToolbar } from '@/components/admin/AdminToolbar';
 import {
   CheckIcon,
   EyeIcon,
@@ -17,7 +18,6 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
-import { PageSearchBar } from '@/components/ui/PageSearchBar';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
@@ -205,29 +205,28 @@ export default function AdminDoctorsPage() {
   return (
     <Layout title={t('admin.doctors')} subtitle={t('admin.doctorsManagementSubtitle')}>
       <div className='admin-page-content'>
-        <PageSearchBar
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onSearch={() => {
-            setPagination((p) => ({ ...p, page: 1 }));
-            fetchDoctors();
-          }}
-          placeholder={t('admin.patientsSearchPlaceholder')}
-        >
-          <Button
-            variant='secondary'
-            size='md'
-            onClick={() => {
-              setAdvancedVerification(verificationFilter);
-              setAdvancedSpecialty(specialtyFilter);
-              setAdvancedLocation(locationFilter);
-              setShowAdvancedSearch(true);
-            }}
-          >
-            <FilterIcon className='icon icon-sm' aria-hidden />
-            {t('admin.patientsAdvancedSearch')}
-          </Button>
-        </PageSearchBar>
+        <AdminToolbar
+          searchValue={searchTerm}
+          onSearchChange={(e) => setSearchTerm(e.target.value)}
+          searchPlaceholder={t('admin.patientsSearchPlaceholder')}
+          searchAriaLabel={t('admin.doctorsSearchPlaceholder') || 'Search doctors'}
+          filters={[]}
+          actions={
+            <Button
+              variant='secondary'
+              size='sm'
+              onClick={() => {
+                setAdvancedVerification(verificationFilter);
+                setAdvancedSpecialty(specialtyFilter);
+                setAdvancedLocation(locationFilter);
+                setShowAdvancedSearch(true);
+              }}
+            >
+              <FilterIcon className='icon icon-sm' aria-hidden />
+              {t('admin.patientsAdvancedSearch')}
+            </Button>
+          }
+        />
 
         {/* Advanced search modal */}
         <Modal

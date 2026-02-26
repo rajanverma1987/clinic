@@ -5,6 +5,7 @@ import { withErrorHandler } from '@/middleware/error-handler';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
 import { withRequestLogger } from '@/middleware/request-logger';
+import User from '@/models/User';
 import {
   createSubscription,
   getTenantSubscription,
@@ -18,10 +19,10 @@ import { NextResponse } from 'next/server';
  */
 async function getHandler(req, user) {
   // If super admin, list all subscriptions
-    if (user.role === 'super_admin') {
-      const subscriptions = await listSubscriptions();
-      return NextResponse.json(successResponse(subscriptions));
-    }
+  if (user.role === 'super_admin') {
+    const subscriptions = await listSubscriptions();
+    return NextResponse.json(successResponse(subscriptions));
+  }
 
   // Otherwise, get tenant's subscription
   const subscription = await getTenantSubscription(user.tenantId);
@@ -31,24 +32,38 @@ async function getHandler(req, user) {
 /**
  * POST /api/subscriptions
  * Create subscription for tenant. Payment: PayPal only.
+ * Only the primary account (registered with full clinic details) can purchase. Super Admin can create for any tenant.
  */
 async function postHandler(req, user) {
   const body = await req.json();
-    const paymentMethod = 'paypal';
-    if (!body.planId) {
-      return NextResponse.json(errorResponse('Plan ID is required', 'VALIDATION_ERROR'), {
-        status: 400,
-      });
-    }
+  if (!body.planId) {
+    return NextResponse.json(errorResponse('Plan ID is required', 'VALIDATION_ERROR'), {
+      status: 400,
+    });
+  }
 
-    const result = await createSubscription(
-      user.tenantId,
-      body.planId,
-      user.userId,
-      body.customerEmail,
-      body.customerName,
-      paymentMethod,
-    );
+  if (user.role !== 'super_admin') {
+    const userDoc = await User.findById(user.userId).select('isPrimaryAccount').lean();
+    if (!userDoc?.isPrimaryAccount) {
+      return NextResponse.json(
+        errorResponse(
+          'Only the primary account (registered with clinic details) can purchase a plan. Staff or doctor accounts created by admin cannot purchase.',
+          'PRIMARY_ACCOUNT_REQUIRED',
+        ),
+        { status: 403 },
+      );
+    }
+  }
+
+  const paymentMethod = 'paypal';
+  const result = await createSubscription(
+    user.tenantId,
+    body.planId,
+    user.userId,
+    body.customerEmail,
+    body.customerName,
+    paymentMethod,
+  );
 
   return NextResponse.json(successResponse(result), { status: 201 });
 }

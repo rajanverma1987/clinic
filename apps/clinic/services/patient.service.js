@@ -75,7 +75,7 @@ export async function createPatient(input, tenantId, userId) {
     patient._id.toString(),
     { patientId: patient.patientId, name: `${patient.firstName} ${patient.lastName}` },
     ipAddress,
-    userAgent
+    userAgent,
   );
 
   return patient;
@@ -89,7 +89,7 @@ export async function getPatientById(
   tenantId,
   userId,
   ipAddress = 'unknown',
-  userAgent = 'unknown'
+  userAgent = 'unknown',
 ) {
   await connectDB();
 
@@ -97,7 +97,7 @@ export async function getPatientById(
     withTenant(tenantId, {
       _id: patientId,
       deletedAt: null, // Exclude soft-deleted
-    })
+    }),
   )
     .populate('createdBy', 'firstName lastName email')
     .populate('familyMembers', 'firstName lastName patientId');
@@ -120,7 +120,7 @@ export async function searchPatients(
   tenantId,
   userId,
   ipAddress = 'unknown',
-  userAgent = 'unknown'
+  userAgent = 'unknown',
 ) {
   await connectDB();
 
@@ -201,11 +201,20 @@ export async function searchPatients(
     }
   }
 
+  // L2: Branch filter (cross-branch reports)
+  if (filters.branchId) {
+    const mongoose = await import('mongoose');
+    query.branchId =
+      typeof filters.branchId === 'string' && mongoose.Types.ObjectId.isValid(filters.branchId)
+        ? new mongoose.Types.ObjectId(filters.branchId)
+        : filters.branchId;
+  }
+
   // Doctor scope: only patients who have at least one appointment with this doctor
   if (filters.doctorId) {
     const patientIds = await Appointment.distinct(
       'patientId',
-      withTenant(tenantId, { doctorId: filters.doctorId })
+      withTenant(tenantId, { doctorId: filters.doctorId }),
     );
     if (!patientIds || patientIds.length === 0) {
       return createPaginationResult([], 0, page, limit);
@@ -280,7 +289,7 @@ export async function searchPatients(
     'patient',
     null, // No specific patient ID for search
     ipAddress,
-    userAgent
+    userAgent,
   );
 
   return createPaginationResult(patients, total, page, limit);
@@ -295,7 +304,7 @@ export async function updatePatient(
   tenantId,
   userId,
   ipAddress = 'unknown',
-  userAgent = 'unknown'
+  userAgent = 'unknown',
 ) {
   await connectDB();
 
@@ -303,7 +312,7 @@ export async function updatePatient(
     withTenant(tenantId, {
       _id: patientId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!patient) {
@@ -345,7 +354,7 @@ export async function updatePatient(
     patient._id.toString(),
     { changes: Object.keys(updateData), patientId: patient.patientId },
     ipAddress,
-    userAgent
+    userAgent,
   );
 
   await notifyPatientUpdated(tenantId, patient._id.toString(), patient.toObject?.() ?? patient);
@@ -361,7 +370,7 @@ export async function deletePatient(
   tenantId,
   userId,
   ipAddress = 'unknown',
-  userAgent = 'unknown'
+  userAgent = 'unknown',
 ) {
   await connectDB();
 
@@ -369,7 +378,7 @@ export async function deletePatient(
     withTenant(tenantId, {
       _id: patientId,
       deletedAt: null,
-    })
+    }),
   );
 
   if (!patient) {
@@ -389,7 +398,7 @@ export async function deletePatient(
     patient._id.toString(),
     { patientId: patient.patientId, name: `${patient.firstName} ${patient.lastName}` },
     ipAddress,
-    userAgent
+    userAgent,
   );
 
   return patient;

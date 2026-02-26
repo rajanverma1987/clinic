@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { phiEncryptionPlugin } from '@/lib/encryption/phi-encryption.js';
+import { logger } from '@/lib/utils/logger.js';
 
 export const NoteType = {
   SOAP: 'soap',
@@ -192,7 +193,7 @@ ClinicalNoteSchema.post('init', function () {
         this.soap.plan = decryptField(this.soap.plan);
       }
     } catch (error) {
-      console.error('SOAP decryption failed:', error);
+      logger.error('ClinicalNote SOAP decryption failed', { message: error?.message });
     }
   }
 });
@@ -205,7 +206,7 @@ ClinicalNoteSchema.pre('save', async function (next) {
     try {
       this.consultationNumber = await generateConsultationNumber(this.tenantId);
     } catch (error) {
-      console.error('Failed to generate consultation number:', error);
+      logger.error('ClinicalNote consultation number generation failed', { message: error?.message });
       // Continue without number if generation fails
     }
   }

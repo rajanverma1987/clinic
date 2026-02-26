@@ -24,9 +24,8 @@ export function UpdatesAvailableBanner({ onRefresh, visible = false, className =
         </span>
         <Button
           variant='primary'
-          size='xs'
+          size='compact'
           onClick={onRefresh}
-          className='shrink-0 !min-h-[28px] !py-1 !px-2.5 text-xs'
         >
           {t('common.refresh')}
         </Button>

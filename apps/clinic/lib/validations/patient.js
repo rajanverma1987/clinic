@@ -124,5 +124,6 @@ export const patientSearchSchema = z.object({
     .enum(['firstName', 'lastName', 'dateOfBirth', 'createdAt', 'patientId', 'lastVisit'])
     .optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
-  doctorId: z.string().optional(), // When present, scope to patients with appointments for this doctor (User id)
+  doctorId: z.string().optional(),
+  branchId: z.string().optional(), // L2: filter by branch/location
 });

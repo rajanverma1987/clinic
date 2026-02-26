@@ -11,6 +11,7 @@ import {
   UserIcon,
   UsersIcon,
 } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
 import { useCallback, useRef } from 'react';
 
@@ -129,8 +130,9 @@ export function SettingsTabs({ activeTab, setActiveTab, canAccessAdminTabs, acti
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
-            <button
+            <Button
               type='button'
+              variant='ghost'
               key={tab.id}
               id={`${TABLIST_ID_PREFIX}-tab-${tab.id}`}
               role='tab'
@@ -139,12 +141,12 @@ export function SettingsTabs({ activeTab, setActiveTab, canAccessAdminTabs, acti
               onClick={() => setActiveTab(tab.id)}
               className={
                 isActive
-                  ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-600 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap -mb-[1px]'
-                  : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 -mb-[1px]'
+                  ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-600 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap -mb-[1px] rounded-none'
+                  : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 -mb-[1px] rounded-none'
               }
             >
               {tab.label}
-            </button>
+            </Button>
           );
         })}
       </nav>

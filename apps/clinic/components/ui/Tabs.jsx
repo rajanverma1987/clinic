@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { useCallback, useRef } from 'react';
 
 /**
@@ -76,8 +77,9 @@ export function Tabs({
 
         if (isDashboard) {
           return (
-            <button
+            <Button
               type='button'
+              variant='ghost'
               key={tab.id}
               id={tabId}
               role='tab'
@@ -86,8 +88,7 @@ export function Tabs({
               onClick={() => onChange(tab.id)}
               onMouseEnter={onTabHover ? () => onTabHover(tab.id) : undefined}
               className={[
-                'px-4 py-2 rounded-none text-sm whitespace-nowrap transition-colors duration-150 outline-none',
-                'focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1',
+                'px-4 py-2 rounded-none text-sm whitespace-nowrap transition-colors duration-150',
                 isActive
                   ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200 font-semibold'
                   : 'font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-primary-50 dark:hover:bg-neutral-800',
@@ -105,13 +106,14 @@ export function Tabs({
                   {tab.count}
                 </span>
               )}
-            </button>
+            </Button>
           );
         }
 
         return (
-          <button
+          <Button
             type='button'
+            variant='ghost'
             key={tab.id}
             id={tabId}
             role='tab'
@@ -121,8 +123,8 @@ export function Tabs({
             onMouseEnter={onTabHover ? () => onTabHover(tab.id) : undefined}
             className={
               isActive
-                ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-500 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap transition-all duration-200 ease-out'
-                : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-500 transition-all duration-200 ease-out'
+                ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-500 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap transition-all duration-200 ease-out rounded-none'
+                : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-500 transition-all duration-200 ease-out rounded-none'
             }
           >
             {tab.label}
@@ -137,7 +139,7 @@ export function Tabs({
                 {tab.count}
               </span>
             )}
-          </button>
+          </Button>
         );
       })}
     </nav>

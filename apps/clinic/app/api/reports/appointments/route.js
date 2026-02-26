@@ -41,6 +41,7 @@ async function getHandler(req, user) {
     status: searchParams.get('status') || undefined,
     type: searchParams.get('type') || undefined,
     includeNoShows: searchParams.get('includeNoShows') === 'true',
+    branchId: searchParams.get('branchId') || undefined,
   };
 
   const validationResult = appointmentReportSchema.safeParse(queryParams);

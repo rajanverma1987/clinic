@@ -28,6 +28,12 @@ const AppointmentSchema = new Schema(
       required: true,
       index: true,
     },
+    /** Optional branch/location for multi-location (L1) */
+    branchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Location',
+      index: true,
+    },
     // Auto-generated appointment number (e.g., "APT001234")
     appointmentNumber: {
       type: String,
@@ -144,7 +150,12 @@ const AppointmentSchema = new Schema(
       type: String,
       trim: true,
     },
-    
+    /** Optional link to care plan for follow-up scheduling (C3) */
+    carePlanId: {
+      type: Schema.Types.ObjectId,
+      ref: 'CarePlan',
+      index: true,
+    },
     // Reminders sent array as per NEW-PLANS.md
     remindersSent: [{
       type: {

@@ -4,9 +4,11 @@ import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 import { useState } from 'react';
 
-export default function ContactPage() {
+export default function SupportContactPage() {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -47,17 +49,9 @@ export default function ContactPage() {
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1'>
+      <main className='flex-1 page-main'>
         {/* Hero Section */}
-        <section
-          className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
-          style={{
-            paddingTop: '120px',
-            paddingBottom: '80px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <section className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden pt-12 pb-12 px-8'>
           {/* Background accents */}
           <div
             className='absolute top-0 right-0 bg-primary-100 rounded-full mix-blend-multiply filter opacity-30'
@@ -71,9 +65,9 @@ export default function ContactPage() {
           <div className='max-w-7xl mx-auto relative z-10'>
             <Breadcrumb
               items={[
-                { label: 'Home', href: '/' },
-                { label: 'Support', href: '/support' },
-                { label: 'Contact' },
+                { label: t('navigation.home'), href: '/' },
+                { label: t('navigation.support'), href: '/support' },
+                { label: t('navigation.contact') },
               ]}
             />
 
@@ -105,31 +99,12 @@ export default function ContactPage() {
                     clipRule='evenodd'
                   />
                 </svg>
-                <span>We&apos;re Here to Help</span>
+                <span>{t('supportContact.badge')}</span>
               </div>
 
-              <h1
-                className='text-neutral-900'
-                style={{
-                  fontSize: '32px',
-                  lineHeight: '40px',
-                  letterSpacing: '-0.02em',
-                  fontWeight: '700',
-                  marginBottom: '24px',
-                }}
-              >
-                Contact Us
-              </h1>
-              <p
-                className='text-neutral-700 max-w-3xl mx-auto'
-                style={{
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  letterSpacing: '-0.01em',
-                  fontWeight: '400',
-                }}
-              >
-                Have a question or need help? We&apos;re here to assist you.
+              <h1 className='text-h1 text-neutral-900 mb-4'>{t('supportContact.title')}</h1>
+              <p className='text-body-lg text-neutral-700 max-w-3xl mx-auto'>
+                {t('supportContact.subtitle')}
               </p>
             </div>
           </div>

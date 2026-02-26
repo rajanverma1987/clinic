@@ -2,6 +2,7 @@
 
 import TodayAppointments from '@/components/dashboard/TodayAppointments';
 import { ChevronRightIcon } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -140,8 +141,11 @@ function DashboardListCardInner({
           {/* See All Link - positioned at bottom for better UX */}
           {showSeeAll && data && data.length > 0 && (
             <div className='pt-3 border-t border-neutral-200 dark:border-neutral-700 mt-auto'>
-              <button
+              <Button
                 type='button'
+                variant='ghost'
+                size='sm'
+                fullWidth
                 onClick={() => {
                   if (onSeeAll) {
                     onSeeAll();
@@ -149,7 +153,7 @@ function DashboardListCardInner({
                     window.location.href = seeAllLink;
                   }
                 }}
-                className='section-header-action w-full inline-flex items-center justify-center gap-1.5 py-2 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-sm font-medium group'
+                className='section-header-action text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/30'
                 aria-label={t('dashboard.seeAll')}
               >
                 <span>{t('dashboard.seeAll')}</span>
@@ -157,7 +161,7 @@ function DashboardListCardInner({
                   className='icon icon-xs group-hover:translate-x-0.5 transition-transform'
                   ariaHidden
                 />
-              </button>
+              </Button>
             </div>
           )}
         </motion.div>

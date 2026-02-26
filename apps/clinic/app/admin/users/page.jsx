@@ -1,5 +1,6 @@
 'use client';
 
+import { AdminToolbar } from '@/components/admin/AdminToolbar';
 import {
   EyeIcon,
   FileDownIcon,
@@ -13,7 +14,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
-import { PageSearchBar } from '@/components/ui/PageSearchBar';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -36,7 +36,7 @@ export default function AdminUsersPage() {
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [roleFilter, setRoleFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
-  const [tenantFilter, setTenantFilter] = useState('');
+  const [tenantFilter, setTenantFilter] = useState(() => searchParams.get('tenantId') || '');
   const [tenants, setTenants] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, pages: 0 });
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
@@ -47,6 +47,13 @@ export default function AdminUsersPage() {
   const [resetPasswordUser, setResetPasswordUser] = useState(null);
   const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [forceLogoutUserId, setForceLogoutUserId] = useState(null);
+  const [unlockingUserId, setUnlockingUserId] = useState(null);
+
+  useEffect(() => {
+    const tid = searchParams.get('tenantId') || '';
+    if (tid && tenantFilter !== tid) setTenantFilter(tid);
+  }, [searchParams, tenantFilter]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -205,6 +212,30 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleUnlockAccount = async (userId) => {
+    setUnlockingUserId(userId);
+    try {
+      const response = await apiClient.put(`/admin/users/${userId}`, {
+        isActive: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      });
+      if (response?.success) {
+        showSuccess(t('admin.accountUnlocked') || 'Account unlocked. User can now log in.');
+        fetchUsers();
+      } else {
+        showError(
+          response?.error?.message || t('admin.accountUnlockFailed') || 'Failed to unlock account',
+        );
+      }
+    } catch (error) {
+      logger.error('Unlock account failed:', error);
+      showError(t('admin.accountUnlockFailed') || 'Failed to unlock account');
+    } finally {
+      setUnlockingUserId(null);
+    }
+  };
+
   const handleToggleActive = async (userId, currentStatus) => {
     try {
       const response = await apiClient.put(`/admin/users/${userId}`, { isActive: !currentStatus });
@@ -217,6 +248,23 @@ export default function AdminUsersPage() {
     } catch (error) {
       logger.error('Failed to toggle user status:', error);
       showError(t('admin.failedToUpdateUserStatus'));
+    }
+  };
+
+  const handleForceLogout = async (userId) => {
+    setForceLogoutUserId(userId);
+    try {
+      const response = await apiClient.post(`/admin/users/${userId}/force-logout`);
+      if (response?.success) {
+        showSuccess(t('admin.forceLogoutSuccess') || 'All sessions revoked for this user');
+      } else {
+        showError(response?.error?.message || t('admin.forceLogoutFailed'));
+      }
+    } catch (error) {
+      logger.error('Force logout failed:', error);
+      showError(t('admin.forceLogoutFailed') || 'Failed to revoke sessions');
+    } finally {
+      setForceLogoutUserId(null);
     }
   };
 
@@ -324,6 +372,40 @@ export default function AdminUsersPage() {
           >
             {t('admin.resetPassword') || 'Reset'}
           </Button>
+          {/* Unlock: shown for locked/inactive accounts */}
+          {!row.isActive && (
+            <Button
+              variant='ghost'
+              size='xs'
+              disabled={unlockingUserId === (row._id || row.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUnlockAccount(row._id || row.id);
+              }}
+              aria-label={t('admin.unlockAccount') || 'Unlock account'}
+              title={t('admin.unlockAccount') || 'Unlock — re-enable this account'}
+              className='text-green-600 hover:text-green-700'
+            >
+              {unlockingUserId === (row._id || row.id)
+                ? '...'
+                : t('admin.unlockAccount') || 'Unlock'}
+            </Button>
+          )}
+          <Button
+            variant='ghost'
+            size='xs'
+            disabled={forceLogoutUserId === (row._id || row.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleForceLogout(row._id || row.id);
+            }}
+            aria-label={t('admin.forceLogout') || 'Force logout'}
+            title={t('admin.forceLogout') || 'Revoke all sessions'}
+          >
+            {forceLogoutUserId === (row._id || row.id)
+              ? t('common.loading') || '...'
+              : t('admin.forceLogout') || 'Force logout'}
+          </Button>
           <Button
             variant={row.isActive ? 'danger' : 'primary'}
             size='xs'
@@ -365,30 +447,38 @@ export default function AdminUsersPage() {
       }
     >
       <div className='admin-page-content'>
-        <PageSearchBar
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onSearch={() => setPagination((p) => ({ ...p, page: 1 }))}
-          placeholder={t('admin.searchUsersPlaceholder')}
-        >
-          <Button variant='secondary' size='sm' onClick={handleExportCSV}>
-            <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-            {t('admin.exportCSV') || 'Export CSV'}
-          </Button>
-          <Button
-            variant='secondary'
-            size='md'
-            onClick={() => {
-              setAdvancedRole(roleFilter);
-              setAdvancedActive(activeFilter);
-              setAdvancedTenant(tenantFilter);
-              setShowAdvancedSearch(true);
-            }}
-          >
-            <FilterIcon className='icon icon-sm' aria-hidden />
-            {t('admin.patientsAdvancedSearch')}
-          </Button>
-        </PageSearchBar>
+        <AdminToolbar
+          intro={
+            t('admin.userGovernanceIntro') ||
+            'Control access without entering clinic: reset password, unlock (activate), force logout. View user list and last login. Login history: use Activity log link per user. Failed attempts: see Security tab and Audit & Compliance.'
+          }
+          searchValue={searchTerm}
+          onSearchChange={(e) => setSearchTerm(e.target.value)}
+          searchPlaceholder={t('admin.searchUsersPlaceholder')}
+          searchAriaLabel={t('admin.searchUsersPlaceholder') || 'Search users'}
+          filters={[]}
+          actions={
+            <>
+              <Button variant='secondary' size='sm' onClick={handleExportCSV}>
+                <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
+                {t('admin.exportCSV') || 'Export CSV'}
+              </Button>
+              <Button
+                variant='secondary'
+                size='sm'
+                onClick={() => {
+                  setAdvancedRole(roleFilter);
+                  setAdvancedActive(activeFilter);
+                  setAdvancedTenant(tenantFilter);
+                  setShowAdvancedSearch(true);
+                }}
+              >
+                <FilterIcon className='icon icon-sm' aria-hidden />
+                {t('admin.patientsAdvancedSearch')}
+              </Button>
+            </>
+          }
+        />
 
         <Modal
           isOpen={showAdvancedSearch}

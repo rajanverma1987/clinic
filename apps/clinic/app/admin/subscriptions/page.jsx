@@ -36,6 +36,9 @@ const VIEW_TABLE = 'table';
 const VIEW_CARDS = 'cards';
 const VIEW_COMPARISON = 'comparison';
 
+const ACTIVE_TAB = 'px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white';
+const INACTIVE_TAB = 'px-4 py-2 text-sm font-medium rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700';
+
 // Available features: { key } for i18n, value is stored in API
 const AVAILABLE_FEATURES = [
   { key: 'planFeaturePatientManagement', value: 'Patient Management' },
@@ -64,9 +67,26 @@ export default function AdminSubscriptionsPage() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { open: openConfirm } = useConfirmation();
+  const [activeSubTab, setActiveSubTab] = useState('plans');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState(VIEW_TABLE);
+  // Billing tab state
+  const [billingClinics, setBillingClinics] = useState([]);
+  const [loadingBilling, setLoadingBilling] = useState(false);
+  const [billingFetchedRef] = useState({ current: false });
+  const [overrideClinic, setOverrideClinic] = useState(null);
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideGraceDays, setOverrideGraceDays] = useState('7');
+  const [submittingOverride, setSubmittingOverride] = useState(false);
+  // Trials tab state
+  const [trialClinics, setTrialClinics] = useState([]);
+  const [loadingTrials, setLoadingTrials] = useState(false);
+  const [trialsFetchedRef] = useState({ current: false });
+  const [extendClinic, setExtendClinic] = useState(null);
+  const [extendDate, setExtendDate] = useState('');
+  const [extendReason, setExtendReason] = useState('');
+  const [submittingExtend, setSubmittingExtend] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState(null);
@@ -87,6 +107,7 @@ export default function AdminSubscriptionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [creatingPayPalPlan, setCreatingPayPalPlan] = useState(false);
   const [clients, setClients] = useState([]);
+  const [billingMonitor, setBillingMonitor] = useState(null);
 
   useEffect(() => {
     if (!authLoading) {
@@ -100,9 +121,17 @@ export default function AdminSubscriptionsPage() {
         router.push('/dashboard');
         return;
       }
-      // User is super admin - fetch plans and clients (for clinics-per-plan)
+      // User is super admin - fetch plans, clients, and billing monitor
       fetchPlans();
       fetchClients();
+      (async () => {
+        try {
+          const res = await apiClient.get('/admin/stats');
+          if (res?.success && res.data) setBillingMonitor(res.data);
+        } catch {
+          setBillingMonitor(null);
+        }
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, router]);
@@ -143,6 +172,35 @@ export default function AdminSubscriptionsPage() {
       }
     } catch {
       setClients([]);
+    }
+  };
+
+  const fetchBillingClinics = async () => {
+    setLoadingBilling(true);
+    try {
+      const res = await apiClient.get('/admin/clients?limit=100');
+      const list = res?.data?.clients ?? res?.clients ?? (Array.isArray(res?.data) ? res.data : []);
+      setBillingClinics(Array.isArray(list) ? list : []);
+    } catch {
+      setBillingClinics([]);
+    } finally {
+      setLoadingBilling(false);
+    }
+  };
+
+  const fetchTrialClinics = async () => {
+    setLoadingTrials(true);
+    try {
+      const res = await apiClient.get('/admin/clients?status=trial&limit=100');
+      const list = res?.data?.clients ?? res?.clients ?? (Array.isArray(res?.data) ? res.data : []);
+      const trials = (Array.isArray(list) ? list : []).filter(
+        (c) => c.status === 'trial' || c.subscription?.status === 'trialing' || c.subscription?.status === 'trial',
+      );
+      setTrialClinics(trials);
+    } catch {
+      setTrialClinics([]);
+    } finally {
+      setLoadingTrials(false);
     }
   };
 
@@ -462,6 +520,59 @@ export default function AdminSubscriptionsPage() {
     },
   ];
 
+  // Lazy-load billing/trials on first visit to those tabs
+  useEffect(() => {
+    if (activeSubTab === 'billing' && !billingFetchedRef.current && user?.role === 'super_admin') {
+      billingFetchedRef.current = true;
+      fetchBillingClinics();
+    }
+    if (activeSubTab === 'trials' && !trialsFetchedRef.current && user?.role === 'super_admin') {
+      trialsFetchedRef.current = true;
+      fetchTrialClinics();
+    }
+  }, [activeSubTab, user?.role]);
+
+  const handlePaymentOverride = async () => {
+    if (!overrideClinic) return;
+    if (overrideReason.trim().length < 10) { showError('Reason must be at least 10 characters.'); return; }
+    try {
+      setSubmittingOverride(true);
+      const id = overrideClinic._id ?? overrideClinic.tenantId;
+      const res = await apiClient.put(`/admin/clients/${id}`, {
+        'subscription.status': 'active',
+        'subscription.graceUntil': new Date(Date.now() + Number(overrideGraceDays) * 86400000).toISOString(),
+        overrideReason: overrideReason.trim(),
+      });
+      if (res?.success) {
+        showSuccess(`Payment override applied. Grace period: ${overrideGraceDays} days. Action logged.`);
+        setOverrideClinic(null); setOverrideReason(''); setOverrideGraceDays('7');
+        fetchBillingClinics();
+      } else { showError(res?.error?.message || 'Override failed.'); }
+    } catch (err) { showError(err?.message || 'Override failed.'); }
+    finally { setSubmittingOverride(false); }
+  };
+
+  const handleExtendTrial = async () => {
+    if (!extendClinic) return;
+    if (!extendDate) { showError('Select a new trial end date.'); return; }
+    if (extendReason.trim().length < 10) { showError('Reason must be at least 10 characters.'); return; }
+    try {
+      setSubmittingExtend(true);
+      const id = extendClinic._id ?? extendClinic.tenantId;
+      const res = await apiClient.put(`/admin/clients/${id}`, {
+        'subscription.trialEnd': extendDate,
+        'subscription.status': 'trial',
+        extendReason: extendReason.trim(),
+      });
+      if (res?.success) {
+        showSuccess(`Trial extended to ${extendDate}. Action logged.`);
+        setExtendClinic(null); setExtendDate(''); setExtendReason('');
+        fetchTrialClinics();
+      } else { showError(res?.error?.message || 'Extension failed.'); }
+    } catch (err) { showError(err?.message || 'Extension failed.'); }
+    finally { setSubmittingExtend(false); }
+  };
+
   if (!user) return null;
   if (loading) return <Loader type='page' text={t('common.loading')} />;
   if (user.role !== 'super_admin') return null;
@@ -491,6 +602,66 @@ export default function AdminSubscriptionsPage() {
         }
       />
       <div className='admin-page-content'>
+        {/* Tab switcher: Plans | Billing | Trials */}
+        <div className='flex gap-2 mb-6 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg w-fit'>
+          <button type='button' className={activeSubTab === 'plans' ? ACTIVE_TAB : INACTIVE_TAB} onClick={() => setActiveSubTab('plans')}>Plans</button>
+          <button type='button' className={activeSubTab === 'billing' ? ACTIVE_TAB : INACTIVE_TAB} onClick={() => setActiveSubTab('billing')}>Billing</button>
+          <button type='button' className={activeSubTab === 'trials' ? ACTIVE_TAB : INACTIVE_TAB} onClick={() => setActiveSubTab('trials')}>Trials</button>
+        </div>
+
+        {/* ── PLANS TAB ── */}
+        <div className={activeSubTab === 'plans' ? '' : 'hidden'}>
+        <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-4'>
+          {t('admin.subscriptionBillingIntro') ||
+            'Manage plan assignment, plan change, trial extension (Clinic Management), and renewal status. Monitor active subscriptions, payment delays, and renewal alerts below. Payment override: mark paid or extend per clinic via Clinic Management → clinic → Update subscription.'}
+        </p>
+        {/* Subscription & Billing monitor: active, payment failures, renewal alerts */}
+        {billingMonitor && (
+          <section className='admin-section mb-6'>
+            <div className='admin-section__title'>
+              <span className='admin-section__accent' />
+              <h2 className='admin-section__title-text'>
+                {t('admin.subscriptionBillingMonitor') || 'Monitor'}
+              </h2>
+            </div>
+            <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+              <Card>
+                <div className='p-4'>
+                  <p className='text-sm text-neutral-500'>{t('admin.activeSubscriptions')}</p>
+                  <p className='text-2xl font-semibold text-neutral-900 dark:text-neutral-100'>
+                    {Number(billingMonitor.subscriptions?.active ?? 0).toLocaleString()}
+                  </p>
+                </div>
+              </Card>
+              <Card
+                className={
+                  billingMonitor.riskMonitoring?.paymentDelays > 0 ? 'border-status-warning' : ''
+                }
+              >
+                <div className='p-4'>
+                  <p className='text-sm text-neutral-500'>{t('admin.paymentDelays')}</p>
+                  <p className='text-2xl font-semibold text-neutral-900 dark:text-neutral-100'>
+                    {Number(billingMonitor.riskMonitoring?.paymentDelays ?? 0).toLocaleString()}
+                  </p>
+                </div>
+              </Card>
+              <Card
+                className={
+                  (billingMonitor.subscriptions?.renewalAlerts ?? 0) > 0 ? 'border-amber-400' : ''
+                }
+              >
+                <div className='p-4'>
+                  <p className='text-sm text-neutral-500'>
+                    {t('admin.renewalAlertsLabel') || 'Renewal alerts'}
+                  </p>
+                  <p className='text-2xl font-semibold text-neutral-900 dark:text-neutral-100'>
+                    {Number(billingMonitor.subscriptions?.renewalAlerts ?? 0).toLocaleString()}
+                  </p>
+                </div>
+              </Card>
+            </div>
+          </section>
+        )}
         {showForm && (
           <Card className='mb-6'>
             <form onSubmit={handleSubmit} className='space-y-6' noValidate>
@@ -736,11 +907,13 @@ export default function AdminSubscriptionsPage() {
                   role='tablist'
                   aria-label={t('admin.viewTable')}
                 >
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
+                    size='sm'
                     role='tab'
                     aria-selected={viewMode === VIEW_TABLE}
-                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1.5 ${
                       viewMode === VIEW_TABLE
                         ? 'bg-primary-100 text-primary-700 shadow-sm'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
@@ -749,12 +922,14 @@ export default function AdminSubscriptionsPage() {
                   >
                     <ListChecksIcon className='icon icon-sm' />
                     {t('admin.viewTable')}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type='button'
+                    variant='ghost'
+                    size='sm'
                     role='tab'
                     aria-selected={viewMode === VIEW_CARDS}
-                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1.5 ${
                       viewMode === VIEW_CARDS
                         ? 'bg-primary-100 text-primary-700 shadow-sm'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
@@ -763,12 +938,14 @@ export default function AdminSubscriptionsPage() {
                   >
                     <LayoutDashboardIcon className='icon icon-sm' />
                     {t('admin.viewCards')}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type='button'
+                    variant='ghost'
+                    size='sm'
                     role='tab'
                     aria-selected={viewMode === VIEW_COMPARISON}
-                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    className={`inline-flex items-center gap-1.5 ${
                       viewMode === VIEW_COMPARISON
                         ? 'bg-primary-100 text-primary-700 shadow-sm'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
@@ -777,7 +954,7 @@ export default function AdminSubscriptionsPage() {
                   >
                     <DocumentIcon className='icon icon-sm' />
                     {t('admin.planComparison') || 'Comparison'}
-                  </button>
+                  </Button>
                 </div>
               </div>
               {viewMode === VIEW_COMPARISON ? (
@@ -922,6 +1099,196 @@ export default function AdminSubscriptionsPage() {
             </>
           )}
         </Card>
+        </div>{/* end Plans tab */}
+
+        {/* ── BILLING TAB ── */}
+        <div className={activeSubTab === 'billing' ? '' : 'hidden'}>
+          <section className='admin-section'>
+            <div className='admin-section__title'>
+              <span className='admin-section__accent' />
+              <h2 className='admin-section__title-text'>Per-Clinic Billing Records</h2>
+              <button type='button' className='ml-auto text-xs text-primary-600 hover:underline' onClick={fetchBillingClinics}>Refresh</button>
+            </div>
+            <p className='text-sm text-neutral-500 dark:text-neutral-400 mb-4'>
+              Renewal dates, payment status, and payment overrides per clinic.
+              Override marks a clinic as paid and sets a configurable grace period.
+            </p>
+            {loadingBilling ? (
+              <Card><p className='text-sm text-neutral-500 py-8 text-center'>Loading billing records…</p></Card>
+            ) : billingClinics.length === 0 ? (
+              <Card><p className='text-sm text-neutral-500 py-8 text-center'>No billing records found.</p></Card>
+            ) : (
+              <Card>
+                <div className='overflow-x-auto'>
+                  <table className='w-full text-sm'>
+                    <thead>
+                      <tr className='border-b border-neutral-100 dark:border-neutral-700'>
+                        <th className='text-left py-3 pr-4 font-medium text-neutral-600 dark:text-neutral-400'>Clinic</th>
+                        <th className='text-left py-3 px-3 font-medium text-neutral-600 dark:text-neutral-400'>Plan</th>
+                        <th className='text-left py-3 px-3 font-medium text-neutral-600 dark:text-neutral-400'>Status</th>
+                        <th className='text-left py-3 px-3 font-medium text-neutral-600 dark:text-neutral-400'>Renewal</th>
+                        <th className='text-left py-3 px-3 font-medium text-neutral-600 dark:text-neutral-400'>Grace Until</th>
+                        <th className='text-center py-3 px-3 font-medium text-neutral-600 dark:text-neutral-400'>Override</th>
+                      </tr>
+                    </thead>
+                    <tbody className='divide-y divide-neutral-50 dark:divide-neutral-800'>
+                      {billingClinics.map((c) => {
+                        const id = c._id ?? c.tenantId;
+                        const sub = c.subscription ?? {};
+                        const statusColor = sub.status === 'active' ? 'text-green-600 dark:text-green-400' :
+                          sub.status === 'trial' || sub.status === 'trialing' ? 'text-blue-600 dark:text-blue-400' :
+                          sub.status === 'past_due' || sub.status === 'expired' ? 'text-red-600 dark:text-red-400' :
+                          'text-neutral-500';
+                        return (
+                          <tr key={id} className='hover:bg-neutral-50 dark:hover:bg-neutral-800/50'>
+                            <td className='py-3 pr-4'>
+                              <p className='font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[160px]'>{c.name ?? c.clinicName ?? id}</p>
+                            </td>
+                            <td className='py-3 px-3 text-neutral-600 dark:text-neutral-400'>{sub.planId?.name ?? c.planName ?? '—'}</td>
+                            <td className={`py-3 px-3 font-medium ${statusColor}`}>{sub.status ?? c.status ?? '—'}</td>
+                            <td className='py-3 px-3 text-neutral-600 dark:text-neutral-400 text-xs'>
+                              {sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toLocaleDateString() : sub.nextBillingDate ? new Date(sub.nextBillingDate).toLocaleDateString() : '—'}
+                            </td>
+                            <td className='py-3 px-3 text-neutral-600 dark:text-neutral-400 text-xs'>
+                              {sub.graceUntil ? new Date(sub.graceUntil).toLocaleDateString() : '—'}
+                            </td>
+                            <td className='py-3 px-3 text-center'>
+                              <button type='button' className='text-xs text-primary-600 hover:underline' onClick={() => { setOverrideClinic(c); setOverrideReason(''); setOverrideGraceDays('7'); }}>
+                                Override
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+          </section>
+
+          {/* Payment Override Modal */}
+          {overrideClinic && (
+            <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'>
+              <div className='bg-white dark:bg-neutral-800 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4'>
+                <h3 className='font-semibold text-neutral-800 dark:text-neutral-200'>
+                  Payment Override — {overrideClinic.name ?? overrideClinic.clinicName}
+                </h3>
+                <p className='text-sm text-neutral-500 dark:text-neutral-400'>
+                  Marks this clinic as paid and sets a grace period. This action is audit-logged.
+                </p>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>Grace period (days)</label>
+                  <input type='number' min={1} max={90} value={overrideGraceDays} onChange={(e) => setOverrideGraceDays(e.target.value)} className='input w-32' />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>Reason <span className='text-red-500'>*</span></label>
+                  <textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} rows={3} placeholder='Business reason for this payment override…' className='input w-full resize-none' />
+                  <p className={`text-xs mt-1 ${overrideReason.length >= 10 ? 'text-green-600' : 'text-neutral-400'}`}>{overrideReason.length}/10 minimum</p>
+                </div>
+                <div className='flex gap-2 pt-2'>
+                  <button type='button' className='btn btn-primary btn-sm' disabled={overrideReason.trim().length < 10 || submittingOverride} onClick={handlePaymentOverride}>
+                    {submittingOverride ? 'Applying…' : 'Apply Override'}
+                  </button>
+                  <button type='button' className='btn btn-secondary btn-sm' onClick={() => setOverrideClinic(null)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>{/* end Billing tab */}
+
+        {/* ── TRIALS TAB ── */}
+        <div className={activeSubTab === 'trials' ? '' : 'hidden'}>
+          <section className='admin-section'>
+            <div className='admin-section__title'>
+              <span className='admin-section__accent' />
+              <h2 className='admin-section__title-text'>Clinics in Trial</h2>
+              <button type='button' className='ml-auto text-xs text-primary-600 hover:underline' onClick={fetchTrialClinics}>Refresh</button>
+            </div>
+            <p className='text-sm text-neutral-500 dark:text-neutral-400 mb-4'>
+              All clinics currently on a trial subscription. Extend the trial end date or convert to a paid plan.
+            </p>
+            {loadingTrials ? (
+              <Card><p className='text-sm text-neutral-500 py-8 text-center'>Loading trial clinics…</p></Card>
+            ) : trialClinics.length === 0 ? (
+              <Card><p className='text-sm text-neutral-500 py-8 text-center'>No clinics currently in trial.</p></Card>
+            ) : (
+              <Card>
+                <div className='overflow-x-auto'>
+                  <table className='w-full text-sm'>
+                    <thead>
+                      <tr className='border-b border-neutral-100 dark:border-neutral-700'>
+                        <th className='text-left py-3 pr-4 font-medium text-neutral-600 dark:text-neutral-400'>Clinic</th>
+                        <th className='text-left py-3 px-3 font-medium text-neutral-600 dark:text-neutral-400'>Trial Ends</th>
+                        <th className='text-left py-3 px-3 font-medium text-neutral-600 dark:text-neutral-400'>Days Remaining</th>
+                        <th className='text-center py-3 px-3 font-medium text-neutral-600 dark:text-neutral-400'>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className='divide-y divide-neutral-50 dark:divide-neutral-800'>
+                      {trialClinics.map((c) => {
+                        const id = c._id ?? c.tenantId;
+                        const trialEnd = c.subscription?.trialEnd ?? c.trialEnd;
+                        const daysLeft = trialEnd ? Math.max(0, Math.ceil((new Date(trialEnd) - Date.now()) / 86400000)) : null;
+                        const urgency = daysLeft !== null && daysLeft <= 3 ? 'text-red-600 dark:text-red-400 font-semibold' :
+                          daysLeft !== null && daysLeft <= 7 ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-neutral-700 dark:text-neutral-300';
+                        return (
+                          <tr key={id} className='hover:bg-neutral-50 dark:hover:bg-neutral-800/50'>
+                            <td className='py-3 pr-4'>
+                              <p className='font-medium text-neutral-800 dark:text-neutral-200 truncate max-w-[160px]'>{c.name ?? c.clinicName ?? id}</p>
+                              <p className='text-xs text-neutral-500'>{c.planName ?? c.subscription?.planId?.name ?? '—'}</p>
+                            </td>
+                            <td className='py-3 px-3 text-xs text-neutral-600 dark:text-neutral-400'>
+                              {trialEnd ? new Date(trialEnd).toLocaleDateString() : '—'}
+                            </td>
+                            <td className={`py-3 px-3 text-sm ${urgency}`}>
+                              {daysLeft !== null ? `${daysLeft} day${daysLeft !== 1 ? 's' : ''}` : '—'}
+                            </td>
+                            <td className='py-3 px-3 text-center'>
+                              <button type='button' className='text-xs text-primary-600 hover:underline mr-3' onClick={() => { setExtendClinic(c); setExtendDate(''); setExtendReason(''); }}>
+                                Extend
+                              </button>
+                              <button type='button' className='text-xs text-green-600 hover:underline' onClick={() => { setActiveSubTab('plans'); }}>
+                                Convert →
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <p className='text-xs text-neutral-400 mt-3'>{trialClinics.length} clinic{trialClinics.length !== 1 ? 's' : ''} in trial. Red = ≤3 days, Amber = ≤7 days.</p>
+              </Card>
+            )}
+          </section>
+
+          {/* Extend Trial Modal */}
+          {extendClinic && (
+            <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'>
+              <div className='bg-white dark:bg-neutral-800 rounded-xl shadow-xl max-w-md w-full p-6 space-y-4'>
+                <h3 className='font-semibold text-neutral-800 dark:text-neutral-200'>
+                  Extend Trial — {extendClinic.name ?? extendClinic.clinicName}
+                </h3>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>New trial end date <span className='text-red-500'>*</span></label>
+                  <input type='date' value={extendDate} onChange={(e) => setExtendDate(e.target.value)} className='input' />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>Reason <span className='text-red-500'>*</span></label>
+                  <textarea value={extendReason} onChange={(e) => setExtendReason(e.target.value)} rows={3} placeholder='Reason for extending trial…' className='input w-full resize-none' />
+                  <p className={`text-xs mt-1 ${extendReason.length >= 10 ? 'text-green-600' : 'text-neutral-400'}`}>{extendReason.length}/10 minimum</p>
+                </div>
+                <div className='flex gap-2 pt-2'>
+                  <button type='button' className='btn btn-primary btn-sm' disabled={!extendDate || extendReason.trim().length < 10 || submittingExtend} onClick={handleExtendTrial}>
+                    {submittingExtend ? 'Extending…' : 'Extend Trial'}
+                  </button>
+                  <button type='button' className='btn btn-secondary btn-sm' onClick={() => setExtendClinic(null)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>{/* end Trials tab */}
+
       </div>
     </Layout>
   );

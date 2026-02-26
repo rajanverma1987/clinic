@@ -47,9 +47,9 @@ export function FAQSection({ openFaqIndex, onFaqToggle }) {
       }}
     >
       <div className='max-w-4xl mx-auto'>
-        <div className='text-center mb-16'>
+        <div className='text-center mb-10'>
           <h2
-            className='text-neutral-900 mb-6'
+            className='text-neutral-900 mb-4'
             style={{
               fontSize: '48px',
               lineHeight: '56px',

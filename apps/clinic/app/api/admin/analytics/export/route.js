@@ -1,9 +1,10 @@
 /**
  * GET /api/admin/analytics/export?startDate=&endDate=
  * Returns platform analytics as CSV (Super Admin only).
- * Client can call this with same query as /api/admin/analytics and download CSV.
+ * Enterprise: consistent error shape via errorResponse.
  */
 
+import { errorResponse } from '@/lib/utils/api-response';
 import { logger } from '@/lib/utils/logger.js';
 import { NextResponse } from 'next/server';
 
@@ -17,7 +18,7 @@ function escapeCsv(val) {
 async function getHandler(req, user) {
   try {
     if (user.role !== 'super_admin') {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+      return NextResponse.json(errorResponse('Unauthorized', 'FORBIDDEN'), { status: 403 });
     }
     const url = req.url || '';
     const searchParams = new URL(url).searchParams;
@@ -66,9 +67,9 @@ async function getHandler(req, user) {
       },
     });
   } catch (err) {
-    logger.error('Admin analytics export error:', err);
+    logger.error('Admin analytics export failed', { message: err?.message });
     return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'Export failed' },
+      errorResponse(err instanceof Error ? err.message : 'Export failed', 'INTERNAL_ERROR'),
       { status: 500 },
     );
   }

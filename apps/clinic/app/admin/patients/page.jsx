@@ -1,5 +1,6 @@
 'use client';
 
+import { AdminToolbar } from '@/components/admin/AdminToolbar';
 import {
   BarChart2Icon,
   EyeIcon,
@@ -17,7 +18,6 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
-import { PageSearchBar } from '@/components/ui/PageSearchBar';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
@@ -298,31 +298,33 @@ export default function AdminPatientsPage() {
   return (
     <Layout title={t('admin.patientsManagement')} subtitle={t('admin.patientsManagementSubtitle')}>
       <div className='admin-page-content'>
-        <PageSearchBar
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onSearch={handleSearch}
-          placeholder={t('admin.patientsSearchPlaceholder')}
-        >
-          <Button
-            variant='secondary'
-            size='md'
-            onClick={() => {
-              setAdvancedStatus(statusFilter);
-              setAdvancedDateFrom(dateFrom);
-              setAdvancedDateTo(dateTo);
-              setAdvancedDoctor(doctorFilter);
-              setAdvancedHasAppointments(hasAppointments);
-              setAdvancedSortBy(sortBy);
-              setAdvancedSortOrder(sortOrder);
-              setAdvancedTenantId(tenantFilter);
-              setShowAdvancedSearch(true);
-            }}
-          >
-            <FilterIcon className='icon icon-sm' aria-hidden />
-            {t('admin.patientsAdvancedSearch')}
-          </Button>
-        </PageSearchBar>
+        <AdminToolbar
+          searchValue={searchTerm}
+          onSearchChange={(e) => setSearchTerm(e.target.value)}
+          searchPlaceholder={t('admin.patientsSearchPlaceholder')}
+          searchAriaLabel={t('admin.patientsSearchPlaceholder') || 'Search patients'}
+          filters={[]}
+          actions={
+            <Button
+              variant='secondary'
+              size='sm'
+              onClick={() => {
+                setAdvancedStatus(statusFilter);
+                setAdvancedDateFrom(dateFrom);
+                setAdvancedDateTo(dateTo);
+                setAdvancedDoctor(doctorFilter);
+                setAdvancedHasAppointments(hasAppointments);
+                setAdvancedSortBy(sortBy);
+                setAdvancedSortOrder(sortOrder);
+                setAdvancedTenantId(tenantFilter);
+                setShowAdvancedSearch(true);
+              }}
+            >
+              <FilterIcon className='icon icon-sm' aria-hidden />
+              {t('admin.patientsAdvancedSearch')}
+            </Button>
+          }
+        />
 
         {/* Advanced search modal */}
         <Modal
@@ -627,7 +629,9 @@ export default function AdminPatientsPage() {
                               {
                                 key: 'activityLog',
                                 label: t('admin.patientsActivityLog'),
-                                icon: <HistoryIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
+                                icon: (
+                                  <HistoryIcon className='icon icon-sm flex-shrink-0' ariaHidden />
+                                ),
                                 onClick: () =>
                                   router.push(
                                     `/admin/activity-logs?resource=patient&resourceId=${p._id}`,
@@ -654,7 +658,9 @@ export default function AdminPatientsPage() {
                               {
                                 key: 'delete',
                                 label: t('admin.patientsDelete'),
-                                icon: <TrashIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
+                                icon: (
+                                  <TrashIcon className='icon icon-sm flex-shrink-0' ariaHidden />
+                                ),
                                 danger: true,
                                 onClick: () => handleDelete(p._id),
                               },

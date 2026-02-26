@@ -6,7 +6,7 @@
 
 import connectDB from '@/lib/db/connection';
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth/jwt';
-import { successResponse } from '@/lib/utils/api-response';
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import User from '@/models/User';
 import ImpersonationToken from '@/models/ImpersonationToken';
 import { NextResponse } from 'next/server';
@@ -14,14 +14,16 @@ import { NextResponse } from 'next/server';
 export async function GET(req) {
   const token = req.nextUrl.searchParams.get('token');
   if (!token) {
-    return NextResponse.json({ success: false, error: 'missing_token' }, { status: 400 });
+    return NextResponse.json(errorResponse('Missing token', 'MISSING_TOKEN'), { status: 400 });
   }
 
   await connectDB();
 
   const record = await ImpersonationToken.findOneAndDelete({ token }).lean();
   if (!record || new Date() > new Date(record.expiresAt)) {
-    return NextResponse.json({ success: false, error: 'invalid_or_expired' }, { status: 400 });
+    return NextResponse.json(errorResponse('Invalid or expired token', 'INVALID_OR_EXPIRED'), {
+      status: 400,
+    });
   }
 
   const targetUser = await User.findOne({
@@ -33,15 +35,19 @@ export async function GET(req) {
     .lean();
 
   if (!targetUser) {
-    return NextResponse.json({ success: false, error: 'no_user' }, { status: 404 });
+    return NextResponse.json(errorResponse('No user found for tenant', 'NO_USER'), {
+      status: 404,
+    });
   }
 
   const tenantId = targetUser.tenantId?.toString() || '';
+  /** Super_Admin.md: Support mode is read-only; all write and clinical data return 403. */
   const tokenPayload = {
     userId: targetUser._id.toString(),
     tenantId,
     email: targetUser.email,
     role: targetUser.role,
+    supportMode: true,
   };
 
   const accessToken = generateAccessToken(tokenPayload);

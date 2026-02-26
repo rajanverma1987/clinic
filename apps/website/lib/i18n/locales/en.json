@@ -1044,7 +1044,57 @@
     "noCreditCardRequired": "No credit card required",
     "freeTrial": "14-day free trial",
     "cancelAnytime": "Cancel anytime",
-    "forDoctors": "I'm a Doctor"
+    "forDoctors": "I'm a Doctor",
+    "bannerFreeTrial": "Start your 30-day free trial — All features, zero cost. No credit card required.",
+    "bannerCta": "Try it for free",
+    "tryItFree": "Try it for free",
+    "bookDemo": "Book a Demo",
+    "heroOverline": "Clinic Management Software",
+    "featuresOverline": "Feature-rich",
+    "securityOverline": "Data secure",
+    "ctaPromise": "Streamlined operations with guaranteed support",
+    "ctaHeadline": "Start free. Scale when you're ready.",
+    "ctaSubline": "No credit card required. Full access during trial. Cancel anytime.",
+    "ctaSupport24": "24/7 Support Available",
+    "ctaGetInTouch": "Get In Touch",
+    "ctaGetInTouchDesc": "We're here to help. Reach out through any of these channels.",
+    "ctaSendMessage": "Send Us a Message",
+    "ctaResponseGuarantee": "Response within 24 hours guaranteed"
+  },
+  "subscribe": {
+    "title": "Subscribe to get early access to discounts, offers and product updates",
+    "placeholder": "Your email",
+    "button": "Subscribe",
+    "success": "Thank you! We'll be in touch."
+  },
+  "about": {
+    "title": "About",
+    "description": "We build software to help clinics and healthcare professionals manage appointments, patients, prescriptions, and billing — securely and in one place.",
+    "mission": "Our Mission",
+    "missionDesc": "We are dedicated to providing healthcare professionals with powerful, secure, and intuitive tools to manage their clinics efficiently. Our platform helps you focus on what matters most—delivering excellent patient care.",
+    "whyChooseUs": "Why Choose Us",
+    "bullet1": "Enterprise-grade security with HIPAA and GDPR compliance",
+    "bullet2": "Comprehensive clinic management in one unified platform",
+    "bullet3": "Designed for healthcare professionals, by healthcare professionals",
+    "bullet4": "Scalable solution that grows with your practice",
+    "bullet5": "24/7 support and regular feature updates"
+  },
+  "contact": {
+    "title": "Contact",
+    "emailIntro": "For general inquiries or support, email us at",
+    "loginHint": "Existing users: sign in to your account for in-app support and faster help.",
+    "needMoreHelp": "Need More Help?",
+    "supportCenterIntro": "For detailed inquiries, technical support, or to submit a contact form, visit our support center.",
+    "formPage": "Use the contact form"
+  },
+  "supportContact": {
+    "badge": "We're Here to Help",
+    "title": "Contact Us",
+    "subtitle": "Have a question or need help? We're here to assist you."
+  },
+  "legal": {
+    "title": "Legal Information & Disclaimers",
+    "lastUpdated": "Last updated"
   },
   "nav": {
     "lots": "Lots",
@@ -1261,6 +1311,7 @@
     "flagReviewFailed": "Failed to flag review"
   },
   "navigation": {
+    "home": "Home",
     "features": "Features",
     "about": "About",
     "blog": "Blog",
@@ -1269,7 +1320,9 @@
     "getStarted": "Get Started",
     "pricing": "Pricing",
     "goToDashboard": "Go to Dashboard",
-    "forDoctors": "For Doctors"
+    "forDoctors": "For Doctors",
+    "apiDocs": "API Docs",
+    "documentation": "Documentation"
   },
   "blog": {
     "title": "Blog & Resources",
@@ -1501,6 +1554,54 @@
     "bulletList": "Bullet List",
     "numberedList": "Numbered List"
   },
+  "featuresPage": {
+    "heroTitle": "The Essentials",
+    "heroSubtitle": "We deliver a wide range of features to ensure your clinic runs smoothly",
+    "heroIntro": "Explore the intuitive and carefully crafted solutions we have in store for you.",
+    "block1Overline": "Effective flow",
+    "block1Title": "Seamless Scheduling & Queue",
+    "block1Desc": "Smart scheduling with conflict detection and real-time queue management so your clinic runs without bottlenecks.",
+    "block1Bullet1": "Instant appointment scheduling",
+    "block1Bullet2": "Efficient queue and wait-time tracking",
+    "block1Bullet3": "Multi-doctor calendar view",
+    "block2Overline": "Keep your data safe",
+    "block2Title": "Secure Cloud-Based EMR",
+    "block2Desc": "Your patient data is secure in HIPAA-compliant infrastructure with encryption and regular audits.",
+    "block2Bullet1": "Sensitive data in encrypted cloud environment",
+    "block2Bullet2": "Minimal maintenance",
+    "block2Bullet3": "Robust security measures",
+    "block3Overline": "Informed decisions",
+    "block3Title": "Intelligent Dashboard",
+    "block3Desc": "Oversee all activities of your practice on one screen and make data-driven decisions.",
+    "block3Bullet1": "Data-driven insights",
+    "block3Bullet2": "Live updates",
+    "block3Bullet3": "Timely patient care",
+    "block4Overline": "Stay informed",
+    "block4Title": "Patient 360",
+    "block4Desc": "Access and manage patient medical information: details, history, appointments, treatments, notes, and prescriptions.",
+    "block4Bullet1": "Brief, simple layout for easier viewing",
+    "block4Bullet2": "Constant patient monitoring",
+    "block4Bullet3": "Real-time alerts and notifications",
+    "block5Overline": "Billing made simple",
+    "block5Title": "Billing & Invoicing",
+    "block5Desc": "Region-specific billing with multi-currency support, payment tracking, and ready-to-use invoice templates.",
+    "block5Bullet1": "Customizable invoice templates",
+    "block5Bullet2": "Simplify clinic management",
+    "block5Bullet3": "Multi-currency and tax support",
+    "block6Overline": "Hassle-free journey",
+    "block6Title": "A User-Friendly Platform",
+    "block6Desc": "Navigate from booking to consultation with a simple, responsive interface designed for any level of technical expertise.",
+    "block6Bullet1": "Simple navigation",
+    "block6Bullet2": "Minimalist design",
+    "block6Bullet3": "Responsive UI",
+    "ctaTitle": "Streamlining care",
+    "ctaSubtitle": "We assure you",
+    "ctaBullet1": "Faster bookings",
+    "ctaBullet2": "Quicker care",
+    "ctaBullet3": "Deeper insights",
+    "ctaDescription": "We provide clinics with a user-friendly clinic management platform that prioritizes their time and values.",
+    "bookDemo": "Book a Demo Now"
+  },
   "footer": {
     "description": "Global-ready clinic management system with HIPAA/GDPR compliance. Streamline your practice with our comprehensive healthcare management platform.",
     "product": "Product",
@@ -1509,10 +1610,12 @@
     "getStarted": "Get Started",
     "support": "Support",
     "legal": "Legal",
+    "resources": "Resources",
     "legalInfo": "Legal & Disclaimers",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
     "contactUs": "Contact Us",
+    "contact": "Contact",
     "allRightsReserved": "All rights reserved"
   },
   "telemedicine": {

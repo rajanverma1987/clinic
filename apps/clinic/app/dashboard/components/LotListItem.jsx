@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
+
 export function LotListItem({ lot, onClick }) {
   const formatDate = (date) => {
     if (!date) return 'N/A';
@@ -23,10 +25,14 @@ export function LotListItem({ lot, onClick }) {
   };
 
   return (
-    <div
-      className={`dashboard-list-item dashboard-list-item-${getStatusColor()} group`}
+    <Button
+      type='button'
+      variant='ghost'
+      size='listRow'
+      fullWidth
+      align='start'
+      className={`dashboard-list-item dashboard-list-item-${getStatusColor()} group border-0 bg-transparent`}
       onClick={onClick}
-      style={{ cursor: 'pointer' }}
     >
       <div className='flex items-center justify-between gap-3'>
         <div className='flex-1 min-w-0'>
@@ -54,7 +60,7 @@ export function LotListItem({ lot, onClick }) {
           </span>
         </div>
       </div>
-    </div>
+    </Button>
   );
 }
 

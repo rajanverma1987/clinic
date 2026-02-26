@@ -17,6 +17,7 @@
  * - Request correlation tracking
  */
 
+import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { successResponse, validationErrorResponse } from '@/lib/utils/api-response';
 import { patientRegistrationSchema, patientSearchSchema } from '@/lib/validations/patient';
@@ -27,7 +28,6 @@ import { apiRateLimit } from '@/middleware/rate-limit';
 import { withRequestLogger } from '@/middleware/request-logger';
 import { createPatient, searchPatients } from '@/services/patient.service';
 import { NextResponse } from 'next/server';
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 
 /**
  * GET /api/patients
@@ -105,6 +105,7 @@ async function getHandler(req, user) {
     sortBy: searchParams.get('sortBy') || 'createdAt',
     sortOrder: searchParams.get('sortOrder') || 'desc',
     doctorId,
+    branchId: searchParams.get('branchId') || undefined,
   };
 
   // Validate filters
@@ -125,7 +126,8 @@ async function getHandler(req, user) {
   const result = isDashboardWidget
     ? await optimizedCacheManager.getOrFetch(
         `patients:recent:${user.tenantId}`,
-        () => searchPatients(validationResult.data, user.tenantId, user.userId, ipAddress, userAgent),
+        () =>
+          searchPatients(validationResult.data, user.tenantId, user.userId, ipAddress, userAgent),
         60000,
       )
     : await searchPatients(validationResult.data, user.tenantId, user.userId, ipAddress, userAgent);

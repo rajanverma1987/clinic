@@ -388,6 +388,7 @@ const DEFAULT_LIST_PAGE_SIZE = 10;
 
 /**
  * Appointments list skeleton – 100% layout match to dashboard AppointmentsTab (Card, section header, stats grid, table).
+ * Real layout: section-header flex-wrap gap-3 → (accent + title) | ml-auto (See All + Book Appointment); stats grid 2x4; table 4 cols.
  */
 export function AppointmentsListSkeleton() {
   return (
@@ -395,27 +396,26 @@ export function AppointmentsListSkeleton() {
       className={`dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col ${pulse}`}
       aria-busy='true'
     >
-      {/* Section Header – same as real: accent bar + title + filter/export buttons */}
-      <div className='section-header flex items-center gap-3 mb-4'>
-        <div className={`w-1 h-4 ${bg3} rounded-full flex-shrink-0`} />
-        <div className={`h-6 ${bg3} rounded w-32`} />
+      <div className='section-header flex flex-wrap gap-3 mb-4'>
+        <div className='flex items-center gap-3'>
+          <div className={`w-1 h-4 ${bg3} rounded-full flex-shrink-0`} />
+          <div className={`h-6 ${bg3} rounded w-32`} />
+        </div>
         <div className='flex gap-2 ml-auto'>
-          <div className={`h-10 w-24 ${bg2} rounded`} />
-          <div className={`h-10 w-36 ${bg2} rounded`} />
+          <div className={`h-9 w-24 ${bg2} rounded`} />
+          <div className={`h-9 w-36 ${bg2} rounded`} />
         </div>
       </div>
 
-      {/* Stats Bar – same grid as real: grid-cols-2 sm:grid-cols-4 */}
       <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
         {[...Array(4)].map((_, i) => (
           <div key={i} className='text-center'>
-            <div className={`h-8 ${bg3} rounded w-16 mx-auto mb-2`} />
+            <div className={`h-8 ${bg3} rounded w-14 mx-auto mb-2`} />
             <div className={`h-3 ${bg2} rounded w-20 mx-auto`} />
           </div>
         ))}
       </div>
 
-      {/* Table – same wrapper as real */}
       <div className='flex-1 overflow-auto'>
         <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
       </div>
@@ -425,6 +425,7 @@ export function AppointmentsListSkeleton() {
 
 /**
  * Prescriptions list skeleton – 100% layout match to dashboard PrescriptionsTab (Card, section header, stats grid, table).
+ * Real layout: section-header flex-wrap gap-3 → (accent + title) | ml-auto (See All + Create); stats grid 2x4; table 4 cols.
  */
 export function PrescriptionsListSkeleton() {
   return (
@@ -432,27 +433,26 @@ export function PrescriptionsListSkeleton() {
       className={`dashboard-list-card dashboard-list-card-primary p-6 h-full flex flex-col ${pulse}`}
       aria-busy='true'
     >
-      {/* Section Header – same as real */}
-      <div className='section-header flex items-center gap-3 mb-4'>
-        <div className={`w-1 h-4 ${bg3} rounded-full flex-shrink-0`} />
-        <div className={`h-6 ${bg3} rounded w-32`} />
+      <div className='section-header flex flex-wrap gap-3 mb-4'>
+        <div className='flex items-center gap-3'>
+          <div className={`w-1 h-4 ${bg3} rounded-full flex-shrink-0`} />
+          <div className={`h-6 ${bg3} rounded w-32`} />
+        </div>
         <div className='flex gap-2 ml-auto'>
-          <div className={`h-10 w-24 ${bg2} rounded`} />
-          <div className={`h-10 w-36 ${bg2} rounded`} />
+          <div className={`h-9 w-24 ${bg2} rounded`} />
+          <div className={`h-9 w-36 ${bg2} rounded`} />
         </div>
       </div>
 
-      {/* Stats Bar – same grid as real */}
       <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-700'>
         {[...Array(4)].map((_, i) => (
           <div key={i} className='text-center'>
-            <div className={`h-8 ${bg3} rounded w-16 mx-auto mb-2`} />
+            <div className={`h-8 ${bg3} rounded w-14 mx-auto mb-2`} />
             <div className={`h-3 ${bg2} rounded w-20 mx-auto`} />
           </div>
         ))}
       </div>
 
-      {/* Table – same wrapper as real */}
       <div className='flex-1 overflow-auto'>
         <TableSkeleton rows={DEFAULT_LIST_PAGE_SIZE} cols={4} />
       </div>

@@ -5,6 +5,7 @@
  * Must include its own <html> and <body>. Catches errors that escape the root error boundary.
  * Auto hard-refreshes on chunk/stale-build errors (same logic as error.jsx and chunk-recovery.js).
  */
+import { Button } from '@/components/ui/Button';
 import { useEffect } from 'react';
 
 function isChunkOrStaleError(msg) {
@@ -75,21 +76,9 @@ export default function GlobalError({ error, reset }) {
               : 'An unexpected error occurred.'}
           </p>
           {!isChunk && (
-            <button
-              type='button'
-              onClick={() => reset()}
-              style={{
-                padding: '0.5rem 1rem',
-                fontSize: '1rem',
-                cursor: 'pointer',
-                background: '#2563eb',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-              }}
-            >
+            <Button type='button' variant='primary' size='md' onClick={() => reset()}>
               Try again
-            </button>
+            </Button>
           )}
         </div>
       </body>

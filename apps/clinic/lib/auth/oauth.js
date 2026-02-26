@@ -130,50 +130,60 @@ export async function handleOAuthCallback(provider, code, state) {
   // Get user info
   const userInfo = await getUserInfo(provider, access_token);
 
-  // Find or create user
+  const emailLower = userInfo.email.toLowerCase();
+
   let user = await User.findOne({
-    email: userInfo.email.toLowerCase(),
+    email: emailLower,
     oauthProvider: provider,
-  });
+  }).lean();
 
   if (!user) {
-    // Check if user exists with this email (link OAuth account)
     const existingUser = await User.findOne({
-      email: userInfo.email.toLowerCase(),
+      email: emailLower,
     });
-
     if (existingUser) {
-      // Link OAuth account to existing user
       existingUser.oauthProvider = provider;
-      existingUser.oauthId = userInfo.email; // Use email as OAuth ID
+      existingUser.oauthId = userInfo.email;
+      if (!existingUser.avatar && userInfo.picture) existingUser.avatar = userInfo.picture;
       await existingUser.save();
-      user = existingUser;
+      user = existingUser.toObject ? existingUser.toObject() : existingUser;
     } else {
-      // New user registration not supported via OAuth; clinic staff register via app
-      // This is a simplified version - in production, you'd need proper tenant handling
-      throw new Error('OAuth registration for new users requires additional setup');
+      throw new Error(
+        'No account found with this email. Please register with email first, then you can sign in with Google.',
+      );
     }
   }
 
-  // Generate tokens
+  const userId = user._id.toString();
+  const tenantId = user.tenantId ? user.tenantId.toString() : '';
+
   const accessToken = generateAccessToken({
-    userId: user._id.toString(),
-    tenantId: user.tenantId?.toString(),
+    userId,
+    tenantId,
+    email: user.email,
     role: user.role,
+    tokenVersion: user.tokenVersion ?? 0,
   });
 
   const refreshToken = generateRefreshToken({
-    userId: user._id.toString(),
-    tenantId: user.tenantId?.toString(),
+    userId,
+    tenantId,
+    email: user.email,
+    role: user.role,
+    tokenVersion: (user.tokenVersion ?? 0),
   });
 
   return {
     user: {
+      id: userId,
       _id: user._id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
+      tenantId,
+      isPrimaryAccount: !!user.isPrimaryAccount,
+      avatar: user.avatar,
     },
     accessToken,
     refreshToken,

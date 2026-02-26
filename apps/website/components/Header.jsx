@@ -37,11 +37,11 @@ export function Header() {
 
   const navigationLinks = useMemo(
     () => [
-      { href: '/#features', label: t('navigation.features') || 'Features' },
+      { href: '/features', label: t('navigation.features') || 'Features' },
       { href: '/blog', label: t('navigation.blog') || 'Blog' },
       { href: '/pricing', label: t('navigation.pricing') || 'Pricing' },
       { href: '/about', label: t('navigation.about') || 'About' },
-      { href: '/contact', label: t('navigation.contact') || 'Contact' },
+      { href: '/support/contact', label: t('navigation.contact') || 'Contact' },
     ],
     [t],
   );

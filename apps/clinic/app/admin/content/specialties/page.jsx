@@ -177,7 +177,7 @@ export default function AdminSpecialtiesPage() {
                       </td>
                       <td>
                         <div className='flex gap-2'>
-                          <Button variant='secondary' size='sm' onClick={() => openEdit(s)}>
+                          <Button variant='primary' size='sm' onClick={() => openEdit(s)}>
                             {t('common.edit')}
                           </Button>
                           <Button variant='danger' size='sm' onClick={() => handleDelete(s._id)}>
@@ -265,7 +265,7 @@ export default function AdminSpecialtiesPage() {
                 </label>
               </div>
               <div className='flex gap-2 justify-end'>
-                <Button type='button' variant='secondary' onClick={closeModal}>
+                <Button type='button' variant='ghost' onClick={closeModal}>
                   {t('common.cancel')}
                 </Button>
                 <Button type='submit' variant='primary' disabled={saving}>

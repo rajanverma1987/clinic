@@ -15,6 +15,9 @@ import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+const ACTIVE_TAB = 'px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white';
+const INACTIVE_TAB = 'px-4 py-2 text-sm font-medium rounded-md text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700';
+
 export default function AdminAnalyticsPage() {
   const router = useRouter();
   const { t } = useI18n();
@@ -24,6 +27,7 @@ export default function AdminAnalyticsPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState('usage');
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -111,10 +115,16 @@ export default function AdminAnalyticsPage() {
   const stats = data?.appointmentStats ?? {};
   const specialties = data?.popularSpecialties ?? [];
   const peakHours = data?.peakHours ?? [];
+  const activeUsersCount = data?.activeUsersCount ?? 0;
+  const planDistribution = data?.planDistribution ?? [];
 
   return (
     <Layout title={t('admin.platformAnalytics')} subtitle={t('admin.platformAnalyticsSubtitle')}>
       <div className='admin-page-content'>
+        <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-4'>
+          {t('admin.analyticsIntro') ||
+            'Platform-wide insights: user growth, revenue trend, appointments, popular specialties, peak hours, geographic distribution. Use date filters and export for clinic-level breakdown.'}
+        </p>
         {/* Filter Bar */}
         <Card className='mb-6'>
           <div className='p-5'>
@@ -184,6 +194,38 @@ export default function AdminAnalyticsPage() {
           </div>
         </Card>
 
+        {/* Tab switcher — Usage / Adoption */}
+        <div className='flex gap-2 mb-6 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg w-fit'>
+          <button type='button' className={activeTab === 'usage' ? ACTIVE_TAB : INACTIVE_TAB} onClick={() => setActiveTab('usage')}>
+            Usage
+          </button>
+          <button type='button' className={activeTab === 'adoption' ? ACTIVE_TAB : INACTIVE_TAB} onClick={() => setActiveTab('adoption')}>
+            Adoption
+          </button>
+        </div>
+
+        {/* Usage: Active users (Super_Admin.md §7) */}
+        <section className={activeTab === 'usage' ? 'admin-section mb-6' : 'hidden'} aria-label={t('admin.analyticsUsage') || 'Usage'}>
+          <div className='admin-section__title'>
+            <span className='admin-section__accent' />
+            <h2 className='admin-section__title-text'>{t('admin.analyticsUsage') || 'Usage'}</h2>
+          </div>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4'>
+            <Card>
+              <div className='p-4'>
+                <p className='text-xs font-medium text-neutral-500 uppercase'>
+                  {t('admin.analyticsActiveUsers') || 'Active users'}
+                </p>
+                <p className='text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1'>
+                  {Number(activeUsersCount).toLocaleString()}
+                </p>
+              </div>
+            </Card>
+          </div>
+        </section>
+
+        {/* Usage: stat cards + charts */}
+        <div className={activeTab === 'usage' ? '' : 'hidden'}>
         {/* Stats Cards */}
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6'>
           <Card>
@@ -227,35 +269,55 @@ export default function AdminAnalyticsPage() {
             </div>
           </Card>
         </div>
-
-        {/* Charts */}
+        {/* Usage charts: user activity trends */}
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
-          <ChartCard
-            title={t('admin.userGrowth')}
-            data={data?.userGrowth ?? []}
-            colorScheme='primary'
-            loading={loading}
-          />
-          <ChartCard
-            title={t('admin.revenueTrend')}
-            data={data?.revenueTrends ?? []}
-            colorScheme='primary'
-            loading={loading}
-          />
-          <ChartCard
-            title={t('admin.subscriptionGrowth') || 'Subscription Growth'}
-            data={data?.subscriptionGrowth ?? []}
-            colorScheme='primary'
-            loading={loading}
-          />
-          <ChartCard
-            title={t('admin.appointmentTrend') || 'Appointments'}
-            data={data?.appointmentTrends ?? []}
-            colorScheme='primary'
-            loading={loading}
-          />
+          <ChartCard title={t('admin.userGrowth')} data={data?.userGrowth ?? []} colorScheme='primary' loading={loading} />
+          <ChartCard title={t('admin.appointmentTrend') || 'Appointments'} data={data?.appointmentTrends ?? []} colorScheme='primary' loading={loading} />
+        </div>
         </div>
 
+        {/* Adoption: Feature usage (Super_Admin.md §7) */}
+        <section
+          className={activeTab === 'adoption' ? 'admin-section mb-6' : 'hidden'}
+          aria-label={t('admin.analyticsAdoption') || 'Adoption'}
+        >
+          <div className='admin-section__title'>
+            <span className='admin-section__accent' />
+            <h2 className='admin-section__title-text'>
+              {t('admin.analyticsAdoption') || 'Adoption'}
+            </h2>
+          </div>
+          <p className='text-sm text-neutral-600 dark:text-neutral-400 mb-4'>
+            {t('admin.analyticsAdoptionDesc') ||
+              'Feature usage by plan: clinics per plan below. Per-clinic beta features in Clinic Management → View details.'}
+          </p>
+          {planDistribution.length > 0 && (
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4'>
+              {planDistribution.slice(0, 8).map((p) => (
+                <Card key={p._id || p.name}>
+                  <div className='p-4'>
+                    <p
+                      className='text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate'
+                      title={p.name}
+                    >
+                      {p.name}
+                    </p>
+                    <p className='text-xl font-semibold text-neutral-900 dark:text-neutral-100 mt-1'>
+                      {Number(p.count ?? 0).toLocaleString()} {t('admin.clinics')}
+                    </p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Adoption tab: revenue metrics + plan distribution + top clinics + specialties + peak hours */}
+        <div className={activeTab === 'adoption' ? '' : 'hidden'}>
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6'>
+          <ChartCard title={t('admin.revenueTrend')} data={data?.revenueTrends ?? []} colorScheme='primary' loading={loading} />
+          <ChartCard title={t('admin.subscriptionGrowth') || 'Subscription Growth'} data={data?.subscriptionGrowth ?? []} colorScheme='primary' loading={loading} />
+        </div>
         {/* Subscription & Revenue Metrics */}
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6'>
           <Card>
@@ -406,6 +468,7 @@ export default function AdminAnalyticsPage() {
             </div>
           </Card>
         </div>
+        </div>{/* end adoption tab */}
       </div>
     </Layout>
   );

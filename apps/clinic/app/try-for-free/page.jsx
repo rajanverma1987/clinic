@@ -254,7 +254,7 @@ export default function TryForFreePage() {
                   <div className={inputWrapperClass}>
                     <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='w-5 h-5 text-neutral-600'
+                        className='icon icon-sm text-neutral-600'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -379,7 +379,7 @@ export default function TryForFreePage() {
                   <div className={inputWrapperClass}>
                     <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='w-5 h-5 text-neutral-600'
+                        className='icon icon-sm text-neutral-600'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -479,7 +479,7 @@ export default function TryForFreePage() {
                   <div className={inputWrapperClass}>
                     <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='w-5 h-5 text-neutral-600'
+                        className='icon icon-sm text-neutral-600'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -512,7 +512,7 @@ export default function TryForFreePage() {
                   <div className={inputWrapperClass}>
                     <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='w-5 h-5 text-neutral-600'
+                        className='icon icon-sm text-neutral-600'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -546,7 +546,7 @@ export default function TryForFreePage() {
                   <div className={inputWrapperClass}>
                     <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='w-5 h-5 text-neutral-600'
+                        className='icon icon-sm text-neutral-600'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}

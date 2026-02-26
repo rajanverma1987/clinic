@@ -10,26 +10,15 @@ export default function AboutPage() {
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1' style={{ paddingTop: '120px' }}>
-        <div
-          className='max-w-4xl mx-auto'
-          style={{ paddingLeft: '32px', paddingRight: '32px', paddingBottom: '64px' }}
-        >
-          <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
+      <main className='flex-1 page-main'>
+        <div className='page-content page-content-narrow'>
+          <Breadcrumb
+            items={[{ label: t('navigation.home'), href: '/' }, { label: t('about.title') }]}
+          />
 
           {/* Header Section */}
-          <div className='mb-12'>
-            <h1
-              className='text-neutral-900 mb-4'
-              style={{
-                fontSize: '32px',
-                lineHeight: '40px',
-                letterSpacing: '-0.02em',
-                fontWeight: '700',
-              }}
-            >
-              {t('about.title') || 'About'}
-            </h1>
+          <div className='mb-8'>
+            <h1 className='text-h1 text-neutral-900 mb-4'>{t('about.title')}</h1>
             <div className='flex items-center gap-3 flex-wrap'>
               <div className='flex items-center gap-2 bg-primary-100 px-3 py-1 rounded-full'>
                 <svg
@@ -46,7 +35,7 @@ export default function AboutPage() {
                   />
                 </svg>
                 <span className='text-primary-700 font-semibold text-xs'>
-                  HIPAA & GDPR Compliant
+                  {t('homepage.hipaaGdprCompliant')}
                 </span>
               </div>
             </div>
@@ -55,47 +44,24 @@ export default function AboutPage() {
           {/* Content */}
           <div className='bg-white rounded-xl border border-neutral-200 shadow-sm p-8 md:p-12'>
             <p className='text-neutral-700 mb-6 text-base leading-relaxed'>
-              {t('about.description') ||
-                'We build software to help clinics and healthcare professionals manage appointments, patients, prescriptions, and billing — securely and in one place.'}
+              {t('about.description')}
             </p>
 
             <div className='mt-8 pt-8 border-t border-neutral-200'>
-              <h2
-                className='text-neutral-900 mb-4'
-                style={{
-                  fontSize: '24px',
-                  lineHeight: '32px',
-                  letterSpacing: '-0.01em',
-                  fontWeight: '600',
-                }}
-              >
-                Our Mission
-              </h2>
+              <h2 className='text-h2 text-neutral-900 mb-4'>{t('about.mission')}</h2>
               <p className='text-neutral-700 mb-4 text-base leading-relaxed'>
-                We are dedicated to providing healthcare professionals with powerful, secure, and
-                intuitive tools to manage their clinics efficiently. Our platform helps you focus on
-                what matters most—delivering excellent patient care.
+                {t('about.missionDesc')}
               </p>
             </div>
 
             <div className='mt-8 pt-8 border-t border-neutral-200'>
-              <h2
-                className='text-neutral-900 mb-4'
-                style={{
-                  fontSize: '24px',
-                  lineHeight: '32px',
-                  letterSpacing: '-0.01em',
-                  fontWeight: '600',
-                }}
-              >
-                Why Choose Us
-              </h2>
+              <h2 className='text-h2 text-neutral-900 mb-4'>{t('about.whyChooseUs')}</h2>
               <ul className='list-disc pl-6 text-neutral-700 space-y-2 text-base'>
-                <li>Enterprise-grade security with HIPAA and GDPR compliance</li>
-                <li>Comprehensive clinic management in one unified platform</li>
-                <li>Designed for healthcare professionals, by healthcare professionals</li>
-                <li>Scalable solution that grows with your practice</li>
-                <li>24/7 support and regular feature updates</li>
+                <li>{t('about.bullet1')}</li>
+                <li>{t('about.bullet2')}</li>
+                <li>{t('about.bullet3')}</li>
+                <li>{t('about.bullet4')}</li>
+                <li>{t('about.bullet5')}</li>
               </ul>
             </div>
           </div>

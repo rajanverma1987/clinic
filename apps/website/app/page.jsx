@@ -5,9 +5,11 @@ import { DataSecuritySection } from '@/components/marketing/DataSecuritySection'
 import { FAQSection } from '@/components/marketing/FAQSection';
 import { FeaturesSection } from '@/components/marketing/FeaturesSection';
 import { Footer } from '@/components/marketing/Footer';
+import { FreeTrialBanner } from '@/components/marketing/FreeTrialBanner';
 import { Header } from '@/components/marketing/Header';
 import { HeroSection } from '@/components/marketing/HeroSection';
 import { ProductGallerySection } from '@/components/marketing/ProductGallerySection';
+import { SubscribeStrip } from '@/components/marketing/SubscribeStrip';
 import { TestimonialsSection } from '@/components/marketing/TestimonialsSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { CLINIC_APP_URL } from '@/lib/config';
@@ -22,6 +24,11 @@ function HomePage() {
   const [cardsPerView, setCardsPerView] = useState(3); // Default for SSR
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const [bannerVisible, setBannerVisible] = useState(true);
+
+  const handleBannerVisibility = useCallback((visible) => {
+    setBannerVisible(visible);
+  }, []);
 
   const handleContactClick = useCallback(() => {
     window.location.href = '/support/contact';
@@ -104,8 +111,13 @@ function HomePage() {
 
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50 relative'>
-      <Header />
-      <main className='flex-1 min-h-[calc(100vh-200px)]'>
+      <div className='fixed top-0 left-0 right-0 z-[9999] flex flex-col'>
+        <FreeTrialBanner onVisibilityChange={handleBannerVisibility} />
+        <Header noFixed />
+      </div>
+      <main
+        className={`flex-1 min-h-[calc(100vh-200px)] ${bannerVisible ? 'pt-[120px]' : 'pt-[80px]'}`}
+      >
         <HeroSection onContactClick={handleContactClick} />
         <FeaturesSection
           showAllFeatures={showAllFeatures}
@@ -120,6 +132,7 @@ function HomePage() {
         />
         <FAQSection openFaqIndex={openFaqIndex} onFaqToggle={handleFaqToggle} />
         <CTASection user={user} />
+        <SubscribeStrip />
       </main>
       <Footer />
     </div>

@@ -68,11 +68,15 @@ export function ClinicHoursTab({
                     </div>
                     <div className='flex items-center gap-1.5'>
                       {hour.isOpen && (
-                        <button
+                        <Button
                           type='button'
+                          variant='ghost'
+                          size='xs'
+                          iconOnly
                           onClick={() => addTimeSlot(dayIndex)}
-                          className='p-1 text-primary-600 hover:bg-primary-50 rounded transition-colors'
+                          className='p-1 text-primary-600 hover:bg-primary-50 min-w-0'
                           title={t('settings.addTimeSlot')}
+                          aria-label={t('settings.addTimeSlot')}
                         >
                           <svg
                             className='w-3.5 h-3.5'
@@ -87,7 +91,7 @@ export function ClinicHoursTab({
                               d='M12 4v16m8-8H4'
                             />
                           </svg>
-                        </button>
+                        </Button>
                       )}
                       <Toggle
                         checked={hour.isOpen}
@@ -150,11 +154,15 @@ export function ClinicHoursTab({
                                 />
                               </div>
                               {hour.timeSlots.length > 1 && (
-                                <button
+                                <Button
                                   type='button'
+                                  variant='ghost'
+                                  size='xs'
+                                  iconOnly
                                   onClick={() => removeTimeSlot(dayIndex, slotIndex)}
-                                  className='p-1 text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-opacity'
+                                  className='p-1 text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity min-w-0'
                                   title={t('settings.removeTimeSlot')}
+                                  aria-label={t('settings.removeTimeSlot')}
                                 >
                                   <svg
                                     className='w-3.5 h-3.5'
@@ -169,17 +177,19 @@ export function ClinicHoursTab({
                                       d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
                                     />
                                   </svg>
-                                </button>
+                                </Button>
                               )}
                             </div>
                           ))}
                         </div>
                       ) : (
                         <div className='text-center py-3'>
-                          <button
+                          <Button
                             type='button'
+                            variant='ghost'
+                            size='xs'
                             onClick={() => addTimeSlot(dayIndex)}
-                            className='inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-primary-600 hover:bg-primary-50 rounded border border-primary-200 transition-colors'
+                            className='inline-flex items-center gap-1.5 text-primary-600 hover:bg-primary-50 border border-primary-200'
                           >
                             <svg
                               className='w-3.5 h-3.5'
@@ -195,7 +205,7 @@ export function ClinicHoursTab({
                               />
                             </svg>
                             {t('settings.addTimeSlot')}
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>

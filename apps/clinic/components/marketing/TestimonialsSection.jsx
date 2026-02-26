@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
 
 export function TestimonialsSection({
@@ -204,11 +205,15 @@ export function TestimonialsSection({
             </div>
           </div>
 
-          <button
+          <Button
+            type='button'
+            variant='secondary'
+            size='sm'
+            iconOnly
             onClick={() =>
               setCurrentTestimonialIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))
             }
-            className='absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-3 shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10'
+            className='absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white rounded-full p-3 shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10 min-w-0'
             aria-label={t('common.ariaLabelPreviousTestimonial')}
           >
             <svg
@@ -225,12 +230,16 @@ export function TestimonialsSection({
                 d='M15 19l-7-7 7-7'
               />
             </svg>
-          </button>
-          <button
+          </Button>
+          <Button
+            type='button'
+            variant='secondary'
+            size='sm'
+            iconOnly
             onClick={() =>
               setCurrentTestimonialIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))
             }
-            className='absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-3 shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10'
+            className='absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white rounded-full p-3 shadow-lg hover:shadow-xl border border-neutral-200 hover:border-primary-500 z-10 min-w-0'
             aria-label={t('common.ariaLabelNextTestimonial')}
           >
             <svg
@@ -242,14 +251,18 @@ export function TestimonialsSection({
             >
               <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 5l7 7-7 7' />
             </svg>
-          </button>
+          </Button>
 
           <div className='flex justify-center items-center gap-2 mt-8'>
             {Array.from({ length: totalSlides }, (_, index) => (
-              <button
+              <Button
                 key={index}
+                type='button'
+                variant='ghost'
+                size='xs'
+                iconOnly
                 onClick={() => setCurrentTestimonialIndex(index)}
-                className={`rounded-full ${
+                className={`rounded-full min-w-0 p-0 ${
                   currentTestimonialIndex === index
                     ? 'bg-primary-500 w-8 h-3'
                     : 'bg-neutral-300 w-3 h-3 hover:bg-neutral-400'

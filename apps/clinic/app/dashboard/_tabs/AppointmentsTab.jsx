@@ -19,7 +19,7 @@ import {
   REVALIDATE_DELAY_MS,
 } from '@/lib/dashboard-tab-cache';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const LIMIT = 10;
 
@@ -54,17 +54,24 @@ export function AppointmentsTab({ isActive = false }) {
     [userId, t],
   );
 
-  // When tab becomes active: show cached immediately, revalidate after delay. Cache is always updated on fetch.
-  useEffect(() => {
-    if (authLoading || !user || !userId) return;
-    if (!isActive) return;
-
+  // Before paint: when tab becomes active, show cache immediately so no loading flash.
+  useLayoutEffect(() => {
+    if (!isActive || !userId) return;
     const cached = getCachedAppointments(userId);
     if (cached !== null && Array.isArray(cached)) {
       setAppointments(cached);
       setLoading(false);
       setError(null);
-    } else {
+    }
+  }, [isActive, userId]);
+
+  // After paint: fetch if no cache, and schedule revalidate.
+  useEffect(() => {
+    if (authLoading || !user || !userId) return;
+    if (!isActive) return;
+
+    const cached = getCachedAppointments(userId);
+    if (cached === null || !Array.isArray(cached)) {
       fetchAndUpdate(false);
     }
 

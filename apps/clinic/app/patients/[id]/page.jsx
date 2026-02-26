@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
+import { Modal } from '@/components/ui/Modal';
 import { Tabs, getTabPanelId, getTabPanelLabelledBy } from '@/components/ui/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -17,6 +18,7 @@ import { ERROR_HANDLING, PATIENT_DETAIL_TABS } from '@/lib/constants/route-secur
 import { hasPermission } from '@/lib/permissions/constants';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
+import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -38,6 +40,10 @@ export default function PatientDetailPage() {
   const [labResults, setLabResults] = useState([]);
   const [imagingStudies, setImagingStudies] = useState([]);
   const [insuranceClaims, setInsuranceClaims] = useState([]);
+  const [carePlans, setCarePlans] = useState([]);
+  const [procedureSessions, setProcedureSessions] = useState([]);
+  const [consentRecords, setConsentRecords] = useState([]);
+  const [consentForms, setConsentForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const tabFromUrl = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(
@@ -50,6 +56,32 @@ export default function PatientDetailPage() {
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [selectedConsentFormId, setSelectedConsentFormId] = useState('');
+  const [savingConsent, setSavingConsent] = useState(false);
+  const [showProcedureModal, setShowProcedureModal] = useState(false);
+  const [procedureForm, setProcedureForm] = useState({ type: '' });
+  const [savingProcedure, setSavingProcedure] = useState(false);
+  const [updatingProcedureId, setUpdatingProcedureId] = useState(null);
+  const [showCarePlanModal, setShowCarePlanModal] = useState(false);
+  const [carePlanForm, setCarePlanForm] = useState({
+    name: '',
+    condition: '',
+    startDate: '',
+    endDate: '',
+    status: 'active',
+  });
+  const [savingCarePlan, setSavingCarePlan] = useState(false);
+  const [showAssignTaskModal, setShowAssignTaskModal] = useState(false);
+  const [assignTaskForm, setAssignTaskForm] = useState({
+    assigneeId: '',
+    title: '',
+    description: '',
+    dueDate: '',
+    priority: 'medium',
+  });
+  const [assignTaskUsers, setAssignTaskUsers] = useState([]);
+  const [savingAssignTask, setSavingAssignTask] = useState(false);
   useEffect(() => {
     if (!authLoading && user && params?.id) {
       fetchAllData();
@@ -69,22 +101,221 @@ export default function PatientDetailPage() {
     });
   };
 
+  const handleOpenConsentModal = async () => {
+    setShowConsentModal(true);
+    setSelectedConsentFormId('');
+    try {
+      const res = await apiClient.get('/consent-forms', {
+        params: { isActive: 'true', limit: 100 },
+      });
+      if (res.success && res.data?.items) setConsentForms(res.data.items);
+      else setConsentForms([]);
+    } catch (_err) {
+      setConsentForms([]);
+    }
+  };
+
+  const handleRecordConsent = async (e) => {
+    e.preventDefault();
+    if (!selectedConsentFormId) {
+      showError(t('consent.selectFormRequired'));
+      return;
+    }
+    const patientId = params?.id;
+    if (!patientId) return;
+    setSavingConsent(true);
+    try {
+      const res = await apiClient.post('/consent-records', {
+        patientId,
+        formId: selectedConsentFormId,
+      });
+      if (res.success) {
+        showSuccess(t('consent.recordSuccess'));
+        setShowConsentModal(false);
+        const listRes = await apiClient.get(`/consent-records?patientId=${patientId}&limit=100`);
+        if (listRes.success && listRes.data?.items) setConsentRecords(listRes.data.items);
+      } else {
+        showError(res.error?.message || t('consent.saveFailed'));
+      }
+    } catch (err) {
+      showError(err?.message || t('consent.saveFailed'));
+    } finally {
+      setSavingConsent(false);
+    }
+  };
+
+  const handleAddProcedure = async (e) => {
+    e.preventDefault();
+    if (!procedureForm.type?.trim()) {
+      showError(t('procedures.failedToLoad'));
+      return;
+    }
+    const patientId = params?.id;
+    if (!patientId) return;
+    setSavingProcedure(true);
+    try {
+      const payload = {
+        patientId,
+        type: procedureForm.type.trim(),
+        typeCode: procedureForm.typeCode?.trim() || undefined,
+        status: 'scheduled',
+      };
+      const res = await apiClient.post('/procedures', payload);
+      if (res.success) {
+        showSuccess(t('procedures.created'));
+        setShowProcedureModal(false);
+        setProcedureForm({ type: '' });
+        const listRes = await apiClient.get(`/procedures?patientId=${patientId}&limit=100`);
+        if (listRes.success && listRes.data?.items) setProcedureSessions(listRes.data.items);
+      } else {
+        showError(res.error?.message || t('procedures.failedToLoad'));
+      }
+    } catch (err) {
+      showError(err?.message || t('procedures.failedToLoad'));
+    } finally {
+      setSavingProcedure(false);
+    }
+  };
+
+  const handleProcedureStatusChange = async (sessionId, newStatus) => {
+    setUpdatingProcedureId(sessionId);
+    try {
+      const res = await apiClient.put(`/procedures/${sessionId}`, { status: newStatus });
+      if (res.success) {
+        showSuccess(t('procedures.updated'));
+        const listRes = await apiClient.get(`/procedures?patientId=${params?.id}&limit=100`);
+        if (listRes.success && listRes.data?.items) setProcedureSessions(listRes.data.items);
+      } else {
+        showError(res.error?.message || t('procedures.failedToLoad'));
+      }
+    } catch (err) {
+      showError(err?.message || t('procedures.failedToLoad'));
+    } finally {
+      setUpdatingProcedureId(null);
+    }
+  };
+
+  const handleOpenAssignTaskModal = async () => {
+    setShowAssignTaskModal(true);
+    setAssignTaskForm({
+      assigneeId: '',
+      title: '',
+      description: '',
+      dueDate: '',
+      priority: 'medium',
+    });
+    try {
+      const res = await apiClient.get('/users?limit=200');
+      if (res?.success && res?.data) {
+        const list = Array.isArray(res.data) ? res.data : (res.data?.data ?? res.data?.items ?? []);
+        setAssignTaskUsers(list);
+      } else setAssignTaskUsers([]);
+    } catch (_err) {
+      setAssignTaskUsers([]);
+    }
+  };
+
+  const handleAssignTask = async (e) => {
+    e.preventDefault();
+    if (!assignTaskForm.assigneeId || !assignTaskForm.title?.trim()) {
+      showError(t('tasks.failedToLoad'));
+      return;
+    }
+    const patientId = params?.id;
+    if (!patientId) return;
+    setSavingAssignTask(true);
+    try {
+      const payload = {
+        assigneeId: assignTaskForm.assigneeId,
+        title: assignTaskForm.title.trim(),
+        description: assignTaskForm.description?.trim() || undefined,
+        dueDate: assignTaskForm.dueDate
+          ? new Date(assignTaskForm.dueDate).toISOString()
+          : undefined,
+        priority: assignTaskForm.priority || 'medium',
+        relatedEntityType: 'patient',
+        relatedEntityId: patientId,
+      };
+      const res = await apiClient.post('/tasks', payload);
+      if (res.success) {
+        showSuccess(t('tasks.created') || 'Task assigned');
+        setShowAssignTaskModal(false);
+      } else {
+        showError(res.error?.message || t('tasks.updateFailed'));
+      }
+    } catch (err) {
+      showError(err?.message || t('tasks.updateFailed'));
+    } finally {
+      setSavingAssignTask(false);
+    }
+  };
+
+  const handleSaveCarePlan = async (e) => {
+    e.preventDefault();
+    if (!carePlanForm.name?.trim()) {
+      showError(t('carePlans.saveFailed'));
+      return;
+    }
+    const patientId = params?.id;
+    if (!patientId) return;
+    setSavingCarePlan(true);
+    try {
+      const payload = {
+        patientId,
+        name: carePlanForm.name.trim(),
+        condition: carePlanForm.condition?.trim() || undefined,
+        startDate: carePlanForm.startDate
+          ? new Date(carePlanForm.startDate).toISOString()
+          : new Date().toISOString(),
+        endDate: carePlanForm.endDate ? new Date(carePlanForm.endDate).toISOString() : undefined,
+        status: carePlanForm.status || 'active',
+      };
+      const res = await apiClient.post('/care-plans', payload);
+      if (res.success) {
+        showSuccess(t('carePlans.created'));
+        setShowCarePlanModal(false);
+        setCarePlanForm({ name: '', condition: '', startDate: '', endDate: '', status: 'active' });
+        const listRes = await apiClient.get(`/care-plans?patientId=${patientId}&limit=100`);
+        if (listRes.success && listRes.data?.items) setCarePlans(listRes.data.items);
+      } else {
+        showError(res.error?.message || t('carePlans.saveFailed'));
+      }
+    } catch (err) {
+      showError(err?.message || t('carePlans.saveFailed'));
+    } finally {
+      setSavingCarePlan(false);
+    }
+  };
+
   const fetchAllData = async () => {
     setLoading(true);
     try {
       const patientId = params.id;
 
       // Prefetch all tab data in parallel (total time ≈ slowest request)
-      const [patientRes, aptRes, presRes, invRes, labResRes, imagingRes, claimsRes] =
-        await Promise.all([
-          apiClient.get(`/patients/${patientId}`),
-          apiClient.get(`/appointments?patientId=${patientId}&limit=100`),
-          apiClient.get(`/prescriptions?patientId=${patientId}&limit=100`),
-          apiClient.get(`/invoices?patientId=${patientId}&limit=100`),
-          apiClient.get(`/lab-results?patientId=${patientId}&limit=100`),
-          apiClient.get(`/imaging?patientId=${patientId}&limit=100`),
-          apiClient.get(`/insurance/claims?patientId=${patientId}&limit=100`),
-        ]);
+      const [
+        patientRes,
+        aptRes,
+        presRes,
+        invRes,
+        labResRes,
+        imagingRes,
+        claimsRes,
+        carePlansRes,
+        proceduresRes,
+        consentRecRes,
+      ] = await Promise.all([
+        apiClient.get(`/patients/${patientId}`),
+        apiClient.get(`/appointments?patientId=${patientId}&limit=100`),
+        apiClient.get(`/prescriptions?patientId=${patientId}&limit=100`),
+        apiClient.get(`/invoices?patientId=${patientId}&limit=100`),
+        apiClient.get(`/lab-results?patientId=${patientId}&limit=100`),
+        apiClient.get(`/imaging?patientId=${patientId}&limit=100`),
+        apiClient.get(`/insurance/claims?patientId=${patientId}&limit=100`),
+        apiClient.get(`/care-plans?patientId=${patientId}&limit=100`),
+        apiClient.get(`/procedures?patientId=${patientId}&limit=100`),
+        apiClient.get(`/consent-records?patientId=${patientId}&limit=100`),
+      ]);
 
       if (patientRes.success && patientRes.data) {
         setPatient(patientRes.data);
@@ -114,7 +345,8 @@ export default function PatientDetailPage() {
       }
 
       if (labResRes.success && labResRes.data) {
-        setLabResults(Array.isArray(labResRes.data) ? labResRes.data : labResRes.data?.data || []);
+        const lr = labResRes.data;
+        setLabResults(Array.isArray(lr) ? lr : lr?.items || lr?.data || []);
       }
       if (imagingRes.success && imagingRes.data) {
         setImagingStudies(
@@ -125,6 +357,21 @@ export default function PatientDetailPage() {
         setInsuranceClaims(
           Array.isArray(claimsRes.data) ? claimsRes.data : claimsRes.data?.data || [],
         );
+      }
+      if (carePlansRes.success && carePlansRes.data?.items) {
+        setCarePlans(carePlansRes.data.items);
+      } else {
+        setCarePlans([]);
+      }
+      if (proceduresRes.success && proceduresRes.data?.items) {
+        setProcedureSessions(proceduresRes.data.items);
+      } else {
+        setProcedureSessions([]);
+      }
+      if (consentRecRes.success && consentRecRes.data?.items) {
+        setConsentRecords(consentRecRes.data.items);
+      } else {
+        setConsentRecords([]);
       }
 
       // Lab tests derived from prescriptions (use response, not state)
@@ -319,6 +566,9 @@ export default function PatientDetailPage() {
                       href={`/appointments/new?patientId=${params.id}`}
                     >
                       + {t('dashboard.newAppointment')}
+                    </Button>
+                    <Button variant='secondary' size='md' onClick={handleOpenAssignTaskModal}>
+                      {t('tasks.assignTask') || 'Assign task'}
                     </Button>
                   </>
                 ) : (
@@ -727,6 +977,94 @@ export default function PatientDetailPage() {
                 </div>
               )}
 
+              {activeTab === 'timeline' && (
+                <Card title={t('patients.timeline') || 'Visit timeline'}>
+                  <div className='space-y-4'>
+                    {(() => {
+                      const entries = [];
+                      (appointments || []).forEach((a) => {
+                        const d = a.appointmentDate || a.startTime || a.createdAt;
+                        entries.push({
+                          date: d ? new Date(d) : null,
+                          type: 'appointment',
+                          label: `${a.type || 'Visit'} – ${a.status || ''}`,
+                          id: a._id,
+                          href: `/appointments/${a._id}`,
+                        });
+                      });
+                      (prescriptions || []).forEach((p) => {
+                        const d = p.createdAt || p.validFrom;
+                        entries.push({
+                          date: d ? new Date(d) : null,
+                          type: 'prescription',
+                          label: p.prescriptionNumber || 'Prescription',
+                          id: p._id,
+                          href: `/prescriptions/${p._id}`,
+                        });
+                      });
+                      (labResults || []).forEach((r) => {
+                        const d = r.reportedAt || r.createdAt;
+                        entries.push({
+                          date: d ? new Date(d) : null,
+                          type: 'lab_result',
+                          label: r.testId?.name || 'Lab result',
+                          id: r._id,
+                          href: `/lab-results/${r._id}`,
+                        });
+                      });
+                      (procedureSessions || []).forEach((s) => {
+                        const d = s.startTime || s.scheduledAt || s.createdAt;
+                        entries.push({
+                          date: d ? new Date(d) : null,
+                          type: 'procedure',
+                          label: s.procedureId?.name || s.procedureName || 'Procedure',
+                          id: s._id,
+                          href: null,
+                        });
+                      });
+                      entries.sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
+                      return entries.length === 0 ? (
+                        <p className='text-neutral-500 dark:text-neutral-400'>
+                          {t('common.noDataFound')}
+                        </p>
+                      ) : (
+                        <ul className='divide-y divide-neutral-200 dark:divide-neutral-700'>
+                          {entries.map((e) => (
+                            <li key={`${e.type}-${e.id}`} className='py-3 first:pt-0'>
+                              <div className='flex items-center justify-between gap-4'>
+                                <div>
+                                  <span className='text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide'>
+                                    {e.date
+                                      ? e.date.toLocaleDateString(undefined, {
+                                          dateStyle: 'medium',
+                                        })
+                                      : '—'}{' '}
+                                    · {e.type.replace('_', ' ')}
+                                  </span>
+                                  <p className='font-medium text-neutral-900 dark:text-neutral-100 mt-0.5'>
+                                    {e.label}
+                                  </p>
+                                </div>
+                                {e.href && (
+                                  <Button
+                                    variant='secondary'
+                                    size='sm'
+                                    onClick={() => router.push(e.href)}
+                                    aria-label={t('common.view')}
+                                  >
+                                    {t('common.view')}
+                                  </Button>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    })()}
+                  </div>
+                </Card>
+              )}
+
               {activeTab === 'visits' && (
                 <Card title={t('appointments.appointmentList')}>
                   <div className='clinic-table-wrap'>
@@ -867,6 +1205,170 @@ export default function PatientDetailPage() {
                         {prescriptions.length === 0 && (
                           <tr data-empty>
                             <td colSpan={6}>{t('common.noDataFound')}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+
+              {activeTab === 'procedures' && (
+                <Card title={t('procedures.title')}>
+                  <div className='flex justify-end mb-4'>
+                    <Button
+                      type='button'
+                      variant='primary'
+                      size='sm'
+                      onClick={() => {
+                        setProcedureForm({ type: '' });
+                        setShowProcedureModal(true);
+                      }}
+                    >
+                      {t('procedures.addProcedure')}
+                    </Button>
+                  </div>
+                  {procedureSessions.length === 0 ? (
+                    <p className='text-sm text-neutral-500 dark:text-neutral-400'>
+                      {t('procedures.noProcedures')}
+                    </p>
+                  ) : (
+                    <div className='clinic-table-wrap'>
+                      <table className='clinic-table'>
+                        <thead>
+                          <tr>
+                            <th>{t('procedures.procedureNumber')}</th>
+                            <th>{t('procedures.type')}</th>
+                            <th>{t('procedures.status')}</th>
+                            <th>{t('procedures.startedAt')}</th>
+                            <th>{t('procedures.endedAt')}</th>
+                            <th className='text-right'>{t('common.actions')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {procedureSessions.map((proc) => (
+                            <tr key={proc._id}>
+                              <td className='font-medium'>{proc.procedureNumber || '—'}</td>
+                              <td>{proc.type || '—'}</td>
+                              <td>
+                                {proc.status === 'scheduled' && t('procedures.statusScheduled')}
+                                {proc.status === 'in_progress' && t('procedures.statusInProgress')}
+                                {proc.status === 'completed' && t('procedures.statusCompleted')}
+                                {proc.status === 'cancelled' && t('procedures.statusCancelled')}
+                                {!['scheduled', 'in_progress', 'completed', 'cancelled'].includes(
+                                  proc.status,
+                                ) && proc.status}
+                              </td>
+                              <td className='whitespace-nowrap'>
+                                {proc.startedAt ? new Date(proc.startedAt).toLocaleString() : '—'}
+                              </td>
+                              <td className='whitespace-nowrap'>
+                                {proc.endedAt ? new Date(proc.endedAt).toLocaleString() : '—'}
+                              </td>
+                              <td className='text-right'>
+                                {proc.status === 'scheduled' && (
+                                  <Button
+                                    variant='secondary'
+                                    size='sm'
+                                    onClick={() =>
+                                      handleProcedureStatusChange(proc._id, 'in_progress')
+                                    }
+                                    disabled={updatingProcedureId === proc._id}
+                                    className='mr-1'
+                                  >
+                                    {updatingProcedureId === proc._id
+                                      ? t('common.loading')
+                                      : t('procedures.startProcedure')}
+                                  </Button>
+                                )}
+                                {proc.status === 'in_progress' && (
+                                  <Button
+                                    variant='primary'
+                                    size='sm'
+                                    onClick={() =>
+                                      handleProcedureStatusChange(proc._id, 'completed')
+                                    }
+                                    disabled={updatingProcedureId === proc._id}
+                                    className='mr-1'
+                                  >
+                                    {updatingProcedureId === proc._id
+                                      ? t('common.loading')
+                                      : t('procedures.completeProcedure')}
+                                  </Button>
+                                )}
+                                {(proc.status === 'scheduled' || proc.status === 'in_progress') && (
+                                  <Button
+                                    variant='secondary'
+                                    size='sm'
+                                    onClick={() =>
+                                      handleProcedureStatusChange(proc._id, 'cancelled')
+                                    }
+                                    disabled={updatingProcedureId === proc._id}
+                                  >
+                                    {t('procedures.cancelProcedure')}
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Card>
+              )}
+
+              {activeTab === 'care-plans' && (
+                <Card title={t('carePlans.title')}>
+                  <div className='flex justify-end mb-4'>
+                    <Button
+                      type='button'
+                      variant='primary'
+                      size='sm'
+                      onClick={() => {
+                        setCarePlanForm({
+                          name: '',
+                          condition: '',
+                          startDate: '',
+                          endDate: '',
+                          status: 'active',
+                        });
+                        setShowCarePlanModal(true);
+                      }}
+                    >
+                      {t('carePlans.addCarePlan')}
+                    </Button>
+                  </div>
+                  <div className='clinic-table-wrap'>
+                    <table className='clinic-table'>
+                      <thead>
+                        <tr>
+                          <th>{t('carePlans.name')}</th>
+                          <th>{t('carePlans.condition')}</th>
+                          <th>{t('carePlans.conditions') || 'Conditions'}</th>
+                          <th>{t('carePlans.startDate')}</th>
+                          <th>{t('carePlans.endDate')}</th>
+                          <th>{t('carePlans.status')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {carePlans.map((plan) => (
+                          <tr key={plan._id}>
+                            <td className='font-medium'>{plan.name}</td>
+                            <td>{plan.condition || '—'}</td>
+                            <td>{plan.conditions?.length ? plan.conditions.join(', ') : '—'}</td>
+                            <td className='whitespace-nowrap'>
+                              {plan.startDate ? new Date(plan.startDate).toLocaleDateString() : '—'}
+                            </td>
+                            <td className='whitespace-nowrap'>
+                              {plan.endDate ? new Date(plan.endDate).toLocaleDateString() : '—'}
+                            </td>
+                            <td>{plan.status || '—'}</td>
+                          </tr>
+                        ))}
+                        {carePlans.length === 0 && (
+                          <tr data-empty>
+                            <td colSpan={6}>{t('carePlans.noPlans')}</td>
                           </tr>
                         )}
                       </tbody>
@@ -1193,6 +1695,60 @@ export default function PatientDetailPage() {
                 </div>
               )}
 
+              {/* ── Consent tab ── */}
+              {activeTab === 'consent' && (
+                <Card title={t('consent.tabTitle')}>
+                  <div className='flex justify-end mb-4'>
+                    <Button
+                      type='button'
+                      variant='primary'
+                      size='sm'
+                      onClick={handleOpenConsentModal}
+                    >
+                      {t('consent.recordConsent')}
+                    </Button>
+                  </div>
+                  <h3 className='text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2'>
+                    {t('consent.consentHistory')}
+                  </h3>
+                  {consentRecords.length === 0 ? (
+                    <p className='text-sm text-neutral-500 dark:text-neutral-400'>
+                      {t('consent.noRecords')}
+                    </p>
+                  ) : (
+                    <div className='clinic-table-wrap'>
+                      <table className='clinic-table'>
+                        <thead>
+                          <tr>
+                            <th>{t('consent.formName')}</th>
+                            <th>{t('consent.recordedAt')}</th>
+                            <th>{t('consent.recordedBy')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {consentRecords.map((rec) => (
+                            <tr key={rec._id}>
+                              <td className='font-medium'>
+                                {rec.formId?.name ?? rec.formId ?? '—'}
+                              </td>
+                              <td className='whitespace-nowrap'>
+                                {rec.consentedAt ? new Date(rec.consentedAt).toLocaleString() : '—'}
+                              </td>
+                              <td>
+                                {rec.recordedById?.firstName != null ||
+                                rec.recordedById?.lastName != null
+                                  ? `${rec.recordedById.firstName || ''} ${rec.recordedById.lastName || ''}`.trim()
+                                  : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Card>
+              )}
+
               {/* ── Documents tab ── */}
               {activeTab === 'documents' && (
                 <Card title={t('patients.patientDocuments')}>
@@ -1258,6 +1814,288 @@ export default function PatientDetailPage() {
           </div>
         </>
       )}
+
+      <Modal
+        isOpen={showAssignTaskModal}
+        onClose={() => !savingAssignTask && setShowAssignTaskModal(false)}
+        title={t('tasks.assignTask')}
+        size='md'
+      >
+        <form onSubmit={handleAssignTask} className='p-4 space-y-4'>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('tasks.assignee') || 'Assignee'} <span className='text-red-500'>*</span>
+            </label>
+            <select
+              value={assignTaskForm.assigneeId}
+              onChange={(e) => setAssignTaskForm({ ...assignTaskForm, assigneeId: e.target.value })}
+              className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
+              required
+            >
+              <option value=''>{t('tasks.selectAssignee') || 'Select assignee'}</option>
+              {assignTaskUsers.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.firstName} {u.lastName} {u.email ? `(${u.email})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('tasks.titleColumn')} <span className='text-red-500'>*</span>
+            </label>
+            <Input
+              value={assignTaskForm.title}
+              onChange={(e) => setAssignTaskForm({ ...assignTaskForm, title: e.target.value })}
+              placeholder={t('tasks.titleColumn')}
+              required
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('tasks.description') || 'Description'}
+            </label>
+            <textarea
+              value={assignTaskForm.description || ''}
+              onChange={(e) =>
+                setAssignTaskForm({ ...assignTaskForm, description: e.target.value })
+              }
+              rows={3}
+              className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('tasks.dueDate')}
+            </label>
+            <Input
+              type='date'
+              value={assignTaskForm.dueDate || ''}
+              onChange={(e) => setAssignTaskForm({ ...assignTaskForm, dueDate: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('tasks.priority')}
+            </label>
+            <select
+              value={assignTaskForm.priority}
+              onChange={(e) => setAssignTaskForm({ ...assignTaskForm, priority: e.target.value })}
+              className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
+            >
+              <option value='low'>{t('tasks.priorityLow')}</option>
+              <option value='medium'>{t('tasks.priorityMedium')}</option>
+              <option value='high'>{t('tasks.priorityHigh')}</option>
+              <option value='urgent'>{t('tasks.priorityUrgent')}</option>
+            </select>
+          </div>
+          <div className='flex justify-end gap-2 pt-4'>
+            <Button
+              type='button'
+              variant='secondary'
+              size='sm'
+              onClick={() => setShowAssignTaskModal(false)}
+              disabled={savingAssignTask}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type='submit'
+              variant='primary'
+              size='sm'
+              isLoading={savingAssignTask}
+              disabled={savingAssignTask}
+            >
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={showConsentModal}
+        onClose={() => !savingConsent && setShowConsentModal(false)}
+        title={t('consent.recordConsent')}
+        size='md'
+      >
+        <form onSubmit={handleRecordConsent} className='p-4 space-y-4'>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('consent.formName')} <span className='text-red-500'>*</span>
+            </label>
+            <select
+              value={selectedConsentFormId}
+              onChange={(e) => setSelectedConsentFormId(e.target.value)}
+              className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
+              required
+            >
+              <option value=''>{t('consent.selectFormRequired')}</option>
+              {consentForms.map((form) => (
+                <option key={form._id} value={form._id}>
+                  {form.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className='flex justify-end gap-2 pt-4'>
+            <Button
+              type='button'
+              variant='secondary'
+              size='sm'
+              onClick={() => setShowConsentModal(false)}
+              disabled={savingConsent}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type='submit'
+              variant='primary'
+              size='sm'
+              isLoading={savingConsent}
+              disabled={savingConsent}
+            >
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={showProcedureModal}
+        onClose={() => !savingProcedure && setShowProcedureModal(false)}
+        title={t('procedures.addProcedure')}
+        size='md'
+      >
+        <form onSubmit={handleAddProcedure} className='p-4 space-y-4'>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('procedures.type')} <span className='text-red-500'>*</span>
+            </label>
+            <Input
+              value={procedureForm.type}
+              onChange={(e) => setProcedureForm({ ...procedureForm, type: e.target.value })}
+              placeholder={t('procedures.procedureTypePlaceholder')}
+              required
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('procedures.type')} code
+            </label>
+            <Input
+              value={procedureForm.typeCode || ''}
+              onChange={(e) => setProcedureForm({ ...procedureForm, typeCode: e.target.value })}
+              placeholder='e.g. CPT code'
+            />
+          </div>
+          <div className='flex justify-end gap-2 pt-4'>
+            <Button
+              type='button'
+              variant='secondary'
+              size='sm'
+              onClick={() => setShowProcedureModal(false)}
+              disabled={savingProcedure}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type='submit'
+              variant='primary'
+              size='sm'
+              isLoading={savingProcedure}
+              disabled={savingProcedure}
+            >
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={showCarePlanModal}
+        onClose={() => !savingCarePlan && setShowCarePlanModal(false)}
+        title={t('carePlans.addCarePlan')}
+        size='md'
+      >
+        <form onSubmit={handleSaveCarePlan} className='p-4 space-y-4'>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('carePlans.name')} <span className='text-red-500'>*</span>
+            </label>
+            <Input
+              value={carePlanForm.name}
+              onChange={(e) => setCarePlanForm({ ...carePlanForm, name: e.target.value })}
+              placeholder={t('carePlans.name')}
+              required
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('carePlans.condition')}
+            </label>
+            <Input
+              value={carePlanForm.condition}
+              onChange={(e) => setCarePlanForm({ ...carePlanForm, condition: e.target.value })}
+              placeholder={t('carePlans.condition')}
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('carePlans.startDate')}
+            </label>
+            <Input
+              type='date'
+              value={carePlanForm.startDate}
+              onChange={(e) => setCarePlanForm({ ...carePlanForm, startDate: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('carePlans.endDate')}
+            </label>
+            <Input
+              type='date'
+              value={carePlanForm.endDate}
+              onChange={(e) => setCarePlanForm({ ...carePlanForm, endDate: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
+              {t('carePlans.status')}
+            </label>
+            <select
+              value={carePlanForm.status}
+              onChange={(e) => setCarePlanForm({ ...carePlanForm, status: e.target.value })}
+              className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
+            >
+              <option value='active'>{t('carePlans.statusActive')}</option>
+              <option value='completed'>{t('carePlans.statusCompleted')}</option>
+              <option value='on_hold'>{t('carePlans.statusOnHold')}</option>
+              <option value='cancelled'>{t('carePlans.statusCancelled')}</option>
+            </select>
+          </div>
+          <div className='flex justify-end gap-2 pt-4'>
+            <Button
+              type='button'
+              variant='secondary'
+              size='sm'
+              onClick={() => setShowCarePlanModal(false)}
+              disabled={savingCarePlan}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type='submit'
+              variant='primary'
+              size='sm'
+              isLoading={savingCarePlan}
+              disabled={savingCarePlan}
+            >
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </Layout>
   );
 }

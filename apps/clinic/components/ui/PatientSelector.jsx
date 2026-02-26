@@ -98,13 +98,14 @@ export function PatientSelector({
 
               {/* Actions */}
               <div className='flex items-center gap-2'>
-                <button
+                <Button
                   type='button'
+                  variant='link'
                   onClick={() => setIsOpen(true)}
                   className='text-primary-600 hover:text-primary-700 text-sm font-medium'
                 >
                   {t('patientSelector.change')}
-                </button>
+                </Button>
                 <Button
                   variant='ghost'
                   size='xs'
@@ -171,13 +172,16 @@ export function PatientSelector({
             >
               {/* Add New Patient Button */}
               {onAddNew && (
-                <button
+                <Button
                   type='button'
+                  variant='ghost'
+                  fullWidth
+                  align='start'
                   onClick={() => {
                     onAddNew();
                     setIsOpen(false);
                   }}
-                  className='w-full px-4 py-3 text-left border-b border-gray-200 hover:bg-blue-50 flex items-center gap-3'
+                  className='w-full px-4 py-3 border-b border-gray-200 hover:bg-blue-50'
                 >
                   <div className='w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0'>
                     <svg
@@ -202,18 +206,21 @@ export function PatientSelector({
                       {t('patientSelector.addNewPatientDesc')}
                     </div>
                   </div>
-                </button>
+                </Button>
               )}
 
               {/* Patient List */}
               {filteredPatients.length > 0 ? (
                 <div className='py-1'>
                   {filteredPatients.map((patient) => (
-                    <button
+                    <Button
                       key={patient._id}
                       type='button'
+                      variant='ghost'
+                      fullWidth
+                      align='start'
                       onClick={() => handleSelect(patient)}
-                      className='w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0'
+                      className='w-full px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0'
                     >
                       {/* Patient Avatar */}
                       <div className='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0'>
@@ -257,7 +264,7 @@ export function PatientSelector({
                           </svg>
                         </div>
                       )}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               ) : (

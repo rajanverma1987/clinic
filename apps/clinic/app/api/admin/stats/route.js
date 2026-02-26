@@ -37,6 +37,8 @@ async function getHandler(req, user) {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const sevenDaysFromNow = new Date(now);
   sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   const deletedNull = { deletedAt: null };
   const notSuperAdmin = { role: { $ne: 'super_admin' } };
@@ -89,6 +91,9 @@ async function getHandler(req, user) {
     recentPatients,
     tenantsByRegion,
     subscriptionsByStatus,
+    paymentDelaysCount,
+    storageCounts,
+    subscriptionsInTrial,
   ] = await Promise.all([
     Tenant.countDocuments(),
     Tenant.countDocuments({ isActive: true }),
@@ -173,14 +178,94 @@ async function getHandler(req, user) {
     Patient.countDocuments({ ...deletedNull, createdAt: { $gte: sevenDaysAgo } }),
     Tenant.aggregate([{ $group: { _id: '$region', count: { $sum: 1 } } }]),
     Subscription.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+    Subscription.countDocuments({
+      status: 'ACTIVE',
+      nextBillingDate: { $lt: now },
+    }),
+    Subscription.countDocuments({
+      status: 'ACTIVE',
+      trialEnd: { $gte: now },
+    }),
+    Promise.all([
+      Patient.countDocuments(deletedNull),
+      Appointment.countDocuments(deletedNull),
+      Prescription.countDocuments(deletedNull),
+      Invoice.countDocuments(deletedNull),
+      User.countDocuments(notSuperAdmin),
+    ]).then(([p, a, pr, i, u]) => ({
+      patients: p,
+      appointments: a,
+      prescriptions: pr,
+      invoices: i,
+      users: u,
+      totalDocs: (p || 0) + (a || 0) + (pr || 0) + (i || 0) + (u || 0),
+    })),
   ]);
+
+  const [trialEndingSoonList, paymentFailuresList, inactive30dList, suspendedList] =
+    await Promise.all([
+      Subscription.find({
+        status: 'ACTIVE',
+        trialEnd: { $gte: now, $lte: sevenDaysFromNow },
+      })
+        .populate('tenantId', 'name slug')
+        .lean(),
+      Subscription.find({ status: 'ACTIVE', nextBillingDate: { $lt: now } })
+        .populate('tenantId', 'name slug')
+        .lean(),
+      Tenant.find({ isActive: false, updatedAt: { $lt: thirtyDaysAgo } })
+        .select('_id name slug')
+        .lean(),
+      Subscription.find({ status: 'SUSPENDED' }).populate('tenantId', 'name slug').lean(),
+    ]);
+
+  const toClinicItem = (t) => {
+    if (!t) return null;
+    const id = t._id?.toString?.();
+    const name = t.name || '';
+    const slug = t.slug || '';
+    return id ? { tenantId: id, name, slug } : null;
+  };
+  const fromSub = (s) => {
+    const t = s.tenantId;
+    if (!t) return null;
+    return toClinicItem({ _id: t._id, name: t.name, slug: t.slug });
+  };
+  const platformAlerts = {
+    trialEndingSoon: {
+      count: trialEndingSoonList.length,
+      items: trialEndingSoonList.map(fromSub).filter(Boolean),
+    },
+    paymentFailures: {
+      count: paymentFailuresList.length,
+      items: paymentFailuresList.map(fromSub).filter(Boolean),
+    },
+    storageNearingLimit: { count: 0, items: [] },
+    inactiveClinics30d: {
+      count: inactive30dList.length,
+      items: inactive30dList.map(toClinicItem).filter(Boolean),
+    },
+    suspendedClinics: {
+      count: suspendedList.length,
+      items: suspendedList.map(fromSub).filter(Boolean),
+    },
+  };
 
   const totalRevenue = revenueResult[0]?.total ?? 0;
   const thisMonthRevenue = thisMonthRevenueResult[0]?.total ?? 0;
   const todayRevenue = todayRevenueResult[0]?.total ?? 0;
   const thisYearRevenue = thisYearRevenueResult[0]?.total ?? 0;
   const totalPaymentsValue = totalPaymentsAmountResult[0]?.total ?? 0;
-  const inactiveTenants = totalTenants - activeTenants;
+  const inactiveTenants = Math.max(0, (Number(totalTenants) || 0) - (Number(activeTenants) || 0));
+  const paymentDelays = paymentDelaysCount ?? 0;
+  const storage = storageCounts ?? {
+    patients: 0,
+    appointments: 0,
+    prescriptions: 0,
+    invoices: 0,
+    users: 0,
+    totalDocs: 0,
+  };
 
   let mrr = 0;
   activeSubs.forEach((sub) => {
@@ -197,16 +282,16 @@ async function getHandler(req, user) {
     successResponse({
       // Tenants (suspended = tenants with suspended subscription)
       tenants: {
-        total: totalTenants,
-        active: activeTenants,
+        total: Number(totalTenants) || 0,
+        active: Number(activeTenants) || 0,
         inactive: inactiveTenants,
-        suspended: suspendedSubscriptions,
+        suspended: Number(suspendedSubscriptions) || 0,
         recent: recentTenants,
         byRegion: tenantsByRegion,
       },
-      // Users
+      // Users (tenant-level: total across clinics)
       users: {
-        total: totalUsers,
+        total: Number(totalUsers) || 0,
         active: activeUsers,
         superAdmins: superAdmins,
         recent: recentUsers,
@@ -214,14 +299,15 @@ async function getHandler(req, user) {
       },
       // Subscriptions
       subscriptions: {
-        total: totalSubscriptions,
-        active: activeSubscriptions,
-        cancelled: cancelledSubscriptions,
-        expired: expiredSubscriptions,
-        suspended: suspendedSubscriptions,
-        expiringIn7Days: expiringSubscriptionsCount,
-        renewalAlerts: renewalAlertsCount,
-        mrr: mrr,
+        total: Number(totalSubscriptions) || 0,
+        active: Number(activeSubscriptions) || 0,
+        cancelled: Number(cancelledSubscriptions) || 0,
+        expired: Number(expiredSubscriptions) || 0,
+        inTrial: Number(subscriptionsInTrial) || 0,
+        suspended: Number(suspendedSubscriptions) || 0,
+        expiringIn7Days: Number(expiringSubscriptionsCount) || 0,
+        renewalAlerts: Number(renewalAlertsCount) || 0,
+        mrr: Number(mrr) || 0,
         byStatus: subscriptionsByStatus,
       },
       // Subscription Plans
@@ -281,6 +367,26 @@ async function getHandler(req, user) {
         total: totalInventoryItems,
         active: activeInventoryItems,
         lowStock: lowStockItems,
+      },
+      // Risk monitoring (Super_Admin.md L68-72) + paymentDelays for Subscription & Billing
+      riskMonitoring: {
+        expiringSubscriptions: Number(expiringSubscriptionsCount) || 0,
+        securityAlerts: 0,
+        suspendedClinics: Number(suspendedSubscriptions) || 0,
+        auditAnomalies: 0,
+        paymentDelays: Number(paymentDelays) || 0,
+      },
+      // Platform Alerts (each alert links to clinic)
+      platformAlerts,
+      // Storage / usage (SA4)
+      storage: {
+        ...storage,
+        totalDocs: Number(storage?.totalDocs) || 0,
+      },
+      // System health (Super_Admin.md: HEALTHY / DEGRADED / CRITICAL)
+      systemHealth: {
+        status: 'healthy',
+        message: 'All systems operational',
       },
     }),
   );

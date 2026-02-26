@@ -16,6 +16,7 @@ import Appointment from '@/models/Appointment.js';
 import ClinicDashboardMetrics from '@/models/ClinicDashboardMetrics.js';
 import InventoryItem from '@/models/InventoryItem.js';
 import Invoice from '@/models/Invoice.js';
+import LabResult from '@/models/LabResult.js';
 import Patient from '@/models/Patient.js';
 import Prescription from '@/models/Prescription.js';
 import Queue from '@/models/Queue.js';
@@ -36,9 +37,10 @@ async function getDashboardAll(tenantId, userId, role) {
   const thirtyDaysFromNow = new Date(now.getTime() + 30 * 86400000);
   const isDoctor = role === 'doctor';
   // Convert tenantId to ObjectId for aggregation queries
-  const tenantObj = typeof tenantId === 'string' && mongoose.Types.ObjectId.isValid(tenantId)
-    ? new mongoose.Types.ObjectId(tenantId)
-    : tenantId;
+  const tenantObj =
+    typeof tenantId === 'string' && mongoose.Types.ObjectId.isValid(tenantId)
+      ? new mongoose.Types.ObjectId(tenantId)
+      : tenantId;
 
   // Helper to generate last 14 days date strings
   const generateLast14Days = () => {
@@ -100,6 +102,7 @@ async function getDashboardAll(tenantId, userId, role) {
     trendsResult,
     failedTxResult,
     latestActivePrescription,
+    pendingLabResultsPromise,
   ] = await Promise.allSettled([
     Promise.all([
       Appointment.countDocuments({ ...apptMatchToday }),
@@ -161,7 +164,10 @@ async function getDashboardAll(tenantId, userId, role) {
     Appointment.find(apptMatchToday)
       .limit(10)
       .sort({ startTime: 1 })
-      .populate('patientId', 'firstName lastName phone dateOfBirth gender bloodGroup createdAt medicalHistory chronicConditions allergies patientId _id')
+      .populate(
+        'patientId',
+        'firstName lastName phone dateOfBirth gender bloodGroup createdAt medicalHistory chronicConditions allergies patientId _id',
+      )
       .lean(),
     Patient.find({ tenantId: tenantObj }).sort({ createdAt: -1 }).limit(5).lean(),
     isDoctor
@@ -296,8 +302,21 @@ async function getDashboardAll(tenantId, userId, role) {
       deletedAt: null,
     })
       .sort({ createdAt: -1 })
-      .populate('patientId', 'firstName lastName phone dateOfBirth gender bloodGroup createdAt medicalHistory chronicConditions allergies patientId _id')
+      .populate(
+        'patientId',
+        'firstName lastName phone dateOfBirth gender bloodGroup createdAt medicalHistory chronicConditions allergies patientId _id',
+      )
       .lean(),
+    // D1/D2: Pending (draft) lab results for report tracking widget
+    Promise.all([
+      LabResult.countDocuments({ tenantId: tenantObj, status: 'draft' }),
+      LabResult.find({ tenantId: tenantObj, status: 'draft' })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('patientId', 'firstName lastName patientId')
+        .populate('orderId', 'orderNumber')
+        .lean(),
+    ]).then(([count, list]) => ({ count, list })),
   ]);
 
   const [todayCount, completedToday, pendingCount] = val(statsResult, [0, 0, 0]);
@@ -332,6 +351,16 @@ async function getDashboardAll(tenantId, userId, role) {
       severity: 'warning',
       message: `${expiringLotsList.length} lot(s) expiring soon`,
       count: expiringLotsList.length,
+    });
+  }
+  const pendingLabResultsData = val(pendingLabResultsPromise, { count: 0, list: [] });
+  const pendingLabCount = pendingLabResultsData?.count ?? 0;
+  if (pendingLabCount > 0 && !isDoctor) {
+    criticalAlerts.push({
+      type: 'lab_result',
+      severity: 'warning',
+      message: `${pendingLabCount} pending lab result(s) to complete`,
+      count: pendingLabCount,
     });
   }
 
@@ -386,6 +415,8 @@ async function getDashboardAll(tenantId, userId, role) {
       appointmentRequests: val(pendingRequests, []),
       criticalAlerts,
       latestActivePrescription: val(latestActivePrescription, null),
+      pendingLabResults: pendingLabResultsData?.list ?? [],
+      pendingLabResultsCount: pendingLabCount,
     },
     charts: {
       revenue: fillMissingDays(val(chartRevenue, [])),
@@ -402,6 +433,65 @@ async function getDashboardAll(tenantId, userId, role) {
 
 async function getHandler(req, user) {
   const tenantId = user.tenantId?.toString?.() || user.tenantId;
+
+  // Super admin has no tenantId; return minimal payload so UI can render/redirect (they use /admin)
+  if (user.role === 'super_admin' && !tenantId) {
+    const now = new Date();
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          stats: {
+            todayAppointments: 0,
+            completedToday: 0,
+            pendingAppointments: 0,
+            queueActive: 0,
+            queueWaiting: 0,
+            queue: { waiting: 0, inProgress: 0 },
+            todayRevenue: 0,
+            monthRevenue: 0,
+            totalPatients: 0,
+            activePatients: 0,
+            newPatientsThisMonth: 0,
+            pendingInvoices: 0,
+            lastUpdated: now.toISOString(),
+            failed_transactions: 0,
+            revenue: { today: { total: 0, paid: 0 }, thisMonth: { total: 0 } },
+            patients: { total: 0, active: 0 },
+            appointments: {
+              todayTotal: 0,
+              today: { completed: 0 },
+              thisMonth: 0,
+              total: 0,
+              upcoming: 0,
+            },
+          },
+          lists: {
+            todayAppointments: [],
+            recentPatients: [],
+            overdueInvoices: [],
+            lowStockItems: [],
+            queueStatus: { active: 0, waiting: 0, inProgress: 0 },
+            expiringLots: [],
+            appointmentRequests: [],
+            criticalAlerts: [],
+            latestActivePrescription: null,
+            pendingLabResults: [],
+            pendingLabResultsCount: 0,
+          },
+          charts: { revenue: [], appointments: [], patients: [] },
+          trends: { revenue: null, patientFlow: null },
+          meta: { fetchedAt: now.toISOString(), role: 'super_admin' },
+        },
+      },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+        },
+      },
+    );
+  }
+
   if (!tenantId) {
     return NextResponse.json(
       { success: false, message: 'Tenant context required' },

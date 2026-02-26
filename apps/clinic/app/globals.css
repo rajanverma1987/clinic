@@ -96,6 +96,7 @@
 /* Design Tokens - CSS Custom Properties */
 @layer base {
   html {
+    font-size: 100%; /* 16px typical; rem-based typography scales with user preference */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -105,6 +106,7 @@
     --color-primary-900: #123992;
     --color-primary-700: #2553aee5;
     --color-primary-500: #1e4fb5;
+    --color-primary-400: #3568c2;
     --color-primary-300: #5b82d4;
     --color-primary-200: #9bb0e3;
     --color-primary-100: #e5ebf8;
@@ -146,10 +148,13 @@
     --color-status-error: #eb5757;
     --color-status-info: var(--color-primary-700);
 
+    /* Cross-platform font stack: Inter (loaded) → system-ui → platform-specific → generic. */
     --font-family:
-      'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial,
-      sans-serif;
-    --font-mono: 'JetBrains Mono', 'Roboto Mono', ui-monospace, 'Cascadia Mono', monospace;
+      'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Variable',
+      Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono:
+      'JetBrains Mono', 'Roboto Mono', ui-monospace, 'Cascadia Mono', 'Consolas', 'Liberation Mono',
+      monospace;
 
     --space-1: 4px;
     --space-2: 8px;
@@ -247,21 +252,22 @@
     --dashboard-primary-light: var(--color-primary-100);
     --dashboard-sidebar-bg: var(--color-neutral-900);
     --dashboard-page-bg: var(--color-neutral-100);
-    --dashboard-h1: 32px;
-    --dashboard-h2: 24px;
-    --dashboard-h3: 20px;
-    --dashboard-body: 15px;
-    --dashboard-body-sm: 13px;
-    --dashboard-caption: 12px;
+    /* Typography: rem-based for cross-platform scaling and user font-size preference (accessibility). */
+    --dashboard-h1: 2rem; /* 32px at 16px root */
+    --dashboard-h2: 1.5rem; /* 24px */
+    --dashboard-h3: 1.25rem; /* 20px */
+    --dashboard-body: 0.9375rem;
+    --dashboard-body-sm: 0.8125rem;
+    --dashboard-caption: 0.75rem;
 
-    --text-body-xs: 12px;
-    --text-body-xs-line-height: 16px;
-    --text-body-sm: 14px;
-    --text-body-sm-line-height: 20px;
-    --text-body-md: 16px;
-    --text-body-md-line-height: 24px;
-    --text-body-lg: 18px;
-    --text-body-lg-line-height: 28px;
+    --text-body-xs: 0.75rem; /* 12px */
+    --text-body-xs-line-height: 1rem; /* 16px; rem so height/line-height scale with root */
+    --text-body-sm: 0.875rem; /* 14px */
+    --text-body-sm-line-height: 1.25rem; /* 20px */
+    --text-body-md: 1rem; /* 16px */
+    --text-body-md-line-height: 1.5rem; /* 24px */
+    --text-body-lg: 1.125rem; /* 18px */
+    --text-body-lg-line-height: 1.75rem; /* 28px */
 
     /* Smooth transitions – use for hover, open/close, theme switch */
     --transition-smooth: 0.2s ease-out;
@@ -309,7 +315,7 @@
 
   body {
     font-family: var(--font-family);
-    font-size: 16px;
+    font-size: 1rem; /* 16px typical; respects user browser font-size preference */
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -367,46 +373,6 @@
 
   p {
     letter-spacing: -0.01em;
-  }
-}
-
-@layer components {
-  /* Use element+class so we don't need !important when Tailwind utilities are also on the element */
-  button.btn-primary-green,
-  a.btn-primary-green {
-    background-color: #15803d;
-    color: white;
-    border: 1px solid white;
-    box-shadow: 0 0 0 0.5px #15803d;
-  }
-  button.btn-primary-green:hover:not(:disabled),
-  button.btn-primary-green:focus-visible:not(:disabled),
-  a.btn-primary-green:hover:not(:disabled),
-  a.btn-primary-green:focus-visible:not(:disabled) {
-    background-color: var(--color-primary);
-    box-shadow: 0 0 0 0.5px var(--color-primary);
-  }
-  button.btn-primary-green:active:not(:disabled),
-  a.btn-primary-green:active:not(:disabled) {
-    background-color: var(--color-primary-700);
-    box-shadow: 0 0 0 0.5px var(--color-primary);
-  }
-
-  button.btn-secondary-blue,
-  a.btn-secondary-blue {
-    background-color: var(--color-primary);
-    border: 1px solid white;
-    box-shadow: 0 0 0 0.5px var(--color-primary);
-  }
-  button.btn-secondary-blue:hover:not(:disabled),
-  button.btn-secondary-blue:focus-visible:not(:disabled),
-  a.btn-secondary-blue:hover:not(:disabled),
-  a.btn-secondary-blue:focus-visible:not(:disabled) {
-    box-shadow: 0 0 0 0.5px #15803d;
-  }
-  button.btn-secondary-blue:active:not(:disabled),
-  a.btn-secondary-blue:active:not(:disabled) {
-    box-shadow: 0 0 0 0.5px #15803d;
   }
 }
 
@@ -541,8 +507,10 @@
 .quick-actions-dropdown [role='menuitem'] svg,
 .quick-actions-dropdown [role='menuitem'] .icon {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: var(--icon-size-menu);
+  height: var(--icon-size-menu);
+  min-width: var(--icon-size-menu);
+  min-height: var(--icon-size-menu);
   color: inherit !important;
   stroke: currentColor !important;
   fill: none !important;
@@ -880,7 +848,7 @@
 .sticky-header-bar .header-control-box .NotificationDropdown .NotificationDropdown-badge {
   min-width: 18px;
   height: 18px;
-  font-size: 10px;
+  font-size: 0.625rem; /* 10px at 16px root */
   top: -4px;
   right: -4px;
 }
@@ -990,7 +958,7 @@
   outline: none;
   background: var(--color-neutral-100);
   color: var(--color-neutral-500);
-  font-size: 13px;
+  font-size: 0.8125rem; /* 13px at 16px root */
   font-weight: 400;
   cursor: pointer;
   transition:
@@ -1210,7 +1178,7 @@
   max-width: 16rem;
   padding: 0.5rem 0.75rem;
   font-size: var(--text-body-sm, 14px);
-  line-height: var(--text-body-sm-line-height, 20px);
+  line-height: var(--text-body-sm-line-height);
   border: 1px solid var(--color-neutral-300, #d1d5db);
   border-radius: var(--radius-lg, 8px);
   background-color: var(--color-surface, #fff);
@@ -1392,6 +1360,27 @@
   min-height: 200px;
   padding: var(--space-8);
   width: 100%;
+}
+
+/* Hero heading – single source for responsive size (no inline overrides) */
+.hero-heading {
+  margin-bottom: 32px;
+  font-size: 56px;
+  line-height: 64px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+@media (min-width: 768px) {
+  .hero-heading {
+    font-size: 64px;
+    line-height: 72px;
+  }
+}
+@media (min-width: 1024px) {
+  .hero-heading {
+    font-size: 72px;
+    line-height: 80px;
+  }
 }
 
 .clinic-table-wrap {
@@ -1600,12 +1589,57 @@ svg.icon.icon-2xl {
   min-height: var(--icon-size-2xl);
 }
 
+/* Responsive icon for control bars (e.g. telemedicine): xs → sm → md by breakpoint. Single source for touch-friendly sizing. */
+.icon-control-bar,
+svg.icon.icon-control-bar {
+  width: var(--icon-size-xs);
+  height: var(--icon-size-xs);
+  min-width: var(--icon-size-xs);
+  min-height: var(--icon-size-xs);
+}
+@media (min-width: 640px) {
+  .icon-control-bar,
+  svg.icon.icon-control-bar {
+    width: var(--icon-size-sm);
+    height: var(--icon-size-sm);
+    min-width: var(--icon-size-sm);
+    min-height: var(--icon-size-sm);
+  }
+}
+@media (min-width: 768px) {
+  .icon-control-bar,
+  svg.icon.icon-control-bar {
+    width: var(--icon-size-md);
+    height: var(--icon-size-md);
+    min-width: var(--icon-size-md);
+    min-height: var(--icon-size-md);
+  }
+}
+
+/* Hero/feature icon: lg by default, xl from 640px (e.g. pre-join telemedicine). */
+.icon-hero,
+svg.icon.icon-hero {
+  width: var(--icon-size-lg);
+  height: var(--icon-size-lg);
+  min-width: var(--icon-size-lg);
+  min-height: var(--icon-size-lg);
+}
+@media (min-width: 640px) {
+  .icon-hero,
+  svg.icon.icon-hero {
+    width: var(--icon-size-xl);
+    height: var(--icon-size-xl);
+    min-width: var(--icon-size-xl);
+    min-height: var(--icon-size-xl);
+  }
+}
+
 .sidebar-nav-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--dashboard-sidebar-icon-size, 24px);
-  height: var(--dashboard-sidebar-icon-size, 24px);
+  width: var(--dashboard-sidebar-icon-size, var(--icon-size-md));
+  height: var(--dashboard-sidebar-icon-size, var(--icon-size-md));
   flex-shrink: 0;
   color: inherit;
 }
@@ -1621,53 +1655,6 @@ svg.icon.icon-2xl {
 }
 .dark .sidebar-profile-header {
   background: var(--color-surface-elevated) !important;
-}
-
-/* Floating sidebar collapse tab — sits on the right edge of the sidebar */
-.sidebar-collapse-tab {
-  position: absolute;
-  right: -12px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 40px;
-  border-radius: 0 6px 6px 0;
-  background: #fff;
-  border: 1px solid var(--color-neutral-200, #e5e7eb);
-  border-left: none;
-  color: var(--color-neutral-500, #6b7280);
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
-  outline: none;
-}
-.sidebar-collapse-tab:hover {
-  background: var(--color-primary-600, #4f46e5);
-  color: #fff;
-  border-color: var(--color-primary-600, #4f46e5);
-  box-shadow: 2px 0 8px rgba(79, 70, 229, 0.25);
-}
-.sidebar-collapse-tab:focus-visible {
-  outline: 2px solid var(--color-primary-500, #6366f1);
-  outline-offset: 2px;
-}
-.dark .sidebar-collapse-tab {
-  background: var(--color-neutral-800, #1f2937);
-  border-color: var(--color-neutral-700, #374151);
-  color: var(--color-neutral-400, #9ca3af);
-  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
-}
-.dark .sidebar-collapse-tab:hover {
-  background: var(--color-primary-600, #4f46e5);
-  color: #fff;
-  border-color: var(--color-primary-600, #4f46e5);
 }
 
 .dark .sidebar-tooltip-portal {
@@ -2320,8 +2307,8 @@ svg.icon.icon-2xl {
   }
 }
 
-/* Sidebar width animates via inline style; only force dimensions when collapsed */
-[data-collapsed='true'] {
+/* Sidebar width when collapsed */
+.layout-sidebar[data-collapsed='true'] {
   width: 4rem !important;
   min-width: 4rem !important;
   max-width: 4rem !important;
@@ -2566,6 +2553,33 @@ svg.icon.icon-2xl {
 }
 .sub-page-wrap .dashboard-section.sub-section-compact {
   margin-bottom: var(--space-6);
+}
+
+/* Subscription details + Add-ons side-by-side (2-column layout) */
+.sub-details-addons-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+@media (min-width: 768px) {
+  .sub-details-addons-row {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+.sub-details-addons-row .sub-details-col,
+.sub-details-addons-row .sub-addons-col {
+  margin-bottom: 0;
+  min-width: 0;
+}
+.sub-details-addons-row .sub-addons-col .content-grid-2 {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 480px) {
+  .sub-details-addons-row .sub-addons-col .content-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .sub-page-wrap .dashboard-section.sub-footer-line {
   margin-bottom: 0;
@@ -3079,6 +3093,67 @@ svg.icon.icon-2xl {
   text-align: center;
 }
 
+/* Included in ALL Plans list */
+.sub-included-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+}
+.sub-included-list li {
+  position: relative;
+  padding-left: var(--space-4);
+}
+.sub-included-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--color-primary-600);
+  font-weight: 600;
+}
+.dark .sub-included-list li::before {
+  color: var(--color-primary-400);
+}
+
+/* Outcome Positioning table */
+.sub-outcome-wrap {
+  overflow-x: auto;
+}
+.sub-outcome-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.sub-outcome-table th,
+.sub-outcome-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-neutral-200);
+}
+.dark .sub-outcome-table th,
+.dark .sub-outcome-table td {
+  border-color: var(--color-border);
+}
+.sub-outcome-table th {
+  font-weight: 600;
+  color: var(--color-neutral-700);
+}
+.dark .sub-outcome-table th {
+  color: var(--color-neutral-300);
+}
+
+.sub-what-you-deliver-card .sub-what-you-deliver-tagline {
+  margin: 0;
+  font-size: var(--text-body);
+  color: var(--color-neutral-700);
+  font-style: italic;
+}
+.dark .sub-what-you-deliver-card .sub-what-you-deliver-tagline {
+  color: var(--color-neutral-300);
+}
+
 /* ----- Add-ons (compact cards, + icon top-right) ----- */
 .sub-addon-card {
   position: relative;
@@ -3354,20 +3429,6 @@ svg.icon.icon-2xl {
   color: var(--color-neutral-500);
   line-height: 1.6;
 }
-.sub-link-button {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: inherit;
-  color: var(--color-primary-600);
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.sub-link-button:hover {
-  color: var(--color-primary-700);
-}
 .sub-empty {
   text-align: center;
   padding: var(--space-6) var(--space-4);
@@ -3410,6 +3471,110 @@ svg.icon.icon-2xl {
   box-sizing: border-box;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+/* Admin list/tab toolbar: intro + search, filters, actions (Clinic Management, Users, etc.) */
+.admin-toolbar-intro {
+  font-size: var(--text-body-sm, 14px);
+  line-height: 1.5;
+  color: var(--color-neutral-600);
+  margin: 0 0 var(--space-4, 16px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-lg, 10px);
+}
+.dark .admin-toolbar-intro {
+  color: var(--color-neutral-400);
+  background: var(--color-neutral-800);
+  border-color: var(--color-neutral-700);
+}
+
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  padding: var(--space-4, 16px);
+  background: var(--color-white);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-lg, 10px);
+  margin-bottom: var(--space-4, 16px);
+}
+.dark .admin-toolbar {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-neutral-700);
+}
+
+.admin-toolbar__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-toolbar__search-wrap {
+  position: relative;
+  min-width: 220px;
+  max-width: 320px;
+}
+.admin-toolbar__search-wrap .admin-toolbar__search-icon {
+  position: absolute;
+  left: var(--space-3, 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-neutral-500);
+}
+.dark .admin-toolbar__search-wrap .admin-toolbar__search-icon {
+  color: var(--color-neutral-400);
+}
+.admin-toolbar__search-wrap input,
+.admin-toolbar__search-wrap input.admin-toolbar__search-input {
+  padding-left: 2.5rem !important; /* override .form-control-height so placeholder clears icon */
+  width: 100%;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-lg, 10px);
+  background: var(--color-white);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.admin-toolbar__search-wrap input:focus,
+.admin-toolbar__search-wrap input.admin-toolbar__search-input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(45, 156, 219, 0.2);
+}
+.dark .admin-toolbar__search-wrap input,
+.dark .admin-toolbar__search-wrap input.admin-toolbar__search-input {
+  border-color: var(--color-neutral-600);
+  background: var(--color-neutral-800);
+}
+.dark .admin-toolbar__search-wrap input:focus,
+.dark .admin-toolbar__search-wrap input.admin-toolbar__search-input:focus {
+  border-color: var(--color-primary-500);
+}
+
+.admin-toolbar__select {
+  min-width: 140px;
+}
+.admin-toolbar__select select {
+  font-weight: 500;
+  color: var(--color-neutral-700);
+}
+.dark .admin-toolbar__select select {
+  color: var(--color-neutral-300);
+}
+
+.admin-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex-shrink: 0;
 }
 
 .admin-section {
@@ -3708,6 +3873,63 @@ svg.icon.icon-2xl {
 }
 .dark .admin-pending-item__value {
   color: var(--color-amber-400);
+}
+.admin-pending-item--warning {
+  border-color: color-mix(in srgb, var(--color-status-error) 35%, transparent);
+  background: var(--color-white);
+}
+.admin-pending-item--warning:hover {
+  background: color-mix(in srgb, var(--color-status-error) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-error) 45%, transparent);
+}
+.dark .admin-pending-item--warning {
+  border-color: color-mix(in srgb, var(--color-status-error) 40%, transparent);
+  background: var(--color-surface-elevated);
+}
+.dark .admin-pending-item--warning:hover {
+  background: color-mix(in srgb, var(--color-status-error) 15%, transparent);
+}
+.admin-pending-item--warning .admin-pending-item__value {
+  color: var(--color-status-error);
+}
+.dark .admin-pending-item--warning .admin-pending-item__value {
+  color: var(--color-amber-400);
+}
+
+/* Platform Alerts: clinic list (each links to clinic) */
+.admin-alert-list {
+  padding: var(--space-4, 16px);
+}
+.admin-alert-list__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  list-style: none;
+  margin: var(--space-2, 8px) 0 0;
+  padding: 0;
+}
+.admin-alert-list__link {
+  font-size: var(--text-body-sm, 14px);
+  font-weight: 500;
+  color: var(--color-primary-600);
+  text-decoration: none;
+  padding: var(--space-1, 4px) var(--space-2, 8px);
+  border-radius: var(--radius-md, 8px);
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.admin-alert-list__link:hover {
+  color: var(--color-primary-700);
+  background: var(--color-primary-50);
+  text-decoration: underline;
+}
+.dark .admin-alert-list__link {
+  color: var(--color-primary-400);
+}
+.dark .admin-alert-list__link:hover {
+  color: var(--color-primary-300);
+  background: rgba(59, 130, 246, 0.15);
 }
 
 /* Action cards: icon, title, description, button */

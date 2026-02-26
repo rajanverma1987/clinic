@@ -56,7 +56,25 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [reportError, setReportError] = useState(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [locations, setLocations] = useState([]);
+  const [branchId, setBranchId] = useState('');
   const reportsRefreshIntervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!user?.tenantId) return;
+    let cancelled = false;
+    apiClient
+      .get('/locations')
+      .then((res) => {
+        if (!cancelled && res?.success && Array.isArray(res.data)) {
+          setLocations(res.data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.tenantId]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -72,7 +90,7 @@ export default function ReportsPage() {
         fetchInventoryReport();
       }
     }
-  }, [authLoading, user, startDate, endDate, activeTab]);
+  }, [authLoading, user, startDate, endDate, activeTab, branchId]);
 
   // Silent auto-refresh for current report tab (no loading flicker, no page reload)
   useEffect(() => {
@@ -193,6 +211,7 @@ export default function ReportsPage() {
         includeNewPatients: 'true',
         groupBy: 'day',
       });
+      if (branchId) params.set('branchId', branchId);
 
       const response = await apiClient.get(`/reports/patients?${params}`);
       if (response.success && response.data) {
@@ -221,6 +240,7 @@ export default function ReportsPage() {
         groupBy: 'day',
         includeNoShows: 'true',
       });
+      if (branchId) params.set('branchId', branchId);
 
       const response = await apiClient.get(`/reports/appointments?${params}`);
       if (response.success && response.data) {
@@ -497,6 +517,9 @@ export default function ReportsPage() {
         ...(activeTab === 'inventory' && { includeLowStock: 'true', includeExpired: 'true' }),
         ...(activeTab === 'doctors' && { groupBy: 'day' }),
       });
+      if (branchId && (activeTab === 'patients' || activeTab === 'appointments')) {
+        params.set('branchId', branchId);
+      }
       const url = `/reports/${activeTab}?${params}`;
       const response = await apiClient.get(url);
       if (response?.success && response?.data) {
@@ -527,7 +550,7 @@ export default function ReportsPage() {
     } finally {
       setGeneratingPdf(false);
     }
-  }, [activeTab, startDate, endDate, fillReportPdf, loadLogoAsBase64, settings, t]);
+  }, [activeTab, startDate, endDate, branchId, fillReportPdf, loadLogoAsBase64, settings, t]);
 
   const exportCSV = async (reportType) => {
     try {
@@ -536,6 +559,9 @@ export default function ReportsPage() {
         endDate: new Date(endDate).toISOString(),
         format: 'csv',
       });
+      if (branchId && (reportType === 'patients' || reportType === 'appointments')) {
+        params.set('branchId', branchId);
+      }
 
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`/api/reports/${reportType}?${params}`, {
@@ -767,6 +793,24 @@ export default function ReportsPage() {
                 title={t('reports.endDate')}
               />
             </div>
+            {(activeTab === 'patients' || activeTab === 'appointments') && locations.length > 0 && (
+              <div className='w-auto min-w-0'>
+                <select
+                  value={branchId}
+                  onChange={(e) => setBranchId(e.target.value)}
+                  className='filter-input-date'
+                  aria-label={t('reports.branch') || 'Branch'}
+                  title={t('reports.branch') || 'Branch'}
+                >
+                  <option value=''>{t('reports.allBranches') || 'All branches'}</option>
+                  {locations.map((loc) => (
+                    <option key={loc._id} value={loc._id}>
+                      {loc.name || loc.code || loc._id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <Button
               onClick={handleGenerateReportPDF}
               isLoading={loading || generatingPdf}

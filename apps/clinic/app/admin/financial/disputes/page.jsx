@@ -1,8 +1,10 @@
 'use client';
 
+import { AdminToolbar } from '@/components/admin/AdminToolbar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
+import { Select } from '@/components/ui/Select';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -124,36 +126,26 @@ export default function AdminFinancialDisputesPage() {
 
   return (
     <>
-      <Card className='mb-6'>
-        <div className='p-6'>
-          <div className='flex flex-col sm:flex-row sm:items-end gap-4'>
-            <div className='flex-1 sm:max-w-[200px]'>
-              <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
-                {t('admin.disputeStatusLabel')}
-              </label>
-              <select
-                className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100'
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPagination((p) => ({ ...p, page: 1 }));
-                }}
-              >
-                {getStatusOptions(t).map((o) => (
-                  <option key={o.value || 'all'} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className='flex-shrink-0'>
-              <Button variant='primary' onClick={() => fetchDisputes()}>
-                {t('admin.activityLogsApply')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Card>
+      <AdminToolbar
+        filters={[
+          <Select
+            key='status'
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPagination((p) => ({ ...p, page: 1 }));
+            }}
+            width='fit'
+            size='sm'
+            options={getStatusOptions(t)}
+          />,
+        ]}
+        actions={
+          <Button variant='primary' size='sm' onClick={() => fetchDisputes()}>
+            {t('admin.activityLogsApply')}
+          </Button>
+        }
+      />
 
       {!contentLoading && (
         <div className='mb-4 text-sm text-neutral-600'>

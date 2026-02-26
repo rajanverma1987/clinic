@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { ChevronRightIcon, WarningIcon } from '@/components/icons';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
@@ -24,20 +25,17 @@ function AlertItem({ alert, onViewAll, t }) {
           </div>
           <p className='text-body-sm font-medium text-neutral-900 dark:text-neutral-100 flex-1 truncate'>{message}</p>
         </div>
-        <button
+        <Button
           type='button'
+          variant='ghost'
+          size='xs'
           onClick={() => onViewAll?.(alert)}
-          className='inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors rounded-lg text-xs font-medium hover:bg-primary-50 dark:hover:bg-primary-900/30 shrink-0 group'
+          className='shrink-0 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/30'
           aria-label={count > 1 ? t('common.viewAll') : t('dashboard.viewAlert')}
         >
-          <span className='text-xs whitespace-nowrap'>
-            {count > 1 ? t('common.viewAll') : t('dashboard.viewAlert')}
-          </span>
-          <ChevronRightIcon
-            className='icon icon-xs group-hover:translate-x-0.5 transition-transform'
-            ariaHidden
-          />
-        </button>
+          <span className='whitespace-nowrap'>{count > 1 ? t('common.viewAll') : t('dashboard.viewAlert')}</span>
+          <ChevronRightIcon className='icon icon-xs group-hover:translate-x-0.5 transition-transform' ariaHidden />
+        </Button>
       </div>
     </div>
   );

@@ -371,8 +371,9 @@ export default function DoctorSchedulePage() {
                   return d.toISOString().split('T')[0] === dateStr;
                 });
                 return (
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
                     key={dateStr}
                     onClick={() => setSelectedDate(date)}
                     className={`p-3 rounded-lg border text-center transition-colors ${
@@ -393,7 +394,7 @@ export default function DoctorSchedulePage() {
                         {dayAppointments.length} {t('doctors.appointments')}
                       </div>
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

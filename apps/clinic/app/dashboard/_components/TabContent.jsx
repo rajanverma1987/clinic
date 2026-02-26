@@ -2,15 +2,17 @@
 
 /**
  * Renders dashboard tab content by activeTab.
- * Overview = children; Appointments/Prescriptions = slot content.
- * All tabs are kept mounted but hidden for instant switching.
- * Each tab wrapped in ErrorBoundary for graceful degradation.
+ * Overview = children; KPI/Appointments/Prescriptions rendered here so they stay mounted (fast tab switch).
+ * All tabs kept in DOM with display:none when inactive = instant switch, no remount/refetch.
  */
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { memo } from 'react';
+import { AppointmentsTab } from '../_tabs/AppointmentsTab';
+import { KPIDashboardTab } from '../_tabs/KPIDashboardTab';
+import { PrescriptionsTab } from '../_tabs/PrescriptionsTab';
 
 function TabPlaceholder({ tabLabel }) {
   const { t } = useI18n();
@@ -43,14 +45,7 @@ function TabErrorFallback({ error, resetErrorBoundary, tabLabel }) {
   );
 }
 
-export const TabContent = memo(function TabContent({
-  activeTab,
-  children,
-  appointmentsContent = null,
-  kpiContent = null,
-  prescriptionsContent = null,
-  hidden = false,
-}) {
+export const TabContent = memo(function TabContent({ activeTab, children, hidden = false }) {
   const { t } = useI18n();
   const normalizedTab = activeTab || 'overview';
 
@@ -77,7 +72,7 @@ export const TabContent = memo(function TabContent({
         </ErrorBoundary>
       </div>
 
-      {/* KPI Dashboard Tab */}
+      {/* KPI Dashboard Tab – same instance, only isActive changes */}
       <div
         className='dashboard-tab-content'
         style={{ display: normalizedTab === 'kpi' ? 'block' : 'none' }}
@@ -94,11 +89,11 @@ export const TabContent = memo(function TabContent({
             />
           )}
         >
-          {kpiContent ?? <TabPlaceholderMemo tabLabel={t('dashboard.kpiDashboard')} />}
+          <KPIDashboardTab isActive={normalizedTab === 'kpi'} />
         </ErrorBoundary>
       </div>
 
-      {/* Appointments Tab */}
+      {/* Appointments Tab – same instance, only isActive changes */}
       <div
         className='dashboard-tab-content'
         style={{ display: normalizedTab === 'appointments' ? 'block' : 'none' }}
@@ -115,11 +110,11 @@ export const TabContent = memo(function TabContent({
             />
           )}
         >
-          {appointmentsContent ?? <TabPlaceholderMemo tabLabel={t('appointments.title')} />}
+          <AppointmentsTab isActive={normalizedTab === 'appointments'} />
         </ErrorBoundary>
       </div>
 
-      {/* Prescriptions Tab */}
+      {/* Prescriptions Tab – same instance, only isActive changes */}
       <div
         className='dashboard-tab-content'
         style={{ display: normalizedTab === 'prescriptions' ? 'block' : 'none' }}
@@ -136,7 +131,7 @@ export const TabContent = memo(function TabContent({
             />
           )}
         >
-          {prescriptionsContent ?? <TabPlaceholderMemo tabLabel={t('prescriptions.title')} />}
+          <PrescriptionsTab isActive={normalizedTab === 'prescriptions'} />
         </ErrorBoundary>
       </div>
     </div>

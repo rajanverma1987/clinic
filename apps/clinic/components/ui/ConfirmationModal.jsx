@@ -155,7 +155,7 @@ export function ConfirmationModal({
           )}
         </div>
         <div className='ConfirmationModal-footer'>
-          <Button variant='secondary' size='md' onClick={onClose} disabled={confirmLoading}>
+          <Button variant='ghost' size='md' onClick={onClose} disabled={confirmLoading}>
             {displayCancel}
           </Button>
           <Button

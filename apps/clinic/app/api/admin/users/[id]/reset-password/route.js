@@ -41,9 +41,18 @@ async function postHandler(req, user, id) {
   }
 
   const hashed = await bcrypt.hash(newPassword, 12);
+  const target = await User.findById(id).select('tokenVersion').lean();
+  const newTokenVersion = (target?.tokenVersion ?? 0) + 1;
   await User.updateOne(
     { _id: id },
-    { $set: { password: hashed, passwordChangedAt: new Date(), updatedAt: new Date() } },
+    {
+      $set: {
+        password: hashed,
+        passwordChangedAt: new Date(),
+        tokenVersion: newTokenVersion,
+        updatedAt: new Date(),
+      },
+    },
   );
 
   return NextResponse.json(successResponse({ message: 'Password reset successfully' }));

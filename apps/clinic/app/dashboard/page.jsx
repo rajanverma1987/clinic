@@ -67,10 +67,7 @@ import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { canViewRevenueReports } from '@/lib/permissions/cursor-md-matrix';
 import { TabBar } from './_components/TabBar';
 import { TabContent } from './_components/TabContent';
-import { AppointmentsTab } from './_tabs/AppointmentsTab';
-import { KPIDashboardTab } from './_tabs/KPIDashboardTab';
 import { OverviewTab } from './_tabs/OverviewTab';
-import { PrescriptionsTab } from './_tabs/PrescriptionsTab';
 import { AppointmentsListWithHook } from './components/AppointmentsList';
 import { useDashboard } from './hooks/useDashboard';
 import { useDoctorDashboardLists } from './hooks/useDoctorDashboardLists';
@@ -243,6 +240,8 @@ export default function DashboardPage() {
   const criticalAlerts = (isDoctor ? [] : generalLists.criticalAlerts) ?? [];
   const expiringLots = isDoctor ? [] : generalLists.expiringLots;
   const appointmentRequests = isDoctor ? [] : generalLists.appointmentRequests;
+  const pendingLabResultsCount = isDoctor ? 0 : (generalLists.pendingLabResultsCount ?? 0);
+  const pendingLabResults = isDoctor ? [] : (generalLists.pendingLabResults ?? []);
   const listsLoading = isDoctor ? doctorLists.loading : generalLists.loading;
   const fetchDashboardLists = isDoctor
     ? doctorLists.fetchDashboardLists
@@ -307,8 +306,16 @@ export default function DashboardPage() {
         }
       } else {
         if (!refreshIntervalRef.current) {
-          runRefresh();
-          refreshIntervalRef.current = setInterval(runRefresh, DASHBOARD_AUTO_REFRESH_MS);
+          // Defer refresh so tab paints first (fast switch when returning to tab)
+          const scheduleRefresh = () => {
+            runRefresh();
+            refreshIntervalRef.current = setInterval(runRefresh, DASHBOARD_AUTO_REFRESH_MS);
+          };
+          if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(scheduleRefresh, { timeout: 100 });
+          } else {
+            setTimeout(scheduleRefresh, 0);
+          }
         }
       }
     };
@@ -316,9 +323,17 @@ export default function DashboardPage() {
     document.addEventListener('visibilitychange', handleVisibility);
 
     const handleFocus = () => {
-      fetchStatsBackground().then(onRefreshOk).catch(onRefreshFail);
-      fetchDashboardLists().then(onRefreshOk).catch(onRefreshFail);
-      if (!isDoctor) fetchChartData().catch(() => {});
+      // Defer so window paints first when switching back to tab
+      const scheduleFocusRefresh = () => {
+        fetchStatsBackground().then(onRefreshOk).catch(onRefreshFail);
+        fetchDashboardLists().then(onRefreshOk).catch(onRefreshFail);
+        if (!isDoctor) fetchChartData().catch(() => {});
+      };
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(scheduleFocusRefresh, { timeout: 80 });
+      } else {
+        setTimeout(scheduleFocusRefresh, 0);
+      }
     };
     window.addEventListener('focus', handleFocus);
 
@@ -368,16 +383,7 @@ export default function DashboardPage() {
     });
   }, [locale]);
 
-  // Memoize tab content – pass isActive so tabs revalidate when switched to
-  const appointmentsContent = useMemo(
-    () => <AppointmentsTab isActive={activeTab === 'appointments'} />,
-    [activeTab],
-  );
-  const prescriptionsContent = useMemo(
-    () => <PrescriptionsTab isActive={activeTab === 'prescriptions'} />,
-    [activeTab],
-  );
-  const kpiContent = useMemo(() => <KPIDashboardTab isActive={activeTab === 'kpi'} />, [activeTab]);
+  // Tab content is rendered inside TabContent (same instances, no remount on switch = fast)
 
   // Prepare notifications for PageHeader - memoized to prevent recreation on every render
   // Must be called unconditionally (before any early returns) to follow Rules of Hooks
@@ -407,6 +413,8 @@ export default function DashboardPage() {
         navigate('/inventory');
       } else if (notification.type === 'lot') {
         navigate('/inventory/lots');
+      } else if (notification.type === 'lab_result') {
+        navigate('/lab-results?status=draft');
       }
     },
     [navigate],
@@ -480,7 +488,11 @@ export default function DashboardPage() {
               variant='dashboard'
             />
           </div>
-          <div className='dashboard-skeleton-root flex items-center justify-center min-h-[300px]' role='status' aria-label={t('auth.redirectingToLogin')}>
+          <div
+            className='dashboard-skeleton-root flex items-center justify-center min-h-[300px]'
+            role='status'
+            aria-label={t('auth.redirectingToLogin')}
+          >
             <Loader type='section' text={t('auth.redirectingToLogin')} />
           </div>
         </div>
@@ -488,7 +500,9 @@ export default function DashboardPage() {
     );
   }
 
-  const initialDashboardLoading = statsLoading || listsLoading;
+  const initialDashboardLoading = isDoctor
+    ? statsLoading || listsLoading
+    : !(dashboardAll.hasFastStats || dashboardAll.hasFullData);
   const showStaleBanner =
     !isDoctor && dashboardAll.error && dashboardAll.todayAppointments?.length > 0;
 
@@ -559,13 +573,7 @@ export default function DashboardPage() {
           {/* Skeleton shown during initial load */}
           {initialDashboardLoading && <DashboardSkeleton isDoctor={isDoctor} />}
 
-          <TabContent
-            activeTab={activeTab}
-            appointmentsContent={appointmentsContent}
-            kpiContent={kpiContent}
-            prescriptionsContent={prescriptionsContent}
-            hidden={initialDashboardLoading}
-          >
+          <TabContent activeTab={activeTab} hidden={initialDashboardLoading}>
             <OverviewTab>
               {/* Critical Alerts / Pending Tasks – AlertsSection (STEP 5) */}
               <AlertsSection>
@@ -579,10 +587,44 @@ export default function DashboardPage() {
                           onViewAll={(alert) => {
                             if (alert?.type === 'inventory') navigate('/inventory');
                             else if (alert?.type === 'appointments') navigate('/appointments');
+                            else if (alert?.type === 'lab_result')
+                              navigate('/lab-results?status=draft');
                             else navigate('/reports');
                           }}
                         />
                       </ErrorBoundary>
+                    </div>
+                  )}
+                  {/* D2: Report tracking – Pending lab results widget (non-doctor) */}
+                  {!isDoctor && pendingLabResultsCount > 0 && (
+                    <div className='lg:col-span-1'>
+                      <Card
+                        className='p-4 h-full cursor-pointer hover:border-primary-300 dark:hover:border-primary-600 transition-colors'
+                        onClick={() => navigate('/lab-results?status=draft')}
+                        role='button'
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            navigate('/lab-results?status=draft');
+                          }
+                        }}
+                      >
+                        <div className='flex items-center justify-between gap-2 mb-2'>
+                          <span className='text-sm font-semibold text-neutral-700 dark:text-neutral-300'>
+                            {t('dashboard.pendingLabResults') || 'Pending lab results'}
+                          </span>
+                          <span className='text-lg font-bold text-primary-600 dark:text-primary-400'>
+                            {pendingLabResultsCount}
+                          </span>
+                        </div>
+                        <p className='text-xs text-neutral-500 dark:text-neutral-400'>
+                          {t('dashboard.pendingLabResultsDesc') || 'Results awaiting completion'}
+                        </p>
+                        <div className='mt-2 text-xs text-primary-600 dark:text-primary-400 font-medium'>
+                          {t('common.viewAll')} →
+                        </div>
+                      </Card>
                     </div>
                   )}
                   {/* Doctor-specific: Pending Tasks Card */}
@@ -596,13 +638,15 @@ export default function DashboardPage() {
                               {t('dashboard.pendingTasks')}
                             </h3>
                           </div>
-                          <button
+                          <Button
                             type='button'
+                            variant='ghost'
+                            size='sm'
                             onClick={() => navigate('/doctors/reviews')}
-                            className='section-header-action inline-flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors'
+                            className='section-header-action text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30'
                           >
                             {t('dashboard.seeAll')}
-                          </button>
+                          </Button>
                         </div>
                         <div className='space-y-3'>
                           {stats?.pendingReviews > 0 && (
@@ -929,7 +973,9 @@ export default function DashboardPage() {
                           <NextPatientCard
                             patient={latestActivePrescription.patientId}
                             appointment={{
-                              reason: latestActivePrescription.diagnosis || t('prescriptions.activePrescription'),
+                              reason:
+                                latestActivePrescription.diagnosis ||
+                                t('prescriptions.activePrescription'),
                               type: 'prescription',
                             }}
                             onCall={() => {
@@ -1362,7 +1408,7 @@ export default function DashboardPage() {
 
               {/* Charts Section - Only for non-doctors. Graceful degradation when charts fail. */}
               {!isDoctor && (
-                <div className='dashboard-section'>
+                <div className='dashboard-section dashboard-section--defer'>
                   <ErrorBoundary>
                     {dashboardAll.error ? (
                       <Card className='dashboard-list-card dashboard-list-card-primary p-6 lg:col-span-3'>
@@ -1413,7 +1459,7 @@ export default function DashboardPage() {
 
               {/* Critical Lists - 2 columns - Only for non-doctors */}
               {!isDoctor && (
-                <div className='dashboard-section'>
+                <div className='dashboard-section dashboard-section--defer'>
                   <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch'>
                     {/* Overdue Invoices */}
                     <DashboardListCard

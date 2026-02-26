@@ -823,11 +823,13 @@ export default function PatientsPage() {
                 role='tablist'
                 aria-label={t('patients.viewTable')}
               >
-                <button
+                <Button
                   type='button'
+                  variant='ghost'
+                  size='sm'
                   role='tab'
                   aria-selected={viewMode === 'table'}
-                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`inline-flex items-center gap-1.5 ${
                     viewMode === 'table'
                       ? 'bg-primary-100 text-primary-700 shadow-sm dark:bg-primary-900/40 dark:text-primary-300'
                       : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
@@ -836,12 +838,14 @@ export default function PatientsPage() {
                 >
                   <ListChecksIcon className='icon icon-sm' />
                   {t('patients.viewTable')}
-                </button>
-                <button
+                </Button>
+                <Button
                   type='button'
+                  variant='ghost'
+                  size='sm'
                   role='tab'
                   aria-selected={viewMode === 'cards'}
-                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`inline-flex items-center gap-1.5 ${
                     viewMode === 'cards'
                       ? 'bg-primary-100 text-primary-700 shadow-sm dark:bg-primary-900/40 dark:text-primary-300'
                       : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200'
@@ -850,7 +854,7 @@ export default function PatientsPage() {
                 >
                   <LayoutDashboardIcon className='icon icon-sm' />
                   {t('patients.viewCards')}
-                </button>
+                </Button>
               </div>
             </div>
             {viewMode === 'table' ? (

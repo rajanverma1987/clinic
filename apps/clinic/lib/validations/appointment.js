@@ -55,6 +55,8 @@ export const createAppointmentSchema = z.object({
   recurringFrequency: z.enum(['daily', 'weekly', 'biweekly', 'monthly']).optional(),
   recurringEndDate: z.string().optional(),
   recurringOccurrences: z.number().int().min(2).max(52).optional(),
+  carePlanId: z.string().optional(),
+  branchId: z.string().optional(),
 });
 
 export const updateAppointmentSchema = createAppointmentSchema.partial().extend({
@@ -71,6 +73,7 @@ export const appointmentQuerySchema = z.object({
   limit: z.string().optional(),
   patientId: z.string().optional(),
   doctorId: z.string().optional(),
+  branchId: z.string().optional(),
   // 'pending' is accepted for dashboard "appointment requests" and maps to scheduled in the API
   status: z
     .enum([

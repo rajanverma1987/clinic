@@ -1,14 +1,14 @@
-import { getClinicSummary, getClinicSummaryFromMetrics } from '@clinic-saas/dashboard-engine';
-import ClinicDashboardMetrics from '@/models/ClinicDashboardMetrics.js';
 import CacheManager from '@/lib/cache/cache-manager.js';
-import { dashboardEngineAdapter } from '@/lib/dashboard-engine-adapter';
 import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
+import { dashboardEngineAdapter } from '@/lib/dashboard-engine-adapter';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { logger } from '@/lib/utils/logger.js';
 import { withAuth } from '@/middleware/auth';
 import { withErrorHandler } from '@/middleware/error-handler';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
+import ClinicDashboardMetrics from '@/models/ClinicDashboardMetrics.js';
+import { getClinicSummary, getClinicSummaryFromMetrics } from '@clinic-saas/dashboard-engine';
 import { NextResponse } from 'next/server';
 
 /** Server-side cache TTL for dashboard stats (seconds). Redis optional; fails gracefully. */
@@ -23,6 +23,28 @@ const DASHBOARD_CACHE_TTL_MS = DASHBOARD_CACHE_TTL * 1000;
 async function getHandler(req, user) {
   try {
     const tenantId = user.tenantId?.toString?.() || user.tenantId;
+
+    // Super admin has no tenantId; return empty stats so UI doesn't break (they use /admin/stats)
+    if (user.role === 'super_admin' && !tenantId) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          appointments: { today: 0, completed: 0, upcoming: 0 },
+          revenue: { today: 0, monthTotal: 0 },
+          patients: { total: 0, newThisMonth: 0 },
+          invoices: { pending: 0, paid: 0 },
+          lastUpdated: new Date().toISOString(),
+        },
+        fromCache: false,
+      });
+    }
+
+    if (!tenantId) {
+      return NextResponse.json(
+        { success: false, message: 'Tenant context required' },
+        { status: 400 },
+      );
+    }
 
     // Prefer clinic_dashboard_metrics (aggregated table) – no live queries
     const metrics = await ClinicDashboardMetrics.findOne({ tenantId }).lean();

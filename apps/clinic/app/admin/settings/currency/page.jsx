@@ -148,14 +148,16 @@ export default function AdminSettingsCurrencyPage() {
                     className='inline-flex items-center gap-1 px-3 py-1 bg-neutral-100 rounded-full text-sm'
                   >
                     {c}
-                    <button
+                    <Button
                       type='button'
-                      className='text-neutral-500 hover:text-red-600'
+                      variant='ghost'
+                      size='xs'
+                      className='text-neutral-500 hover:text-red-600 min-w-0 p-0.5'
                       onClick={() => handleRemoveCurrency(c)}
                       aria-label={`Remove ${c}`}
                     >
                       ×
-                    </button>
+                    </Button>
                   </span>
                 ))}
               </div>

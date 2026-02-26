@@ -32,10 +32,7 @@ function BlogImageCard({ src, alt, category }) {
   // Show gradient placeholder if error or no image
   if (hasError || !src) {
     return (
-      <div
-        className='mb-6 w-full flex items-center justify-center bg-gradient-to-br from-primary-100 via-primary-200 to-secondary-100 text-primary-700 rounded-lg relative overflow-hidden'
-        style={{ height: '192px' }}
-      >
+      <div className='mb-6 w-full h-48 flex items-center justify-center bg-gradient-to-br from-primary-100 via-primary-200 to-secondary-100 text-primary-700 rounded-lg relative overflow-hidden'>
         <div className='absolute inset-0 bg-gradient-to-br from-primary-500/10 to-secondary-500/10'></div>
         <div className='relative z-10 flex flex-col items-center gap-2'>
           <svg
@@ -58,10 +55,7 @@ function BlogImageCard({ src, alt, category }) {
   }
 
   return (
-    <div
-      className='mb-6 overflow-hidden rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 relative group'
-      style={{ width: '100%', height: '192px' }}
-    >
+    <div className='mb-6 w-full h-48 overflow-hidden rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 relative group'>
       {isLoading && (
         <div className='absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200 z-10'>
           <div className='animate-pulse'>
@@ -104,61 +98,26 @@ export default function BlogPage() {
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1'>
+      <main className='flex-1 page-main'>
         {/* Hero Section */}
-        <section 
-          className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
-          style={{
-            paddingTop: '120px',
-            paddingBottom: '64px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <section className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden pt-12 pb-12 px-8'>
           <div className='max-w-7xl mx-auto relative z-10'>
-            <div className='text-center mb-16'>
-              <h1
-                className='text-neutral-900'
-                style={{
-                  fontSize: '32px',
-                  lineHeight: '40px',
-                  fontWeight: '700',
-                  letterSpacing: '-0.02em',
-                  marginBottom: '24px',
-                }}
-              >
-                Blog & Resources
-              </h1>
-              <p 
-                className='text-neutral-600 max-w-2xl mx-auto'
-                style={{
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  fontWeight: '400',
-                }}
-              >
-                Learn about clinic management, best practices, and how Doctor&apos;s Clinic can transform
-                your practice
+            <div className='text-center mb-10'>
+              <h1 className='text-h1 text-neutral-900 mb-4'>{t('blog.title')}</h1>
+              <p className='text-body-lg text-neutral-600 max-w-2xl mx-auto'>
+                {t('blog.subtitle')}
               </p>
             </div>
           </div>
         </section>
 
         {/* Blog Posts Grid */}
-        <section 
-          className='bg-white'
-          style={{
-            paddingTop: '64px',
-            paddingBottom: '64px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <section className='bg-white py-12 px-8'>
           <div className='max-w-7xl mx-auto'>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
               {blogPosts.map((post) => (
                 <Link key={post.id} href={`/blog/${post.slug}`}>
-                  <Card className='h-full hover:shadow-lg cursor-pointer group transition-shadow duration-300'>
+                  <Card className='h-full hover:shadow-lg cursor-pointer group transition-smooth hover-lift'>
                     <div className='p-6 lg:p-8'>
                       {/* Featured Image or Placeholder */}
                       {post.image?.url ? (
@@ -178,33 +137,13 @@ export default function BlogPage() {
                         </span>
                         <span className='text-sm text-neutral-500'>{post.readTime}</span>
                       </div>
-                      <h2 
-                        className='text-neutral-900 mb-4 group-hover:text-primary-600 transition-colors duration-200'
-                        style={{
-                          fontSize: '20px',
-                          lineHeight: '28px',
-                          fontWeight: '600',
-                        }}
-                      >
+                      <h2 className='text-body-lg font-semibold text-neutral-900 mb-4 group-hover:text-primary-600 transition-colors duration-200'>
                         {post.title}
                       </h2>
-                      <p 
-                        className='text-neutral-600 mb-6 line-clamp-3'
-                        style={{
-                          fontSize: '16px',
-                          lineHeight: '24px',
-                          fontWeight: '400',
-                        }}
-                      >
+                      <p className='text-body-md text-neutral-600 mb-6 line-clamp-3'>
                         {post.excerpt}
                       </p>
-                      <div 
-                        className='flex items-center justify-between text-neutral-500 pt-2 border-t border-neutral-100'
-                        style={{
-                          fontSize: '14px',
-                          lineHeight: '20px',
-                        }}
-                      >
+                      <div className='text-body-sm flex items-center justify-between text-neutral-500 pt-2 border-t border-neutral-100'>
                         <span>
                           {new Date(post.date).toLocaleDateString('en-US', {
                             year: 'numeric',

@@ -309,8 +309,9 @@ function AdminDoctorVerificationContent() {
             <div className='verify-filters-bar' ref={statusFilterWrapRef}>
               <div className='verify-filters-bar__row'>
                 <div className='verify-filters-bar__status-wrap'>
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
                     className='verify-filters-bar__status-trigger'
                     onClick={(e) => {
                       e.stopPropagation();
@@ -334,7 +335,7 @@ function AdminDoctorVerificationContent() {
                       className={`icon icon-sm shrink-0 transition-transform ${statusFilterOpen ? 'rotate-180' : ''}`}
                       aria-hidden
                     />
-                  </button>
+                  </Button>
                 </div>
                 <div className='verify-filters-bar__sort'>
                   <select
@@ -384,9 +385,10 @@ function AdminDoctorVerificationContent() {
                   aria-label={t('admin.verifyFilters')}
                 >
                   {STATUS_OPTIONS.map((opt) => (
-                    <button
+                    <Button
                       key={opt.value || 'all'}
                       type='button'
+                      variant='ghost'
                       role='option'
                       aria-selected={statusFilter === opt.value}
                       className={`verify-filters-bar__status-btn ${statusFilter === opt.value ? 'verify-filters-bar__status-btn--active' : ''}`}
@@ -398,7 +400,7 @@ function AdminDoctorVerificationContent() {
                       }}
                     >
                       {t(opt.labelKey)}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}

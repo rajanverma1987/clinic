@@ -20,11 +20,12 @@ const { getFeaturesForTier } = require('../lib/constants/plan-features.js');
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Plans: SOLO $49, CLINIC $99, ENTERPRISE $499. Annual 5% off on all. Price in CENTS.
+// Plans: Core / Pro / Enterprise. USD only; price in cents. Payment: PayPal only.
 const PLAN_TIERS = [
   {
     name: 'FREE',
-    priceCents: 0,
+    price: 0,
+    currency: 'USD',
     tierIndex: 0,
     description: 'Solo doctors testing the system or very small practice',
     maxUsers: 1,
@@ -33,31 +34,33 @@ const PLAN_TIERS = [
     isHidden: true,
   },
   {
-    name: 'SOLO',
-    priceCents: 4900,
+    name: 'Core',
+    price: 2499, // $24.99 in cents
+    currency: 'USD',
     tierIndex: 1,
-    description:
-      'Individual doctors, solo practitioners. First 14 days free with card; then $49/mo until you cancel.',
+    description: 'For Solo / Small Clinics',
     maxUsers: 3,
     maxPatients: 999999,
-    maxStorageGB: 5,
+    maxStorageGB: 10,
     trialDays: 14,
   },
   {
-    name: 'CLINIC',
-    priceCents: 9900,
+    name: 'Pro',
+    price: 5999, // $59.99 in cents
+    currency: 'USD',
     tierIndex: 2,
-    description: 'Small to medium clinics with multiple doctors',
+    description: 'For Growing Clinics',
     maxUsers: 10,
     maxPatients: 999999,
     maxStorageGB: 50,
     isPopular: true,
   },
   {
-    name: 'ENTERPRISE',
-    priceCents: 49900,
+    name: 'Enterprise',
+    price: 12999, // $129.99 in cents
+    currency: 'USD',
     tierIndex: 3,
-    description: 'Large clinics, multi-specialty centers, hospitals',
+    description: 'For Advanced / Multi-location Clinics',
     maxUsers: 999,
     maxPatients: 999999,
     maxStorageGB: 9999,
@@ -70,10 +73,10 @@ if (!MONGODB_URI) {
 }
 
 /**
- * Seed subscription plans: SOLO $49, CLINIC $99, ENTERPRISE $499. Annual 5% off. Billing MONTHLY.
+ * Seed subscription plans: Core / Pro / Enterprise. USD only, MONTHLY. Payment: PayPal only.
  */
 async function seedSubscriptionPlans() {
-  console.log('📦 Seeding subscription plans...');
+  console.log('📦 Seeding subscription plans (Core / Pro / Enterprise, USD)...');
 
   for (const tier of PLAN_TIERS) {
     const existing = await SubscriptionPlan.findOne({ name: tier.name });
@@ -81,8 +84,8 @@ async function seedSubscriptionPlans() {
     const planData = {
       name: tier.name,
       description: tier.description,
-      price: tier.priceCents,
-      currency: 'USD',
+      price: tier.price,
+      currency: tier.currency || 'USD',
       billingCycle: 'MONTHLY',
       features,
       maxUsers: tier.maxUsers,
@@ -95,7 +98,7 @@ async function seedSubscriptionPlans() {
     if (!existing) {
       await SubscriptionPlan.create(planData);
       console.log(
-        `  ✅ Created plan: ${tier.name} ($${(tier.priceCents / 100).toFixed(2)}/mo, ${features.length} features)`,
+        `  ✅ Created plan: ${tier.name} ($${(tier.price / 100).toFixed(2)}/mo ${tier.currency}, ${features.length} features)`,
       );
     } else {
       await SubscriptionPlan.updateOne(
@@ -103,6 +106,8 @@ async function seedSubscriptionPlans() {
         {
           $set: {
             description: tier.description,
+            price: tier.price,
+            currency: tier.currency || 'USD',
             features,
             maxUsers: tier.maxUsers,
             maxPatients: tier.maxPatients,
@@ -113,7 +118,9 @@ async function seedSubscriptionPlans() {
           },
         },
       );
-      console.log(`  🔄 Updated plan: ${tier.name} (${features.length} features per doc)`);
+      console.log(
+        `  🔄 Updated plan: ${tier.name} ($${(tier.price / 100).toFixed(2)} ${tier.currency}, ${features.length} features)`,
+      );
     }
   }
 }

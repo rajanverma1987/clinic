@@ -1,16 +1,14 @@
 'use client';
 
+import { useI18n } from '@/contexts/I18nContext';
+
 export function DataSecuritySection() {
+  const { t } = useI18n();
   const securityFeatures = [
     {
       title: 'End-to-end encryption with real-time threat monitoring',
       icon: (
-        <svg
-          style={{ width: '24px', height: '24px' }}
-          fill='none'
-          stroke='currentColor'
-          viewBox='0 0 24 24'
-        >
+        <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
             strokeLinecap='round'
             strokeLinejoin='round'
@@ -23,12 +21,7 @@ export function DataSecuritySection() {
     {
       title: 'HIPAA-compliant data hosting on AWS servers',
       icon: (
-        <svg
-          style={{ width: '24px', height: '24px' }}
-          fill='none'
-          stroke='currentColor'
-          viewBox='0 0 24 24'
-        >
+        <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
             strokeLinecap='round'
             strokeLinejoin='round'
@@ -41,12 +34,7 @@ export function DataSecuritySection() {
     {
       title: 'Two-factor authentication for all users',
       icon: (
-        <svg
-          style={{ width: '24px', height: '24px' }}
-          fill='none'
-          stroke='currentColor'
-          viewBox='0 0 24 24'
-        >
+        <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
             strokeLinecap='round'
             strokeLinejoin='round'
@@ -59,12 +47,7 @@ export function DataSecuritySection() {
     {
       title: 'Strict policy against data selling or misuse',
       icon: (
-        <svg
-          style={{ width: '24px', height: '24px' }}
-          fill='none'
-          stroke='currentColor'
-          viewBox='0 0 24 24'
-        >
+        <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
             strokeLinecap='round'
             strokeLinejoin='round'
@@ -77,12 +60,7 @@ export function DataSecuritySection() {
     {
       title: 'Full transparency in data handling practices',
       icon: (
-        <svg
-          style={{ width: '24px', height: '24px' }}
-          fill='none'
-          stroke='currentColor'
-          viewBox='0 0 24 24'
-        >
+        <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
             strokeLinecap='round'
             strokeLinejoin='round'
@@ -101,70 +79,26 @@ export function DataSecuritySection() {
   ];
 
   return (
-    <section
-      className='py-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden'
-      style={{
-        background: 'linear-gradient(135deg, #ffffff 0%, #f7fafc 50%, #e6f7fe 100%)',
-      }}
-    >
-      {/* Animated gradient orbs - theme colors */}
+    <section className='section-padding-x section-padding-y relative overflow-hidden bg-gradient-to-br from-white via-neutral-100 to-primary-50/30'>
+      <div className='absolute -top-[180px] -right-[180px] w-[600px] h-[600px] rounded-full bg-primary-200/20 blur-[80px]' />
+      <div className='absolute -bottom-[150px] -left-[150px] w-[500px] h-[500px] rounded-full bg-secondary-200/20 blur-[80px]' />
       <div
-        className='absolute top-0 right-0 rounded-full'
-        style={{
-          width: '600px',
-          height: '600px',
-          background:
-            'radial-gradient(circle, rgba(45, 156, 219, 0.12) 0%, rgba(45, 156, 219, 0.04) 40%, transparent 70%)',
-          filter: 'blur(80px)',
-          top: '-180px',
-          right: '-180px',
-        }}
-      ></div>
-      <div
-        className='absolute bottom-0 left-0 rounded-full'
-        style={{
-          width: '500px',
-          height: '500px',
-          background:
-            'radial-gradient(circle, rgba(39, 174, 96, 0.12) 0%, rgba(39, 174, 96, 0.04) 40%, transparent 70%)',
-          filter: 'blur(80px)',
-          bottom: '-150px',
-          left: '-150px',
-        }}
-      ></div>
-
-      {/* Premium grid pattern */}
-      <div
-        className='absolute inset-0 opacity-[0.02]'
+        className='absolute inset-0 opacity-[0.02] bg-[length:60px_60px]'
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232D9CDB' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          backgroundSize: '60px 60px',
         }}
-      ></div>
+      />
 
       <div className='max-w-7xl mx-auto relative z-10'>
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-16 items-center'>
           <div>
-            <h2
-              className='text-neutral-900 mb-6'
-              style={{
-                fontSize: '48px',
-                lineHeight: '56px',
-                letterSpacing: '-0.02em',
-                fontWeight: '700',
-              }}
-            >
+            <p className='text-primary-600 font-semibold text-sm uppercase tracking-wider mb-4'>
+              {t('homepage.securityOverline')}
+            </p>
+            <h2 className='text-neutral-900 mb-6 text-5xl leading-[56px] tracking-tight font-bold'>
               Committed to Data Security
             </h2>
-            <p
-              className='text-neutral-600 mb-12'
-              style={{
-                fontSize: '18px',
-                lineHeight: '28px',
-                letterSpacing: '-0.01em',
-                fontWeight: '400',
-              }}
-            >
+            <p className='text-neutral-600 mb-12 text-lg leading-7 tracking-tight font-normal'>
               Protecting your clinic&apos;s sensitive information is a top priority.
             </p>
 
@@ -174,24 +108,10 @@ export function DataSecuritySection() {
                   key={index}
                   className='flex items-start gap-4 group hover:bg-white/50 rounded-xl p-3'
                 >
-                  <div
-                    className='flex-shrink-0 rounded-xl bg-primary-100 flex items-center justify-center text-primary-600 group-hover:bg-primary-200 transition-transform duration-300'
-                    style={{ width: '52px', height: '52px', transform: 'scale(1)' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.01)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                  >
+                  <div className='flex-shrink-0 w-[52px] h-[52px] rounded-xl bg-primary-100 flex items-center justify-center text-primary-600 group-hover:bg-primary-200 transition-transform duration-300 hover:scale-[1.02]'>
                     {feature.icon}
                   </div>
-                  <p
-                    className='text-neutral-700 flex-1 group-hover:text-neutral-900'
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '26px',
-                      letterSpacing: '-0.01em',
-                      fontWeight: '400',
-                      paddingTop: '14px',
-                    }}
-                  >
+                  <p className='text-neutral-700 flex-1 group-hover:text-neutral-900 text-body-md leading-[26px] tracking-tight font-normal'>
                     {feature.title}
                   </p>
                 </div>

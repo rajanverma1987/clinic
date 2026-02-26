@@ -1,7 +1,9 @@
 /**
  * Client-side performance monitoring for component render and tab switch timing.
- * Use in useEffect: start measurement when effect runs, report in cleanup.
+ * Enterprise: uses logger (no console). Use in useEffect: start measurement when effect runs, report in cleanup.
  */
+
+import { logger } from '@/lib/utils/logger';
 
 const SLOW_RENDER_MS = 100;
 
@@ -26,8 +28,7 @@ export function measureComponentRender(componentName, options = {}) {
 
     if (duration > slowThresholdMs && typeof window !== 'undefined') {
       if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn(`Slow render: ${componentName} took ${Math.round(duration)}ms`);
+        logger.warn('Slow render', { component: componentName, durationMs: Math.round(duration) });
       }
 
       try {
@@ -62,8 +63,7 @@ export function measureTabSwitch(fromTab, toTab) {
   return () => {
     const duration = performance.now() - start;
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-      // eslint-disable-next-line no-console
-      console.log(`Tab switch ${fromTab} -> ${toTab}: ${Math.round(duration)}ms`);
+      logger.info('Tab switch', { fromTab, toTab, durationMs: Math.round(duration) });
     }
   };
 }

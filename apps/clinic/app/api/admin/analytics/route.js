@@ -241,7 +241,10 @@ async function getHandler(req, user) {
   const cancelledSubs = subsStatusMap.CANCELLED ?? 0;
   const churnRate = totalSubs > 0 ? Math.round((cancelledSubs / totalSubs) * 10000) / 100 : 0;
 
-  const activeTenantCount = await Tenant.countDocuments({ isActive: true });
+  const [activeTenantCount, activeUsersCount] = await Promise.all([
+    Tenant.countDocuments({ isActive: true }),
+    User.countDocuments({ role: { $ne: 'super_admin' }, isActive: true }),
+  ]);
   const totalRevenuePeriod = revenueTrends.reduce((a, b) => a + (b.total ?? 0), 0);
   const avgRevenuePerClinic =
     activeTenantCount > 0 ? Math.round((totalRevenuePeriod / activeTenantCount) * 100) / 100 : 0;
@@ -278,6 +281,7 @@ async function getHandler(req, user) {
       paymentSuccessRate: Math.round((paymentSuccess / paymentTotal) * 10000) / 100,
       paymentFailureRate: Math.round((paymentFailure / paymentTotal) * 10000) / 100,
       topClinicsByRevenue,
+      activeUsersCount: activeUsersCount ?? 0,
     }),
   );
 }

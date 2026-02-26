@@ -617,7 +617,7 @@ export default function EditPrescriptionPage() {
                 <div className='flex justify-end gap-4 pt-6 border-t'>
                   <Button
                     type='button'
-                    variant='secondary'
+                    variant='ghost'
                     onClick={() => router.back()}
                     disabled={submitting}
                   >

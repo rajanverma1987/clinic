@@ -13,8 +13,8 @@ export function BlogImage({ src, alt, className, loading = 'lazy', caption }) {
       // Fallback to placeholder
       setImgSrc(
         `https://via.placeholder.com/800x450/3B82F6/FFFFFF?text=${encodeURIComponent(
-          alt?.substring(0, 40) || 'Image'
-        )}`
+          alt?.substring(0, 40) || 'Image',
+        )}`,
       );
     }
   };
@@ -34,10 +34,7 @@ export function BlogImage({ src, alt, className, loading = 'lazy', caption }) {
 
   return (
     <>
-      <div
-        className={className}
-        style={{ position: 'relative', width: '100%', minHeight: '300px' }}
-      >
+      <div className={`relative w-full min-h-[300px] ${className || ''}`}>
         <Image
           src={imgSrc}
           alt={alt || ''}
@@ -46,7 +43,6 @@ export function BlogImage({ src, alt, className, loading = 'lazy', caption }) {
           loading={loading}
           onError={handleError}
           sizes='(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px'
-          style={{ objectFit: 'contain' }}
         />
       </div>
       {caption && <p className='text-sm text-neutral-600 italic mt-2 text-center'>{caption}</p>}

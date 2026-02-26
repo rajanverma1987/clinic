@@ -1,6 +1,7 @@
 /**
  * Icon components – Lucide React wrappers. Same API: className (default 'icon icon-sm'), color (default 'currentColor'), ariaHidden (default true).
- * Use with .icon-xs, .icon-sm, .icon-md, .icon-lg, .icon-xl, .icon-2xl for sizing (see globals.css).
+ * Sizing (globals.css): .icon-xs | .icon-sm | .icon-md | .icon-lg | .icon-xl | .icon-2xl.
+ * Context: .icon-control-bar (responsive xs→sm→md for control bars), .icon-hero (lg→xl for feature/hero).
  */
 export { BarChart2Icon } from './BarChart2Icon';
 export { BellIcon } from './BellIcon';
@@ -28,13 +29,13 @@ export { InventoryIcon } from './InventoryIcon';
 export { LanguagesIcon } from './LanguagesIcon';
 export { LayoutDashboardIcon } from './LayoutDashboardIcon';
 export { ListChecksIcon } from './ListChecksIcon';
-export { PanelLeftCloseIcon } from './PanelLeftCloseIcon';
-export { PanelRightOpenIcon } from './PanelRightOpenIcon';
 export { LogOutIcon } from './LogOutIcon';
 export { MailIcon } from './MailIcon';
 export { MapPinIcon } from './MapPinIcon';
 export { MoreVerticalIcon } from './MoreVerticalIcon';
 export { PaletteIcon } from './PaletteIcon';
+export { PanelLeftCloseIcon } from './PanelLeftCloseIcon';
+export { PanelRightOpenIcon } from './PanelRightOpenIcon';
 export { PencilIcon } from './PencilIcon';
 export { PhoneIcon } from './PhoneIcon';
 export { PlayIcon } from './PlayIcon';

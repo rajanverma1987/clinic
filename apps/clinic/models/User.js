@@ -34,8 +34,23 @@ const UserSchema = new Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function () {
+        return !this.oauthProvider;
+      },
       select: false, // Don't return password by default
+    },
+    /** Social login: 'google' | 'apple'. When set, password is optional. */
+    oauthProvider: {
+      type: String,
+      trim: true,
+      default: null,
+      index: true,
+    },
+    /** Provider's user id (or email used as id). */
+    oauthId: {
+      type: String,
+      trim: true,
+      default: null,
     },
     firstName: {
       type: String,
@@ -114,6 +129,12 @@ const UserSchema = new Schema(
       default: undefined,
       select: true,
     },
+    /** True only for the account that registered the clinic (created tenant with full details). Only this account can purchase or manage the subscription. Staff/doctors created by admin are not primary. */
+    isPrimaryAccount: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -131,9 +152,9 @@ UserSchema.index(
 // Index for role-based queries
 UserSchema.index({ tenantId: 1, role: 1 });
 
-// Hash password before saving
+// Hash password before saving (skip for OAuth-only users or when password not set)
 UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
 

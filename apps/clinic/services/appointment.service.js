@@ -18,7 +18,6 @@
  * @since 1.0.0
  */
 
-import mongoose from 'mongoose';
 import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import { PRIMARY_900 } from '@/lib/constants/brand-colors';
 import connectDB from '@/lib/db/connection.js';
@@ -31,6 +30,7 @@ import Patient from '@/models/Patient.js';
 import Queue, { QueuePriority, QueueStatus, QueueType } from '@/models/Queue.js';
 import Tenant from '@/models/Tenant.js';
 import User from '@/models/User.js';
+import mongoose from 'mongoose';
 
 /**
  * Check if a date is a holiday
@@ -281,7 +281,6 @@ export async function createAppointment(input, tenantId, userId) {
           tenantId,
           appointmentNumber,
           schedule,
-          // Legacy fields for backward compatibility
           appointmentDate: schedule.date,
           startTime: schedule.startTime,
           endTime: schedule.endTime,
@@ -300,6 +299,8 @@ export async function createAppointment(input, tenantId, userId) {
           remindersSent: [],
           isTelemedicine: input.isTelemedicine || false,
           telemedicineConsent: input.telemedicineConsent || false,
+          carePlanId: input.carePlanId,
+          branchId: input.branchId,
           createdBy: userId,
         });
         appointments.push(appointment);
@@ -361,7 +362,6 @@ export async function createAppointment(input, tenantId, userId) {
     tenantId,
     appointmentNumber,
     schedule,
-    // Legacy fields for backward compatibility
     appointmentDate: schedule.date,
     startTime: schedule.startTime,
     endTime: schedule.endTime,
@@ -380,6 +380,8 @@ export async function createAppointment(input, tenantId, userId) {
     remindersSent: [],
     isTelemedicine: input.isTelemedicine || false,
     telemedicineConsent: input.telemedicineConsent || false,
+    carePlanId: input.carePlanId,
+    branchId: input.branchId,
     createdBy: userId,
   });
 
@@ -590,6 +592,13 @@ export async function listAppointments(query, tenantId, userId) {
         : query.doctorId;
   }
 
+  if (query.branchId) {
+    filter.branchId =
+      typeof query.branchId === 'string' && mongoose.Types.ObjectId.isValid(query.branchId)
+        ? new mongoose.Types.ObjectId(query.branchId)
+        : query.branchId;
+  }
+
   if (query.status) {
     filter.status = query.status;
   }
@@ -657,7 +666,11 @@ export async function listAppointments(query, tenantId, userId) {
         endDate.setUTCHours(23, 59, 59, 999);
       }
     }
-    if (startDate && typeof query.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(query.startDate.trim())) {
+    if (
+      startDate &&
+      typeof query.startDate === 'string' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(query.startDate.trim())
+    ) {
       startDate = new Date(startDate);
       startDate.setUTCHours(0, 0, 0, 0);
     }

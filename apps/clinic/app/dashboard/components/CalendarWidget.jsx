@@ -123,7 +123,10 @@ export function CalendarWidget({ onDateSelect, loading = false, doctorId }) {
 
   if (loading) {
     return (
-      <Card className='dashboard-list-card dashboard-list-card-primary calendar-widget-card h-full flex flex-col'>
+      <Card
+        className='dashboard-list-card dashboard-list-card-primary calendar-widget-card h-full flex flex-col'
+        contentClassName='calendar-widget-card-body'
+      >
         <div className='relative z-10 flex-1 flex flex-col min-h-0 calendar-widget-inner'>
           <div className='calendar-widget-header'>
             <div className='skeleton w-1 h-4 rounded-full shrink-0' />
@@ -136,7 +139,10 @@ export function CalendarWidget({ onDateSelect, loading = false, doctorId }) {
   }
 
   return (
-    <Card className='dashboard-list-card dashboard-list-card-primary calendar-widget-card'>
+    <Card
+      className='dashboard-list-card dashboard-list-card-primary calendar-widget-card'
+      contentClassName='calendar-widget-card-body'
+    >
       <div className='calendar-widget-inner'>
         {/* Compact header: title + month/year + nav in one tight row */}
         <div className='calendar-widget-header'>
@@ -190,14 +196,16 @@ export function CalendarWidget({ onDateSelect, loading = false, doctorId }) {
               const dateKey = date ? toDateKey(date) : '';
               const count = dateKey ? appointmentCountsByDate[dateKey] || 0 : 0;
               return (
-                <button
+                <Button
                   key={index}
                   type='button'
+                  variant='ghost'
+                  size='xs'
                   onClick={() => handleDateClick(day, isCurrentMonth, date)}
+                  disabled={!isCurrentMonth}
                   className={`calendar-day calendar-day-with-indicator ${!isCurrentMonth ? 'calendar-day-other-month' : ''} ${
                     isToday ? 'calendar-day-today' : ''
                   } ${isSelected ? 'calendar-day-selected' : ''}`}
-                  disabled={!isCurrentMonth}
                   title={
                     count > 0
                       ? (
@@ -216,7 +224,7 @@ export function CalendarWidget({ onDateSelect, loading = false, doctorId }) {
                         : count}
                     </span>
                   )}
-                </button>
+                </Button>
               );
             })}
           </div>

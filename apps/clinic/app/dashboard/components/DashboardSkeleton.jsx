@@ -44,7 +44,16 @@ export function DashboardSkeleton({ isDoctor = false }) {
         </div>
       </div>
 
-      {/* 2. Key Metrics – section header + stat cards (same as real) */}
+      {/* 2. Actions – clinic only (same as real ActionsSection: flex wrap, button placeholders) */}
+      {!isDoctor && (
+        <div className='dashboard-section'>
+          <div className='flex flex-wrap gap-3'>
+            <div className='skeleton h-9 w-44 rounded-lg' />
+          </div>
+        </div>
+      )}
+
+      {/* 3. Key Metrics – section header + stat cards (same as real KPISection) */}
       <div className='dashboard-section dashboard-section-key-metrics'>
         <SectionHeaderSkeleton titleWidth='w-28' />
         <div className={kpiGridClass}>
@@ -62,16 +71,18 @@ export function DashboardSkeleton({ isDoctor = false }) {
         </div>
       </div>
 
-      {/* 3. Trends – clinic only (same as real TrendsSection) */}
+      {/* 4. Trends – clinic only (same as real TrendsSection: grid-cols-1 sm:grid-cols-2, 2 cards) */}
       {!isDoctor && (
         <div className='dashboard-section'>
-          <SectionHeaderSkeleton titleWidth='w-24' />
-          <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 dashboard-grid gap-4 items-stretch'>
             {[1, 2].map((i) => (
               <div key={i} className='dashboard-card-cell'>
                 <Card className='dashboard-list-card dashboard-list-card-primary h-full flex flex-col p-4'>
-                  <div className='skeleton skeleton-text w-20 mb-3' />
-                  <div className='skeleton skeleton-chart flex-1 min-h-[120px]' />
+                  <div className='flex items-center gap-2 mb-2'>
+                    <div className='skeleton w-5 h-5 rounded shrink-0' />
+                    <div className='skeleton skeleton-text w-28' />
+                  </div>
+                  <div className='skeleton skeleton-chart flex-1 min-h-[80px]' />
                 </Card>
               </div>
             ))}
@@ -79,7 +90,7 @@ export function DashboardSkeleton({ isDoctor = false }) {
         </div>
       )}
 
-      {/* 4. Today's Schedule – clinic only: section header + 2-col (Appointments list | Calendar) */}
+      {/* 5. Today's Schedule – clinic only: section header + 2-col (Appointments list | Calendar) */}
       {!isDoctor && (
         <div className='dashboard-section'>
           <SectionHeaderSkeleton titleWidth='w-36' />
@@ -98,7 +109,10 @@ export function DashboardSkeleton({ isDoctor = false }) {
               </Card>
             </div>
             <div className='dashboard-card-cell dashboard-today-schedule-cell'>
-              <Card className='dashboard-list-card dashboard-list-card-primary calendar-widget-card h-full flex flex-col'>
+              <Card
+                className='dashboard-list-card dashboard-list-card-primary calendar-widget-card h-full flex flex-col'
+                contentClassName='calendar-widget-card-body'
+              >
                 <div className='relative z-10 flex-1 flex flex-col min-h-0 calendar-widget-inner'>
                   <div className='calendar-widget-header flex items-center justify-between gap-2 mb-4'>
                     <div className='skeleton accent-bar-placeholder' />
@@ -116,11 +130,11 @@ export function DashboardSkeleton({ isDoctor = false }) {
         </div>
       )}
 
-      {/* 5. Overview row – section header + 3-col. Clinic: Summary chart | Next Patient | Patients Review. Doctor: Today's list | Next Patient | Earnings | Quick Stats | Recent Activity | Calendar */}
+      {/* 6. Overview row – section header + 3-col. Clinic: Summary chart | Next Patient | Patients Review. Doctor: same grid with 8 cells to match real (Today's list, Next Patient, Earnings, Quick Stats, Recent Activity, optional list, Calendar, Feedback) */}
       <div className='dashboard-section'>
         <SectionHeaderSkeleton titleWidth='w-24' />
         <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
-          {/* Clinic: Summary chart | Next Patient | Patients Review */}
+          {/* Clinic: Summary chart | Next Patient | Patients Review (3 cells) */}
           {!isDoctor && (
             <>
               <div className='dashboard-card-cell'>
@@ -165,7 +179,7 @@ export function DashboardSkeleton({ isDoctor = false }) {
             </>
           )}
 
-          {/* Doctor: Today's Appointments | Next Patient | Earnings | Quick Stats | Recent Activity | Calendar */}
+          {/* Doctor: 8 cells to match real overview (Today's Appointments, Next Patient, Earnings, Quick Stats, Recent Activity, Upcoming list, Calendar, Patient Feedback) */}
           {isDoctor && (
             <>
               <div className='dashboard-card-cell'>
@@ -232,9 +246,40 @@ export function DashboardSkeleton({ isDoctor = false }) {
                 <Card className='dashboard-list-card dashboard-list-card-primary h-full flex flex-col p-6'>
                   <div className='section-header mb-4'>
                     <div className='skeleton accent-bar-placeholder' />
+                    <div className='skeleton skeleton-text w-36' />
+                  </div>
+                  <div className='space-y-2 flex-1 min-h-0'>
+                    {[1, 2, 3].map((j) => (
+                      <div key={j} className='skeleton skeleton-list-item' />
+                    ))}
+                  </div>
+                </Card>
+              </div>
+              <div className='dashboard-card-cell'>
+                <Card className='dashboard-list-card dashboard-list-card-primary h-full flex flex-col p-6'>
+                  <div className='section-header mb-4'>
+                    <div className='skeleton accent-bar-placeholder' />
                     <div className='skeleton skeleton-text w-24' />
                   </div>
                   <div className='skeleton flex-1 min-h-[200px] rounded-lg calendar-skeleton' />
+                </Card>
+              </div>
+              <div className='dashboard-card-cell'>
+                <Card className='dashboard-list-card dashboard-list-card-primary h-full flex flex-col p-6'>
+                  <div className='flex items-center justify-between mb-4 pb-3 border-b border-neutral-200 dark:border-neutral-700'>
+                    <div className='skeleton skeleton-text w-28' />
+                    <div className='skeleton h-8 w-16 rounded' />
+                  </div>
+                  <div className='space-y-3'>
+                    <div className='flex justify-between'>
+                      <div className='skeleton skeleton-text w-20' />
+                      <div className='skeleton skeleton-text w-12' />
+                    </div>
+                    <div className='flex justify-between'>
+                      <div className='skeleton skeleton-text w-24' />
+                      <div className='skeleton skeleton-text w-8' />
+                    </div>
+                  </div>
                 </Card>
               </div>
             </>
@@ -242,7 +287,7 @@ export function DashboardSkeleton({ isDoctor = false }) {
         </div>
       </div>
 
-      {/* 6. Charts section – clinic only (3 chart cards, same as real) */}
+      {/* 7. Charts section – clinic only (no section header; 3 chart cards, same as real) */}
       {!isDoctor && (
         <div className='dashboard-section'>
           <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid items-stretch'>
@@ -261,7 +306,7 @@ export function DashboardSkeleton({ isDoctor = false }) {
         </div>
       )}
 
-      {/* 7. Critical Lists – clinic only (Overdue Invoices | Low Stock, 2-col) */}
+      {/* 8. Critical Lists – clinic only (Overdue Invoices | Low Stock, 2-col; 5 rows to match DashboardListCard loading) */}
       {!isDoctor && (
         <div className='dashboard-section'>
           <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid items-stretch'>
@@ -272,8 +317,8 @@ export function DashboardSkeleton({ isDoctor = false }) {
                   <div className='skeleton skeleton-text w-36' />
                 </div>
                 <div className='space-y-2'>
-                  {[1, 2, 3, 4].map((j) => (
-                    <div key={j} className='skeleton skeleton-list-item-sm' />
+                  {[1, 2, 3, 4, 5].map((j) => (
+                    <div key={j} className='skeleton skeleton-list-item' />
                   ))}
                 </div>
               </Card>
@@ -285,8 +330,8 @@ export function DashboardSkeleton({ isDoctor = false }) {
                   <div className='skeleton skeleton-text w-28' />
                 </div>
                 <div className='space-y-2'>
-                  {[1, 2, 3, 4].map((j) => (
-                    <div key={j} className='skeleton skeleton-list-item-sm' />
+                  {[1, 2, 3, 4, 5].map((j) => (
+                    <div key={j} className='skeleton skeleton-list-item' />
                   ))}
                 </div>
               </Card>
