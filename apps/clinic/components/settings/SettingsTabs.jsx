@@ -65,13 +65,13 @@ export function SettingsTabs({ activeTab, setActiveTab, canAccessAdminTabs, acti
     },
     {
       id: 'smtp',
-      label: t('settings.emailSettings') || 'Email Settings',
+      label: t('settings.emailSettings'),
       icon: <MailIcon className='icon icon-sm' />,
       adminOnly: true,
     },
     {
       id: 'holidays',
-      label: 'Holidays',
+      label: t('settings.holidays'),
       icon: <CalendarIcon className='icon icon-sm' />,
       adminOnly: true,
     },
@@ -121,7 +121,7 @@ export function SettingsTabs({ activeTab, setActiveTab, canAccessAdminTabs, acti
       <nav
         ref={tabListRef}
         role='tablist'
-        aria-label={t('settings.title') || 'Settings'}
+        aria-label={t('settings.title')}
         className='w-full flex flex-wrap items-center gap-x-4 gap-y-1 overflow-x-auto scrollbar-hide py-1.5 border-b border-neutral-200 dark:border-neutral-600 min-w-0 flex-1'
         style={{ scrollbarWidth: 'none' }}
         onKeyDown={handleKeyDown}

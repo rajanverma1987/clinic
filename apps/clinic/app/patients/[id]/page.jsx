@@ -160,6 +160,10 @@ export default function PatientDetailPage() {
         const fieldsToCheck = [
           'firstName',
           'lastName',
+          'firstName_es',
+          'lastName_es',
+          'firstName_ar',
+          'lastName_ar',
           'dateOfBirth',
           'gender',
           'bloodGroup',
@@ -208,11 +212,11 @@ export default function PatientDetailPage() {
         invalidateLists();
         fetchAllData();
       } else {
-        setError(response.error?.message || 'Failed to update patient');
+        setError(response.error?.message || t('patients.failedToUpdatePatient'));
       }
     } catch (error) {
       logger.error('Failed to update patient:', error);
-      setError(error.message || 'Failed to update patient');
+      setError(error.message || t('patients.failedToUpdatePatient'));
     } finally {
       setSaving(false);
     }
@@ -404,6 +408,60 @@ export default function PatientDetailPage() {
                           )}
                         </div>
                       </div>
+                      {isEditing && (
+                        <div className='grid grid-cols-2 gap-4 pt-2 border-t border-neutral-200'>
+                          <div>
+                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
+                              {t('patients.firstNameEs')}
+                            </label>
+                            <Input
+                              value={formData.firstName_es || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, firstName_es: e.target.value })
+                              }
+                              placeholder={t('patients.firstNameEs')}
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
+                              {t('patients.lastNameEs')}
+                            </label>
+                            <Input
+                              value={formData.lastName_es || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, lastName_es: e.target.value })
+                              }
+                              placeholder={t('patients.lastNameEs')}
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
+                              {t('patients.firstNameAr')}
+                            </label>
+                            <Input
+                              value={formData.firstName_ar || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, firstName_ar: e.target.value })
+                              }
+                              placeholder={t('patients.firstNameAr')}
+                              dir='rtl'
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
+                              {t('patients.lastNameAr')}
+                            </label>
+                            <Input
+                              value={formData.lastName_ar || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, lastName_ar: e.target.value })
+                              }
+                              placeholder={t('patients.lastNameAr')}
+                              dir='rtl'
+                            />
+                          </div>
+                        </div>
+                      )}
                       <div>
                         <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
                           Patient ID
@@ -802,10 +860,10 @@ export default function PatientDetailPage() {
                     <table className='clinic-table'>
                       <thead>
                         <tr>
-                          <th>{t('prescriptions.rxNumber') || 'Rx #'}</th>
+                          <th>{t('prescriptions.rxNumber')}</th>
                           <th>{t('appointments.date')}</th>
                           <th>{t('prescriptions.diagnosis')}</th>
-                          <th>{t('common.items') || 'Items'}</th>
+                          <th>{t('common.items')}</th>
                           <th>{t('appointments.status')}</th>
                           <th>{t('common.actions')}</th>
                         </tr>
@@ -881,10 +939,10 @@ export default function PatientDetailPage() {
                     <table className='clinic-table'>
                       <thead>
                         <tr>
-                          <th>{t('invoices.invoiceNumber') || 'Invoice #'}</th>
+                          <th>{t('invoices.invoiceNumber')}</th>
                           <th>{t('appointments.date')}</th>
-                          <th>{t('common.items') || 'Items'}</th>
-                          <th>{t('invoices.amount') || 'Amount'}</th>
+                          <th>{t('common.items')}</th>
+                          <th>{t('invoices.amount')}</th>
                           <th>{t('appointments.status')}</th>
                           <th>{t('common.actions')}</th>
                         </tr>
@@ -900,7 +958,7 @@ export default function PatientDetailPage() {
                               {inv.items.length}{' '}
                               {inv.items.length !== 1
                                 ? t('common.items')
-                                : t('common.item') || 'item'}
+                                : t('common.item')}
                             </td>
                             <td className='whitespace-nowrap font-medium'>
                               ${inv.totalAmount.toFixed(2)}
@@ -944,16 +1002,16 @@ export default function PatientDetailPage() {
               )}
 
               {activeTab === 'lab-tests' && (
-                <Card title={t('lab.labTests') || 'Lab Tests'}>
+                <Card title={t('lab.labTests')}>
                   <div className='clinic-table-wrap'>
                     <table className='clinic-table'>
                       <thead>
                         <tr>
-                          <th>{t('lab.testName') || 'Test Name'}</th>
-                          <th>{t('lab.testCode') || 'Test Code'}</th>
+                          <th>{t('lab.testName')}</th>
+                          <th>{t('lab.testCode')}</th>
                           <th>{t('appointments.date')}</th>
                           <th>{t('appointments.status')}</th>
-                          <th>{t('lab.results') || 'Results'}</th>
+                          <th>{t('lab.results')}</th>
                         </tr>
                       </thead>
                       <tbody>

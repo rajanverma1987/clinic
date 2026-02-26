@@ -32,9 +32,23 @@ function logCacheUnavailableOnce(error) {
   }
 }
 
+/**
+ * Resolve API base URL for the current environment.
+ * In the browser: never use localhost when the app is deployed (use same-origin /api).
+ */
+function resolveBaseUrl() {
+  const configured = process.env.NEXT_PUBLIC_API_URL || '';
+  const isLocalhost = /localhost|127\.0\.0\.1/.test(configured);
+  if (typeof window !== 'undefined' && isLocalhost) {
+    const onDeployedSite = !/localhost|127\.0\.0\.1/.test(window.location?.hostname || '');
+    if (onDeployedSite) return '/api';
+  }
+  return configured && configured.trim() ? configured.replace(/\/$/, '') : '/api';
+}
+
 class ApiClient {
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+    this.baseUrl = resolveBaseUrl();
     /** Single-flight refresh: only one refresh in progress, others wait for the same promise. */
     this._refreshPromise = null;
   }

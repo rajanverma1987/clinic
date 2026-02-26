@@ -256,8 +256,7 @@ export default function DoctorEarningsPage() {
           />
           <Card>
             <div className='p-8 text-center text-neutral-600'>
-              {t('doctors.doctorProfileNotFound') ||
-                'Doctor profile not found. Please complete your profile.'}
+              {t('doctors.doctorProfileNotFound')}
             </div>
           </Card>
         </div>

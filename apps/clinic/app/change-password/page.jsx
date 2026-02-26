@@ -53,43 +53,43 @@ function ChangePasswordContent() {
 
     // Validation - only require current password if not first login
     if (!isFirstLogin && !currentPassword) {
-      setError('Current password is required');
+      setError(t('auth.currentPasswordRequired'));
       return;
     }
 
     if (!newPassword) {
-      setError('New password is required');
+      setError(t('auth.newPasswordRequired'));
       return;
     }
 
     if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('auth.passwordMinLength'));
       return;
     }
 
     // Password strength validation
     if (!/[A-Z]/.test(newPassword)) {
-      setError('Password must contain at least one uppercase letter');
+      setError(t('auth.passwordUppercase'));
       return;
     }
 
     if (!/[a-z]/.test(newPassword)) {
-      setError('Password must contain at least one lowercase letter');
+      setError(t('auth.passwordLowercase'));
       return;
     }
 
     if (!/[0-9]/.test(newPassword)) {
-      setError('Password must contain at least one number');
+      setError(t('auth.passwordNumber'));
       return;
     }
 
     if (!/[^A-Za-z0-9]/.test(newPassword)) {
-      setError('Password must contain at least one special character');
+      setError(t('auth.passwordSpecial'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
@@ -109,7 +109,7 @@ function ChangePasswordContent() {
       const response = await apiClient.post('/auth/change-password', requestData);
 
       if (response.success) {
-        setSuccess('Password changed successfully!');
+        setSuccess(t('auth.passwordChangedSuccess'));
         setTimeout(() => {
           if (isFirstLogin) {
             router.push('/dashboard');
@@ -118,10 +118,10 @@ function ChangePasswordContent() {
           }
         }, 2000);
       } else {
-        setError(response.error?.message || 'Failed to change password');
+        setError(response.error?.message || t('auth.changePasswordFailed'));
       }
-    } catch (error) {
-      setError(error.message || 'Failed to change password');
+    } catch (err) {
+      setError(err.message || t('auth.changePasswordFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -156,9 +156,9 @@ function ChangePasswordContent() {
                 <ImageTransition
                   src='/images/logoclinic.png'
                   alt={t('common.altClinicLogo')}
-                  width={128}
-                  height={112}
-                  className='object-contain drop-shadow-md w-32 max-w-full'
+                  width={200}
+                  height={175}
+                  className='object-contain drop-shadow-md max-w-full'
                   priority
                 />
               </div>
@@ -178,9 +178,9 @@ function ChangePasswordContent() {
                   <ImageTransition
                     src='/images/logoclinic.png'
                     alt={t('common.altClinicLogo')}
-                    width={128}
-                    height={112}
-                    className='object-contain drop-shadow-sm w-32 max-w-full'
+                    width={200}
+                    height={175}
+                    className='object-contain drop-shadow-sm'
                     priority
                   />
                 </div>
@@ -197,7 +197,7 @@ function ChangePasswordContent() {
                   fontWeight: '700',
                 }}
               >
-                {isFirstLogin ? 'Set Your Password' : 'Change Password'}
+                {isFirstLogin ? t('auth.setYourPassword') : t('auth.changePasswordTitle')}
               </h2>
               <p
                 className='text-neutral-600'
@@ -208,8 +208,8 @@ function ChangePasswordContent() {
                 }}
               >
                 {isFirstLogin
-                  ? 'Please set a new password for your account'
-                  : 'Enter your current password and choose a new one'}
+                  ? t('auth.setPasswordSubtitle')
+                  : t('auth.enterCurrentAndNew')}
               </p>
             </div>
 
@@ -243,14 +243,14 @@ function ChangePasswordContent() {
                 <div>
                   <label
                     htmlFor='currentPassword'
-                    className='block text-sm font-semibold text-neutral-800 mb-2'
+                    className='block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2'
                   >
-                    Current Password
+                    {t('auth.currentPassword')}
                   </label>
-                  <div className='relative'>
-                    <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                  <div className='relative w-full min-h-[48px] flex items-center rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20'>
+                    <div className='absolute inset-y-0 left-0 w-12 flex items-center justify-center pointer-events-none text-neutral-500 dark:text-neutral-400'>
                       <svg
-                        className='icon icon-sm text-neutral-900'
+                        className='w-5 h-5 text-neutral-900 dark:text-neutral-100'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -271,16 +271,19 @@ function ChangePasswordContent() {
                       required={!isFirstLogin}
                       placeholder={t('auth.passwordPlaceholder')}
                       autoComplete='current-password'
-                      className='pl-10 pr-10'
+                      size='lg'
+                      variant='borderless'
+                      className='flex-1 min-w-0 pl-16 pr-12 py-3 h-12 rounded-xl border-0 bg-transparent'
                     />
                     <button
                       type='button'
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
+                      className='absolute inset-y-0 right-0 pr-4 flex items-center text-primary-500 hover:text-primary-600 transition-colors rounded-r-xl'
+                      aria-label={showCurrentPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     >
                       {showCurrentPassword ? (
                         <svg
-                          className='icon icon-sm'
+                          className='w-5 h-5'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -294,7 +297,7 @@ function ChangePasswordContent() {
                         </svg>
                       ) : (
                         <svg
-                          className='icon icon-sm'
+                          className='w-5 h-5'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -321,14 +324,14 @@ function ChangePasswordContent() {
               <div>
                 <label
                   htmlFor='newPassword'
-                  className='block text-sm font-semibold text-neutral-800 mb-2'
+                  className='block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2'
                 >
-                  New Password
+                  {t('auth.newPassword')}
                 </label>
-                <div className='relative'>
-                  <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                <div className='relative w-full min-h-[48px] flex items-center rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20'>
+                  <div className='absolute inset-y-0 left-0 w-12 flex items-center justify-center pointer-events-none text-neutral-500 dark:text-neutral-400'>
                     <svg
-                      className='icon icon-sm text-neutral-900'
+                      className='w-5 h-5 text-neutral-900 dark:text-neutral-100'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -349,16 +352,19 @@ function ChangePasswordContent() {
                     required
                     placeholder={t('auth.passwordPlaceholder')}
                     autoComplete='new-password'
-                    className='pl-10 pr-10'
+                    size='lg'
+                    variant='borderless'
+                    className='flex-1 min-w-0 pl-16 pr-12 py-3 h-12 rounded-xl border-0 bg-transparent'
                   />
                   <button
                     type='button'
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
+                    className='absolute inset-y-0 right-0 pr-4 flex items-center text-primary-500 hover:text-primary-600 transition-colors rounded-r-xl'
+                    aria-label={showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                   >
                     {showNewPassword ? (
                       <svg
-                        className='icon icon-sm'
+                        className='w-5 h-5'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -372,7 +378,7 @@ function ChangePasswordContent() {
                       </svg>
                     ) : (
                       <svg
-                        className='icon icon-sm'
+                        className='w-5 h-5'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -393,23 +399,22 @@ function ChangePasswordContent() {
                     )}
                   </button>
                 </div>
-                <p className='text-xs text-neutral-500 mt-1'>
-                  Must be at least 8 characters with uppercase, lowercase, number, and special
-                  character
+                <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
+                  {t('auth.passwordRequirementHint')}
                 </p>
               </div>
 
               <div>
                 <label
                   htmlFor='confirmPassword'
-                  className='block text-sm font-semibold text-neutral-800 mb-2'
+                  className='block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2'
                 >
-                  Confirm New Password
+                  {t('auth.confirmNewPassword')}
                 </label>
-                <div className='relative'>
-                  <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                <div className='relative w-full min-h-[48px] flex items-center rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20'>
+                  <div className='absolute inset-y-0 left-0 w-12 flex items-center justify-center pointer-events-none text-neutral-500 dark:text-neutral-400'>
                     <svg
-                      className='icon icon-sm text-neutral-900'
+                      className='w-5 h-5 text-neutral-900 dark:text-neutral-100'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -430,16 +435,19 @@ function ChangePasswordContent() {
                     required
                     placeholder={t('auth.passwordPlaceholder')}
                     autoComplete='new-password'
-                    className='pl-10 pr-10'
+                    size='lg'
+                    variant='borderless'
+                    className='flex-1 min-w-0 pl-16 pr-12 py-3 h-12 rounded-xl border-0 bg-transparent'
                   />
                   <button
                     type='button'
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className='absolute inset-y-0 right-0 pr-3 flex items-center text-primary-500 hover:text-primary-600 transition-colors'
+                    className='absolute inset-y-0 right-0 pr-4 flex items-center text-primary-500 hover:text-primary-600 transition-colors rounded-r-xl'
+                    aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                   >
                     {showConfirmPassword ? (
                       <svg
-                        className='icon icon-sm'
+                        className='w-5 h-5'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -451,29 +459,29 @@ function ChangePasswordContent() {
                           d='M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21'
                         />
                       </svg>
-                    ) : (
-                      <svg
-                        className='icon icon-sm'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
-                        />
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </div>
+                      ) : (
+                        <svg
+                          className='w-5 h-5'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
+                          />
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
               </div>
 
               <Button
@@ -497,7 +505,7 @@ function ChangePasswordContent() {
                     d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
                   />
                 </svg>
-                {isFirstLogin ? 'Set Password' : 'Change Password'}
+                {isFirstLogin ? t('auth.setPassword') : t('auth.changePasswordTitle')}
               </Button>
             </form>
           </FormTransition>

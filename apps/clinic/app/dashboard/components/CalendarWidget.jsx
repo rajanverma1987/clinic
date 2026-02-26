@@ -201,7 +201,7 @@ export function CalendarWidget({ onDateSelect, loading = false, doctorId }) {
                   title={
                     count > 0
                       ? (
-                          t('dashboard.calendarAppointmentsOnDay') || '{{count}} appointment(s)'
+                          t('dashboard.calendarAppointmentsOnDay')
                         ).replace('{{count}}', String(count))
                       : undefined
                   }

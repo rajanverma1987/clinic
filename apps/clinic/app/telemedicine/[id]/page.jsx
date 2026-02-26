@@ -1028,9 +1028,8 @@ function VideoConsultationRoomContent() {
 
   const handleEndCall = async () => {
     openConfirm({
-      title: t('telemedicine.confirmEndConsultation') || 'End consultation?',
-      message:
-        t('common.confirmationDescription') || 'Are you sure you want to end this consultation?',
+      title: t('telemedicine.confirmEndConsultation'),
+      message: t('telemedicine.confirmEndMessage'),
       variant: 'danger',
       onConfirm: async () => {
         if (user) {
@@ -1593,7 +1592,7 @@ function VideoConsultationRoomContent() {
 
       if (response.success) {
         showSuccess(
-          t('telemedicine.linkSentByEmail') || 'Video call link sent to patient via email!',
+          t('telemedicine.linkSentByEmail'),
         );
         setShowShareModal(false);
       } else {
@@ -1969,12 +1968,12 @@ function VideoConsultationRoomContent() {
                         setShowPaymentModal(false);
                       } else {
                         showError(
-                          t('telemedicine.failedToInitiatePayment') || 'Failed to initiate payment',
+                          t('telemedicine.failedToInitiatePayment'),
                         );
                       }
                     } catch (err) {
                       showError(
-                        t('telemedicine.failedToCollectPayment') || 'Failed to collect payment',
+                        t('telemedicine.failedToCollectPayment'),
                       );
                     }
                   }}

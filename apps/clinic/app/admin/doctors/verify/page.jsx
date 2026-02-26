@@ -850,8 +850,9 @@ function AdminDoctorVerificationContent() {
 }
 
 export default function AdminDoctorVerificationPage() {
+  const { t } = useI18n();
   return (
-    <Suspense fallback={<Loader type='page' text='Loading...' />}>
+    <Suspense fallback={<Loader type='page' text={t('common.loading')} />}>
       <AdminDoctorVerificationContent />
     </Suspense>
   );

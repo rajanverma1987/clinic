@@ -137,6 +137,7 @@ export const appointmentQuerySchema = z.object({
     .transform((val) => val === 'true')
     .optional(),
   since: z.string().datetime().optional(), // For incremental updates - ISO datetime string
+  locale: z.string().max(10).optional(), // e.g. es, ar - for localized patient names
 });
 
 export const changeStatusSchema = z.object({

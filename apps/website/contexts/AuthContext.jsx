@@ -7,7 +7,7 @@
 
 import { apiClient } from '@/lib/api/client.js';
 import { setCurrentTenantId } from '@/lib/cache/current-tenant.js';
-import * as dashboardCache from '@/lib/cache/dashboard-cache.js';
+import { clearDashboardCache } from '@/lib/cache/dashboard-cache.js';
 import { clearIndexedDBCache, clearOfflineMutations } from '@/lib/cache/indexed-db-cache.js';
 import { clearAllCache } from '@/lib/utils/api-cache.js';
 import { disconnectRealtimeClient } from '@/lib/realtime/realtime-client.js';
@@ -84,7 +84,7 @@ export function AuthProvider({ children }) {
           if (typeof window !== 'undefined') {
             localStorage.removeItem('refreshToken');
             lastActivityRef.current = 0;
-            dashboardCache.clear();
+            clearDashboardCache();
             clearAllCache();
             disconnectRealtimeClient();
             clearIndexedDBCache().catch(() => {});
@@ -595,7 +595,7 @@ export function AuthProvider({ children }) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('refreshToken');
         lastActivityRef.current = 0;
-        dashboardCache.clear();
+        clearDashboardCache();
         clearAllCache();
         disconnectRealtimeClient();
         clearIndexedDBCache().catch(() => {});

@@ -233,9 +233,9 @@ function LoginPageContent() {
                 <Image
                   src='/images/logoclinic.png'
                   alt={t('common.altClinicLogo')}
-                  width={128}
-                  height={112}
-                  className='object-contain drop-shadow-md w-32 max-w-full'
+                  width={232}
+                  height={203}
+                  className='object-contain drop-shadow-md w-[14.5rem] max-w-full'
                   priority
                 />
               </div>
@@ -250,9 +250,9 @@ function LoginPageContent() {
                   <ImageTransition
                     src='/images/logoclinic.png'
                     alt={t('common.altClinicLogo')}
-                    width={128}
-                    height={112}
-                    className='object-contain drop-shadow-sm w-32'
+                    width={232}
+                    height={203}
+                    className='object-contain drop-shadow-sm w-[14.5rem]'
                     priority
                   />
                 </div>
@@ -510,7 +510,7 @@ function LoginPageContent() {
                       fontWeight: '600',
                     }}
                   >
-                    Two-Factor Authentication
+                    {t('auth.twoFactorAuthentication')}
                   </h3>
                   <p
                     className='text-neutral-600'
@@ -674,7 +674,7 @@ function LoginPageContent() {
                       href='/pricing'
                       className='text-primary-600 hover:text-primary-700 font-bold transition-colors'
                     >
-                      {t('auth.contactSales') || 'contact sales'}
+                      {t('auth.contactSales')}
                     </Link>
                     .
                   </p>

@@ -27,21 +27,22 @@ export function NextPatientCard({
     patientData?.name || `${firstName} ${lastName}`.trim() || t('common.unknownPatient');
   const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
 
-  const patientId = patientData?.patientId || patientData?._id?.slice(-12) || 'N/A';
+  const na = t('common.na');
+  const patientId = patientData?.patientId || patientData?._id?.slice(-12) || na;
   const dateOfBirth = patientData?.dateOfBirth
     ? new Date(patientData.dateOfBirth).toLocaleDateString()
-    : 'N/A';
-  const gender = patientData?.gender || 'N/A';
-  const weight = patientData?.weight || 'N/A';
-  const height = patientData?.height || 'N/A';
-  const phone = patientData?.phone || 'N/A';
+    : na;
+  const gender = patientData?.gender || na;
+  const weight = patientData?.weight || na;
+  const height = patientData?.height || na;
+  const phone = patientData?.phone || na;
   const regDate = patientData?.createdAt
     ? new Date(patientData.createdAt).toLocaleDateString()
-    : 'N/A';
+    : na;
 
   const lastAppointment = appointment?.lastAppointment
     ? new Date(appointment.lastAppointment).toLocaleDateString()
-    : 'N/A';
+    : na;
 
   const reason = appointment?.reason || appointment?.type || t('common.generalConsultation');
 
@@ -57,10 +58,11 @@ export function NextPatientCard({
   };
   
   // Combine medicalHistory, chronicConditions, and allergies for display
+  const allergyLabel = t('dashboard.allergyLabel');
   const medicalHistory = [
     ...parseMedicalInfo(patientData?.chronicConditions),
     ...parseMedicalInfo(patientData?.medicalHistory),
-    ...parseMedicalInfo(patientData?.allergies).map(a => `Allergy: ${a}`),
+    ...parseMedicalInfo(patientData?.allergies).map((a) => `${allergyLabel}: ${a}`),
   ].filter(Boolean);
 
   return (
@@ -104,37 +106,37 @@ export function NextPatientCard({
           {/* Patient Details Grid */}
           <div className='grid grid-cols-3 gap-3 text-body-xs'>
             <div>
-              <span className='text-neutral-500 dark:text-neutral-400'>D.O.B</span>
+              <span className='text-neutral-500 dark:text-neutral-400'>{t('dashboard.dob')}</span>
               <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
                 {dateOfBirth}
               </p>
             </div>
             <div>
-              <span className='text-neutral-500 dark:text-neutral-400'>Sex</span>
+              <span className='text-neutral-500 dark:text-neutral-400'>{t('dashboard.genderLabel')}</span>
               <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
                 {gender}
               </p>
             </div>
             <div>
-              <span className='text-neutral-500 dark:text-neutral-400'>Weight</span>
+              <span className='text-neutral-500 dark:text-neutral-400'>{t('dashboard.weight')}</span>
               <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
                 {weight}
               </p>
             </div>
             <div>
-              <span className='text-neutral-500 dark:text-neutral-400'>Last Appointment</span>
+              <span className='text-neutral-500 dark:text-neutral-400'>{t('dashboard.lastAppointment')}</span>
               <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
                 {lastAppointment}
               </p>
             </div>
             <div>
-              <span className='text-neutral-500 dark:text-neutral-400'>Height</span>
+              <span className='text-neutral-500 dark:text-neutral-400'>{t('dashboard.height')}</span>
               <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
                 {height}
               </p>
             </div>
             <div>
-              <span className='text-neutral-500 dark:text-neutral-400'>Reg. Date</span>
+              <span className='text-neutral-500 dark:text-neutral-400'>{t('dashboard.registrationDate')}</span>
               <p className='font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5'>
                 {regDate}
               </p>
@@ -162,7 +164,7 @@ export function NextPatientCard({
             </div>
           ) : (
             <p className='text-body-sm text-neutral-500 dark:text-neutral-400 italic'>
-              {t('common.notMentioned') || 'Not mentioned'}
+              {t('common.notMentioned')}
             </p>
           )}
         </div>

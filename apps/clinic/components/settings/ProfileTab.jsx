@@ -233,13 +233,13 @@ export function ProfileTab({
       const response = await apiClient.put(`/users/${userId}`, { avatar: dataUrl });
       handleCloseCropModal();
       if (response?.success) {
-        showSuccess(t('settings.profilePhotoUpdated') || 'Profile photo updated.');
+        showSuccess(t('settings.profilePhotoUpdated'));
         onAvatarUploaded?.();
       } else {
-        showError(response?.error?.message || t('errors.generic') || 'Failed to update photo.');
+        showError(response?.error?.message || t('errors.generic'));
       }
     } catch (err) {
-      showError(err?.message || t('errors.generic') || 'Failed to update photo.');
+      showError(err?.message || t('errors.generic'));
     } finally {
       setUploadingAvatar(false);
     }
@@ -256,9 +256,7 @@ export function ProfileTab({
   const handleLogoutClick = () => {
     openConfirm({
       title: t('auth.confirmLogout', 'Confirm Sign Out'),
-      message:
-        t('auth.logoutConfirmMessage') ||
-        'Are you sure you want to sign out? You will need to sign in again to access your account.',
+      message: t('auth.logoutConfirmMessage'),
       variant: 'danger',
       onConfirm: () => logout(),
     });
@@ -268,7 +266,7 @@ export function ProfileTab({
     const file = e?.target?.files?.[0];
     if (!file || !file.type.startsWith('image/')) {
       showError(
-        t('settings.uploadPhotoInvalid') || 'Please select an image file (JPEG, PNG, GIF).',
+        t('settings.uploadPhotoInvalid'),
       );
       return;
     }
@@ -277,7 +275,7 @@ export function ProfileTab({
         t('settings.uploadPhotoTooSmall', {
           minMB: AVATAR_FILE_MIN_MB,
           maxMB: AVATAR_FILE_MAX_MB,
-        }) || `Image must be between ${AVATAR_FILE_MIN_MB} MB and ${AVATAR_FILE_MAX_MB} MB.`,
+        }),
       );
       return;
     }
@@ -286,7 +284,7 @@ export function ProfileTab({
         t('settings.uploadPhotoTooLarge', {
           minMB: AVATAR_FILE_MIN_MB,
           maxMB: AVATAR_FILE_MAX_MB,
-        }) || `Image must be between ${AVATAR_FILE_MIN_MB} MB and ${AVATAR_FILE_MAX_MB} MB.`,
+        }),
       );
       return;
     }
@@ -317,7 +315,7 @@ export function ProfileTab({
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      showError(t('settings.uploadPhotoInvalid') || 'Failed to load image.');
+      showError(t('settings.uploadPhotoInvalid'));
     };
     img.src = url;
   };
@@ -380,9 +378,7 @@ export function ProfileTab({
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAvatar || saving}
                   className='absolute top-1.5 right-1.5 w-8 h-8 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 shadow-sm flex items-center justify-center text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-50 disabled:pointer-events-none'
-                  aria-label={
-                    t('settings.uploadPhoto') || t('common.uploadPhoto') || 'Upload photo'
-                  }
+                  aria-label={t('settings.uploadPhoto')}
                 >
                   <PencilIcon className='icon icon-xs' ariaHidden />
                 </button>
@@ -399,7 +395,7 @@ export function ProfileTab({
                 type='file'
                 accept='image/jpeg,image/png,image/gif,image/webp'
                 className='sr-only'
-                aria-label={t('settings.uploadPhoto') || t('common.uploadPhoto') || 'Upload photo'}
+                aria-label={t('settings.uploadPhoto')}
                 onChange={handleAvatarFileSelect}
               />
             </div>
@@ -472,13 +468,12 @@ export function ProfileTab({
       <Modal
         isOpen={showCropModal}
         onClose={handleCloseCropModal}
-        title={t('settings.cropPhoto') || 'Crop photo'}
+        title={t('settings.cropPhoto')}
         size='md'
       >
         <div className='p-4'>
           <p className='text-sm text-neutral-600 mb-4'>
-            {t('settings.cropPhotoHint') ||
-              'Drag the image to position it. The square area will be used as your profile photo.'}
+            {t('settings.cropPhotoHint')}
           </p>
           <div
             className='relative mx-auto overflow-hidden rounded-xl bg-neutral-200 dark:bg-neutral-700 select-none'
@@ -518,7 +513,7 @@ export function ProfileTab({
               onClick={handleApplyCrop}
               disabled={uploadingAvatar || !cropImageSize.w}
             >
-              {uploadingAvatar ? t('common.uploading') || 'Uploading…' : t('common.apply')}
+              {uploadingAvatar ? t('common.uploading') : t('common.apply')}
             </Button>
           </div>
         </div>
@@ -597,10 +592,10 @@ export function ProfileTab({
               </div>
               <div className='pt-4 border-t border-neutral-200 dark:border-neutral-600'>
                 <p className='text-sm font-medium text-neutral-700 dark:text-neutral-300'>
-                  Two-Factor Authentication
+                  {t('auth.twoFactorAuthentication')}
                 </p>
                 <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-0.5'>
-                  Add an extra layer of security using an authenticator app.
+                  {t('auth.twoFactorDescription')}
                 </p>
                 <div className='mt-3'>
                   <TwoFactorSetup

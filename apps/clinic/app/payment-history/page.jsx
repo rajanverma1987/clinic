@@ -88,7 +88,7 @@ export default function PaymentHistoryPage() {
 
   const columns = [
     {
-      header: 'Date',
+      header: t('subscription.date'),
       accessor: (row) => (
         <div className='text-sm'>
           {row.paidAt ? formatDate(row.paidAt) : formatDate(row.createdAt)}
@@ -96,17 +96,17 @@ export default function PaymentHistoryPage() {
       ),
     },
     {
-      header: 'Amount',
+      header: t('subscription.amount'),
       accessor: (row) => <div className='font-medium'>{formatPrice(row.amount, row.currency)}</div>,
     },
     {
-      header: 'Method',
+      header: t('subscription.method'),
       accessor: (row) => (
         <div className='text-sm text-neutral-600 capitalize'>{row.paymentMethod.toLowerCase()}</div>
       ),
     },
     {
-      header: 'Status',
+      header: t('subscription.status'),
       accessor: (row) => (
         <Tag variant={getStatusVariant(row.status)} size='sm'>
           {row.status}
@@ -114,7 +114,7 @@ export default function PaymentHistoryPage() {
       ),
     },
     {
-      header: 'Transaction ID',
+      header: t('subscription.transactionId'),
       accessor: (row) => (
         <div className='text-xs text-neutral-500 font-mono'>
           {row.paypalTransactionId || row.paypalOrderId || '-'}
@@ -165,7 +165,7 @@ export default function PaymentHistoryPage() {
                 </h3>
                 <p className='text-sm text-neutral-600'>
                   {formatPrice(subscription.planId.price, subscription.planId.currency)} /{' '}
-                  {subscription.planId.billingCycle === 'MONTHLY' ? 'month' : 'year'}
+                  {subscription.planId.billingCycle === 'MONTHLY' ? t('subscription.perMonth') : t('subscription.perYear')}
                 </p>
               </div>
               <Button variant='secondary' href='/subscription'>

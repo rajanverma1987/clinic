@@ -39,6 +39,11 @@ const PatientSchema = new Schema(
       required: true,
       trim: true,
     },
+    // Optional localized names for display in Spanish/Arabic (default firstName/lastName used when not set)
+    firstName_es: { type: String, trim: true },
+    lastName_es: { type: String, trim: true },
+    firstName_ar: { type: String, trim: true },
+    lastName_ar: { type: String, trim: true },
     dateOfBirth: {
       type: Date,
       required: true,

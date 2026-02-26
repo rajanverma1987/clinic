@@ -649,7 +649,7 @@ function NewPrescriptionPageContent() {
   const handlePrintPreview = () => {
     const selectedPatient = patients.find((p) => p._id === formData.patientId);
     if (!selectedPatient) {
-      showError(t('prescriptions.selectPatientFirst') || 'Please select a patient first');
+      showError(t('prescriptions.selectPatientFirst'));
       return;
     }
     setShowPrintPreview(true);
@@ -1035,7 +1035,7 @@ function NewPrescriptionPageContent() {
                     title={t('prescriptions.prescriptionItems')}
                     actions={
                       <Button type='button' variant='primary' size='sm' onClick={addItem}>
-                        + {t('prescriptions.addItem') || 'Add Item'}
+                        + {t('prescriptions.addItem')}
                       </Button>
                     }
                   >
@@ -1091,7 +1091,7 @@ function NewPrescriptionPageContent() {
                       }
                     >
                       <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-                      {t('prescriptions.downloadPdf') || 'Download PDF'}
+                      {t('prescriptions.downloadPdf')}
                     </Button>
                     <Button
                       type='submit'

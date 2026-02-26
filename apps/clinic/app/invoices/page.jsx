@@ -161,9 +161,9 @@ export default function InvoicesPage() {
     const statusMap = {
       paid: t('invoices.paid'),
       pending: t('invoices.pending'),
-      partial: t('invoices.partial') || 'Partial',
+      partial: t('invoices.partial'),
       overdue: t('invoices.overdue'),
-      draft: t('invoices.draft') || 'Draft',
+      draft: t('invoices.draft'),
     };
     return statusMap[status] || status;
   };
@@ -198,7 +198,7 @@ export default function InvoicesPage() {
         t('invoices.status'),
         t('invoices.total'),
         t('invoices.paid'),
-        t('invoices.balance') || 'Balance',
+        t('invoices.balance'),
         t('appointments.date'),
       ];
       const rows = list.map((inv) => [
@@ -365,7 +365,7 @@ export default function InvoicesPage() {
         const menuItems = [
           {
             key: 'view',
-            label: t('common.view') || 'View',
+            label: t('common.view'),
             icon: <EyeIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
             onClick: () => router.push(`/invoices/${row._id}`),
           },
@@ -411,7 +411,7 @@ export default function InvoicesPage() {
             : []),
           {
             key: 'print',
-            label: t('invoices.print') || 'Print',
+            label: t('invoices.print'),
             icon: <PrinterIcon className='icon icon-sm flex-shrink-0' ariaHidden />,
             onClick: () => {
               setPrintInvoiceId(row._id);
@@ -423,7 +423,7 @@ export default function InvoicesPage() {
           <div onClick={(e) => e.stopPropagation()}>
             <ActionsMenu
               items={menuItems}
-              ariaLabel={t('common.actions') || 'Actions'}
+              ariaLabel={t('common.actions')}
               triggerSize='xs'
             />
           </div>
@@ -467,7 +467,7 @@ export default function InvoicesPage() {
               ) : (
                 <>
                   <FileDownIcon className='icon icon-sm flex-shrink-0' aria-hidden />
-                  {t('invoices.exportCsv') || 'Export CSV'}
+                  {t('invoices.exportCsv')}
                 </>
               )}
             </Button>
@@ -483,7 +483,7 @@ export default function InvoicesPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onSearch={() => fetchInvoices()}
-            placeholder={t('invoices.searchPlaceholder') || 'Search by invoice #, patient...'}
+            placeholder={t('invoices.searchPlaceholder')}
           />
         </div>
         {loading ? (
@@ -515,7 +515,7 @@ export default function InvoicesPage() {
                   <option value='all'>{t('invoices.filterAll')}</option>
                   <option value='paid'>{t('invoices.paid')}</option>
                   <option value='pending'>{t('invoices.pending')}</option>
-                  <option value='partial'>{t('invoices.partial') || 'Partial'}</option>
+                  <option value='partial'>{t('invoices.partial')}</option>
                   <option value='overdue'>{t('invoices.overdue')}</option>
                   <option value='draft'>{t('invoices.draft')}</option>
                 </select>

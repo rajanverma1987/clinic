@@ -232,38 +232,38 @@ function getAllFeaturesOrdered() {
 
 /**
  * Plan-specific feature bullets for subscription/pricing cards (max 8 per plan).
- * Ensures each card shows correct details for SOLO $49, CLINIC $99, ENTERPRISE $499.
+ * Uses i18n keys so cards translate in Spanish/Arabic. Keys live under subscriptionSpec.cardSolo1–8, etc.
  */
 const CARD_FEATURES_BY_PLAN = {
   SOLO: [
-    '1 doctor + 2 staff (3 team members)',
-    'Unlimited patients & appointments',
-    'First 14 days free with card, then $49/mo',
-    'SOAP notes & vital signs tracking',
-    'Digital prescriptions & print',
-    '5GB document storage',
-    'Simple invoicing & payment recording',
-    'Email support (24-hour response)',
+    'subscriptionSpec.cardSolo1',
+    'subscriptionSpec.cardSolo2',
+    'subscriptionSpec.cardSolo3',
+    'subscriptionSpec.cardSolo4',
+    'subscriptionSpec.cardSolo5',
+    'subscriptionSpec.cardSolo6',
+    'subscriptionSpec.cardSolo7',
+    'subscriptionSpec.cardSolo8',
   ],
   CLINIC: [
-    '5 doctors + 5 staff (10 team members)',
-    'Unlimited patients & appointments',
-    'Multi-doctor calendar & SMS reminders (200/mo)',
-    'Custom SOAP templates & prescription library',
-    '50GB storage, advanced invoicing & tax',
-    'Reports & analytics, 2 locations',
-    'Daily backups, priority support',
-    'Phone & live chat support',
+    'subscriptionSpec.cardClinic1',
+    'subscriptionSpec.cardClinic2',
+    'subscriptionSpec.cardClinic3',
+    'subscriptionSpec.cardClinic4',
+    'subscriptionSpec.cardClinic5',
+    'subscriptionSpec.cardClinic6',
+    'subscriptionSpec.cardClinic7',
+    'subscriptionSpec.cardClinic8',
   ],
   ENTERPRISE: [
-    'Unlimited doctors, staff & locations',
-    'Unlimited SMS & storage',
-    'Department management & lab integration',
-    'Advanced billing, pharmacy & inventory',
-    'Custom reports, API & integrations',
-    'HIPAA tools, 2FA, IP whitelisting',
-    '24/7 dedicated support, SLA',
-    'White-label & custom workflows',
+    'subscriptionSpec.cardEnterprise1',
+    'subscriptionSpec.cardEnterprise2',
+    'subscriptionSpec.cardEnterprise3',
+    'subscriptionSpec.cardEnterprise4',
+    'subscriptionSpec.cardEnterprise5',
+    'subscriptionSpec.cardEnterprise6',
+    'subscriptionSpec.cardEnterprise7',
+    'subscriptionSpec.cardEnterprise8',
   ],
 };
 

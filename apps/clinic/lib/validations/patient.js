@@ -12,6 +12,10 @@ export const patientRegistrationSchema = z.object({
   // Demographics
   firstName: z.string().min(1, 'First name is required').max(100, 'First name is too long'),
   lastName: z.string().min(1, 'Last name is required').max(100, 'Last name is too long'),
+  firstName_es: z.string().max(100).optional().or(z.literal('')),
+  lastName_es: z.string().max(100).optional().or(z.literal('')),
+  firstName_ar: z.string().max(100).optional().or(z.literal('')),
+  lastName_ar: z.string().max(100).optional().or(z.literal('')),
   dateOfBirth: z
     .string()
     .or(z.date())

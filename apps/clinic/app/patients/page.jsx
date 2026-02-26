@@ -529,7 +529,7 @@ export default function PatientsPage() {
           const menuItems = [
             {
               key: 'view',
-              label: t('common.view') || 'View',
+              label: t('common.view'),
               icon: <EyeIcon className='icon icon-sm' />,
               onClick: () => {
                 const id = row?._id ?? row?.id;
@@ -542,7 +542,7 @@ export default function PatientsPage() {
             },
             {
               key: 'edit',
-              label: t('common.edit') || 'Edit',
+              label: t('common.edit'),
               icon: <PencilIcon className='icon icon-sm' />,
               onClick: () => {
                 const id = row?._id ?? row?.id;
@@ -557,17 +557,15 @@ export default function PatientsPage() {
               ? [
                   {
                     key: 'delete',
-                    label: t('common.delete') || 'Delete',
+                    label: t('common.delete'),
                     icon: <TrashIcon className='icon icon-sm' />,
                     onClick: () => {
                       const id = row?._id ?? row?.id;
                       const name = `${row?.firstName ?? ''} ${row?.lastName ?? ''}`.trim();
                       if (!id) return;
                       openConfirm({
-                        title: t('patients.deletePatient') || 'Delete patient',
-                        message:
-                          t('patients.deletePatientConfirm')?.replace('{{name}}', name) ||
-                          `Delete "${name}"? This cannot be undone.`,
+                        title: t('patients.deletePatient'),
+                        message: t('patients.deletePatientConfirm', { name }),
                         variant: 'danger',
                         onConfirm: async () => {
                           try {
@@ -592,7 +590,7 @@ export default function PatientsPage() {
           return (
             <div onClick={(e) => e.stopPropagation()}>
               <ActionsMenu
-                ariaLabel={t('common.actions') || 'Actions'}
+                ariaLabel={t('common.actions')}
                 triggerSize='xs'
                 items={menuItems}
               />
@@ -640,7 +638,7 @@ export default function PatientsPage() {
               ) : (
                 <FileDownIcon className='icon icon-sm' aria-hidden />
               )}
-              <span className='ml-1.5'>{t('patients.exportCsv') || 'Export CSV'}</span>
+              <span className='ml-1.5'>{t('patients.exportCsv')}</span>
             </Button>
             <Link
               href='/appointments/new'
@@ -718,7 +716,7 @@ export default function PatientsPage() {
           <div className='search-modal-grid'>
             <div className='search-modal-field'>
               <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                {t('patients.filterStatus') || 'Status'}
+                {t('patients.filterStatus')}
               </label>
               <select
                 className='filter-select w-full'
@@ -734,7 +732,7 @@ export default function PatientsPage() {
             </div>
             <div className='search-modal-field'>
               <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                {t('patients.filterGender') || 'Gender'}
+                {t('patients.filterGender')}
               </label>
               <select
                 className='filter-select w-full'
@@ -743,14 +741,14 @@ export default function PatientsPage() {
                 aria-label={t('patients.filterGender')}
               >
                 <option value='all'>{t('patients.filterAll')}</option>
-                <option value='male'>{t('patients.genderMale') || 'Male'}</option>
-                <option value='female'>{t('patients.genderFemale') || 'Female'}</option>
-                <option value='other'>{t('patients.genderOther') || 'Other'}</option>
+                <option value='male'>{t('patients.genderMale')}</option>
+                <option value='female'>{t('patients.genderFemale')}</option>
+                <option value='other'>{t('patients.genderOther')}</option>
               </select>
             </div>
             <div className='search-modal-field'>
               <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                {t('patients.filterAgeGroup') || 'Age group'}
+                {t('patients.filterAgeGroup')}
               </label>
               <select
                 className='filter-select w-full'
@@ -759,9 +757,9 @@ export default function PatientsPage() {
                 aria-label={t('patients.filterAgeGroup')}
               >
                 <option value='all'>{t('patients.filterAll')}</option>
-                <option value='child'>{t('patients.ageGroupChild') || '0–17'}</option>
-                <option value='adult'>{t('patients.ageGroupAdult') || '18–64'}</option>
-                <option value='senior'>{t('patients.ageGroupSenior') || '65+'}</option>
+                <option value='child'>{t('patients.ageGroupChild')}</option>
+                <option value='adult'>{t('patients.ageGroupAdult')}</option>
+                <option value='senior'>{t('patients.ageGroupSenior')}</option>
               </select>
             </div>
             <div className='search-modal-field'>
@@ -800,7 +798,7 @@ export default function PatientsPage() {
                 setShowAdvancedSearch(false);
               }}
             >
-              {t('patients.applyFilters') || t('common.apply') || 'Apply'}
+              {t('patients.applyFilters')}
             </Button>
           </div>
         </Modal>

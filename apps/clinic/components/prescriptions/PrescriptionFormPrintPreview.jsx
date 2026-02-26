@@ -317,9 +317,9 @@ export function PrescriptionFormPrintPreview({
               <Button variant='secondary' onClick={handleDownloadPDF} disabled={downloadingPdf}>
                 {downloadingPdf
                   ? t('common.loading')
-                  : t('prescriptions.downloadPdf') || 'Download PDF'}
+                  : t('prescriptions.downloadPdf')}
               </Button>
-              <Button onClick={handlePrint}>{t('prescriptions.print') || 'Print'}</Button>
+              <Button onClick={handlePrint}>{t('prescriptions.print')}</Button>
             </div>
           </>
         )}

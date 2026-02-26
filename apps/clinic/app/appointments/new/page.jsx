@@ -361,7 +361,7 @@ function NewAppointmentPageContent() {
           <form onSubmit={handleSubmit} className='space-y-4' noValidate>
             <div className='border-b border-neutral-200 dark:border-neutral-600 pb-4 mb-4'>
               <h2 className='text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3'>
-                {t('appointments.appointmentDetails') || 'Appointment details'}
+                {t('appointments.appointmentDetails')}
               </h2>
               <div className='space-y-4'>
                 <PatientSelector
@@ -479,7 +479,7 @@ function NewAppointmentPageContent() {
                     size='md'
                   />
                   <span className='text-sm font-medium text-neutral-800 dark:text-neutral-200'>
-                    {t('appointments.recurring') || 'Recurring'}
+                    {t('appointments.recurring')}
                   </span>
                 </label>
                 {formData.isRecurring && (
@@ -503,7 +503,7 @@ function NewAppointmentPageContent() {
                         setFormData({ ...formData, recurringEndDate: e.target.value })
                       }
                       min={formData.appointmentDate || new Date().toISOString().split('T')[0]}
-                      placeholder={t('appointments.endDateOptional') || 'End date (optional)'}
+                      placeholder={t('appointments.endDateOptional')}
                     />
                     {!formData.recurringEndDate && (
                       <Input
@@ -534,7 +534,7 @@ function NewAppointmentPageContent() {
             {/* Consultation method */}
             <div className='border-b border-neutral-200 dark:border-neutral-600 pb-4 mb-4'>
               <h2 className='text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3'>
-                {t('appointments.consultationMethod') || 'Consultation method'}
+                {t('appointments.consultationMethod')}
               </h2>
 
               {/* If Telemedicine not available, show only In-Person (disabled) */}
@@ -732,11 +732,11 @@ function NewAppointmentPageContent() {
             {formData.isTelemedicine && (
               <div className='border-b border-neutral-200 dark:border-neutral-600 pb-4 mb-4'>
                 <h2 className='text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3'>
-                  {t('appointments.videoDetails') || 'Video details'}
+                  {t('appointments.videoDetails')}
                 </h2>
                 <div className='space-y-3'>
                   <Input
-                    label={t('appointments.patientEmailForVideo') || 'Patient email'}
+                    label={t('appointments.patientEmailForVideo')}
                     type='email'
                     value={formData.patientEmail}
                     onChange={(e) => setFormData({ ...formData, patientEmail: e.target.value })}
@@ -755,8 +755,7 @@ function NewAppointmentPageContent() {
                         className='mt-0.5'
                       />
                       <span className='text-sm text-neutral-700 dark:text-neutral-300'>
-                        {t('appointments.videoConsentNotice') ||
-                          'Patient consents to video consultation and understands HIPAA/GDPR rights.'}{' '}
+                        {t('appointments.videoConsentNotice')}{' '}
                         *
                       </span>
                     </label>
@@ -768,7 +767,7 @@ function NewAppointmentPageContent() {
             {/* Optional details */}
             <div className='border-b border-neutral-200 dark:border-neutral-600 pb-4 mb-4 last:border-0'>
               <h2 className='text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3'>
-                {t('appointments.optionalDetails') || 'Optional details'}
+                {t('appointments.optionalDetails')}
               </h2>
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                 <Input

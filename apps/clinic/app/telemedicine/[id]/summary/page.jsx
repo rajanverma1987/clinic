@@ -50,7 +50,7 @@ export default function SessionSummaryPage() {
 
   const handleSubmitRating = async () => {
     if (rating === 0) {
-      showError(t('telemedicine.selectRating') || 'Please select a rating');
+      showError(t('telemedicine.selectRating'));
       return;
     }
     try {
@@ -60,14 +60,14 @@ export default function SessionSummaryPage() {
         reviewText: review,
       });
       if (response.success) {
-        showSuccess(t('telemedicine.thankYouFeedback') || 'Thank you for your feedback!');
+        showSuccess(t('telemedicine.thankYouFeedback'));
         setShowRating(false);
         fetchSession();
       } else {
-        showError(t('telemedicine.failedToSubmitRating') || 'Failed to submit rating');
+        showError(t('telemedicine.failedToSubmitRating'));
       }
     } catch (err) {
-      showError(t('telemedicine.failedToSubmitRating') || 'Failed to submit rating');
+      showError(t('telemedicine.failedToSubmitRating'));
     } finally {
       setSubmittingRating(false);
     }
@@ -76,17 +76,17 @@ export default function SessionSummaryPage() {
   const downloadSummary = () => {
     // Generate and download consultation summary PDF
     const summaryContent = `
-Consultation Summary
-Session ID: ${session.sessionId}
-Date: ${new Date(session.scheduledStartTime).toLocaleString()}
-Duration: ${session.duration || 'N/A'} minutes
+${t('telemedicine.consultationSummary')}
+${t('telemedicine.sessionId')}: ${session.sessionId}
+${t('common.date')}: ${new Date(session.scheduledStartTime).toLocaleString()}
+${t('telemedicine.durationLabel')}: ${session.duration ?? t('common.na')} ${t('queue.minutes')}
 
-Patient: ${session.patientId?.firstName} ${session.patientId?.lastName}
-Doctor: Dr. ${session.doctorId?.firstName} ${session.doctorId?.lastName}
+${t('telemedicine.patient')}: ${session.patientId?.firstName} ${session.patientId?.lastName}
+${t('telemedicine.doctor')}: Dr. ${session.doctorId?.firstName} ${session.doctorId?.lastName}
 
-${session.notes ? `Clinical Notes:\n${session.notes}\n\n` : ''}
-${session.diagnosis ? `Diagnosis:\n${session.diagnosis}\n\n` : ''}
-${t('telemedicine.connectionQuality')}: ${session.connectionQuality || 'N/A'}
+${session.notes ? `${t('telemedicine.clinicalNotes')}:\n${session.notes}\n\n` : ''}
+${session.diagnosis ? `${t('telemedicine.diagnosis')}:\n${session.diagnosis}\n\n` : ''}
+${t('telemedicine.connectionQuality')}: ${session.connectionQuality || t('common.na')}
     `.trim();
 
     const blob = new Blob([summaryContent], { type: 'text/plain' });
@@ -162,13 +162,32 @@ ${t('telemedicine.connectionQuality')}: ${session.connectionQuality || 'N/A'}
                   <label className='text-sm text-neutral-600'>
                     {t('telemedicine.sessionType')}
                   </label>
-                  <Tag variant='default'>{session.sessionType}</Tag>
+                  <Tag variant='default'>
+                    {t(
+                      `telemedicine.${
+                        (session.sessionType || '').toUpperCase() === 'CHAT'
+                          ? 'typeChat'
+                          : 'typeVideo'
+                      }`
+                    )}
+                  </Tag>
                 </div>
 
                 <div>
-                  <label className='text-sm text-neutral-600'>Status</label>
+                  <label className='text-sm text-neutral-600'>
+                    {t('telemedicine.status')}
+                  </label>
                   <Tag variant={session.status === 'COMPLETED' ? 'success' : 'default'}>
-                    {session.status}
+                    {t(
+                      `telemedicine.${
+                        {
+                          SCHEDULED: 'statusScheduled',
+                          IN_PROGRESS: 'statusInProgress',
+                          COMPLETED: 'statusCompleted',
+                          CANCELLED: 'statusCancelled',
+                        }[session.status] || 'statusScheduled'
+                      }`
+                    )}
                   </Tag>
                 </div>
 
@@ -184,7 +203,9 @@ ${t('telemedicine.connectionQuality')}: ${session.connectionQuality || 'N/A'}
                 {session.duration && (
                   <div>
                     <label className='text-sm text-neutral-600'>{t('appointments.duration')}</label>
-                    <p className='font-medium text-neutral-900'>{session.duration} minutes</p>
+                    <p className='font-medium text-neutral-900'>
+                    {session.duration} {t('queue.minutes')}
+                  </p>
                   </div>
                 )}
 

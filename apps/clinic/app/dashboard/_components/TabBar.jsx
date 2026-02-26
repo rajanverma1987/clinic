@@ -15,8 +15,9 @@ import { useCallback, useTransition } from 'react';
 
 export function TabBar({ className = '', activeTab, onTabChange, userId }) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [isPending, startTransition] = useTransition();
+  const appLocale = (locale || 'en').slice(0, 2);
 
   const switchTab = useCallback(
     (tabId) => {
@@ -51,10 +52,10 @@ export function TabBar({ className = '', activeTab, onTabChange, userId }) {
   const handleTabHover = useCallback(
     (tabId) => {
       if (!userId) return;
-      if (tabId === 'appointments') prefetchAppointmentsTab(userId);
+      if (tabId === 'appointments') prefetchAppointmentsTab(userId, appLocale);
       else if (tabId === 'prescriptions') prefetchPrescriptionsTab(userId);
     },
-    [userId],
+    [userId, appLocale],
   );
 
   return (

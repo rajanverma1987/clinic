@@ -5,6 +5,7 @@ import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
 import { PageSearchBar } from '@/components/ui/PageSearchBar';
@@ -160,7 +161,7 @@ export default function StaffPage() {
         try {
           const res = await apiClient.put(`/users/${row.id}`, { isActive: false });
           if (res?.success) {
-            showSuccess(row.isActive ? t('staff.deactivate') + ' OK' : t('staff.activate') + ' OK');
+            showSuccess(row.isActive ? t('staff.deactivatedSuccess') : t('staff.activatedSuccess'));
             fetchStaff();
           } else {
             showError(res?.error?.message || t('staff.failedToUpdate'));
@@ -176,7 +177,7 @@ export default function StaffPage() {
     try {
       const res = await apiClient.put(`/users/${row.id}`, { isActive: true });
       if (res?.success) {
-        showSuccess(t('staff.activate') + ' OK');
+        showSuccess(t('staff.activatedSuccess'));
         fetchStaff();
       } else {
         showError(res?.error?.message || t('staff.failedToUpdate'));
@@ -224,7 +225,7 @@ export default function StaffPage() {
     try {
       const res = await apiClient.put(`/users/${editingUser.id}`, editForm);
       if (res?.success) {
-        showSuccess(t('common.update') + ' OK');
+        showSuccess(t('staff.updatedSuccess'));
         setEditingUser(null);
         fetchStaff();
       } else {
@@ -240,7 +241,7 @@ export default function StaffPage() {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!addForm.firstName?.trim() || !addForm.lastName?.trim() || !addForm.email?.trim()) {
-      showError(t('staff.fullName') + ' & ' + t('staff.email') + ' required');
+      showError(t('staff.nameAndEmailRequired'));
       return;
     }
     setSaving(true);
@@ -391,9 +392,9 @@ export default function StaffPage() {
             {maxUsers != null && (
               <span
                 className='text-sm text-neutral-600'
-                title={t('staff.userLimitDesc') || 'Users used vs plan limit'}
+                title={t('staff.userLimitDesc')}
               >
-                {currentUserCount}/{maxUsers} {t('staff.usersUsed') || 'users'}
+                {currentUserCount}/{maxUsers} {t('staff.usersUsed')}
               </span>
             )}
             <Button
@@ -402,7 +403,7 @@ export default function StaffPage() {
               disabled={atUserLimit}
               title={
                 atUserLimit
-                  ? t('staff.upgradeToAddMore') || 'Upgrade plan to add more users'
+                  ? t('staff.upgradeToAddMore')
                   : undefined
               }
             >
@@ -475,7 +476,7 @@ export default function StaffPage() {
                   setShowAdvancedSearch(false);
                 }}
               >
-                {t('admin.applyFilters')}
+                {t('staff.applyFilters')}
               </Button>
             </div>
           </Modal>
@@ -502,14 +503,14 @@ export default function StaffPage() {
               <h2 className='text-lg font-bold text-neutral-900 mb-4'>{t('staff.addStaff')}</h2>
               {atUserLimit && (
                 <div className='mb-4 p-3 bg-status-warning/10 border border-status-warning/30 rounded-lg text-sm text-neutral-700'>
-                  {t('staff.userLimitReached') || 'User limit reached.'}{' '}
+                  {t('staff.userLimitReached')}{' '}
                   <Link
                     href='/subscription'
                     className='text-primary-600 hover:underline font-medium'
                   >
-                    {t('staff.upgradePlan') || 'Upgrade plan'}
+                    {t('staff.upgradePlan')}
                   </Link>{' '}
-                  {t('staff.toAddMoreUsers') || 'to add more users.'}
+                  {t('staff.toAddMoreUsers')}
                 </div>
               )}
               <form onSubmit={handleAddSubmit} className='space-y-4'>
@@ -578,7 +579,7 @@ export default function StaffPage() {
                     onChange={(e) => setAddForm({ ...addForm, sendWelcomeEmail: e.target.checked })}
                   />
                   <label htmlFor='sendWelcome' className='text-sm text-neutral-700'>
-                    {t('staff.sendInvitation')} (email with login link)
+                    {t('staff.sendInvitation')} ({t('staff.sendInvitationHint')})
                   </label>
                 </div>
                 <div className='flex justify-end gap-2 pt-4'>
@@ -605,7 +606,7 @@ export default function StaffPage() {
                 <div className='grid grid-cols-2 gap-4'>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      First name
+                      {t('staff.firstName')}
                     </label>
                     <Input
                       value={editForm.firstName}
@@ -614,7 +615,7 @@ export default function StaffPage() {
                   </div>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 mb-1'>
-                      Last name
+                      {t('staff.lastName')}
                     </label>
                     <Input
                       value={editForm.lastName}

@@ -484,7 +484,7 @@ export default function AppointmentCalendar({
     <Card className='p-4'>
       <div className='flex items-center justify-between mb-4'>
         <h3 className='text-lg font-semibold text-neutral-900'>
-          {t('appointments.availabilityCalendar') || 'Availability Calendar'}
+          {t('appointments.availabilityCalendar')}
         </h3>
       </div>
 
@@ -497,7 +497,7 @@ export default function AppointmentCalendar({
               size='sm'
               iconOnly
               onClick={goToPreviousDay}
-              title={t('appointments.previousDay') || 'Previous Day'}
+              title={t('appointments.previousDay')}
               className='!min-w-[44px] !w-11 !h-11'
             >
               ←
@@ -514,7 +514,7 @@ export default function AppointmentCalendar({
               size='sm'
               iconOnly
               onClick={goToNextDay}
-              title={t('appointments.nextDay') || 'Next Day'}
+              title={t('appointments.nextDay')}
               className='!min-w-[44px] !w-11 !h-11'
             >
               →
@@ -525,7 +525,7 @@ export default function AppointmentCalendar({
                 size='xs'
                 onClick={goToToday}
               >
-                {t('appointments.today') || 'Today'}
+                {t('appointments.today')}
               </Button>
             )}
             <div className='ml-auto text-sm text-neutral-600'>{formatDateDisplay(currentDate)}</div>
@@ -573,28 +573,28 @@ export default function AppointmentCalendar({
 
                   if (isSelected && !isBooked && !isPastSlot) {
                     slotClass = 'bg-primary-600 text-white border-primary-600 cursor-pointer';
-                    slotTitle = `${timeStr} - ${t('appointments.available') || 'Available'} (${
-                      t('appointments.selected') || 'Selected'
+                    slotTitle = `${timeStr} - ${t('appointments.available')} (${
+                      t('appointments.selected')
                     })`;
                     slotIcon = '✓';
                   } else if (isBooked) {
                     // Booked slots should always be red/orange and disabled
                     slotClass =
                       'bg-status-warning/20 text-status-warning border-status-warning/40 cursor-not-allowed opacity-90';
-                    slotTitle = `${timeStr} - ${t('appointments.booked') || 'Booked'}`;
+                    slotTitle = `${timeStr} - ${t('appointments.booked')}`;
                     slotIcon = '●';
                   } else if (isPastSlot) {
                     slotClass = 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed';
-                    slotTitle = `${timeStr} - ${t('appointments.past') || 'Past'}`;
+                    slotTitle = `${timeStr} - ${t('appointments.past')}`;
                     slotIcon = '—';
                   } else if (isAvailable) {
                     slotClass =
                       'bg-secondary-100 text-secondary-700 border-secondary-300 hover:bg-secondary-100 cursor-pointer';
-                    slotTitle = `${timeStr} - ${t('appointments.available') || 'Available'}`;
+                    slotTitle = `${timeStr} - ${t('appointments.available')}`;
                     slotIcon = '○';
                   } else {
                     slotClass = 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed';
-                    slotTitle = `${timeStr} - ${t('appointments.unavailable') || 'Unavailable'}`;
+                    slotTitle = `${timeStr} - ${t('appointments.unavailable')}`;
                     slotIcon = '—';
                   }
 
@@ -620,17 +620,17 @@ export default function AppointmentCalendar({
                 <div className='flex items-center gap-1.5'>
                   <div className='w-3 h-3 bg-green-50 border border-green-300 rounded'></div>
                   <span className='text-neutral-600'>
-                    {t('appointments.available') || 'Available'}
+                    {t('appointments.available')}
                   </span>
                 </div>
                 <div className='flex items-center gap-1.5'>
                   <div className='w-3 h-3 bg-status-warning/20 border border-status-warning/40 rounded'></div>
-                  <span className='text-neutral-600'>{t('appointments.booked') || 'Booked'}</span>
+                  <span className='text-neutral-600'>{t('appointments.booked')}</span>
                 </div>
                 <div className='flex items-center gap-1.5'>
                   <div className='w-3 h-3 bg-gray-100 border border-gray-200 rounded'></div>
                   <span className='text-neutral-600'>
-                    {t('appointments.pastUnavailable') || 'Past/Unavailable'}
+                    {t('appointments.pastUnavailable')}
                   </span>
                 </div>
               </div>

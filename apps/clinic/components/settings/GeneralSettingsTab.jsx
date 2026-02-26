@@ -182,7 +182,7 @@ export function GeneralSettingsTab({
                 <Input
                   value={clinicForm.logo || ''}
                   onChange={(e) => setClinicForm({ ...clinicForm, logo: e.target.value })}
-                  placeholder='https://…'
+                  placeholder={t('settings.urlPlaceholder')}
                 />
               </div>
               <div>

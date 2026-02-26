@@ -269,7 +269,7 @@ export function NotificationCenter({
         <Card className='w-full h-full shadow-2xl border border-neutral-200 dark:border-neutral-600'>
           <div className='p-4 border-b border-neutral-200 dark:border-neutral-600 flex items-center justify-between'>
             <h2 className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
-              Notifications{' '}
+              {t('notifications.title')}{' '}
               {unreadCount > 0 && (
                 <span className='ml-2 px-2 py-1 bg-primary-600 text-white text-xs rounded-full'>
                   {unreadCount}
@@ -279,7 +279,7 @@ export function NotificationCenter({
             <div className='flex gap-2'>
               {unreadCount > 0 && (
                 <Button variant='secondary' size='sm' onClick={handleMarkAllAsRead}>
-                  Mark All Read
+                  {t('notifications.markAllAsRead')}
                 </Button>
               )}
               <Button
@@ -304,7 +304,7 @@ export function NotificationCenter({
               }`}
               onClick={() => setFilter('all')}
             >
-              All
+              {t('notifications.all')}
             </button>
             <button
               className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
@@ -314,11 +314,19 @@ export function NotificationCenter({
               }`}
               onClick={() => setFilter('unread')}
             >
-              Unread ({unreadCount})
+              {t('notifications.unreadCount', { count: unreadCount })}
             </button>
             {Object.values(NOTIFICATION_TYPES).map((type) => {
               const count = notifications.filter((n) => n.type === type).length;
               if (count === 0) return null;
+              const typeKey =
+                {
+                  [NOTIFICATION_TYPES.APPOINTMENT]: 'notifications.typeAppointment',
+                  [NOTIFICATION_TYPES.PRESCRIPTION]: 'notifications.typePrescription',
+                  [NOTIFICATION_TYPES.PAYMENT]: 'notifications.typePayment',
+                  [NOTIFICATION_TYPES.LAB_RESULT]: 'notifications.typeLabResult',
+                  [NOTIFICATION_TYPES.SYSTEM]: 'notifications.typeSystem',
+                }[type] || type;
               return (
                 <button
                   key={type}
@@ -329,7 +337,7 @@ export function NotificationCenter({
                   }`}
                   onClick={() => setFilter(type)}
                 >
-                  {TYPE_ICONS[type]} {type.replace('_', ' ')} ({count})
+                  {TYPE_ICONS[type]} {t(typeKey)} ({count})
                 </button>
               );
             })}

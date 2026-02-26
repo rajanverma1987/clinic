@@ -620,15 +620,15 @@ export function SettingsPageContent() {
         lastName: editProfileForm.lastName?.trim() || '',
       });
       if (response?.success) {
-        showSuccess(t('settings.profileUpdatedSuccess') || 'Profile updated successfully');
+        showSuccess(t('settings.profileUpdatedSuccess'));
         setShowEditProfileModal(false);
         await refreshUser();
         fetchSettings();
       } else {
-        showError(response?.error?.message || t('errors.generic') || 'Failed to update profile');
+        showError(response?.error?.message || t('errors.generic'));
       }
     } catch (error) {
-      showError(error?.message || t('errors.generic') || 'Failed to update profile');
+      showError(error?.message || t('errors.generic'));
     } finally {
       setSaving(false);
     }
@@ -808,7 +808,7 @@ export function SettingsPageContent() {
       <Modal
         isOpen={showEditProfileModal}
         onClose={() => setShowEditProfileModal(false)}
-        title={t('settings.editProfile') || 'Edit Profile'}
+        title={t('settings.editProfile')}
         size='md'
       >
         <div className='p-4 space-y-4'>

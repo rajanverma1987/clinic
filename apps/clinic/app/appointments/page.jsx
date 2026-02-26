@@ -33,8 +33,9 @@ export default function AppointmentsPage() {
   const searchParams = useSearchParams();
   const dateFromUrl = searchParams.get('date') || '';
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
-  const { locale } = useSettings();
+  const { t, locale: uiLocale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const locale = uiLocale || settingsLocale;
   const { invalidateLists, invalidateStats } = useInvalidateDashboard();
   const { prefetchAppointment } = usePrefetchDetail();
   const tenantId = user?.tenantId ?? null;
@@ -48,6 +49,8 @@ export default function AppointmentsPage() {
 
   useLayoutEffect(() => {
     if (!tenantId) return;
+    const localeCode = (locale || '').slice(0, 2);
+    if (localeCode === 'es' || localeCode === 'ar') return; // always fetch when UI needs localized patient names
     const cached = routeCache.getData(ROUTE_KEY, tenantId);
     const list = cached?.appointments;
     if (cached && Array.isArray(list) && list.length > 0) {
@@ -56,7 +59,7 @@ export default function AppointmentsPage() {
       setTotalPages(cached.totalPages ?? 1);
       setLoading(false);
     }
-  }, [tenantId]);
+  }, [tenantId, locale]);
   const [statsLoading, setStatsLoading] = useState(true);
   const [settings, setSettings] = useState(null);
   const [doctors, setDoctors] = useState([]);
@@ -159,6 +162,8 @@ export default function AppointmentsPage() {
     const q = new URLSearchParams({ page: '1', limit: '10' });
     if (selectedStatus) q.append('status', selectedStatus);
     if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) q.append('date', dateFromUrl);
+    const localeCode = (locale || '').slice(0, 2);
+    if (localeCode) q.append('locale', localeCode);
     apiClient
       .get(`/appointments?${q}`)
       .then((response) => {
@@ -185,6 +190,21 @@ export default function AppointmentsPage() {
       } catch (error) {
         logger.error('Failed to format date', error);
         return date.toLocaleDateString();
+      }
+    },
+    [settings, locale],
+  );
+
+  const formatTimeDisplay = useCallback(
+    (date, options = { hour: '2-digit', minute: '2-digit' }) => {
+      try {
+        return new Intl.DateTimeFormat(locale || 'en-US', {
+          timeZone: settings?.settings?.timezone || 'UTC',
+          ...options,
+        }).format(date);
+      } catch (error) {
+        logger.error('Failed to format time', error);
+        return date.toLocaleTimeString();
       }
     },
     [settings, locale],
@@ -263,7 +283,9 @@ export default function AppointmentsPage() {
   const fetchAppointments = useCallback(
     async (silentRefresh = false) => {
       const hasDateFilter = dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl);
-      const hasCache = tenantId && !hasDateFilter && routeCache.getData(ROUTE_KEY, tenantId);
+      const localeCode = (locale || '').slice(0, 2);
+      const useCache = localeCode !== 'es' && localeCode !== 'ar';
+      const hasCache = useCache && tenantId && !hasDateFilter && routeCache.getData(ROUTE_KEY, tenantId);
       if (!silentRefresh && !hasCache) setLoading(true);
       try {
         const params = new URLSearchParams({
@@ -273,6 +295,7 @@ export default function AppointmentsPage() {
         if (selectedDoctorId) params.append('doctorId', selectedDoctorId);
         if (selectedStatus) params.append('status', selectedStatus);
         if (hasDateFilter) params.append('date', dateFromUrl);
+        if (localeCode) params.append('locale', localeCode);
 
         const response = await apiClient.get(`/appointments?${params}`);
         if (response.success && response.data) {
@@ -281,7 +304,7 @@ export default function AppointmentsPage() {
           const pages = response.data.pagination?.totalPages || 1;
           setAppointments(list);
           setTotalPages(pages);
-          if (tenantId && !hasDateFilter)
+          if (tenantId && !hasDateFilter && useCache)
             routeCache.set(ROUTE_KEY, tenantId, {
               appointments: list,
               currentPage,
@@ -295,7 +318,7 @@ export default function AppointmentsPage() {
         setRefreshing(false);
       }
     },
-    [currentPage, selectedDoctorId, selectedStatus, tenantId, dateFromUrl],
+    [currentPage, selectedDoctorId, selectedStatus, tenantId, dateFromUrl, locale],
   );
 
   useEffect(() => {
@@ -308,6 +331,20 @@ export default function AppointmentsPage() {
       fetchAppointments();
     }
   }, [authLoading, user, router, fetchAppointments, fromBook]);
+
+  // Refetch appointments when UI language changes so patient names use the new locale (es/ar)
+  const prevLocaleRef = useRef(locale);
+  useEffect(() => {
+    if (!user || authLoading) return;
+    const localeCode = (locale || '').slice(0, 2);
+    const prevCode = (prevLocaleRef.current || '').slice(0, 2);
+    if (localeCode !== prevCode && (localeCode === 'es' || localeCode === 'ar' || prevCode === 'es' || prevCode === 'ar')) {
+      prevLocaleRef.current = locale;
+      fetchAppointments(true);
+    } else {
+      prevLocaleRef.current = locale;
+    }
+  }, [locale, user, authLoading, fetchAppointments]);
 
   // Setup automatic background refresh every 60 seconds
   useEffect(() => {
@@ -364,11 +401,11 @@ export default function AppointmentsPage() {
         await fetchAppointments();
         await fetchStats();
       } else {
-        showError(response.error?.message || 'Failed to cancel appointment');
+        showError(response.error?.message || t('appointments.cancelFailed'));
       }
     } catch (error) {
       logger.error('Failed to cancel appointment', error);
-      showError(error.message || 'Failed to cancel appointment');
+      showError(error.message || t('appointments.cancelFailed'));
     } finally {
       setLoadingAppointmentId(null);
     }
@@ -413,7 +450,7 @@ export default function AppointmentsPage() {
         }
       } else {
         // Handle error from API response
-        const errorMessage = response.error?.message || 'Failed to update appointment status';
+        const errorMessage = response.error?.message || t('appointments.updateFailed');
         // If it's a duplicate queue error but appointment was updated, show success
         if (errorMessage.includes('duplicate') && errorMessage.includes('queue')) {
           showSuccess(t('appointments.markedArrivedAlready', { name: patientName || 'Patient' }));
@@ -431,7 +468,7 @@ export default function AppointmentsPage() {
       const errorMessage =
         error?.response?.data?.error?.message ||
         error?.message ||
-        'Failed to update appointment status. Please try again.';
+        t('appointments.updateFailedTryAgain');
 
       // If it's a duplicate queue error, show a more user-friendly message
       if (errorMessage.includes('duplicate') && errorMessage.includes('queue')) {
@@ -459,6 +496,23 @@ export default function AppointmentsPage() {
     return statusMap[status] || status;
   };
 
+  const getTypeLabel = (type) => {
+    if (!type) return '—';
+    const normalized = String(type).toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
+    const keyMap = {
+      consultation: 'typeConsultation',
+      follow_up: 'typeFollowUp',
+      followup: 'typeFollowUp',
+      checkup: 'typeCheckup',
+      emergency: 'typeEmergency',
+      new_patient: 'typeNewPatient',
+      newpatient: 'typeNewPatient',
+      routine: 'typeRoutine',
+    };
+    const key = keyMap[normalized];
+    return key ? t(`appointments.${key}`) : type;
+  };
+
   const columns = [
     {
       header: t('appointments.patient'),
@@ -468,7 +522,10 @@ export default function AppointmentsPage() {
           p && (p.firstName != null || p.lastName != null)
             ? `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim()
             : '';
-        return name || (row.patientId?._id ? String(row.patientId._id).slice(-6) : '—');
+        if (!name) return t('common.unknownPatient');
+        const lower = name.toLowerCase();
+        if (lower === 'patient' || lower === 'unknown' || lower === 'unknown patient' || lower === 'n/a') return t('common.unknownPatient');
+        return name;
       },
     },
     {
@@ -479,23 +536,36 @@ export default function AppointmentsPage() {
           d && (d.firstName != null || d.lastName != null)
             ? `${d.firstName ?? ''} ${d.lastName ?? ''}`.trim()
             : '';
-        return name || (row.doctorId?._id ? `Dr. ${String(row.doctorId._id).slice(-6)}` : '—');
+        if (!name) return t('common.unknownDoctor');
+        const lower = name.toLowerCase();
+        if (lower === 'doctor' || lower === 'unknown' || lower === 'unknown doctor' || lower === 'n/a') return t('common.unknownDoctor');
+        return name;
       },
     },
     {
       header: t('appointments.date'),
-      accessor: (row) => new Date(row.appointmentDate).toLocaleDateString(),
+      accessor: (row) =>
+        row.appointmentDate
+          ? formatDateDisplay(new Date(row.appointmentDate), {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          : '—',
     },
     {
       header: t('appointments.time'),
       accessor: (row) =>
-        `${new Date(row.startTime).toLocaleTimeString()} - ${new Date(
-          row.endTime,
-        ).toLocaleTimeString()}`,
+        row.startTime && row.endTime
+          ? `${formatTimeDisplay(new Date(row.startTime))} - ${formatTimeDisplay(new Date(row.endTime))}`
+          : '—',
     },
-    { header: t('appointments.type'), accessor: 'type' },
     {
-      header: 'Method',
+      header: t('appointments.type'),
+      accessor: (row) => getTypeLabel(row.type),
+    },
+    {
+      header: t('appointments.method'),
       accessor: (row) => (
         <Tag
           variant={row.isTelemedicine ? 'default' : 'success'}
@@ -512,7 +582,7 @@ export default function AppointmentsPage() {
                   d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
                 />
               </svg>
-              Video
+              {t('appointments.video')}
             </>
           ) : (
             <>
@@ -524,7 +594,7 @@ export default function AppointmentsPage() {
                   d='M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
                 />
               </svg>
-              In-Person
+              {t('appointments.inPerson')}
             </>
           )}
         </Tag>
@@ -557,7 +627,7 @@ export default function AppointmentsPage() {
         const menuItems = [
           {
             key: 'view',
-            label: t('common.view') || 'View',
+            label: t('common.view'),
             icon: <EyeIcon className='icon icon-sm' />,
             onClick: () => router.push(`/appointments/${row._id}`),
           },
@@ -565,13 +635,13 @@ export default function AppointmentsPage() {
             ? [
                 {
                   key: 'markArrived',
-                  label: t('appointments.markArrived') || 'Mark Arrived',
+                  label: t('appointments.markArrived'),
                   onClick: () => handleStatusChange(row._id, 'arrived', patientName),
                   disabled: loadingAppointmentId === row._id,
                 },
                 {
                   key: 'cancel',
-                  label: t('appointments.cancelAppointment') || 'Cancel Appointment',
+                  label: t('appointments.cancelAppointment'),
                   icon: <XIcon className='icon icon-sm' />,
                   onClick: () => setCancelTarget({ id: row._id, patientName }),
                   disabled: loadingAppointmentId === row._id,
@@ -583,7 +653,7 @@ export default function AppointmentsPage() {
         return (
           <div onClick={(e) => e.stopPropagation()}>
             <ActionsMenu
-              ariaLabel={t('common.actions') || 'Actions'}
+              ariaLabel={t('common.actions')}
               triggerSize='xs'
               items={menuItems}
             />
@@ -679,10 +749,10 @@ export default function AppointmentsPage() {
                         setCurrentPage(1);
                       }}
                       className='filter-select'
-                      aria-label={t('appointments.filterByDoctor') || 'Filter by Doctor'}
+                      aria-label={t('appointments.filterByDoctor')}
                     >
                       <option value=''>
-                        {t('appointments.filterByDoctor') || 'Filter by Doctor'}
+                        {t('appointments.filterByDoctor')}
                       </option>
                       {doctors && Array.isArray(doctors) && doctors.length > 0 ? (
                         doctors.map((doctor) => {
@@ -702,7 +772,7 @@ export default function AppointmentsPage() {
                         <option value='' disabled>
                           {doctors === null || doctors === undefined
                             ? t('appointments.loadingDoctors')
-                            : t('appointments.noDoctorsAvailable') || 'No doctors available'}
+                            : t('appointments.noDoctorsAvailable')}
                         </option>
                       )}
                     </select>
@@ -718,10 +788,10 @@ export default function AppointmentsPage() {
                       setCurrentPage(1);
                     }}
                     className='filter-select'
-                    aria-label={t('appointments.filterByStatus') || 'Filter by Status'}
+                    aria-label={t('appointments.filterByStatus')}
                   >
                     <option value=''>
-                      {t('appointments.filterByStatus') || 'Filter by Status'}
+                      {t('appointments.filterByStatus')}
                     </option>
                     <option value='scheduled'>{t('appointments.scheduled')}</option>
                     <option value='confirmed'>{t('appointments.confirmed')}</option>
@@ -754,7 +824,7 @@ export default function AppointmentsPage() {
             <div className='content-grid-2 mb-6'>
               <Card className='bg-primary-100 border border-primary-300'>
                 <p className='text-body-sm font-medium text-primary-700 mb-2'>
-                  Today&apos;s Appointments
+                  {t('appointments.todaysAppointments')}
                 </p>
                 <div className='flex items-baseline gap-3'>
                   <p className='text-h1 font-bold text-primary-900'>
@@ -769,13 +839,13 @@ export default function AppointmentsPage() {
                   </span>
                 </div>
                 <p className='text-body-xs text-primary-500 mt-3'>
-                  Includes all appointments scheduled for today
+                  {t('appointments.includesToday')}
                 </p>
               </Card>
 
               <Card className='bg-secondary-100 border border-secondary-300'>
                 <p className='text-body-sm font-medium text-secondary-700 mb-2'>
-                  Tomorrow&apos;s Appointments
+                  {t('appointments.tomorrowsAppointments')}
                 </p>
                 <div className='flex items-baseline gap-3'>
                   <p className='text-h1 font-bold text-secondary-700'>
@@ -790,7 +860,7 @@ export default function AppointmentsPage() {
                   </span>
                 </div>
                 <p className='text-body-xs text-secondary-500 mt-3'>
-                  Scheduled visits and video consultations for tomorrow
+                  {t('appointments.includesTomorrow')}
                 </p>
               </Card>
             </div>

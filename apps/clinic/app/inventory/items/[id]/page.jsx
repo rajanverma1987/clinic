@@ -134,13 +134,13 @@ export default function InventoryItemDetailPage() {
   };
 
   const formatCurrency = (amount) => {
-    if (!amount) return 'N/A';
+    if (!amount) return t('common.na');
     return formatCurrencyUtil(amount, currency, locale);
   };
 
   const handleAddStock = async () => {
     if (!stockFormData.batchNumber || !stockFormData.quantity) {
-      setError('Batch number and quantity are required');
+      setError(t('inventory.batchNumberRequired'));
       return;
     }
 
@@ -180,11 +180,11 @@ export default function InventoryItemDetailPage() {
         });
         fetchItem();
       } else {
-        setError(response.error?.message || 'Failed to add stock');
+        setError(response.error?.message || t('inventory.failedToAddStock'));
       }
     } catch (err) {
       logger.error('Failed to add stock:', err);
-      setError(err.message || 'Failed to add stock');
+      setError(err.message || t('inventory.failedToAddStock'));
     } finally {
       setAddingStock(false);
     }
@@ -239,11 +239,15 @@ export default function InventoryItemDetailPage() {
         title={item.name}
         subtitle={
           <>
-            {item.code && <span className='mr-4'>Code: {item.code}</span>}
+            {item.code && (
+              <span className='mr-4'>
+                {t('inventory.code')}: {item.code}
+              </span>
+            )}
             <Tag variant={getStockStatus()} size='sm' className='ml-2'>
               {(item.availableQuantity ?? 0) <= (item.lowStockThreshold ?? 0)
-                ? 'Low Stock'
-                : 'In Stock'}
+                ? t('inventory.lowStock')
+                : t('inventory.inStock')}
             </Tag>
           </>
         }
@@ -258,7 +262,7 @@ export default function InventoryItemDetailPage() {
                   onClick={() => setShowAddStockModal(true)}
                   className='mr-2'
                 >
-                  + {t('inventory.addStock') || 'Add Stock'}
+                  + {t('inventory.addStock')}
                 </Button>
                 <Button onClick={() => setIsEditing(true)}>{t('common.edit')}</Button>
               </>
@@ -307,10 +311,10 @@ export default function InventoryItemDetailPage() {
                 disabled={!isEditing}
                 required
                 options={[
-                  { value: 'medicine', label: 'Medicine' },
-                  { value: 'equipment', label: 'Equipment' },
-                  { value: 'supply', label: 'Supply' },
-                  { value: 'consumable', label: 'Consumable' },
+                  { value: 'medicine', label: t('inventory.medicine') },
+                  { value: 'equipment', label: t('inventory.equipment') },
+                  { value: 'supply', label: t('inventory.supply') },
+                  { value: 'consumable', label: t('inventory.consumable') },
                   { value: 'other', label: t('common.other') },
                 ]}
               />
@@ -333,7 +337,7 @@ export default function InventoryItemDetailPage() {
                       {item.totalQuantity} {item.unit}
                       {item.availableQuantity !== item.totalQuantity && (
                         <span className='text-neutral-500 dark:text-neutral-400 ml-2'>
-                          ({item.availableQuantity} available)
+                          ({item.availableQuantity} {t('inventory.available')})
                         </span>
                       )}
                     </p>
@@ -491,23 +495,23 @@ export default function InventoryItemDetailPage() {
         {item.batches && item.batches.length > 0 && (
           <Card className='mt-6'>
             <h3 className='text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4'>
-              {t('inventory.stockBatches') || 'Stock Batches'}
+              {t('inventory.stockBatches')}
             </h3>
             <div className='overflow-x-auto'>
               <table className='w-full text-sm'>
                 <thead>
                   <tr className='border-b border-neutral-200 dark:border-neutral-700'>
                     <th className='text-left py-2 px-3 font-medium text-neutral-600 dark:text-neutral-400'>
-                      {t('inventory.batchNumber') || 'Batch Number'}
+                      {t('inventory.batchNumber')}
                     </th>
                     <th className='text-left py-2 px-3 font-medium text-neutral-600 dark:text-neutral-400'>
-                      {t('inventory.quantity') || 'Quantity'}
+                      {t('inventory.quantity')}
                     </th>
                     <th className='text-left py-2 px-3 font-medium text-neutral-600 dark:text-neutral-400'>
-                      {t('inventory.expiryDate') || 'Expiry Date'}
+                      {t('inventory.expiryDate')}
                     </th>
                     <th className='text-left py-2 px-3 font-medium text-neutral-600 dark:text-neutral-400'>
-                      {t('inventory.purchaseDate') || 'Purchase Date'}
+                      {t('inventory.purchaseDate')}
                     </th>
                   </tr>
                 </thead>
@@ -546,33 +550,33 @@ export default function InventoryItemDetailPage() {
       <Modal
         isOpen={showAddStockModal}
         onClose={() => setShowAddStockModal(false)}
-        title={t('inventory.addStock') || 'Add Stock'}
+        title={t('inventory.addStock')}
       >
         <div className='space-y-4'>
           <Input
-            label={t('inventory.batchNumber') || 'Batch Number'}
+            label={t('inventory.batchNumber')}
             value={stockFormData.batchNumber}
             onChange={(e) =>
               setStockFormData({ ...stockFormData, batchNumber: e.target.value })
             }
-            placeholder='e.g., BATCH-001'
+            placeholder={t('inventory.placeholderBatchExample')}
             required
           />
 
           <Input
-            label={t('inventory.quantity') || 'Quantity'}
+            label={t('inventory.quantity')}
             type='number'
             value={stockFormData.quantity}
             onChange={(e) =>
               setStockFormData({ ...stockFormData, quantity: e.target.value })
             }
-            placeholder='Enter quantity'
+            placeholder={t('inventory.enterQuantity')}
             min='1'
             required
           />
 
           <DatePicker
-            label={t('inventory.expiryDate') || 'Expiry Date'}
+            label={t('inventory.expiryDate')}
             value={stockFormData.expiryDate}
             onChange={(e) =>
               setStockFormData({ ...stockFormData, expiryDate: e.target.value })
@@ -580,7 +584,7 @@ export default function InventoryItemDetailPage() {
           />
 
           <DatePicker
-            label={t('inventory.purchaseDate') || 'Purchase Date'}
+            label={t('inventory.purchaseDate')}
             value={stockFormData.purchaseDate}
             onChange={(e) =>
               setStockFormData({ ...stockFormData, purchaseDate: e.target.value })
@@ -588,23 +592,23 @@ export default function InventoryItemDetailPage() {
           />
 
           <Input
-            label={t('inventory.costPrice') || 'Cost Price'}
+            label={t('inventory.costPrice')}
             type='number'
             step='0.01'
             value={stockFormData.costPrice}
             onChange={(e) =>
               setStockFormData({ ...stockFormData, costPrice: e.target.value })
             }
-            placeholder='Enter cost price'
+            placeholder={t('inventory.enterCostPrice')}
           />
 
           <Input
-            label={t('inventory.supplier') || 'Supplier'}
+            label={t('inventory.supplier')}
             value={stockFormData.supplier}
             onChange={(e) =>
               setStockFormData({ ...stockFormData, supplier: e.target.value })
             }
-            placeholder='Enter supplier name'
+            placeholder={t('inventory.enterSupplierName')}
           />
 
           <div className='flex gap-4 pt-4'>
@@ -613,7 +617,7 @@ export default function InventoryItemDetailPage() {
               isLoading={addingStock}
               disabled={addingStock}
             >
-              {t('inventory.addStock') || 'Add Stock'}
+              {t('inventory.addStock')}
             </Button>
             <Button
               variant='secondary'

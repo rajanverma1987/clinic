@@ -244,11 +244,11 @@ export default function AdminActivityLogsPage() {
               </div>
               <div>
                 <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                  {t('admin.activityLogsIpAddress') || 'IP Address'}
+                  {t('admin.activityLogsIpAddress')}
                 </label>
                 <Input
                   type='text'
-                  placeholder={t('admin.activityLogsFilterIpPlaceholder') || 'Filter by IP...'}
+                  placeholder={t('admin.activityLogsFilterIpPlaceholder')}
                   value={ipFilter}
                   onChange={(e) => setIpFilter(e.target.value)}
                   className='form-control-height w-full'
@@ -256,7 +256,7 @@ export default function AdminActivityLogsPage() {
               </div>
               <div>
                 <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                  {t('admin.activityLogsStartDate') || 'From date'}
+                  {t('admin.activityLogsStartDate')}
                 </label>
                 <Input
                   type='date'
@@ -267,7 +267,7 @@ export default function AdminActivityLogsPage() {
               </div>
               <div>
                 <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                  {t('admin.activityLogsEndDate') || 'To date'}
+                  {t('admin.activityLogsEndDate')}
                 </label>
                 <Input
                   type='date'
@@ -278,12 +278,12 @@ export default function AdminActivityLogsPage() {
               </div>
               <div>
                 <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                  {t('admin.activityLogsSearch') || 'Search'}
+                  {t('admin.activityLogsSearch')}
                 </label>
                 <Input
                   type='text'
                   placeholder={
-                    t('admin.activityLogsSearchPlaceholder') || 'Search action, resource...'
+                    t('admin.activityLogsSearchPlaceholder')
                   }
                   value={searchTermInput}
                   onChange={(e) => setSearchTermInput(e.target.value)}
@@ -336,8 +336,8 @@ export default function AdminActivityLogsPage() {
                   iconOnly
                   onClick={handleCleanup}
                   disabled={cleanupLoading}
-                  aria-label={t('admin.activityLogsCleanupNow') || 'Cleanup old logs'}
-                  title={t('admin.activityLogsCleanupNow') || 'Cleanup old logs'}
+                  aria-label={t('admin.activityLogsCleanupNow')}
+                  title={t('admin.activityLogsCleanupNow')}
                 >
                   {cleanupLoading ? (
                     <RefreshCwIcon className='icon icon-sm animate-spin' aria-hidden />
@@ -351,8 +351,8 @@ export default function AdminActivityLogsPage() {
                   iconOnly
                   onClick={handleExportCsv}
                   disabled={exporting || logs.length === 0}
-                  aria-label={t('admin.activityLogsExportCsv') || 'Export CSV'}
-                  title={t('admin.activityLogsExportCsv') || 'Export CSV'}
+                  aria-label={t('admin.activityLogsExportCsv')}
+                  title={t('admin.activityLogsExportCsv')}
                 >
                   {exporting ? (
                     <RefreshCwIcon className='icon icon-sm animate-spin' aria-hidden />
@@ -365,8 +365,8 @@ export default function AdminActivityLogsPage() {
                   size='sm'
                   iconOnly
                   onClick={handleEmailReport}
-                  aria-label={t('admin.activityLogsEmailReport') || 'Email Report'}
-                  title={t('admin.activityLogsEmailReport') || 'Email Report'}
+                  aria-label={t('admin.activityLogsEmailReport')}
+                  title={t('admin.activityLogsEmailReport')}
                 >
                   <MailIcon className='icon icon-sm' aria-hidden />
                 </Button>
@@ -387,7 +387,7 @@ export default function AdminActivityLogsPage() {
                       <th>{t('admin.activityLogsAction')}</th>
                       <th>{t('admin.activityLogsResource')}</th>
                       <th>{t('admin.activityLogsResourceId')}</th>
-                      <th>{t('admin.activityLogsIpAddress') || 'IP'}</th>
+                      <th>{t('admin.activityLogsIpAddress')}</th>
                       <th>{t('admin.activityLogsPhi')}</th>
                     </tr>
                   </thead>
@@ -458,7 +458,7 @@ export default function AdminActivityLogsPage() {
           <Modal
             isOpen={!!selectedLog}
             onClose={() => setSelectedLog(null)}
-            title={t('admin.activityLogsActionDetails') || 'Action Details'}
+            title={t('admin.activityLogsActionDetails')}
           >
             <div className='space-y-3 text-sm'>
               <div>
@@ -494,7 +494,7 @@ export default function AdminActivityLogsPage() {
               {selectedLog.ipAddress && (
                 <div>
                   <span className='font-medium text-neutral-500'>
-                    {t('admin.activityLogsIpAddress') || 'IP Address'}:{' '}
+                    {t('admin.activityLogsIpAddress')}:{' '}
                   </span>
                   {selectedLog.ipAddress}
                 </div>
@@ -510,7 +510,7 @@ export default function AdminActivityLogsPage() {
               {selectedLog.details && Object.keys(selectedLog.details).length > 0 && (
                 <div>
                   <span className='font-medium text-neutral-500'>
-                    {t('admin.activityLogsDetails') || 'Details'}:{' '}
+                    {t('admin.activityLogsDetails')}:{' '}
                   </span>
                   <pre className='mt-1 p-2 bg-neutral-100 dark:bg-neutral-800 rounded text-xs overflow-auto max-h-40'>
                     {JSON.stringify(selectedLog.details, null, 2)}

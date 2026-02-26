@@ -23,8 +23,7 @@ export function ActionsSection({ failedTransactions = 0, children, className = '
           <Link href='/invoices?filter=failed'>
             <Button variant='secondary' size='sm' className='inline-flex items-center gap-2'>
               <RefreshCwIcon className='icon icon-sm' aria-hidden />
-              {t('dashboard.retryFailedPayments') ||
-                `Retry ${failedTransactions} failed payment${failedTransactions > 1 ? 's' : ''}`}
+              {t('dashboard.retryFailedPaymentsCount', { count: failedTransactions })}
             </Button>
           </Link>
         </div>

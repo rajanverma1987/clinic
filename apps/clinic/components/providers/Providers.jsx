@@ -37,12 +37,12 @@ export function Providers({ children }) {
   return (
     <AuthProvider>
       <SWRConfig value={swrOptions}>
-        <ThemeProvider>
-          <RealtimeProvider>
-            <OfflineReplay />
-            <CacheWarming />
-            <I18nProvider>
-              <DocumentLocale />
+        <I18nProvider>
+          <DocumentLocale />
+          <ThemeProvider>
+            <RealtimeProvider>
+              <OfflineReplay />
+              <CacheWarming />
               <FeatureProvider>
                 <NotificationProvider>
                   <AppNotificationsProvider>
@@ -54,9 +54,9 @@ export function Providers({ children }) {
                   </AppNotificationsProvider>
                 </NotificationProvider>
               </FeatureProvider>
-            </I18nProvider>
-          </RealtimeProvider>
-        </ThemeProvider>
+            </RealtimeProvider>
+          </ThemeProvider>
+        </I18nProvider>
       </SWRConfig>
     </AuthProvider>
   );

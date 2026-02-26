@@ -225,7 +225,7 @@ export function VisitLengthTableCard({ title, rows, columns, getCell, loading })
           <thead>
             <tr>
               <th className='kpi-table__th text-left py-3 px-4 font-semibold text-neutral-700 dark:text-neutral-300 border-b border-neutral-200 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800/50'>
-                {t('common.department') || 'Department'}
+                {t('common.department')}
               </th>
               {colList.map((col, j) => (
                 <th

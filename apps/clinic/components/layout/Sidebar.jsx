@@ -452,7 +452,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         },
         {
           href: '/admin/analytics',
-          label: t('admin.analytics') || 'Analytics',
+          label: t('admin.analytics'),
           icon: ZapIcon,
           match: (p) => p?.startsWith('/admin/analytics'),
         },
@@ -469,7 +469,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       items: [
         {
           href: '/admin/support',
-          label: t('admin.supportTickets') || 'Support',
+          label: t('admin.supportTickets'),
           icon: ChatIcon,
           match: (p) => p?.startsWith('/admin/support'),
         },

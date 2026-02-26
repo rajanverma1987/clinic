@@ -128,7 +128,7 @@ export default function AppointmentDetailsPage() {
           mutateAppointment((prev) => (prev ? { ...prev, status: statusParam } : prev), {
             revalidate: false,
           });
-          showSuccess(t('appointments.statusUpdated') || 'Appointment status updated');
+          showSuccess(t('appointments.statusUpdated'));
           invalidateLists();
           invalidateStats();
           router.replace(`/appointments/${id}`);
@@ -138,15 +138,14 @@ export default function AppointmentDetailsPage() {
           }
           showError(
             response.error?.message ||
-              t('appointments.statusUpdateFailed') ||
-              'Failed to update status',
+              t('appointments.statusUpdateFailed'),
           );
         }
       } catch (err) {
         if (dashboardListsRollbackRef.current != null) {
           mutate(DASHBOARD_LISTS_KEY, dashboardListsRollbackRef.current, { revalidate: false });
         }
-        showError(t('appointments.statusUpdateFailed') || 'Failed to update appointment status');
+        showError(t('appointments.statusUpdateFailed'));
       } finally {
         setSaving(false);
       }
@@ -367,8 +366,7 @@ export default function AppointmentDetailsPage() {
                       openConfirm({
                         title: t('common.areYouSure'),
                         message:
-                          t('appointments.confirmCancel') ||
-                          'Are you sure you want to cancel this appointment?',
+                          t('appointments.confirmCancel'),
                         variant: 'danger',
                         onConfirm: () => handleStatusChange('cancelled'),
                       });
@@ -386,8 +384,7 @@ export default function AppointmentDetailsPage() {
                     openConfirm({
                       title: t('common.areYouSure'),
                       message:
-                        t('appointments.confirmMarkCompleted') ||
-                        'Mark this appointment as completed?',
+                        t('appointments.confirmMarkCompleted'),
                       variant: 'info',
                       onConfirm: () => handleStatusChange('completed'),
                     });
