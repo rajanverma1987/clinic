@@ -1,5 +1,6 @@
 'use client';
 
+import { AdminToolbar } from '@/components/admin/AdminToolbar';
 import {
   EyeIcon,
   FileDownIcon,
@@ -13,7 +14,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
-import { PageSearchBar } from '@/components/ui/PageSearchBar';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -36,7 +36,7 @@ export default function AdminUsersPage() {
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [roleFilter, setRoleFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
-  const [tenantFilter, setTenantFilter] = useState('');
+  const [tenantFilter, setTenantFilter] = useState(() => searchParams.get('tenantId') || '');
   const [tenants, setTenants] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, pages: 0 });
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
@@ -47,6 +47,13 @@ export default function AdminUsersPage() {
   const [resetPasswordUser, setResetPasswordUser] = useState(null);
   const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [forceLogoutUserId, setForceLogoutUserId] = useState(null);
+  const [unlockingUserId, setUnlockingUserId] = useState(null);
+
+  useEffect(() => {
+    const tid = searchParams.get('tenantId') || '';
+    if (tid && tenantFilter !== tid) setTenantFilter(tid);
+  }, [searchParams, tenantFilter]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -175,12 +182,12 @@ export default function AdminUsersPage() {
     a.download = `users-export-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showSuccess(t('admin.exportSuccessful'));
+    showSuccess(t('admin.exportSuccessful') || 'Export successful');
   }, [filteredUsers, t]);
 
   const handleResetPassword = async () => {
     if (!resetPasswordUser || !resetPasswordValue?.trim() || resetPasswordValue.length < 8) {
-      showError(t('admin.passwordMinLength'));
+      showError(t('admin.passwordMinLength') || 'Password must be at least 8 characters');
       return;
     }
     const userId = resetPasswordUser._id || resetPasswordUser.id;
@@ -191,7 +198,7 @@ export default function AdminUsersPage() {
         newPassword: resetPasswordValue.trim(),
       });
       if (response?.success) {
-        showSuccess(t('admin.passwordResetSuccess'));
+        showSuccess(t('admin.passwordResetSuccess') || 'Password reset successfully');
         setResetPasswordUser(null);
         setResetPasswordValue('');
       } else {
@@ -199,9 +206,33 @@ export default function AdminUsersPage() {
       }
     } catch (err) {
       logger.error('Reset password failed', err);
-      showError(t('admin.passwordResetFailed'));
+      showError(t('admin.passwordResetFailed') || 'Failed to reset password');
     } finally {
       setResettingPassword(false);
+    }
+  };
+
+  const handleUnlockAccount = async (userId) => {
+    setUnlockingUserId(userId);
+    try {
+      const response = await apiClient.put(`/admin/users/${userId}`, {
+        isActive: true,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      });
+      if (response?.success) {
+        showSuccess(t('admin.accountUnlocked') || 'Account unlocked. User can now log in.');
+        fetchUsers();
+      } else {
+        showError(
+          response?.error?.message || t('admin.accountUnlockFailed') || 'Failed to unlock account',
+        );
+      }
+    } catch (error) {
+      logger.error('Unlock account failed:', error);
+      showError(t('admin.accountUnlockFailed') || 'Failed to unlock account');
+    } finally {
+      setUnlockingUserId(null);
     }
   };
 
@@ -209,14 +240,31 @@ export default function AdminUsersPage() {
     try {
       const response = await apiClient.put(`/admin/users/${userId}`, { isActive: !currentStatus });
       if (response?.success) {
-        showSuccess(currentStatus ? t('admin.userDeactivated') : t('admin.userActivated'));
+        showSuccess(currentStatus ? 'User deactivated' : 'User activated');
         fetchUsers();
       } else {
-        showError(response?.error?.message || t('admin.failedToUpdateUserStatus'));
+        showError(response?.error?.message || 'Failed to update user status');
       }
     } catch (error) {
       logger.error('Failed to toggle user status:', error);
       showError(t('admin.failedToUpdateUserStatus'));
+    }
+  };
+
+  const handleForceLogout = async (userId) => {
+    setForceLogoutUserId(userId);
+    try {
+      const response = await apiClient.post(`/admin/users/${userId}/force-logout`);
+      if (response?.success) {
+        showSuccess(t('admin.forceLogoutSuccess') || 'All sessions revoked for this user');
+      } else {
+        showError(response?.error?.message || t('admin.forceLogoutFailed'));
+      }
+    } catch (error) {
+      logger.error('Force logout failed:', error);
+      showError(t('admin.forceLogoutFailed') || 'Failed to revoke sessions');
+    } finally {
+      setForceLogoutUserId(null);
     }
   };
 
@@ -252,7 +300,7 @@ export default function AdminUsersPage() {
       header: t('admin.tenant'),
       accessor: (row) => (
         <div>
-          <div className='font-medium text-neutral-900'>{row.tenantName || t('common.na')}</div>
+          <div className='font-medium text-neutral-900'>{row.tenantName || 'N/A'}</div>
           {row.tenantSlug && <div className='text-sm text-neutral-500'>{row.tenantSlug}</div>}
         </div>
       ),
@@ -306,8 +354,8 @@ export default function AdminUsersPage() {
             variant='ghost'
             size='xs'
             href={`/admin/activity-logs?userId=${row._id || row.id}`}
-            aria-label={t('admin.viewActivityLog')}
-            title={t('admin.viewActivityLog')}
+            aria-label={t('admin.viewActivityLog') || 'View activity log'}
+            title={t('admin.viewActivityLog') || 'View activity log'}
           >
             <HistoryIcon className='icon icon-xs' />
           </Button>
@@ -322,7 +370,41 @@ export default function AdminUsersPage() {
             aria-label={t('admin.resetPassword')}
             title={t('admin.resetPassword')}
           >
-            {t('admin.resetPassword')}
+            {t('admin.resetPassword') || 'Reset'}
+          </Button>
+          {/* Unlock: shown for locked/inactive accounts */}
+          {!row.isActive && (
+            <Button
+              variant='ghost'
+              size='xs'
+              disabled={unlockingUserId === (row._id || row.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleUnlockAccount(row._id || row.id);
+              }}
+              aria-label={t('admin.unlockAccount') || 'Unlock account'}
+              title={t('admin.unlockAccount') || 'Unlock — re-enable this account'}
+              className='text-green-600 hover:text-green-700'
+            >
+              {unlockingUserId === (row._id || row.id)
+                ? '...'
+                : t('admin.unlockAccount') || 'Unlock'}
+            </Button>
+          )}
+          <Button
+            variant='ghost'
+            size='xs'
+            disabled={forceLogoutUserId === (row._id || row.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleForceLogout(row._id || row.id);
+            }}
+            aria-label={t('admin.forceLogout') || 'Force logout'}
+            title={t('admin.forceLogout') || 'Revoke all sessions'}
+          >
+            {forceLogoutUserId === (row._id || row.id)
+              ? t('common.loading') || '...'
+              : t('admin.forceLogout') || 'Force logout'}
           </Button>
           <Button
             variant={row.isActive ? 'danger' : 'primary'}
@@ -334,13 +416,13 @@ export default function AdminUsersPage() {
             }}
             aria-label={
               row.isActive
-                ? t('admin.deactivate')
-                : t('admin.activate')
+                ? t('admin.deactivate') || 'Deactivate'
+                : t('admin.activate') || 'Activate'
             }
             title={
               row.isActive
-                ? t('admin.deactivate')
-                : t('admin.activate')
+                ? t('admin.deactivate') || 'Deactivate'
+                : t('admin.activate') || 'Activate'
             }
           >
             {row.isActive ? (
@@ -365,30 +447,38 @@ export default function AdminUsersPage() {
       }
     >
       <div className='admin-page-content'>
-        <PageSearchBar
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onSearch={() => setPagination((p) => ({ ...p, page: 1 }))}
-          placeholder={t('admin.searchUsersPlaceholder')}
-        >
-          <Button variant='secondary' size='sm' onClick={handleExportCSV}>
-            <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-            {t('admin.exportCSV')}
-          </Button>
-          <Button
-            variant='secondary'
-            size='md'
-            onClick={() => {
-              setAdvancedRole(roleFilter);
-              setAdvancedActive(activeFilter);
-              setAdvancedTenant(tenantFilter);
-              setShowAdvancedSearch(true);
-            }}
-          >
-            <FilterIcon className='icon icon-sm' aria-hidden />
-            {t('admin.patientsAdvancedSearch')}
-          </Button>
-        </PageSearchBar>
+        <AdminToolbar
+          intro={
+            t('admin.userGovernanceIntro') ||
+            'Control access without entering clinic: reset password, unlock (activate), force logout. View user list and last login. Login history: use Activity log link per user. Failed attempts: see Security tab and Audit & Compliance.'
+          }
+          searchValue={searchTerm}
+          onSearchChange={(e) => setSearchTerm(e.target.value)}
+          searchPlaceholder={t('admin.searchUsersPlaceholder')}
+          searchAriaLabel={t('admin.searchUsersPlaceholder') || 'Search users'}
+          filters={[]}
+          actions={
+            <>
+              <Button variant='secondary' size='sm' onClick={handleExportCSV}>
+                <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
+                {t('admin.exportCSV') || 'Export CSV'}
+              </Button>
+              <Button
+                variant='secondary'
+                size='sm'
+                onClick={() => {
+                  setAdvancedRole(roleFilter);
+                  setAdvancedActive(activeFilter);
+                  setAdvancedTenant(tenantFilter);
+                  setShowAdvancedSearch(true);
+                }}
+              >
+                <FilterIcon className='icon icon-sm' aria-hidden />
+                {t('admin.patientsAdvancedSearch')}
+              </Button>
+            </>
+          }
+        />
 
         <Modal
           isOpen={showAdvancedSearch}
@@ -399,7 +489,7 @@ export default function AdminUsersPage() {
         >
           <div className='search-modal-grid'>
             <div className='search-modal-field'>
-              <label>{t('admin.role')}</label>
+              <label>{t('admin.role') || 'Role'}</label>
               <select
                 className='filter-select w-full'
                 value={advancedRole}
@@ -415,7 +505,7 @@ export default function AdminUsersPage() {
               </select>
             </div>
             <div className='search-modal-field'>
-              <label>{t('common.status')}</label>
+              <label>{t('common.status') || 'Status'}</label>
               <select
                 className='filter-select w-full'
                 value={advancedActive}
@@ -427,7 +517,7 @@ export default function AdminUsersPage() {
               </select>
             </div>
             <div className='search-modal-field full-width'>
-              <label>{t('admin.tenant')}</label>
+              <label>{t('admin.tenant') || 'Tenant'}</label>
               <select
                 className='filter-select w-full'
                 value={advancedTenant}
@@ -510,7 +600,7 @@ export default function AdminUsersPage() {
           <Modal
             isOpen={!!detailsUser}
             onClose={() => setDetailsUser(null)}
-            title={t('admin.userDetails')}
+            title={t('admin.userDetails') || 'User Details'}
           >
             <div className='space-y-3 text-sm'>
               <div>
@@ -527,7 +617,7 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <span className='font-medium text-neutral-500'>{t('admin.tenant')}: </span>
-                {detailsUser.tenantName || t('common.na')}
+                {detailsUser.tenantName || 'N/A'}
               </div>
               <div>
                 <span className='font-medium text-neutral-500'>{t('admin.status')}: </span>
@@ -535,7 +625,7 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <span className='font-medium text-neutral-500'>
-                  {t('admin.lastLogin')}:{' '}
+                  {t('admin.lastLogin') || 'Last Login'}:{' '}
                 </span>
                 {detailsUser.lastLoginAt
                   ? new Date(detailsUser.lastLoginAt).toLocaleString()
@@ -552,7 +642,7 @@ export default function AdminUsersPage() {
                   href={`/admin/activity-logs?userId=${detailsUser._id || detailsUser.id}`}
                 >
                   <HistoryIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-                  {t('admin.viewActivityLog')}
+                  {t('admin.viewActivityLog') || 'View activity log'}
                 </Button>
               </div>
             </div>
@@ -567,22 +657,22 @@ export default function AdminUsersPage() {
               setResetPasswordUser(null);
               setResetPasswordValue('');
             }}
-            title={t('admin.resetPassword')}
+            title={t('admin.resetPassword') || 'Reset Password'}
           >
             <div className='space-y-4'>
               <p className='text-sm text-neutral-600'>
-                {t('admin.resetPasswordFor')}:{' '}
+                {t('admin.resetPasswordFor') || 'Reset password for'}:{' '}
                 <strong>{resetPasswordUser.email}</strong>
               </p>
               <div>
                 <label className='block text-sm font-medium mb-1'>
-                  {t('admin.newPassword')}
+                  {t('admin.newPassword') || 'New Password'}
                 </label>
                 <input
                   type='password'
                   value={resetPasswordValue}
                   onChange={(e) => setResetPasswordValue(e.target.value)}
-                  placeholder={t('admin.passwordMinLength')}
+                  placeholder={t('admin.passwordMinLength') || 'Min 8 characters'}
                   className='form-control-height w-full border rounded-lg px-3'
                   minLength={8}
                 />

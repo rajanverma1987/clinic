@@ -554,6 +554,9 @@
     "lastName": "Nom de famille",
     "confirmPassword": "Confirmer le mot de passe",
     "loginFailed": "Échec de la connexion. Vérifiez vos identifiants.",
+    "oauthTokenMissing": "Le lien de connexion a expiré. Veuillez réessayer.",
+    "orContinueWith": "Ou continuer avec",
+    "continueWithGoogle": "Continuer avec Google",
     "registerFailed": "Échec de l'inscription. Veuillez réessayer.",
     "emailRequired": "Le courriel est requis",
     "passwordRequired": "Le mot de passe est requis",
@@ -2034,7 +2037,9 @@
     "downloadSummary": "Télécharger le résumé",
     "printSummary": "Imprimer le résumé",
     "bookFollowUp": "Réserver un suivi",
-    "sessionNotFound": "Session introuvable"
+    "sessionNotFound": "Session introuvable",
+    "testVideoCall": "TEMP: Test video call",
+    "testVideoCallHint": "Creates a test session and opens room; remove before production"
   },
   "errors": {
     "generic": "An unexpected error occurred",

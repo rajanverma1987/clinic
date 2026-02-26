@@ -1,11 +1,13 @@
 /**
  * Admin single-appointment report download (Super Admin only)
- * GET /api/admin/appointments/:id/report - Returns CSV for that appointment
+ * GET /api/admin/appointments/:id/report - Returns CSV for that appointment.
+ * Enterprise: consistent error shape via errorResponse.
  */
 
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db/connection';
 import Appointment from '@/models/Appointment';
+import { errorResponse } from '@/lib/utils/api-response';
 import { logger } from '@/lib/utils/logger.js';
 
 function escapeCsv(val) {
@@ -17,17 +19,17 @@ function escapeCsv(val) {
 
 async function getHandler(req, user, id) {
   try {
-    if (user.role === 'super_admin') {
+    if (user.role !== 'super_admin') {
       return NextResponse.json(
-        { success: false, error: 'Access denied. Platform role has no tenant operational data access.' },
-        { status: 403 }
+        errorResponse('Access denied. Super Admin only.', 'FORBIDDEN'),
+        { status: 403 },
       );
     }
-    if (user.role !== 'super_admin') {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
-    }
     if (!id) {
-      return NextResponse.json({ success: false, error: 'Appointment ID required' }, { status: 400 });
+      return NextResponse.json(
+        errorResponse('Appointment ID required', 'VALIDATION_ERROR'),
+        { status: 400 },
+      );
     }
     await connectDB();
     const appointment = await Appointment.findOne({ _id: id, deletedAt: null })
@@ -36,7 +38,7 @@ async function getHandler(req, user, id) {
       .populate('tenantId', 'name slug')
       .lean();
     if (!appointment) {
-      return NextResponse.json({ success: false, error: 'Appointment not found' }, { status: 404 });
+      return NextResponse.json(errorResponse('Appointment not found', 'NOT_FOUND'), { status: 404 });
     }
     const patientName = appointment.patientId
       ? `${appointment.patientId.firstName || ''} ${appointment.patientId.lastName || ''}`.trim()
@@ -83,10 +85,10 @@ async function getHandler(req, user, id) {
       },
     });
   } catch (err) {
-    logger.error('Admin appointment report error:', err);
+    logger.error('Admin appointment report failed', { message: err?.message });
     return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'Failed to generate report' },
-      { status: 500 }
+      errorResponse(err instanceof Error ? err.message : 'Failed to generate report', 'INTERNAL_ERROR'),
+      { status: 500 },
     );
   }
 }

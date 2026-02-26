@@ -227,7 +227,7 @@ export default function ForgotPasswordPage() {
                   <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
                     <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='w-5 h-5 text-neutral-600'
+                        className='icon icon-sm text-neutral-600'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -359,7 +359,7 @@ export default function ForgotPasswordPage() {
                   <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
                     <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='w-5 h-5 text-neutral-600'
+                        className='icon icon-sm text-neutral-600'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -384,15 +384,17 @@ export default function ForgotPasswordPage() {
                         className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0 pr-2'
                       />
                     </div>
-                    <button
+                    <Button
                       type='button'
+                      variant='ghost'
+                      size='sm'
+                      className='w-12 shrink-0 min-w-0 flex items-center justify-center text-neutral-500 hover:text-primary-600'
                       onClick={() => setShowPassword(!showPassword)}
-                      className='w-12 shrink-0 flex items-center justify-center text-neutral-500 hover:text-primary-600 transition-colors'
                       aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     >
                       {showPassword ? (
                         <svg
-                          className='w-5 h-5'
+                          className='icon icon-sm'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -406,7 +408,7 @@ export default function ForgotPasswordPage() {
                         </svg>
                       ) : (
                         <svg
-                          className='w-5 h-5'
+                          className='icon icon-sm'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -425,7 +427,7 @@ export default function ForgotPasswordPage() {
                           />
                         </svg>
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -439,7 +441,7 @@ export default function ForgotPasswordPage() {
                   <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
                     <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
                       <svg
-                        className='w-5 h-5 text-neutral-600'
+                        className='icon icon-sm text-neutral-600'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -464,17 +466,19 @@ export default function ForgotPasswordPage() {
                         className='w-full border-0 rounded-none focus:ring-0 focus:shadow-none focus:border-0 pr-2'
                       />
                     </div>
-                    <button
+                    <Button
                       type='button'
+                      variant='ghost'
+                      size='sm'
+                      className='w-12 shrink-0 min-w-0 flex items-center justify-center text-neutral-500 hover:text-primary-600'
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className='w-12 shrink-0 flex items-center justify-center text-neutral-500 hover:text-primary-600 transition-colors'
                       aria-label={
                         showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')
                       }
                     >
                       {showConfirmPassword ? (
                         <svg
-                          className='w-5 h-5'
+                          className='icon icon-sm'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -488,7 +492,7 @@ export default function ForgotPasswordPage() {
                         </svg>
                       ) : (
                         <svg
-                          className='w-5 h-5'
+                          className='icon icon-sm'
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'
@@ -507,7 +511,7 @@ export default function ForgotPasswordPage() {
                           />
                         </svg>
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -538,8 +542,9 @@ export default function ForgotPasswordPage() {
                 </Button>
 
                 <div className='text-center space-y-2'>
-                  <button
+                  <Button
                     type='button'
+                    variant='link'
                     onClick={() => {
                       setStep('request');
                       setSecretCode('');
@@ -548,7 +553,7 @@ export default function ForgotPasswordPage() {
                       setError('');
                       setSuccess('');
                     }}
-                    className='text-sm text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1'
+                    className='text-sm text-primary-600 hover:text-primary-700 font-semibold'
                   >
                     <svg
                       className='icon icon-xs'
@@ -564,7 +569,7 @@ export default function ForgotPasswordPage() {
                       />
                     </svg>
                     Back
-                  </button>
+                  </Button>
                   <div>
                     <Link
                       href='/login'

@@ -421,25 +421,17 @@ export default function SupportPage() {
                           key={faqIndex}
                           className='border border-neutral-200 rounded-xl overflow-hidden hover:border-primary-300'
                         >
-                          <button
+                          <Button
+                            type='button'
+                            variant='ghost'
+                            fullWidth
+                            align='start'
                             onClick={() => toggleFaq(categoryIndex, faqIndex)}
-                            className='w-full text-left flex items-center justify-between group hover:bg-neutral-50'
-                            style={{
-                              paddingLeft: '24px',
-                              paddingRight: '24px',
-                              paddingTop: '20px',
-                              paddingBottom: '20px',
-                            }}
+                            className='flex items-center justify-between group hover:bg-neutral-50 px-6 py-5'
                           >
                             <div className='flex items-start flex-1'>
                               <div
-                                className='rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-200'
-                                style={{
-                                  width: '24px',
-                                  height: '24px',
-                                  marginRight: '16px',
-                                  marginTop: '2px',
-                                }}
+                                className='rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-200 w-6 h-6 mr-4 mt-0.5'
                               >
                                 <svg
                                   className={`text-primary-600 ${isOpen ? 'rotate-180' : ''}`}
@@ -457,18 +449,12 @@ export default function SupportPage() {
                                 </svg>
                               </div>
                               <h4
-                                className='text-neutral-900 font-semibold flex-1 group-hover:text-primary-600'
-                                style={{
-                                  fontSize: '18px',
-                                  lineHeight: '28px',
-                                  letterSpacing: '-0.01em',
-                                  fontWeight: '600',
-                                }}
+                                className='text-neutral-900 font-semibold flex-1 group-hover:text-primary-600 text-lg leading-7 tracking-tight font-semibold'
                               >
                                 {t(faq.qKey)}
                               </h4>
                             </div>
-                          </button>
+                          </Button>
 
                           {/* Answer Content - Collapsible */}
                           <div

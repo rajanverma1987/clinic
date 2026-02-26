@@ -5,118 +5,135 @@
  * ESM for use in client components.
  */
 
-export const PLAN_SLUGS = ['FREE', 'SOLO', 'CLINIC', 'ENTERPRISE'];
+/** Plan structure: Core / Pro / Enterprise. Currency: USD only. */
+export const PLAN_SLUGS = ['FREE', 'Core', 'Pro', 'Enterprise'];
 
-/** Plans shown in comparison table (SOLO, CLINIC, ENTERPRISE only; all have 14-day trial) */
-export const COMPARISON_TABLE_PLAN_SLUGS = ['SOLO', 'CLINIC', 'ENTERPRISE'];
+/** Plans shown in comparison table; all have 14-day trial */
+export const COMPARISON_TABLE_PLAN_SLUGS = ['Core', 'Pro', 'Enterprise'];
 
-/** Plan names allowed in admin "Update Subscription" dropdown (canonical product plans only) */
+/** Plan names for admin and subscription page */
 export const AVAILABLE_PLAN_NAMES_FOR_ASSIGNMENT = [
   'FREE',
   'Free Trial',
-  'SOLO',
-  'CLINIC',
-  'ENTERPRISE',
+  'Core',
+  'Pro',
+  'Enterprise',
 ];
 
-/** Quick Feature Comparison – 14 rows, SOLO | CLINIC | ENTERPRISE only (no FREE column) */
+/** Display names (legacy → current) */
+export const PLAN_DISPLAY_NAMES = {
+  FREE: 'Free',
+  SOLO: 'Core',
+  CLINIC: 'Pro',
+  ENTERPRISE: 'Enterprise',
+  Starter: 'Core',
+  Growth: 'Pro',
+  'Smart Clinic': 'Pro',
+  Core: 'Core',
+  Pro: 'Pro',
+  Enterprise: 'Enterprise',
+};
+
+/** Monthly prices in USD cents (DB stores cents). $24.99 / $59.99 / $129.99 */
+export const FIX_PLAN_PRICES_USD_CENTS = {
+  Core: 2499,
+  Pro: 5999,
+  Enterprise: 12999,
+};
+
+/** Annual 2 months free: yearly = 10 × monthly (USD cents). */
+export const YEARLY_SAVE_USD_CENTS = {
+  Core: 4998,
+  Pro: 11998,
+  Enterprise: 25998,
+};
+
+/** Yearly save amount in major units (dollars) for SubscriptionCard "Save $X per year". */
+export const YEARLY_SAVE = {
+  Core: 49.98,
+  Pro: 119.98,
+  Enterprise: 259.98,
+};
+
+/** Feature flags for add-ons (A1, A2): gate CDS/AI and advanced automation */
+export const ADDON_FEATURE_FLAGS = {
+  AI_ASSISTANCE: 'ai_assistance',
+  ADVANCED_AUTOMATION: 'advanced_automation',
+};
+
+/** Quick Feature Comparison – Core | Pro | Enterprise (3 columns) */
 export const COMPARISON_TABLE_ROWS = [
-  ['subscriptionSpec.doctorAccounts', '1', '5', 'Unlimited'],
-  ['subscriptionSpec.staffAccounts', '2', '5', 'Unlimited'],
+  ['subscriptionSpec.teamMembers', '3', '10', 'Unlimited'],
   ['subscriptionSpec.patientRecords', 'Unlimited', 'Unlimited', 'Unlimited'],
-  ['subscriptionSpec.appointmentsPerMonth', 'Unlimited', 'Unlimited', 'Unlimited'],
-  ['subscriptionSpec.soapNotes', '✓', '✓ Templates', '✓ Advanced'],
-  ['subscriptionSpec.prescriptions', '✓', '✓ + Templates', '✓ + Advanced'],
-  ['subscriptionSpec.smsReminders', '❌', '200/mo', 'Unlimited'],
-  ['subscriptionSpec.documentStorage', '5GB', '50GB', 'Unlimited'],
+  ['subscriptionSpec.documentStorage', '10GB', '50GB', 'Unlimited'],
+  ['subscriptionSpec.soapNotes', '✓', '✓', '✓ Advanced'],
+  ['subscriptionSpec.prescriptions', '✓', '✓ + Pharmacy', '✓ + Advanced'],
   ['subscriptionSpec.billing', 'Basic', 'Advanced', 'Enterprise'],
-  ['subscriptionSpec.inventory', '❌', 'Basic', 'Full Pharmacy'],
-  ['subscriptionSpec.reports', 'Basic', 'Advanced', 'Custom'],
-  ['subscriptionSpec.locations', '1', '2', 'Unlimited'],
-  ['subscriptionSpec.backups', 'Daily', 'Daily', 'Hourly'],
-  ['subscriptionSpec.support', 'Email 24h', 'Phone + Chat', '24/7 Dedicated'],
+  ['subscriptionSpec.backups', 'Daily', 'Daily', 'Daily'],
+  ['subscriptionSpec.support', 'Email', 'Phone + Chat', '24/7 Dedicated'],
 ];
 
-/** Add-ons per Subscriptions.md: key, labelKey, descriptionKey, price (exact doc wording), noteKey */
+
+/** Add-ons (optional): key, labelKey, descriptionKey, price display, noteKey */
 export const ADDONS = [
   {
-    key: 'extraDoctor',
-    labelKey: 'subscriptionSpec.extraDoctor',
-    descriptionKey: 'subscriptionSpec.extraDoctorDesc',
-    price: '$10/month',
-    noteKey: 'subscriptionSpec.addonUnlimitedEnterprise',
+    key: 'aiAssist',
+    labelKey: 'subscriptionSpec.aiAssist',
+    descriptionKey: 'subscriptionSpec.aiAssistDesc',
+    price: '',
+    noteKey: null,
   },
   {
-    key: 'extraStaff',
-    labelKey: 'subscriptionSpec.extraStaff',
-    descriptionKey: 'subscriptionSpec.extraStaffDesc',
-    price: '$5/month',
-    noteKey: 'subscriptionSpec.addonUnlimitedEnterprise',
+    key: 'advancedAnalytics',
+    labelKey: 'subscriptionSpec.advancedAnalytics',
+    descriptionKey: 'subscriptionSpec.advancedAnalyticsDesc',
+    price: '',
+    noteKey: null,
   },
   {
-    key: 'extraSms',
-    labelKey: 'subscriptionSpec.extraSms',
-    descriptionKey: 'subscriptionSpec.extraSmsDesc',
-    price: '100 SMS - $5, 500 SMS - $20, 1000 SMS - $35',
-    noteKey: 'subscriptionSpec.addonUnlimitedEnterprise',
+    key: 'automationPro',
+    labelKey: 'subscriptionSpec.automationPro',
+    descriptionKey: 'subscriptionSpec.automationProDesc',
+    price: '',
+    noteKey: null,
   },
   {
-    key: 'additionalStorage',
-    labelKey: 'subscriptionSpec.additionalStorage',
-    descriptionKey: 'subscriptionSpec.additionalStorageDesc',
-    price: '25GB - $10/month, 100GB - $30/month',
-    noteKey: 'subscriptionSpec.addonUnlimitedEnterprise',
-  },
-  {
-    key: 'whatsApp',
-    labelKey: 'subscriptionSpec.whatsApp',
-    descriptionKey: 'subscriptionSpec.whatsAppDesc',
-    price: '$20/month (includes 500 messages)',
-    noteKey: 'subscriptionSpec.addonBuiltInEnterprise',
-  },
-  {
-    key: 'advancedReports',
-    labelKey: 'subscriptionSpec.advancedReports',
-    descriptionKey: 'subscriptionSpec.advancedReportsDesc',
-    price: '$15/month (custom dashboards)',
-    noteKey: 'subscriptionSpec.addonBuiltInEnterprise',
+    key: 'apiIntegration',
+    labelKey: 'subscriptionSpec.apiIntegration',
+    descriptionKey: 'subscriptionSpec.apiIntegrationDesc',
+    price: '',
+    noteKey: null,
   },
 ];
 
-/** Which plan: planSlug, titleKey, bulletsKey (array of keys), bestForKey */
+/** Bullets for "All plans include" (i18n keys). */
+export const ALL_PLANS_INCLUDED_KEYS = [
+  'subscriptionSpec.includedInAllPlans1',
+  'subscriptionSpec.includedInAllPlans2',
+  'subscriptionSpec.includedInAllPlans3',
+  'subscriptionSpec.includedInAllPlans4',
+  'subscriptionSpec.includedInAllPlans5',
+  'subscriptionSpec.includedInAllPlans6',
+];
+
+/** Positioning: plan → operational outcome (i18n key). */
+export const OUTCOME_POSITIONING = [
+  { plan: 'Core', outcomeKey: 'subscriptionSpec.outcomeCore' },
+  { plan: 'Pro', outcomeKey: 'subscriptionSpec.outcomePro' },
+  { plan: 'Enterprise', outcomeKey: 'subscriptionSpec.outcomeEnterprise' },
+];
+
+/** Which plan: planSlug, titleKey, bulletsKey, bestForKey */
 export const WHICH_PLAN = [
-  {
-    planSlug: 'FREE',
-    titleKey: 'subscriptionSpec.chooseFree',
-    bulletsKey: 'subscriptionSpec.chooseFreeBullets',
-    bestForKey: 'subscriptionSpec.bestForFree',
-  },
-  {
-    planSlug: 'SOLO',
-    titleKey: 'subscriptionSpec.chooseSolo',
-    bulletsKey: 'subscriptionSpec.chooseSoloBullets',
-    bestForKey: 'subscriptionSpec.bestForSolo',
-  },
-  {
-    planSlug: 'CLINIC',
-    titleKey: 'subscriptionSpec.chooseClinic',
-    bulletsKey: 'subscriptionSpec.chooseClinicBullets',
-    bestForKey: 'subscriptionSpec.bestForClinic',
-  },
-  {
-    planSlug: 'ENTERPRISE',
-    titleKey: 'subscriptionSpec.chooseEnterprise',
-    bulletsKey: 'subscriptionSpec.chooseEnterpriseBullets',
-    bestForKey: 'subscriptionSpec.bestForEnterprise',
-  },
+  { planSlug: 'FREE', titleKey: 'subscriptionSpec.chooseFree', bulletsKey: 'subscriptionSpec.chooseFreeBullets', bestForKey: 'subscriptionSpec.bestForFree' },
+  { planSlug: 'Core', titleKey: 'subscriptionSpec.chooseCore', bulletsKey: 'subscriptionSpec.chooseCoreBullets', bestForKey: 'subscriptionSpec.bestForCore' },
+  { planSlug: 'Pro', titleKey: 'subscriptionSpec.choosePro', bulletsKey: 'subscriptionSpec.chooseProBullets', bestForKey: 'subscriptionSpec.bestForPro' },
+  { planSlug: 'Enterprise', titleKey: 'subscriptionSpec.chooseEnterprise', bulletsKey: 'subscriptionSpec.chooseEnterpriseBullets', bestForKey: 'subscriptionSpec.bestForEnterprise' },
 ];
 
-/** Annual 5% off: yearly save (USD) per plan = monthly * 12 * 0.05 */
-export const YEARLY_SAVE = { SOLO: 29, CLINIC: 59, ENTERPRISE: 299 };
-
-/** Yearly price cents = monthly * 12 * 0.95 (5% off) */
+/** Yearly price (USD cents): 10 × monthly (2 months free). */
 export function getYearlyPriceCents(monthlyCents) {
-  return Math.round(monthlyCents * 12 * 0.95);
+  return Math.round(monthlyCents * 10);
 }
 
 /** FAQ: questionKey, answerKey */

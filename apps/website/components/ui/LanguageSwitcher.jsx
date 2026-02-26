@@ -214,7 +214,7 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
 
   return (
     <>
-      <div className='LanguageSwitcher' ref={dropdownRef} style={{ position: 'relative' }}>
+      <div className='LanguageSwitcher relative' ref={dropdownRef}>
         <button
           type='button'
           onClick={(e) => {

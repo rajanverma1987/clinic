@@ -1,10 +1,13 @@
 'use client';
 
+import { AdminToolbar } from '@/components/admin/AdminToolbar';
 import { EyeIcon, FileDownIcon, TrashIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
@@ -178,78 +181,72 @@ export default function AdminAppointmentsPage() {
       }
     >
       <div className='admin-page-content'>
-        <Card className='mb-6 overflow-hidden'>
-          <div className='p-4 sm:p-6'>
-            <div className='flex flex-wrap items-center gap-3'>
-              <input
-                type='text'
-                placeholder={t('admin.appointmentsSearchPlaceholder') || 'Search by appointment'}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className='filter-input-date min-w-[10rem] max-w-[14rem]'
-                aria-label={t('admin.appointmentsBookingId') || 'Booking ID'}
-              />
-              <select
-                className='filter-select'
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPagination((p) => ({ ...p, page: 1 }));
-                }}
-                aria-label={t('admin.appointmentsStatusLabel') || 'Status'}
-              >
-                <option value=''>{t('admin.appointmentsStatusLabel') || 'Status'}</option>
-                <option value='scheduled'>{t('admin.appointmentsScheduled')}</option>
-                <option value='confirmed'>{t('admin.appointmentsConfirmed')}</option>
-                <option value='arrived'>{t('admin.appointmentsArrived')}</option>
-                <option value='in_progress'>{t('admin.appointmentsInProgress')}</option>
-                <option value='completed'>{t('admin.appointmentsCompleted')}</option>
-                <option value='cancelled'>{t('admin.appointmentsCancelled')}</option>
-                <option value='no_show'>{t('admin.appointmentsNoShow')}</option>
-              </select>
-              <select
-                className='filter-select'
-                value={typeFilter}
-                onChange={(e) => {
-                  setTypeFilter(e.target.value);
-                  setPagination((p) => ({ ...p, page: 1 }));
-                }}
-                aria-label={t('admin.appointmentsType') || 'Type'}
-              >
-                <option value=''>{t('admin.appointmentsType') || 'Type'}</option>
-                {APPOINTMENT_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {t(type.labelKey)}
-                  </option>
-                ))}
-              </select>
-              <input
-                type='date'
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className='filter-input-date'
-                aria-label={t('admin.appointmentsFromDate') || 'From date'}
-                title={t('admin.appointmentsFromDate') || 'From date'}
-              />
-              <input
-                type='date'
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className='filter-input-date'
-                aria-label={t('admin.appointmentsToDate') || 'To date'}
-                title={t('admin.appointmentsToDate') || 'To date'}
-              />
-              <Button
-                variant='primary'
-                onClick={handleSearch}
-                className='filter-button shrink-0 min-w-[100px]'
-              >
-                {t('admin.activityLogsApply')}
-              </Button>
-            </div>
-          </div>
-        </Card>
+        <AdminToolbar
+          searchValue={search}
+          onSearchChange={(e) => setSearch(e.target.value)}
+          searchPlaceholder={t('admin.appointmentsSearchPlaceholder') || 'Search by appointment'}
+          searchAriaLabel={t('admin.appointmentsBookingId') || 'Search appointments'}
+          filters={[
+            <Select
+              key='status'
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPagination((p) => ({ ...p, page: 1 }));
+              }}
+              width='fit'
+              size='sm'
+              options={[
+                { value: '', label: t('admin.appointmentsStatusLabel') || 'Status' },
+                { value: 'scheduled', label: t('admin.appointmentsScheduled') },
+                { value: 'confirmed', label: t('admin.appointmentsConfirmed') },
+                { value: 'arrived', label: t('admin.appointmentsArrived') },
+                { value: 'in_progress', label: t('admin.appointmentsInProgress') },
+                { value: 'completed', label: t('admin.appointmentsCompleted') },
+                { value: 'cancelled', label: t('admin.appointmentsCancelled') },
+                { value: 'no_show', label: t('admin.appointmentsNoShow') },
+              ]}
+            />,
+            <Select
+              key='type'
+              value={typeFilter}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setPagination((p) => ({ ...p, page: 1 }));
+              }}
+              width='fit'
+              size='sm'
+              options={[
+                { value: '', label: t('admin.appointmentsType') || 'Type' },
+                ...APPOINTMENT_TYPES.map((type) => ({
+                  value: type.value,
+                  label: t(type.labelKey),
+                })),
+              ]}
+            />,
+            <Input
+              key='startDate'
+              type='date'
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className='form-control-height form-control-md w-full min-w-[140px]'
+              aria-label={t('admin.appointmentsFromDate') || 'From date'}
+            />,
+            <Input
+              key='endDate'
+              type='date'
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className='form-control-height form-control-md w-full min-w-[140px]'
+              aria-label={t('admin.appointmentsToDate') || 'To date'}
+            />,
+          ]}
+          actions={
+            <Button variant='primary' size='sm' onClick={handleSearch}>
+              {t('admin.activityLogsApply')}
+            </Button>
+          }
+        />
 
         <div className='mb-4 grid grid-cols-2 md:grid-cols-4 gap-3'>
           <Card className='p-4'>

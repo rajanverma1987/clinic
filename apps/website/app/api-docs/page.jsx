@@ -4,25 +4,19 @@ import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 import { CLINIC_APP_URL } from '@/lib/config';
 import Link from 'next/link';
 
 export default function ApiDocsPage() {
+  const { t } = useI18n();
   const clinicAppUrl = CLINIC_APP_URL.replace(/\/$/, '');
 
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1'>
-        <section
-          className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
-          style={{
-            paddingTop: '120px',
-            paddingBottom: '80px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+      <main className='flex-1 page-main'>
+        <section className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden pt-12 pb-12 px-8'>
           <div
             className='absolute top-0 right-0 bg-primary-100 rounded-full mix-blend-multiply filter opacity-30'
             style={{ width: '400px', height: '400px', filter: 'blur(100px)' }}
@@ -35,23 +29,13 @@ export default function ApiDocsPage() {
           <div className='max-w-4xl mx-auto relative z-10'>
             <Breadcrumb
               items={[
-                { label: 'Home', href: '/' },
-                { label: 'Support', href: '/support' },
-                { label: 'Documentation' },
+                { label: t('navigation.home'), href: '/' },
+                { label: t('navigation.support'), href: '/support' },
+                { label: t('navigation.documentation') },
               ]}
             />
 
-            <h1
-              className='text-neutral-900 mb-4'
-              style={{
-                fontSize: '32px',
-                lineHeight: '40px',
-                letterSpacing: '-0.02em',
-                fontWeight: '700',
-              }}
-            >
-              Documentation & API
-            </h1>
+            <h1 className='text-h1 text-neutral-900 mb-4'>Documentation & API</h1>
             <p className='text-neutral-700 mb-8 text-base leading-relaxed max-w-2xl'>
               Access user guides, API documentation, and integration resources for Doctor&apos;s
               Clinic.

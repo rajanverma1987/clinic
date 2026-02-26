@@ -9,6 +9,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 const AppNotificationsContext = createContext(undefined);
@@ -111,7 +112,7 @@ export function AppNotificationsProvider({ children }) {
       setNotifications(notifs);
       setLastFetched(new Date());
     } catch (err) {
-      console.error('Failed to fetch notifications:', err);
+      logger.error('Notifications fetch failed', { message: err?.message });
     } finally {
       setLoading(false);
     }

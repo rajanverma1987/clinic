@@ -5,8 +5,8 @@ import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
-import { useCallback, useEffect, useState } from 'react';
 import { logger } from '@/lib/utils/logger.js';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Compact calendar component showing available appointment slots for a selected date
@@ -58,7 +58,7 @@ export default function AppointmentCalendar({
         return formatDateLocal(date);
       }
     },
-    [settings?.timezone, formatDateLocal]
+    [settings?.timezone, formatDateLocal],
   );
 
   const formatDateDisplay = useCallback(
@@ -75,7 +75,7 @@ export default function AppointmentCalendar({
         return date.toLocaleDateString();
       }
     },
-    [settings?.locale, settings?.timezone]
+    [settings?.locale, settings?.timezone],
   );
 
   const formatTimeDisplay = useCallback(
@@ -91,7 +91,7 @@ export default function AppointmentCalendar({
         return date.toLocaleTimeString();
       }
     },
-    [settings?.locale, settings?.timezone]
+    [settings?.locale, settings?.timezone],
   );
 
   // Update currentDate when selectedDate prop changes (parse YYYY-MM-DD as local date to avoid UTC-offset)
@@ -149,7 +149,7 @@ export default function AppointmentCalendar({
         // Include 'in_queue' for video consultations that go directly to queue
         const activeStatuses = ['scheduled', 'confirmed', 'arrived', 'in_progress', 'in_queue'];
         const allAppointments = appointmentsData.filter((apt) =>
-          activeStatuses.includes(apt.status)
+          activeStatuses.includes(apt.status),
         );
 
         // Filter appointments to only those on the selected date
@@ -196,10 +196,10 @@ export default function AppointmentCalendar({
 
           // Get hours/minutes in clinic timezone
           const aptStartInClinicTz = new Date(
-            aptStart.toLocaleString('en-US', { timeZone: clinicTimezone })
+            aptStart.toLocaleString('en-US', { timeZone: clinicTimezone }),
           );
           const aptEndInClinicTz = new Date(
-            aptEnd.toLocaleString('en-US', { timeZone: clinicTimezone })
+            aptEnd.toLocaleString('en-US', { timeZone: clinicTimezone }),
           );
 
           // Use the original date but extract time in clinic timezone
@@ -208,26 +208,26 @@ export default function AppointmentCalendar({
               timeZone: clinicTimezone,
               hour: 'numeric',
               hour12: false,
-            }).format(aptStart)
+            }).format(aptStart),
           );
           const aptStartMinutes = parseInt(
             new Intl.DateTimeFormat('en-US', {
               timeZone: clinicTimezone,
               minute: 'numeric',
-            }).format(aptStart)
+            }).format(aptStart),
           );
           const aptEndHours = parseInt(
             new Intl.DateTimeFormat('en-US', {
               timeZone: clinicTimezone,
               hour: 'numeric',
               hour12: false,
-            }).format(aptEnd)
+            }).format(aptEnd),
           );
           const aptEndMinutes = parseInt(
             new Intl.DateTimeFormat('en-US', {
               timeZone: clinicTimezone,
               minute: 'numeric',
-            }).format(aptEnd)
+            }).format(aptEnd),
           );
 
           const aptStartTimeMinutes = aptStartHours * 60 + aptStartMinutes;
@@ -244,26 +244,26 @@ export default function AppointmentCalendar({
                 timeZone: clinicTimezone,
                 hour: 'numeric',
                 hour12: false,
-              }).format(slot.start)
+              }).format(slot.start),
             );
             const slotStartMinutes = parseInt(
               new Intl.DateTimeFormat('en-US', {
                 timeZone: clinicTimezone,
                 minute: 'numeric',
-              }).format(slot.start)
+              }).format(slot.start),
             );
             const slotEndHours = parseInt(
               new Intl.DateTimeFormat('en-US', {
                 timeZone: clinicTimezone,
                 hour: 'numeric',
                 hour12: false,
-              }).format(slot.end)
+              }).format(slot.end),
             );
             const slotEndMinutes = parseInt(
               new Intl.DateTimeFormat('en-US', {
                 timeZone: clinicTimezone,
                 minute: 'numeric',
-              }).format(slot.end)
+              }).format(slot.end),
             );
 
             const slotStartTimeMinutes = slotStartHours * 60 + slotStartMinutes;
@@ -484,21 +484,21 @@ export default function AppointmentCalendar({
     <Card className='p-4'>
       <div className='flex items-center justify-between mb-4'>
         <h3 className='text-lg font-semibold text-neutral-900'>
-          {t('appointments.availabilityCalendar')}
+          {t('appointments.availabilityCalendar') || 'Availability Calendar'}
         </h3>
       </div>
 
-      {(
+      {
         <>
           {/* Date Selector */}
           <div className='mb-4 flex items-center gap-2 flex-wrap'>
             <Button
               variant='secondary'
-              size='sm'
+              size='lg'
               iconOnly
               onClick={goToPreviousDay}
-              title={t('appointments.previousDay')}
-              className='!min-w-[44px] !w-11 !h-11'
+              title={t('appointments.previousDay') || 'Previous Day'}
+              aria-label={t('appointments.previousDay') || 'Previous Day'}
             >
               ←
             </Button>
@@ -511,21 +511,17 @@ export default function AppointmentCalendar({
             />
             <Button
               variant='primary'
-              size='sm'
+              size='lg'
               iconOnly
               onClick={goToNextDay}
-              title={t('appointments.nextDay')}
-              className='!min-w-[44px] !w-11 !h-11'
+              title={t('appointments.nextDay') || 'Next Day'}
+              aria-label={t('appointments.nextDay') || 'Next Day'}
             >
               →
             </Button>
             {!isToday && (
-              <Button
-                variant='secondary'
-                size='xs'
-                onClick={goToToday}
-              >
-                {t('appointments.today')}
+              <Button variant='secondary' size='xs' onClick={goToToday}>
+                {t('appointments.today') || 'Today'}
               </Button>
             )}
             <div className='ml-auto text-sm text-neutral-600'>{formatDateDisplay(currentDate)}</div>
@@ -573,44 +569,49 @@ export default function AppointmentCalendar({
 
                   if (isSelected && !isBooked && !isPastSlot) {
                     slotClass = 'bg-primary-600 text-white border-primary-600 cursor-pointer';
-                    slotTitle = `${timeStr} - ${t('appointments.available')} (${
-                      t('appointments.selected')
+                    slotTitle = `${timeStr} - ${t('appointments.available') || 'Available'} (${
+                      t('appointments.selected') || 'Selected'
                     })`;
                     slotIcon = '✓';
                   } else if (isBooked) {
                     // Booked slots should always be red/orange and disabled
                     slotClass =
                       'bg-status-warning/20 text-status-warning border-status-warning/40 cursor-not-allowed opacity-90';
-                    slotTitle = `${timeStr} - ${t('appointments.booked')}`;
+                    slotTitle = `${timeStr} - ${t('appointments.booked') || 'Booked'}`;
                     slotIcon = '●';
                   } else if (isPastSlot) {
-                    slotClass = 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed';
-                    slotTitle = `${timeStr} - ${t('appointments.past')}`;
+                    slotClass =
+                      'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed';
+                    slotTitle = `${timeStr} - ${t('appointments.past') || 'Past'}`;
                     slotIcon = '—';
                   } else if (isAvailable) {
                     slotClass =
                       'bg-secondary-100 text-secondary-700 border-secondary-300 hover:bg-secondary-100 cursor-pointer';
-                    slotTitle = `${timeStr} - ${t('appointments.available')}`;
+                    slotTitle = `${timeStr} - ${t('appointments.available') || 'Available'}`;
                     slotIcon = '○';
                   } else {
                     slotClass = 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed';
-                    slotTitle = `${timeStr} - ${t('appointments.unavailable')}`;
+                    slotTitle = `${timeStr} - ${t('appointments.unavailable') || 'Unavailable'}`;
                     slotIcon = '—';
                   }
 
                   return (
-                    <button
+                    <Button
                       key={idx}
+                      type='button'
+                      variant='ghost'
+                      size='xs'
                       onClick={() => handleSlotClick(slot)}
                       disabled={isBooked || !isAvailable || isPastSlot}
                       className={`py-2 px-3 text-xs rounded border font-medium ${slotClass}`}
                       title={slotTitle}
+                      aria-label={slotTitle}
                     >
                       <div className='flex flex-col items-center'>
                         <span className='text-xs font-semibold'>{timeStr}</span>
                         <span className='text-base mt-0.5'>{slotIcon}</span>
                       </div>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -620,24 +621,24 @@ export default function AppointmentCalendar({
                 <div className='flex items-center gap-1.5'>
                   <div className='w-3 h-3 bg-green-50 border border-green-300 rounded'></div>
                   <span className='text-neutral-600'>
-                    {t('appointments.available')}
+                    {t('appointments.available') || 'Available'}
                   </span>
                 </div>
                 <div className='flex items-center gap-1.5'>
                   <div className='w-3 h-3 bg-status-warning/20 border border-status-warning/40 rounded'></div>
-                  <span className='text-neutral-600'>{t('appointments.booked')}</span>
+                  <span className='text-neutral-600'>{t('appointments.booked') || 'Booked'}</span>
                 </div>
                 <div className='flex items-center gap-1.5'>
                   <div className='w-3 h-3 bg-gray-100 border border-gray-200 rounded'></div>
                   <span className='text-neutral-600'>
-                    {t('appointments.pastUnavailable')}
+                    {t('appointments.pastUnavailable') || 'Past/Unavailable'}
                   </span>
                 </div>
               </div>
             </>
           )}
         </>
-      )}
+      }
     </Card>
   );
 }

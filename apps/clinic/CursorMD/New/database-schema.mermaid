@@ -53,6 +53,11 @@ erDiagram
 
     APPOINTMENTS ||--o{ MEDICAL_RECORDS : "generates"
     APPOINTMENTS ||--o{ INVOICES : "billing"
+    CLINICS ||--o{ PROCEDURE_SESSIONS : "has"
+    CLINICS ||--o{ TREATMENT_PACKAGES : "has"
+    PATIENTS ||--o{ PROCEDURE_SESSIONS : "has"
+    APPOINTMENTS ||--o{ PROCEDURE_SESSIONS : "optional"
+    PROCEDURE_SESSIONS }o--o| TREATMENT_PACKAGES : "optional"
     APPOINTMENTS {
         uuid id PK
         uuid clinic_id FK
@@ -257,6 +262,38 @@ erDiagram
         decimal amount
         json features
         timestamp created_at
+    }
+
+    PROCEDURE_SESSIONS {
+        uuid id PK
+        uuid clinic_id FK
+        uuid patient_id FK
+        uuid appointment_id FK
+        uuid doctor_id FK
+        string procedure_number UK
+        string type
+        string type_code
+        enum status "scheduled|in_progress|completed|cancelled"
+        datetime started_at
+        datetime ended_at
+        text notes
+        json logs
+        uuid treatment_package_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    TREATMENT_PACKAGES {
+        uuid id PK
+        uuid clinic_id FK
+        string name
+        text description
+        json items
+        decimal price
+        string currency
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
     }
 
     PERMISSIONS {

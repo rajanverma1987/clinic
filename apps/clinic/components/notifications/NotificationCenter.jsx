@@ -269,7 +269,7 @@ export function NotificationCenter({
         <Card className='w-full h-full shadow-2xl border border-neutral-200 dark:border-neutral-600'>
           <div className='p-4 border-b border-neutral-200 dark:border-neutral-600 flex items-center justify-between'>
             <h2 className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
-              {t('notifications.title')}{' '}
+              Notifications{' '}
               {unreadCount > 0 && (
                 <span className='ml-2 px-2 py-1 bg-primary-600 text-white text-xs rounded-full'>
                   {unreadCount}
@@ -279,7 +279,7 @@ export function NotificationCenter({
             <div className='flex gap-2'>
               {unreadCount > 0 && (
                 <Button variant='secondary' size='sm' onClick={handleMarkAllAsRead}>
-                  {t('notifications.markAllAsRead')}
+                  Mark All Read
                 </Button>
               )}
               <Button
@@ -296,49 +296,50 @@ export function NotificationCenter({
 
           {/* Filters */}
           <div className='p-3 border-b border-neutral-200 dark:border-neutral-600 flex gap-2 overflow-x-auto'>
-            <button
-              className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+            <Button
+              type='button'
+              variant={filter === 'all' ? 'primary' : 'ghost'}
+              size='xs'
+              className={`rounded-full whitespace-nowrap ${
                 filter === 'all'
-                  ? 'bg-primary-600 text-white'
+                  ? ''
                   : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
               }`}
               onClick={() => setFilter('all')}
             >
-              {t('notifications.all')}
-            </button>
-            <button
-              className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+              All
+            </Button>
+            <Button
+              type='button'
+              variant={filter === 'unread' ? 'primary' : 'ghost'}
+              size='xs'
+              className={`rounded-full whitespace-nowrap ${
                 filter === 'unread'
-                  ? 'bg-primary-600 text-white'
+                  ? ''
                   : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
               }`}
               onClick={() => setFilter('unread')}
             >
-              {t('notifications.unreadCount', { count: unreadCount })}
-            </button>
+              Unread ({unreadCount})
+            </Button>
             {Object.values(NOTIFICATION_TYPES).map((type) => {
               const count = notifications.filter((n) => n.type === type).length;
               if (count === 0) return null;
-              const typeKey =
-                {
-                  [NOTIFICATION_TYPES.APPOINTMENT]: 'notifications.typeAppointment',
-                  [NOTIFICATION_TYPES.PRESCRIPTION]: 'notifications.typePrescription',
-                  [NOTIFICATION_TYPES.PAYMENT]: 'notifications.typePayment',
-                  [NOTIFICATION_TYPES.LAB_RESULT]: 'notifications.typeLabResult',
-                  [NOTIFICATION_TYPES.SYSTEM]: 'notifications.typeSystem',
-                }[type] || type;
               return (
-                <button
+                <Button
                   key={type}
-                  className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+                  type='button'
+                  variant={filter === type ? 'primary' : 'ghost'}
+                  size='xs'
+                  className={`rounded-full whitespace-nowrap ${
                     filter === type
-                      ? 'bg-primary-600 text-white'
+                      ? ''
                       : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
                   }`}
                   onClick={() => setFilter(type)}
                 >
-                  {TYPE_ICONS[type]} {t(typeKey)} ({count})
-                </button>
+                  {TYPE_ICONS[type]} {type.replace('_', ' ')} ({count})
+                </Button>
               );
             })}
           </div>

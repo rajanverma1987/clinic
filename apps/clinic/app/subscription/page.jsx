@@ -18,9 +18,11 @@ import { apiClient } from '@/lib/api/client';
 import { CARD_FEATURES_BY_PLAN } from '@/lib/constants/plan-features';
 import {
   ADDONS,
+  ALL_PLANS_INCLUDED_KEYS,
   COMPARISON_TABLE_PLAN_SLUGS,
   COMPARISON_TABLE_ROWS,
   FAQ_ITEMS,
+  OUTCOME_POSITIONING,
   YEARLY_SAVE,
 } from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
@@ -34,6 +36,9 @@ export default function SubscriptionPage() {
   const { user, loading: authLoading } = useAuth();
   const { open: openConfirm } = useConfirmation();
   const { t } = useI18n();
+  /** Subscription pricing is USD only; payment method is PayPal only. */
+  const displayCurrency = 'USD';
+  const displayLocale = 'en-US';
   const { handleError, safeTranslate } = useErrorHandler({ t, showToast: true });
   const [subscription, setSubscription] = useState(null);
   const [availablePlans, setAvailablePlans] = useState([]);
@@ -302,9 +307,10 @@ export default function SubscriptionPage() {
     });
   };
 
-  const formatCurrency = (amount, currency) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(
-      amount / 100,
+  /** Subscription pricing is USD only. */
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+      (amount || 0) / 100,
     );
 
   const renderAddonCard = (addon) => {
@@ -321,9 +327,12 @@ export default function SubscriptionPage() {
               {safeTranslate(addon?.labelKey, addon?.key || 'Add-on')}
             </div>
             {canAdd && (
-              <button
+              <Button
                 type='button'
-                className='sub-addon-add-icon'
+                variant='ghost'
+                size='sm'
+                iconOnly
+                className='sub-addon-add-icon min-w-0'
                 onClick={() => handleAddAddon(addon)}
                 disabled={!!addonLoading}
                 aria-label={safeTranslate('subscription.addAddon', 'Add')}
@@ -334,7 +343,7 @@ export default function SubscriptionPage() {
                 ) : (
                   <PlusIcon className='icon icon-sm' ariaHidden />
                 )}
-              </button>
+              </Button>
             )}
             {alreadyAdded && (
               <span className='sub-addon-badge' aria-hidden>
@@ -345,8 +354,10 @@ export default function SubscriptionPage() {
           {addon?.descriptionKey && (
             <p className='sub-addon-description'>{safeTranslate(addon.descriptionKey, '')}</p>
           )}
-          <div className='sub-addon-price'>{addon?.price || 'N/A'}</div>
-          {addon?.noteKey && <p className='sub-addon-note'>{safeTranslate(addon.noteKey, '')}</p>}
+          {addon?.price ? <div className='sub-addon-price'>{addon.price}</div> : null}
+          {addon?.noteKey ? (
+            <p className='sub-addon-note'>{safeTranslate(addon.noteKey, '')}</p>
+          ) : null}
         </div>
       );
     } catch (error) {
@@ -379,8 +390,8 @@ export default function SubscriptionPage() {
     return colors[status] || 'default';
   };
 
-  // Show SOLO, CLINIC, ENTERPRISE only (no free plan; all plans have 14-day free trial, then billing)
-  const ALLOWED_PLAN_NAMES = ['SOLO', 'CLINIC', 'ENTERPRISE'];
+  /** Plans: Core / Pro / Enterprise. USD only, PayPal only. */
+  const ALLOWED_PLAN_NAMES = ['Core', 'Pro', 'Enterprise'];
 
   // Dedupe plans by name; keep only allowed plans and sort by ALLOWED_PLAN_NAMES order
   const uniquePlans = availablePlans
@@ -421,8 +432,8 @@ export default function SubscriptionPage() {
   if (!user) return null;
   if (loading) return <Loader type='page' text={t('common.loading')} />;
 
-  // Only clinic owners (doctor/admin/clinic_admin) can manage subscriptions; accountant is read-only
-  const canManageSubscription = ['doctor', 'admin', 'clinic_admin'].includes(user.role);
+  // Only the primary account (registered with full clinic details) can purchase or manage subscription. Staff/doctors created by admin cannot.
+  const canManageSubscription = !!user.isPrimaryAccount;
 
   // No plans at all: show empty state with i18n
   if (uniquePlans.length === 0) {
@@ -477,10 +488,10 @@ export default function SubscriptionPage() {
             </div>
           </div>
         )}
-        {/* Current plan first, then Add-ons below (same section + card style) */}
+        {/* Subscription details and Add-ons side by side (2-column layout) */}
         {subscription && subscription.planId && typeof subscription.planId === 'object' ? (
-          <>
-            <div className='dashboard-section'>
+          <div className='sub-details-addons-row'>
+            <div className='dashboard-section sub-details-col'>
               <h2 className='sub-section-title'>
                 <span className='sub-accent' />
                 {t('subscription.currentPlan')}
@@ -514,11 +525,7 @@ export default function SubscriptionPage() {
                   <div className='sub-detail-row'>
                     <span className='sub-detail-label'>{t('subscription.monthlyCost')}</span>
                     <span className='sub-detail-value'>
-                      {formatCurrency(
-                        subscription.planId?.price || 0,
-                        subscription.planId?.currency || 'USD',
-                      )}{' '}
-                      /{' '}
+                      {formatCurrency(subscription.planId?.price || 0)} /{' '}
                       {subscription.planId?.billingCycle === 'YEARLY'
                         ? t('pricing.perYear')
                         : t('pricing.perMonth')}
@@ -537,12 +544,7 @@ export default function SubscriptionPage() {
                         .replace('{{planName}}', subscription.planId?.name || '')
                         .replace(
                           '{{amount}}',
-                          subscription.planId
-                            ? formatCurrency(
-                                subscription.planId.price || 0,
-                                subscription.planId.currency || 'USD',
-                              )
-                            : '',
+                          subscription.planId ? formatCurrency(subscription.planId.price || 0) : '',
                         )}
                     </p>
                   </div>
@@ -593,7 +595,7 @@ export default function SubscriptionPage() {
               </Card>
             </div>
 
-            <div className='dashboard-section sub-section-compact'>
+            <div className='dashboard-section sub-addons-col sub-section-compact'>
               <h2 className='sub-section-title'>
                 <span className='sub-accent' />
                 {t('subscriptionSpec.addOns')}
@@ -605,12 +607,12 @@ export default function SubscriptionPage() {
                 >
                   {t('subscriptionSpec.addOnsSubtitle')}
                 </p>
-                <div className='content-grid-3 content-grid-gap-3'>
+                <div className='content-grid-2 content-grid-gap-3'>
                   {ADDONS.map(renderAddonCard)}
                 </div>
               </Card>
             </div>
-          </>
+          </div>
         ) : (
           <>
             {/* Add-ons catalog – full width when no current plan */}
@@ -670,6 +672,8 @@ export default function SubscriptionPage() {
                     isPopular={plan.isPopular}
                     yearlySaveAmount={YEARLY_SAVE[plan.name]}
                     trialDays={plan.trialDays ?? 14}
+                    displayCurrency={displayCurrency}
+                    displayLocale={displayLocale}
                     showPaymentMethods={canManageSubscription && isPaid}
                     onSubscribe={
                       canManageSubscription && isPaid ? () => setPaymentModalPlan(plan) : undefined
@@ -726,15 +730,18 @@ export default function SubscriptionPage() {
         {/* Feature comparison (collapsible) */}
         <div className='dashboard-section sub-section-compact'>
           <Card>
-            <button
+            <Button
               type='button'
+              variant='ghost'
+              fullWidth
+              align='start'
               className='sub-comparison-toggle'
               onClick={() => setComparisonOpen((o) => !o)}
               aria-expanded={comparisonOpen}
             >
               <span>{t('subscriptionSpec.comparisonTable')}</span>
               <span aria-hidden>{comparisonOpen ? '−' : '+'}</span>
-            </button>
+            </Button>
             {comparisonOpen && (
               <div className='sub-comparison-wrap'>
                 <table>
@@ -762,20 +769,79 @@ export default function SubscriptionPage() {
           </Card>
         </div>
 
+        {/* Included in ALL Plans */}
+        <div className='dashboard-section sub-section-compact'>
+          <Card>
+            <h3 className='sub-section-title' style={{ marginTop: 0 }}>
+              <span className='sub-accent' />
+              {t('subscriptionSpec.includedInAllPlans')}
+            </h3>
+            <ul className='sub-included-list'>
+              {ALL_PLANS_INCLUDED_KEYS.map((key) => (
+                <li key={key}>{t(key)}</li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+
+        {/* Outcome Positioning */}
+        <div className='dashboard-section sub-section-compact'>
+          <Card>
+            <h3 className='sub-section-title' style={{ marginTop: 0 }}>
+              <span className='sub-accent' />
+              {t('subscriptionSpec.outcomePositioning')}
+            </h3>
+            <div className='sub-outcome-wrap'>
+              <table className='sub-outcome-table'>
+                <thead>
+                  <tr>
+                    <th>{t('subscriptionSpec.plan')}</th>
+                    <th>{t('subscriptionSpec.outcome')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {OUTCOME_POSITIONING.map(({ plan, outcomeKey }) => (
+                    <tr key={plan}>
+                      <td>{plan}</td>
+                      <td>{t(outcomeKey)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+
+        {/* What You Deliver */}
+        <div className='dashboard-section sub-section-compact'>
+          <Card className='sub-what-you-deliver-card'>
+            <h3 className='sub-section-title' style={{ marginTop: 0 }}>
+              <span className='sub-accent' />
+              {t('subscriptionSpec.whatYouDeliver')}
+            </h3>
+            <p className='sub-what-you-deliver-tagline'>
+              {t('subscriptionSpec.whatYouDeliverTagline')}
+            </p>
+          </Card>
+        </div>
+
         {/* FAQ (compact) */}
         <div className='dashboard-section sub-section-compact'>
           <Card title={t('subscriptionSpec.faq')}>
             <div className='sub-faq-list'>
               {FAQ_ITEMS.map((item, idx) => (
                 <div key={idx} className='sub-faq-item'>
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
                     onClick={() => setFaqOpen(faqOpen === idx ? null : idx)}
                     aria-expanded={faqOpen === idx}
                   >
                     {t(item.questionKey)}
                     <span>{faqOpen === idx ? '−' : '+'}</span>
-                  </button>
+                  </Button>
                   {faqOpen === idx && <div className='sub-faq-answer'>{t(item.answerKey)}</div>}
                 </div>
               ))}
@@ -787,21 +853,11 @@ export default function SubscriptionPage() {
         <div className='dashboard-section sub-footer-line'>
           <p className='sub-terms-one-line'>
             {t('subscription.termsOneLine')}{' '}
-            <Button
-              variant='link'
-              size='xs'
-              className='sub-link-button !p-0 !min-h-0'
-              href='/pricing'
-            >
+            <Button variant='link' href='/pricing'>
               {t('subscription.comparePlans')}
             </Button>
             {' · '}
-            <Button
-              variant='link'
-              size='xs'
-              className='sub-link-button !p-0 !min-h-0'
-              href='/support'
-            >
+            <Button variant='link' href='/support'>
               {t('subscriptionSpec.contactSupport')}
             </Button>
           </p>

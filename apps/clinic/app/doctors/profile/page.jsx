@@ -425,12 +425,15 @@ export default function DoctorProfilePage() {
                         className='inline-flex items-center gap-2 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm'
                       >
                         {spec}
-                        <button
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='xs'
                           onClick={() => removeSpecialization(index)}
-                          className='text-primary-600 hover:text-primary-800'
+                          className='text-primary-600 hover:text-primary-800 min-w-0 p-0.5'
                         >
                           ×
-                        </button>
+                        </Button>
                       </span>
                     ))}
                   </div>
@@ -478,14 +481,17 @@ export default function DoctorProfilePage() {
                         className='inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm'
                       >
                         {service}
-                        <button
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='xs'
                           onClick={() =>
                             setServicesOffered(servicesOffered.filter((_, i) => i !== index))
                           }
-                          className='text-blue-600 hover:text-blue-800'
+                          className='text-blue-600 hover:text-blue-800 min-w-0 p-0.5'
                         >
                           ×
-                        </button>
+                        </Button>
                       </span>
                     ))}
                   </div>
@@ -520,12 +526,15 @@ export default function DoctorProfilePage() {
                         className='inline-flex items-center gap-2 px-3 py-1 bg-neutral-100 text-neutral-800 rounded-full text-sm'
                       >
                         {lang}
-                        <button
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='xs'
                           onClick={() => removeLanguage(index)}
-                          className='text-neutral-600 hover:text-neutral-800'
+                          className='text-neutral-600 hover:text-neutral-800 min-w-0 p-0.5'
                         >
                           ×
-                        </button>
+                        </Button>
                       </span>
                     ))}
                   </div>
@@ -560,12 +569,15 @@ export default function DoctorProfilePage() {
                         className='inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm'
                       >
                         {condition}
-                        <button
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='xs'
                           onClick={() => removeCondition(index)}
-                          className='text-green-600 hover:text-green-800'
+                          className='text-green-600 hover:text-green-800 min-w-0 p-0.5'
                         >
                           ×
-                        </button>
+                        </Button>
                       </span>
                     ))}
                   </div>
@@ -600,12 +612,15 @@ export default function DoctorProfilePage() {
                         className='flex items-center justify-between p-3 bg-neutral-50 rounded-lg'
                       >
                         <span className='text-neutral-900'>{award}</span>
-                        <button
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='xs'
                           onClick={() => removeAward(index)}
                           className='text-red-600 hover:text-red-800'
                         >
                           {t('doctors.remove')}
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -842,17 +857,20 @@ export default function DoctorProfilePage() {
                               className='inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm'
                             >
                               {facility}
-                              <button
+                              <Button
+                                type='button'
+                                variant='ghost'
+                                size='xs'
                                 onClick={() => {
                                   setNewClinic({
                                     ...newClinic,
                                     facilities: newClinic.facilities.filter((_, i) => i !== fIndex),
                                   });
                                 }}
-                                className='text-blue-600 hover:text-blue-800'
+                                className='text-blue-600 hover:text-blue-800 min-w-0 p-0.5'
                               >
                                 ×
-                              </button>
+                              </Button>
                             </span>
                           ))}
                         </div>
@@ -920,17 +938,21 @@ export default function DoctorProfilePage() {
                                     className='w-full h-full object-cover'
                                   />
                                 )}
-                                <button
+                                <Button
+                                  type='button'
+                                  variant='danger'
+                                  size='xs'
+                                  iconOnly
                                   onClick={() => {
                                     setNewClinic({
                                       ...newClinic,
                                       photos: newClinic.photos.filter((_, i) => i !== pIndex),
                                     });
                                   }}
-                                  className='absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs'
+                                  className='absolute top-1 right-1 w-5 h-5 min-w-0 rounded-full text-xs'
                                 >
                                   ×
-                                </button>
+                                </Button>
                               </div>
                             ))}
                           </div>
@@ -1161,12 +1183,15 @@ export default function DoctorProfilePage() {
                         className='inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm'
                       >
                         {insurance}
-                        <button
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='xs'
                           onClick={() => removeInsurance(index)}
-                          className='text-blue-600 hover:text-blue-800'
+                          className='text-blue-600 hover:text-blue-800 min-w-0 p-0.5'
                         >
                           ×
-                        </button>
+                        </Button>
                       </span>
                     ))}
                   </div>

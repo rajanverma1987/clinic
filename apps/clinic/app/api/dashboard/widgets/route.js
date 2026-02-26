@@ -20,6 +20,7 @@ import { getLowStockItems, getAllLots } from '@/services/inventory.service';
 import { listPrescriptions } from '@/services/prescription.service';
 import { searchPatients } from '@/services/patient.service';
 import { listQueueEntries } from '@/services/queue.service';
+import { successResponse } from '@/lib/utils/api-response';
 import { NextResponse } from 'next/server';
 
 const WIDGETS_CACHE_TTL_MS = 60_000; // 60 seconds
@@ -126,7 +127,7 @@ async function getHandler(req, user) {
     WIDGETS_CACHE_TTL_MS,
   );
 
-  return NextResponse.json({ success: true, data });
+  return NextResponse.json(successResponse(data));
 }
 
 export const GET = withErrorHandler(

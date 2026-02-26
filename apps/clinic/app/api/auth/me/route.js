@@ -102,6 +102,7 @@ async function handler(req, user) {
     avatar: userDoc.avatar || undefined,
     lastLoginAt: userDoc.lastLoginAt,
     createdAt: userDoc.createdAt,
+    isPrimaryAccount: !!userDoc.isPrimaryAccount,
   };
   if (userDoc.role === 'manager' && userDoc.managerAccess && userDoc.managerAccess.length > 0) {
     payload.managerAccess = userDoc.managerAccess;

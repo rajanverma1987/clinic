@@ -775,7 +775,7 @@ export default function DoctorRegisterPage() {
               </div>
 
               <div className='flex justify-between'>
-                <Button variant='secondary' onClick={handleBack}>
+                <Button variant='ghost' onClick={handleBack}>
                   Back
                 </Button>
                 <Button variant='primary' onClick={handleNext}>
@@ -956,7 +956,7 @@ export default function DoctorRegisterPage() {
               </div>
 
               <div className='flex justify-between'>
-                <Button variant='secondary' onClick={handleBack}>
+                <Button variant='ghost' onClick={handleBack}>
                   Back
                 </Button>
                 <Button variant='primary' onClick={handleNext}>
@@ -1185,7 +1185,7 @@ export default function DoctorRegisterPage() {
               </div>
 
               <div className='flex justify-between'>
-                <Button variant='secondary' onClick={handleBack}>
+                <Button variant='ghost' onClick={handleBack}>
                   Back
                 </Button>
                 <Button variant='primary' onClick={handleNext}>
@@ -1312,7 +1312,7 @@ export default function DoctorRegisterPage() {
               </div>
 
               <div className='flex justify-between'>
-                <Button variant='secondary' onClick={handleBack}>
+                <Button variant='ghost' onClick={handleBack}>
                   Back
                 </Button>
                 <Button

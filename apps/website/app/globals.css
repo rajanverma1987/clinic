@@ -19,6 +19,8 @@
     --color-primary-100: #e5ebf8;
     --color-primary-50: #f2f5fc;
     --color-primary-600: #1a48ab;
+    /* Light bg for icon-style blocks – tint of royal blue #304DA5, blue only */
+    --color-primary-icon-bg: #e8ecf7;
     --color-primary: var(--color-primary-700);
 
     --color-secondary-700: #1e874f;
@@ -135,6 +137,23 @@
       transparent 100%
     );
     --text-shadow-on-dark: 0 2px 8px rgba(0, 0, 0, 0.4);
+
+    /* Page layout – single source for spacing; do not combine with inline style on same element */
+    --header-height: 96px;
+    --page-content-padding-x: 32px;
+    --page-content-padding-bottom: 48px;
+
+    /* Motion – smooth transitions and easing (use these for consistent feel) */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-in-out-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 350ms;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
@@ -144,7 +163,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    background-color: var(--color-neutral-50);
+    background-color: var(--color-neutral-100);
     color: var(--color-neutral-900);
   }
 
@@ -198,11 +217,37 @@
     background: var(--section-bg-gradient);
   }
 
+  /* Light blue bg for icon-style blocks – matches royal blue #304DA5, blue only */
+  .bg-primary-icon-bg {
+    background-color: var(--color-primary-icon-bg);
+  }
+
   /* Section container – consistent max-width and centering (theme scope). Sections add their own padding. */
   .section-container {
     max-width: 80rem;
     margin-left: auto;
     margin-right: auto;
+  }
+
+  /* Page layout – use these classes only; do not add inline style for padding/margin on the same element */
+  .page-main {
+    padding-top: var(--header-height);
+  }
+  .page-content {
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--page-content-padding-x);
+    padding-right: var(--page-content-padding-x);
+    padding-bottom: var(--page-content-padding-bottom);
+  }
+  .page-content-narrow {
+    max-width: 56rem;
+  }
+  .page-content-wide {
+    max-width: 64rem;
+  }
+  .page-content-max {
+    max-width: 80rem;
   }
 
   /* Section title – theme typography for section headings */
@@ -212,6 +257,22 @@
     letter-spacing: -0.02em;
     font-weight: 700;
     color: var(--color-neutral-900);
+  }
+
+  /* Section spacing – consistent vertical and horizontal padding site-wide */
+  .section-padding-x {
+    padding-left: var(--page-content-padding-x);
+    padding-right: var(--page-content-padding-x);
+  }
+  .section-padding-y {
+    padding-top: var(--space-14);
+    padding-bottom: var(--space-14);
+  }
+  @media (min-width: 768px) {
+    .section-padding-y {
+      padding-top: var(--space-16);
+      padding-bottom: var(--space-16);
+    }
   }
 }
 
@@ -275,6 +336,97 @@
   animation: hero-shine 1.5s ease-in-out;
 }
 
+/* Smooth transitions – use these classes for interactive elements */
+.transition-smooth {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity, width;
+  transition-duration: var(--duration-normal);
+  transition-timing-function: var(--ease-out-smooth);
+}
+.transition-smooth-fast {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-out-smooth);
+}
+.hover-lift {
+  transition:
+    transform var(--duration-normal) var(--ease-out-expo),
+    box-shadow var(--duration-normal) var(--ease-out-smooth);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.hover-scale-subtle {
+  transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+.hover-scale-subtle:hover {
+  transform: scale(1.02);
+}
+.link-underline {
+  position: relative;
+  transition: color var(--duration-fast) var(--ease-out-smooth);
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+.link-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+/* Section fade-in (optional: add .animate-on-scroll to sections; use JS or reduce-motion) */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fade-in-up var(--duration-slow) var(--ease-out-expo) forwards;
+}
+/* Accordion / collapsible content */
+.accordion-content {
+  transition:
+    max-height var(--duration-slow) var(--ease-out-smooth),
+    opacity var(--duration-normal) var(--ease-out-smooth);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transition-smooth,
+  .transition-smooth-fast,
+  .hover-lift,
+  .hover-scale-subtle,
+  .link-underline::after {
+    transition-duration: 0.01ms !important;
+  }
+  .hover-lift:hover {
+    transform: none;
+  }
+  .hover-scale-subtle:hover {
+    transform: none;
+  }
+  .animate-fade-in-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .accordion-content {
+    transition: none;
+  }
+}
+
 /* Hero trust badges – icon + text pills */
 .hero-trust-badge {
   display: inline-flex;
@@ -315,24 +467,61 @@
     font-size: 32px;
     line-height: 40px;
     font-weight: 700;
+    letter-spacing: -0.02em;
     font-family: var(--font-family);
   }
   .text-h2 {
     font-size: 24px;
     line-height: 32px;
     font-weight: 600;
+    letter-spacing: -0.01em;
     font-family: var(--font-family);
   }
   .text-h3 {
     font-size: 20px;
     line-height: 28px;
     font-weight: 600;
+    letter-spacing: -0.01em;
     font-family: var(--font-family);
   }
   .text-h4 {
     font-size: 18px;
     line-height: 24px;
     font-weight: 600;
+    letter-spacing: -0.01em;
+    font-family: var(--font-family);
+  }
+  .text-hero {
+    font-size: clamp(32px, 5vw, 48px);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    font-family: var(--font-family);
+  }
+  .text-hero-xl {
+    font-size: 56px;
+    line-height: 64px;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    font-family: var(--font-family);
+  }
+  @media (min-width: 768px) {
+    .text-hero-xl {
+      font-size: 64px;
+      line-height: 72px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .text-hero-xl {
+      font-size: 72px;
+      line-height: 80px;
+    }
+  }
+  .text-section-heading {
+    font-size: clamp(28px, 4vw, 36px);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 700;
     font-family: var(--font-family);
   }
   .text-body-lg {

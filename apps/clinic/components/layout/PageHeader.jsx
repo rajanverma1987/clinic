@@ -1,6 +1,7 @@
 'use client';
 
 import { RefreshCwIcon, SearchIcon } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { NotificationDropdown } from '@/components/ui/NotificationDropdown';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -122,28 +123,24 @@ export function PageHeader({
 
         <div className='page-header__tools'>
           {showSearch && (
-            <button
+            <Button
               type='button'
-              onClick={() => {
-                if (typeof onOpenSearch === 'function') {
-                  onOpenSearch();
-                } else {
-                  window.dispatchEvent(new CustomEvent('openSearch'));
-                }
-              }}
+              variant='ghost'
+              onClick={onOpenSearch}
               className='page-header__search'
               aria-label={t('common.ariaLabelSearch')}
             >
               <SearchIcon className='page-header__search-icon' ariaHidden />
               <span className='page-header__search-text'>
-                {t('common.searchPlaceholder')}
+                {t('common.searchPlaceholder') || 'Search...'}
               </span>
               <kbd className='page-header__search-kbd'>⌘K</kbd>
-            </button>
+            </Button>
           )}
 
-          <button
+          <Button
             type='button'
+            variant='ghost'
             onClick={handleRefresh}
             disabled={isRefreshing}
             className='page-header__btn'
@@ -155,7 +152,7 @@ export function PageHeader({
               className={`icon icon-md ${isRefreshing ? 'animate-spin' : ''}`}
               ariaHidden
             />
-          </button>
+          </Button>
 
           {hasActions && (
             <>

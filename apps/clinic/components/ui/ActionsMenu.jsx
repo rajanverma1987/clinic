@@ -97,9 +97,12 @@ export function ActionsMenu({
         aria-orientation='vertical'
       >
         {filteredItems.map((item) => (
-          <button
+          <Button
             key={item.key}
             type='button'
+            variant='ghost'
+            fullWidth
+            align='start'
             role='menuitem'
             disabled={item.disabled}
             data-danger={item.danger ? '' : undefined}
@@ -111,7 +114,7 @@ export function ActionsMenu({
           >
             {item.icon && <span className='flex-shrink-0'>{item.icon}</span>}
             <span>{item.label}</span>
-          </button>
+          </Button>
         ))}
       </div>,
       document.body,

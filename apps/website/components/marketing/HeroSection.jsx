@@ -1,23 +1,18 @@
 'use client';
 
 import { CalendarIcon, CheckIcon, XIcon } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
+import { CLINIC_APP_URL } from '@/lib/config';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export function HeroSection({ onContactClick }) {
   const { t } = useI18n();
+  const registerUrl = CLINIC_APP_URL.replace(/\/$/, '') + '/register';
 
   return (
-    <section
-      className='relative overflow-hidden'
-      style={{
-        paddingTop: '120px',
-        paddingBottom: '100px',
-        paddingLeft: '32px',
-        paddingRight: '32px',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f7fafc 50%, #e6f7fe 100%)',
-      }}
-    >
+    <section className='section-bg relative overflow-hidden pt-[5vh] pb-16 px-8'>
       {/* Animated gradient orbs - theme colors */}
       <div
         className='absolute top-0 right-0 rounded-full hero-orb-1'
@@ -57,125 +52,55 @@ export function HeroSection({ onContactClick }) {
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-16 items-center'>
           {/* Left Content */}
           <div className='text-center lg:text-left'>
+            {/* Optional overline – clean hierarchy (Dochours-style) */}
+            <p className='text-primary-600 font-semibold text-sm uppercase tracking-wider mb-4'>
+              {t('homepage.heroOverline')}
+            </p>
             {/* Premium Badge */}
-            <div
-              className='inline-flex items-center bg-white/80 border-2 border-primary-200 text-primary-700 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300'
-              style={{
-                paddingLeft: '20px',
-                paddingRight: '20px',
-                paddingTop: '10px',
-                paddingBottom: '10px',
-                gap: '10px',
-                marginBottom: '48px',
-                fontSize: '14px',
-                lineHeight: '20px',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              <CheckIcon className='text-primary-500' style={{ width: 18, height: 18 }} />
+            <div className='inline-flex items-center gap-2.5 px-5 py-2.5 mb-8 text-body-sm font-semibold bg-white/80 border-2 border-primary-200 text-primary-700 rounded-full shadow-lg hover:shadow-xl transition-smooth hover-scale-subtle backdrop-blur-sm'>
+              <CheckIcon className='text-primary-500 w-[18px] h-[18px] shrink-0' />
               <span>{t('homepage.hipaaGdprCompliant')}</span>
             </div>
 
             {/* Main Heading */}
-            <h1
-              className='text-neutral-900'
-              style={{
-                marginBottom: '32px',
-                fontSize: '56px',
-                lineHeight: '64px',
-                letterSpacing: '-0.02em',
-                fontWeight: '700',
-              }}
-            >
+            <h1 className='text-hero-xl text-neutral-900 mb-6'>
               <span className='block'>{t('homepage.heroTitle')}</span>
-              <span
-                className='block'
-                style={{
-                  marginTop: '12px',
-                  color: '#2D9CDB',
-                  fontWeight: '700',
-                }}
-              >
+              <span className='block mt-3 text-primary-500 font-bold'>
                 {t('homepage.heroSubtitle')}
               </span>
             </h1>
-            <style
-              dangerouslySetInnerHTML={{
-                __html: `
-                @media (min-width: 768px) {
-                  h1 {
-                    font-size: 64px !important;
-                    line-height: 72px !important;
-                  }
-                }
-                @media (min-width: 1024px) {
-                  h1 {
-                    font-size: 72px !important;
-                    line-height: 80px !important;
-                  }
-                }
-              `,
-              }}
-            />
 
             {/* Description */}
-            <p
-              className='text-neutral-700 max-w-2xl mx-auto lg:mx-0'
-              style={{
-                marginBottom: '64px',
-                fontSize: '18px',
-                lineHeight: '28px',
-                fontWeight: '400',
-              }}
-            >
+            <p className='text-body-lg text-neutral-700 max-w-2xl mx-auto lg:mx-0 mb-6'>
               {t('homepage.heroDescription')}
             </p>
 
+            {/* CTAs – Dochours-style: Try it free + Book a Demo */}
+            <div className='flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-10'>
+              <a href={registerUrl}>
+                <Button variant='primary' size='lg' className='whitespace-nowrap px-6 py-3'>
+                  {t('homepage.tryItFree')}
+                </Button>
+              </a>
+              <Link href='/support/contact'>
+                <Button variant='secondary' size='lg' className='whitespace-nowrap px-6 py-3'>
+                  {t('homepage.bookDemo')}
+                </Button>
+              </Link>
+            </div>
+
             {/* Trust Badges */}
-            <div
-              className='flex flex-wrap items-center justify-center lg:justify-start'
-              style={{ gap: '24px' }}
-            >
-              <div
-                className='flex items-center text-neutral-700'
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  fontWeight: '500',
-                }}
-              >
-                <CheckIcon
-                  style={{ width: 18, height: 18, marginRight: '8px' }}
-                  className='text-secondary-500'
-                />
+            <div className='flex flex-wrap items-center justify-center lg:justify-start gap-6'>
+              <div className='flex items-center text-body-sm font-medium text-neutral-700'>
+                <CheckIcon className='w-[18px] h-[18px] mr-2 shrink-0 text-secondary-500' />
                 <span>{t('homepage.noCreditCardRequired')}</span>
               </div>
-              <div
-                className='flex items-center text-neutral-700'
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  fontWeight: '500',
-                }}
-              >
-                <CalendarIcon
-                  style={{ width: 18, height: 18, marginRight: '8px' }}
-                  className='text-primary-500'
-                />
+              <div className='flex items-center text-body-sm font-medium text-neutral-700'>
+                <CalendarIcon className='w-[18px] h-[18px] mr-2 shrink-0 text-primary-500' />
                 <span>{t('homepage.freeTrial')}</span>
               </div>
-              <div
-                className='flex items-center text-neutral-700'
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  fontWeight: '500',
-                }}
-              >
-                <XIcon
-                  style={{ width: 18, height: 18, marginRight: '8px' }}
-                  className='text-neutral-500'
-                />
+              <div className='flex items-center text-body-sm font-medium text-neutral-700'>
+                <XIcon className='w-[18px] h-[18px] mr-2 shrink-0 text-neutral-500' />
                 <span>{t('homepage.cancelAnytime')}</span>
               </div>
             </div>
@@ -219,11 +144,10 @@ export function HeroSection({ onContactClick }) {
                 alt='Clinic Management Platform'
                 width={900}
                 height={675}
-                className='object-cover w-full h-full'
+                className='object-cover w-full h-auto block'
                 priority
                 sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 900px'
                 quality={95}
-                style={{ width: '100%', height: 'auto', display: 'block' }}
               />
 
               {/* Bottom gradient overlay - very light */}

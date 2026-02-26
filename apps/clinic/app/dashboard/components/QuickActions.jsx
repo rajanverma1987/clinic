@@ -156,7 +156,9 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
                   variant='ghost'
                   size='sm'
                   role='menuitem'
-                  className='!min-h-0 !w-full !justify-start'
+                  size='auto'
+                  fullWidth
+                  align='start'
                   onClick={() => {
                     if (onNavigate && typeof onNavigate === 'function') {
                       onNavigate(path);

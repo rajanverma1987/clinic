@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { ChevronRightIcon, DocumentIcon } from '@/components/icons';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -19,9 +20,13 @@ export function InvoiceListItem({ invoice, onClick, formatCurrency }) {
   const isOverdue = invoice.dueDate && new Date(invoice.dueDate) < new Date();
 
   return (
-    <button
+    <Button
       type='button'
-      className='dashboard-list-item dashboard-list-item-warning group w-full text-left cursor-pointer border-0 bg-transparent p-0'
+      variant='ghost'
+      size='listRow'
+      fullWidth
+      align='start'
+      className='dashboard-list-item dashboard-list-item-warning group border-0 bg-transparent'
       onClick={onClick}
       aria-label={`${patientName}, Invoice ${invoiceNumber}`}
     >
@@ -52,6 +57,6 @@ export function InvoiceListItem({ invoice, onClick, formatCurrency }) {
         {/* Arrow */}
         <ChevronRightIcon className='icon icon-sm text-neutral-400 group-hover:text-status-warning transition-colors flex-shrink-0' />
       </div>
-    </button>
+    </Button>
   );
 }

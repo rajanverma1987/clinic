@@ -34,9 +34,9 @@ export function VideoDisplay({ localVideoRef, remoteVideoRef, isVideoEnabled, is
           style={{ transform: 'scaleX(-1)' }}
         />
         {!isVideoEnabled && (
-          <div className='absolute inset-0 bg-neutral-300 flex items-center justify-center'>
+          <div className='absolute inset-0 bg-neutral-300 dark:bg-neutral-700 flex items-center justify-center'>
             <svg
-              className='w-12 h-12 text-neutral-600'
+              className='w-12 h-12 text-neutral-600 dark:text-neutral-400'
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'

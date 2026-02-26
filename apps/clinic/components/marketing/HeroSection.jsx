@@ -79,47 +79,13 @@ export function HeroSection({ onContactClick }) {
               <span>{t('homepage.hipaaGdprCompliant')}</span>
             </div>
 
-            {/* Main Heading */}
-            <h1
-              className='text-neutral-900'
-              style={{
-                marginBottom: '32px',
-                fontSize: '56px',
-                lineHeight: '64px',
-                letterSpacing: '-0.02em',
-                fontWeight: '700',
-              }}
-            >
+            {/* Main Heading – responsive size via .hero-heading (globals.css) */}
+            <h1 className='text-neutral-900 hero-heading'>
               <span className='block'>{t('homepage.heroTitle')}</span>
-              <span
-                className='block'
-                style={{
-                  marginTop: '12px',
-                  color: 'var(--color-primary-900)',
-                  fontWeight: '700',
-                }}
-              >
+              <span className='block mt-3 font-bold' style={{ color: 'var(--color-primary-900)' }}>
                 {t('homepage.heroSubtitle')}
               </span>
             </h1>
-            <style
-              dangerouslySetInnerHTML={{
-                __html: `
-                @media (min-width: 768px) {
-                  h1 {
-                    font-size: 64px !important;
-                    line-height: 72px !important;
-                  }
-                }
-                @media (min-width: 1024px) {
-                  h1 {
-                    font-size: 72px !important;
-                    line-height: 80px !important;
-                  }
-                }
-              `,
-              }}
-            />
 
             {/* Description */}
             <p

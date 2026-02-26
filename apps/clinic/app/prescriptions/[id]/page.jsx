@@ -25,12 +25,40 @@ export default function PrescriptionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [versions, setVersions] = useState({ items: [], total: 0 });
+  const [versionsLoading, setVersionsLoading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user && prescriptionId) {
       fetchPrescription();
     }
   }, [authLoading, user, prescriptionId]);
+
+  useEffect(() => {
+    if (user && prescriptionId && prescription) {
+      fetchVersions();
+    }
+  }, [user, prescriptionId, prescription]);
+
+  const fetchVersions = async () => {
+    if (!prescriptionId) return;
+    setVersionsLoading(true);
+    try {
+      const response = await apiClient.get(`/prescriptions/${prescriptionId}/versions`, {
+        params: { page: 1, limit: 20 },
+      });
+      if (response.success && response.data) {
+        setVersions({
+          items: response.data.items || [],
+          total: response.data.total ?? 0,
+        });
+      }
+    } catch (_err) {
+      setVersions({ items: [], total: 0 });
+    } finally {
+      setVersionsLoading(false);
+    }
+  };
 
   const fetchPrescription = async () => {
     setLoading(true);
@@ -438,6 +466,50 @@ export default function PrescriptionDetailPage() {
                 </div>
               </Card>
             )}
+
+            {/* Version History */}
+            <Card>
+              <h2 className='text-lg font-semibold mb-4'>{t('prescriptions.versionHistory')}</h2>
+              {versionsLoading ? (
+                <p className='text-sm text-neutral-500'>{t('common.loading')}</p>
+              ) : versions.items.length === 0 ? (
+                <p className='text-sm text-neutral-500'>{t('prescriptions.versionHistoryEmpty')}</p>
+              ) : (
+                <div className='clinic-table-wrap'>
+                  <table className='clinic-table'>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>{t('prescriptions.versionActionLabel')}</th>
+                        <th>{t('prescriptions.versionChangedBy')}</th>
+                        <th>{t('prescriptions.versionChangedAt')}</th>
+                        <th>{t('prescriptions.versionReason')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {versions.items.map((v, idx) => (
+                        <tr key={v._id || idx}>
+                          <td>{v.version}</td>
+                          <td>
+                            {v.action === 'create' && t('prescriptions.versionActionCreate')}
+                            {v.action === 'update' && t('prescriptions.versionActionUpdate')}
+                            {v.action === 'void' && t('prescriptions.versionActionVoid')}
+                            {!['create', 'update', 'void'].includes(v.action) && v.action}
+                          </td>
+                          <td>
+                            {v.changedById?.firstName != null || v.changedById?.lastName != null
+                              ? `${v.changedById.firstName || ''} ${v.changedById.lastName || ''}`.trim()
+                              : '—'}
+                          </td>
+                          <td>{v.changedAt ? new Date(v.changedAt).toLocaleString() : '—'}</td>
+                          <td>{v.reason || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
           </div>
 
           {/* Right Sidebar - Patient Details */}

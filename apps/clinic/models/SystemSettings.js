@@ -50,6 +50,8 @@ const SystemSettingsSchema = new Schema(
       privacy: { type: String, trim: true },
     },
     maintenanceMode: { type: Boolean, default: false },
+    /** When true, only super_admin can log in (emergency security lock). */
+    emergencyLock: { type: Boolean, default: false },
     security: {
       sessionTimeoutMinutes: { type: Number, default: 30 },
       passwordMinLength: { type: Number, default: 8 },
@@ -58,6 +60,9 @@ const SystemSettingsSchema = new Schema(
       failedLoginMaxAttempts: { type: Number, default: 5 },
       failedLoginLockoutMinutes: { type: Number, default: 15 },
       ipWhitelistEnabled: { type: Boolean, default: false },
+      /** IPs allowed for Super Admin login when superAdminIpWhitelistEnabled is true. */
+      superAdminIpWhitelistEnabled: { type: Boolean, default: false },
+      superAdminIpWhitelist: { type: [String], default: [] },
       auditLogRetentionDays: { type: Number, default: 365 },
     },
   },

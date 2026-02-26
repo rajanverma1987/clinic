@@ -244,13 +244,15 @@ export default function AdminCreateManagerPage() {
                     required
                     minLength={8}
                   />
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
+                    size='xs'
+                    className='absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 min-w-0'
                     onClick={() => setShowPassword(!showPassword)}
-                    className='absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-neutral-700'
                   >
                     {showPassword ? 'Hide' : 'Show'}
-                  </button>
+                  </Button>
                 </div>
                 <p className='text-sm text-neutral-500 mt-1'>{t('admin.createAdminMinimumChars')}</p>
               </div>
@@ -271,7 +273,7 @@ export default function AdminCreateManagerPage() {
                 <Button type='submit' variant='primary' disabled={isLoading}>
                   {isLoading ? t('common.creating') : t('settings.createManager')}
                 </Button>
-                <Button type='button' variant='secondary' href='/admin/users'>
+                <Button type='button' variant='ghost' href='/admin/users'>
                   {t('common.cancel')}
                 </Button>
               </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { generatePrescriptionPrintHTML } from '@/components/prescriptions/PrescriptionPrintTemplate';
+import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -262,12 +263,9 @@ export default function PrescriptionPrintPage() {
       <div className='flex items-center justify-center h-screen' style={{ paddingTop: '10px' }}>
         <div className='text-center'>
           <div className='text-status-error mb-4'>{error}</div>
-          <button
-            onClick={() => router.back()}
-            className='px-4 py-2 bg-primary-500 text-white rounded hover:bg-primary-600'
-          >
+          <Button variant='primary' size='sm' onClick={() => router.back()}>
             Go Back
-          </button>
+          </Button>
         </div>
       </div>
     );

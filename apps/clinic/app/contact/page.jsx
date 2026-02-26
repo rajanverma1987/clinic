@@ -114,7 +114,13 @@ export default function ContactPage() {
                 style={{ fontSize: '16px' }}
               >
                 {t('contact.formPage') || 'Use the contact form'}
-                <svg className='w-4 h-4 ml-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <svg
+                  className='icon icon-xs ml-2'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                  aria-hidden
+                >
                   <path
                     strokeLinecap='round'
                     strokeLinejoin='round'

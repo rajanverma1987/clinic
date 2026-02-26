@@ -2,34 +2,44 @@
 
 /**
  * Admin layout – wraps all /admin/* pages.
- * Shows full-screen loader during auth loading (covers sidebar and header).
- * Redirects non-super_admin users to dashboard.
+ * Super_Admin.md: all routes wrapped in SuperAdminGuard; redirect to /unauthorized on role mismatch.
+ * Routes removed per Super_Admin.md (not in scope): doctor verifications, reviews, content.
  */
 
+import { SuperAdminGuard } from '@/components/auth/SuperAdminGuard';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+
+/** Super_Admin.md: these are marketplace features – not in scope. Redirect to Overview. */
+const SUPER_ADMIN_FORBIDDEN_PATHS = ['/admin/doctors/verify', '/admin/content', '/admin/reviews'];
+
+function isForbiddenPath(pathname) {
+  const p = (pathname || '').replace(/\/$/, '') || '';
+  return SUPER_ADMIN_FORBIDDEN_PATHS.some(
+    (forbidden) => p === forbidden || p.startsWith(forbidden + '/'),
+  );
+}
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && user && user.role !== 'super_admin') {
-      router.push('/dashboard');
+    if (!authLoading && user?.role === 'super_admin' && isForbiddenPath(pathname)) {
+      router.replace('/admin');
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user, router, pathname]);
 
-  // Show full-screen loader during auth loading (covers entire viewport including sidebar/header)
-  if (authLoading) {
-    return <Loader fullScreen size='lg' />;
-  }
-
-  // Don't render anything while redirecting non-super_admin users
-  if (!user || user.role !== 'super_admin') {
-    return <Loader fullScreen size='lg' />;
-  }
-
-  return children;
+  return (
+    <SuperAdminGuard>
+      {isForbiddenPath(pathname) ? (
+        <Loader fullScreen size='lg' />
+      ) : (
+        children
+      )}
+    </SuperAdminGuard>
+  );
 }

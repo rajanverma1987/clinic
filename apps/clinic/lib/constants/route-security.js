@@ -28,7 +28,19 @@ export const SESSION_CONFIG = {
 // ─── 4. Multi-Tenancy Isolation ───────────────────────────────────────────
 export const TENANT_ISOLATION = {
   enforceOnAllRoutes: true,
-  exceptions: ['/login', '/pricing', '/forgot-password', '/reset-password', '/about', '/contact', '/blog', '/support', '/legal', '/privacy', '/terms'],
+  exceptions: [
+    '/login',
+    '/pricing',
+    '/forgot-password',
+    '/reset-password',
+    '/about',
+    '/contact',
+    '/blog',
+    '/support',
+    '/legal',
+    '/privacy',
+    '/terms',
+  ],
   crossTenantAllowed: [], // Super admin only
   requireTenantContext: true,
 };
@@ -84,9 +96,27 @@ export const PATIENT_DETAIL_TABS = {
       phiLevel: 'basic',
     },
     {
+      id: 'timeline',
+      labelKey: 'patients.timeline',
+      requiredPermission: { resource: 'patient', action: 'read' },
+      phiLevel: 'basic',
+    },
+    {
       id: 'prescriptions',
       labelKey: 'prescriptions.title',
       requiredPermission: { resource: 'prescription', action: 'read' },
+      phiLevel: 'sensitive',
+    },
+    {
+      id: 'care-plans',
+      labelKey: 'carePlans.title',
+      requiredPermission: { resource: 'care_plan', action: 'read' },
+      phiLevel: 'sensitive',
+    },
+    {
+      id: 'procedures',
+      labelKey: 'procedures.title',
+      requiredPermission: { resource: 'procedure', action: 'read' },
       phiLevel: 'sensitive',
     },
     {
@@ -118,6 +148,12 @@ export const PATIENT_DETAIL_TABS = {
       labelKey: 'insurance.title',
       requiredPermission: { resource: 'patient', action: 'read' },
       phiLevel: 'medium',
+    },
+    {
+      id: 'consent',
+      labelKey: 'consent.tabTitle',
+      requiredPermission: { resource: 'consent', action: 'read' },
+      phiLevel: 'sensitive',
     },
     {
       id: 'documents',

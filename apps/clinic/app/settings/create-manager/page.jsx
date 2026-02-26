@@ -215,13 +215,15 @@ export default function CreateManagerPage() {
                   required
                   minLength={8}
                 />
-                <button
+                <Button
                   type='button'
+                  variant='ghost'
+                  size='xs'
                   onClick={() => setShowPassword(!showPassword)}
-                  className='absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
+                  className='absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 min-w-0'
                 >
                   {showPassword ? t('common.hide') : t('common.show')}
-                </button>
+                </Button>
               </div>
               <p className='text-sm text-neutral-500 dark:text-neutral-400 mt-1'>{t('settings.minimumChars')}</p>
             </div>

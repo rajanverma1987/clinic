@@ -1,9 +1,10 @@
 /**
  * Batch API: run multiple GET requests in one round-trip.
  * Request body: { endpoints: string[] } (e.g. ['/patients?page=1&limit=10', '/appointments?date=2025-01-29']).
- * Response: { success: true, data: [result1, result2, ...] }.
+ * Enterprise: consistent { success, data, error } response shape.
  */
 
+import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { NextResponse } from 'next/server';
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || '';
@@ -14,7 +15,7 @@ export async function POST(request) {
     const endpoints = Array.isArray(body.endpoints) ? body.endpoints : [];
     if (endpoints.length === 0 || endpoints.length > 20) {
       return NextResponse.json(
-        { success: false, error: { message: 'endpoints array required (max 20)' } },
+        errorResponse('endpoints array required (max 20)', 'VALIDATION_ERROR'),
         { status: 400 },
       );
     }
@@ -43,10 +44,10 @@ export async function POST(request) {
         }
       }),
     );
-    return NextResponse.json({ success: true, data: results });
+    return NextResponse.json(successResponse(results));
   } catch (e) {
     return NextResponse.json(
-      { success: false, error: { message: e?.message || 'Batch request failed' } },
+      errorResponse(e?.message || 'Batch request failed', 'INTERNAL_ERROR'),
       { status: 500 },
     );
   }

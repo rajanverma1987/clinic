@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { ClockIcon, PhoneIcon } from '@/components/icons';
 import { useI18n } from '@/contexts/I18nContext';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -159,44 +160,52 @@ function AppointmentListItemInner({
       {showActions && (
         <div className='flex flex-wrap gap-2 mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-600'>
           {onViewHistory && (
-            <button
+            <Button
               type='button'
+              variant='link'
+              size='xs'
               data-action-button
-              className='text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline'
+              className='text-xs'
               onClick={(e) => handleAction(e, () => onViewHistory(appointment))}
             >
               {t('dashboard.viewHistory')}
-            </button>
+            </Button>
           )}
           {onStart && (
-            <button
+            <Button
               type='button'
+              variant='link'
+              size='xs'
               data-action-button
-              className='text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline'
+              className='text-xs'
               onClick={(e) => handleAction(e, () => onStart(appointment))}
             >
               {t('dashboard.startConsultation')}
-            </button>
+            </Button>
           )}
           {onReschedule && (
-            <button
+            <Button
               type='button'
+              variant='link'
+              size='xs'
               data-action-button
-              className='text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:underline'
+              className='text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
               onClick={(e) => handleAction(e, () => onReschedule(appointment))}
             >
               {t('dashboard.reschedule')}
-            </button>
+            </Button>
           )}
           {onCancel && (
-            <button
+            <Button
               type='button'
+              variant='link'
+              size='xs'
               data-action-button
-              className='text-xs font-medium text-red-600 hover:text-red-700 hover:underline'
+              className='text-xs !text-red-600 hover:!text-red-700'
               onClick={(e) => handleAction(e, () => onCancel(appointment))}
             >
               {t('common.cancel')}
-            </button>
+            </Button>
           )}
         </div>
       )}

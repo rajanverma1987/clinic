@@ -1,9 +1,10 @@
 /**
  * Incremental Appointments Hook
- * Matches ENTERPRISE_DASHBOARD_PERFORMANCE.md spec exactly.
+ * Enterprise: logger (no console), response.success check, safe error handling.
  */
 
 import { apiClient } from '@/lib/api/client';
+import { logger } from '@/lib/utils/logger';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useIncrementalAppointments({ limit, status, date, showCompletedIfEmpty = false } = {}) {
@@ -27,7 +28,14 @@ export function useIncrementalAppointments({ limit, status, date, showCompletedI
         }
 
         const response = await apiClient.get('/appointments', { params });
-        const { data, isIncremental: wasIncremental, timestamp } = response.data;
+        if (response?.success === false) {
+          const msg = response?.error?.message || 'Failed to fetch appointments';
+          logger.error('useIncrementalAppointments fetch failed', { message: msg });
+          setError(msg);
+          setLoading(false);
+          return;
+        }
+        const { data, isIncremental: wasIncremental, timestamp } = response?.data ?? {};
 
         let resultData = data || [];
 
@@ -45,7 +53,7 @@ export function useIncrementalAppointments({ limit, status, date, showCompletedI
             const completedParams = { ...params, status: 'completed' };
             delete completedParams.since;
             const completedRes = await apiClient.get('/appointments', { params: completedParams });
-            resultData = completedRes.data?.data || [];
+            resultData = completedRes?.success !== false ? (completedRes?.data?.data ?? completedRes?.data ?? []) : [];
           }
           // Sort by appointment time (earliest first for today's schedule)
           resultData.sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate));
@@ -56,8 +64,8 @@ export function useIncrementalAppointments({ limit, status, date, showCompletedI
         setLoading(false);
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch appointments:', err);
-        setError(err.message);
+        logger.error('useIncrementalAppointments failed', { message: err?.message });
+        setError(err?.message || err?.error?.message || 'Failed to fetch appointments');
         setLoading(false);
       }
     },

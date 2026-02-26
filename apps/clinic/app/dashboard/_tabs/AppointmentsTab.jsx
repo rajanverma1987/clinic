@@ -19,47 +19,16 @@ import {
   REVALIDATE_DELAY_MS,
 } from '@/lib/dashboard-tab-cache';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const LIMIT = 10;
 
 export function AppointmentsTab({ isActive = false }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { prefetchAppointment } = usePrefetchDetail();
   const userId = user?._id || user?.userId;
-
-  const appLocale = locale || 'en';
-  const formatTableDate = useCallback(
-    (dateStr) => {
-      if (!dateStr) return '—';
-      try {
-        return new Intl.DateTimeFormat(appLocale, {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        }).format(new Date(dateStr));
-      } catch {
-        return '—';
-      }
-    },
-    [appLocale],
-  );
-  const formatTableTime = useCallback(
-    (dateStr) => {
-      if (!dateStr) return '';
-      try {
-        return new Intl.DateTimeFormat(appLocale, {
-          hour: '2-digit',
-          minute: '2-digit',
-        }).format(new Date(dateStr));
-      } catch {
-        return '';
-      }
-    },
-    [appLocale],
-  );
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +40,7 @@ export function AppointmentsTab({ isActive = false }) {
     async (showRevalidating = false) => {
       if (!userId) return;
       if (showRevalidating) setIsRevalidating(true);
-      const { data, error: err } = await fetchAppointmentsTab(userId, appLocale);
+      const { data, error: err } = await fetchAppointmentsTab(userId);
       if (err) {
         if (!showRevalidating) setError(err?.message || t('common.error'));
         setAppointments((prev) => (prev.length ? prev : []));
@@ -82,20 +51,27 @@ export function AppointmentsTab({ isActive = false }) {
       setLoading(false);
       setIsRevalidating(false);
     },
-    [userId, t, appLocale],
+    [userId, t],
   );
 
-  // When tab becomes active: show cached immediately, revalidate after delay. Cache is always updated on fetch.
-  useEffect(() => {
-    if (authLoading || !user || !userId) return;
-    if (!isActive) return;
-
-    const cached = getCachedAppointments(userId, appLocale);
+  // Before paint: when tab becomes active, show cache immediately so no loading flash.
+  useLayoutEffect(() => {
+    if (!isActive || !userId) return;
+    const cached = getCachedAppointments(userId);
     if (cached !== null && Array.isArray(cached)) {
       setAppointments(cached);
       setLoading(false);
       setError(null);
-    } else {
+    }
+  }, [isActive, userId]);
+
+  // After paint: fetch if no cache, and schedule revalidate.
+  useEffect(() => {
+    if (authLoading || !user || !userId) return;
+    if (!isActive) return;
+
+    const cached = getCachedAppointments(userId);
+    if (cached === null || !Array.isArray(cached)) {
       fetchAndUpdate(false);
     }
 
@@ -124,23 +100,19 @@ export function AppointmentsTab({ isActive = false }) {
     () => [
       {
         header: t('appointments.patient'),
-        accessor: (row) => {
-          const name = [row.patientId?.firstName, row.patientId?.lastName].filter(Boolean).join(' ').trim();
-          if (!name) return t('common.unknownPatient');
-          const lower = name.toLowerCase();
-          if (lower === 'patient' || lower === 'unknown' || lower === 'unknown patient' || lower === 'n/a') return t('common.unknownPatient');
-          return name;
-        },
+        accessor: (row) =>
+          [row.patientId?.firstName, row.patientId?.lastName].filter(Boolean).join(' ') || '—',
       },
       {
         header: t('appointments.date'),
-        accessor: (row) => formatTableDate(row.appointmentDate),
+        accessor: (row) =>
+          row.appointmentDate ? new Date(row.appointmentDate).toLocaleDateString() : '—',
       },
       {
         header: t('appointments.time'),
         accessor: (row) =>
           row.startTime && row.endTime
-            ? `${formatTableTime(row.startTime)} - ${formatTableTime(row.endTime)}`
+            ? `${new Date(row.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(row.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
             : '—',
       },
       {
@@ -162,7 +134,7 @@ export function AppointmentsTab({ isActive = false }) {
         },
       },
     ],
-    [t, getStatusLabel, formatTableDate, formatTableTime],
+    [t, getStatusLabel],
   );
 
   const stats = useMemo(
@@ -185,7 +157,7 @@ export function AppointmentsTab({ isActive = false }) {
           <h2 className='section-title'>{t('appointments.title')}</h2>
           {isRevalidating && (
             <span className='text-xs text-neutral-500 dark:text-neutral-400' aria-hidden>
-              {t('common.updating')}
+              {t('common.updating') || 'Updating…'}
             </span>
           )}
         </div>

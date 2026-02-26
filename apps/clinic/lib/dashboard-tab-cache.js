@@ -11,7 +11,7 @@ import { logger } from '@/lib/utils/logger';
 const CACHE = new Map();
 const LIMIT = 10;
 const CACHE_TTL_MS = 60000; // 1 min – consider cached data "fresh" within this window
-const REVALIDATE_DELAY_MS = 2000; // 2 sec – delay before fetching fresh data when tab opens
+const REVALIDATE_DELAY_MS = 800; // 0.8 sec – delay before revalidate when tab opens (cache shown first)
 
 function cacheKey(type, userId, locale = '') {
   return `${type}-tab-${userId}-${locale || ''}`;
@@ -141,4 +141,4 @@ export async function fetchPrescriptionsTab(userId) {
   }
 }
 
-export { REVALIDATE_DELAY_MS, CACHE_TTL_MS };
+export { CACHE_TTL_MS, REVALIDATE_DELAY_MS };

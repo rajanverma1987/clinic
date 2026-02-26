@@ -13,6 +13,7 @@ import {
   HistoryIcon,
   SettingsIcon,
 } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
 import { useRouter } from 'next/navigation';
@@ -144,15 +145,16 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
       <div ref={userMenuRef}>
         {isCollapsed ? (
           /* Collapsed: centered avatar, click opens dropdown to the right */
-          <button
+          <Button
             type='button'
+            variant='ghost'
             onClick={toggleUserMenu}
-            className='group relative flex items-center justify-center mx-auto w-10 h-10 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 transition-all'
+            className='group relative flex items-center justify-center mx-auto w-16 h-16 rounded-full min-w-0'
             aria-label={t('common.userMenu')}
             aria-expanded={showUserMenu}
             aria-haspopup='true'
           >
-            <div className='overflow-hidden rounded-full bg-primary-600 flex items-center justify-center text-white font-bold ring-2 ring-primary-100 dark:ring-primary-900/50 shadow-md w-10 h-10 text-sm group-hover:ring-primary-200 transition-all'>
+            <div className='overflow-hidden rounded-full bg-primary-600 flex items-center justify-center text-white font-bold ring-2 ring-primary-100 dark:ring-primary-900/50 shadow-md w-16 h-16 text-lg group-hover:ring-primary-200 transition-all'>
               {user?.avatar && !avatarError ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -169,31 +171,34 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
               className={`absolute bottom-0 right-0 w-2 h-2 border border-white dark:border-neutral-900 rounded-full ${user?.isActive ? 'bg-green-500' : 'bg-red-500'}`}
               aria-hidden
             />
-          </button>
+          </Button>
         ) : (
-          /* Expanded: full-width profile block with large avatar + name/role + chevron */
-          <button
+          /* Expanded: large avatar, minimal padding – max space for image */
+          <Button
             type='button'
-            onClick={toggleUserMenu}
+            variant='ghost'
+            fullWidth
+            align='start'
             className={[
-              'group w-full flex items-center gap-4 px-3 py-4 rounded-xl transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+              'group flex items-center gap-3 px-2 py-2.5 rounded-xl transition-all duration-150',
               showUserMenu
                 ? 'bg-neutral-100 dark:bg-neutral-800'
                 : 'hover:bg-neutral-100 dark:hover:bg-neutral-800',
             ].join(' ')}
+            onClick={toggleUserMenu}
             aria-label={t('common.userMenu')}
             aria-expanded={showUserMenu}
             aria-haspopup='true'
           >
-            {/* Large avatar */}
+            {/* Large avatar – max size, minimal surrounding space */}
             <div className='relative flex-shrink-0'>
-              <div className='overflow-hidden rounded-full bg-primary-600 flex items-center justify-center text-white font-bold ring-2 ring-primary-100 dark:ring-primary-900/50 shadow-md w-16 h-16 text-xl group-hover:ring-primary-200 dark:group-hover:ring-primary-800 transition-all duration-150'>
+              <div className='overflow-hidden rounded-full bg-primary-600 flex items-center justify-center text-white font-bold ring-2 ring-primary-100 dark:ring-primary-900/50 shadow-md w-32 h-32 text-2xl group-hover:ring-primary-200 dark:group-hover:ring-primary-800 transition-all duration-150'>
                 {user?.avatar && !avatarError ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.avatar}
                     alt={userDisplayName || t('common.altProfile')}
-                    className='w-full h-full object-cover'
+                    className='w-full h-full object-cover object-center'
                     onError={() => setAvatarError(true)}
                   />
                 ) : (
@@ -220,7 +225,7 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
             <ChevronDownIcon
               className={`w-3.5 h-3.5 text-neutral-400 flex-shrink-0 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`}
             />
-          </button>
+          </Button>
         )}
 
         {showUserMenu && typeof document !== 'undefined'
@@ -243,8 +248,11 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
                 <div className='profile-dropdown__body'>
                   {showSubscriptionLinks && (
                     <>
-                      <button
+                      <Button
                         type='button'
+                        variant='ghost'
+                        fullWidth
+                        align='start'
                         className='profile-dropdown__item'
                         onClick={handleSubscriptionClick}
                         role='menuitem'
@@ -258,9 +266,12 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
                           </span>
                         </span>
                         <ChevronRightIcon className='icon icon-xs text-neutral-400 flex-shrink-0' />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type='button'
+                        variant='ghost'
+                        fullWidth
+                        align='start'
                         className='profile-dropdown__item'
                         onClick={handlePaymentHistoryClick}
                         role='menuitem'
@@ -274,12 +285,15 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
                           </span>
                         </span>
                         <ChevronRightIcon className='icon icon-xs text-neutral-400 flex-shrink-0' />
-                      </button>
+                      </Button>
                       <div className='profile-dropdown__divider' />
                     </>
                   )}
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
                     className='profile-dropdown__item'
                     onClick={handleSettingsClick}
                     role='menuitem'
@@ -296,7 +310,7 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
                       </span>
                     </span>
                     <ChevronRightIcon className='icon icon-xs text-neutral-400 flex-shrink-0' />
-                  </button>
+                  </Button>
                 </div>
               </div>,
               document.body,

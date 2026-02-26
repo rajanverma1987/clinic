@@ -477,8 +477,8 @@ function logSecurity(event, user = null, meta = {}) {
   });
 }
 
-// CommonJS export for Node runtime compatibility
-module.exports = {
+// ES module exports
+export {
   logger,
   setCorrelationId,
   getCorrelationId,

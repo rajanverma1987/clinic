@@ -303,6 +303,10 @@ export async function getPatientReport(input, tenantId, userId) {
       deletedAt: null,
     });
 
+    if (input.branchId) {
+      filter.branchId = input.branchId;
+    }
+
     // Optimize: Add date filter to MongoDB query instead of filtering in memory
     if (input.includeNewPatients && dateFilter) {
       filter.createdAt = dateFilter;
@@ -504,6 +508,10 @@ export async function getAppointmentReport(input, tenantId, userId) {
 
   if (input.type) {
     filter.type = input.type;
+  }
+
+  if (input.branchId) {
+    filter.branchId = input.branchId;
   }
 
   const appointments = await Appointment.find(filter)

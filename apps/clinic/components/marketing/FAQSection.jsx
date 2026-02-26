@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronDownIcon } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 
 export function FAQSection({ openFaqIndex, onFaqToggle }) {
   const faqs = [
@@ -76,9 +77,14 @@ export function FAQSection({ openFaqIndex, onFaqToggle }) {
                     : 'border-neutral-200 hover:border-primary-300 hover:shadow-md'
                 }`}
               >
-                <button
+                <Button
+                  type='button'
+                  variant='ghost'
+                  fullWidth
+                  align='start'
                   onClick={() => onFaqToggle(index)}
-                  className='w-full p-6 flex items-center justify-between text-left group'
+                  aria-expanded={isOpen}
+                  className='p-6 flex items-center justify-between group'
                 >
                   <h3
                     className={`font-semibold flex-1 pr-4 ${
@@ -100,9 +106,9 @@ export function FAQSection({ openFaqIndex, onFaqToggle }) {
                         : 'bg-neutral-100 text-neutral-600 group-hover:bg-primary-50 group-hover:text-primary-600'
                     }`}
                   >
-                    <ChevronDownIcon style={{ width: 20, height: 20 }} />
+                    <ChevronDownIcon className='icon icon-sm' aria-hidden />
                   </div>
-                </button>
+                </Button>
 
                 <div
                   className={`${

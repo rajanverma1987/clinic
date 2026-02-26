@@ -260,11 +260,14 @@ export function Header() {
             )}
 
             {/* Mobile Menu Button */}
-            <button
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              iconOnly
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className='lg:hidden rounded-xl text-neutral-700 hover:bg-neutral-100'
+              className='lg:hidden rounded-xl text-neutral-700 hover:bg-neutral-100 min-w-0'
               aria-label={t('common.ariaLabelToggleMenu')}
-              style={{ padding: '8px' }}
             >
               {mobileMenuOpen ? (
                 <svg
@@ -295,7 +298,7 @@ export function Header() {
                   />
                 </svg>
               )}
-            </button>
+            </Button>
           </div>
         </div>
 

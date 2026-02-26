@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { ChevronRightIcon } from '@/components/icons';
 import React from 'react';
 
@@ -16,9 +17,13 @@ function PatientListItemInner({ patient, onClick }) {
   const gender = patient.gender || '';
 
   return (
-    <button
+    <Button
       type='button'
-      className='dashboard-list-item dashboard-list-item-primary group w-full text-left cursor-pointer border-0 bg-transparent p-0'
+      variant='ghost'
+      size='listRow'
+      fullWidth
+      align='start'
+      className='dashboard-list-item dashboard-list-item-primary group border-0 bg-transparent'
       onClick={onClick}
       aria-label={patientName}
     >
@@ -48,7 +53,7 @@ function PatientListItemInner({ patient, onClick }) {
         {/* Arrow */}
         <ChevronRightIcon className='icon icon-sm text-neutral-400 group-hover:text-primary-500 transition-colors flex-shrink-0' />
       </div>
-    </button>
+    </Button>
   );
 }
 

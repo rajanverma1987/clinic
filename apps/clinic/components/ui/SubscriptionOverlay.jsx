@@ -1,6 +1,7 @@
 'use client';
 
 import { InfoIcon } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import { useI18nOptional } from '@/contexts/I18nContext';
 import { logger } from '@/lib/utils/logger.js';
 import { useRouter } from 'next/navigation';
@@ -129,20 +130,20 @@ export function SubscriptionOverlay({
           {message}
         </p>
         <div className='flex flex-shrink-0 items-center gap-2'>
-          <button
-            type='button'
-            onClick={buttonAction}
-            className='text-xs font-medium px-3 py-1.5 h-8 min-h-0 rounded-lg bg-[#15803d] text-white border border-white shadow-[0_0_0_0.5px_#15803d] hover:bg-primary-500 active:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 transition-all duration-200'
-          >
+          <Button type='button' variant='success' size='sm' onClick={buttonAction}>
             {buttonText}
-          </button>
-          <button
+          </Button>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            iconOnly
             onClick={handleDismiss}
-            className='w-7 h-7 flex items-center justify-center rounded-lg text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50 transition-colors'
+            className='w-7 h-7 min-w-0 text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-600/50'
             aria-label={t('common.ariaLabelDismiss')}
           >
             ×
-          </button>
+          </Button>
         </div>
       </div>
     </div>

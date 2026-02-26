@@ -7,6 +7,7 @@
 import { FEATURE_FLAGS } from '@/lib/constants/route-security';
 import connectDB from '@/lib/db/connection.js';
 import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
+import Tenant from '@/models/Tenant.js';
 // Import SubscriptionPlan to ensure model is registered for populate operations
 import '@/models/SubscriptionPlan.js';
 
@@ -49,13 +50,14 @@ export async function getTenantFeatures(tenantId) {
     .sort({ createdAt: -1 })
     .lean();
 
-  // If no subscription or subscription is not active, return empty array
-  if (!subscription || subscription.status !== SubscriptionStatus.ACTIVE) {
-    return [];
-  }
+  const planFeatures = subscription?.status === SubscriptionStatus.ACTIVE && subscription?.planId?.features
+    ? subscription.planId.features
+    : [];
 
-  const plan = subscription.planId;
-  return plan?.features || [];
+  // SA9: Merge tenant beta features (Super Admin rollout)
+  const tenant = await Tenant.findById(tenantId).select('betaFeatures').lean();
+  const beta = Array.isArray(tenant?.betaFeatures) ? tenant.betaFeatures : [];
+  return [...new Set([...planFeatures, ...beta])];
 }
 
 /**

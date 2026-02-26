@@ -62,12 +62,9 @@ export default function PricingPage() {
     }
   };
 
-  const formatPrice = (price, currency) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency || 'USD',
-    }).format(price / 100);
-  };
+  /** Pricing is USD only. */
+  const formatPrice = (price) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((price || 0) / 100);
 
   const handleSelectPlan = async (planId, planName) => {
     setSelectingPlanId(planId);
@@ -106,8 +103,8 @@ export default function PricingPage() {
     }
   };
 
-  // Show SOLO, CLINIC, ENTERPRISE only (no free plan; all plans have 14-day free trial)
-  const DISPLAY_PLAN_SLUGS = ['SOLO', 'CLINIC', 'ENTERPRISE'];
+  /** Plans: Core / Pro / Enterprise. USD only, PayPal only. */
+  const DISPLAY_PLAN_SLUGS = ['Core', 'Pro', 'Enterprise'];
   const allowedPlans = plans.filter(
     (plan) => plan && plan.name && DISPLAY_PLAN_SLUGS.includes(plan.name),
   );
@@ -335,7 +332,7 @@ export default function PricingPage() {
                       description={plan.description}
                       price={plan.price}
                       originalPrice={plan.originalPrice}
-                      currency={plan.currency}
+                      currency={plan.currency || 'USD'}
                       billingCycle={plan.billingCycle}
                       features={CARD_FEATURES_BY_PLAN[plan.name] || plan.features}
                       maxUsers={plan.maxUsers}
@@ -344,6 +341,8 @@ export default function PricingPage() {
                       isPopular={plan.isPopular}
                       yearlySaveAmount={YEARLY_SAVE[plan.name]}
                       trialDays={plan.trialDays ?? 14}
+                      displayCurrency='USD'
+                      displayLocale='en-US'
                       showPaymentMethods={user && (Number(plan.price) || 0) > 0}
                       onPayWithPayPal={
                         user && (Number(plan.price) || 0) > 0

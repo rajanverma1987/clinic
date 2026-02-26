@@ -187,7 +187,7 @@ async function calculateDashboardStats(tenantId) {
 
     return stats;
   } catch (error) {
-    console.error(`Error calculating stats for tenant ${tenantId}:`, error);
+    logger.error('Dashboard stats calculation failed', { tenantId: tenantId?.toString(), message: error?.message });
     return null;
   }
 }
@@ -204,7 +204,7 @@ async function updateAllTenantsStats() {
     await connectDB();
 
     const tenants = await Tenant.find({ isActive: true }).select('_id').lean();
-    console.log(`📊 Updating stats for ${tenants.length} tenants...`);
+    logger.info('Dashboard stats job run', { tenantCount: tenants.length });
 
     for (const tenant of tenants) {
       const tenantId = tenant._id?.toString?.() || tenant._id;
@@ -230,9 +230,9 @@ async function updateAllTenantsStats() {
       }
     }
 
-    console.log(`✅ Dashboard stats updated`);
+    logger.info('Dashboard stats updated for all tenants');
   } catch (error) {
-    console.error('Error updating stats:', error);
+    logger.error('Dashboard stats job failed', { message: error?.message });
   }
 }
 
@@ -243,11 +243,11 @@ function startDashboardStatsJob() {
   cron.schedule('*/5 * * * *', updateAllTenantsStats);
 
   setTimeout(() => {
-    console.log('🚀 Running initial stats calculation...');
+    logger.info('Dashboard stats initial calculation started');
     updateAllTenantsStats();
   }, 5000);
 
-  console.log('✅ Dashboard stats job started (every 5 minutes)');
+  logger.info('Dashboard stats job started (every 5 minutes)');
 }
 
 module.exports = { startDashboardStatsJob, calculateDashboardStats };

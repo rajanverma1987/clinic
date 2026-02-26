@@ -272,9 +272,12 @@ export function NotificationDropdown({
                 const notifId = notification.id ?? notification._id ?? Math.random();
 
                 return (
-                  <button
+                  <Button
                     key={notifId}
                     type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
                     onClick={() => handleNotificationClick(notification)}
                     className={itemClasses}
                   >
@@ -293,7 +296,7 @@ export function NotificationDropdown({
                     {(notification.unread ?? !notification.channels?.inApp?.read) && (
                       <div className='NotificationDropdown-item-dot'></div>
                     )}
-                  </button>
+                  </Button>
                 );
               })
             )}
@@ -302,13 +305,15 @@ export function NotificationDropdown({
           {/* Footer */}
           {safeNotifications.length > 0 && (
             <div className='NotificationDropdown-footer'>
-              <button
+              <Button
                 type='button'
+                variant='ghost'
+                fullWidth
                 onClick={() => setIsOpen(false)}
                 className='NotificationDropdown-view-all'
               >
                 {t('notifications.viewAllNotifications')}
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -318,8 +323,10 @@ export function NotificationDropdown({
   return (
     <>
       <div className='NotificationDropdown' ref={dropdownRef} style={{ position: 'relative' }}>
-        <button
+        <Button
           type='button'
+          variant='ghost'
+          iconOnly
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -352,7 +359,7 @@ export function NotificationDropdown({
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Render dropdown via portal to document.body */}

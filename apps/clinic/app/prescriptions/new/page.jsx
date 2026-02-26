@@ -398,6 +398,29 @@ function NewPrescriptionPageContent() {
     ]);
   };
 
+  const [treatmentPackages, setTreatmentPackages] = useState([]);
+  const [selectedPackageId, setSelectedPackageId] = useState('');
+  useEffect(() => {
+    apiClient.get('/treatment-packages?limit=100').then((res) => {
+      if (res?.success && res?.data?.items) setTreatmentPackages(res.data.items);
+    });
+  }, []);
+
+  const addItemsFromPackage = () => {
+    if (!selectedPackageId) return;
+    const pkg = treatmentPackages.find((p) => p._id === selectedPackageId);
+    if (!pkg?.items?.length) return;
+    const newItems = pkg.items.map((i) => ({
+      itemType: 'procedure',
+      procedureName: i.name || '',
+      procedureCode: i.procedureType || '',
+      procedureInstructions: i.description || '',
+    }));
+    setItems((prev) => [...prev, ...newItems]);
+    setSelectedPackageId('');
+    showSuccess(t('prescriptions.addedFromPackage') || 'Added from package');
+  };
+
   const removeItem = (index) => {
     if (items.length > 1) {
       setItems(items.filter((_, i) => i !== index));
@@ -649,7 +672,7 @@ function NewPrescriptionPageContent() {
   const handlePrintPreview = () => {
     const selectedPatient = patients.find((p) => p._id === formData.patientId);
     if (!selectedPatient) {
-      showError(t('prescriptions.selectPatientFirst'));
+      showError(t('prescriptions.selectPatientFirst') || 'Please select a patient first');
       return;
     }
     setShowPrintPreview(true);
@@ -1034,9 +1057,37 @@ function NewPrescriptionPageContent() {
                     className='prescription-items-card'
                     title={t('prescriptions.prescriptionItems')}
                     actions={
-                      <Button type='button' variant='primary' size='sm' onClick={addItem}>
-                        + {t('prescriptions.addItem')}
-                      </Button>
+                      <div className='flex flex-wrap items-center gap-2'>
+                        <Button type='button' variant='primary' size='sm' onClick={addItem}>
+                          + {t('prescriptions.addItem') || 'Add Item'}
+                        </Button>
+                        {treatmentPackages.length > 0 && (
+                          <>
+                            <select
+                              value={selectedPackageId}
+                              onChange={(e) => setSelectedPackageId(e.target.value)}
+                              className='px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm min-w-[160px]'
+                              aria-label={t('prescriptions.addFromPackage') || 'Treatment package'}
+                            >
+                              <option value=''>{t('prescriptions.selectPackage') || 'Select package'}</option>
+                              {treatmentPackages.map((p) => (
+                                <option key={p._id} value={p._id}>
+                                  {p.name}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              type='button'
+                              variant='secondary'
+                              size='sm'
+                              onClick={addItemsFromPackage}
+                              disabled={!selectedPackageId}
+                            >
+                              {t('prescriptions.addFromPackage') || 'Add from package'}
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     }
                   >
                     {fieldErrors.items && (
@@ -1057,7 +1108,7 @@ function NewPrescriptionPageContent() {
                   <div className='prescription-form-actions'>
                     <Button
                       type='button'
-                      variant='secondary'
+                      variant='ghost'
                       onClick={() => router.back()}
                       disabled={submitting}
                     >
@@ -1091,7 +1142,7 @@ function NewPrescriptionPageContent() {
                       }
                     >
                       <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-                      {t('prescriptions.downloadPdf')}
+                      {t('prescriptions.downloadPdf') || 'Download PDF'}
                     </Button>
                     <Button
                       type='submit'

@@ -230,10 +230,14 @@ export function ProductGallerySection() {
             <div className='bg-neutral-50 border-r border-neutral-200 p-6 lg:p-8'>
               <div className='space-y-2'>
                 {FEATURES.map((feature, index) => (
-                  <button
+                  <Button
                     key={index}
+                    type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
                     onClick={() => setActiveTab(index)}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 ${
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 h-auto ${
                       activeTab === index
                         ? 'bg-white border-primary-300 shadow-md'
                         : 'bg-transparent border-neutral-200 hover:border-neutral-300 hover:bg-white/50'
@@ -274,7 +278,7 @@ export function ProductGallerySection() {
                         </p>
                       </div>
                     </div>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>

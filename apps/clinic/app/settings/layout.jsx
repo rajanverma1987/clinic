@@ -8,6 +8,21 @@ import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { SettingsPageContent } from './SettingsPageContent';
+
+/** Tab IDs that use the shared SettingsPageContent (no remount on switch = fast). */
+const SETTINGS_TAB_CONTENT_IDS = [
+  'profile',
+  'general',
+  'compliance',
+  'doctors',
+  'hours',
+  'queue',
+  'tax',
+  'smtp',
+  'holidays',
+  'consent',
+];
 
 export default function SettingsLayout({ children }) {
   const pathname = usePathname();
@@ -15,17 +30,23 @@ export default function SettingsLayout({ children }) {
   const { t } = useI18n();
   const { user, loading: authLoading } = useAuth();
 
-  const canAccessAdminTabs = hasPermission(user?.role, RESOURCES.SETTINGS, ACTIONS.READ);
-  // Until auth has loaded, show only non-admin tabs (Profile) to avoid flash of admin tabs for doctor/manager
+  const canAccessSettings = hasPermission(user?.role, RESOURCES.SETTINGS, ACTIONS.READ);
+  /** Only clinic_admin and doctor can manage clinic info / compliance / doctors etc.; others must not see those tabs at all. */
+  const canManageClinicSettings = user?.role === 'clinic_admin' || user?.role === 'doctor';
+  const canAccessAdminTabs = canAccessSettings && canManageClinicSettings;
+  // Until auth has loaded, show only non-admin tabs (Profile) to avoid flash of admin tabs
   const visibleTabs = authLoading
     ? SETTINGS_CHILDREN.filter((tab) => !tab.adminOnly)
-    : SETTINGS_CHILDREN.filter((tab) => !tab.adminOnly || canAccessAdminTabs);
+    : SETTINGS_CHILDREN.filter((tab) => !tab.adminOnly || canManageClinicSettings);
 
   const activeTabPath = visibleTabs.find(
     (c) => pathname === c.path || (pathname || '').startsWith(c.path + '/'),
   );
   const pageTitle = activeTabPath ? t(activeTabPath.labelKey) : t('settings.title');
   const pageSubtitle = t('settings.description');
+
+  const pathSegment = (pathname || '').replace(/^\/settings\/?/, '').split('/')[0] || '';
+  const useSharedTabContent = SETTINGS_TAB_CONTENT_IDS.includes(pathSegment);
 
   useEffect(() => {
     if (!authLoading && user && !canAccessAdminTabs) {
@@ -61,12 +82,14 @@ export default function SettingsLayout({ children }) {
                 href={path}
                 role='tab'
                 aria-selected={isActive}
+                prefetch={true}
+                scroll={false}
                 aria-controls='settings-panel'
                 id={`settings-tab-${index}`}
                 className={
                   isActive
-                    ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-600 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap'
-                    : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200'
+                    ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-600 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap transition-colors duration-150'
+                    : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors duration-150'
                 }
               >
                 {t(labelKey)}
@@ -84,7 +107,7 @@ export default function SettingsLayout({ children }) {
             return i >= 0 ? `settings-tab-${i}` : undefined;
           })()}
         >
-          {children}
+          {useSharedTabContent ? <SettingsPageContent /> : children}
         </div>
       </div>
     </Layout>

@@ -597,10 +597,12 @@ function NewAppointmentPageContent() {
                           Upgrade your subscription to enable secure video consultations with
                           patients remotely.
                         </p>
-                        <button
+                        <Button
                           type='button'
+                          variant='primary'
+                          size='sm'
                           href='/subscription'
-                          className='inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg'
+                          className='inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 border-purple-600'
                         >
                           <svg
                             className='icon icon-xs'
@@ -616,7 +618,7 @@ function NewAppointmentPageContent() {
                             />
                           </svg>
                           Upgrade Plan
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -624,8 +626,11 @@ function NewAppointmentPageContent() {
               ) : (
                 /* Show both options if Telemedicine is available */
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
                     onClick={() =>
                       setFormData({
                         ...formData,
@@ -633,7 +638,7 @@ function NewAppointmentPageContent() {
                         telemedicineConsent: false,
                       })
                     }
-                    className={`p-4 border-2 rounded-lg ${
+                    className={`p-4 border-2 rounded-lg h-auto ${
                       !formData.isTelemedicine
                         ? 'border-primary-500 bg-primary-100'
                         : 'border-neutral-300 hover:border-neutral-400'
@@ -670,10 +675,13 @@ function NewAppointmentPageContent() {
                         </div>
                       </div>
                     </div>
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     type='button'
+                    variant='ghost'
+                    fullWidth
+                    align='start'
                     onClick={() => {
                       // When Video Consultation is selected, auto-populate email from patient
                       const selectedPatient = patients.find(
@@ -686,7 +694,7 @@ function NewAppointmentPageContent() {
                         patientEmail: selectedPatient?.email || prev.patientEmail,
                       }));
                     }}
-                    className={`p-4 border-2 rounded-lg ${
+                    className={`p-4 border-2 rounded-lg h-auto ${
                       formData.isTelemedicine
                         ? 'border-primary-500 bg-primary-100'
                         : 'border-neutral-300 hover:border-neutral-400'
@@ -723,7 +731,7 @@ function NewAppointmentPageContent() {
                         </div>
                       </div>
                     </div>
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

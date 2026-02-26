@@ -1,6 +1,6 @@
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
-import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { ClientBreadcrumb } from '@/components/ui/ClientBreadcrumb';
 import Link from 'next/link';
 
 export const metadata = {
@@ -12,40 +12,22 @@ export default function PrivacyPage() {
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main
-        className='flex-1'
-        style={{
-          paddingTop: '120px',
-          paddingBottom: '64px',
-          paddingLeft: '32px',
-          paddingRight: '32px',
-        }}
-      >
-        <div className='max-w-4xl mx-auto'>
-          <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Privacy Policy' }]} />
+      <main className='flex-1 page-main'>
+        <div className='page-content page-content-narrow'>
+          <ClientBreadcrumb
+            items={[
+              { href: '/', labelKey: 'navigation.home' },
+              { labelKey: 'footer.privacyPolicy' },
+            ]}
+          />
 
           {/* Header Section */}
           <div className='mb-12'>
-            <h1
-              className='text-neutral-900 mb-4'
-              style={{
-                fontSize: '32px',
-                lineHeight: '40px',
-                letterSpacing: '-0.02em',
-                fontWeight: '700',
-              }}
-            >
+            <h1 className='text-h1 text-neutral-900 mb-4'>
               Privacy Policy
             </h1>
             <div className='flex items-center gap-3'>
-              <p
-                className='text-neutral-600'
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '24px',
-                  letterSpacing: '-0.01em',
-                }}
-              >
+              <p className='text-body-md text-neutral-600'>
                 Last updated:{' '}
                 {new Date().toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -56,11 +38,11 @@ export default function PrivacyPage() {
               <span className='text-neutral-300'>•</span>
               <div className='flex items-center gap-2 bg-primary-100 px-3 py-1 rounded-full'>
                 <svg
-                  style={{ width: '14px', height: '14px' }}
-                  className='text-primary-600'
+                  className='icon icon-sm text-primary-600'
                   fill='none'
                   stroke='currentColor'
                   viewBox='0 0 24 24'
+                  aria-hidden
                 >
                   <path
                     strokeLinecap='round'

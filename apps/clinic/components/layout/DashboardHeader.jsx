@@ -2,6 +2,7 @@
 
 import { CalendarIcon } from '@/components/icons';
 import { CalendarPopup } from '@/components/notifications/CalendarPopup';
+import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { logger } from '@/lib/utils/logger.js';
@@ -101,10 +102,12 @@ export function DashboardHeader({
           {subtitle ||
             (showDate && (
               <div className='flex items-center gap-2' style={{ marginLeft: '22px' }}>
-                <button
+                <Button
                   ref={calendarButtonRef}
+                  type='button'
+                  variant='ghost'
                   onClick={() => setShowCalendar(!showCalendar)}
-                  className='flex items-center gap-2 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer group'
+                  className='flex items-center gap-2 text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 group'
                   style={{
                     fontSize: 'var(--text-body-md)',
                     lineHeight: 'var(--text-body-md-line-height)',
@@ -114,7 +117,7 @@ export function DashboardHeader({
                 >
                   <CalendarIcon className='icon icon-sm text-primary-500 group-hover:text-primary-600 transition-colors' />
                   {subtitle || formatDateDisplay(new Date(), dateOptions)}
-                </button>
+                </Button>
               </div>
             ))}
         </div>

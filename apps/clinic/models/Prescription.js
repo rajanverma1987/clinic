@@ -23,6 +23,12 @@ const PrescriptionSchema = new Schema(
       ref: 'Tenant',
       required: true,
     },
+    /** Optional branch/location for multi-location (L1) */
+    branchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Location',
+      index: true,
+    },
     patientId: {
       type: Schema.Types.ObjectId,
       ref: 'Patient',

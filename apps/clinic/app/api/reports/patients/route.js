@@ -38,6 +38,7 @@ async function getHandler(req, user) {
     format: searchParams.get('format') || 'json',
     groupByField: searchParams.get('groupByField') || undefined,
     includeNewPatients: searchParams.get('includeNewPatients') === 'true',
+    branchId: searchParams.get('branchId') || undefined,
   };
 
   const validationResult = patientReportSchema.safeParse(queryParams);

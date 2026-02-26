@@ -915,13 +915,14 @@ export default function AppointmentsPage() {
                     }),
                   )}
                 </span>
-                <button
+                <Button
                   type='button'
+                  variant='link'
                   href='/appointments'
-                  className='font-medium text-primary-700 underline hover:text-primary-900'
+                  className='font-medium text-primary-700 hover:text-primary-900'
                 >
                   {t('appointments.showAllAppointments')}
-                </button>
+                </Button>
               </div>
             )}
 

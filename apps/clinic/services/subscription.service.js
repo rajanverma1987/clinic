@@ -551,14 +551,7 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
 }
 
 /** Valid add-on keys (must match lib/constants/subscription-spec.js ADDONS) */
-const ADDON_KEYS = [
-  'extraDoctor',
-  'extraStaff',
-  'extraSms',
-  'additionalStorage',
-  'whatsApp',
-  'advancedReports',
-];
+const ADDON_KEYS = ['aiAssist', 'advancedAnalytics', 'automationPro', 'apiIntegration'];
 
 /**
  * Add an add-on to a subscription (for limited-plan users).

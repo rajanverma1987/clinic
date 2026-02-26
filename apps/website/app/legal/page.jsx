@@ -4,51 +4,28 @@ import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Disclaimer } from '@/components/ui/Disclaimer';
+import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
-import { useEffect } from 'react';
 
 export default function LegalPage() {
-  useEffect(() => {
-    document.title = 'Legal Information & Disclaimers | Clinic Management System';
-  }, []);
+  const { t } = useI18n();
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main
-        className='flex-1'
-        style={{
-          paddingTop: '120px',
-          paddingBottom: '64px',
-          paddingLeft: '32px',
-          paddingRight: '32px',
-        }}
-      >
-        <div className='max-w-5xl mx-auto'>
-          <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Legal & Disclaimers' }]} />
+      <main className='flex-1 page-main'>
+        <div className='page-content page-content-wide'>
+          <Breadcrumb
+            items={[{ label: t('navigation.home'), href: '/' }, { label: t('footer.legalInfo') }]}
+          />
 
           {/* Header Section */}
           <div className='mb-12'>
-            <h1
-              className='text-neutral-900 mb-4'
-              style={{
-                fontSize: '32px',
-                lineHeight: '40px',
-                letterSpacing: '-0.02em',
-                fontWeight: '700',
-              }}
-            >
-              Legal Information & Disclaimers
+            <h1 className='text-h1 text-neutral-900 mb-4'>
+              {t('legal.title')}
             </h1>
             <div className='flex items-center gap-3 flex-wrap'>
-              <p
-                className='text-neutral-600'
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '24px',
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                Last updated:{' '}
+              <p className='text-body-md text-neutral-600'>
+                {t('legal.lastUpdated')}{' '}
                 {new Date().toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -58,11 +35,11 @@ export default function LegalPage() {
               <span className='text-neutral-300'>•</span>
               <div className='flex items-center gap-2 bg-primary-100 px-3 py-1 rounded-full'>
                 <svg
-                  style={{ width: '14px', height: '14px' }}
-                  className='text-primary-600'
+                  className='icon icon-sm text-primary-600'
                   fill='none'
                   stroke='currentColor'
                   viewBox='0 0 24 24'
+                  aria-hidden
                 >
                   <path
                     strokeLinecap='round'
@@ -71,11 +48,8 @@ export default function LegalPage() {
                     d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
                   />
                 </svg>
-                <span
-                  className='text-primary-700 font-semibold'
-                  style={{ fontSize: '12px', fontWeight: '600' }}
-                >
-                  HIPAA & GDPR Compliant
+                <span className='text-body-xs font-semibold text-primary-700'>
+                  {t('homepage.hipaaGdprCompliant')}
                 </span>
               </div>
             </div>

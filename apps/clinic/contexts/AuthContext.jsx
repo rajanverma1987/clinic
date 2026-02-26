@@ -17,7 +17,8 @@ import React, { createContext, useContext, useEffect, useLayoutEffect, useState 
 const AuthContext = createContext(undefined);
 
 // Idle timeout: 2 hours (120 minutes)
-const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+/** Super_Admin.md: Session timeout after 30 minutes of inactivity. */
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 // Token refresh threshold: refresh if token expires within next 30 minutes
 const TOKEN_REFRESH_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -178,6 +179,7 @@ export function AuthProvider({ children }) {
                 subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
                 avatar: userData.avatar,
+                isPrimaryAccount: !!userData.isPrimaryAccount,
               };
               setUser(userInfo);
               if (typeof window !== 'undefined') {
@@ -261,6 +263,7 @@ export function AuthProvider({ children }) {
           subscriptionPlan: userData.subscriptionPlan || null,
           isActive: userData.isActive !== undefined ? userData.isActive : true,
           avatar: userData.avatar,
+          isPrimaryAccount: !!userData.isPrimaryAccount,
         };
         setUser(userInfo);
         setCurrentTenantId(userInfo.tenantId || null);
@@ -313,6 +316,7 @@ export function AuthProvider({ children }) {
                 subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
                 avatar: userData.avatar,
+                isPrimaryAccount: !!userData.isPrimaryAccount,
               };
               setUser(userInfo);
               if (typeof window !== 'undefined') {
@@ -387,6 +391,7 @@ export function AuthProvider({ children }) {
                 subscriptionPlan: userData.subscriptionPlan || null,
                 isActive: userData.isActive !== undefined ? userData.isActive : true,
                 avatar: userData.avatar,
+                isPrimaryAccount: !!userData.isPrimaryAccount,
               };
               setUser(userInfo);
               if (typeof window !== 'undefined') {
@@ -572,7 +577,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     // Set logging out state immediately to show full-screen loader
     setLoggingOut(true);
-    
+
     if (typeof window !== 'undefined') clearTestAccountRoleOverride();
     // Clear all timeouts and intervals
     if (idleTimeoutRef.current) {
@@ -612,6 +617,43 @@ export function AuthProvider({ children }) {
 
   const refreshUser = async () => {
     await checkAuth();
+  };
+
+  /** Complete social login after redirect: set token from cookie, fetch user, update state. */
+  const completeOAuthLogin = async (accessToken) => {
+    if (!accessToken) return { success: false, error: 'No token' };
+    apiClient.setToken(accessToken);
+    if (typeof window !== 'undefined') {
+      lastActivityRef.current = Date.now();
+    }
+    try {
+      const response = await apiClient.get('/auth/me', undefined, true);
+      if (response.success && response.data) {
+        const d = response.data;
+        const userInfo = {
+          userId: d.id || d.userId,
+          id: d.id || d.userId,
+          email: d.email || '',
+          firstName: d.firstName || '',
+          lastName: d.lastName || '',
+          role: d.role || '',
+          tenantId: d.tenantId || '',
+          subscriptionPlan: d.subscriptionPlan || null,
+          isActive: d.isActive !== undefined ? d.isActive : true,
+          avatar: d.avatar,
+          isPrimaryAccount: !!d.isPrimaryAccount,
+        };
+        setUser(userInfo);
+        setCurrentTenantId(userInfo.tenantId || null);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('userInfo', JSON.stringify(userInfo));
+        }
+        return { success: true, user: userInfo };
+      }
+      return { success: false, error: response.error?.message || 'Failed to load user' };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'Failed to load user' };
+    }
   };
 
   // Sync current tenant for IndexedDB/SWR fetchers (no React in fetchers)
@@ -728,6 +770,7 @@ export function AuthProvider({ children }) {
         logout,
         register,
         refreshUser,
+        completeOAuthLogin,
       }}
     >
       {children}

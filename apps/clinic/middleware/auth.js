@@ -65,6 +65,33 @@ export async function authenticate(request) {
       }
     }
 
+    // Super_Admin.md: Support mode — block writes and clinical data read
+    if (user.supportMode) {
+      const method = request.method || '';
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        return {
+          error: NextResponse.json(
+            { success: false, error: { message: 'Support mode: write operations are not allowed', code: 'SUPPORT_MODE_READ_ONLY' } },
+            { status: 403, headers: NO_CACHE_HEADERS }
+          ),
+        };
+      }
+      if (method === 'GET') {
+        try {
+          const path = new URL(request.url || '', 'http://localhost').pathname || '';
+          const clinicalPrefixes = ['/api/patients', '/api/prescriptions', '/api/clinical-notes', '/api/care-plans', '/api/consent-records', '/api/lab-results'];
+          if (clinicalPrefixes.some((p) => path.startsWith(p))) {
+            return {
+              error: NextResponse.json(
+                { success: false, error: { message: 'Support mode: clinical data access is blocked', code: 'SUPPORT_MODE_CLINICAL_BLOCKED' } },
+                { status: 403, headers: NO_CACHE_HEADERS }
+              ),
+            };
+          }
+        } catch (_) {}
+      }
+    }
+
     return { user };
   } catch (error) {
     return {

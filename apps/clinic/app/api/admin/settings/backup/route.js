@@ -17,6 +17,17 @@ async function postHandler(req, user) {
   if (user.role !== 'super_admin') {
     return NextResponse.json(errorResponse('Unauthorized', 'UNAUTHORIZED'), { status: 403 });
   }
+  let body = {};
+  try {
+    body = await req.json();
+  } catch (_) {}
+  const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
+  if (!reason) {
+    return NextResponse.json(
+      errorResponse('Reason is required for backup (Super Admin audit)', 'VALIDATION_ERROR'),
+      { status: 400 },
+    );
+  }
   await connectDB();
   try {
     const { mongoose } = await import('mongoose');
@@ -37,6 +48,7 @@ async function postHandler(req, user) {
     return NextResponse.json(
       successResponse({
         message: 'Backup export completed',
+        reason,
         collections: Object.keys(exportData),
         totalDocs: Object.values(exportData).reduce((s, arr) => s + arr.length, 0),
       }),

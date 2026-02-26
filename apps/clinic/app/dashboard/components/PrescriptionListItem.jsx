@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { ChevronRightIcon, PrescriptionIcon } from '@/components/icons';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -17,9 +18,13 @@ export function PrescriptionListItem({ prescription, onClick }) {
   const duration = prescription.duration || '';
 
   return (
-    <button
+    <Button
       type='button'
-      className='dashboard-list-item dashboard-list-item-primary group w-full text-left cursor-pointer border-0 bg-transparent p-0'
+      variant='ghost'
+      size='listRow'
+      fullWidth
+      align='start'
+      className='dashboard-list-item dashboard-list-item-primary group border-0 bg-transparent'
       onClick={onClick}
       aria-label={`${patientName}, ${medication}`}
     >
@@ -47,6 +52,6 @@ export function PrescriptionListItem({ prescription, onClick }) {
         {/* Arrow */}
         <ChevronRightIcon className='icon icon-sm text-neutral-400 group-hover:text-primary-500 transition-colors flex-shrink-0' />
       </div>
-    </button>
+    </Button>
   );
 }

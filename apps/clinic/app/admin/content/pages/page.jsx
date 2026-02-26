@@ -197,7 +197,7 @@ export default function AdminContentPagesPage() {
                       </td>
                       <td>
                         <div className='flex gap-2'>
-                          <Button variant='secondary' size='sm' onClick={() => openEdit(item)}>
+                          <Button variant='primary' size='sm' onClick={() => openEdit(item)}>
                             {t('common.edit')}
                           </Button>
                           <Button variant='danger' size='sm' onClick={() => handleDelete(item._id)}>
@@ -282,7 +282,7 @@ export default function AdminContentPagesPage() {
                 </label>
               </div>
               <div className='flex gap-2 justify-end'>
-                <Button type='button' variant='secondary' onClick={closeModal}>
+                <Button type='button' variant='ghost' onClick={closeModal}>
                   {t('common.cancel')}
                 </Button>
                 <Button type='submit' variant='primary' disabled={saving}>

@@ -8,6 +8,7 @@ import { HolidayManagementTab } from '@/components/settings/HolidayManagementTab
 import { ProfileTab } from '@/components/settings/ProfileTab';
 import { QueueSettingsTab } from '@/components/settings/QueueSettingsTab';
 import { SMTPSettingsTab } from '@/components/settings/SMTPSettingsTab';
+import { ConsentTemplatesTab } from '@/components/settings/ConsentTemplatesTab';
 import { TaxSettingsTab } from '@/components/settings/TaxSettingsTab';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -23,7 +24,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 /** Settings tabs: clinic-related only (profile = current user; rest = clinic config). */
-export const SETTINGS_TAB_IDS = [
+const SETTINGS_TAB_IDS = [
   'profile',
   'general',
   'compliance',
@@ -33,9 +34,10 @@ export const SETTINGS_TAB_IDS = [
   'tax',
   'smtp',
   'holidays',
+  'consent',
 ];
 /** Must match SettingsTabs: all except profile have adminOnly: true */
-export const ADMIN_ONLY_TABS = [
+const ADMIN_ONLY_TABS = [
   'general',
   'compliance',
   'doctors',
@@ -44,9 +46,19 @@ export const ADMIN_ONLY_TABS = [
   'tax',
   'smtp',
   'holidays',
+  'consent',
 ];
 
-export function SettingsPageContent() {
+function SettingsPageFallback() {
+  const { t } = useI18n();
+  return (
+    <div className='flex items-center justify-center min-h-[400px]'>
+      <Loader type='section' text={t('common.loading')} />
+    </div>
+  );
+}
+
+function SettingsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const { user: currentUser, loading: authLoading, logout, refreshUser } = useAuth();
@@ -620,15 +632,15 @@ export function SettingsPageContent() {
         lastName: editProfileForm.lastName?.trim() || '',
       });
       if (response?.success) {
-        showSuccess(t('settings.profileUpdatedSuccess'));
+        showSuccess(t('settings.profileUpdatedSuccess') || 'Profile updated successfully');
         setShowEditProfileModal(false);
         await refreshUser();
         fetchSettings();
       } else {
-        showError(response?.error?.message || t('errors.generic'));
+        showError(response?.error?.message || t('errors.generic') || 'Failed to update profile');
       }
     } catch (error) {
-      showError(error?.message || t('errors.generic'));
+      showError(error?.message || t('errors.generic') || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -704,21 +716,29 @@ export function SettingsPageContent() {
       ) : (
         <div className='data-tabs-container w-full'>
           <div className='tab-content-standard-width-left min-h-[200px]'>
-            {activeTab === 'profile' && (
-              <div className='w-full'>
-                <ProfileTab
-                  currentUser={currentUser}
-                  logout={logout}
-                  saving={saving}
-                  onToggleStatus={handleToggleMyStatus}
-                  availabilityForm={availabilityForm}
-                  setAvailabilityForm={setAvailabilityForm}
-                  onEditProfileClick={handleEditProfileClick}
-                  onAvatarUploaded={refreshUser}
-                />
-              </div>
-            )}
-            {activeTab === 'general' && (
+            {/* All panels kept mounted; visibility toggled for fast tab switch (no remount). */}
+            <div
+              className='w-full'
+              style={{ display: activeTab === 'profile' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'profile'}
+              role='tabpanel'
+            >
+              <ProfileTab
+                currentUser={currentUser}
+                logout={logout}
+                saving={saving}
+                onToggleStatus={handleToggleMyStatus}
+                availabilityForm={availabilityForm}
+                setAvailabilityForm={setAvailabilityForm}
+                onEditProfileClick={handleEditProfileClick}
+                onAvatarUploaded={refreshUser}
+              />
+            </div>
+            <div
+              style={{ display: activeTab === 'general' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'general'}
+              role='tabpanel'
+            >
               <GeneralSettingsTab
                 isClinicAdmin={isClinicAdmin}
                 clinicForm={clinicForm}
@@ -727,8 +747,12 @@ export function SettingsPageContent() {
                 onSave={handleSaveGeneral}
                 onCancel={fetchSettings}
               />
-            )}
-            {activeTab === 'compliance' && (
+            </div>
+            <div
+              style={{ display: activeTab === 'compliance' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'compliance'}
+              role='tabpanel'
+            >
               <ComplianceTab
                 isClinicAdmin={isClinicAdmin}
                 complianceForm={complianceForm}
@@ -737,8 +761,12 @@ export function SettingsPageContent() {
                 onSave={handleSaveCompliance}
                 onCancel={fetchSettings}
               />
-            )}
-            {activeTab === 'doctors' && (
+            </div>
+            <div
+              style={{ display: activeTab === 'doctors' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'doctors'}
+              role='tabpanel'
+            >
               <DoctorsTab
                 isClinicAdmin={isClinicAdmin}
                 users={users}
@@ -753,8 +781,12 @@ export function SettingsPageContent() {
                 onCreateUser={handleCreateUser}
                 onToggleUserStatus={handleToggleUserStatus}
               />
-            )}
-            {activeTab === 'hours' && (
+            </div>
+            <div
+              style={{ display: activeTab === 'hours' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'hours'}
+              role='tabpanel'
+            >
               <ClinicHoursTab
                 clinicHours={clinicHours}
                 updateClinicHour={updateClinicHour}
@@ -765,8 +797,12 @@ export function SettingsPageContent() {
                 onSave={handleSaveHours}
                 onCancel={fetchSettings}
               />
-            )}
-            {activeTab === 'queue' && (
+            </div>
+            <div
+              style={{ display: activeTab === 'queue' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'queue'}
+              role='tabpanel'
+            >
               <QueueSettingsTab
                 queueForm={queueForm}
                 setQueueForm={setQueueForm}
@@ -774,8 +810,12 @@ export function SettingsPageContent() {
                 onSave={handleSaveQueue}
                 onCancel={fetchSettings}
               />
-            )}
-            {activeTab === 'tax' && (
+            </div>
+            <div
+              style={{ display: activeTab === 'tax' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'tax'}
+              role='tabpanel'
+            >
               <TaxSettingsTab
                 taxForm={taxForm}
                 setTaxForm={setTaxForm}
@@ -783,8 +823,12 @@ export function SettingsPageContent() {
                 onSave={handleSaveTax}
                 onCancel={fetchSettings}
               />
-            )}
-            {activeTab === 'smtp' && (
+            </div>
+            <div
+              style={{ display: activeTab === 'smtp' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'smtp'}
+              role='tabpanel'
+            >
               <SMTPSettingsTab
                 smtpForm={smtpForm}
                 setSmtpForm={setSmtpForm}
@@ -792,15 +836,26 @@ export function SettingsPageContent() {
                 onSave={handleSaveSmtp}
                 onCancel={fetchSettings}
               />
-            )}
-            {activeTab === 'holidays' && (
+            </div>
+            <div
+              style={{ display: activeTab === 'holidays' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'holidays'}
+              role='tabpanel'
+            >
               <HolidayManagementTab
                 settings={settings}
                 onUpdate={fetchSettings}
                 showAddForm={showHolidayAddForm}
                 setShowAddForm={setShowHolidayAddForm}
               />
-            )}
+            </div>
+            <div
+              style={{ display: activeTab === 'consent' ? 'block' : 'none' }}
+              aria-hidden={activeTab !== 'consent'}
+              role='tabpanel'
+            >
+              <ConsentTemplatesTab />
+            </div>
           </div>
         </div>
       )}
@@ -808,7 +863,7 @@ export function SettingsPageContent() {
       <Modal
         isOpen={showEditProfileModal}
         onClose={() => setShowEditProfileModal(false)}
-        title={t('settings.editProfile')}
+        title={t('settings.editProfile') || 'Edit Profile'}
         size='md'
       >
         <div className='p-4 space-y-4'>
@@ -839,7 +894,7 @@ export function SettingsPageContent() {
             />
           </div>
           <div className='flex justify-end gap-2 pt-4'>
-            <Button variant='secondary' onClick={() => setShowEditProfileModal(false)}>
+            <Button variant='ghost' onClick={() => setShowEditProfileModal(false)}>
               {t('common.cancel')}
             </Button>
             <Button variant='primary' onClick={handleSaveEditProfile} disabled={saving}>
@@ -851,3 +906,5 @@ export function SettingsPageContent() {
     </>
   );
 }
+
+export { SettingsPageContent };

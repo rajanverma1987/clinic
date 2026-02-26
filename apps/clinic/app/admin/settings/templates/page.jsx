@@ -162,7 +162,7 @@ export default function AdminSettingsTemplatesPage() {
           <Button variant="ghost" size="xs" onClick={() => handleEdit(r)}>
             {t('common.edit')}
           </Button>
-          <Button variant="ghost" size="xs" onClick={() => handleDelete(r)} className="text-red-600">
+          <Button variant="danger" size="xs" onClick={() => handleDelete(r)}>
             {t('common.delete')}
           </Button>
         </div>

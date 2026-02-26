@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 /** Redirect /settings to first tab (general). Layout renders tab bar + children. */
-export default function SettingsIndexPage() {
+function SettingsIndexPage() {
   const router = useRouter();
   const { t } = useI18n();
   useEffect(() => {
@@ -18,3 +18,5 @@ export default function SettingsIndexPage() {
     </div>
   );
 }
+
+export default SettingsIndexPage;

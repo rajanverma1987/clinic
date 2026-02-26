@@ -1,6 +1,7 @@
 'use client';
 
 import { useI18n } from '@/contexts/I18nContext';
+import { convertAmountForDisplay, getLocaleForCurrency } from '@/lib/utils/currency';
 import { Button } from './Button.jsx';
 
 /** Max feature lines shown on card to keep layout clean */
@@ -37,16 +38,28 @@ export function SubscriptionCard({
   loadingCard = false,
   loadingPayPal = false,
   className = '',
+  /** Tenant/location currency for display (from useSettings). When set, price is converted and shown in this currency. */
+  displayCurrency,
+  /** Tenant/location locale for number format (from useSettings). */
+  displayLocale,
 }) {
   const { t } = useI18n();
 
-  const formatPrice = (amount, curr) => {
-    return new Intl.NumberFormat('en-US', {
+  const effectiveCurrency = displayCurrency || currency || 'USD';
+  const effectiveLocale = displayLocale || getLocaleForCurrency(effectiveCurrency);
+
+  const formatPrice = (amountMinor, planCurr) => {
+    const { amountMajor, currency: fmtCurr } = convertAmountForDisplay(
+      amountMinor,
+      planCurr || currency,
+      effectiveCurrency,
+    );
+    return new Intl.NumberFormat(effectiveLocale, {
       style: 'currency',
-      currency: curr || 'USD',
+      currency: fmtCurr,
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
-    }).format(amount / 100);
+    }).format(amountMajor);
   };
 
   const billingPeriod = billingCycle === 'MONTHLY' ? t('pricing.perMonth') : t('pricing.perYear');
@@ -95,7 +108,22 @@ export function SubscriptionCard({
               <span className='sub-plan-card__price-period'>/{billingPeriod}</span>
               {yearlySaveAmount != null && yearlySaveAmount > 0 && billingCycle === 'MONTHLY' && (
                 <p className='sub-plan-card__save'>
-                  {t('subscriptionSpec.saveAmount').replace('{{amount}}', String(yearlySaveAmount))}{' '}
+                  {t('subscriptionSpec.saveAmount').replace(
+                    '{{amount}}',
+                    (() => {
+                      const { amountMajor, currency: fmtCurr } = convertAmountForDisplay(
+                        yearlySaveAmount * 100,
+                        currency,
+                        effectiveCurrency,
+                      );
+                      return new Intl.NumberFormat(effectiveLocale, {
+                        style: 'currency',
+                        currency: fmtCurr,
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }).format(amountMajor);
+                    })(),
+                  )}{' '}
                   {t('subscriptionSpec.perYear')}
                 </p>
               )}

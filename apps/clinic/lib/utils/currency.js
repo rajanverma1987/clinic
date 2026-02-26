@@ -79,3 +79,40 @@ export function getLocaleForCurrency(currencyCode = 'USD') {
   return localeMap[currencyCode] || 'en-US';
 }
 
+/**
+ * Conversion rates to USD (1 unit of fromCurrency = rate USD). Used for display when tenant currency differs from plan currency.
+ * Update periodically or source from settings for accuracy.
+ */
+const RATE_TO_USD = {
+  USD: 1,
+  INR: 0.012,   // ~83 INR = 1 USD
+  EUR: 1.08,
+  GBP: 1.27,
+  CAD: 0.74,
+  AUD: 0.65,
+  JPY: 0.0067,
+};
+
+/**
+ * Convert amount from one currency to another for display.
+ * Amount is in minor units (cents/paise); returns object { amountMajor, currency } for formatting.
+ * @param {number} amountMinor - Amount in minor units (cents or paise)
+ * @param {string} fromCurrency - Plan/store currency (e.g. 'INR', 'USD')
+ * @param {string} toCurrency - Tenant/location display currency
+ * @returns {{ amountMajor: number, currency: string }}
+ */
+export function convertAmountForDisplay(amountMinor, fromCurrency, toCurrency) {
+  if (!amountMinor || amountMinor === 0) {
+    return { amountMajor: 0, currency: toCurrency || fromCurrency };
+  }
+  const from = (fromCurrency || 'USD').toUpperCase();
+  const to = (toCurrency || from).toUpperCase();
+  if (from === to) {
+    return { amountMajor: amountMinor / 100, currency: to };
+  }
+  const toUsd = RATE_TO_USD[from] ?? 1;
+  const fromUsd = RATE_TO_USD[to] ?? 1;
+  const amountMajor = (amountMinor / 100) * toUsd * (1 / fromUsd);
+  return { amountMajor, currency: to };
+}
+

@@ -3,6 +3,7 @@
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { WelcomeNotification } from '@/components/notifications/WelcomeNotification';
 import GlobalSearch from '@/components/search/GlobalSearch';
+import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { SubscriptionExpiredBanner } from '@/components/ui/SubscriptionExpiredBanner.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -20,6 +21,7 @@ import { Sidebar } from './Sidebar.jsx';
  * render PageHeader above children so admin and other pages get the same sticky header
  * without each page importing PageHeader.
  * When loading=true, shows section loader in content area (sidebar + header stay visible).
+ * When loading=true and skeleton is provided, shows layout-matched skeleton instead of spinner.
  */
 export function Layout({
   children,
@@ -29,6 +31,7 @@ export function Layout({
   actionButtons,
   loading = false,
   loadingText,
+  skeleton,
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -52,7 +55,7 @@ export function Layout({
     apiClient
       .get('/maintenance-status', undefined, true)
       .then((res) => {
-        if (cancelled || !res?.success || !res?.maintenanceMode) return;
+        if (cancelled || !res?.success || !res?.data?.maintenanceMode) return;
         router.replace('/maintenance');
       })
       .finally(() => {
@@ -133,10 +136,11 @@ export function Layout({
           <div className='page-shell'>
             {/* Mobile: hamburger to open sidebar (touch target min 44px) */}
             <div className='md:hidden flex items-center h-12 min-h-[44px] px-4 border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800'>
-              <button
+              <Button
                 type='button'
-                onClick={() => setSidebarMobileOpen(true)}
+                variant='ghost'
                 className='p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                onClick={() => setSidebarMobileOpen(true)}
                 aria-label={t('common.ariaLabelOpenMenu')}
               >
                 <svg
@@ -154,7 +158,7 @@ export function Layout({
                   <line x1='3' y1='12' x2='21' y2='12' />
                   <line x1='3' y1='18' x2='21' y2='18' />
                 </svg>
-              </button>
+              </Button>
             </div>
             {/* Subscription status banner – top of content, full width, no cut-off */}
             {user && user.role !== 'super_admin' && (
@@ -176,16 +180,22 @@ export function Layout({
                 onOpenSearch={() => setShowSearch(true)}
               />
             )}
-            {/* Page-specific loading: loader in content area only */}
+            {/* Page-specific loading: layout-matched skeleton or section loader */}
             {loading ? (
-              <div
-                className='flex items-center justify-center min-h-[calc(100vh-12rem)]'
-                role='status'
-                aria-busy='true'
-                aria-label={loadingText ?? t('common.loading')}
-              >
-                <Loader type='section' size='lg' text={loadingText ?? t('common.loading')} />
-              </div>
+              skeleton ? (
+                <div role='status' aria-busy='true' aria-label={loadingText ?? t('common.loading')}>
+                  {skeleton}
+                </div>
+              ) : (
+                <div
+                  className='flex items-center justify-center min-h-[calc(100vh-12rem)]'
+                  role='status'
+                  aria-busy='true'
+                  aria-label={loadingText ?? t('common.loading')}
+                >
+                  <Loader type='section' size='lg' text={loadingText ?? t('common.loading')} />
+                </div>
+              )
             ) : (
               children
             )}

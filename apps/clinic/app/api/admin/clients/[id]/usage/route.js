@@ -22,15 +22,25 @@ async function getHandler(req, user, tenantId) {
     return NextResponse.json(errorResponse('Tenant not found', 'NOT_FOUND'), { status: 404 });
   }
 
-  const [patientsCount, managersCount, doctorsCount, appointmentsCount] = await Promise.all([
-    Patient.countDocuments({ tenantId, deletedAt: null }),
-    User.countDocuments({ tenantId, role: 'manager', isActive: true }),
-    User.countDocuments({ tenantId, role: { $in: ['doctor', 'admin', 'clinic_admin'] }, isActive: true }),
-    (async () => {
-      const Appointment = (await import('@/models/Appointment')).default;
-      return Appointment.countDocuments({ tenantId, deletedAt: null });
-    })(),
-  ]);
+  const [patientsCount, managersCount, doctorsCount, appointmentsCount, lastActivity] =
+    await Promise.all([
+      Patient.countDocuments({ tenantId, deletedAt: null }),
+      User.countDocuments({ tenantId, role: 'manager', isActive: true }),
+      User.countDocuments({
+        tenantId,
+        role: { $in: ['doctor', 'admin', 'clinic_admin'] },
+        isActive: true,
+      }),
+      (async () => {
+        const Appointment = (await import('@/models/Appointment')).default;
+        return Appointment.countDocuments({ tenantId, deletedAt: null });
+      })(),
+      User.findOne({ tenantId })
+        .sort({ lastLoginAt: -1 })
+        .select('lastLoginAt')
+        .lean()
+        .then((u) => (u?.lastLoginAt ? new Date(u.lastLoginAt).toISOString() : null)),
+    ]);
 
   return NextResponse.json(
     successResponse({
@@ -38,6 +48,7 @@ async function getHandler(req, user, tenantId) {
       managersCount,
       staffCount: doctorsCount,
       appointmentsCount,
+      lastActivity,
     }),
   );
 }

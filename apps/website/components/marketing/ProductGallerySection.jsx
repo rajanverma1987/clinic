@@ -2,7 +2,6 @@
 
 import { Button } from '@/components/ui/Button';
 import { CLINIC_APP_URL } from '@/lib/config';
-import Link from 'next/link';
 import { useState } from 'react';
 
 export function ProductGallerySection() {
@@ -179,7 +178,7 @@ export function ProductGallerySection() {
       }}
     >
       <div className='max-w-7xl mx-auto'>
-        <div className='text-center mb-16'>
+        <div className='text-center mb-10'>
           <div className='inline-flex items-center bg-primary-50 border border-primary-200 rounded-full px-4 py-1.5 mb-6'>
             <span className='text-xs font-semibold text-primary-700 tracking-wide uppercase'>
               Platform Overview
@@ -187,7 +186,7 @@ export function ProductGallerySection() {
           </div>
 
           <h2
-            className='text-neutral-900 mb-6'
+            className='text-neutral-900 mb-4'
             style={{
               fontSize: '48px',
               lineHeight: '56px',
@@ -338,8 +337,8 @@ export function ProductGallerySection() {
                 </div>
 
                 <div className='mt-8 pt-6 border-t border-neutral-200'>
-                  <Button 
-                    variant='primary' 
+                  <Button
+                    variant='primary'
                     size='lg'
                     onClick={() => {
                       const feature = features[activeTab].title;

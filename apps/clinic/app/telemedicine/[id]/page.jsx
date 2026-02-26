@@ -10,6 +10,8 @@ import { VideoControls } from '@/components/telemedicine/VideoControls';
 import { VideoDisplay } from '@/components/telemedicine/VideoDisplay';
 import { WaitingRoom } from '@/components/telemedicine/WaitingRoom';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
@@ -72,6 +74,7 @@ function VideoConsultationRoomContent() {
   const [reconnectAttempts, setReconnectAttempts] = useState(0); // Track reconnection attempts
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const socketRef = useRef(null); // Socket.IO connection
 
   const videoContainerRef = useRef(null);
@@ -171,8 +174,13 @@ function VideoConsultationRoomContent() {
       }
     };
 
-    // Only request if we're in a secure context and have the API
-    if (window.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    // Only request if we're in a secure context and have the API (guard for SSR)
+    if (
+      typeof window !== 'undefined' &&
+      window.isSecureContext &&
+      navigator.mediaDevices &&
+      navigator.mediaDevices.getUserMedia
+    ) {
       requestMediaPermissions();
     }
   }, []); // Run once on mount
@@ -180,6 +188,7 @@ function VideoConsultationRoomContent() {
   // Load session data and check expiry
   useEffect(() => {
     const loadSession = async () => {
+      setSessionLoading(true);
       try {
         const sessionResponse = await apiClient.get(
           `/telemedicine/sessions/${sessionId}/public`,
@@ -254,6 +263,8 @@ function VideoConsultationRoomContent() {
         }
       } catch (error) {
         logger.error('Failed to load session:', error);
+      } finally {
+        setSessionLoading(false);
       }
     };
     if (sessionId) {
@@ -460,8 +471,18 @@ function VideoConsultationRoomContent() {
     };
   }, []);
 
-  // Check if getUserMedia is available (for UI feedback)
+  // Check if getUserMedia is available (for UI feedback). Safe for SSR (no navigator/window on server).
   const checkMediaSupport = () => {
+    if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+      return {
+        supported: false,
+        hasMediaDevices: false,
+        hasGetUserMedia: false,
+        isSecure: false,
+        protocol: '',
+        hostname: '',
+      };
+    }
     const hasMediaDevices = !!navigator.mediaDevices;
     const hasGetUserMedia = !!(
       navigator.mediaDevices?.getUserMedia ||
@@ -1609,10 +1630,14 @@ function VideoConsultationRoomContent() {
   };
 
   return (
-    <div className='h-screen bg-neutral-100 flex flex-col'>
+    <div className='h-screen bg-neutral-100 dark:bg-neutral-900 flex flex-col'>
       {/* Header */}
-      <div className='bg-white border-b border-neutral-300 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between'>
-        <SessionInfo sessionDuration={isConnected ? sessionDuration : 0} sessionId={sessionId} />
+      <div className='bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between'>
+        <SessionInfo
+          sessionDuration={isConnected ? sessionDuration : 0}
+          sessionId={sessionId}
+          sessionData={sessionData}
+        />
 
         <div className='flex items-center space-x-2 sm:space-x-4 flex-shrink-0'>
           {isConnected && (
@@ -1652,7 +1677,7 @@ function VideoConsultationRoomContent() {
       {/* Main Content */}
       <div className='flex-1 flex overflow-hidden relative'>
         {/* Video Area */}
-        <div className='flex-1 relative bg-neutral-300 flex items-center justify-center min-h-0'>
+        <div className='flex-1 relative bg-neutral-300 dark:bg-neutral-800 flex items-center justify-center min-h-0'>
           {/* Video Container - WebRTC Video Streams */}
           {isConnecting || isConnected ? (
             <div ref={videoContainerRef} className='w-full h-full relative overflow-hidden'>
@@ -1692,16 +1717,16 @@ function VideoConsultationRoomContent() {
 
               {/* Connecting Indicator */}
               {isConnecting && !isConnected && (
-                <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm flex items-center justify-center z-20'>
-                  <div className='text-center bg-white border border-neutral-300 rounded-lg p-6 max-w-md mx-4 shadow-xl'>
+                <div className='absolute inset-0 bg-neutral-900/50 dark:bg-neutral-950/60 backdrop-blur-sm flex items-center justify-center z-20'>
+                  <div className='text-center bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-6 max-w-md mx-4 shadow-xl'>
                     <Loader type='section' variant='primary' text={t('telemedicine.connecting')} />
-                    <p className='text-neutral-900 text-lg font-semibold mb-2 mt-4'>
+                    <p className='text-neutral-900 dark:text-neutral-100 text-lg font-semibold mb-2 mt-4'>
                       {t('telemedicine.connecting')}
                     </p>
-                    <p className='text-neutral-600 text-sm'>
+                    <p className='text-neutral-600 dark:text-neutral-400 text-sm'>
                       {t('telemedicine.establishingConnection')}
                     </p>
-                    <p className='text-neutral-500 text-xs mt-2'>
+                    <p className='text-neutral-500 dark:text-neutral-500 text-xs mt-2'>
                       {t('telemedicine.mayTakeFewSeconds')}
                     </p>
                     {connectionError && (
@@ -1715,8 +1740,8 @@ function VideoConsultationRoomContent() {
 
               {/* Waiting for Remote User Message */}
               {(isConnected && !remoteUserConnected) || waitingForRemoteUser ? (
-                <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm flex items-center justify-center z-20'>
-                  <div className='text-center bg-white border border-neutral-300 rounded-lg p-6 max-w-md mx-4 shadow-xl'>
+                <div className='absolute inset-0 bg-neutral-900/50 dark:bg-neutral-950/60 backdrop-blur-sm flex items-center justify-center z-20'>
+                  <div className='text-center bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-6 max-w-md mx-4 shadow-xl'>
                     <Loader
                       type='section'
                       variant='primary'
@@ -1739,7 +1764,7 @@ function VideoConsultationRoomContent() {
                           ? t('telemedicine.waitingForPatientToJoin')
                           : t('telemedicine.waitingForDoctorToJoin')}
                     </p>
-                    <p className='text-neutral-600 text-sm'>
+                    <p className='text-neutral-600 dark:text-neutral-400 text-sm'>
                       {waitingForRemoteUser
                         ? t('telemedicine.otherPersonDisconnected')
                         : t('telemedicine.waitingForParticipantToJoin')}
@@ -1806,117 +1831,131 @@ function VideoConsultationRoomContent() {
                 onDecline={() => handleRecordingConsent(false)}
               />
             </div>
+          ) : sessionLoading ? (
+            /* Session loading - show until session data or error is available */
+            <div className='absolute inset-0 flex flex-col items-center justify-center z-10 bg-neutral-100 dark:bg-neutral-900'>
+              <Loader type='section' variant='primary' text={t('telemedicine.loading')} />
+              <p className='text-neutral-600 dark:text-neutral-400 text-sm mt-4'>
+                {t('telemedicine.loading')}
+              </p>
+            </div>
           ) : (
             /* Pre-connection UI - Shown when not connecting and not connected */
-            <div className='text-center px-4 w-full absolute inset-0 flex flex-col items-center justify-center z-10'>
-              <div className='w-16 h-16 sm:w-24 sm:h-24 bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6'>
-                <svg
-                  className='w-8 h-8 sm:w-12 sm:h-12 text-white'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
+            <div className='text-center px-4 w-full absolute inset-0 flex flex-col items-center justify-center z-10 bg-neutral-100 dark:bg-neutral-900'>
+              <div className='max-w-md w-full mx-auto'>
+                <div className='w-16 h-16 sm:w-20 sm:h-20 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg'>
+                  <svg
+                    className='icon icon-hero text-white'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+                    />
+                  </svg>
+                </div>
+                <h2 className='text-neutral-900 dark:text-neutral-100 text-xl sm:text-2xl font-semibold mb-2'>
+                  {t('telemedicine.readyToJoin')}
+                </h2>
+                <p className='text-neutral-600 dark:text-neutral-400 text-sm sm:text-base mb-6 px-2'>
+                  {isPatientLink
+                    ? t('telemedicine.clickToStartPatient')
+                    : t('telemedicine.clickToStartDoctor')}
+                </p>
+                <Button
+                  onClick={handleConnect}
+                  size='lg'
+                  className='w-full sm:w-auto min-w-[200px] text-sm sm:text-base px-6 sm:px-8'
+                  disabled={isConnecting || sessionExpired}
+                  isLoading={isConnecting}
+                  aria-label={t('telemedicine.joinVideoCall')}
                 >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
-                  />
-                </svg>
-              </div>
-              <h3 className='text-neutral-900 text-lg sm:text-xl font-semibold mb-2'>
-                {t('telemedicine.readyToJoin')}
-              </h3>
-              <p className='text-neutral-600 text-sm sm:text-base mb-4 sm:mb-6 px-2'>
-                {isPatientLink
-                  ? t('telemedicine.clickToStartPatient')
-                  : t('telemedicine.clickToStartDoctor')}
-              </p>
-              <Button
-                onClick={handleConnect}
-                size='lg'
-                className='text-sm sm:text-base px-6 sm:px-8'
-                disabled={
-                  isConnecting || sessionExpired || !hasCameraPermission || !hasMicrophonePermission
-                }
-                isLoading={isConnecting}
-              >
-                {sessionExpired
-                  ? t('telemedicine.sessionExpired')
-                  : isConnecting
-                    ? t('telemedicine.requestingPermissions')
-                    : !hasCameraPermission || !hasMicrophonePermission
-                      ? t('telemedicine.permissionsRequired')
-                      : t('telemedicine.joinVideoCall')}
-              </Button>
-              {(() => {
-                const mediaSupport = checkMediaSupport();
-                if (!mediaSupport.supported) {
-                  return (
-                    <div className='text-status-warning text-xs mt-3 px-2 max-w-md space-y-1 bg-status-warning/10 border border-status-warning/30 rounded-lg p-3'>
-                      <p className='font-semibold mb-2'>
-                        ⚠️ {t('telemedicine.browserCompatibilityCheck')}
-                      </p>
-                      <p>• Media Devices: {mediaSupport.hasMediaDevices ? '✅' : '❌'}</p>
-                      <p>• getUserMedia: {mediaSupport.hasGetUserMedia ? '✅' : '❌'}</p>
-                      <p>
-                        • Secure Context: {mediaSupport.isSecure ? '✅' : '❌'} (
-                        {mediaSupport.protocol})
-                      </p>
-                      {!mediaSupport.isSecure && (
-                        <p className='mt-2 text-status-warning/80'>
-                          ⚠️ Camera/mic requires HTTPS. Current: {mediaSupport.protocol}
+                  {sessionExpired
+                    ? t('telemedicine.sessionExpired')
+                    : isConnecting
+                      ? t('telemedicine.requestingPermissions')
+                      : !hasCameraPermission && !hasMicrophonePermission
+                        ? t('telemedicine.permissionsRequired')
+                        : t('telemedicine.joinVideoCall')}
+                </Button>
+                {(() => {
+                  const mediaSupport = checkMediaSupport();
+                  if (!mediaSupport.supported) {
+                    return (
+                      <div className='text-status-warning text-xs mt-5 px-3 py-3 max-w-md mx-auto space-y-1 bg-status-warning/10 dark:bg-status-warning/20 border border-status-warning/30 rounded-xl'>
+                        <p className='font-semibold mb-2'>
+                          ⚠️ {t('telemedicine.browserCompatibilityCheck')}
                         </p>
-                      )}
+                        <p>• Media Devices: {mediaSupport.hasMediaDevices ? '✅' : '❌'}</p>
+                        <p>• getUserMedia: {mediaSupport.hasGetUserMedia ? '✅' : '❌'}</p>
+                        <p>
+                          • Secure Context: {mediaSupport.isSecure ? '✅' : '❌'} (
+                          {mediaSupport.protocol})
+                        </p>
+                        {!mediaSupport.isSecure && (
+                          <p className='mt-2 text-status-warning/80'>
+                            Camera/mic requires HTTPS. Current: {mediaSupport.protocol}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className='text-neutral-500 dark:text-neutral-400 text-xs mt-5 px-2 max-w-md mx-auto space-y-1'>
+                      <p>💡 {t('telemedicine.onMobilePermission')}</p>
+                      <p>💡 {t('telemedicine.ifDeniedPermission')}</p>
                     </div>
                   );
-                }
-                return (
-                  <div className='text-neutral-500 text-xs mt-3 px-2 max-w-md space-y-1'>
-                    <p>💡 {t('telemedicine.onMobilePermission')}</p>
-                    <p>💡 {t('telemedicine.ifDeniedPermission')}</p>
+                })()}
+                {connectionError && (
+                  <div className='mt-5 p-4 bg-status-error/10 dark:bg-status-error/20 border border-status-error/30 text-status-error rounded-xl text-sm max-w-md mx-auto'>
+                    <p className='font-semibold'>{t('telemedicine.unableToConnect')}</p>
+                    <p className='mt-1'>
+                      {typeof connectionError === 'string'
+                        ? connectionError
+                        : getUserFriendlyMessage(String(connectionError))}
+                    </p>
                   </div>
-                );
-              })()}
-              {connectionError && (
-                <div className='mt-4 p-3 bg-status-error/10 border border-status-error/30 text-status-error rounded-lg text-sm max-w-md mx-auto'>
-                  <p className='font-semibold'>{t('telemedicine.unableToConnect')}</p>
-                  <p>
-                    {typeof connectionError === 'string'
-                      ? connectionError
-                      : getUserFriendlyMessage(String(connectionError))}
-                  </p>
-                </div>
-              )}
+                )}
 
-              {/* Permission Status Indicator */}
-              {!hasCameraPermission || !hasMicrophonePermission ? (
-                <div className='mt-4 p-4 bg-status-warning/10 border border-status-warning/30 rounded-lg text-sm max-w-md mx-auto'>
-                  <p className='font-semibold text-status-warning/80 mb-2'>
-                    ⚠️ {t('telemedicine.permissionsRequiredTitle')}
-                  </p>
-                  <ul className='text-status-warning/90 space-y-1 text-xs'>
-                    {!hasCameraPermission && <li>❌ Camera permission denied</li>}
-                    {!hasMicrophonePermission && <li>❌ Microphone permission denied</li>}
-                  </ul>
-                  <p className='text-status-warning/80 text-xs mt-2'>
-                    Please enable camera and microphone permissions to join the call.
-                  </p>
-                </div>
-              ) : null}
+                {/* Permission Status Indicator */}
+                {!hasCameraPermission || !hasMicrophonePermission ? (
+                  <div className='mt-5 p-4 bg-status-warning/10 dark:bg-status-warning/20 border border-status-warning/30 rounded-xl text-sm max-w-md mx-auto'>
+                    <p className='font-semibold text-status-warning/90 dark:text-status-warning/80 mb-2'>
+                      ⚠️ {t('telemedicine.permissionsRequiredTitle')}
+                    </p>
+                    <ul className='text-status-warning/90 dark:text-status-warning/80 space-y-1 text-xs'>
+                      {!hasCameraPermission && <li>• Camera permission denied</li>}
+                      {!hasMicrophonePermission && <li>• Microphone permission denied</li>}
+                    </ul>
+                    <p className='text-status-warning/80 text-xs mt-2'>
+                      {t('telemedicine.ifDeniedPermission')}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
             </div>
           )}
 
           {/* Waiting Room UI for Patients */}
           {isInWaitingRoom && !isConnected && (
-            <div className='absolute inset-0 bg-neutral-500/40 backdrop-blur-sm z-50 flex items-center justify-center'>
-              <div className='bg-white border border-neutral-300 rounded-lg p-8 max-w-md w-full mx-4 shadow-xl text-center'>
+            <div className='absolute inset-0 bg-neutral-900/50 dark:bg-neutral-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4'>
+              <div className='bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-8 max-w-md w-full shadow-xl text-center'>
                 <Loader type='section' variant='primary' text={t('telemedicine.pleaseWait')} />
-                <h3 className='text-neutral-900 text-xl font-semibold mb-2'>
+                <h3 className='text-neutral-900 dark:text-neutral-100 text-xl font-semibold mb-2'>
                   {t('telemedicine.waitingRoom')}
                 </h3>
-                <p className='text-neutral-600 mb-4'>{t('telemedicine.waitingRoomDescription')}</p>
-                <p className='text-neutral-500 text-sm'>{t('telemedicine.pleaseWait')}</p>
+                <p className='text-neutral-600 dark:text-neutral-400 mb-4'>
+                  {t('telemedicine.waitingRoomDescription')}
+                </p>
+                <p className='text-neutral-500 dark:text-neutral-500 text-sm'>
+                  {t('telemedicine.pleaseWait')}
+                </p>
               </div>
             </div>
           )}
@@ -1926,7 +1965,7 @@ function VideoConsultationRoomContent() {
       {/* Share Link Modal */}
       <ShareModal
         isOpen={showShareModal}
-        onClose={() => setShowPaymentModal(false)}
+        onClose={() => setShowShareModal(false)}
         sessionId={sessionId}
         sessionData={sessionData}
         onSendEmail={handleSendEmail}
@@ -1934,20 +1973,35 @@ function VideoConsultationRoomContent() {
 
       {/* Payment Collection Modal (Doctor Only) */}
       {showPaymentModal && userRole === 'doctor' && (
-        <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'>
-          <Card className='p-6 max-w-md w-full mx-4'>
-            <h3 className='text-lg font-bold text-neutral-900 mb-4'>
+        <div
+          className='fixed inset-0 bg-neutral-900/50 dark:bg-neutral-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4'
+          role='dialog'
+          aria-modal='true'
+          aria-labelledby='payment-modal-title'
+        >
+          <Card className='p-6 max-w-md w-full shadow-xl border border-neutral-200 dark:border-neutral-700'>
+            <h3
+              id='payment-modal-title'
+              className='text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4'
+            >
               {t('telemedicine.collectPayment')}
             </h3>
             <div className='space-y-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Amount</label>
+                <label
+                  htmlFor='payment-amount'
+                  className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'
+                >
+                  {t('telemedicine.amount')}
+                </label>
                 <Input
+                  id='payment-amount'
                   type='number'
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
                   min={0}
                   step={0.01}
+                  aria-label={t('telemedicine.amount')}
                 />
               </div>
               <div className='flex gap-3'>
@@ -1978,10 +2032,10 @@ function VideoConsultationRoomContent() {
                     }
                   }}
                 >
-                  Collect Payment
+                  {t('telemedicine.collectPayment')}
                 </Button>
                 <Button variant='secondary' onClick={() => setShowPaymentModal(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
             </div>
@@ -1995,7 +2049,7 @@ function VideoConsultationRoomContent() {
 function VideoConsultationRoomFallback() {
   const { t } = useI18n();
   return (
-    <div className='h-screen bg-neutral-100 flex items-center justify-center'>
+    <div className='h-screen bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center'>
       <Loader type='page' variant='primary' text={t('telemedicine.loading')} />
     </div>
   );

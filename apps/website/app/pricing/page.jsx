@@ -35,8 +35,7 @@ export default function PricingPage() {
         error: {
           ...(response.error || {}),
           message:
-            response.error?.message ||
-            t('pricing.unableToLoad', 'Unable to load pricing plans'),
+            response.error?.message || t('pricing.unableToLoad', 'Unable to load pricing plans'),
         },
       };
     }
@@ -218,50 +217,28 @@ export default function PricingPage() {
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1'>
+      <main className='flex-1 page-main'>
         {/* Hero Section */}
-        <section
-          className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden'
-          style={{
-            paddingTop: '120px',
-            paddingBottom: '80px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <section className='bg-gradient-to-br from-white via-neutral-50 to-primary-50/30 relative overflow-hidden py-12 px-8'>
           {/* Background accents */}
           <div
-            className='absolute top-0 right-0 bg-primary-100 rounded-full mix-blend-multiply filter opacity-30'
-            style={{ width: '400px', height: '400px', filter: 'blur(100px)' }}
-          ></div>
+            className='absolute top-0 right-0 w-[400px] h-[400px] bg-primary-100 rounded-full mix-blend-multiply opacity-30 blur-[100px]'
+            aria-hidden
+          />
           <div
-            className='absolute bottom-0 left-0 bg-secondary-100 rounded-full mix-blend-multiply filter opacity-30'
-            style={{ width: '400px', height: '400px', filter: 'blur(100px)' }}
-          ></div>
+            className='absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary-100 rounded-full mix-blend-multiply opacity-30 blur-[100px]'
+            aria-hidden
+          />
 
           <div className='max-w-7xl mx-auto relative z-10'>
             <div className='text-center'>
               {/* Premium badge */}
-              <div
-                className='inline-flex items-center bg-white border-2 border-neutral-200/80 text-primary-700 rounded-xl font-medium shadow-sm hover:shadow-md hover:border-primary-200 group'
-                style={{
-                  paddingLeft: '20px',
-                  paddingRight: '20px',
-                  paddingTop: '10px',
-                  paddingBottom: '10px',
-                  marginBottom: '32px',
-                  gap: '10px',
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  letterSpacing: '0.01em',
-                  fontWeight: '500',
-                }}
-              >
+              <div className='inline-flex items-center gap-2.5 px-5 py-2.5 mb-6 text-body-sm font-medium bg-white border-2 border-neutral-200/80 text-primary-700 rounded-xl shadow-sm hover:shadow-md hover:border-primary-200 group'>
                 <svg
-                  style={{ width: '18px', height: '18px' }}
-                  className='group-hover:scale-110'
+                  className='w-[18px] h-[18px] shrink-0 group-hover:scale-110'
                   fill='currentColor'
                   viewBox='0 0 20 20'
+                  aria-hidden
                 >
                   <path
                     fillRule='evenodd'
@@ -272,36 +249,13 @@ export default function PricingPage() {
                 <span>{t('pricing.flexiblePlans')}</span>
               </div>
 
-              <h1
-                className='text-neutral-900'
-                style={{
-                  fontSize: '32px',
-                  lineHeight: '40px',
-                  letterSpacing: '-0.02em',
-                  fontWeight: '700',
-                  marginBottom: '24px',
-                }}
-              >
-                {t('pricing.title')}
-              </h1>
-              <p
-                className='text-neutral-700 max-w-3xl mx-auto'
-                style={{
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  letterSpacing: '-0.01em',
-                  fontWeight: '400',
-                  marginBottom: '48px',
-                }}
-              >
+              <h1 className='text-h1 text-neutral-900 mb-4'>{t('pricing.title')}</h1>
+              <p className='text-body-lg text-neutral-700 max-w-3xl mx-auto mb-8'>
                 {t('pricing.description')}
               </p>
 
               {/* Billing Cycle Toggle */}
-              <div
-                className='inline-flex items-center bg-white border-2 border-neutral-200 rounded-xl shadow-md hover:shadow-lg'
-                style={{ padding: '4px' }}
-              >
+              <div className='inline-flex items-center p-1 bg-white border-2 border-neutral-200 rounded-xl shadow-md hover:shadow-lg'>
                 <Button
                   type='button'
                   onClick={() => setBillingCycle('MONTHLY')}
@@ -319,17 +273,7 @@ export default function PricingPage() {
                   className={`relative ${billingCycle === 'YEARLY' ? '' : 'bg-white'}`}
                 >
                   {t('pricing.yearly')}
-                  <span
-                    className='absolute -top-2 -right-2 bg-secondary-500 text-white font-bold rounded-full shadow-sm'
-                    style={{
-                      paddingLeft: '6px',
-                      paddingRight: '6px',
-                      paddingTop: '2px',
-                      paddingBottom: '2px',
-                      fontSize: '10px',
-                      lineHeight: '14px',
-                    }}
-                  >
+                  <span className='absolute -top-2 -right-2 px-1.5 py-0.5 text-body-xs bg-secondary-500 text-white font-bold rounded-full shadow-sm'>
                     {t('pricing.save20')}
                   </span>
                 </Button>
@@ -339,15 +283,7 @@ export default function PricingPage() {
         </section>
 
         {/* Pricing Cards Section */}
-        <section
-          className='bg-white'
-          style={{
-            paddingTop: '80px',
-            paddingBottom: '80px',
-            paddingLeft: '32px',
-            paddingRight: '32px',
-          }}
-        >
+        <section className='bg-white py-12 px-8'>
           <div className='max-w-7xl mx-auto'>
             {filteredPlans.length > 0 ? (
               <>
@@ -389,21 +325,15 @@ export default function PricingPage() {
                 </div>
               </>
             ) : (
-              <div className='text-center' style={{ paddingTop: '48px', paddingBottom: '48px' }}>
-                <div
-                  className='bg-white border-2 border-neutral-200 rounded-2xl shadow-lg hover:shadow-xl max-w-2xl mx-auto'
-                  style={{ padding: '48px' }}
-                >
-                  <div
-                    className='bg-gradient-to-br from-primary-100 to-primary-50 rounded-2xl flex items-center justify-center mx-auto shadow-sm'
-                    style={{ width: '80px', height: '80px', marginBottom: '24px' }}
-                  >
+              <div className='text-center py-12'>
+                <div className='p-12 bg-white border-2 border-neutral-200 rounded-2xl shadow-lg hover:shadow-xl max-w-2xl mx-auto'>
+                  <div className='w-20 h-20 mb-6 bg-gradient-to-br from-primary-100 to-primary-50 rounded-2xl flex items-center justify-center mx-auto shadow-sm'>
                     <svg
-                      className='text-primary-600'
+                      className='text-primary-600 w-10 h-10 shrink-0'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
-                      style={{ width: '40px', height: '40px' }}
+                      aria-hidden
                     >
                       <path
                         strokeLinecap='round'
@@ -413,19 +343,10 @@ export default function PricingPage() {
                       />
                     </svg>
                   </div>
-                  <h3
-                    className='text-neutral-900'
-                    style={{
-                      fontSize: '28px',
-                      lineHeight: '36px',
-                      letterSpacing: '-0.01em',
-                      fontWeight: '700',
-                      marginBottom: '12px',
-                    }}
-                  >
+                  <h3 className='text-section-heading text-neutral-900 mb-3'>
                     {t('pricing.noPlansAvailable', { billingCycle: billingCycle.toLowerCase() })}
                   </h3>
-                  <p className='text-neutral-600 text-body-md' style={{ marginBottom: '32px' }}>
+                  <p className='text-neutral-600 text-body-md mb-8'>
                     Please check back later or contact us for more information.
                   </p>
                   <Button

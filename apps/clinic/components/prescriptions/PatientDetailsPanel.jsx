@@ -1,6 +1,7 @@
 'use client';
 
 import '@/app/prescriptions/styles/prescription-form.css';
+import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client.js';
@@ -117,30 +118,36 @@ export function PatientDetailsPanel({ patientId }) {
     <div className='patient-details-panel'>
       {/* Tabs */}
       <div className='patient-details-tabs'>
-        <button
+        <Button
+          type='button'
+          variant='ghost'
           onClick={() => setActiveTab('details')}
           className={`patient-details-tab ${
             activeTab === 'details' ? 'patient-details-tab-active' : ''
           }`}
         >
           Details
-        </button>
-        <button
+        </Button>
+        <Button
+          type='button'
+          variant='ghost'
           onClick={() => setActiveTab('history')}
           className={`patient-details-tab ${
             activeTab === 'history' ? 'patient-details-tab-active' : ''
           }`}
         >
           History
-        </button>
-        <button
+        </Button>
+        <Button
+          type='button'
+          variant='ghost'
           onClick={() => setActiveTab('visits')}
           className={`patient-details-tab ${
             activeTab === 'visits' ? 'patient-details-tab-active' : ''
           }`}
         >
           Visits ({appointments.length})
-        </button>
+        </Button>
       </div>
 
       {/* Patient Details Tab */}
