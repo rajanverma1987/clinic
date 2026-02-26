@@ -146,13 +146,13 @@ export function TwoFactorSetup({ is2FAEnabled, onStatusChange }) {
         {/* QR code rendered as an <img> from the otpauth URL via a free QR service */}
         <img
           src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`}
-          alt='2FA QR Code'
+          alt={t('auth.twoFactorQRCodeAlt')}
           className='rounded-lg border border-neutral-200'
           width={180}
           height={180}
         />
         <p className='text-xs text-neutral-500 break-all'>
-          Or enter manually: <span className='font-mono font-semibold'>{secret}</span>
+          {t('auth.enterManually')} <span className='font-mono font-semibold'>{secret}</span>
         </p>
         <div className='space-y-2'>
           <label className='block text-sm font-medium text-neutral-700'>{t('auth.verificationCode')}</label>

@@ -592,10 +592,10 @@ export function ProfileTab({
               </div>
               <div className='pt-4 border-t border-neutral-200 dark:border-neutral-600'>
                 <p className='text-sm font-medium text-neutral-700 dark:text-neutral-300'>
-                  Two-Factor Authentication
+                  {t('auth.twoFactorAuthentication')}
                 </p>
                 <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-0.5'>
-                  Add an extra layer of security using an authenticator app.
+                  {t('auth.twoFactorDescription')}
                 </p>
                 <div className='mt-3'>
                   <TwoFactorSetup

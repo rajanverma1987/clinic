@@ -510,7 +510,7 @@ function LoginPageContent() {
                       fontWeight: '600',
                     }}
                   >
-                    Two-Factor Authentication
+                    {t('auth.twoFactorAuthentication')}
                   </h3>
                   <p
                     className='text-neutral-600'
