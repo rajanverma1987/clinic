@@ -140,11 +140,10 @@ export function SubscriptionCard({
         {trialDays != null && trialDays > 0 && (
           <div className='sub-plan-card__trial'>
             <p className='sub-plan-card__trial-line'>
-              {t('subscriptionSpec.trialDaysFree').replace('{{days}}', String(trialDays))}
+              {t('subscriptionSpec.trialDaysFree').replace('{{months}}', String(Math.round(trialDays / 30)))}
             </p>
             <p className='sub-plan-card__trial-billing'>
               {t('subscriptionSpec.trialThenBilling')
-                .replace('{{days}}', String(trialDays))
                 .replace('{{planName}}', name)
                 .replace(
                   '{{amount}}',

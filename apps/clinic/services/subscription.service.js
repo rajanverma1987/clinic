@@ -205,10 +205,10 @@ export async function createSubscription(
   const now = new Date();
   const periodStart = now;
   let periodEnd = new Date(now);
-  const trialDays = plan.trialDays ?? 14;
+  const trialDays = plan.trialDays ?? 180;
 
   if (trialDays > 0) {
-    // All plans: 14 days free, then billing starts
+    // All plans: 180-day (6 month) Starter free trial, then billing starts
     periodEnd.setDate(periodEnd.getDate() + trialDays);
   } else if (plan.billingCycle === PlanBillingCycle.MONTHLY) {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
@@ -245,7 +245,7 @@ export async function createSubscription(
     }
   }
 
-  // Trial end date: 14 days free for all plans, then billing starts
+  // Trial end date: 180 days (6 months) free Starter plan, then billing starts
   const trialEnd = trialDays > 0 ? new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000) : null;
 
   // Create subscription
@@ -471,9 +471,9 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
   const periodStart = new Date();
   const periodEnd = new Date(periodStart);
 
-  // Free Trial gets 15 days, others follow billing cycle
-  if (newPlan.name === 'Free Trial') {
-    periodEnd.setDate(periodEnd.getDate() + 15); // 15 days for free trial
+  // Starter / Free Trial gets 180 days (6 months), others follow billing cycle
+  if (newPlan.name === 'Free Trial' || newPlan.name === 'Starter') {
+    periodEnd.setDate(periodEnd.getDate() + 180);
   } else if (newPlan.billingCycle === PlanBillingCycle.MONTHLY) {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
   } else {

@@ -1,58 +1,77 @@
 /**
- * Subscription spec per CursorMD/Subscriptions.md.
- * No free plan: all plans are paid with 14-day free trial, then billing starts.
- * Comparison table, add-ons, which plan, payment terms, offers, get started, FAQ.
+ * Subscription spec – 3-tier USD pricing (Basic / Smart Clinic / Enterprise).
+ * Basic: 6-month free trial. Smart Clinic & Enterprise: 3-month free trial. No card required.
+ * Payment method: PayPal only. Currency: USD only.
  * ESM for use in client components.
  */
 
-/** Plan structure: Core / Pro / Enterprise. Currency: USD only. */
-export const PLAN_SLUGS = ['FREE', 'Core', 'Pro', 'Enterprise'];
+/** Plan slugs – matches DB plan names exactly. */
+export const PLAN_SLUGS = ['FREE', 'Starter', 'Basic', 'Smart Clinic', 'Enterprise'];
 
-/** Plans shown in comparison table; all have 14-day trial */
-export const COMPARISON_TABLE_PLAN_SLUGS = ['Core', 'Pro', 'Enterprise'];
+/** Plans shown in comparison table. Basic: 6-month free trial; Smart Clinic & Enterprise: 3-month free trial. */
+export const COMPARISON_TABLE_PLAN_SLUGS = ['Basic', 'Smart Clinic', 'Enterprise'];
+
+/** Free trial duration in days per plan. Used by both backend and frontend. */
+export const PLAN_TRIAL_DAYS = {
+  Basic: 180,          // 6 months
+  'Smart Clinic': 90,  // 3 months
+  Enterprise: 90,      // 3 months
+  Starter: 0,          // always-free tier, no countdown
+  'Free Trial': 0,     // legacy name for Starter
+  Free: 0,
+  SOLO: 180,           // legacy Basic
+  Core: 180,           // legacy Basic
+  CLINIC: 90,          // legacy Smart Clinic
+  ENTERPRISE: 90,      // legacy Enterprise
+  Pro: 90,             // legacy Smart Clinic
+  Growth: 90,          // legacy Smart Clinic
+};
 
 /** Plan names for admin and subscription page */
 export const AVAILABLE_PLAN_NAMES_FOR_ASSIGNMENT = [
   'FREE',
-  'Free Trial',
-  'Core',
-  'Pro',
+  'Starter',
+  'Basic',
+  'Smart Clinic',
   'Enterprise',
 ];
 
 /** Display names (legacy → current) */
 export const PLAN_DISPLAY_NAMES = {
   FREE: 'Free',
-  SOLO: 'Core',
-  CLINIC: 'Pro',
-  ENTERPRISE: 'Enterprise',
-  Starter: 'Core',
-  Growth: 'Pro',
-  'Smart Clinic': 'Pro',
-  Core: 'Core',
-  Pro: 'Pro',
+  Starter: 'Starter',
+  'Free Trial': 'Starter',
+  Basic: 'Basic',
+  'Smart Clinic': 'Smart Clinic',
   Enterprise: 'Enterprise',
+  // Legacy mappings
+  Core: 'Basic',
+  Pro: 'Smart Clinic',
+  Growth: 'Smart Clinic',
+  SOLO: 'Basic',
+  CLINIC: 'Smart Clinic',
+  ENTERPRISE: 'Enterprise',
 };
 
-/** Monthly prices in USD cents (DB stores cents). $24.99 / $59.99 / $129.99 */
+/** Monthly prices in USD cents. */
 export const FIX_PLAN_PRICES_USD_CENTS = {
-  Core: 2499,
-  Pro: 5999,
-  Enterprise: 12999,
+  Basic: 2499,           // $24.99
+  'Smart Clinic': 19900, // $199
+  Enterprise: 49900,     // $499
 };
 
-/** Annual 2 months free: yearly = 10 × monthly (USD cents). */
-export const YEARLY_SAVE_USD_CENTS = {
-  Core: 4998,
-  Pro: 11998,
-  Enterprise: 25998,
+/** Annual 20% off: save = monthly × 12 × 0.20 (USD major units). */
+export const YEARLY_SAVE_USD = {
+  Basic: 59.98,         // $24.99 × 12 × 20%
+  'Smart Clinic': 477.6, // $199 × 12 × 20%
+  Enterprise: 1197.6,   // $499 × 12 × 20%
 };
 
-/** Yearly save amount in major units (dollars) for SubscriptionCard "Save $X per year". */
+/** Yearly save amount in USD (major units) for SubscriptionCard "Save $X per year". */
 export const YEARLY_SAVE = {
-  Core: 49.98,
-  Pro: 119.98,
-  Enterprise: 259.98,
+  Basic: 59.98,
+  'Smart Clinic': 477.6,
+  Enterprise: 1197.6,
 };
 
 /** Feature flags for add-ons (A1, A2): gate CDS/AI and advanced automation */
@@ -61,18 +80,35 @@ export const ADDON_FEATURE_FLAGS = {
   ADVANCED_AUTOMATION: 'advanced_automation',
 };
 
-/** Quick Feature Comparison – Core | Pro | Enterprise (3 columns) */
+/** Quick Feature Comparison – Basic | Smart Clinic | Enterprise (3 columns) */
 export const COMPARISON_TABLE_ROWS = [
-  ['subscriptionSpec.teamMembers', '3', '10', 'Unlimited'],
-  ['subscriptionSpec.patientRecords', 'Unlimited', 'Unlimited', 'Unlimited'],
-  ['subscriptionSpec.documentStorage', '10GB', '50GB', 'Unlimited'],
-  ['subscriptionSpec.soapNotes', '✓', '✓', '✓ Advanced'],
-  ['subscriptionSpec.prescriptions', '✓', '✓ + Pharmacy', '✓ + Advanced'],
-  ['subscriptionSpec.billing', 'Basic', 'Advanced', 'Enterprise'],
-  ['subscriptionSpec.backups', 'Daily', 'Daily', 'Daily'],
-  ['subscriptionSpec.support', 'Email', 'Phone + Chat', '24/7 Dedicated'],
+  // Team & Accounts
+  ['subscriptionSpec.doctorAccounts',    '1',           '5',                     'Unlimited'],
+  ['subscriptionSpec.staffAccounts',     '2',           '10',                    'Unlimited'],
+  ['subscriptionSpec.teamMembers',       '3 total',     '15 total',              'Unlimited'],
+  // Patients & Records
+  ['subscriptionSpec.patientRecords',    'Unlimited',   'Unlimited',             'Unlimited'],
+  ['subscriptionSpec.appointmentsPerMonth', 'Unlimited', 'Unlimited',            'Unlimited'],
+  // Clinical
+  ['subscriptionSpec.soapNotes',         '10 templates', 'Unlimited templates',  'Unlimited templates'],
+  ['subscriptionSpec.prescriptions',     '✓',           '✓ + Drug alerts',       '✓ + Advanced'],
+  ['subscriptionSpec.labTests',          '—',           '✓',                     '✓ + In-house lab'],
+  // Billing & Inventory
+  ['subscriptionSpec.billing',           'Basic',       'Advanced + Tax',        'Enterprise + Claims'],
+  ['subscriptionSpec.inventory',         'Basic',       'Medicine tracking',     'Full pharmacy'],
+  // Communication
+  ['subscriptionSpec.smsReminders',      '—',           '200 / month',           'Unlimited'],
+  // Storage & Locations
+  ['subscriptionSpec.documentStorage',   '5 GB',        '100 GB',                'Unlimited'],
+  ['subscriptionSpec.locations',         '1',           'Up to 2',               'Unlimited'],
+  // Reports
+  ['subscriptionSpec.reports',           'Basic',       'Advanced + Export',     'Custom builder'],
+  // Access & Security
+  ['subscriptionSpec.apiAccess',         '—',           '—',                     '✓'],
+  // Backup & Support
+  ['subscriptionSpec.backups',           'Daily',       'Daily',                 'Hourly'],
+  ['subscriptionSpec.support',           'Email 24 hr', 'Priority + Phone',      '24/7 Dedicated'],
 ];
-
 
 /** Add-ons (optional): key, labelKey, descriptionKey, price display, noteKey */
 export const ADDONS = [
@@ -118,22 +154,21 @@ export const ALL_PLANS_INCLUDED_KEYS = [
 
 /** Positioning: plan → operational outcome (i18n key). */
 export const OUTCOME_POSITIONING = [
-  { plan: 'Core', outcomeKey: 'subscriptionSpec.outcomeCore' },
-  { plan: 'Pro', outcomeKey: 'subscriptionSpec.outcomePro' },
+  { plan: 'Basic', outcomeKey: 'subscriptionSpec.outcomeBasic' },
+  { plan: 'Smart Clinic', outcomeKey: 'subscriptionSpec.outcomeSmartClinic' },
   { plan: 'Enterprise', outcomeKey: 'subscriptionSpec.outcomeEnterprise' },
 ];
 
 /** Which plan: planSlug, titleKey, bulletsKey, bestForKey */
 export const WHICH_PLAN = [
-  { planSlug: 'FREE', titleKey: 'subscriptionSpec.chooseFree', bulletsKey: 'subscriptionSpec.chooseFreeBullets', bestForKey: 'subscriptionSpec.bestForFree' },
-  { planSlug: 'Core', titleKey: 'subscriptionSpec.chooseCore', bulletsKey: 'subscriptionSpec.chooseCoreBullets', bestForKey: 'subscriptionSpec.bestForCore' },
-  { planSlug: 'Pro', titleKey: 'subscriptionSpec.choosePro', bulletsKey: 'subscriptionSpec.chooseProBullets', bestForKey: 'subscriptionSpec.bestForPro' },
-  { planSlug: 'Enterprise', titleKey: 'subscriptionSpec.chooseEnterprise', bulletsKey: 'subscriptionSpec.chooseEnterpriseBullets', bestForKey: 'subscriptionSpec.bestForEnterprise' },
+  { planSlug: 'Basic',       titleKey: 'subscriptionSpec.chooseBasic',       bulletsKey: 'subscriptionSpec.chooseBasicBullets',       bestForKey: 'subscriptionSpec.bestForBasic' },
+  { planSlug: 'Smart Clinic',titleKey: 'subscriptionSpec.chooseSmartClinic', bulletsKey: 'subscriptionSpec.chooseSmartClinicBullets', bestForKey: 'subscriptionSpec.bestForSmartClinic' },
+  { planSlug: 'Enterprise',  titleKey: 'subscriptionSpec.chooseEnterprise',  bulletsKey: 'subscriptionSpec.chooseEnterpriseBullets',  bestForKey: 'subscriptionSpec.bestForEnterprise' },
 ];
 
-/** Yearly price (USD cents): 10 × monthly (2 months free). */
+/** Yearly price (USD cents): monthly × 12 × 0.80 (20% off). */
 export function getYearlyPriceCents(monthlyCents) {
-  return Math.round(monthlyCents * 10);
+  return Math.round(monthlyCents * 12 * 0.8);
 }
 
 /** FAQ: questionKey, answerKey */

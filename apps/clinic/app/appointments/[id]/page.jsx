@@ -3,6 +3,7 @@
 import { CalendarIcon, CheckIcon, PlayIcon, UserIcon, VideoIcon, XIcon } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { AiAssistSuggest } from '@/components/ui/AiAssistSuggest';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -247,7 +248,7 @@ export default function AppointmentDetailsPage() {
   };
 
   if (loading) {
-    return <Loader type='page' text={t('auth.loadingAppointmentDetails')} />;
+    return <Layout loading />;
   }
 
   if (error || !appointment) {
@@ -506,9 +507,15 @@ export default function AppointmentDetailsPage() {
             {showConsultationNotes ? (
               <div className='space-y-4'>
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    {t('appointments.diagnosisLabel')}
-                  </label>
+                  <div className='flex items-center justify-between gap-2 mb-2'>
+                    <label className='block text-sm font-medium text-neutral-700'>
+                      {t('appointments.diagnosisLabel')}
+                    </label>
+                    <AiAssistSuggest
+                      context='diagnosis'
+                      onInsert={(text) => setDiagnosis((prev) => (prev ? `${prev}; ${text}` : text))}
+                    />
+                  </div>
                   <Input
                     type='text'
                     value={diagnosis}
@@ -517,9 +524,17 @@ export default function AppointmentDetailsPage() {
                   />
                 </div>
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                    {t('appointments.clinicalNotes')}
-                  </label>
+                  <div className='flex items-center justify-between gap-2 mb-2'>
+                    <label className='block text-sm font-medium text-neutral-700'>
+                      {t('appointments.clinicalNotes')}
+                    </label>
+                    <AiAssistSuggest
+                      context='clinical_notes'
+                      onInsert={(text) =>
+                        setConsultationNotes((prev) => (prev ? `${prev}\n${text}` : text))
+                      }
+                    />
+                  </div>
                   <textarea
                     className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
                     rows={6}

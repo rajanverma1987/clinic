@@ -27,6 +27,12 @@ function getTestAccountPremiumState() {
       currentPeriodEnd: farFuture.toISOString(),
       trialDaysRemaining: null,
       paypalApprovalUrl: null,
+      addons: [
+        { addonKey: 'aiAssist' },
+        { addonKey: 'advancedAnalytics' },
+        { addonKey: 'automationPro' },
+        { addonKey: 'apiIntegration' },
+      ],
     },
   };
 }
@@ -42,7 +48,11 @@ export function FeatureProvider({ children }) {
     user?.tenantId && user?.role !== 'super_admin' && !isTestAccount(user?.email)
       ? FEATURES_KEY
       : null;
-  const { data: featuresData, isLoading: featuresLoading, mutate } = useSWR(swrKey, featuresFetcher, {
+  const {
+    data: featuresData,
+    isLoading: featuresLoading,
+    mutate,
+  } = useSWR(swrKey, featuresFetcher, {
     revalidateOnFocus: true,
     dedupingInterval: 2 * 60 * 1000,
   });
@@ -111,6 +121,13 @@ export function FeatureProvider({ children }) {
     return featureNames.every((feature) => features.includes(feature));
   };
 
+  /** Check if tenant has a subscription add-on (e.g. aiAssist for AI Assistance). */
+  const hasAddon = (addonKey) => {
+    if (features.includes('*')) return true; // Super admin
+    const list = subscription?.addons;
+    return Array.isArray(list) && list.some((a) => a.addonKey === addonKey);
+  };
+
   const checkLimit = (limitType, currentCount) => {
     let limit;
     switch (limitType) {
@@ -147,6 +164,7 @@ export function FeatureProvider({ children }) {
         hasFeature,
         hasAnyFeature,
         hasAllFeatures,
+        hasAddon,
         checkLimit,
         refreshFeatures,
       }}

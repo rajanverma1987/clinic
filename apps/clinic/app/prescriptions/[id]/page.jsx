@@ -112,7 +112,7 @@ export default function PrescriptionDetailPage() {
   }
 
   if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return <Layout loading />;
   }
 
   if (error || !prescription) {

@@ -3817,5 +3817,18 @@
     "failedToCreate": "Failed to create insurance claim",
     "failedToUpdate": "Failed to update insurance claim",
     "failedToSubmit": "Failed to submit insurance claim"
+  },
+  "aiAssist": {
+    "suggest": "اقترح",
+    "error": "تعذر تحميل الاقتراحات",
+    "noSuggestions": "لا توجد اقتراحات لهذا السياق.",
+    "subjective": "ذاتي",
+    "objective": "موضوعي",
+    "assessment": "التقييم",
+    "plan": "الخطة",
+    "diagnosis": "التشخيص",
+    "clinicalNotes": "ملاحظات سريرية",
+    "cds": "دعم القرار السريري",
+    "cdsHints": "دعم القرار السريري"
   }
 }

@@ -574,7 +574,7 @@ export default function AdminSubscriptionsPage() {
   };
 
   if (!user) return null;
-  if (loading) return <Loader type='page' text={t('common.loading')} />;
+  if (loading) return <Layout loading />;
   if (user.role !== 'super_admin') return null;
 
   return (

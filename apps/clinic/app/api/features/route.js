@@ -7,9 +7,18 @@ import { withErrorHandler } from '@/middleware/error-handler';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
 import { withRequestLogger } from '@/middleware/request-logger';
+import Tenant from '@/models/Tenant';
 import { getTenantFeatures, getTenantLimits } from '@/services/feature-access.service';
 import { getTenantSubscription } from '@/services/subscription.service';
 import { NextResponse } from 'next/server';
+
+/** Free trial duration in days per plan. Basic = 6 months; Smart Clinic & Enterprise = 3 months. */
+const PLAN_FREE_TRIAL_DAYS = {
+  Basic: 180, SOLO: 180, Core: 180,          // Basic / legacy Basic = 6 months
+  'Smart Clinic': 90, CLINIC: 90, Pro: 90, Growth: 90, // Smart Clinic / legacy = 3 months
+  Enterprise: 90, ENTERPRISE: 90,            // Enterprise = 3 months
+};
+const DEFAULT_FREE_TRIAL_DAYS = 180; // no subscription → assume Basic-level (6 months)
 
 const FEATURES_CACHE_TTL_MS = 60000;
 
@@ -25,6 +34,7 @@ function getTestAccountPremiumPayload() {
       currentPeriodEnd: farFuture.toISOString(),
       trialDaysRemaining: null,
       paypalApprovalUrl: null,
+      addons: [{ addonKey: 'aiAssist' }],
     },
   };
 }
@@ -60,20 +70,45 @@ async function getHandler(req, user) {
     const payload = await optimizedCacheManager.getOrFetch(
       cacheKey,
       async () => {
-        const features = await getTenantFeatures(user.tenantId);
-        const limits = await getTenantLimits(user.tenantId);
-        const subscription = await getTenantSubscription(user.tenantId);
-        let trialDaysRemaining;
+        const [features, limits, subscription, tenant] = await Promise.all([
+          getTenantFeatures(user.tenantId),
+          getTenantLimits(user.tenantId),
+          getTenantSubscription(user.tenantId),
+          Tenant.findById(user.tenantId).select('createdAt').lean(),
+        ]);
         const sub = subscription;
-        if (sub && sub.planId && typeof sub.planId === 'object' && 'name' in sub.planId) {
-          const plan = sub.planId;
-          if (plan.name === 'Free Trial' && sub.status === 'ACTIVE') {
-            const now = new Date();
-            const end = new Date(sub.currentPeriodEnd);
-            const daysRemaining = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-            trialDaysRemaining = Math.max(0, daysRemaining);
+
+        // Calculate trial days remaining based on tenant creation date + plan-specific trial length.
+        // Basic = 6 months (180 days); Smart Clinic & Enterprise = 3 months (90 days).
+        const planName = sub?.planId?.name || null;
+        const freeDays = planName ? (PLAN_FREE_TRIAL_DAYS[planName] ?? 90) : DEFAULT_FREE_TRIAL_DAYS;
+        let trialDaysRemaining = null;
+        if (tenant?.createdAt) {
+          const trialEnd = new Date(tenant.createdAt);
+          trialEnd.setDate(trialEnd.getDate() + freeDays);
+          const now = new Date();
+          if (trialEnd > now) {
+            trialDaysRemaining = Math.max(
+              0,
+              Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+            );
+          } else {
+            trialDaysRemaining = 0;
           }
         }
+
+        // For a paid ACTIVE subscription: trial is over — suppress the trial banner
+        const hasPaidActiveSub =
+          sub &&
+          sub.status === 'ACTIVE' &&
+          sub.planId &&
+          typeof sub.planId === 'object' &&
+          (sub.planId.price ?? 0) > 0;
+        if (hasPaidActiveSub) {
+          trialDaysRemaining = null;
+        }
+
+        const addons = Array.isArray(sub?.addons) ? sub.addons.map((a) => ({ addonKey: a.addonKey })) : [];
         return {
           features,
           limits,
@@ -83,8 +118,9 @@ async function getHandler(req, user) {
                 currentPeriodEnd: sub.currentPeriodEnd,
                 trialDaysRemaining,
                 paypalApprovalUrl: sub.paypalApprovalUrl,
+                addons,
               }
-            : null,
+            : { status: null, currentPeriodEnd: null, trialDaysRemaining, paypalApprovalUrl: null, addons: [] },
         };
       },
       FEATURES_CACHE_TTL_MS,

@@ -109,7 +109,7 @@ export default function AdminAnalyticsPage() {
 
   const hasFilters = startDate || endDate;
 
-  if (authLoading || (loading && !data)) return <Loader type='page' text={t('common.loading')} />;
+  if (authLoading || (loading && !data)) return <Layout loading />;
   if (user?.role !== 'super_admin') return null;
 
   const stats = data?.appointmentStats ?? {};

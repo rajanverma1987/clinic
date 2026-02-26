@@ -3817,5 +3817,18 @@
     "failedToCreate": "Failed to create insurance claim",
     "failedToUpdate": "Failed to update insurance claim",
     "failedToSubmit": "Failed to submit insurance claim"
+  },
+  "aiAssist": {
+    "suggest": "Sugerir",
+    "error": "No se pudieron cargar las sugerencias",
+    "noSuggestions": "Sin sugerencias para este contexto.",
+    "subjective": "Subjetivo",
+    "objective": "Objetivo",
+    "assessment": "Evaluación",
+    "plan": "Plan",
+    "diagnosis": "Diagnóstico",
+    "clinicalNotes": "Notas clínicas",
+    "cds": "CDS",
+    "cdsHints": "Apoyo a la decisión clínica"
   }
 }

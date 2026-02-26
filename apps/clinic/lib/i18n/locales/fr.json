@@ -2094,5 +2094,18 @@
     "failedToStartVideoSession": "Failed to start video session",
     "failedToCreateVideoSession": "Failed to create video session",
     "managerAccountCreatedSuccess": "Manager account created successfully!"
+  },
+  "aiAssist": {
+    "suggest": "Suggérer",
+    "error": "Impossible de charger les suggestions",
+    "noSuggestions": "Aucune suggestion pour ce contexte.",
+    "subjective": "Subjective",
+    "objective": "Objectif",
+    "assessment": "Évaluation",
+    "plan": "Plan",
+    "diagnosis": "Diagnostic",
+    "clinicalNotes": "Notes cliniques",
+    "cds": "CDS",
+    "cdsHints": "Aide à la décision clinique"
   }
 }

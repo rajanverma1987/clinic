@@ -10,6 +10,11 @@ import { useEffect, useState } from 'react';
 /**
  * Compact subscription overlay in bottom-right corner.
  * Shows subscription status as a small, dismissible notification.
+ *
+ * Trial model:
+ *  - Registered users get 3 months free, no card required.
+ *  - During last 30 days of trial: show warning overlay.
+ *  - After trial expired (no subscription): show expired overlay.
  */
 export function SubscriptionOverlay({
   subscriptionStatus,
@@ -40,25 +45,28 @@ export function SubscriptionOverlay({
     }
   };
 
-  /** Send to pricing so user can subscribe with current account; purchase syncs via /features refetch on return. */
   const goToPlans = () => router.push('/pricing');
+  const goToSubscription = () => router.push('/subscription');
 
   const handleDismiss = () => {
     setIsDismissed(true);
     setIsVisible(false);
   };
 
-  // Don't show if subscription is active and trial is fine
-  if (subscriptionStatus === 'ACTIVE' && (!trialDaysRemaining || trialDaysRemaining > 3)) {
+  // Active and trial not expiring soon → no overlay
+  if (subscriptionStatus === 'ACTIVE' && (!trialDaysRemaining || trialDaysRemaining > 30)) {
     return null;
   }
 
-  // Don't show if dismissed
+  // No subscription + plenty of trial left → no overlay
+  if (!subscriptionStatus && trialDaysRemaining != null && trialDaysRemaining > 30) {
+    return null;
+  }
+
   if (isDismissed) {
     return null;
   }
 
-  // Determine message and button based on status
   let message = '';
   let buttonText = '';
   let buttonAction = goToPlans;
@@ -66,8 +74,8 @@ export function SubscriptionOverlay({
   let borderColor = 'border-primary-500 dark:border-primary-400';
   let textColor = 'text-neutral-700 dark:text-neutral-200';
 
-  // Trial expiring soon
-  if (subscriptionStatus === 'ACTIVE' && trialDaysRemaining != null && trialDaysRemaining <= 3) {
+  // Active subscription, trial expiring within 30 days
+  if (subscriptionStatus === 'ACTIVE' && trialDaysRemaining != null && trialDaysRemaining <= 30) {
     const days = trialDaysRemaining === 1 ? t('common.day') : t('common.days');
     message = t('subscription.bannerTrialExpiring')
       .replace('{{count}}', String(trialDaysRemaining))
@@ -76,6 +84,27 @@ export function SubscriptionOverlay({
     bgColor = 'bg-amber-50 dark:bg-amber-900/30';
     borderColor = 'border-amber-500 dark:border-amber-600';
     textColor = 'text-neutral-800 dark:text-amber-100';
+  }
+  // No subscription + last 30 days of trial
+  else if (!subscriptionStatus && trialDaysRemaining != null && trialDaysRemaining <= 30 && trialDaysRemaining > 0) {
+    const days = trialDaysRemaining === 1 ? t('common.day') : t('common.days');
+    message = t('subscription.bannerTrialExpiringSoon')
+      .replace('{{count}}', String(trialDaysRemaining))
+      .replace('{{days}}', days);
+    buttonText = t('subscription.upgradeNow');
+    buttonAction = goToSubscription;
+    bgColor = 'bg-amber-50 dark:bg-amber-900/30';
+    borderColor = 'border-amber-500 dark:border-amber-600';
+    textColor = 'text-neutral-800 dark:text-amber-100';
+  }
+  // No subscription + trial ended
+  else if (!subscriptionStatus && (!trialDaysRemaining || trialDaysRemaining <= 0)) {
+    message = t('subscription.bannerTrialEnded');
+    buttonText = t('subscription.upgradeNow');
+    buttonAction = goToSubscription;
+    bgColor = 'bg-red-50 dark:bg-red-900/30';
+    borderColor = 'border-red-500 dark:border-red-600';
+    textColor = 'text-neutral-800 dark:text-red-100';
   }
   // Expired, suspended, or cancelled
   else if (
@@ -86,6 +115,7 @@ export function SubscriptionOverlay({
     const status = subscriptionStatus.toLowerCase();
     message = t('subscription.bannerExpired').replace('{{status}}', status);
     buttonText = t('subscription.renewNow');
+    buttonAction = goToSubscription;
     bgColor = 'bg-red-50 dark:bg-red-900/30';
     borderColor = 'border-red-500 dark:border-red-600';
     textColor = 'text-neutral-800 dark:text-red-100';
@@ -98,11 +128,6 @@ export function SubscriptionOverlay({
     bgColor = 'bg-primary-50 dark:bg-primary-900/30';
     borderColor = 'border-primary-500 dark:border-primary-400';
     textColor = 'text-neutral-800 dark:text-primary-100';
-  }
-  // No subscription → View Plans goes to pricing (logged-in); purchase syncs on return
-  else if (!subscriptionStatus) {
-    message = t('subscription.bannerNoSubscription');
-    buttonText = t('subscription.viewPlans');
   }
 
   if (!message) {

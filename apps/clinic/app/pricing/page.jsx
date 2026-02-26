@@ -103,8 +103,8 @@ export default function PricingPage() {
     }
   };
 
-  /** Plans: Core / Pro / Enterprise. USD only, PayPal only. */
-  const DISPLAY_PLAN_SLUGS = ['Core', 'Pro', 'Enterprise'];
+  /** Plans: Basic / Smart Clinic / Enterprise. USD only, PayPal only. */
+  const DISPLAY_PLAN_SLUGS = ['Basic', 'Smart Clinic', 'Enterprise'];
   const allowedPlans = plans.filter(
     (plan) => plan && plan.name && DISPLAY_PLAN_SLUGS.includes(plan.name),
   );
@@ -140,7 +140,7 @@ export default function PricingPage() {
       <div className='min-h-screen flex flex-col bg-white'>
         <Header />
         <main className='flex-1 flex items-center justify-center py-32'>
-          <Loader type='page' text={t('pricing.loadingPricingPlans')} />
+          <Loader type='section' text={t('pricing.loadingPricingPlans')} />
         </main>
         <Footer />
       </div>

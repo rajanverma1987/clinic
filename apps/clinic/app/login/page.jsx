@@ -32,6 +32,8 @@ function LoginPageContent() {
   const [showOtp, setShowOtp] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
   const formRef = useRef(null);
+  /** Hold password during 2FA flow so we can save it on remember me after OTP success */
+  const passwordForRememberRef = useRef('');
 
   const getRoleHomePage = (role) => {
     const roleRoutes = {
@@ -49,12 +51,17 @@ function LoginPageContent() {
     return roleRoutes[role];
   };
 
-  // Load remembered email on mount
+  // Load remembered email and password on mount (when Remember me was used)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const rememberedEmail = localStorage.getItem('rememberedEmail');
+      const rememberedPassword = localStorage.getItem('rememberedPassword');
       if (rememberedEmail) {
         setEmail(rememberedEmail);
+        setRememberMe(true);
+      }
+      if (rememberedPassword) {
+        setPassword(rememberedPassword);
         setRememberMe(true);
       }
     }
@@ -135,20 +142,23 @@ function LoginPageContent() {
     const result = await login(email, password, rememberMe);
 
     if (result.success) {
-      // Check if 2FA is required
+      // Check if 2FA is required (password saved to storage only after full login success)
       if (result.require2FA) {
+        passwordForRememberRef.current = rememberMe ? password : '';
         setShowOtp(true);
         setPendingEmail(email);
-        setPassword(''); // Clear password for security
+        setPassword(''); // Clear from UI for security; will save after 2FA success if rememberMe
         setIsLoading(false);
         return;
       }
 
-      // Handle remember me
+      // Handle remember me: save or clear email and password
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
+        localStorage.setItem('rememberedPassword', password);
       } else {
         localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPassword');
       }
 
       // Ensure tokens are stored before redirect - verify token is actually stored
@@ -191,11 +201,16 @@ function LoginPageContent() {
     const result = await verify2FA(pendingEmail || email, otp, rememberMe);
 
     if (result.success) {
-      // Handle remember me
+      // Handle remember me: save or clear email and password (password held in ref during 2FA)
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', pendingEmail || email);
+        const pwd = passwordForRememberRef.current;
+        if (pwd) localStorage.setItem('rememberedPassword', pwd);
+        passwordForRememberRef.current = '';
       } else {
         localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPassword');
+        passwordForRememberRef.current = '';
       }
 
       // Ensure tokens are stored before redirect - verify token is actually stored

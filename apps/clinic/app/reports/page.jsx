@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { Table } from '@/components/ui/Table';
 import { Tabs, getTabPanelId, getTabPanelLabelledBy } from '@/components/ui/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatures } from '@/contexts/FeatureContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
@@ -36,6 +37,7 @@ export default function ReportsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
+  const { hasAddon } = useFeatures();
   const { t } = useI18n();
   const { currency, locale, settings } = useSettings();
   const visibleTabIds = useMemo(() => getVisibleTabIds(user?.role), [user?.role]);
@@ -353,8 +355,7 @@ export default function ReportsPage() {
 
       let title = t('reports.title');
       if (activeTab === 'revenue') title = t('reports.revenue');
-      else if (activeTab === 'doctors')
-        title = t('reports.doctorPerformance');
+      else if (activeTab === 'doctors') title = t('reports.doctorPerformance');
       else if (activeTab === 'patients') title = t('reports.patients');
       else if (activeTab === 'appointments') title = t('reports.appointments');
       else if (activeTab === 'inventory') title = t('reports.inventory');
@@ -483,11 +484,7 @@ export default function ReportsPage() {
         ]);
       } else {
         pdf.setFontSize(10);
-        pdf.text(
-          t('reports.noData'),
-          margin,
-          y,
-        );
+        pdf.text(t('reports.noData'), margin, y);
       }
     },
     [
@@ -817,9 +814,7 @@ export default function ReportsPage() {
               className='filter-button'
               title={t('reports.downloadPdfHint')}
             >
-              {generatingPdf
-                ? t('reports.generatingPdf')
-                : t('reports.generateReport')}
+              {generatingPdf ? t('reports.generatingPdf') : t('reports.generateReport')}
             </Button>
             <Button
               variant='secondary'
@@ -832,6 +827,60 @@ export default function ReportsPage() {
               {t('reports.print')}
             </Button>
           </div>
+
+          {hasAddon('advancedAnalytics') && (
+            <Card className='mb-4 p-4 border-primary-200 dark:border-primary-700 bg-primary-50/50 dark:bg-primary-900/20'>
+              <h3 className='text-sm font-semibold text-primary-700 dark:text-primary-300 mb-1'>
+                {t('reports.advancedInsights')}
+              </h3>
+              <p className='text-body-sm text-neutral-600 dark:text-neutral-400 mb-3'>
+                {t('reports.advancedInsightsDesc')}
+              </p>
+              <div className='flex flex-wrap gap-4 text-body-sm'>
+                {revenueReport?.summary && (
+                  <span className='text-neutral-700 dark:text-neutral-300'>
+                    {t('reports.totalRevenue')}:{' '}
+                    {formatCurrency(revenueReport.summary.totalRevenue || 0)} ·{' '}
+                    {revenueReport.summary.invoiceCount || 0} {t('reports.invoices')}
+                  </span>
+                )}
+                {patientReport?.summary && (
+                  <span className='text-neutral-700 dark:text-neutral-300'>
+                    {t('reports.totalPatients')}: {patientReport.summary.totalPatients || 0} ·{' '}
+                    {t('reports.newPatients')}: {patientReport.summary.newPatients || 0}
+                  </span>
+                )}
+                {appointmentReport?.summary && (
+                  <span className='text-neutral-700 dark:text-neutral-300'>
+                    {t('reports.totalAppointments')}:{' '}
+                    {appointmentReport.summary.totalAppointments || 0} ·{' '}
+                    {t('reports.completionRate')}:{' '}
+                    {Math.round(appointmentReport.summary.completionRate || 0)}%
+                  </span>
+                )}
+                {inventoryReport?.summary && (
+                  <span className='text-neutral-700 dark:text-neutral-300'>
+                    {t('reports.totalItems')}: {inventoryReport.summary.totalItems || 0} ·{' '}
+                    {t('reports.lowStockItems')}: {inventoryReport.summary.lowStockCount || 0}
+                  </span>
+                )}
+                {doctorReport?.summary && (
+                  <span className='text-neutral-700 dark:text-neutral-300'>
+                    {t('reports.doctorPerformance')}: {doctorReport.summary.totalDoctors || 0}{' '}
+                    {t('reports.totalDoctors')} · {t('reports.completionRate')}:{' '}
+                    {Math.round(doctorReport.summary.averageCompletionRate || 0)}%
+                  </span>
+                )}
+                {!revenueReport?.summary &&
+                  !patientReport?.summary &&
+                  !appointmentReport?.summary &&
+                  !inventoryReport?.summary &&
+                  !doctorReport?.summary && (
+                    <span className='text-neutral-500'>{t('reports.loadingReportData')}</span>
+                  )}
+              </div>
+            </Card>
+          )}
 
           <Tabs
             tabs={[
@@ -975,9 +1024,7 @@ export default function ReportsPage() {
                   </Card>
                   <Card>
                     <div className='p-4'>
-                      <p className='text-sm text-neutral-600 mb-1'>
-                        {t('reports.totalDoctors')}
-                      </p>
+                      <p className='text-sm text-neutral-600 mb-1'>{t('reports.totalDoctors')}</p>
                       <p className='text-3xl font-bold text-neutral-800'>
                         {doctorReport.summary.totalDoctors || 0}
                       </p>
@@ -987,9 +1034,7 @@ export default function ReportsPage() {
                 {doctorReport.doctors && doctorReport.doctors.length > 0 && (
                   <Card>
                     <div className='flex items-center justify-between mb-4'>
-                      <h2 className='text-xl font-semibold'>
-                        {t('reports.doctorPerformance')}
-                      </h2>
+                      <h2 className='text-xl font-semibold'>{t('reports.doctorPerformance')}</h2>
                       {canExportData(user?.role) && (
                         <Button variant='secondary' size='md' onClick={() => exportCSV('doctors')}>
                           {t('reports.exportToCSV')}

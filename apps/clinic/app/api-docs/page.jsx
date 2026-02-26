@@ -4,6 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatures } from '@/contexts/FeatureContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
@@ -12,12 +13,16 @@ import { useEffect, useState } from 'react';
 export default function APIDocsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { hasAddon } = useFeatures();
   useEffect(() => {
     if (authLoading) return;
-    if (user?.role !== 'super_admin') {
+    const allowed = user?.role === 'super_admin' || hasAddon('apiIntegration');
+    if (!user) {
+      router.replace('/login');
+    } else if (!allowed) {
       router.replace('/dashboard');
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, hasAddon, router]);
   const { t } = useI18n();
   const [apiToken, setApiToken] = useState('');
   const [showToken, setShowToken] = useState(false);
