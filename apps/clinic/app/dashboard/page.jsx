@@ -1268,7 +1268,6 @@ export default function DashboardPage() {
                                       }}
                                       aria-label={t('common.accept')}
                                       title={t('common.accept')}
-                                      className='hover:scale-105 transition-transform'
                                     >
                                       <CheckIcon className='icon icon-xs' />
                                     </Button>
@@ -1284,7 +1283,6 @@ export default function DashboardPage() {
                                       }}
                                       aria-label={t('common.decline')}
                                       title={t('common.decline')}
-                                      className='hover:scale-105 transition-transform'
                                     >
                                       <XIcon className='icon icon-xs' />
                                     </Button>

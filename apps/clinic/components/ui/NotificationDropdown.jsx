@@ -45,8 +45,8 @@ export function NotificationDropdown({
       if (!dropdownRef.current) return;
 
       const rect = dropdownRef.current.getBoundingClientRect();
-      const dropdownWidth = 360;
-      const dropdownHeight = 400;
+      const dropdownWidth = 380;
+      const dropdownHeight = 480;
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const spaceOnRight = viewportWidth - rect.right;

@@ -29,12 +29,12 @@ export function useDoctorDashboardStats() {
   const fetchStats = useCallback(async () => {
     if (!user || !userId || userId === 'undefined') {
       setLoading(false);
-      return;
+      return Promise.resolve();
     }
     const role = (user.role || '').toLowerCase();
     if (role !== 'doctor') {
       setLoading(false);
-      return;
+      return Promise.resolve();
     }
 
     const cached = dashboardCache.getData('doctorStats', userId);

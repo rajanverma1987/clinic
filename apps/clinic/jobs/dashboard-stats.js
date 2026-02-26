@@ -242,12 +242,12 @@ async function updateAllTenantsStats() {
 function startDashboardStatsJob() {
   cron.schedule('*/5 * * * *', updateAllTenantsStats);
 
-  setTimeout(() => {
+  setTimeout(async () => {
+    await loadModules();
+    logger.info('Dashboard stats job started (every 5 minutes)');
     logger.info('Dashboard stats initial calculation started');
     updateAllTenantsStats();
   }, 5000);
-
-  logger.info('Dashboard stats job started (every 5 minutes)');
 }
 
 module.exports = { startDashboardStatsJob, calculateDashboardStats };

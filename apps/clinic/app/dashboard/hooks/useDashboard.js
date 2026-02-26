@@ -156,10 +156,7 @@ export function useDashboard({ enabled = true } = {}) {
     loading: !hasAnyData && isLoading,
     isRefreshing: isValidating && !isLoading,
     error,
-    refresh: () => {
-      mutate();
-      mutateSummary();
-    },
+    refresh: () => Promise.all([mutate(), mutateSummary()]),
     fetchDashboardLists: () => mutate(),
     removeFromQueue,
     hasFastStats: !!fastStats,

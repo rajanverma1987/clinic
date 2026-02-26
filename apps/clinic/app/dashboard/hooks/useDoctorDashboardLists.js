@@ -45,7 +45,7 @@ export function useDoctorDashboardLists() {
     // which changes whenever the auth context refreshes, causing cascading re-fetches.
     if (!userId || userId === 'undefined') {
       setLoading(false);
-      return;
+      return Promise.resolve();
     }
 
     const cached = dashboardCache.getData('doctorLists', userId);
@@ -67,7 +67,7 @@ export function useDoctorDashboardLists() {
           setDoctorId(currentDoctorId);
         } else {
           setLoading(false);
-          return;
+          return Promise.resolve();
         }
       }
 

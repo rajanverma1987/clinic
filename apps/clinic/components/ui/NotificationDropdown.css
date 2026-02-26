@@ -222,18 +222,21 @@
   }
 }
 
-/* Dropdown - Ultra Premium */
+/* Dropdown - Ultra Premium (fallbacks so content is always visible) */
 .NotificationDropdown-dropdown {
   position: fixed;
-  min-width: 380px;
-  max-width: calc(100vw - var(--space-8));
-  max-height: 520px;
+  width: 380px;
+  min-width: 320px;
+  max-width: min(400px, calc(100vw - 2rem));
+  min-height: 280px;
+  max-height: min(520px, calc(100vh - 6rem));
+  background: var(--color-neutral-50, #fafafa);
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--color-neutral-50) 99%, transparent) 0%,
-    color-mix(in srgb, var(--color-neutral-100) 98%, transparent) 100%
+    color-mix(in srgb, var(--color-neutral-50, #fafafa) 99%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-100, #f5f5f5) 98%, transparent) 100%
   );
-  border: 1px solid color-mix(in srgb, var(--color-neutral-200) 90%, transparent);
+  border: 1px solid var(--color-neutral-200, #e5e5e5);
   border-radius: var(--radius-2xl);
   z-index: var(--z-dropdown-menu-high, 10050);
   overflow: hidden;
@@ -264,7 +267,7 @@
   z-index: 1;
 }
 
-/* Subtle pattern overlay */
+/* Subtle pattern overlay – low opacity so content stays readable */
 .NotificationDropdown-dropdown::after {
   content: '';
   position: absolute;
@@ -272,6 +275,15 @@
   background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%231e4fb5' fill-opacity='0.015' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 0;
+  opacity: 0.5;
+}
+
+/* Keep all content above overlay */
+.NotificationDropdown-header,
+.NotificationDropdown-list,
+.NotificationDropdown-footer {
+  position: relative;
+  z-index: 1;
 }
 
 @keyframes slideDownPremium {
@@ -288,31 +300,62 @@
   }
 }
 
+/* Dark mode: ensure dropdown content is visible */
+.dark .NotificationDropdown-dropdown {
+  background: var(--color-neutral-800, #262626);
+  border-color: var(--color-neutral-600, #525252);
+}
+.dark .NotificationDropdown-header {
+  background: var(--color-neutral-800, #262626);
+  border-color: var(--color-neutral-600, #525252);
+}
+.dark .NotificationDropdown-list {
+  background: var(--color-neutral-800, #262626);
+}
+.dark .NotificationDropdown-item {
+  background: var(--color-neutral-800, #262626);
+  border-color: var(--color-neutral-700, #404040);
+}
+.dark .NotificationDropdown-item-title {
+  color: var(--color-neutral-100, #f5f5f5);
+}
+.dark .NotificationDropdown-item-message {
+  color: var(--color-neutral-300, #d4d4d4);
+}
+.dark .NotificationDropdown-item-time {
+  color: var(--color-neutral-400, #a3a3a3);
+}
+.dark .NotificationDropdown-title {
+  color: var(--color-neutral-100, #f5f5f5);
+}
+.dark .NotificationDropdown-empty-text,
+.dark .NotificationDropdown-empty-subtext {
+  color: var(--color-neutral-400, #a3a3a3);
+}
+
 /* Header - Premium */
 .NotificationDropdown-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-6);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-neutral-200) 60%, transparent);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--color-neutral-50) 50%, transparent) 0%,
-    color-mix(in srgb, var(--color-neutral-100) 30%, transparent) 100%
-  );
+  padding: var(--space-6, 1rem 1.25rem);
+  border-bottom: 1px solid var(--color-neutral-200, #e5e5e5);
+  background: var(--color-neutral-50, #fafafa);
+  flex-shrink: 0;
   position: relative;
   z-index: 2;
 }
 
 .NotificationDropdown-title {
-  font-size: var(--dashboard-h3, 20px);
-  font-weight: 800;
-  color: var(--color-neutral-900);
+  font-size: var(--dashboard-h3, 1.125rem);
+  font-weight: 700;
+  color: var(--color-neutral-900, #111827);
   letter-spacing: -0.02em;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: var(--gap-2);
+  gap: var(--gap-2, 0.5rem);
+  line-height: 1.3;
 }
 
 .NotificationDropdown-title::before {
@@ -349,11 +392,15 @@
   box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
 }
 
-/* List */
+/* List - scrollable area; must have min-height so content is visible */
 .NotificationDropdown-list {
   flex: 1;
+  min-height: 120px;
   overflow-y: auto;
+  overflow-x: hidden;
   max-height: 400px;
+  padding: 0;
+  background: var(--color-neutral-50, #fafafa);
 }
 
 .NotificationDropdown-list::-webkit-scrollbar {
@@ -379,10 +426,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 24px;
+  padding: 2rem 1.5rem;
+  min-height: 180px;
   text-align: center;
   position: relative;
-  z-index: 2;
+  z-index: 1;
 }
 
 .NotificationDropdown-empty-icon {
@@ -401,16 +449,16 @@
 }
 
 .NotificationDropdown-empty-text {
-  font-size: var(--text-body-lg);
+  font-size: 1rem;
   font-weight: 700;
-  color: var(--color-neutral-600);
-  margin: 0 0 var(--space-2) 0;
+  color: var(--color-neutral-600, #4b5563);
+  margin: 0 0 0.5rem 0;
   letter-spacing: -0.01em;
 }
 
 .NotificationDropdown-empty-subtext {
-  font-size: var(--text-body-sm);
-  color: var(--color-neutral-500);
+  font-size: 0.875rem;
+  color: var(--color-neutral-500, #6b7280);
   margin: 0;
   font-weight: 500;
 }
@@ -419,17 +467,22 @@
 .NotificationDropdown-item {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-6);
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-4, 0.75rem) var(--space-6, 1rem);
   width: 100%;
-  background: transparent;
+  min-height: 0;
+  background: #fff;
+  background: var(--color-neutral-50, #fafafa);
   border: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-neutral-200) 40%, transparent);
+  border-bottom: 1px solid var(--color-neutral-200, #e5e5e5);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.2s ease;
   text-align: left;
   position: relative;
   z-index: 2;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-neutral-800, #1f2937);
 }
 
 .NotificationDropdown-item::before {
@@ -526,27 +579,35 @@
 .NotificationDropdown-item-content {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .NotificationDropdown-item-title {
-  font-size: var(--text-body-sm);
+  font-size: 14px;
   font-weight: 600;
-  color: var(--color-neutral-900);
-  margin-bottom: var(--space-1);
-  line-height: 1.4;
+  color: var(--color-neutral-900, #111827);
+  margin: 0 0 4px 0;
+  line-height: 1.35;
+  overflow: visible;
+  display: block;
 }
 
 .NotificationDropdown-item-message {
   font-size: 13px;
-  color: var(--color-neutral-600);
-  line-height: 1.5;
-  margin-bottom: var(--space-1);
+  color: var(--color-neutral-600, #4b5563);
+  line-height: 1.45;
+  margin: 0 0 4px 0;
+  overflow: visible;
+  display: block;
 }
 
 .NotificationDropdown-item-time {
-  font-size: var(--text-body-xs);
-  color: var(--color-neutral-500);
+  font-size: 12px;
+  color: var(--color-neutral-500, #6b7280);
   font-weight: 500;
+  margin: 0;
 }
 
 .NotificationDropdown-item-dot {

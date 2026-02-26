@@ -266,8 +266,8 @@ export function NotificationCenter({
     >
       <div className='NotificationCenter-backdrop' aria-hidden />
       <div className='NotificationCenter-panel' onClick={(e) => e.stopPropagation()}>
-        <Card className='w-full h-full shadow-2xl border border-neutral-200 dark:border-neutral-600'>
-          <div className='p-4 border-b border-neutral-200 dark:border-neutral-600 flex items-center justify-between'>
+        <Card className='notification-center-card w-full h-full shadow-2xl border border-neutral-200 dark:border-neutral-600'>
+          <div className='p-4 border-b border-neutral-200 dark:border-neutral-600 flex items-center justify-between flex-shrink-0'>
             <h2 className='text-lg font-bold text-neutral-900 dark:text-neutral-100'>
               Notifications{' '}
               {unreadCount > 0 && (
@@ -295,7 +295,7 @@ export function NotificationCenter({
           </div>
 
           {/* Filters */}
-          <div className='p-3 border-b border-neutral-200 dark:border-neutral-600 flex gap-2 overflow-x-auto'>
+          <div className='p-3 border-b border-neutral-200 dark:border-neutral-600 flex gap-2 overflow-x-auto flex-shrink-0'>
             <Button
               type='button'
               variant={filter === 'all' ? 'primary' : 'ghost'}
@@ -344,7 +344,7 @@ export function NotificationCenter({
             })}
           </div>
 
-          <div className='max-h-96 overflow-y-auto'>
+          <div className='notification-center-scroll max-h-96'>
             {loading ? (
               <div className='p-8 text-center'>
                 <Loader type='inline' text={t('common.loading')} />

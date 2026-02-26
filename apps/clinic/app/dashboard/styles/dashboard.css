@@ -208,6 +208,25 @@
   font-size: 0.8125rem;
 }
 
+/* No zoom/scale on stats and tables – keep layout stable */
+.stat-card,
+.stat-card:hover,
+.dashboard-list-card,
+.dashboard-list-card:hover,
+.dashboard-card-cell,
+.dashboard-card-cell *,
+.kpi-table-wrap,
+.kpi-table-wrap table,
+.dashboard-list-item,
+.dashboard-list-item:hover {
+  transform: none !important;
+}
+.stat-card,
+.dashboard-list-card,
+.dashboard-card-cell {
+  transition: box-shadow 0.2s ease-out, border-color 0.2s ease-out;
+}
+
 /* Grid cell – min-height only; content can grow (standard dashboard pattern) */
 .dashboard-card-cell {
   min-height: var(--dashboard-card-min-height);

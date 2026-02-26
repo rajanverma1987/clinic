@@ -52,8 +52,25 @@
   width: 100%;
   max-width: 28rem;
   min-height: 12rem;
+  max-height: min(85vh, 32rem);
+  display: flex;
+  flex-direction: column;
   pointer-events: auto;
   animation: NotificationCenter-panel-in 0.25s ease-out forwards;
+}
+
+.NotificationCenter-panel .notification-center-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.NotificationCenter-panel .notification-center-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
