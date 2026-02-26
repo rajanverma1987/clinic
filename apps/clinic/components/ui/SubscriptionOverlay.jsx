@@ -12,10 +12,12 @@ import { useEffect, useState } from 'react';
  * Shows subscription status as a small, dismissible notification.
  *
  * Trial model:
- *  - Registered users get 3 months free, no card required.
- *  - During last 30 days of trial: show warning overlay.
+ *  - Registered users get 6 months free.
+ *  - During last 15 days of trial: show warning overlay (every day until last day).
  *  - After trial expired (no subscription): show expired overlay.
  */
+const TRIAL_WARNING_DAYS = 15; // Show trial-expiring message when ≤ this many days left
+
 export function SubscriptionOverlay({
   subscriptionStatus,
   expiryDate,
@@ -53,13 +55,20 @@ export function SubscriptionOverlay({
     setIsVisible(false);
   };
 
-  // Active and trial not expiring soon → no overlay
-  if (subscriptionStatus === 'ACTIVE' && (!trialDaysRemaining || trialDaysRemaining > 30)) {
+  // Active and trial not expiring soon (more than 15 days) → no overlay
+  if (
+    subscriptionStatus === 'ACTIVE' &&
+    (!trialDaysRemaining || trialDaysRemaining > TRIAL_WARNING_DAYS)
+  ) {
     return null;
   }
 
-  // No subscription + plenty of trial left → no overlay
-  if (!subscriptionStatus && trialDaysRemaining != null && trialDaysRemaining > 30) {
+  // No subscription + more than 15 days trial left → no overlay
+  if (
+    !subscriptionStatus &&
+    trialDaysRemaining != null &&
+    trialDaysRemaining > TRIAL_WARNING_DAYS
+  ) {
     return null;
   }
 
@@ -74,8 +83,12 @@ export function SubscriptionOverlay({
   let borderColor = 'border-primary-500 dark:border-primary-400';
   let textColor = 'text-neutral-700 dark:text-neutral-200';
 
-  // Active subscription, trial expiring within 30 days
-  if (subscriptionStatus === 'ACTIVE' && trialDaysRemaining != null && trialDaysRemaining <= 30) {
+  // Active subscription, trial expiring within 15 days (show until last day)
+  if (
+    subscriptionStatus === 'ACTIVE' &&
+    trialDaysRemaining != null &&
+    trialDaysRemaining <= TRIAL_WARNING_DAYS
+  ) {
     const days = trialDaysRemaining === 1 ? t('common.day') : t('common.days');
     message = t('subscription.bannerTrialExpiring')
       .replace('{{count}}', String(trialDaysRemaining))
@@ -85,8 +98,13 @@ export function SubscriptionOverlay({
     borderColor = 'border-amber-500 dark:border-amber-600';
     textColor = 'text-neutral-800 dark:text-amber-100';
   }
-  // No subscription + last 30 days of trial
-  else if (!subscriptionStatus && trialDaysRemaining != null && trialDaysRemaining <= 30 && trialDaysRemaining > 0) {
+  // No subscription + last 15 days of trial (show until last day)
+  else if (
+    !subscriptionStatus &&
+    trialDaysRemaining != null &&
+    trialDaysRemaining <= TRIAL_WARNING_DAYS &&
+    trialDaysRemaining > 0
+  ) {
     const days = trialDaysRemaining === 1 ? t('common.day') : t('common.days');
     message = t('subscription.bannerTrialExpiringSoon')
       .replace('{{count}}', String(trialDaysRemaining))

@@ -11,10 +11,12 @@ import { Button } from './Button.jsx';
  * Used in Layout for non–super-admin users. All copy is i18n.
  *
  * Trial model:
- *  - Registered users get 3 months free, no card required.
- *  - During trial (trialDaysRemaining > 0, no subscription): show soft info or warning.
+ *  - Registered users get 6 months free.
+ *  - During last 15 days of trial: show warning banner (every day until last day).
  *  - After trial expired (trialDaysRemaining <= 0, no subscription): show expired banner.
  */
+const TRIAL_WARNING_DAYS = 15; // Show trial-expiring message when ≤ this many days left
+
 export function SubscriptionExpiredBanner({
   subscriptionStatus,
   expiryDate,
@@ -35,13 +37,20 @@ export function SubscriptionExpiredBanner({
 
   const goToSubscription = () => router.push('/subscription');
 
-  // Active subscription, trial not expiring soon → no banner needed
-  if (subscriptionStatus === 'ACTIVE' && (!trialDaysRemaining || trialDaysRemaining > 30)) {
+  // Active subscription, trial not expiring soon (more than 15 days) → no banner
+  if (
+    subscriptionStatus === 'ACTIVE' &&
+    (!trialDaysRemaining || trialDaysRemaining > TRIAL_WARNING_DAYS)
+  ) {
     return null;
   }
 
-  // Active subscription, trial expiring within 30 days → warning
-  if (subscriptionStatus === 'ACTIVE' && trialDaysRemaining != null && trialDaysRemaining <= 30) {
+  // Active subscription, trial expiring within 15 days → warning (show until last day)
+  if (
+    subscriptionStatus === 'ACTIVE' &&
+    trialDaysRemaining != null &&
+    trialDaysRemaining <= TRIAL_WARNING_DAYS
+  ) {
     const days = trialDaysRemaining === 1 ? t('common.day') : t('common.days');
     const message = t('subscription.bannerTrialExpiring')
       .replace('{{count}}', String(trialDaysRemaining))
@@ -70,7 +79,7 @@ export function SubscriptionExpiredBanner({
   // No subscription + still in free trial (days remaining > 0)
   if (!subscriptionStatus && trialDaysRemaining != null && trialDaysRemaining > 0) {
     const days = trialDaysRemaining === 1 ? t('common.day') : t('common.days');
-    const daysLeft = trialDaysRemaining <= 30;
+    const daysLeft = trialDaysRemaining <= TRIAL_WARNING_DAYS;
     const message = daysLeft
       ? t('subscription.bannerTrialExpiringSoon')
           .replace('{{count}}', String(trialDaysRemaining))

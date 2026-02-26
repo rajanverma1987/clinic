@@ -473,6 +473,8 @@ export default function SubscriptionPage() {
 
   const hasActiveSubscription =
     subscription && subscription.planId && typeof subscription.planId === 'object';
+  /** Add-ons only available with a paid plan (not Free Trial / $0). */
+  const hasPaidPlan = hasActiveSubscription && (subscription.planId?.price ?? 0) > 0;
 
   // No plans at all: empty state
   if (uniquePlans.length === 0) {
@@ -544,21 +546,33 @@ export default function SubscriptionPage() {
               >
                 <div className='sub-detail-row'>
                   <span className='sub-detail-label'>{t('subscription.status')}</span>
-                  <Tag variant={getStatusColor(subscription.status)}>{subscription.status}</Tag>
+                  <Tag variant={getStatusColor(subscription.status)}>
+                    {subscription.status
+                      ? subscription.status.charAt(0).toUpperCase() +
+                        subscription.status.slice(1).toLowerCase()
+                      : '—'}
+                  </Tag>
                 </div>
 
                 <div className='sub-detail-row'>
                   <span className='sub-detail-label'>{t('subscriptionSpec.plan')}</span>
                   <span className='sub-detail-value font-semibold'>
-                    {subscription.planId?.name || '—'}
+                    {(() => {
+                      const rawName = subscription.planId?.name;
+                      const canonical = PLAN_DISPLAY_NAMES[rawName] || rawName;
+                      const displayName =
+                        t(`subscriptionSpec.planName${canonical}`) || canonical || '—';
+                      const isFree = (subscription.planId?.price ?? 0) === 0;
+                      return isFree ? `${displayName} (${t('pricing.free')})` : displayName;
+                    })()}
                   </span>
                 </div>
 
-                {subscription.planId && (
+                {subscription.planId && (subscription.planId?.price ?? 0) > 0 && (
                   <div className='sub-detail-row'>
                     <span className='sub-detail-label'>{t('subscription.monthlyCost')}</span>
                     <span className='sub-detail-value'>
-                      {formatCurrency(subscription.planId?.price || 0)} /{' '}
+                      {formatCurrency(subscription.planId.price)} /{' '}
                       {subscription.planId?.billingCycle === 'YEARLY'
                         ? t('pricing.perYear')
                         : t('pricing.perMonth')}
@@ -566,17 +580,19 @@ export default function SubscriptionPage() {
                   </div>
                 )}
 
-                {subscription.currentPeriodStart && subscription.currentPeriodEnd && (
-                  <div className='sub-detail-row'>
-                    <span className='sub-detail-label'>{t('subscription.currentPeriod')}</span>
-                    <span className='sub-detail-value'>
-                      {formatDate(subscription.currentPeriodStart)} –{' '}
-                      {formatDate(subscription.currentPeriodEnd)}
-                    </span>
-                  </div>
-                )}
+                {subscription.currentPeriodStart &&
+                  subscription.currentPeriodEnd &&
+                  (subscription.planId?.price ?? 0) > 0 && (
+                    <div className='sub-detail-row'>
+                      <span className='sub-detail-label'>{t('subscription.currentPeriod')}</span>
+                      <span className='sub-detail-value'>
+                        {formatDate(subscription.currentPeriodStart)} –{' '}
+                        {formatDate(subscription.currentPeriodEnd)}
+                      </span>
+                    </div>
+                  )}
 
-                {subscription.nextBillingDate && (
+                {subscription.nextBillingDate && (subscription.planId?.price ?? 0) > 0 && (
                   <div className='sub-detail-row'>
                     <span className='sub-detail-label'>{t('subscription.nextBillingDate')}</span>
                     <span className='sub-detail-value'>
@@ -594,7 +610,14 @@ export default function SubscriptionPage() {
                       )}
                       .{' '}
                       {t('subscription.afterTrialPlanContinues')
-                        .replace('{{planName}}', subscription.planId?.name || '')
+                        .replace(
+                          '{{planName}}',
+                          (() => {
+                            const rawName = subscription.planId?.name;
+                            const canonical = PLAN_DISPLAY_NAMES[rawName] || rawName;
+                            return t(`subscriptionSpec.planName${canonical}`) || canonical || '';
+                          })(),
+                        )
                         .replace(
                           '{{amount}}',
                           subscription.planId ? formatCurrency(subscription.planId.price || 0) : '',
@@ -650,22 +673,33 @@ export default function SubscriptionPage() {
               </Card>
             </div>
 
-            {/* Add-ons — only shown when subscribed */}
+            {/* Add-ons — only shown when on a paid plan */}
             <div className='dashboard-section sub-addons-col sub-section-compact'>
               <h2 className='sub-section-title'>
                 <span className='sub-accent' />
                 {t('subscriptionSpec.addOns')}
               </h2>
               <Card className='sub-details-card-inner'>
-                <p
-                  className='sub-section-desc'
-                  style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}
-                >
-                  {t('subscriptionSpec.addOnsSubtitle')}
-                </p>
-                <div className='content-grid-2 content-grid-gap-3'>
-                  {ADDONS.map(renderAddonCard)}
-                </div>
+                {hasPaidPlan ? (
+                  <>
+                    <p
+                      className='sub-section-desc'
+                      style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}
+                    >
+                      {t('subscriptionSpec.addOnsSubtitle')}
+                    </p>
+                    <div className='content-grid-2 content-grid-gap-3'>
+                      {ADDONS.map(renderAddonCard)}
+                    </div>
+                  </>
+                ) : (
+                  <p
+                    className='sub-section-desc text-neutral-600 dark:text-neutral-400'
+                    style={{ marginTop: 0 }}
+                  >
+                    {t('subscription.addOnsPaidPlanOnly')}
+                  </p>
+                )}
               </Card>
             </div>
           </div>
@@ -685,14 +719,6 @@ export default function SubscriptionPage() {
                 ? t('subscription.upgradeDescription')
                 : t('subscription.chooseDescription')}
             </p>
-            <p className='sub-section-desc sub-section-desc--trial'>
-              {t('subscription.allPlansIncludeTrial')}
-            </p>
-            {displayPlans.some((p) => (Number(p.price) || 0) > 0) && (
-              <p className='sub-payment-security-note' role='status'>
-                {t('subscription.securePaymentNote')}
-              </p>
-            )}
 
             <div className='content-grid-3 content-grid-gap-6'>
               {displayPlans.map((plan) => {
@@ -724,6 +750,7 @@ export default function SubscriptionPage() {
                     maxPatients={plan.maxPatients}
                     maxStorageGB={plan.maxStorageGB}
                     isPopular={plan.isPopular}
+                    isBestValue={canonicalName === 'Smart Clinic'}
                     yearlySaveAmount={YEARLY_SAVE[canonicalName]}
                     trialDays={PLAN_TRIAL_DAYS[canonicalName] ?? 90}
                     displayCurrency={displayCurrency}
@@ -763,9 +790,6 @@ export default function SubscriptionPage() {
             >
               {paymentModalPlan && (
                 <div className='sub-payment-modal-content'>
-                  <p className='sub-payment-modal-note' role='status'>
-                    {t('subscription.securePaymentNote')}
-                  </p>
                   <div className='sub-payment-modal-buttons'>
                     <Button
                       variant='primary'

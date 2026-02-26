@@ -6,7 +6,7 @@
  */
 
 /** Plan slugs – matches DB plan names exactly. */
-export const PLAN_SLUGS = ['FREE', 'Starter', 'Basic', 'Smart Clinic', 'Enterprise'];
+export const PLAN_SLUGS = ['Starter', 'Basic', 'Smart Clinic', 'Enterprise'];
 
 /** Plans shown in comparison table. Basic: 6-month free trial; Smart Clinic & Enterprise: 3-month free trial. */
 export const COMPARISON_TABLE_PLAN_SLUGS = ['Basic', 'Smart Clinic', 'Enterprise'];
@@ -18,7 +18,7 @@ export const PLAN_TRIAL_DAYS = {
   Enterprise: 90,      // 3 months
   Starter: 0,          // always-free tier, no countdown
   'Free Trial': 0,     // legacy name for Starter
-  Free: 0,
+  FREE: 0,             // legacy DB value → treated as Starter
   SOLO: 180,           // legacy Basic
   Core: 180,           // legacy Basic
   CLINIC: 90,          // legacy Smart Clinic
@@ -29,7 +29,6 @@ export const PLAN_TRIAL_DAYS = {
 
 /** Plan names for admin and subscription page */
 export const AVAILABLE_PLAN_NAMES_FOR_ASSIGNMENT = [
-  'FREE',
   'Starter',
   'Basic',
   'Smart Clinic',
@@ -38,7 +37,7 @@ export const AVAILABLE_PLAN_NAMES_FOR_ASSIGNMENT = [
 
 /** Display names (legacy → current) */
 export const PLAN_DISPLAY_NAMES = {
-  FREE: 'Free',
+  FREE: 'Starter',      // legacy DB value → Starter
   Starter: 'Starter',
   'Free Trial': 'Starter',
   Basic: 'Basic',

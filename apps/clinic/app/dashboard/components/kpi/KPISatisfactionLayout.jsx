@@ -67,9 +67,12 @@ export function GaugeCard({ title, items, loading }) {
     return (
       <Card className='kpi-card kpi-card--gauges p-6 min-h-[280px]'>
         <div className='skeleton skeleton-text w-48 h-5 mb-6' />
-        <div className='flex justify-between gap-6'>
+        <div className='kpi-gauges-row flex flex-wrap justify-center gap-6'>
           {[1, 2, 3].map((i) => (
-            <div key={i} className='skeleton flex-1 max-w-[140px] aspect-[2/1] rounded-lg' />
+            <div
+              key={i}
+              className='skeleton flex-1 min-w-[100px] max-w-[140px] aspect-[2/1] rounded-lg'
+            />
           ))}
         </div>
       </Card>
@@ -80,7 +83,7 @@ export function GaugeCard({ title, items, loading }) {
       <h3 className='kpi-card__title text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-6'>
         {title}
       </h3>
-      <div className='flex justify-between gap-4 flex-1 items-start'>
+      <div className='kpi-gauges-row flex flex-wrap justify-center sm:justify-between gap-6 sm:gap-4 flex-1 items-start'>
         {(items || []).map((item, i) => (
           <Gauge key={i} value={item.value} label={item.label} unit={item.unit || 'mins'} />
         ))}
@@ -158,33 +161,35 @@ export function DonutCard({ title, segments, centerLabel, loading }) {
       <h3 className='kpi-card__title text-base font-semibold text-neutral-900 dark:text-neutral-100 mb-5 text-center'>
         {title}
       </h3>
-      <div className='kpi-donut relative flex justify-center items-center flex-1 min-h-[200px]'>
-        <svg width={size} height={size} className='-rotate-90 shrink-0'>
-          {normalized.map((seg, i) => {
-            const ratio = seg.value / 100;
-            const dash = ratio * C;
-            const segOffset = offset;
-            offset -= dash;
-            return (
-              <circle
-                key={i}
-                cx={cx}
-                cy={cx}
-                r={r}
-                fill='none'
-                stroke={seg.color || 'var(--color-primary-500)'}
-                strokeWidth='20'
-                strokeDasharray={`${dash} ${C}`}
-                strokeDashoffset={-segOffset + C}
-                strokeLinecap='round'
-              />
-            );
-          })}
-        </svg>
-        <div className='kpi-donut__center absolute inset-0 flex items-center justify-center pointer-events-none'>
-          <span className='text-body-sm font-semibold text-neutral-700 dark:text-neutral-300 text-center px-4'>
-            {centerLabel}
-          </span>
+      <div className='kpi-donut flex flex-col items-center flex-1 min-h-[200px]'>
+        <div className='kpi-donut__wrap relative w-[200px] h-[200px] shrink-0'>
+          <svg width={size} height={size} className='-rotate-90 block'>
+            {normalized.map((seg, i) => {
+              const ratio = seg.value / 100;
+              const dash = ratio * C;
+              const segOffset = offset;
+              offset -= dash;
+              return (
+                <circle
+                  key={i}
+                  cx={cx}
+                  cy={cx}
+                  r={r}
+                  fill='none'
+                  stroke={seg.color || 'var(--color-primary-500)'}
+                  strokeWidth='20'
+                  strokeDasharray={`${dash} ${C}`}
+                  strokeDashoffset={-segOffset + C}
+                  strokeLinecap='round'
+                />
+              );
+            })}
+          </svg>
+          <div className='kpi-donut__center absolute inset-0 flex items-center justify-center pointer-events-none'>
+            <span className='text-body-sm font-semibold text-neutral-700 dark:text-neutral-300 text-center px-3 max-w-[120px]'>
+              {centerLabel}
+            </span>
+          </div>
         </div>
       </div>
       <div className='kpi-donut__legend mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2'>

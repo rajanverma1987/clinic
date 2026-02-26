@@ -565,7 +565,9 @@ export async function addAddon(subscriptionId, tenantId, input) {
   const subscription = await Subscription.findOne({
     _id: subscriptionId,
     tenantId,
-  });
+  })
+    .populate('planId', 'name price')
+    .lean();
   if (!subscription) {
     throw new Error('Subscription not found');
   }
@@ -575,26 +577,36 @@ export async function addAddon(subscriptionId, tenantId, input) {
   ) {
     throw new Error('Add-ons can only be added to an active or pending subscription');
   }
+  const planPrice = subscription.planId?.price ?? 0;
+  if (typeof planPrice !== 'number' || planPrice <= 0) {
+    throw new Error(
+      'Add-ons are only available with a paid plan. Please upgrade from Free Trial first.',
+    );
+  }
+
+  // Re-fetch as document to mutate and save (lean() was for plan check)
+  const subDoc = await Subscription.findOne({ _id: subscriptionId, tenantId });
+  if (!subDoc) throw new Error('Subscription not found');
 
   const addonKey = (input.addonKey || '').trim();
   if (!ADDON_KEYS.includes(addonKey)) {
     throw new Error(`Invalid add-on: ${addonKey}`);
   }
 
-  const existing = (subscription.addons || []).find((a) => a.addonKey === addonKey);
+  const existing = (subDoc.addons || []).find((a) => a.addonKey === addonKey);
   if (existing) {
     throw new Error('This add-on is already on your subscription');
   }
 
-  subscription.addons = subscription.addons || [];
-  subscription.addons.push({
+  subDoc.addons = subDoc.addons || [];
+  subDoc.addons.push({
     addonKey,
     quantity: typeof input.quantity === 'number' && input.quantity >= 1 ? input.quantity : 1,
     option: typeof input.option === 'string' ? input.option.trim() : undefined,
   });
-  await subscription.save();
+  await subDoc.save();
 
-  return subscription;
+  return subDoc;
 }
 
 /**

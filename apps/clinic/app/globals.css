@@ -2721,6 +2721,25 @@ svg.icon.icon-hero {
   color: #fff;
   box-shadow: var(--shadow-md);
 }
+.sub-plan-card__badge--best-value {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+.sub-plan-card--best-value {
+  border-color: #10b981;
+  border-width: 2px;
+  background: linear-gradient(180deg, #ecfdf5 0%, var(--color-surface, #fff) 35%);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.14);
+}
+.dark .sub-plan-card--best-value {
+  background: linear-gradient(180deg, color-mix(in srgb, #10b981 15%, transparent) 0%, var(--color-surface-elevated) 35%);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  border-color: #34d399;
+}
+.sub-plan-card--best-value:hover {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2);
+}
 .sub-plan-card__body {
   display: flex;
   flex-direction: column;

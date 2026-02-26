@@ -239,7 +239,9 @@ async function updateAllTenantsStats() {
 /**
  * Start the dashboard stats background job
  */
-function startDashboardStatsJob() {
+async function startDashboardStatsJob() {
+  await loadModules(); // ensure logger and deps are ready before use
+
   cron.schedule('*/5 * * * *', updateAllTenantsStats);
 
   setTimeout(() => {
