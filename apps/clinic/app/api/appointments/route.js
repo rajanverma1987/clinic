@@ -84,6 +84,10 @@ async function getHandler(req, user) {
   try {
     const { searchParams } = new URL(req.url);
 
+    const locale =
+      searchParams.get('locale') ||
+      req.headers.get('accept-language')?.split(',')[0]?.trim()?.slice(0, 2) ||
+      undefined;
     const queryParams = {
       page: searchParams.get('page') || '1',
       limit: searchParams.get('limit') || '50', // Default to 50 for appointments
@@ -96,6 +100,7 @@ async function getHandler(req, user) {
       date: searchParams.get('date') || undefined,
       isActive: searchParams.get('isActive') || undefined,
       since: searchParams.get('since') || undefined, // For incremental updates
+      locale: locale || undefined, // es/ar for localized patient names
     };
 
     const validationResult = appointmentQuerySchema.safeParse(queryParams);
@@ -126,9 +131,10 @@ async function getHandler(req, user) {
       !queryData.endDate &&
       (queryData.date || queryData.status === 'scheduled') &&
       parseInt(queryData.limit) <= 10;
+    const cacheLocale = (queryData.locale && String(queryData.locale).slice(0, 2)) || '';
     const result = isDashboardQuery
       ? await optimizedCacheManager.getOrFetch(
-          `appointments:dashboard:${user.tenantId}:${queryData.date || ''}:${queryData.status || ''}`,
+          `appointments:dashboard:${user.tenantId}:${queryData.date || ''}:${queryData.status || ''}:${cacheLocale}`,
           () => listAppointments(queryData, user.tenantId, user.userId),
           30000,
         )

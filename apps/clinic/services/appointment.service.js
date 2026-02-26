@@ -723,7 +723,21 @@ export async function listAppointments(query, tenantId, userId) {
         localField: 'patientId',
         foreignField: '_id',
         as: 'patient',
-        pipeline: [{ $project: { firstName: 1, lastName: 1, patientId: 1, phone: 1, email: 1 } }],
+        pipeline: [
+          {
+            $project: {
+              firstName: 1,
+              lastName: 1,
+              firstName_es: 1,
+              lastName_es: 1,
+              firstName_ar: 1,
+              lastName_ar: 1,
+              patientId: 1,
+              phone: 1,
+              email: 1,
+            },
+          },
+        ],
       },
     },
     {
@@ -747,9 +761,27 @@ export async function listAppointments(query, tenantId, userId) {
   ];
 
   try {
-    const appointments = await measureTime(`listAppointments-${tenantId}`, () =>
+    let appointments = await measureTime(`listAppointments-${tenantId}`, () =>
       Appointment.aggregate(pipeline),
     );
+
+    // Apply localized patient names when locale is requested (es or ar)
+    const locale = query.locale && String(query.locale).toLowerCase().slice(0, 2);
+    if (locale === 'es' || locale === 'ar') {
+      const firstKey = `firstName_${locale}`;
+      const lastKey = `lastName_${locale}`;
+      appointments = appointments.map((apt) => {
+        const p = apt.patientId;
+        if (p && (p[firstKey] || p[lastKey])) {
+          apt.patientId = {
+            ...p,
+            firstName: p[firstKey]?.trim() || p.firstName,
+            lastName: p[lastKey]?.trim() || p.lastName,
+          };
+        }
+        return apt;
+      });
+    }
 
     // Audit list access
     await AuditLogger.auditWrite(

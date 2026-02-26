@@ -149,9 +149,9 @@ export function NotificationDropdown({
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return t('notifications.justNow');
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 60) return t('notifications.minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('notifications.hoursAgo', { count: diffHours });
+    if (diffDays < 7) return t('notifications.daysAgo', { count: diffDays });
     return notificationDate.toLocaleDateString();
   };
 
@@ -233,10 +233,10 @@ export function NotificationDropdown({
         >
           {/* Header */}
           <div className='NotificationDropdown-header'>
-            <h3 className='NotificationDropdown-title'>Notifications</h3>
+            <h3 className='NotificationDropdown-title'>{t('notifications.title')}</h3>
             {unreadCount > 0 && (
               <Button variant='link' size='xs' onClick={handleMarkAllAsRead}>
-                Mark all as read
+                {t('notifications.markAllAsRead')}
               </Button>
             )}
           </div>

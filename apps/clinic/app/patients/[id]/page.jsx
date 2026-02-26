@@ -160,6 +160,10 @@ export default function PatientDetailPage() {
         const fieldsToCheck = [
           'firstName',
           'lastName',
+          'firstName_es',
+          'lastName_es',
+          'firstName_ar',
+          'lastName_ar',
           'dateOfBirth',
           'gender',
           'bloodGroup',
@@ -404,6 +408,60 @@ export default function PatientDetailPage() {
                           )}
                         </div>
                       </div>
+                      {isEditing && (
+                        <div className='grid grid-cols-2 gap-4 pt-2 border-t border-neutral-200'>
+                          <div>
+                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
+                              {t('patients.firstNameEs')}
+                            </label>
+                            <Input
+                              value={formData.firstName_es || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, firstName_es: e.target.value })
+                              }
+                              placeholder={t('patients.firstNameEs')}
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
+                              {t('patients.lastNameEs')}
+                            </label>
+                            <Input
+                              value={formData.lastName_es || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, lastName_es: e.target.value })
+                              }
+                              placeholder={t('patients.lastNameEs')}
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
+                              {t('patients.firstNameAr')}
+                            </label>
+                            <Input
+                              value={formData.firstName_ar || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, firstName_ar: e.target.value })
+                              }
+                              placeholder={t('patients.firstNameAr')}
+                              dir='rtl'
+                            />
+                          </div>
+                          <div>
+                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
+                              {t('patients.lastNameAr')}
+                            </label>
+                            <Input
+                              value={formData.lastName_ar || ''}
+                              onChange={(e) =>
+                                setFormData({ ...formData, lastName_ar: e.target.value })
+                              }
+                              placeholder={t('patients.lastNameAr')}
+                              dir='rtl'
+                            />
+                          </div>
+                        </div>
+                      )}
                       <div>
                         <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
                           Patient ID

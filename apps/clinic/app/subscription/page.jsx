@@ -656,12 +656,14 @@ export default function SubscriptionPage() {
                 return (
                   <SubscriptionCard
                     key={plan._id || plan.name}
-                    name={plan.name}
-                    description={plan.description}
+                    name={t(`subscriptionSpec.planName${plan.name}`) || plan.name}
+                    description={t(`subscriptionSpec.planDesc${plan.name}`) || plan.description}
                     price={plan.price}
                     currency={plan.currency}
                     billingCycle={plan.billingCycle}
-                    features={CARD_FEATURES_BY_PLAN[plan.name] || dedupeFeatures(plan.features)}
+                    features={(CARD_FEATURES_BY_PLAN[plan.name] || []).length
+                      ? (CARD_FEATURES_BY_PLAN[plan.name] || []).map((key) => t(key))
+                      : dedupeFeatures(plan.features)}
                     maxUsers={plan.maxUsers}
                     maxPatients={plan.maxPatients}
                     maxStorageGB={plan.maxStorageGB}
