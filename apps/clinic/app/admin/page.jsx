@@ -6,6 +6,7 @@
  * Per Super_Admin.md: tenant-level only; no marketplace concepts (no doctor verifications, reviews, complaints, content).
  */
 
+import { AdminSkeleton } from '@/app/admin/components/AdminSkeleton';
 import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -116,7 +117,17 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <Layout title={t('admin.superAdminDashboard')} loading loadingText={t('common.loading')} />
+      <Layout
+        title={t('admin.superAdminDashboard')}
+        subtitle={t('admin.description')}
+        loading
+        loadingText={t('common.loading')}
+        skeleton={
+          <div className='admin-page-content'>
+            <AdminSkeleton />
+          </div>
+        }
+      />
     );
   }
 

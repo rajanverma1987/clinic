@@ -23,8 +23,9 @@ export function DashboardSkeleton({ isDoctor = false }) {
     ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 dashboard-grid'
     : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 dashboard-grid';
 
+  /* Same wrapper as tab content: single dashboard-container from page; skeleton uses dashboard-skeleton-root for padding. */
   return (
-    <div className='dashboard-container dashboard-skeleton-root'>
+    <div className='dashboard-skeleton-root'>
       {/* 1. Alerts / Pending Tasks – same as real: grid 3 cols, one card spans 2 */}
       <div className='dashboard-section'>
         <div className='grid grid-cols-1 lg:grid-cols-3 dashboard-grid'>

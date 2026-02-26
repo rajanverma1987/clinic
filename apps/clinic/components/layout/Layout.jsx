@@ -21,6 +21,7 @@ import { Sidebar } from './Sidebar.jsx';
  * render PageHeader above children so admin and other pages get the same sticky header
  * without each page importing PageHeader.
  * When loading=true, shows section loader in content area (sidebar + header stay visible).
+ * When loading=true and skeleton is provided, shows layout-matched skeleton instead of spinner.
  */
 export function Layout({
   children,
@@ -30,6 +31,7 @@ export function Layout({
   actionButtons,
   loading = false,
   loadingText,
+  skeleton,
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -172,16 +174,22 @@ export function Layout({
                 onOpenSearch={() => setShowSearch(true)}
               />
             )}
-            {/* Page-specific loading: loader in content area only */}
+            {/* Page-specific loading: layout-matched skeleton or section loader */}
             {loading ? (
-              <div
-                className='flex items-center justify-center min-h-[calc(100vh-12rem)]'
-                role='status'
-                aria-busy='true'
-                aria-label={loadingText ?? t('common.loading')}
-              >
-                <Loader type='section' size='lg' text={loadingText ?? t('common.loading')} />
-              </div>
+              skeleton ? (
+                <div role='status' aria-busy='true' aria-label={loadingText ?? t('common.loading')}>
+                  {skeleton}
+                </div>
+              ) : (
+                <div
+                  className='flex items-center justify-center min-h-[calc(100vh-12rem)]'
+                  role='status'
+                  aria-busy='true'
+                  aria-label={loadingText ?? t('common.loading')}
+                >
+                  <Loader type='section' size='lg' text={loadingText ?? t('common.loading')} />
+                </div>
+              )
             ) : (
               children
             )}
