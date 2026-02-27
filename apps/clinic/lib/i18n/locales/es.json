@@ -3353,6 +3353,7 @@
     "choosePaymentMethod": "Elegir método de pago",
     "payWithCard": "Pagar con tarjeta",
     "payWithPayPal": "Pagar con PayPal",
+    "startFreeTrialNoCard": "Iniciar prueba gratuita de {{count}} meses (sin tarjeta)",
     "securePaymentNote": "Pago seguro con PayPal. Sus datos de pago no se almacenan en nuestros servidores.",
     "plansAndServices": "Planes y servicios",
     "plansAndServicesDescription": "Cada plan incluye distintos servicios y límites. Compara las funciones y elige el que mejor se adapte.",

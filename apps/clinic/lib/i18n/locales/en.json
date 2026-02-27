@@ -3377,6 +3377,7 @@
     "choosePaymentMethod": "Choose payment method",
     "payWithCard": "Pay with card",
     "payWithPayPal": "Pay with PayPal",
+    "startFreeTrialNoCard": "Start {{count}}-month free trial (no card)",
     "securePaymentNote": "Secure payment via PayPal. No card required during your free trial.",
     "plansAndServices": "Plans & services",
     "plansAndServicesDescription": "Each plan includes different services and limits. Compare features and choose the one that fits your practice.",

@@ -143,6 +143,40 @@ export default function SubscriptionPage() {
     }
   };
 
+  /** Start free trial (no card): Basic 6 months, Smart Clinic / Enterprise 3 months. */
+  const handleStartFreeTrial = async (planId) => {
+    if (!user) return;
+    const plan = availablePlans.find((p) => p._id === planId);
+    if (!plan) {
+      showError(t('subscription.updateFailed'));
+      return;
+    }
+    setUpgrading(true);
+    setUpgradingMethod('trial');
+    try {
+      const response = await apiClient.post('/subscriptions', {
+        planId,
+        customerEmail: user.email,
+        customerName: `${user.firstName} ${user.lastName}`.trim() || user.email,
+        trialOnly: true,
+      });
+      if (response.success && response.data) {
+        showSuccess(t('subscription.subscriptionUpdated'));
+        setPaymentModalPlan(null);
+        fetchSubscription();
+        if (refreshFeatures) refreshFeatures();
+      } else {
+        showError(response.error?.message || t('subscription.updateFailed'));
+      }
+    } catch (error) {
+      logger.error('Failed to start free trial', error);
+      showError(error.message || t('subscription.updateFailed'));
+    } finally {
+      setUpgrading(false);
+      setUpgradingMethod(null);
+    }
+  };
+
   const handleUpgrade = async (planId, paymentMethod = 'paypal') => {
     if (!user) return;
     const plan = availablePlans.find((p) => p._id === planId);
@@ -777,33 +811,51 @@ export default function SubscriptionPage() {
               })}
             </div>
 
-            {/* PayPal Payment Modal */}
+            {/* Plan choice modal: Start free trial (no card) or Pay with PayPal */}
             <Modal
               isOpen={!!paymentModalPlan}
               onClose={() => !upgrading && setPaymentModalPlan(null)}
               title={
                 paymentModalPlan
                   ? `${t('subscription.subscribe')} – ${paymentModalPlan.name}`
-                  : t('subscription.payWithPayPal')
+                  : t('subscription.choosePlan')
               }
               size='sm'
             >
-              {paymentModalPlan && (
-                <div className='sub-payment-modal-content'>
-                  <div className='sub-payment-modal-buttons'>
-                    <Button
-                      variant='primary'
-                      size='md'
-                      className='sub-payment-modal-btn'
-                      onClick={() => handlePaymentWithMethod(paymentModalPlan._id, 'paypal')}
-                      disabled={upgrading}
-                      isLoading={upgradingMethod === 'paypal'}
-                    >
-                      {t('subscription.payWithPayPal')}
-                    </Button>
+              {paymentModalPlan && (() => {
+                const canonicalName = PLAN_DISPLAY_NAMES[paymentModalPlan.name] || paymentModalPlan.name;
+                const trialDays = PLAN_TRIAL_DAYS[canonicalName] ?? PLAN_TRIAL_DAYS[paymentModalPlan.name] ?? 0;
+                const trialMonths = Math.round(trialDays / 30);
+                const showTrialNoCard = trialMonths > 0;
+                return (
+                  <div className='sub-payment-modal-content'>
+                    <div className='sub-payment-modal-buttons' style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                      {showTrialNoCard && (
+                        <Button
+                          variant='primary'
+                          size='md'
+                          className='sub-payment-modal-btn'
+                          onClick={() => handleStartFreeTrial(paymentModalPlan._id)}
+                          disabled={upgrading}
+                          isLoading={upgradingMethod === 'trial'}
+                        >
+                          {t('subscription.startFreeTrialNoCard', { count: trialMonths }).replace('{{count}}', String(trialMonths))}
+                        </Button>
+                      )}
+                      <Button
+                        variant={showTrialNoCard ? 'secondary' : 'primary'}
+                        size='md'
+                        className='sub-payment-modal-btn'
+                        onClick={() => handlePaymentWithMethod(paymentModalPlan._id, 'paypal')}
+                        disabled={upgrading}
+                        isLoading={upgradingMethod === 'paypal'}
+                      >
+                        {t('subscription.payWithPayPal')}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </Modal>
           </div>
         )}

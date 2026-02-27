@@ -6,11 +6,11 @@ import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { useI18n } from '@/contexts/I18nContext';
 
 export default function AboutPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
-      <main className='flex-1' style={{ paddingTop: '120px' }}>
+      <main className='flex-1' style={{ paddingTop: '120px' }} key={locale}>
         <div
           className='max-w-4xl mx-auto'
           style={{ paddingLeft: '32px', paddingRight: '32px', paddingBottom: '64px' }}

@@ -3353,6 +3353,7 @@
     "choosePaymentMethod": "اختر طريقة الدفع",
     "payWithCard": "الدفع بالبطاقة",
     "payWithPayPal": "الدفع عبر PayPal",
+    "startFreeTrialNoCard": "ابدأ تجربة مجانية {{count}} أشهر (بدون بطاقة)",
     "securePaymentNote": "دفع آمن عبر PayPal. لا يتم تخزين بيانات الدفع على خوادمنا.",
     "plansAndServices": "الخطط والخدمات",
     "plansAndServicesDescription": "تتضمن كل خطة خدمات وحدوداً مختلفة. قارن الميزات واختر ما يناسب عيادتك.",

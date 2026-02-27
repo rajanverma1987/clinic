@@ -1559,9 +1559,9 @@
   },
   "footer": {
     "description": "Global-ready clinic management system with HIPAA/GDPR compliance. Streamline your practice with our comprehensive healthcare management platform.",
-    "product": "Product",
-    "about": "About",
-    "features": "Features",
+    "product": "المنتج",
+    "about": "من نحن",
+    "features": "الميزات",
     "getStarted": "Get Started",
     "support": "Support",
     "legal": "Legal",

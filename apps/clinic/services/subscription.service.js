@@ -3,6 +3,7 @@
  */
 
 import connectDB from '@/lib/db/connection.js';
+import { PLAN_TRIAL_DAYS } from '@/lib/constants/subscription-spec.js';
 import { logger } from '@/lib/utils/logger.js';
 import Subscription, { SubscriptionStatus } from '@/models/Subscription.js';
 import SubscriptionPayment, { PaymentStatus } from '@/models/SubscriptionPayment.js';
@@ -140,8 +141,10 @@ export async function deleteSubscriptionPlan(planId) {
 }
 
 /**
- * Create subscription for tenant. Only PayPal is supported.
+ * Create subscription for tenant. Only PayPal is supported for paid billing.
+ * When trialOnly is true: Basic 6 months, Smart Clinic / Enterprise 3 months — no card required.
  * @param {string} [paymentMethod] - 'paypal' only (card/Stripe removed).
+ * @param {boolean} [trialOnly] - If true, create active subscription with trial period only (no PayPal/card).
  */
 export async function createSubscription(
   tenantId,
@@ -150,6 +153,7 @@ export async function createSubscription(
   customerEmail,
   customerName,
   paymentMethod = 'paypal',
+  trialOnly = false,
 ) {
   await connectDB();
 
@@ -163,7 +167,7 @@ export async function createSubscription(
     throw new Error('Subscription plan is not active');
   }
 
-  if (plan.price > 0 && paymentMethod !== 'paypal') {
+  if (plan.price > 0 && paymentMethod !== 'paypal' && !trialOnly) {
     throw new Error('Only PayPal is accepted. Please use Pay with PayPal.');
   }
 
@@ -174,7 +178,7 @@ export async function createSubscription(
   });
 
   // If upgrading to a paid plan from any existing subscription, cancel the old one first
-  if (existingSubscription && plan.price > 0) {
+  if (existingSubscription && plan.price > 0 && !trialOnly) {
     logger.info(
       `Cancelling existing subscription ${existingSubscription._id} before creating new paid subscription`,
     );
@@ -192,11 +196,63 @@ export async function createSubscription(
         logger.error('Failed to cancel PayPal subscription:', error);
       }
     }
-  } else if (existingSubscription && plan.price === 0) {
+  } else if (existingSubscription && plan.price === 0 && !trialOnly) {
     throw new Error('Tenant already has an active subscription. Use update endpoint instead.');
   }
 
-  // Paid plans require PayPal plan ID
+  // Trial-only: Basic 6 months, Smart Clinic & Enterprise 3 months — no card required
+  const trialDaysFromSpec = PLAN_TRIAL_DAYS[plan.name];
+  const trialDays = trialOnly
+    ? (typeof trialDaysFromSpec === 'number' && trialDaysFromSpec > 0 ? trialDaysFromSpec : plan.trialDays ?? 90)
+    : (plan.trialDays ?? trialDaysFromSpec ?? 180);
+
+  if (trialOnly) {
+    if (trialDays <= 0) {
+      throw new Error('This plan does not offer a free trial. Please subscribe with PayPal.');
+    }
+    // Cancel any existing subscription so the new trial is the active one
+    if (existingSubscription) {
+      existingSubscription.status = SubscriptionStatus.CANCELLED;
+      existingSubscription.cancelledAt = new Date();
+      existingSubscription.cancelAtPeriodEnd = false;
+      await existingSubscription.save();
+      if (existingSubscription.paypalSubscriptionId) {
+        try {
+          await cancelPayPalSubscription(
+            existingSubscription.paypalSubscriptionId,
+            'Starting free trial (no card)',
+          );
+        } catch (error) {
+          logger.error('Failed to cancel PayPal subscription:', error);
+        }
+      }
+    }
+    const now = new Date();
+    const periodStart = now;
+    const periodEnd = new Date(now);
+    periodEnd.setDate(periodEnd.getDate() + trialDays);
+    const trialEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+
+    const subscription = await Subscription.create({
+      tenantId,
+      planId,
+      status: SubscriptionStatus.ACTIVE,
+      paypalSubscriptionId: null,
+      paypalApprovalUrl: null,
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
+      cancelAtPeriodEnd: false,
+      nextBillingDate: periodEnd,
+      trialEnd,
+    });
+
+    logger.info(
+      `Trial-only subscription created for tenant ${tenantId}, plan ${plan.name}, ${trialDays} days (no card).`,
+    );
+    return { subscription, approvalUrl: null };
+  }
+
+  // Paid plans require PayPal plan ID when not trial-only
   if (plan.price > 0 && !plan.paypalPlanId) {
     throw new Error('PayPal is not available for this plan. Please contact support.');
   }
@@ -205,10 +261,8 @@ export async function createSubscription(
   const now = new Date();
   const periodStart = now;
   let periodEnd = new Date(now);
-  const trialDays = plan.trialDays ?? 180;
 
   if (trialDays > 0) {
-    // All plans: 180-day (6 month) Starter free trial, then billing starts
     periodEnd.setDate(periodEnd.getDate() + trialDays);
   } else if (plan.billingCycle === PlanBillingCycle.MONTHLY) {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
@@ -245,16 +299,14 @@ export async function createSubscription(
     }
   }
 
-  // Trial end date: 180 days (6 months) free Starter plan, then billing starts
   const trialEnd = trialDays > 0 ? new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000) : null;
 
-  // Create subscription
   const subscription = await Subscription.create({
     tenantId,
     planId,
     status: plan.paypalPlanId ? SubscriptionStatus.PENDING : SubscriptionStatus.ACTIVE,
     paypalSubscriptionId,
-    paypalApprovalUrl: approvalUrl, // Store approval URL for later use
+    paypalApprovalUrl: approvalUrl,
     currentPeriodStart: periodStart,
     currentPeriodEnd: periodEnd,
     cancelAtPeriodEnd: false,

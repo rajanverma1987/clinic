@@ -56,6 +56,7 @@ async function postHandler(req, user) {
   }
 
   const paymentMethod = 'paypal';
+  const trialOnly = body.trialOnly === true;
   const result = await createSubscription(
     user.tenantId,
     body.planId,
@@ -63,6 +64,7 @@ async function postHandler(req, user) {
     body.customerEmail,
     body.customerName,
     paymentMethod,
+    trialOnly,
   );
 
   return NextResponse.json(successResponse(result), { status: 201 });

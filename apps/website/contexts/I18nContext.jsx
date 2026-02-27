@@ -107,6 +107,10 @@ export function I18nProvider({ children }) {
       if (typeof window !== 'undefined') {
         localStorage.setItem('locale', newLocale);
         applyLocaleToDocument(newLocale);
+        // Persist locale in URL so choice survives refresh and is visible
+        const url = new URL(window.location.href);
+        url.searchParams.set('locale', newLocale);
+        window.history.replaceState({}, '', url.pathname + (url.search || ''));
       }
 
       if (user) {
@@ -140,7 +144,9 @@ export function I18nProvider({ children }) {
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, t, loading }}>
-      {children}
+      <div key={locale} style={{ display: 'contents' }}>
+        {children}
+      </div>
     </I18nContext.Provider>
   );
 }
