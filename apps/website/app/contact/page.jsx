@@ -64,10 +64,10 @@ export default function ContactPage() {
 
           {/* Contact Information Card */}
           <div className='bg-primary-50 rounded-xl border border-primary-200 p-8'>
-            <h2 className='text-h2 text-neutral-900 mb-4'>Contact Information</h2>
+            <h2 className='text-h2 text-neutral-900 mb-4'>{t('contact.contactInformation')}</h2>
             <div className='space-y-4'>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>
-                <h3 className='text-neutral-900 font-semibold mb-2'>Support Email</h3>
+                <h3 className='text-neutral-900 font-semibold mb-2'>{t('contact.supportEmail')}</h3>
                 <a
                   href={`mailto:${SUPPORT_EMAIL}`}
                   className='text-primary-600 hover:text-primary-700 hover:underline text-sm'
@@ -76,9 +76,9 @@ export default function ContactPage() {
                 </a>
               </div>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>
-                <h3 className='text-neutral-900 font-semibold mb-2'>Response Time</h3>
+                <h3 className='text-neutral-900 font-semibold mb-2'>{t('contact.responseTime')}</h3>
                 <p className='text-neutral-700 text-sm'>
-                  We typically respond within 24 hours during business days.
+                  {t('contact.responseTimeDescription')}
                 </p>
               </div>
             </div>

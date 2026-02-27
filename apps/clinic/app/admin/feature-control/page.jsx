@@ -116,9 +116,9 @@ export default function AdminFeatureControlPage() {
           ...prev,
           [clinicId]: { ...prev[clinicId], [moduleKey]: current },
         }));
-        showError(res?.error?.message || 'Failed to update module.');
+        showError(res?.error?.message || t('admin.featureControlUpdateFailed'));
       } else {
-        showSuccess(`${moduleKey} ${newVal ? 'enabled' : 'disabled'} for clinic.`);
+        showSuccess(`${moduleKey} ${newVal ? t('admin.featureControlModuleEnabled') : t('admin.featureControlModuleDisabled')}`);
       }
     } catch (err) {
       // Rollback
@@ -126,7 +126,7 @@ export default function AdminFeatureControlPage() {
         ...prev,
         [clinicId]: { ...prev[clinicId], [moduleKey]: current },
       }));
-      showError(err?.message || 'Failed to update module.');
+      showError(err?.message || t('admin.featureControlUpdateFailed'));
     } finally {
       setSaving(null);
     }
@@ -142,7 +142,7 @@ export default function AdminFeatureControlPage() {
     <Layout>
       <PageHeader
         title={t('admin.tabFeatureControl') || 'Feature Control'}
-        subtitle='Enable or disable platform modules per clinic, and manage plan-to-feature mapping'
+        subtitle={t('admin.featureControlSubtitle')}
         notifications={[]}
         unreadCount={0}
       />
@@ -153,14 +153,14 @@ export default function AdminFeatureControlPage() {
             className={activeTab === 'modules' ? ACTIVE_TAB : INACTIVE_TAB}
             onClick={() => setActiveTab('modules')}
           >
-            Modules
+            {t('admin.featureControlTabModules')}
           </button>
           <button
             type='button'
             className={activeTab === 'planMapping' ? ACTIVE_TAB : INACTIVE_TAB}
             onClick={() => setActiveTab('planMapping')}
           >
-            Plan Mapping
+            {t('admin.featureControlTabPlanMapping')}
           </button>
         </div>
 
@@ -176,8 +176,8 @@ export default function AdminFeatureControlPage() {
           <AdminToolbar
             searchValue={searchTerm}
             onSearchChange={(e) => setSearchTerm(e.target.value)}
-            searchPlaceholder='Search clinics…'
-            searchAriaLabel='Search clinics'
+            searchPlaceholder={t('admin.featureControlSearchPlaceholder')}
+            searchAriaLabel={t('admin.featureControlSearchPlaceholder')}
             filters={[]}
           />
           {loading ? (

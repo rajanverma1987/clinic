@@ -19,10 +19,13 @@ export function generateAccessToken(payload) {
 
 /**
  * Generate refresh token
+ * @param {object} payload - Token payload
+ * @param {object} [options] - { expiresIn: number (seconds) or string (e.g. '7d') } - optional custom TTL
  */
-export function generateRefreshToken(payload) {
+export function generateRefreshToken(payload, options = {}) {
+  const expiresIn = options.expiresIn ?? JWT_REFRESH_EXPIRES_IN;
   return jwt.sign(payload, JWT_REFRESH_SECRET, {
-    expiresIn: JWT_REFRESH_EXPIRES_IN,
+    expiresIn,
   });
 }
 

@@ -267,13 +267,13 @@ export default function ContactPage() {
                           className='font-semibold text-neutral-900'
                           style={{ marginBottom: '4px' }}
                         >
-                          Response Time
+                          {t('contact.responseTime')}
                         </p>
                         <p
                           className='text-neutral-600'
                           style={{ fontSize: '16px', lineHeight: '24px' }}
                         >
-                          We typically respond within 24 hours
+                          {t('contact.responseTimeShort')}
                         </p>
                       </div>
                     </div>
@@ -292,20 +292,20 @@ export default function ContactPage() {
                       marginBottom: '16px',
                     }}
                   >
-                    Business Hours
+                    {t('contact.businessHours')}
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <p
                       className='text-neutral-700'
                       style={{ fontSize: '14px', lineHeight: '20px' }}
                     >
-                      Monday - Friday: 9:00 AM - 6:00 PM EST
+                      {t('contact.businessHoursWeekdays')}
                     </p>
                     <p
                       className='text-neutral-700'
                       style={{ fontSize: '14px', lineHeight: '20px' }}
                     >
-                      Saturday - Sunday: Closed
+                      {t('contact.businessHoursWeekend')}
                     </p>
                   </div>
                 </div>

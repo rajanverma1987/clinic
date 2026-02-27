@@ -353,10 +353,10 @@ export default function AdminDataManagementPage() {
                 </div>
                 <div>
                   <h3 className='font-medium text-neutral-900 dark:text-neutral-100'>
-                    Restore Clinic
+                    {t('admin.restoreClinic')}
                   </h3>
                   <p className='text-sm text-neutral-500'>
-                    ⚠ HIGH RISK — Overwrites current clinic data. Requires secondary admin approval.
+                    ⚠ {t('admin.restoreClinicHighRisk')}
                   </p>
                 </div>
               </div>
@@ -364,7 +364,7 @@ export default function AdminDataManagementPage() {
               {/* Step 0: idle */}
               {restoreStep === 0 && (
                 <Button variant='secondary' size='sm' onClick={startRestoreFlow}>
-                  Begin Restore Request
+                  {t('admin.beginRestoreRequest')}
                 </Button>
               )}
 
@@ -372,10 +372,10 @@ export default function AdminDataManagementPage() {
               {restoreStep === 1 && (
                 <div className='space-y-3 max-w-sm'>
                   <p className='text-sm font-semibold text-neutral-700 dark:text-neutral-300'>
-                    Step 1 — Select clinic to restore
+                    {t('admin.restoreStep1')}
                   </p>
                   {loadingRestoreClinics ? (
-                    <p className='text-sm text-neutral-500'>Loading clinics…</p>
+                    <p className='text-sm text-neutral-500'>{t('admin.supportLoadingClinics')}</p>
                   ) : (
                     <select
                       className='input w-full text-sm'
@@ -387,7 +387,7 @@ export default function AdminDataManagementPage() {
                         )
                       }
                     >
-                      <option value=''>Select a clinic…</option>
+                      <option value=''>{t('admin.selectClinicPlaceholder')}</option>
                       {restoreClinics.map((c) => (
                         <option key={c._id ?? c.tenantId} value={c._id ?? c.tenantId}>
                           {c.name ?? c.clinicName}
@@ -402,10 +402,10 @@ export default function AdminDataManagementPage() {
                       disabled={!restoreClinic}
                       onClick={() => setRestoreStep(2)}
                     >
-                      Next →
+                      {t('common.next')} →
                     </Button>
                     <Button variant='ghost' size='sm' onClick={resetRestore}>
-                      Cancel
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 </div>
@@ -415,7 +415,7 @@ export default function AdminDataManagementPage() {
               {restoreStep === 2 && (
                 <div className='space-y-3 max-w-sm'>
                   <p className='text-sm font-semibold text-neutral-700 dark:text-neutral-300'>
-                    Step 2 — Select restore point
+                    {t('admin.restoreStep2')}
                   </p>
                   <ul className='space-y-2'>
                     {MOCK_BACKUP_POINTS.map((bp) => (
@@ -448,10 +448,10 @@ export default function AdminDataManagementPage() {
                       disabled={!restorePoint}
                       onClick={() => setRestoreStep(3)}
                     >
-                      Next →
+                      {t('common.next')} →
                     </Button>
                     <Button variant='ghost' size='sm' onClick={() => setRestoreStep(1)}>
-                      ← Back
+                      ← {t('common.back')}
                     </Button>
                   </div>
                 </div>
@@ -461,36 +461,35 @@ export default function AdminDataManagementPage() {
               {restoreStep === 3 && (
                 <div className='space-y-3 max-w-sm'>
                   <p className='text-sm font-semibold text-neutral-700 dark:text-neutral-300'>
-                    Step 3 — What will be overwritten
+                    {t('admin.restoreStep3')}
                   </p>
                   <div className='p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-700 text-sm text-red-700 dark:text-red-400 space-y-1'>
                     <p>
-                      <strong>Clinic:</strong> {restoreClinic?.name ?? restoreClinic?.clinicName}
+                      <strong>{t('admin.restoreClinicLabel')}:</strong> {restoreClinic?.name ?? restoreClinic?.clinicName}
                     </p>
                     <p>
-                      <strong>Restore point:</strong> {restorePoint?.label} (
+                      <strong>{t('admin.restorePointLabel')}:</strong> {restorePoint?.label} (
                       {new Date(restorePoint?.date).toLocaleString()})
                     </p>
                     <p>
-                      <strong>Current data will be replaced.</strong> All records after the restore
-                      point will be lost.
+                      <strong>{t('admin.restoreCurrentDataReplaced')}</strong>
                     </p>
                   </div>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                      Reason <span className='text-red-500'>*</span>
+                      {t('admin.backupReason')} <span className='text-red-500'>*</span>
                     </label>
                     <textarea
                       value={restoreReason}
                       onChange={(e) => setRestoreReason(e.target.value)}
                       rows={3}
-                      placeholder='Business reason for this restore…'
+                      placeholder={t('admin.restoreReasonPlaceholder')}
                       className='input w-full resize-none'
                     />
                     <p
                       className={`text-xs mt-1 ${restoreReason.length >= 20 ? 'text-green-600' : 'text-neutral-400'}`}
                     >
-                      {restoreReason.length}/20 minimum
+                      {restoreReason.length}/20 {t('admin.restoreMinimumChars')}
                     </p>
                   </div>
                   <div className='flex gap-2'>
@@ -500,10 +499,10 @@ export default function AdminDataManagementPage() {
                       disabled={restoreReason.trim().length < 20}
                       onClick={() => setRestoreStep(4)}
                     >
-                      Next →
+                      {t('common.next')} →
                     </Button>
                     <Button variant='ghost' size='sm' onClick={() => setRestoreStep(2)}>
-                      ← Back
+                      ← {t('common.back')}
                     </Button>
                   </div>
                 </div>
@@ -513,18 +512,14 @@ export default function AdminDataManagementPage() {
               {restoreStep === 4 && (
                 <div className='space-y-3 max-w-sm'>
                   <p className='text-sm font-semibold text-neutral-700 dark:text-neutral-300'>
-                    Step 4 — Secondary admin approval required
+                    {t('admin.restoreStep4')}
                   </p>
                   <div className='p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-700 text-sm text-amber-700 dark:text-amber-400'>
-                    A second Super Admin must approve this restore from their own session. After you
-                    submit, they will see a pending restore request in their admin panel.
+                    {t('admin.restoreStep4Notice')}
                   </div>
                   <div>
                     <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
-                      Schedule restore{' '}
-                      <span className='text-neutral-400 font-normal'>
-                        (optional — leave empty for immediate)
-                      </span>
+                      {t('admin.scheduleRestoreOptional')}
                     </label>
                     <input
                       type='datetime-local'
@@ -535,10 +530,10 @@ export default function AdminDataManagementPage() {
                   </div>
                   <div className='flex gap-2'>
                     <Button variant='primary' size='sm' onClick={() => setRestoreStep(5)}>
-                      Next →
+                      {t('common.next')} →
                     </Button>
                     <Button variant='ghost' size='sm' onClick={() => setRestoreStep(3)}>
-                      ← Back
+                      ← {t('common.back')}
                     </Button>
                   </div>
                 </div>
@@ -548,11 +543,10 @@ export default function AdminDataManagementPage() {
               {restoreStep === 5 && (
                 <div className='space-y-3 max-w-sm'>
                   <p className='text-sm font-semibold text-neutral-700 dark:text-neutral-300'>
-                    Step 5 — Type{' '}
+                    {t('admin.restoreStep5')}{' '}
                     <span className='font-mono bg-neutral-100 dark:bg-neutral-700 px-1 rounded'>
                       RESTORE {restoreClinic?.name ?? restoreClinic?.clinicName}
-                    </span>{' '}
-                    to confirm
+                    </span>
                   </p>
                   <input
                     type='text'
@@ -573,14 +567,14 @@ export default function AdminDataManagementPage() {
                       isLoading={submittingRestore}
                       onClick={submitRestore}
                     >
-                      Submit Restore Request
+                      {t('admin.submitRestoreRequest')}
                     </Button>
                     <Button variant='ghost' size='sm' onClick={() => setRestoreStep(4)}>
-                      ← Back
+                      ← {t('common.back')}
                     </Button>
                   </div>
                   <p className='text-xs text-neutral-400'>
-                    Action is permanently logged. All Super Admins will be notified.
+                    {t('admin.restoreActionLogged')}
                   </p>
                 </div>
               )}
@@ -589,11 +583,10 @@ export default function AdminDataManagementPage() {
               {restoreStep === 6 && (
                 <div className='space-y-3 max-w-sm'>
                   <div className='p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-700 text-sm text-green-700 dark:text-green-400'>
-                    ✓ Restore request submitted. Awaiting secondary admin approval. You will be
-                    notified when the restore is completed.
+                    ✓ {t('admin.restoreSubmitted')}
                   </div>
                   <Button variant='secondary' size='sm' onClick={resetRestore}>
-                    Start Another Restore
+                    {t('admin.startAnotherRestore')}
                   </Button>
                 </div>
               )}

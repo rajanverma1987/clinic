@@ -154,7 +154,7 @@ export function Header() {
                           width: 'var(--space-3)',
                           height: 'var(--space-3)',
                         }}
-                        title={user?.isActive ? 'Active' : 'Inactive'}
+                        title={user?.isActive ? t('common.active') : t('common.inactive')}
                       ></div>
                     </div>
                     {/* User Info */}

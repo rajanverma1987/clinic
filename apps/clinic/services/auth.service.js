@@ -394,13 +394,13 @@ export async function loginUser(input, options = {}) {
   };
 
   const accessToken = generateAccessToken(tokenPayload);
-  const refreshToken = generateRefreshToken(tokenPayload);
-
-  // Determine token expiry based on remember_me flag
   const rememberMe = input.rememberMe || false;
-  const refreshTokenExpiry = rememberMe
-    ? 30 * 24 * 60 * 60 * 1000 // 30 days
-    : 7 * 24 * 60 * 60 * 1000; // 7 days
+  const refreshTokenExpirySeconds = rememberMe
+    ? 30 * 24 * 60 * 60   // 30 days, in seconds
+    : 7 * 24 * 60 * 60;   // 7 days, in seconds
+  const refreshToken = generateRefreshToken(tokenPayload, {
+    expiresIn: refreshTokenExpirySeconds,
+  });
 
   return {
     user: {
@@ -517,7 +517,12 @@ export async function verify2FA(input, options = {}) {
   };
 
   const accessToken = generateAccessToken(tokenPayload);
-  const refreshToken = generateRefreshToken(tokenPayload);
+  const refreshTokenExpirySeconds = rememberMe
+    ? 30 * 24 * 60 * 60   // 30 days
+    : 7 * 24 * 60 * 60;   // 7 days
+  const refreshToken = generateRefreshToken(tokenPayload, {
+    expiresIn: refreshTokenExpirySeconds,
+  });
 
   return {
     user: {

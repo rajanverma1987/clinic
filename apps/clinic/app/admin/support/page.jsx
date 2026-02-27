@@ -130,13 +130,13 @@ export default function AdminSupportPage() {
       {/* SUPPORT MODE BANNER — fixed top bar while session active */}
       {sessionClinic && (
         <div className='fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-black flex items-center justify-between px-4 py-2 text-sm font-semibold shadow-lg'>
-          <span>⚠ SUPPORT MODE — READ ONLY — Clinical data access is blocked</span>
+          <span>⚠ {t('admin.supportModeBanner')}</span>
           <div className='flex items-center gap-4'>
             <span className='font-mono'>
-              Clinic: <span className='font-bold'>{sessionClinic.name}</span>
+              {t('admin.supportModeClinic')}: <span className='font-bold'>{sessionClinic.name}</span>
             </span>
             <span className='font-mono'>
-              Session expires in:{' '}
+              {t('admin.supportModeSessionExpires')}{' '}
               <span className={sessionSecondsLeft < 300 ? 'text-red-800' : ''}>
                 {fmtTime(sessionSecondsLeft)}
               </span>
@@ -146,7 +146,7 @@ export default function AdminSupportPage() {
               className='bg-black/20 hover:bg-black/30 text-black font-semibold text-xs px-3 py-1 rounded-lg'
               onClick={endSupportSession}
             >
-              Exit Support Mode
+              {t('admin.supportModeExit')}
             </button>
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function AdminSupportPage() {
         <section className='admin-section'>
           <div className='admin-section__title'>
             <span className='admin-section__accent' />
-            <h2 className='admin-section__title-text'>Enter Clinic (Support Mode)</h2>
+            <h2 className='admin-section__title-text'>{t('admin.supportEnterClinic')}</h2>
           </div>
 
           <Card className='border-amber-200 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-900/10 mb-4'>
@@ -169,38 +169,35 @@ export default function AdminSupportPage() {
               </div>
               <div>
                 <p className='font-semibold text-amber-800 dark:text-amber-300 text-sm mb-1'>
-                  Support Mode Restrictions
+                  {t('admin.supportModeRestrictions')}
                 </p>
                 <ul className='text-sm text-amber-700 dark:text-amber-400 space-y-0.5'>
-                  <li>• You can view clinic configuration, settings, and workflows</li>
-                  <li>
-                    • You <strong>cannot</strong> edit consultations, prescriptions, or patient
-                    clinical records
-                  </li>
-                  <li>• All support interventions are logged in the Audit &amp; Compliance tab</li>
-                  <li>• Exit support mode immediately after diagnosing the issue</li>
+                  <li>• {t('admin.supportRestriction1')}</li>
+                  <li>• {t('admin.supportRestriction2')}</li>
+                  <li>• {t('admin.supportRestriction3')}</li>
+                  <li>• {t('admin.supportRestriction4')}</li>
                 </ul>
               </div>
             </div>
           </Card>
 
           <AdminToolbar
-            intro='Search for a clinic and click Enter Clinic to access the clinic admin view in support mode.'
+            intro={t('admin.supportSearchIntro')}
             searchValue={searchTerm}
             onSearchChange={(e) => setSearchTerm(e.target.value)}
-            searchPlaceholder='Search active clinics…'
-            searchAriaLabel='Search active clinics'
+            searchPlaceholder={t('admin.supportSearchPlaceholder')}
+            searchAriaLabel={t('admin.supportSearchAriaLabel')}
             filters={[]}
           />
 
           {loadingClinics ? (
             <Card>
-              <p className='text-sm text-neutral-500 py-6 text-center'>Loading clinics…</p>
+              <p className='text-sm text-neutral-500 py-6 text-center'>{t('admin.supportLoadingClinics')}</p>
             </Card>
           ) : filteredClinics.length === 0 ? (
             <Card>
               <p className='text-sm text-neutral-500 py-6 text-center'>
-                {searchTerm ? 'No clinics match your search.' : 'No active clinics found.'}
+                {searchTerm ? t('admin.supportNoMatch') : t('admin.supportNoActiveClinics')}
               </p>
             </Card>
           ) : (
@@ -235,7 +232,7 @@ export default function AdminSupportPage() {
                           router.push(`/admin/clients?tenantId=${encodeURIComponent(id)}`);
                         }}
                       >
-                        Enter Clinic →
+                        {t('admin.supportEnterClinicButton')}
                       </Button>
                     </li>
                   );
@@ -248,7 +245,7 @@ export default function AdminSupportPage() {
                   onClick={() => router.push('/admin/clients')}
                   className='text-sm text-primary-600'
                 >
-                  View all clinics in Clinic Management →
+                  {t('admin.supportViewAllClinics')}
                 </Button>
               </div>
             </Card>
@@ -259,20 +256,20 @@ export default function AdminSupportPage() {
         <section className='admin-section'>
           <div className='admin-section__title'>
             <span className='admin-section__accent' />
-            <h2 className='admin-section__title-text'>Recent Interventions</h2>
+            <h2 className='admin-section__title-text'>{t('admin.supportRecentInterventions')}</h2>
             <Button
               variant='ghost'
               size='xs'
               onClick={() => router.push('/admin/activity-logs')}
               className='ml-auto text-primary-600 text-xs'
             >
-              View all in Audit Logs →
+              {t('admin.supportViewAllAuditLogs')}
             </Button>
           </div>
           {recentLogs.length === 0 ? (
             <Card>
               <p className='text-sm text-neutral-500 py-4 text-center'>
-                No recent support interventions recorded.
+                {t('admin.supportNoRecentInterventions')}
               </p>
             </Card>
           ) : (
@@ -285,8 +282,8 @@ export default function AdminSupportPage() {
                     </div>
                     <div className='flex-1 min-w-0'>
                       <p className='text-sm text-neutral-800 dark:text-neutral-200'>
-                        <span className='font-medium'>{log.userId ?? 'Super Admin'}</span>{' '}
-                        {log.action ?? 'entered support mode'}
+                        <span className='font-medium'>{log.userId ?? t('common.roleSuperAdmin')}</span>{' '}
+                        {log.action ?? t('admin.supportEnteredSupportMode')}
                       </p>
                       <p className='text-xs text-neutral-500 mt-0.5'>
                         {log.resourceId ?? '—'} ·{' '}

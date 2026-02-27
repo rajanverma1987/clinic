@@ -110,7 +110,7 @@ export default function AdminDeploymentPage() {
     setSaving(true);
     await new Promise((r) => setTimeout(r, 600));
     setSaving(false);
-    showSuccess('Deployment template saved. Applied to new clinic onboarding.');
+    showSuccess(t('admin.deploymentTemplateSaved'));
   };
 
   if (!user || user?.role !== 'super_admin') return null;
@@ -134,14 +134,14 @@ export default function AdminDeploymentPage() {
             className={activeTab === 'templates' ? ACTIVE_TAB_CLASS : INACTIVE_TAB_CLASS}
             onClick={() => setActiveTab('templates')}
           >
-            Templates
+            {t('admin.deploymentTabTemplates')}
           </button>
           <button
             type="button"
             className={activeTab === 'moduleAssignment' ? ACTIVE_TAB_CLASS : INACTIVE_TAB_CLASS}
             onClick={() => setActiveTab('moduleAssignment')}
           >
-            Module Assignment
+            {t('admin.deploymentTabModuleAssignment')}
           </button>
         </div>
 
@@ -150,11 +150,10 @@ export default function AdminDeploymentPage() {
             <section className="admin-section">
               <div className="admin-section__title">
                 <span className="admin-section__accent" />
-                <h2 className="admin-section__title-text">Clinic Setup Templates</h2>
+                <h2 className="admin-section__title-text">{t('admin.deploymentClinicSetupTemplates')}</h2>
               </div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-                Select a preset deployment template for new clinics. These define the default
-                workflow, clinic type, enabled modules, and role structure on first onboarding.
+                {t('admin.deploymentTemplatesIntro')}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {DEPLOYMENT_TEMPLATES.map((tpl) => (
@@ -169,10 +168,10 @@ export default function AdminDeploymentPage() {
                     }`}
                   >
                     <p className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">
-                      {tpl.name}
+                      {t(`admin.deploymentTemplate${tpl.id.charAt(0).toUpperCase() + tpl.id.slice(1)}`)}
                     </p>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
-                      {tpl.desc}
+                      {t(`admin.deploymentTemplate${tpl.id.charAt(0).toUpperCase() + tpl.id.slice(1)}Desc`)}
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {tpl.modules.slice(0, 4).map((m) => (
@@ -180,12 +179,12 @@ export default function AdminDeploymentPage() {
                           key={m}
                           className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300"
                         >
-                          {DEFAULT_MODULES.find((dm) => dm.key === m)?.label ?? m}
+                          {t(`admin.deploymentModule${((DEFAULT_MODULES.find((dm) => dm.key === m)?.key ?? m).charAt(0).toUpperCase() + (DEFAULT_MODULES.find((dm) => dm.key === m)?.key ?? m).slice(1))}`)}
                         </span>
                       ))}
                       {tpl.modules.length > 4 && (
                         <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-700 text-neutral-500">
-                          +{tpl.modules.length - 4} more
+                          +{tpl.modules.length - 4} {t('admin.deploymentMore')}
                         </span>
                       )}
                     </div>
@@ -197,28 +196,28 @@ export default function AdminDeploymentPage() {
             <section className="admin-section">
               <div className="admin-section__title">
                 <span className="admin-section__accent" />
-                <h2 className="admin-section__title-text">Template Configuration</h2>
+                <h2 className="admin-section__title-text">{t('admin.deploymentTemplateConfig')}</h2>
               </div>
               <Card>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                      Default Workflow Template
+                      {t('admin.deploymentDefaultWorkflow')}
                     </label>
                     <select
                       value={workflowTemplate}
                       onChange={(e) => setWorkflowTemplate(e.target.value)}
                       className="input w-full"
                     >
-                      <option value="standard">Standard Outpatient</option>
-                      <option value="soap">SOAP-focused</option>
-                      <option value="procedure">Procedure-heavy</option>
-                      <option value="minimal">Minimal (appointments only)</option>
+                      <option value="standard">{t('admin.deploymentWorkflowStandard')}</option>
+                      <option value="soap">{t('admin.deploymentWorkflowSoap')}</option>
+                      <option value="procedure">{t('admin.deploymentWorkflowProcedure')}</option>
+                      <option value="minimal">{t('admin.deploymentWorkflowMinimal')}</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                      Clinic Type
+                      {t('admin.deploymentClinicType')}
                     </label>
                     <select
                       value={clinicType}
@@ -227,7 +226,7 @@ export default function AdminDeploymentPage() {
                     >
                       {CLINIC_TYPES.map((ct) => (
                         <option key={ct.value} value={ct.value}>
-                          {ct.label}
+                          {t(`admin.deploymentClinicType${ct.value === 'multiLocation' ? 'Multi' : ct.value.charAt(0).toUpperCase() + ct.value.slice(1)}`)}
                         </option>
                       ))}
                     </select>
@@ -241,14 +240,14 @@ export default function AdminDeploymentPage() {
                     disabled={saving}
                     isLoading={saving}
                   >
-                    Save Template
+                    {t('admin.deploymentSaveTemplate')}
                   </Button>
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => router.push('/admin/clients')}
                   >
-                    Apply to Clinic →
+                    {t('admin.deploymentApplyToClinic')}
                   </Button>
                 </div>
               </Card>
@@ -261,11 +260,10 @@ export default function AdminDeploymentPage() {
             <section className="admin-section">
               <div className="admin-section__title">
                 <span className="admin-section__accent" />
-                <h2 className="admin-section__title-text">Default Module Assignment</h2>
+                <h2 className="admin-section__title-text">{t('admin.deploymentDefaultModuleAssignment')}</h2>
               </div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-                Choose which modules are enabled by default when a new clinic is onboarded. Locked
-                modules are always enabled and cannot be removed.
+                {t('admin.deploymentModuleIntro')}
               </p>
               <Card>
                 <ul className="divide-y divide-neutral-100 dark:divide-neutral-700" role="list">
@@ -273,11 +271,11 @@ export default function AdminDeploymentPage() {
                     <li key={mod.key} className="flex items-center justify-between py-3 gap-4">
                       <div className="flex items-center gap-2">
                         <span className="text-neutral-800 dark:text-neutral-200 font-medium">
-                          {mod.label}
+                          {t(`admin.deploymentModule${mod.key.charAt(0).toUpperCase() + mod.key.slice(1)}`)}
                         </span>
                         {mod.locked && (
                           <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-700 text-neutral-500">
-                            Required
+                            {t('admin.deploymentRequired')}
                           </span>
                         )}
                       </div>
@@ -309,10 +307,10 @@ export default function AdminDeploymentPage() {
             <section className="admin-section">
               <div className="admin-section__title">
                 <span className="admin-section__accent" />
-                <h2 className="admin-section__title-text">Default Role Structure</h2>
+                <h2 className="admin-section__title-text">{t('admin.deploymentDefaultRoleStructure')}</h2>
               </div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-                Choose which roles are created by default during clinic setup.
+                {t('admin.deploymentRoleIntro')}
               </p>
               <Card>
                 <ul className="divide-y divide-neutral-100 dark:divide-neutral-700" role="list">
@@ -320,11 +318,11 @@ export default function AdminDeploymentPage() {
                     <li key={role.key} className="flex items-center justify-between py-3 gap-4">
                       <div className="flex items-center gap-2">
                         <span className="text-neutral-800 dark:text-neutral-200 font-medium">
-                          {role.label}
+                          {t(`admin.deploymentRole${role.key.charAt(0).toUpperCase() + role.key.slice(1)}`)}
                         </span>
                         {role.locked && (
                           <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-700 text-neutral-500">
-                            Required
+                            {t('admin.deploymentRequired')}
                           </span>
                         )}
                       </div>
@@ -358,7 +356,7 @@ export default function AdminDeploymentPage() {
                     disabled={saving}
                     isLoading={saving}
                   >
-                    Save Assignments
+                    {t('admin.deploymentSaveAssignments')}
                   </Button>
                 </div>
               </Card>

@@ -34,14 +34,18 @@ async function postHandler(req) {
   // Verify 2FA and complete login (pass client IP for audit)
   const result = await verify2FA(validationResult.data, { clientIP });
 
-  // Set refresh token as HTTP-only cookie
+  // Set refresh token as HTTP-only cookie (respect rememberMe like login route)
+  const rememberMe = validationResult.data.rememberMe || false;
+  const cookieMaxAge = rememberMe
+    ? 60 * 60 * 24 * 30  // 30 days
+    : 60 * 60 * 24 * 7;  // 7 days
+
   const response = NextResponse.json(successResponse(result), { status: 200 });
-  
   response.cookies.set('refreshToken', result.refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: cookieMaxAge,
     path: '/',
   });
 
