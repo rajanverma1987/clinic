@@ -168,7 +168,7 @@ export default function AdminSettingsSecurityPage() {
     setTestIpResult({ allowed: matched, reason: matched ? 'IP is in allowlist.' : 'IP is NOT in allowlist — would be blocked.' });
   };
 
-  if (authLoading || loading) return <Loader type="page" text={t('common.loading') || 'Loading…'} />;
+  if (authLoading || loading) return <Layout loading />;
   if (user?.role !== 'super_admin') return null;
 
   return (

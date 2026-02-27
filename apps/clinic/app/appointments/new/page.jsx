@@ -345,7 +345,7 @@ function NewAppointmentPageContent() {
   }
 
   if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return <Layout loading />;
   }
 
   return (
@@ -829,7 +829,7 @@ function NewAppointmentPageContent() {
 
 function AppointmentPageFallback() {
   const { t } = useI18n();
-  return <Loader type='page' text={t('common.loading')} />;
+  return <Layout loading />;
 }
 
 export default function NewAppointmentPage() {

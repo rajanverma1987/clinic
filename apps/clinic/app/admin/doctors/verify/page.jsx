@@ -286,7 +286,7 @@ function AdminDoctorVerificationContent() {
   };
 
   if (authLoading || loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return <Layout loading />;
   }
 
   if (user?.role !== 'super_admin') {

@@ -264,7 +264,7 @@ export default function EditInvoicePage() {
   }
 
   if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return <Layout loading />;
   }
 
   return (

@@ -8,10 +8,10 @@ const { startDashboardStatsJob } = require('./dashboard-stats');
 /**
  * Initialize all background jobs
  */
-function initializeJobs() {
+async function initializeJobs() {
   console.log('🔧 Initializing background jobs...');
 
-  startDashboardStatsJob();
+  await startDashboardStatsJob();
 
   console.log('✅ All background jobs initialized');
 }

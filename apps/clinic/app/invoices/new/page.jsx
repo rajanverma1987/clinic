@@ -378,7 +378,7 @@ export default function NewInvoicePage() {
   }
 
   if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return <Layout loading />;
   }
 
   const labelClass =

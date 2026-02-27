@@ -138,7 +138,7 @@ export default function AdminSettingsTemplatesPage() {
     });
   };
 
-  if (authLoading || loading) return <Loader type="page" text={t('common.loading')} />;
+  if (authLoading || loading) return <Layout loading />;
   if (user?.role !== 'super_admin') return null;
 
   const columns = [

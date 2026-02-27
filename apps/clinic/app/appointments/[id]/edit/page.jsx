@@ -27,7 +27,7 @@ export default function AppointmentEditRedirectPage() {
   return (
     <Layout>
       <div className='flex items-center justify-center min-h-[200px]'>
-        <Loader type='page' text={t('common.loading')} />
+        <Loader type='section' text={t('common.loading')} />
       </div>
     </Layout>
   );

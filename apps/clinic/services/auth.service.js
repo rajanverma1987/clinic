@@ -3,7 +3,6 @@
  * Handles user registration, login, and token management
  */
 
-import { createHash } from 'crypto';
 import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '@/lib/auth/jwt.js';
 import { isTestAccount } from '@/lib/constants/test-account.js';
@@ -14,6 +13,7 @@ import SubscriptionPlan, { PlanStatus } from '@/models/SubscriptionPlan.js';
 import SystemSettings from '@/models/SystemSettings.js';
 import Tenant from '@/models/Tenant.js';
 import User, { UserRole } from '@/models/User.js';
+import { createHash } from 'crypto';
 import speakeasy from 'speakeasy';
 
 /** Format locale (e.g. "en" -> "en-US") without importing i18n (avoids module resolution issues in API context). */
@@ -114,7 +114,9 @@ export async function registerUser(input) {
     const existingWithSameName = await Tenant.find({ name: nameRegex })
       .select('region settings.address')
       .lean();
-    const isDuplicate = existingWithSameName.some((t) => locationKey(t.region, t.settings?.address) === newLoc);
+    const isDuplicate = existingWithSameName.some(
+      (t) => locationKey(t.region, t.settings?.address) === newLoc,
+    );
     if (isDuplicate) {
       throw new Error(
         'A clinic with this name and location already exists. If this is a branch, please provide a different branch address (different city/address).',
@@ -149,8 +151,8 @@ export async function registerUser(input) {
     tenantId = tenant._id;
     isPrimaryAccount = true; // Only the account that registered with full clinic details can purchase subscription
 
-    // Auto-assign Free Trial subscription to new clinic (trialDays from try-for-free flow, default 15)
-    const trialDays = input.trialDays && input.trialDays > 0 ? input.trialDays : 15;
+    // Auto-assign Free Trial subscription to new clinic (6 months free; trialDays from try-for-free flow, default 180)
+    const trialDays = input.trialDays && input.trialDays > 0 ? input.trialDays : 180;
     try {
       const freeTrialPlan = await SubscriptionPlan.findOne({
         name: 'Free Trial',
@@ -345,7 +347,9 @@ export async function loginUser(input, options = {}) {
     Array.isArray(platformSettings.security.superAdminIpWhitelist) &&
     platformSettings.security.superAdminIpWhitelist.length > 0
   ) {
-    const allowed = platformSettings.security.superAdminIpWhitelist.map((ip) => ip?.trim()).filter(Boolean);
+    const allowed = platformSettings.security.superAdminIpWhitelist
+      .map((ip) => ip?.trim())
+      .filter(Boolean);
     const clientIPNormalized = (clientIP || '').trim();
     if (!allowed.some((ip) => ip === clientIPNormalized)) {
       throw new Error('Access denied: your IP is not allowed for Super Admin login.');

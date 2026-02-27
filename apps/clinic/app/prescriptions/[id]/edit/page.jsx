@@ -484,7 +484,7 @@ export default function EditPrescriptionPage() {
   }
 
   if (loading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return <Layout loading />;
   }
 
   return (

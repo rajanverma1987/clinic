@@ -6,12 +6,12 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
 import { SubscriptionCard } from '@/components/ui/SubscriptionCard';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
+import { useFeatures } from '@/contexts/FeatureContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { apiClient } from '@/lib/api/client';
@@ -22,7 +22,11 @@ import {
   COMPARISON_TABLE_PLAN_SLUGS,
   COMPARISON_TABLE_ROWS,
   FAQ_ITEMS,
+  FIX_PLAN_PRICES_USD_CENTS,
   OUTCOME_POSITIONING,
+  PLAN_DISPLAY_NAMES,
+  PLAN_TRIAL_DAYS,
+  WHICH_PLAN,
   YEARLY_SAVE,
 } from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
@@ -35,8 +39,9 @@ export default function SubscriptionPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { open: openConfirm } = useConfirmation();
+  const { refreshFeatures } = useFeatures();
   const { t } = useI18n();
-  /** Subscription pricing is USD only; payment method is PayPal only. */
+  /** Subscription pricing is USD; payment method is PayPal only. */
   const displayCurrency = 'USD';
   const displayLocale = 'en-US';
   const { handleError, safeTranslate } = useErrorHandler({ t, showToast: true });
@@ -90,14 +95,17 @@ export default function SubscriptionPage() {
   const fetchAvailablePlans = async () => {
     try {
       const response = await apiClient.get('/subscription-plans');
-      if (response.success && response.data) setAvailablePlans(response.data);
+      if (response.success && response.data) {
+        const list = Array.isArray(response.data) ? response.data : [response.data];
+        setAvailablePlans(list);
+      }
     } catch (error) {
       logger.error('Failed to fetch plans', error);
       setFetchError((prev) => prev || error.message || t('subscription.noPlansDescription'));
     }
   };
 
-  /** Run subscription API and redirect (used from payment method modal, no confirm dialog). */
+  /** Run subscription API and redirect to PayPal. */
   const handlePaymentWithMethod = async (planId, paymentMethod) => {
     if (!user) return;
     const plan = availablePlans.find((p) => p._id === planId);
@@ -164,7 +172,7 @@ export default function SubscriptionPage() {
         setUpgrading(true);
         setUpgradingMethod(method);
         try {
-          if (isPaidPlan && (subscription || !subscription)) {
+          if (isPaidPlan) {
             const response = await apiClient.post('/subscriptions', {
               planId,
               customerEmail: user.email,
@@ -181,12 +189,10 @@ export default function SubscriptionPage() {
             } else {
               showError(response.error?.message || t('subscription.updateFailed'));
             }
-          } else if ((isFreePlan || !isPaidPlan) && subscription) {
+          } else if (isFreePlan && subscription) {
             const response = await apiClient.put(
               `/subscriptions/${subscription._id}?action=upgrade`,
-              {
-                planId,
-              },
+              { planId },
             );
             if (response.success) {
               showSuccess(t('subscription.subscriptionUpdated'));
@@ -225,6 +231,7 @@ export default function SubscriptionPage() {
           });
           if (response.success) {
             await fetchSubscription();
+            await refreshFeatures();
             showSuccess(t('subscription.addonAdded'));
           } else {
             showError(response.error?.message || t('subscription.updateFailed'));
@@ -256,6 +263,7 @@ export default function SubscriptionPage() {
           });
           if (response.success) {
             await fetchSubscription();
+            await refreshFeatures();
             showSuccess(t('subscription.addonRemoved'));
           } else {
             showError(response.error?.message || t('subscription.updateFailed'));
@@ -287,9 +295,7 @@ export default function SubscriptionPage() {
         try {
           const response = await apiClient.post(
             `/subscriptions/${subscription._id}?action=cancel`,
-            {
-              cancelAtPeriodEnd: !subscription.cancelAtPeriodEnd,
-            },
+            { cancelAtPeriodEnd: !subscription.cancelAtPeriodEnd },
           );
           if (response.success) {
             fetchSubscription();
@@ -307,11 +313,35 @@ export default function SubscriptionPage() {
     });
   };
 
-  /** Subscription pricing is USD only. */
+  /** Format USD cents → "$24.99" */
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
       (amount || 0) / 100,
     );
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch {
+      return 'Invalid Date';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      ACTIVE: 'success',
+      CANCELLED: 'danger',
+      SUSPENDED: 'warning',
+      EXPIRED: 'danger',
+      PENDING: 'warning',
+    };
+    return colors[status] || 'default';
+  };
 
   const renderAddonCard = (addon) => {
     try {
@@ -346,9 +376,24 @@ export default function SubscriptionPage() {
               </Button>
             )}
             {alreadyAdded && (
-              <span className='sub-addon-badge' aria-hidden>
-                ✓ {safeTranslate('subscription.added', 'Added')}
-              </span>
+              <>
+                <span className='sub-addon-badge' aria-hidden>
+                  ✓ {safeTranslate('subscription.added', 'Added')}
+                </span>
+                {canManageSubscription && (
+                  <button
+                    type='button'
+                    onClick={() => handleRemoveAddon(addon.key, addon.labelKey)}
+                    disabled={!!addonLoading}
+                    className='sub-addon-remove text-body-sm text-status-error hover:underline ml-2'
+                    aria-label={safeTranslate('subscription.removeAddon', 'Remove')}
+                  >
+                    {addonLoading === addon.key
+                      ? '…'
+                      : safeTranslate('subscription.removeAddon', 'Remove')}
+                  </button>
+                )}
+              </>
             )}
           </div>
           {addon?.descriptionKey && (
@@ -366,53 +411,34 @@ export default function SubscriptionPage() {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    } catch {
-      return 'Invalid Date';
-    }
+  /** Plans: Basic / Smart Clinic / Enterprise — USD, PayPal only. */
+  const ALLOWED_PLAN_NAMES = ['Basic', 'Smart Clinic', 'Enterprise'];
+  const normalizedPlanName = (name) => (name && String(name).trim()) || '';
+  const isAllowedPlan = (name) =>
+    ALLOWED_PLAN_NAMES.some(
+      (allowed) => normalizedPlanName(name).toLowerCase() === allowed.toLowerCase(),
+    );
+  const sortOrder = (name) => {
+    const n = normalizedPlanName(name).toLowerCase();
+    const i = ALLOWED_PLAN_NAMES.findIndex((a) => a.toLowerCase() === n);
+    return i >= 0 ? i : 999;
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      ACTIVE: 'success',
-      CANCELLED: 'danger',
-      SUSPENDED: 'warning',
-      EXPIRED: 'danger',
-      PENDING: 'warning',
-    };
-    return colors[status] || 'default';
-  };
-
-  /** Plans: Core / Pro / Enterprise. USD only, PayPal only. */
-  const ALLOWED_PLAN_NAMES = ['Core', 'Pro', 'Enterprise'];
-
-  // Dedupe plans by name; keep only allowed plans and sort by ALLOWED_PLAN_NAMES order
   const uniquePlans = availablePlans
-    .filter((plan) => plan && plan.name && ALLOWED_PLAN_NAMES.includes(plan.name))
+    .filter((plan) => plan && plan.name && isAllowedPlan(plan.name))
     .reduce((acc, plan) => {
-      if (acc.some((p) => p.name === plan.name)) return acc;
+      const key = normalizedPlanName(plan.name).toLowerCase();
+      if (acc.some((p) => normalizedPlanName(p.name).toLowerCase() === key)) return acc;
       acc.push(plan);
       return acc;
     }, [])
-    .sort((a, b) => ALLOWED_PLAN_NAMES.indexOf(a.name) - ALLOWED_PLAN_NAMES.indexOf(b.name));
+    .sort((a, b) => sortOrder(a.name) - sortOrder(b.name));
 
+  // Plans to display (exclude current active plan)
   const displayPlans = uniquePlans.filter((plan) => {
-    if (
-      subscription &&
-      subscription.planId &&
-      typeof subscription.planId === 'object' &&
-      plan &&
-      plan._id
-    ) {
-      const subPlanId = subscription.planId._id?.toString?.() ?? String(subscription.planId._id);
-      const planId = plan._id?.toString?.() ?? String(plan._id);
+    if (subscription?.planId && typeof subscription.planId === 'object' && plan?._id) {
+      const subPlanId = String(subscription.planId._id);
+      const planId = String(plan._id);
       if (subPlanId === planId) return false;
     }
     return true;
@@ -430,12 +456,27 @@ export default function SubscriptionPage() {
   };
 
   if (!user) return null;
-  if (loading) return <Loader type='page' text={t('common.loading')} />;
+  if (loading) return <Layout loading />;
 
-  // Only the primary account (registered with full clinic details) can purchase or manage subscription. Staff/doctors created by admin cannot.
-  const canManageSubscription = !!user.isPrimaryAccount;
+  // Any registered account can purchase a new subscription.
+  const canPurchase = true;
+  // Only the account that originally purchased can upgrade, downgrade, or cancel.
+  const currentUserId = String(user.id || user.userId || '');
+  const subscriptionOwnerId = subscription
+    ? String(subscription.userId || subscription.createdBy || '')
+    : '';
+  const canManageSubscription = subscription
+    ? subscriptionOwnerId
+      ? subscriptionOwnerId === currentUserId
+      : !!user.isPrimaryAccount
+    : canPurchase;
 
-  // No plans at all: show empty state with i18n
+  const hasActiveSubscription =
+    subscription && subscription.planId && typeof subscription.planId === 'object';
+  /** Add-ons only available with a paid plan (not Free Trial / $0). */
+  const hasPaidPlan = hasActiveSubscription && (subscription.planId?.price ?? 0) > 0;
+
+  // No plans at all: empty state
   if (uniquePlans.length === 0) {
     return (
       <Layout>
@@ -470,6 +511,7 @@ export default function SubscriptionPage() {
         unreadCount={0}
       />
       <div className='dashboard-container sub-page-wrap'>
+        {/* ── Error Banner ───────────────────────────────────────────────── */}
         {fetchError && (
           <div className='dashboard-section'>
             <div className='sub-error-banner' role='alert'>
@@ -488,9 +530,11 @@ export default function SubscriptionPage() {
             </div>
           </div>
         )}
-        {/* Subscription details and Add-ons side by side (2-column layout) */}
-        {subscription && subscription.planId && typeof subscription.planId === 'object' ? (
+
+        {/* ── Current Subscription + Add-ons ─────────────────────────────── */}
+        {hasActiveSubscription && (
           <div className='sub-details-addons-row'>
+            {/* Current Plan Details */}
             <div className='dashboard-section sub-details-col'>
               <h2 className='sub-section-title'>
                 <span className='sub-accent' />
@@ -502,18 +546,53 @@ export default function SubscriptionPage() {
               >
                 <div className='sub-detail-row'>
                   <span className='sub-detail-label'>{t('subscription.status')}</span>
-                  <Tag variant={getStatusColor(subscription.status)}>{subscription.status}</Tag>
+                  <Tag variant={getStatusColor(subscription.status)}>
+                    {subscription.status
+                      ? subscription.status.charAt(0).toUpperCase() +
+                        subscription.status.slice(1).toLowerCase()
+                      : '—'}
+                  </Tag>
                 </div>
-                {subscription.currentPeriodStart && subscription.currentPeriodEnd && (
+
+                <div className='sub-detail-row'>
+                  <span className='sub-detail-label'>{t('subscriptionSpec.plan')}</span>
+                  <span className='sub-detail-value font-semibold'>
+                    {(() => {
+                      const rawName = subscription.planId?.name;
+                      const canonical = PLAN_DISPLAY_NAMES[rawName] || rawName;
+                      const displayName =
+                        t(`subscriptionSpec.planName${canonical}`) || canonical || '—';
+                      const isFree = (subscription.planId?.price ?? 0) === 0;
+                      return isFree ? `${displayName} (${t('pricing.free')})` : displayName;
+                    })()}
+                  </span>
+                </div>
+
+                {subscription.planId && (subscription.planId?.price ?? 0) > 0 && (
                   <div className='sub-detail-row'>
-                    <span className='sub-detail-label'>{t('subscription.currentPeriod')}</span>
+                    <span className='sub-detail-label'>{t('subscription.monthlyCost')}</span>
                     <span className='sub-detail-value'>
-                      {formatDate(subscription.currentPeriodStart)} –{' '}
-                      {formatDate(subscription.currentPeriodEnd)}
+                      {formatCurrency(subscription.planId.price)} /{' '}
+                      {subscription.planId?.billingCycle === 'YEARLY'
+                        ? t('pricing.perYear')
+                        : t('pricing.perMonth')}
                     </span>
                   </div>
                 )}
-                {subscription.nextBillingDate && (
+
+                {subscription.currentPeriodStart &&
+                  subscription.currentPeriodEnd &&
+                  (subscription.planId?.price ?? 0) > 0 && (
+                    <div className='sub-detail-row'>
+                      <span className='sub-detail-label'>{t('subscription.currentPeriod')}</span>
+                      <span className='sub-detail-value'>
+                        {formatDate(subscription.currentPeriodStart)} –{' '}
+                        {formatDate(subscription.currentPeriodEnd)}
+                      </span>
+                    </div>
+                  )}
+
+                {subscription.nextBillingDate && (subscription.planId?.price ?? 0) > 0 && (
                   <div className='sub-detail-row'>
                     <span className='sub-detail-label'>{t('subscription.nextBillingDate')}</span>
                     <span className='sub-detail-value'>
@@ -521,17 +600,7 @@ export default function SubscriptionPage() {
                     </span>
                   </div>
                 )}
-                {subscription.planId && (
-                  <div className='sub-detail-row'>
-                    <span className='sub-detail-label'>{t('subscription.monthlyCost')}</span>
-                    <span className='sub-detail-value'>
-                      {formatCurrency(subscription.planId?.price || 0)} /{' '}
-                      {subscription.planId?.billingCycle === 'YEARLY'
-                        ? t('pricing.perYear')
-                        : t('pricing.perMonth')}
-                    </span>
-                  </div>
-                )}
+
                 {subscription.trialEnd && new Date(subscription.trialEnd) > new Date() && (
                   <div className='sub-trial-notice'>
                     <p className='sub-detail-value'>
@@ -541,7 +610,14 @@ export default function SubscriptionPage() {
                       )}
                       .{' '}
                       {t('subscription.afterTrialPlanContinues')
-                        .replace('{{planName}}', subscription.planId?.name || '')
+                        .replace(
+                          '{{planName}}',
+                          (() => {
+                            const rawName = subscription.planId?.name;
+                            const canonical = PLAN_DISPLAY_NAMES[rawName] || rawName;
+                            return t(`subscriptionSpec.planName${canonical}`) || canonical || '';
+                          })(),
+                        )
                         .replace(
                           '{{amount}}',
                           subscription.planId ? formatCurrency(subscription.planId.price || 0) : '',
@@ -549,6 +625,7 @@ export default function SubscriptionPage() {
                     </p>
                   </div>
                 )}
+
                 {subscription.cancelAtPeriodEnd && (
                   <div className='sub-alert'>
                     <span className='text-amber-600' aria-hidden>
@@ -562,6 +639,7 @@ export default function SubscriptionPage() {
                     </p>
                   </div>
                 )}
+
                 <div className='sub-actions'>
                   {canManageSubscription && (
                     <>
@@ -595,83 +673,86 @@ export default function SubscriptionPage() {
               </Card>
             </div>
 
+            {/* Add-ons — only shown when on a paid plan */}
             <div className='dashboard-section sub-addons-col sub-section-compact'>
               <h2 className='sub-section-title'>
                 <span className='sub-accent' />
                 {t('subscriptionSpec.addOns')}
               </h2>
               <Card className='sub-details-card-inner'>
-                <p
-                  className='sub-section-desc'
-                  style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}
-                >
-                  {t('subscriptionSpec.addOnsSubtitle')}
-                </p>
-                <div className='content-grid-2 content-grid-gap-3'>
-                  {ADDONS.map(renderAddonCard)}
-                </div>
+                {hasPaidPlan ? (
+                  <>
+                    <p
+                      className='sub-section-desc'
+                      style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}
+                    >
+                      {t('subscriptionSpec.addOnsSubtitle')}
+                    </p>
+                    <div className='content-grid-2 content-grid-gap-3'>
+                      {ADDONS.map(renderAddonCard)}
+                    </div>
+                  </>
+                ) : (
+                  <p
+                    className='sub-section-desc text-neutral-600 dark:text-neutral-400'
+                    style={{ marginTop: 0 }}
+                  >
+                    {t('subscription.addOnsPaidPlanOnly')}
+                  </p>
+                )}
               </Card>
             </div>
           </div>
-        ) : (
-          <>
-            {/* Add-ons catalog – full width when no current plan */}
-            <div className='dashboard-section sub-section-compact'>
-              <Card title={t('subscriptionSpec.addOns')}>
-                <p
-                  className='sub-section-desc'
-                  style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}
-                >
-                  {t('subscriptionSpec.addOnsSubtitle')}
-                </p>
-                <div className='content-grid-3 content-grid-gap-3'>
-                  {ADDONS.map(renderAddonCard)}
-                </div>
-              </Card>
-            </div>
-          </>
         )}
 
-        {/* Other plans (excludes current plan) */}
+        {/* ── Available Plans ─────────────────────────────────────────────── */}
         {displayPlans.length > 0 && (
           <div className='dashboard-section'>
             <h2 className='sub-section-title'>
               <span className='sub-accent' />
-              {subscription ? t('subscription.upgradeOrChangePlan') : t('subscription.chooseAPlan')}
+              {hasActiveSubscription
+                ? t('subscription.upgradeOrChangePlan')
+                : t('subscription.chooseAPlan')}
             </h2>
             <p className='sub-section-desc'>
-              {subscription
+              {hasActiveSubscription
                 ? t('subscription.upgradeDescription')
                 : t('subscription.chooseDescription')}
             </p>
-            <p className='sub-section-desc sub-section-desc--trial'>
-              {t('subscription.allPlansIncludeTrial')}
-            </p>
-            {displayPlans.some((p) => (Number(p.price) || 0) > 0) && (
-              <p className='sub-payment-security-note' role='status'>
-                {t('subscription.securePaymentNote')}
-              </p>
-            )}
+
             <div className='content-grid-3 content-grid-gap-6'>
               {displayPlans.map((plan) => {
-                const isPaid = (Number(plan.price) || 0) > 0;
+                // Normalize DB plan name (handles legacy ENTERPRISE, CLINIC, SOLO etc.)
+                const canonicalName = PLAN_DISPLAY_NAMES[plan.name] || plan.name;
+                // All plans are USD-only. Override DB price/currency from spec constants when available.
+                const fixedPriceCents = FIX_PLAN_PRICES_USD_CENTS[canonicalName];
+                const cardPrice = fixedPriceCents ?? plan.price;
+                const cardCurrency = fixedPriceCents != null ? 'USD' : plan.currency || 'USD';
+                const isPaid = (Number(cardPrice) || 0) > 0;
+                // CARD_FEATURES_BY_PLAN stores plain text strings — pass directly, do NOT translate
+                const cardFeatures = (
+                  CARD_FEATURES_BY_PLAN[canonicalName] ||
+                  CARD_FEATURES_BY_PLAN[plan.name] ||
+                  []
+                ).length
+                  ? CARD_FEATURES_BY_PLAN[canonicalName] || CARD_FEATURES_BY_PLAN[plan.name]
+                  : dedupeFeatures(plan.features);
                 return (
                   <SubscriptionCard
                     key={plan._id || plan.name}
-                    name={t(`subscriptionSpec.planName${plan.name}`) || plan.name}
-                    description={t(`subscriptionSpec.planDesc${plan.name}`) || plan.description}
-                    price={plan.price}
-                    currency={plan.currency}
+                    name={t(`subscriptionSpec.planName${canonicalName}`) || canonicalName}
+                    description={t(`subscriptionSpec.planDesc${canonicalName}`) || plan.description}
+                    price={cardPrice}
+                    currency={cardCurrency}
                     billingCycle={plan.billingCycle}
-                    features={(CARD_FEATURES_BY_PLAN[plan.name] || []).length
-                      ? (CARD_FEATURES_BY_PLAN[plan.name] || []).map((key) => t(key))
-                      : dedupeFeatures(plan.features)}
+                    features={cardFeatures}
                     maxUsers={plan.maxUsers}
                     maxPatients={plan.maxPatients}
                     maxStorageGB={plan.maxStorageGB}
                     isPopular={plan.isPopular}
-                    yearlySaveAmount={YEARLY_SAVE[plan.name]}
-                    trialDays={plan.trialDays ?? 14}
+                    isBestValue={canonicalName === 'Smart Clinic'}
+                    yearlySaveAmount={YEARLY_SAVE[canonicalName]}
+                    trialDays={PLAN_TRIAL_DAYS[canonicalName] ?? 90}
                     displayCurrency={displayCurrency}
                     displayLocale={displayLocale}
                     showPaymentMethods={canManageSubscription && isPaid}
@@ -683,17 +764,20 @@ export default function SubscriptionPage() {
                     }
                     ctaText={
                       canManageSubscription
-                        ? subscription
+                        ? hasActiveSubscription
                           ? t('subscription.switchToPlan')
                           : t('subscription.getStarted')
-                        : t('subscription.viewOnly')
+                        : hasActiveSubscription
+                          ? t('subscription.viewOnly')
+                          : t('subscription.getStarted')
                     }
-                    ctaDisabled={upgrading || !canManageSubscription}
+                    ctaDisabled={upgrading || (!!hasActiveSubscription && !canManageSubscription)}
                   />
                 );
               })}
             </div>
 
+            {/* PayPal Payment Modal */}
             <Modal
               isOpen={!!paymentModalPlan}
               onClose={() => !upgrading && setPaymentModalPlan(null)}
@@ -706,9 +790,6 @@ export default function SubscriptionPage() {
             >
               {paymentModalPlan && (
                 <div className='sub-payment-modal-content'>
-                  <p className='sub-payment-modal-note' role='status'>
-                    {t('subscription.securePaymentNote')}
-                  </p>
                   <div className='sub-payment-modal-buttons'>
                     <Button
                       variant='primary'
@@ -727,7 +808,7 @@ export default function SubscriptionPage() {
           </div>
         )}
 
-        {/* Feature comparison (collapsible) */}
+        {/* ── Feature Comparison Table ────────────────────────────────────── */}
         <div className='dashboard-section sub-section-compact'>
           <Card>
             <Button
@@ -769,7 +850,43 @@ export default function SubscriptionPage() {
           </Card>
         </div>
 
-        {/* Included in ALL Plans */}
+        {/* ── Which Plan is Right for You? ────────────────────────────────── */}
+        <div className='dashboard-section sub-section-compact'>
+          <Card>
+            <h3 className='sub-section-title' style={{ marginTop: 0 }}>
+              <span className='sub-accent' />
+              {t('subscriptionSpec.whichPlan')}
+            </h3>
+            <div
+              className='content-grid-3 content-grid-gap-4'
+              style={{ marginTop: 'var(--space-4)' }}
+            >
+              {WHICH_PLAN.map(({ planSlug, titleKey, bulletsKey, bestForKey }) => {
+                const bullets =
+                  t(bulletsKey)
+                    ?.split(';')
+                    .map((s) => s.trim())
+                    .filter(Boolean) || [];
+                return (
+                  <div key={planSlug} className='sub-which-plan-card'>
+                    <div className='sub-which-plan-name'>{planSlug}</div>
+                    <p className='sub-which-plan-title'>{t(titleKey)}</p>
+                    <ul className='sub-which-plan-bullets'>
+                      {bullets.map((b, i) => (
+                        <li key={i}>{b}</li>
+                      ))}
+                    </ul>
+                    <p className='sub-which-plan-best'>
+                      <strong>{t('subscriptionSpec.bestForLabel')}</strong> {t(bestForKey)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+
+        {/* ── Included in All Plans ───────────────────────────────────────── */}
         <div className='dashboard-section sub-section-compact'>
           <Card>
             <h3 className='sub-section-title' style={{ marginTop: 0 }}>
@@ -784,48 +901,28 @@ export default function SubscriptionPage() {
           </Card>
         </div>
 
-        {/* Outcome Positioning */}
+        {/* ── What You Achieve (Outcome Positioning) ──────────────────────── */}
         <div className='dashboard-section sub-section-compact'>
           <Card>
             <h3 className='sub-section-title' style={{ marginTop: 0 }}>
               <span className='sub-accent' />
               {t('subscriptionSpec.outcomePositioning')}
             </h3>
-            <div className='sub-outcome-wrap'>
-              <table className='sub-outcome-table'>
-                <thead>
-                  <tr>
-                    <th>{t('subscriptionSpec.plan')}</th>
-                    <th>{t('subscriptionSpec.outcome')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {OUTCOME_POSITIONING.map(({ plan, outcomeKey }) => (
-                    <tr key={plan}>
-                      <td>{plan}</td>
-                      <td>{t(outcomeKey)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div
+              className='content-grid-3 content-grid-gap-4'
+              style={{ marginTop: 'var(--space-4)' }}
+            >
+              {OUTCOME_POSITIONING.map(({ plan, outcomeKey }) => (
+                <div key={plan} className='sub-outcome-card'>
+                  <div className='sub-outcome-plan'>{plan}</div>
+                  <p className='sub-outcome-text'>{t(outcomeKey)}</p>
+                </div>
+              ))}
             </div>
           </Card>
         </div>
 
-        {/* What You Deliver */}
-        <div className='dashboard-section sub-section-compact'>
-          <Card className='sub-what-you-deliver-card'>
-            <h3 className='sub-section-title' style={{ marginTop: 0 }}>
-              <span className='sub-accent' />
-              {t('subscriptionSpec.whatYouDeliver')}
-            </h3>
-            <p className='sub-what-you-deliver-tagline'>
-              {t('subscriptionSpec.whatYouDeliverTagline')}
-            </p>
-          </Card>
-        </div>
-
-        {/* FAQ (compact) */}
+        {/* ── FAQ ─────────────────────────────────────────────────────────── */}
         <div className='dashboard-section sub-section-compact'>
           <Card title={t('subscriptionSpec.faq')}>
             <div className='sub-faq-list'>
@@ -849,7 +946,7 @@ export default function SubscriptionPage() {
           </Card>
         </div>
 
-        {/* Terms & support (one line) */}
+        {/* ── Footer: Terms & Support ─────────────────────────────────────── */}
         <div className='dashboard-section sub-footer-line'>
           <p className='sub-terms-one-line'>
             {t('subscription.termsOneLine')}{' '}

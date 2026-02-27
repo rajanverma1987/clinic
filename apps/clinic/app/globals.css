@@ -2721,6 +2721,25 @@ svg.icon.icon-hero {
   color: #fff;
   box-shadow: var(--shadow-md);
 }
+.sub-plan-card__badge--best-value {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+.sub-plan-card--best-value {
+  border-color: #10b981;
+  border-width: 2px;
+  background: linear-gradient(180deg, #ecfdf5 0%, var(--color-surface, #fff) 35%);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.14);
+}
+.dark .sub-plan-card--best-value {
+  background: linear-gradient(180deg, color-mix(in srgb, #10b981 15%, transparent) 0%, var(--color-surface-elevated) 35%);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  border-color: #34d399;
+}
+.sub-plan-card--best-value:hover {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2);
+}
 .sub-plan-card__body {
   display: flex;
   flex-direction: column;
@@ -3189,6 +3208,95 @@ svg.icon.icon-hero {
 }
 .dark .sub-what-you-deliver-card .sub-what-you-deliver-tagline {
   color: var(--color-neutral-300);
+}
+
+/* Outcome cards (grid layout replacing old table) */
+.sub-outcome-card {
+  padding: var(--space-4);
+  border-radius: 10px;
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-neutral-50);
+}
+.dark .sub-outcome-card {
+  background: var(--color-neutral-800);
+  border-color: var(--color-border);
+}
+.sub-outcome-plan {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-primary-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+}
+.dark .sub-outcome-plan {
+  color: var(--color-primary-400);
+}
+.sub-outcome-text {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-700);
+  line-height: 1.5;
+}
+.dark .sub-outcome-text {
+  color: var(--color-neutral-300);
+}
+
+/* Which plan is right for you — cards */
+.sub-which-plan-card {
+  padding: var(--space-4);
+  border-radius: 10px;
+  border: 1px solid var(--color-neutral-200);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.dark .sub-which-plan-card {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+.sub-which-plan-name {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--color-primary-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.dark .sub-which-plan-name {
+  color: var(--color-primary-400);
+}
+.sub-which-plan-title {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.sub-which-plan-bullets {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.sub-which-plan-bullets li {
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-700);
+  line-height: 1.4;
+}
+.dark .sub-which-plan-bullets li {
+  color: var(--color-neutral-300);
+}
+.sub-which-plan-best {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-neutral-600);
+  border-top: 1px solid var(--color-neutral-200);
+  padding-top: var(--space-2);
+}
+.dark .sub-which-plan-best {
+  color: var(--color-neutral-400);
+  border-top-color: var(--color-border);
 }
 
 /* ----- Add-ons (compact cards, + icon top-right) ----- */

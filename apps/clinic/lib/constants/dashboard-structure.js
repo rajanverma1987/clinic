@@ -1194,6 +1194,18 @@ export const SETTINGS_CHILDREN = [
   { path: '/settings/locations', labelKey: 'nav.locations', adminOnly: true },
   { path: '/settings/branding', labelKey: 'nav.branding', adminOnly: true },
   { path: '/settings/white-label', labelKey: 'nav.whiteLabel', adminOnly: true },
+  {
+    path: '/settings/automation',
+    labelKey: 'settings.automation',
+    adminOnly: true,
+    addonKey: 'automationPro',
+  },
+  {
+    path: '/settings/integrations',
+    labelKey: 'settings.apiIntegrations',
+    adminOnly: true,
+    addonKey: 'apiIntegration',
+  },
 ];
 
 /** Child pages under /admin/financial. */

@@ -75,6 +75,7 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('userInfo');
             localStorage.removeItem('rememberedEmail');
+            localStorage.removeItem('rememberedPassword');
             lastActivityRef.current = 0;
             dashboardCache.clear();
             clearAllCache();
@@ -600,6 +601,7 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userInfo');
         localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPassword');
         lastActivityRef.current = 0;
         dashboardCache.clear();
         clearAllCache();

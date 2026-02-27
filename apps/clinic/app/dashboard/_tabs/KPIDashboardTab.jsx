@@ -163,16 +163,14 @@ export function KPIDashboardTab({ isActive = false }) {
   if (!isActive) return null;
 
   return (
-    <div className='dashboard-section dashboard-tab-content-inner space-y-6'>
+    <div className='dashboard-section dashboard-tab-content-inner dashboard-kpi-tab'>
       {/* Title */}
-      <div className='mb-6'>
-        <h1 className='text-xl font-bold text-neutral-900 dark:text-neutral-100'>
-          {t('dashboard.kpiSatisfactionTitle')}
-        </h1>
-      </div>
+      <header className='dashboard-kpi-tab__header'>
+        <h1 className='dashboard-kpi-tab__title'>{t('dashboard.kpiSatisfactionTitle')}</h1>
+      </header>
 
       {/* Row 1: Average waiting times (gauges) + Patients by department (bar chart) */}
-      <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid'>
+      <div className='dashboard-kpi-grid dashboard-kpi-grid--2'>
         <GaugeCard
           title={t('dashboard.averageWaitingTimes')}
           items={gaugeItems}
@@ -189,7 +187,7 @@ export function KPIDashboardTab({ isActive = false }) {
       </div>
 
       {/* Row 2: Doctor explained / Confidence (horizontal bars) + Patient satisfaction (donut) */}
-      <div className='grid grid-cols-1 md:grid-cols-3 dashboard-grid'>
+      <div className='dashboard-kpi-grid dashboard-kpi-grid--3'>
         <HorizontalBarCard
           title={t('dashboard.doctorExplainedTreatment')}
           data={treatmentExplainedData}
@@ -209,7 +207,7 @@ export function KPIDashboardTab({ isActive = false }) {
       </div>
 
       {/* Row 3: Patient feedback by type (donut) + Average visit length table */}
-      <div className='grid grid-cols-1 lg:grid-cols-2 dashboard-grid'>
+      <div className='dashboard-kpi-grid dashboard-kpi-grid--2'>
         <DonutCard
           title={t('dashboard.patientFeedbackByType')}
           segments={feedbackByTypeSegments}

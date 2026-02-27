@@ -532,10 +532,10 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
               alt={t('common.altClinicLogo')}
               className='block object-contain flex-shrink-0'
               style={{
-                height: isCollapsed ? 44 : 56,
-                width: isCollapsed ? 44 : 'auto',
-                maxWidth: isCollapsed ? 44 : 200,
-                maxHeight: isCollapsed ? 44 : 64,
+                height: isCollapsed ? 43 : 55,
+                width: isCollapsed ? 43 : 'auto',
+                maxWidth: isCollapsed ? 43 : 196,
+                maxHeight: isCollapsed ? 43 : 63,
                 transition: 'height 0.3s ease, width 0.3s ease, max-width 0.3s ease',
               }}
             />

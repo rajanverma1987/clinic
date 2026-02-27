@@ -205,10 +205,10 @@ export async function createSubscription(
   const now = new Date();
   const periodStart = now;
   let periodEnd = new Date(now);
-  const trialDays = plan.trialDays ?? 14;
+  const trialDays = plan.trialDays ?? 180;
 
   if (trialDays > 0) {
-    // All plans: 14 days free, then billing starts
+    // All plans: 180-day (6 month) Starter free trial, then billing starts
     periodEnd.setDate(periodEnd.getDate() + trialDays);
   } else if (plan.billingCycle === PlanBillingCycle.MONTHLY) {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
@@ -245,7 +245,7 @@ export async function createSubscription(
     }
   }
 
-  // Trial end date: 14 days free for all plans, then billing starts
+  // Trial end date: 180 days (6 months) free Starter plan, then billing starts
   const trialEnd = trialDays > 0 ? new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000) : null;
 
   // Create subscription
@@ -471,9 +471,9 @@ export async function updateTenantSubscription(tenantId, newPlanId, customerEmai
   const periodStart = new Date();
   const periodEnd = new Date(periodStart);
 
-  // Free Trial gets 15 days, others follow billing cycle
-  if (newPlan.name === 'Free Trial') {
-    periodEnd.setDate(periodEnd.getDate() + 15); // 15 days for free trial
+  // Starter / Free Trial gets 180 days (6 months), others follow billing cycle
+  if (newPlan.name === 'Free Trial' || newPlan.name === 'Starter') {
+    periodEnd.setDate(periodEnd.getDate() + 180);
   } else if (newPlan.billingCycle === PlanBillingCycle.MONTHLY) {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
   } else {
@@ -565,7 +565,9 @@ export async function addAddon(subscriptionId, tenantId, input) {
   const subscription = await Subscription.findOne({
     _id: subscriptionId,
     tenantId,
-  });
+  })
+    .populate('planId', 'name price')
+    .lean();
   if (!subscription) {
     throw new Error('Subscription not found');
   }
@@ -575,26 +577,36 @@ export async function addAddon(subscriptionId, tenantId, input) {
   ) {
     throw new Error('Add-ons can only be added to an active or pending subscription');
   }
+  const planPrice = subscription.planId?.price ?? 0;
+  if (typeof planPrice !== 'number' || planPrice <= 0) {
+    throw new Error(
+      'Add-ons are only available with a paid plan. Please upgrade from Free Trial first.',
+    );
+  }
+
+  // Re-fetch as document to mutate and save (lean() was for plan check)
+  const subDoc = await Subscription.findOne({ _id: subscriptionId, tenantId });
+  if (!subDoc) throw new Error('Subscription not found');
 
   const addonKey = (input.addonKey || '').trim();
   if (!ADDON_KEYS.includes(addonKey)) {
     throw new Error(`Invalid add-on: ${addonKey}`);
   }
 
-  const existing = (subscription.addons || []).find((a) => a.addonKey === addonKey);
+  const existing = (subDoc.addons || []).find((a) => a.addonKey === addonKey);
   if (existing) {
     throw new Error('This add-on is already on your subscription');
   }
 
-  subscription.addons = subscription.addons || [];
-  subscription.addons.push({
+  subDoc.addons = subDoc.addons || [];
+  subDoc.addons.push({
     addonKey,
     quantity: typeof input.quantity === 'number' && input.quantity >= 1 ? input.quantity : 1,
     option: typeof input.option === 'string' ? input.option.trim() : undefined,
   });
-  await subscription.save();
+  await subDoc.save();
 
-  return subscription;
+  return subDoc;
 }
 
 /**

@@ -108,7 +108,7 @@ export default function DoctorMessagesPage() {
   if (authLoading || loading) {
     return (
       <Layout>
-        <Loader type='page' text={t('common.loading')} />
+        <Loader type='section' text={t('common.loading')} />
       </Layout>
     );
   }

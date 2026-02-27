@@ -2,6 +2,7 @@
 
 import { Layout } from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatures } from '@/contexts/FeatureContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { SETTINGS_CHILDREN } from '@/lib/constants/dashboard-structure';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
@@ -34,10 +35,15 @@ export default function SettingsLayout({ children }) {
   /** Only clinic_admin and doctor can manage clinic info / compliance / doctors etc.; others must not see those tabs at all. */
   const canManageClinicSettings = user?.role === 'clinic_admin' || user?.role === 'doctor';
   const canAccessAdminTabs = canAccessSettings && canManageClinicSettings;
+  const { hasAddon } = useFeatures();
   // Until auth has loaded, show only non-admin tabs (Profile) to avoid flash of admin tabs
+  // Add-on tabs (addonKey) are visible only when the tenant has that add-on
   const visibleTabs = authLoading
     ? SETTINGS_CHILDREN.filter((tab) => !tab.adminOnly)
-    : SETTINGS_CHILDREN.filter((tab) => !tab.adminOnly || canManageClinicSettings);
+    : SETTINGS_CHILDREN.filter((tab) => {
+        if (tab.addonKey && !hasAddon(tab.addonKey)) return false;
+        return !tab.adminOnly || canManageClinicSettings;
+      });
 
   const activeTabPath = visibleTabs.find(
     (c) => pathname === c.path || (pathname || '').startsWith(c.path + '/'),

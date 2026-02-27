@@ -9,6 +9,7 @@ import { ICD10SearchInput } from '@/components/prescriptions/ICD10SearchInput';
 import { PrescriptionFormPrintPreview } from '@/components/prescriptions/PrescriptionFormPrintPreview';
 import { PrescriptionItemsTable } from '@/components/prescriptions/PrescriptionItemsTable.jsx';
 import { PrescriptionPatientHeader } from '@/components/prescriptions/PrescriptionPatientHeader';
+import { AiAssistSuggest } from '@/components/ui/AiAssistSuggest';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -99,7 +100,7 @@ function NewPrescriptionPageContent() {
   const appointmentsFetcher = async () => {
     const res = await apiClient.get('/appointments?status=in_progress&limit=100');
     if (!res?.success || !res?.data) return [];
-    return Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+    return Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
   };
   const patientsFetcher = async () => {
     const res = await apiClient.get('/patients?limit=100');
@@ -111,10 +112,14 @@ function NewPrescriptionPageContent() {
     appointmentsFetcher,
     { revalidateOnFocus: false, dedupingInterval: 2 * 60 * 1000 },
   );
-  const { data: patientsFromSWR, isLoading: patientsLoading } = useSWR(patientsKey, patientsFetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 2 * 60 * 1000,
-  });
+  const { data: patientsFromSWR, isLoading: patientsLoading } = useSWR(
+    patientsKey,
+    patientsFetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 2 * 60 * 1000,
+    },
+  );
   useEffect(() => {
     if (appointmentsFromSWR === undefined || patientsFromSWR === undefined) return;
     const appointmentsData = appointmentsFromSWR ?? [];
@@ -131,9 +136,7 @@ function NewPrescriptionPageContent() {
       ),
     ];
     let filtered =
-      patientIds.length > 0
-        ? allPatients.filter((p) => patientIds.includes(p._id))
-        : [];
+      patientIds.length > 0 ? allPatients.filter((p) => patientIds.includes(p._id)) : [];
     if (patientIdFromUrl) {
       const urlPatient = allPatients.find((p) => p._id === patientIdFromUrl);
       if (urlPatient && !filtered.find((p) => p._id === patientIdFromUrl)) {
@@ -694,7 +697,7 @@ function NewPrescriptionPageContent() {
   const dataLoading =
     appointmentsLoading || patientsLoading || (drugs.length === 0 && medicinesLoading);
   if (dataLoading) {
-    return <Loader type='page' text={t('common.loading')} />;
+    return <Layout loading />;
   }
 
   return (
@@ -887,9 +890,20 @@ function NewPrescriptionPageContent() {
                       </div>
 
                       <div className='prescription-form-field'>
-                        <label htmlFor='diagnosis' className='prescription-form-label'>
-                          {t('prescriptions.primaryDiagnosis')}
-                        </label>
+                        <div className='flex items-center justify-between gap-2 mb-2'>
+                          <label htmlFor='diagnosis' className='prescription-form-label'>
+                            {t('prescriptions.primaryDiagnosis')}
+                          </label>
+                          <AiAssistSuggest
+                            context='diagnosis'
+                            onInsert={(text) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                diagnosis: prev.diagnosis ? `${prev.diagnosis}; ${text}` : text,
+                              }))
+                            }
+                          />
+                        </div>
                         <ICD10SearchInput
                           codes={icd10Common}
                           value={formData.icd10Codes?.[0] || ''}
@@ -1036,13 +1050,26 @@ function NewPrescriptionPageContent() {
                     </div>
 
                     <div className='prescription-form-field prescription-form-field-block'>
-                      <label htmlFor='additionalInstructions' className='prescription-form-label'>
-                        {t('prescriptions.advicePrecautions')}
-                      </label>
+                      <div className='flex items-center justify-between gap-2 mb-2'>
+                        <label htmlFor='additionalInstructions' className='prescription-form-label'>
+                          {t('prescriptions.advicePrecautions')}
+                        </label>
+                        <AiAssistSuggest
+                          context='clinical_notes'
+                          onInsert={(text) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              additionalInstructions: prev.additionalInstructions
+                                ? `${prev.additionalInstructions}\n${text}`
+                                : text,
+                            }))
+                          }
+                        />
+                      </div>
                       <SimpleTextEditor
                         value={formData.additionalInstructions}
                         onChange={(value) =>
-                          setFormData({ ...formData, additionalInstructions: value })
+                          setFormData((prev) => ({ ...prev, additionalInstructions: value }))
                         }
                         placeholder={t('prescriptions.instructionsPlaceholder')}
                         rows={4}
@@ -1069,7 +1096,9 @@ function NewPrescriptionPageContent() {
                               className='px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm min-w-[160px]'
                               aria-label={t('prescriptions.addFromPackage') || 'Treatment package'}
                             >
-                              <option value=''>{t('prescriptions.selectPackage') || 'Select package'}</option>
+                              <option value=''>
+                                {t('prescriptions.selectPackage') || 'Select package'}
+                              </option>
                               {treatmentPackages.map((p) => (
                                 <option key={p._id} value={p._id}>
                                   {p.name}

@@ -24,6 +24,7 @@ export function SubscriptionCard({
   maxPatients,
   maxStorageGB,
   isPopular = false,
+  isBestValue = false,
   isCurrent = false,
   yearlySaveAmount,
   trialDays,
@@ -73,13 +74,24 @@ export function SubscriptionCard({
   const displayMaxStorageGB =
     maxStorageGB != null && maxStorageGB >= UNLIMITED_STORAGE_THRESHOLD ? null : maxStorageGB;
 
-  const cardMod = isPopular ? 'sub-plan-card--popular' : isCurrent ? 'sub-plan-card--current' : '';
+  const cardMod = isPopular
+    ? 'sub-plan-card--popular'
+    : isBestValue
+    ? 'sub-plan-card--best-value'
+    : isCurrent
+    ? 'sub-plan-card--current'
+    : '';
 
   return (
     <div className={`sub-plan-card ${cardMod} ${className}`.trim()}>
       {isPopular && (
         <div className='sub-plan-card__badge sub-plan-card__badge--popular'>
           {t('subscriptionSpec.mostPopular')}
+        </div>
+      )}
+      {isBestValue && !isPopular && (
+        <div className='sub-plan-card__badge sub-plan-card__badge--best-value'>
+          {t('subscriptionSpec.bestValue')}
         </div>
       )}
       {isCurrent && (
@@ -140,11 +152,10 @@ export function SubscriptionCard({
         {trialDays != null && trialDays > 0 && (
           <div className='sub-plan-card__trial'>
             <p className='sub-plan-card__trial-line'>
-              {t('subscriptionSpec.trialDaysFree').replace('{{days}}', String(trialDays))}
+              {t('subscriptionSpec.trialDaysFree').replace('{{months}}', String(Math.round(trialDays / 30)))}
             </p>
             <p className='sub-plan-card__trial-billing'>
               {t('subscriptionSpec.trialThenBilling')
-                .replace('{{days}}', String(trialDays))
                 .replace('{{planName}}', name)
                 .replace(
                   '{{amount}}',
@@ -220,7 +231,7 @@ export function SubscriptionCard({
         {showPaymentMethods && onSubscribe && isPaid ? (
           <div className='sub-plan-card__cta-group'>
             <Button
-              variant={isPopular ? 'primary' : 'secondary'}
+              variant={isPopular || isBestValue ? 'primary' : 'secondary'}
               size='md'
               className='sub-plan-card__cta'
               onClick={onSubscribe}
@@ -232,7 +243,7 @@ export function SubscriptionCard({
         ) : showPaymentMethods && onPayWithPayPal && isPaid ? (
           <div className='sub-plan-card__cta-group'>
             <Button
-              variant={isPopular ? 'primary' : 'secondary'}
+              variant={isPopular || isBestValue ? 'primary' : 'secondary'}
               size='md'
               className='sub-plan-card__cta'
               onClick={onPayWithPayPal}
@@ -244,7 +255,7 @@ export function SubscriptionCard({
           </div>
         ) : onSelect ? (
           <Button
-            variant={isPopular ? 'primary' : isCurrent ? 'secondary' : 'secondary'}
+            variant={isPopular || isBestValue ? 'primary' : isCurrent ? 'secondary' : 'secondary'}
             size='md'
             className='sub-plan-card__cta'
             onClick={onSelect}

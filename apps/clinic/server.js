@@ -86,15 +86,14 @@ app.prepare().then(async () => {
 
   // Initialize background jobs after server setup
   // Jobs will connect to DB internally when needed
-  try {
-    const { initializeJobs } = require('./jobs/index.js');
-    initializeJobs();
+  const { initializeJobs } = require('./jobs/index.js');
+  initializeJobs().then(() => {
     logger.info('✅ Background jobs initialized');
-  } catch (err) {
+  }).catch((err) => {
     logger.warn('Failed to initialize background jobs; continuing without pre-computed stats', {
       error: err?.message,
     });
-  }
+  });
 
   io.on('connection', (socket) => {
     socket.on('join-session', (sessionId) => {
