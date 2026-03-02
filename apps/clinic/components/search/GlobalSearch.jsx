@@ -214,15 +214,11 @@ export default function GlobalSearch({ isOpen, onClose }) {
               onChange={(e) => setQuery(e.target.value)}
               className='pr-20'
             />
-            <div className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500 dark:text-neutral-400'>
-              {loading ? (
+            {loading && (
+              <div className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500 dark:text-neutral-400'>
                 <Loader type='inline' text={t('common.loading')} />
-              ) : (
-                <kbd className='px-2 py-1 bg-neutral-100 dark:bg-neutral-700 rounded border border-neutral-300 dark:border-neutral-600'>
-                  ⌘K
-                </kbd>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Results */}

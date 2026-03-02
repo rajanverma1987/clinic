@@ -34,7 +34,7 @@ export function PageSearchBar({
       <div className='p-4'>
         <div className='flex flex-col sm:flex-row gap-3'>
           <div className='flex-1 flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-800 focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500'>
-            <SearchIcon className='ml-3 shrink-0 w-5 h-5 text-neutral-400' aria-hidden />
+            <SearchIcon className='icon icon-sm ml-3 text-neutral-400' ariaHidden />
             <Input
               type='text'
               placeholder={placeholder}

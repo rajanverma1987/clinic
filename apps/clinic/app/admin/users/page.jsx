@@ -6,13 +6,16 @@ import {
   FileDownIcon,
   FilterIcon,
   HistoryIcon,
+  KeyIcon,
+  LogOutIcon,
+  RefreshCwIcon,
+  UnlockIcon,
   UserAddIcon,
   XIcon,
 } from '@/components/icons';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
 import { Table } from '@/components/ui/Table';
 import { useAuth } from '@/contexts/AuthContext';
@@ -336,7 +339,7 @@ export default function AdminUsersPage() {
     {
       header: t('common.actions'),
       accessor: (row) => (
-        <div className='flex items-center gap-1'>
+        <div className='admin-users-actions-cell flex items-center gap-1'>
           <Button
             variant='ghost'
             size='xs'
@@ -348,20 +351,22 @@ export default function AdminUsersPage() {
             aria-label={t('common.view')}
             title={t('common.view')}
           >
-            <EyeIcon className='icon icon-xs' />
+            <EyeIcon className='icon icon-sm' />
           </Button>
           <Button
             variant='ghost'
             size='xs'
+            iconOnly
             href={`/admin/activity-logs?userId=${row._id || row.id}`}
             aria-label={t('admin.viewActivityLog') || 'View activity log'}
             title={t('admin.viewActivityLog') || 'View activity log'}
           >
-            <HistoryIcon className='icon icon-xs' />
+            <HistoryIcon className='icon icon-sm' />
           </Button>
           <Button
             variant='ghost'
             size='xs'
+            iconOnly
             onClick={(e) => {
               e.stopPropagation();
               setResetPasswordUser(row);
@@ -370,13 +375,14 @@ export default function AdminUsersPage() {
             aria-label={t('admin.resetPassword')}
             title={t('admin.resetPassword')}
           >
-            {t('admin.resetPassword') || 'Reset'}
+            <KeyIcon className='icon icon-sm' />
           </Button>
           {/* Unlock: shown for locked/inactive accounts */}
           {!row.isActive && (
             <Button
               variant='ghost'
               size='xs'
+              iconOnly
               disabled={unlockingUserId === (row._id || row.id)}
               onClick={(e) => {
                 e.stopPropagation();
@@ -384,16 +390,19 @@ export default function AdminUsersPage() {
               }}
               aria-label={t('admin.unlockAccount') || 'Unlock account'}
               title={t('admin.unlockAccount') || 'Unlock — re-enable this account'}
-              className='text-green-600 hover:text-green-700'
+              className='text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'
             >
-              {unlockingUserId === (row._id || row.id)
-                ? '...'
-                : t('admin.unlockAccount') || 'Unlock'}
+              {unlockingUserId === (row._id || row.id) ? (
+                <RefreshCwIcon className='icon icon-sm animate-spin' />
+              ) : (
+                <UnlockIcon className='icon icon-sm' />
+              )}
             </Button>
           )}
           <Button
             variant='ghost'
             size='xs'
+            iconOnly
             disabled={forceLogoutUserId === (row._id || row.id)}
             onClick={(e) => {
               e.stopPropagation();
@@ -402,9 +411,11 @@ export default function AdminUsersPage() {
             aria-label={t('admin.forceLogout') || 'Force logout'}
             title={t('admin.forceLogout') || 'Revoke all sessions'}
           >
-            {forceLogoutUserId === (row._id || row.id)
-              ? t('common.loading') || '...'
-              : t('admin.forceLogout') || 'Force logout'}
+            {forceLogoutUserId === (row._id || row.id) ? (
+              <RefreshCwIcon className='icon icon-sm animate-spin' />
+            ) : (
+              <LogOutIcon className='icon icon-sm' />
+            )}
           </Button>
           <Button
             variant={row.isActive ? 'danger' : 'primary'}
@@ -426,9 +437,9 @@ export default function AdminUsersPage() {
             }
           >
             {row.isActive ? (
-              <XIcon className='icon icon-xs' />
+              <XIcon className='icon icon-sm' />
             ) : (
-              <UserAddIcon className='icon icon-xs' />
+              <UserAddIcon className='icon icon-sm' />
             )}
           </Button>
         </div>

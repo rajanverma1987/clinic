@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
 import { supportedLocales } from '@/lib/i18n/index.js';
 
@@ -17,6 +18,7 @@ const localeData = {
 };
 
 export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
+  const { user } = useAuth();
   const { locale, setLocale, t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState({});
@@ -126,6 +128,9 @@ export function LanguageSwitcher({ variant = 'light', size = 'md' }) {
   };
 
   const currentLocale = localeData[locale] || localeData.en;
+
+  /* Super Admin dashboard is English-only; hide language switcher. */
+  if (user?.role === 'super_admin') return null;
 
   const buttonClasses = [
     'LanguageSwitcher-button',

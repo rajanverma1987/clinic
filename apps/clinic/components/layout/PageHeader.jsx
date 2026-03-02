@@ -19,7 +19,7 @@ function toActionsList(actionButtons) {
 
 /**
  * PageHeader – enterprise-level sticky header.
- * Left: page title + meta inline. Right: search pill (⌘K) | refresh | actions | theme | lang | bell.
+ * Left: page title + meta inline. Right: search pill | refresh | actions | theme | lang | bell.
  * onOpenSearch is owned by Layout to keep a single GlobalSearch instance.
  */
 export function PageHeader({
@@ -54,21 +54,27 @@ export function PageHeader({
   // Use context notifications if props are empty
   const appNotifications = useAppNotifications();
   const useContextNotifications = notificationsProp.length === 0 && unreadCountProp === 0;
-  
-  const notifications = useContextNotifications ? appNotifications.notifications : notificationsProp;
+
+  const notifications = useContextNotifications
+    ? appNotifications.notifications
+    : notificationsProp;
   const unreadCount = useContextNotifications ? appNotifications.unreadCount : unreadCountProp;
-  const onNotificationClick = onNotificationClickProp || ((notification) => {
-    if (notification.type === 'appointment') {
-      router.push('/appointments');
-    } else if (notification.type === 'inventory') {
-      router.push('/inventory');
-    }
-    if (useContextNotifications) {
-      appNotifications.markAsRead(notification.id);
-    }
-  });
-  const onMarkAsRead = onMarkAsReadProp || (useContextNotifications ? appNotifications.markAsRead : undefined);
-  const onMarkAllAsRead = onMarkAllAsReadProp || (useContextNotifications ? appNotifications.markAllAsRead : undefined);
+  const onNotificationClick =
+    onNotificationClickProp ||
+    ((notification) => {
+      if (notification.type === 'appointment') {
+        router.push('/appointments');
+      } else if (notification.type === 'inventory') {
+        router.push('/inventory');
+      }
+      if (useContextNotifications) {
+        appNotifications.markAsRead(notification.id);
+      }
+    });
+  const onMarkAsRead =
+    onMarkAsReadProp || (useContextNotifications ? appNotifications.markAsRead : undefined);
+  const onMarkAllAsRead =
+    onMarkAllAsReadProp || (useContextNotifications ? appNotifications.markAllAsRead : undefined);
 
   const handleRefresh = useCallback(() => {
     if (typeof onRefresh === 'function') {
@@ -134,7 +140,6 @@ export function PageHeader({
               <span className='page-header__search-text'>
                 {t('common.searchPlaceholder') || 'Search...'}
               </span>
-              <kbd className='page-header__search-kbd'>⌘K</kbd>
             </Button>
           )}
 

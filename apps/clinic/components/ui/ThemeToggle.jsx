@@ -11,7 +11,7 @@ export function ThemeToggle({ className = '', size = 'md', ariaLabel }) {
   const { t } = useI18n();
   const { theme, toggleTheme, mounted } = useTheme();
   const isDark = theme === 'dark';
-  const iconClass = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
+  const iconClass = size === 'sm' ? 'icon icon-sm' : 'icon icon-md';
   const defaultAriaLabel = isDark ? t('theme.switchToLight') : t('theme.switchToDark');
 
   // Always render the same <button> so server and client DOM match (avoids hydration mismatch).
@@ -20,7 +20,7 @@ export function ThemeToggle({ className = '', size = 'md', ariaLabel }) {
       type='button'
       disabled={!mounted}
       onClick={mounted ? toggleTheme : undefined}
-      className={`inline-flex items-center justify-center rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:text-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 ease-out disabled:pointer-events-none ${iconClass} ${className}`}
+      className={`inline-flex items-center justify-center p-1.5 rounded-lg text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:text-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 ease-out disabled:pointer-events-none ${className}`}
       aria-label={ariaLabel ?? defaultAriaLabel}
     >
       {isDark ? (

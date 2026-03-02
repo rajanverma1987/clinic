@@ -100,14 +100,16 @@ const SIZES = {
  * Icon-only buttons: always square, sized to match their size prop.
  * sm/md = 2.375rem (38px, aligns with filter inputs).
  * lg = 44px (WCAG 2.5.5 minimum touch target).
+ * NOTE: Use explicit px/rem values — tailwind.config overrides spacing keys
+ * 4,8,12,16,24,32,40,48 to raw px (e.g. w-8 = 8px not 32px here).
  */
 const ICON_ONLY_SIZES = {
   compact: 'w-7 h-7 p-0 min-h-7 min-w-7',
-  xs: 'w-8 h-8 p-0 min-h-8 min-w-8',
+  xs: 'w-[32px] h-[32px] p-0 min-h-[32px] min-w-[32px]',
   sm: 'w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]',
   md: 'w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]',
   lg: 'w-11 h-11 p-0 min-h-[44px] min-w-[44px]',
-  xl: 'w-12 h-12 p-0 min-h-12 min-w-12',
+  xl: 'w-[48px] h-[48px] p-0 min-h-[48px] min-w-[48px]',
   auto: 'w-[2.375rem] h-[2.375rem] p-0 min-h-[2.375rem] min-w-[2.375rem]',
 };
 

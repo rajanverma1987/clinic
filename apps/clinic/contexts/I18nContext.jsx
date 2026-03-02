@@ -17,20 +17,29 @@ function setLocaleCookie(locale) {
   document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
 }
 
+/** Super Admin dashboard is English-only; no other locale is shown or allowed. */
+const isSuperAdmin = (user) => user?.role === 'super_admin';
+
 export function I18nProvider({ children }) {
   const { user } = useAuth();
   const [locale, setLocaleState] = useState('en');
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
+  const effectiveLocale = isSuperAdmin(user) ? 'en' : locale;
+
   // Mark component as mounted to prevent hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Load locale: prefer localStorage (user's explicit choice), then tenant, then browser
+  // Load locale: prefer localStorage (user's explicit choice), then tenant, then browser. Skip for Super Admin (English only).
   useEffect(() => {
     if (!mounted) return;
+    if (isSuperAdmin(user)) {
+      setLoading(false);
+      return;
+    }
 
     const loadLocale = async () => {
       try {
@@ -84,6 +93,7 @@ export function I18nProvider({ children }) {
 
   const setLocale = useCallback(
     (newLocale) => {
+      if (isSuperAdmin(user)) return;
       const normalized = extractLocale(newLocale);
       if (!supportedLocales.includes(normalized)) return;
       setLocaleState(normalized);
@@ -110,7 +120,7 @@ export function I18nProvider({ children }) {
   );
 
   const t = (key, params) => {
-    let translation = getTranslation(key, locale);
+    let translation = getTranslation(key, effectiveLocale);
 
     // Replace parameters in translation
     if (params) {
@@ -127,14 +137,14 @@ export function I18nProvider({ children }) {
 
   useEffect(() => {
     configureToast({
-      closeAriaLabel: getTranslation('common.ariaLabelCloseNotification', locale),
+      closeAriaLabel: getTranslation('common.ariaLabelCloseNotification', effectiveLocale),
     });
-  }, [locale]);
+  }, [effectiveLocale]);
 
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t, loading }}>
+    <I18nContext.Provider value={{ locale: effectiveLocale, setLocale, t, loading }}>
       {/* key forces full re-render when locale changes so every translated string updates */}
-      <React.Fragment key={locale}>{children}</React.Fragment>
+      <React.Fragment key={effectiveLocale}>{children}</React.Fragment>
     </I18nContext.Provider>
   );
 }

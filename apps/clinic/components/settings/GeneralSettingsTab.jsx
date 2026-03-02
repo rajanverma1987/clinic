@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { SettingsTabHeader } from './SettingsTabHeader';
 
@@ -14,7 +15,9 @@ export function GeneralSettingsTab({
   onSave,
   onCancel,
 }) {
+  const { user } = useAuth();
   const { t } = useI18n();
+  const isSuperAdmin = user?.role === 'super_admin';
 
   if (!isClinicAdmin) {
     return (
@@ -117,24 +120,26 @@ export function GeneralSettingsTab({
                 <p className='text-xs text-neutral-500 mt-1'>{t('settings.forBillingInvoices')}</p>
               </div>
 
-              <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
-                  {t('settings.locale')} <span className='text-red-500'>*</span>
-                </label>
-                <select
-                  value={clinicForm.locale}
-                  onChange={(e) => setClinicForm({ ...clinicForm, locale: e.target.value })}
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
-                  required
-                >
-                  <option value='en-US'>English (US)</option>
-                  <option value='es-ES'>Español</option>
-                  <option value='ar-SA'>العربية</option>
-                </select>
-                <p className='text-xs text-neutral-500 mt-1'>
-                  {t('settings.languageAndDateFormat')}
-                </p>
-              </div>
+              {!isSuperAdmin && (
+                <div>
+                  <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                    {t('settings.locale')} <span className='text-red-500'>*</span>
+                  </label>
+                  <select
+                    value={clinicForm.locale}
+                    onChange={(e) => setClinicForm({ ...clinicForm, locale: e.target.value })}
+                    className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
+                    required
+                  >
+                    <option value='en-US'>English (US)</option>
+                    <option value='es-ES'>Español</option>
+                    <option value='ar-SA'>العربية</option>
+                  </select>
+                  <p className='text-xs text-neutral-500 mt-1'>
+                    {t('settings.languageAndDateFormat')}
+                  </p>
+                </div>
+              )}
 
               <div className='md:col-span-2'>
                 <label className='block text-sm font-medium text-neutral-700 mb-1.5'>

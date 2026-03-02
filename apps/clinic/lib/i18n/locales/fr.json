@@ -429,8 +429,8 @@
     "superAdminOnly": "La documentation API est disponible uniquement pour Super Admin. Les autres rôles ne peuvent pas y accéder."
   },
   "search": {
-    "placeholder": "Search patients, appointments, prescriptions... (Ctrl+K)",
-    "placeholderAdmin": "Search by user email, name, tenant... (Ctrl+K)",
+    "placeholder": "Search patients, appointments, prescriptions...",
+    "placeholderAdmin": "Search by user email, name, tenant...",
     "noResultsFor": "No results found for \"{{query}}\"",
     "tryDifferentKeywords": "Try different keywords",
     "quickTips": "Quick tips:",
@@ -456,7 +456,7 @@
     "createdAt": "Créé",
     "update": "Mettre à jour",
     "search": "Rechercher",
-    "searchPlaceholder": "Rechercher patients, rendez-vous, ordonnances... (Ctrl+K)",
+    "searchPlaceholder": "Rechercher patients, rendez-vous, ordonnances...",
     "filter": "Filtrer",
     "actions": "Actions",
     "remove": "Remove",

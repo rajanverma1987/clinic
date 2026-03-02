@@ -984,8 +984,10 @@
   color: var(--color-neutral-200);
 }
 .page-header__search-icon {
-  width: 18px;
-  height: 18px;
+  width: var(--icon-size-menu);
+  height: var(--icon-size-menu);
+  min-width: var(--icon-size-menu);
+  min-height: var(--icon-size-menu);
   flex-shrink: 0;
   stroke: currentColor;
 }
@@ -2733,7 +2735,11 @@ svg.icon.icon-hero {
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.14);
 }
 .dark .sub-plan-card--best-value {
-  background: linear-gradient(180deg, color-mix(in srgb, #10b981 15%, transparent) 0%, var(--color-surface-elevated) 35%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #10b981 15%, transparent) 0%,
+    var(--color-surface-elevated) 35%
+  );
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
   border-color: #34d399;
 }
@@ -3615,8 +3621,10 @@ svg.icon.icon-hero {
   padding-bottom: var(--space-8);
   box-sizing: border-box;
   max-width: 1400px;
-  margin: 0 auto;
+  margin-left: 0;
+  margin-right: auto;
 }
+
 
 /* Admin list/tab toolbar: intro + search, filters, actions (Clinic Management, Users, etc.) */
 .admin-toolbar-intro {
