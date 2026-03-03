@@ -25,6 +25,8 @@ import { withTenant } from '@/lib/db/tenant-helper.js';
 import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 import { logger } from '@/lib/utils/logger.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name.js';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish.js';
 import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
 import Patient from '@/models/Patient.js';
 import Queue, { QueuePriority, QueueStatus, QueueType } from '@/models/Queue.js';
@@ -778,23 +780,60 @@ export async function listAppointments(query, tenantId, userId) {
       Appointment.aggregate(pipeline),
     );
 
-    // Apply localized patient names when locale is requested (es or ar)
+    // Apply localized patient names and set patientDisplayName for UI (es/ar when requested)
     const locale = query.locale && String(query.locale).toLowerCase().slice(0, 2);
-    if (locale === 'es' || locale === 'ar') {
-      const firstKey = `firstName_${locale}`;
-      const lastKey = `lastName_${locale}`;
-      appointments = appointments.map((apt) => {
-        const p = apt.patientId;
-        if (p && (p[firstKey] || p[lastKey])) {
-          apt.patientId = {
-            ...p,
-            firstName: p[firstKey]?.trim() || p.firstName,
-            lastName: p[lastKey]?.trim() || p.lastName,
-          };
+    const firstKey = locale === 'es' || locale === 'ar' ? `firstName_${locale}` : 'firstName';
+    const lastKey = locale === 'es' || locale === 'ar' ? `lastName_${locale}` : 'lastName';
+    appointments = appointments.map((apt) => {
+      const p = apt.patientId;
+      if (p) {
+        const displayFirst = (p[firstKey] && String(p[firstKey]).trim()) || p.firstName || '';
+        const displayLast = (p[lastKey] && String(p[lastKey]).trim()) || p.lastName || '';
+        apt.patientId = {
+          ...p,
+          firstName: displayFirst,
+          lastName: displayLast,
+        };
+        let displayName = [displayFirst, displayLast].filter(Boolean).join(' ').trim() || null;
+        // When locale is Arabic and patient has no stored Arabic names, transliterate to Arabic script for display
+        if (locale === 'ar' && displayName && !(p.firstName_ar || p.lastName_ar)) {
+          displayName = [transliterateToArabic(displayFirst), transliterateToArabic(displayLast)]
+            .filter(Boolean)
+            .join(' ')
+            .trim() || displayName;
         }
-        return apt;
-      });
-    }
+        // When locale is Spanish and patient has no stored Spanish names, translate using in-app dictionary
+        if (locale === 'es' && displayName && !(p.firstName_es || p.lastName_es)) {
+          const esFirst = translateToSpanish(displayFirst) || displayFirst;
+          const esLast = translateToSpanish(displayLast) || displayLast;
+          displayName = [esFirst, esLast].filter(Boolean).join(' ').trim() || displayName;
+        }
+        apt.patientDisplayName = displayName;
+      } else {
+        apt.patientDisplayName = null;
+      }
+
+      // Apply localized doctor names for UI (es/ar when requested) – transliterate/translate like patient
+      const d = apt.doctorId;
+      if (d) {
+        let docFirst = d.firstName || '';
+        let docLast = d.lastName || '';
+        if (locale === 'ar') {
+          docFirst = transliterateToArabic(docFirst) || docFirst;
+          docLast = transliterateToArabic(docLast) || docLast;
+        }
+        if (locale === 'es') {
+          docFirst = translateToSpanish(docFirst) || docFirst;
+          docLast = translateToSpanish(docLast) || docLast;
+        }
+        apt.doctorId = { ...d, firstName: docFirst, lastName: docLast };
+        apt.doctorDisplayName = [docFirst, docLast].filter(Boolean).join(' ').trim() || null;
+      } else {
+        apt.doctorDisplayName = null;
+      }
+
+      return apt;
+    });
 
     // Audit list access
     await AuditLogger.auditWrite(

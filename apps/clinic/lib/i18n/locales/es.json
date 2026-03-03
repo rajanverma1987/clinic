@@ -3879,7 +3879,9 @@
     "connectionQuality": "Calidad de conexión",
     "clinicalNotes": "Notas clínicas",
     "diagnosis": "Diagnóstico",
-    "chatHistory": "Historial del chat"
+    "chatHistory": "Historial del chat",
+    "testVideoCall": "Probar videollamada",
+    "testVideoCallHint": "Crea una sesión de prueba y abre la sala"
   },
   "errors": {
     "generic": "An unexpected error occurred",

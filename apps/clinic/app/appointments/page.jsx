@@ -21,6 +21,7 @@ import * as routeCache from '@/lib/cache/dashboard-cache';
 import { clearCacheByPrefix } from '@/lib/utils/api-cache';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
+import { getPatientDisplayName as getPatientDisplayNameUtil } from '@/lib/utils/patient-display-name';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -295,7 +296,7 @@ export default function AppointmentsPage() {
         if (selectedDoctorId) params.append('doctorId', selectedDoctorId);
         if (selectedStatus) params.append('status', selectedStatus);
         if (hasDateFilter) params.append('date', dateFromUrl);
-        if (localeCode) params.append('locale', localeCode);
+        params.append('locale', localeCode || 'en');
 
         const response = await apiClient.get(`/appointments?${params}`);
         if (response.success && response.data) {
@@ -338,8 +339,9 @@ export default function AppointmentsPage() {
     if (!user || authLoading) return;
     const localeCode = (locale || '').slice(0, 2);
     const prevCode = (prevLocaleRef.current || '').slice(0, 2);
-    if (localeCode !== prevCode && (localeCode === 'es' || localeCode === 'ar' || prevCode === 'es' || prevCode === 'ar')) {
+    if (localeCode !== prevCode) {
       prevLocaleRef.current = locale;
+      clearCacheByPrefix('/appointments');
       fetchAppointments(true);
     } else {
       prevLocaleRef.current = locale;
@@ -513,20 +515,15 @@ export default function AppointmentsPage() {
     return key ? t(`appointments.${key}`) : type;
   };
 
+  const getPatientDisplayName = useCallback(
+    (row) => getPatientDisplayNameUtil(row, locale, t),
+    [locale, t],
+  );
+
   const columns = [
     {
       header: t('appointments.patient'),
-      accessor: (row) => {
-        const p = row.patientId;
-        const name =
-          p && (p.firstName != null || p.lastName != null)
-            ? `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim()
-            : '';
-        if (!name) return t('common.unknownPatient');
-        const lower = name.toLowerCase();
-        if (lower === 'patient' || lower === 'unknown' || lower === 'unknown patient' || lower === 'n/a') return t('common.unknownPatient');
-        return name;
-      },
+      accessor: (row) => getPatientDisplayName(row),
     },
     {
       header: t('appointments.doctor'),
@@ -621,9 +618,7 @@ export default function AppointmentsPage() {
     {
       header: t('common.actions'),
       accessor: (row) => {
-        const patientName = `${row.patientId?.firstName || ''} ${
-          row.patientId?.lastName || ''
-        }`.trim();
+        const patientName = getPatientDisplayName(row);
         const menuItems = [
           {
             key: 'view',

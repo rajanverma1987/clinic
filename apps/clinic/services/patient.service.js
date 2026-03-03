@@ -10,6 +10,8 @@ import { withTenant } from '@/lib/db/tenant-helper.js';
 import { notifyPatientUpdated } from '@/lib/realtime/integration-helpers.js';
 import { generatePatientId } from '@/lib/utils/number-generator.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name.js';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish.js';
 import Appointment from '@/models/Appointment.js';
 import Patient from '@/models/Patient.js';
 
@@ -280,6 +282,27 @@ export async function searchPatients(
         .lean(),
       Patient.countDocuments(query),
     ]);
+  }
+
+  // Apply localized patient names for UI (es/ar when requested)
+  const locale = filters.locale && String(filters.locale).toLowerCase().slice(0, 2);
+  if (locale === 'es' || locale === 'ar') {
+    const firstKey = locale === 'es' || locale === 'ar' ? `firstName_${locale}` : 'firstName';
+    const lastKey = locale === 'es' || locale === 'ar' ? `lastName_${locale}` : 'lastName';
+    patients = patients.map((p) => {
+      let pFirst = (p[firstKey] && String(p[firstKey]).trim()) || p.firstName || '';
+      let pLast = (p[lastKey] && String(p[lastKey]).trim()) || p.lastName || '';
+      if (locale === 'ar' && !(p.firstName_ar || p.lastName_ar)) {
+        pFirst = transliterateToArabic(pFirst) || pFirst;
+        pLast = transliterateToArabic(pLast) || pLast;
+      }
+      if (locale === 'es' && !(p.firstName_es || p.lastName_es)) {
+        pFirst = translateToSpanish(pFirst) || pFirst;
+        pLast = translateToSpanish(pLast) || pLast;
+      }
+      const patientDisplayName = [pFirst, pLast].filter(Boolean).join(' ').trim() || null;
+      return { ...p, firstName: pFirst, lastName: pLast, patientDisplayName };
+    });
   }
 
   // Log search (PHI access)

@@ -13,11 +13,14 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
+import { formatLocale } from '@/lib/i18n';
 import {
   fetchAppointmentsTab,
   getCachedAppointments,
   REVALIDATE_DELAY_MS,
 } from '@/lib/dashboard-tab-cache';
+import { clearCacheByPrefix } from '@/lib/utils/api-cache';
+import { getPatientDisplayName as getPatientDisplayNameUtil } from '@/lib/utils/patient-display-name';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -26,9 +29,11 @@ const LIMIT = 10;
 export function AppointmentsTab({ isActive = false }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { prefetchAppointment } = usePrefetchDetail();
   const userId = user?._id || user?.userId;
+  const appLocale = (locale || 'en').slice(0, 2);
+  const dateLocale = formatLocale(appLocale);
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +45,7 @@ export function AppointmentsTab({ isActive = false }) {
     async (showRevalidating = false) => {
       if (!userId) return;
       if (showRevalidating) setIsRevalidating(true);
-      const { data, error: err } = await fetchAppointmentsTab(userId);
+      const { data, error: err } = await fetchAppointmentsTab(userId, appLocale);
       if (err) {
         if (!showRevalidating) setError(err?.message || t('common.error'));
         setAppointments((prev) => (prev.length ? prev : []));
@@ -51,26 +56,26 @@ export function AppointmentsTab({ isActive = false }) {
       setLoading(false);
       setIsRevalidating(false);
     },
-    [userId, t],
+    [userId, appLocale, t],
   );
 
   // Before paint: when tab becomes active, show cache immediately so no loading flash.
   useLayoutEffect(() => {
     if (!isActive || !userId) return;
-    const cached = getCachedAppointments(userId);
+    const cached = getCachedAppointments(userId, appLocale);
     if (cached !== null && Array.isArray(cached)) {
       setAppointments(cached);
       setLoading(false);
       setError(null);
     }
-  }, [isActive, userId]);
+  }, [isActive, userId, appLocale]);
 
-  // After paint: fetch if no cache, and schedule revalidate.
+  // After paint: fetch if no cache, then revalidate. Uses appLocale so API returns patient names in Spanish/Arabic when stored on the patient (firstName_es/ar, lastName_es/ar).
   useEffect(() => {
     if (authLoading || !user || !userId) return;
     if (!isActive) return;
 
-    const cached = getCachedAppointments(userId);
+    const cached = getCachedAppointments(userId, appLocale);
     if (cached === null || !Array.isArray(cached)) {
       fetchAndUpdate(false);
     }
@@ -79,7 +84,16 @@ export function AppointmentsTab({ isActive = false }) {
     return () => {
       if (revalidateTimerRef.current) clearTimeout(revalidateTimerRef.current);
     };
-  }, [isActive, userId, authLoading, user, fetchAndUpdate]);
+  }, [isActive, userId, appLocale, authLoading, user, fetchAndUpdate]);
+
+  // When UI language changes, clear API cache and refetch so patient column uses new locale (es/ar).
+  const prevAppLocaleRef = useRef(appLocale);
+  useEffect(() => {
+    if (!isActive || !userId || appLocale === prevAppLocaleRef.current) return;
+    prevAppLocaleRef.current = appLocale;
+    clearCacheByPrefix('/appointments');
+    fetchAndUpdate(false);
+  }, [appLocale, isActive, userId, fetchAndUpdate]);
 
   const getStatusLabel = useCallback(
     (status) => {
@@ -96,23 +110,33 @@ export function AppointmentsTab({ isActive = false }) {
     [t],
   );
 
+  const getPatientDisplayName = useCallback(
+    (row) => getPatientDisplayNameUtil(row, locale, t),
+    [locale, t],
+  );
+
   const columns = useMemo(
     () => [
       {
         header: t('appointments.patient'),
-        accessor: (row) =>
-          [row.patientId?.firstName, row.patientId?.lastName].filter(Boolean).join(' ') || '—',
+        accessor: (row) => getPatientDisplayName(row),
       },
       {
         header: t('appointments.date'),
         accessor: (row) =>
-          row.appointmentDate ? new Date(row.appointmentDate).toLocaleDateString() : '—',
+          row.appointmentDate
+            ? new Date(row.appointmentDate).toLocaleDateString(dateLocale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })
+            : '—',
       },
       {
         header: t('appointments.time'),
         accessor: (row) =>
           row.startTime && row.endTime
-            ? `${new Date(row.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(row.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            ? `${new Date(row.startTime).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })} - ${new Date(row.endTime).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}`
             : '—',
       },
       {
@@ -134,7 +158,7 @@ export function AppointmentsTab({ isActive = false }) {
         },
       },
     ],
-    [t, getStatusLabel],
+    [t, getStatusLabel, dateLocale, getPatientDisplayName],
   );
 
   const stats = useMemo(

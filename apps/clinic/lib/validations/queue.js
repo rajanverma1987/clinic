@@ -102,6 +102,7 @@ export const queueQuerySchema = z.object({
   appointmentId: z.string().optional(),
   date: z.string().optional(), // Filter by date
   isActive: z.string().transform((val) => val === 'true').optional(),
+  locale: z.string().max(10).optional(), // e.g. es, ar for localized patient/doctor names
 });
 
 export const reorderQueueSchema = z.object({

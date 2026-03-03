@@ -3879,7 +3879,9 @@
     "connectionQuality": "جودة الاتصال",
     "clinicalNotes": "الملاحظات السريرية",
     "diagnosis": "التشخيص",
-    "chatHistory": "سجل الدردشة"
+    "chatHistory": "سجل الدردشة",
+    "testVideoCall": "اختبار مكالمة الفيديو",
+    "testVideoCallHint": "ينشئ جلسة اختبار ويفتح الغرفة"
   },
   "errors": {
     "generic": "An unexpected error occurred",

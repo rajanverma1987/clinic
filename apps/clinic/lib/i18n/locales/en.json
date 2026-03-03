@@ -3887,7 +3887,9 @@
     "connectionQuality": "Connection Quality",
     "clinicalNotes": "Clinical Notes",
     "diagnosis": "Diagnosis",
-    "chatHistory": "Chat History"
+    "chatHistory": "Chat History",
+    "testVideoCall": "Test video call",
+    "testVideoCallHint": "Creates a test session and opens room"
   },
   "errors": {
     "generic": "An unexpected error occurred",

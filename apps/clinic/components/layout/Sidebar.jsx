@@ -136,6 +136,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const prefetchOnHover = useCallback((href) => () => router.prefetch(href), [router]);
 
+  const { t, locale } = useI18n();
   const prefetchDashboard = useCallback(() => {
     if (!user) return;
     const summaryFetcher = () =>
@@ -145,13 +146,13 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
     mutate(DASHBOARD_SUMMARY_KEY, summaryFetcher, { revalidate: false, populateCache: true });
     mutate(DASHBOARD_ALL_KEY, allFetcher, { revalidate: false, populateCache: true });
     const uid = user?._id || user?.userId;
+    const appLocale = (locale || 'en').slice(0, 2);
     if (uid) {
-      prefetchAppointmentsTab(uid);
+      prefetchAppointmentsTab(uid, appLocale);
       prefetchPrescriptionsTab(uid);
     }
-  }, [user]);
+  }, [user, locale]);
 
-  const { t } = useI18n();
   const { hasFeature, loading: featuresLoading } = useFeatures();
 
   const [isCollapsed, setIsCollapsed] = useState(false);

@@ -33,6 +33,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { getTranslation } from '@/lib/i18n';
 import * as routeCache from '@/lib/cache/dashboard-cache';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { canDeletePatient } from '@/lib/permissions/cursor-md-matrix';
@@ -50,8 +51,10 @@ const ROUTE_KEY = 'route_patients';
 export default function PatientsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
-  const { locale } = useSettings();
+  const { t, locale: i18nLocale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const locale = i18nLocale || settingsLocale;
+  const localeCode = (locale || 'en').slice(0, 2);
   const { prefetchPatient } = usePrefetchDetail();
   const { open: openConfirm } = useConfirmation();
   const tenantId = user?.tenantId ?? null;
@@ -195,6 +198,7 @@ export default function PatientsPage() {
             params.append('dateOfBirthTo', to.toISOString().slice(0, 10));
           }
         }
+        params.append('locale', localeCode);
 
         const response = await apiClient.get(`/patients?${params}`);
 
@@ -238,8 +242,20 @@ export default function PatientsPage() {
       ageGroupFilter,
       sortBy,
       sortOrder,
+      localeCode,
     ],
   );
+
+  // Refetch when UI language changes so patient table shows names in new locale (es/ar).
+  const prevLocaleRef = useRef(localeCode);
+  useEffect(() => {
+    if (!user || authLoading) return;
+    if (prevLocaleRef.current !== localeCode) {
+      prevLocaleRef.current = localeCode;
+      if (tenantId) routeCache.clear(ROUTE_KEY, tenantId);
+      fetchPatients(!!debouncedSearchTerm, false);
+    }
+  }, [localeCode, user, authLoading, tenantId, fetchPatients, debouncedSearchTerm]);
 
   // Manual refresh handler
   const handleManualRefresh = useCallback(() => {
@@ -444,6 +460,7 @@ export default function PatientsPage() {
           params.append('dateOfBirthTo', to.toISOString().slice(0, 10));
         }
       }
+      params.append('locale', localeCode);
       const res = await apiClient.get(`/patients?${params.toString()}`);
       const list = extractArrayData(res) || [];
       if (!list.length) {
@@ -492,6 +509,7 @@ export default function PatientsPage() {
     statusFilter,
     genderFilter,
     ageGroupFilter,
+    localeCode,
     t,
   ]);
 
@@ -509,6 +527,20 @@ export default function PatientsPage() {
     [user, router],
   );
 
+  const dateLocale = (locale || 'en').slice(0, 2) === 'ar' ? 'ar' : (locale || 'en').startsWith('es') ? 'es' : (locale || 'en-US');
+  /** Use getTranslation with explicit locale so table cells always show in current UI language (es/ar). */
+  const getGenderLabel = useCallback(
+    (value) => {
+      if (!value) return getTranslation('common.na', localeCode);
+      const key = value.toLowerCase().replace(/_/g, '');
+      if (key === 'male') return getTranslation('common.male', localeCode);
+      if (key === 'female') return getTranslation('common.female', localeCode);
+      if (key === 'other' || key === 'prefernottosay') return getTranslation('common.other', localeCode);
+      return getTranslation(`common.${value}`, localeCode) || value;
+    },
+    [localeCode],
+  );
+
   const columns = useMemo(
     () => [
       { header: t('patients.patientId'), accessor: 'patientId' },
@@ -516,13 +548,31 @@ export default function PatientsPage() {
         header: t('patients.name'),
         accessor: (row) => `${row.firstName} ${row.lastName}`,
       },
-      { header: t('patients.phone'), accessor: 'phone' },
-      { header: t('patients.email'), accessor: 'email' },
+      {
+        header: t('patients.phone'),
+        accessor: (row) =>
+          row.phone && String(row.phone).trim() ? row.phone : getTranslation('common.na', localeCode),
+      },
+      {
+        header: t('patients.email'),
+        accessor: (row) =>
+          row.email && String(row.email).trim() ? row.email : getTranslation('common.na', localeCode),
+      },
       {
         header: t('patients.dateOfBirth'),
-        accessor: (row) => new Date(row.dateOfBirth).toLocaleDateString(),
+        accessor: (row) =>
+          row.dateOfBirth
+            ? new Date(row.dateOfBirth).toLocaleDateString(dateLocale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })
+            : getTranslation('common.na', localeCode),
       },
-      { header: t('patients.gender'), accessor: 'gender' },
+      {
+        header: t('patients.gender'),
+        accessor: (row) => getGenderLabel(row.gender),
+      },
       {
         header: t('common.actions'),
         accessor: (row) => {
@@ -599,7 +649,7 @@ export default function PatientsPage() {
         },
       },
     ],
-    [t, router, user, openConfirm, tenantId, fetchPatients],
+    [t, router, user, openConfirm, tenantId, fetchPatients, getGenderLabel, dateLocale, locale, localeCode],
   );
 
   // Redirect if not authenticated (non-blocking)
@@ -857,6 +907,7 @@ export default function PatientsPage() {
             </div>
             {viewMode === 'table' ? (
               <Table
+                key={localeCode}
                 data={patients}
                 columns={columns}
                 onRowClick={handleRowClick}
