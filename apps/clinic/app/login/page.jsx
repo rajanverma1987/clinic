@@ -12,7 +12,7 @@ import { showError } from '@/lib/utils/toast';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const Image = dynamic(() => import('next/image'), { ssr: false });
 
@@ -51,21 +51,32 @@ function LoginPageContent() {
     return roleRoutes[role];
   };
 
-  // Load remembered email and password on mount (when Remember me was used)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const rememberedEmail = localStorage.getItem('rememberedEmail');
-      const rememberedPassword = localStorage.getItem('rememberedPassword');
-      if (rememberedEmail) {
-        setEmail(rememberedEmail);
-        setRememberMe(true);
-      }
-      if (rememberedPassword) {
-        setPassword(rememberedPassword);
-        setRememberMe(true);
-      }
+  // Load remembered email and password as soon as possible (before paint) so form is pre-filled
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return;
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    const rememberedPassword = localStorage.getItem('rememberedPassword');
+    if (rememberedEmail || rememberedPassword) {
+      if (rememberedEmail) setEmail(rememberedEmail);
+      if (rememberedPassword) setPassword(rememberedPassword);
+      setRememberMe(true);
     }
   }, []);
+
+  // When user toggles Remember me: load saved values into form, or clear storage when unchecking
+  const handleRememberMeChange = (checked) => {
+    setRememberMe(checked);
+    if (typeof window === 'undefined') return;
+    if (checked) {
+      const savedEmail = localStorage.getItem('rememberedEmail');
+      const savedPassword = localStorage.getItem('rememberedPassword');
+      if (savedEmail) setEmail(savedEmail);
+      if (savedPassword) setPassword(savedPassword);
+    } else {
+      localStorage.removeItem('rememberedEmail');
+      localStorage.removeItem('rememberedPassword');
+    }
+  };
 
   // Handle OAuth callback: read token from cookie, complete login, redirect
   useEffect(() => {
@@ -482,7 +493,7 @@ function LoginPageContent() {
                     <Checkbox
                       id='rememberMe'
                       checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
+                      onChange={(e) => handleRememberMeChange(e.target.checked)}
                       size='sm'
                     />
                     <label

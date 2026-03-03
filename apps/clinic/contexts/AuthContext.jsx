@@ -70,12 +70,10 @@ export function AuthProvider({ children }) {
         } finally {
           apiClient.setToken('');
           if (typeof window !== 'undefined') {
-            // Clear all authentication-related localStorage items
+            // Clear auth tokens and cache; keep rememberedEmail/rememberedPassword for Remember me
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('userInfo');
-            localStorage.removeItem('rememberedEmail');
-            localStorage.removeItem('rememberedPassword');
             lastActivityRef.current = 0;
             dashboardCache.clear();
             clearAllCache();
@@ -600,8 +598,6 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userInfo');
-        localStorage.removeItem('rememberedEmail');
-        localStorage.removeItem('rememberedPassword');
         lastActivityRef.current = 0;
         dashboardCache.clear();
         clearAllCache();
