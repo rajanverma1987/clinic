@@ -94,6 +94,7 @@ export const updatePrescriptionSchema = createPrescriptionSchema.partial().exten
 export const prescriptionQuerySchema = z.object({
   page: z.string().optional(),
   limit: z.string().optional(),
+  locale: z.string().optional(),
   patientId: z.string().optional(),
   doctorId: z.string().optional(),
   status: z

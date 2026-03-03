@@ -209,12 +209,38 @@ function SettingsPageContent() {
       if (response.success && response.data) {
         const data = response.data;
         setSettings(data);
+        const regionEnum = ['US', 'EU', 'CA', 'AU', 'IN', 'APAC', 'ME'];
+        const region = regionEnum.includes((data.region || '').toUpperCase())
+          ? (data.region || '').toUpperCase()
+          : (data.region || 'US');
+        const currencyEnum = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD'];
+        const currency = currencyEnum.includes((data.settings.currency || '').toUpperCase())
+          ? (data.settings.currency || '').toUpperCase()
+          : (data.settings.currency || 'USD');
+        const localeEnum = ['en-US', 'es-ES', 'ar-SA'];
+        const locale = localeEnum.includes(data.settings.locale)
+          ? data.settings.locale
+          : (data.settings.locale || 'en-US');
+        const timezoneEnum = [
+          'America/New_York',
+          'America/Chicago',
+          'America/Denver',
+          'America/Los_Angeles',
+          'America/Toronto',
+          'Europe/London',
+          'Europe/Paris',
+          'Asia/Kolkata',
+          'Australia/Sydney',
+        ];
+        const timezone = timezoneEnum.includes(data.settings.timezone)
+          ? data.settings.timezone
+          : (data.settings.timezone || 'America/New_York');
         setClinicForm({
           name: data.name,
-          region: data.region,
-          currency: data.settings.currency,
-          locale: data.settings.locale,
-          timezone: data.settings.timezone,
+          region,
+          currency,
+          locale,
+          timezone,
           prescriptionValidityDays: data.settings.prescriptionValidityDays || 30,
           logo: data.settings.logo || '',
           phone: data.settings.phone || '',

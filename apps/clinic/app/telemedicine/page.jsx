@@ -12,26 +12,28 @@ import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function TelemedicinePage() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
   const { user } = useAuth();
+  const localeCode = (i18nLocale || 'en').slice(0, 2);
+  const dateLocale =
+    localeCode === 'ar' ? 'ar' : localeCode === 'es' ? 'es' : (i18nLocale || 'en-US');
+
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [testVideoLoading, setTestVideoLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchSessions();
-    }
-  }, [user]);
-
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/telemedicine/sessions');
+      const params = new URLSearchParams();
+      if (localeCode) params.set('locale', localeCode);
+      const response = await apiClient.get(
+        `/telemedicine/sessions${params.toString() ? `?${params}` : ''}`,
+      );
       if (response.success && response.data) {
         setSessions(Array.isArray(response.data) ? response.data : []);
       }
@@ -41,7 +43,13 @@ export default function TelemedicinePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [localeCode]);
+
+  useEffect(() => {
+    if (user) {
+      fetchSessions();
+    }
+  }, [user, fetchSessions]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -92,67 +100,93 @@ export default function TelemedicinePage() {
     }
   };
 
-  const columns = [
-    {
-      header: t('telemedicine.sessionId'),
-      accessor: (row) => <span className='font-mono text-sm'>{row.sessionId}</span>,
-    },
-    {
-      header: t('telemedicine.patient'),
-      accessor: (row) =>
-        `${row.patientId.firstName} ${row.patientId.lastName} (${row.patientId.patientId})`,
-    },
-    {
-      header: t('telemedicine.doctor'),
-      accessor: (row) => `Dr. ${row.doctorId.firstName} ${row.doctorId.lastName}`,
-    },
-    {
-      header: t('telemedicine.type'),
-      accessor: (row) => (
-        <Tag variant='default'>{t(`telemedicine.${getSessionTypeKey(row.sessionType)}`)}</Tag>
-      ),
-    },
-    {
-      header: t('telemedicine.scheduledTime'),
-      accessor: (row) => new Date(row.scheduledStartTime).toLocaleString(),
-    },
-    {
-      header: t('telemedicine.status'),
-      accessor: (row) => (
-        <Tag variant={getStatusColor(row.status)}>
-          {t(`telemedicine.${getStatusKey(row.status)}`)}
-        </Tag>
-      ),
-    },
-    {
-      header: t('common.actions'),
-      accessor: (row) => {
-        const items = [];
-        if (row.status === 'SCHEDULED' || row.status === 'IN_PROGRESS') {
-          items.push({
-            key: 'join',
-            label: t('telemedicine.joinSession'),
-            onClick: () => handleJoinSession(row._id ?? row.sessionId),
-          });
-        } else {
-          items.push({
-            key: 'summary',
-            label: t('telemedicine.viewSummary'),
-            onClick: () => router.push(`/telemedicine/${row._id ?? row.sessionId}/summary`),
-          });
-        }
-        return (
-          <div onClick={(e) => e.stopPropagation()}>
-            <ActionsMenu
-              ariaLabel={t('common.actions')}
-              triggerSize='xs'
-              items={items}
-            />
-          </div>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        header: t('telemedicine.sessionId'),
+        accessor: (row) => <span className='font-mono text-sm'>{row.sessionId}</span>,
       },
-    },
-  ];
+      {
+        header: t('telemedicine.patient'),
+        accessor: (row) => {
+          const name =
+            row.patientDisplayName ||
+            (row.patientId
+              ? `${row.patientId.firstName || ''} ${row.patientId.lastName || ''}`.trim()
+              : '');
+          const pid = row.patientId?.patientId ? ` (${row.patientId.patientId})` : '';
+          return name ? `${name}${pid}` : '—';
+        },
+      },
+      {
+        header: t('telemedicine.doctor'),
+        accessor: (row) => {
+          const name =
+            row.doctorDisplayName ||
+            (row.doctorId
+              ? `${row.doctorId.firstName || ''} ${row.doctorId.lastName || ''}`.trim()
+              : '');
+          return name ? `Dr. ${name}` : '—';
+        },
+      },
+      {
+        header: t('telemedicine.type'),
+        accessor: (row) => (
+          <Tag variant='default'>{t(`telemedicine.${getSessionTypeKey(row.sessionType)}`)}</Tag>
+        ),
+      },
+      {
+        header: t('telemedicine.scheduledTime'),
+        accessor: (row) =>
+          row.scheduledStartTime
+            ? new Date(row.scheduledStartTime).toLocaleString(dateLocale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '—',
+      },
+      {
+        header: t('telemedicine.status'),
+        accessor: (row) => (
+          <Tag variant={getStatusColor(row.status)}>
+            {t(`telemedicine.${getStatusKey(row.status)}`)}
+          </Tag>
+        ),
+      },
+      {
+        header: t('common.actions'),
+        accessor: (row) => {
+          const items = [];
+          if (row.status === 'SCHEDULED' || row.status === 'IN_PROGRESS') {
+            items.push({
+              key: 'join',
+              label: t('telemedicine.joinSession'),
+              onClick: () => handleJoinSession(row._id ?? row.sessionId),
+            });
+          } else {
+            items.push({
+              key: 'summary',
+              label: t('telemedicine.viewSummary'),
+              onClick: () => router.push(`/telemedicine/${row._id ?? row.sessionId}/summary`),
+            });
+          }
+          return (
+            <div onClick={(e) => e.stopPropagation()}>
+              <ActionsMenu
+                ariaLabel={t('common.actions')}
+                triggerSize='xs'
+                items={items}
+              />
+            </div>
+          );
+        },
+      },
+    ],
+    [t, dateLocale, getStatusKey, getSessionTypeKey, getStatusColor, handleJoinSession, router],
+  );
 
   if (loading) {
     return (

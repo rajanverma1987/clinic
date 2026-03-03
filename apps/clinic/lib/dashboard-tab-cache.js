@@ -74,11 +74,15 @@ export async function prefetchAppointmentsTab(userId, locale = '') {
 
 /**
  * Prefetch prescriptions – runs in background, populates cache.
+ * @param {string} userId
+ * @param {string} [locale] - e.g. 'es', 'ar'
  */
-export async function prefetchPrescriptionsTab(userId) {
+export async function prefetchPrescriptionsTab(userId, locale = '') {
   if (!userId) return;
   try {
-    const response = await apiClient.get('/prescriptions');
+    const params = new URLSearchParams({ limit: String(LIMIT) });
+    if (locale) params.set('locale', (locale || 'en').slice(0, 2));
+    const response = await apiClient.get(`/prescriptions${params.toString() ? `?${params}` : ''}`);
     if (response.success && response.data) {
       const list = extractArrayData(response);
       const data = Array.isArray(list) ? list.slice(0, LIMIT) : [];
@@ -122,11 +126,16 @@ export async function fetchAppointmentsTab(userId, locale = '') {
 
 /**
  * Fetch prescriptions (full flow).
+ * @param {string} userId
+ * @param {string} [locale] - e.g. 'es', 'ar' for localized patient/doctor names
  */
-export async function fetchPrescriptionsTab(userId) {
+export async function fetchPrescriptionsTab(userId, locale = '') {
   if (!userId) return { data: [], error: null };
   try {
-    const response = await apiClient.get('/prescriptions');
+    const params = new URLSearchParams({ limit: String(LIMIT) });
+    const localeCode = (locale || 'en').slice(0, 2);
+    params.set('locale', localeCode);
+    const response = await apiClient.get(`/prescriptions?${params}`);
     if (response.success && response.data) {
       const list = extractArrayData(response);
       const data = Array.isArray(list) ? list.slice(0, LIMIT) : [];

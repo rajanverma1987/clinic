@@ -5,7 +5,43 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useCallback } from 'react';
 import { SettingsTabHeader } from './SettingsTabHeader';
+
+/** Maps DB region/country codes to i18n keys so displayed value is always translated */
+const REGION_KEYS = {
+  US: 'settings.regionUS',
+  EU: 'settings.regionEU',
+  CA: 'settings.regionCA',
+  AU: 'settings.regionAU',
+  IN: 'settings.regionIN',
+  APAC: 'settings.regionAPAC',
+  ME: 'settings.regionME',
+};
+const CURRENCY_KEYS = {
+  USD: 'settings.currencyUSD',
+  EUR: 'settings.currencyEUR',
+  GBP: 'settings.currencyGBP',
+  INR: 'settings.currencyINR',
+  CAD: 'settings.currencyCAD',
+  AUD: 'settings.currencyAUD',
+};
+const LOCALE_KEYS = {
+  'en-US': 'settings.localeEnUS',
+  'es-ES': 'settings.localeEsES',
+  'ar-SA': 'settings.localeArSA',
+};
+const TIMEZONE_KEYS = {
+  'America/New_York': 'settings.timezoneAmericaNewYork',
+  'America/Chicago': 'settings.timezoneAmericaChicago',
+  'America/Denver': 'settings.timezoneAmericaDenver',
+  'America/Los_Angeles': 'settings.timezoneAmericaLosAngeles',
+  'America/Toronto': 'settings.timezoneAmericaToronto',
+  'Europe/London': 'settings.timezoneEuropeLondon',
+  'Europe/Paris': 'settings.timezoneEuropeParis',
+  'Asia/Kolkata': 'settings.timezoneAsiaKolkata',
+  'Australia/Sydney': 'settings.timezoneAustraliaSydney',
+};
 
 export function GeneralSettingsTab({
   isClinicAdmin,
@@ -16,8 +52,36 @@ export function GeneralSettingsTab({
   onCancel,
 }) {
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const isSuperAdmin = user?.role === 'super_admin';
+
+  const getRegionLabel = useCallback(
+    (code) => ((code && REGION_KEYS[code]) ? t(REGION_KEYS[code]) : (code || '—')),
+    [t],
+  );
+  const getCurrencyLabel = useCallback(
+    (code) => ((code && CURRENCY_KEYS[code]) ? t(CURRENCY_KEYS[code]) : (code || '—')),
+    [t],
+  );
+  const getLocaleLabel = useCallback(
+    (code) => ((code && LOCALE_KEYS[code]) ? t(LOCALE_KEYS[code]) : (code || '—')),
+    [t],
+  );
+  const getTimezoneLabel = useCallback(
+    (code) => ((code && TIMEZONE_KEYS[code]) ? t(TIMEZONE_KEYS[code]) : (code || '—')),
+    [t],
+  );
+
+  const normalizedRegion = REGION_KEYS[(clinicForm.region || '').toUpperCase()]
+    ? (clinicForm.region || '').toUpperCase()
+    : 'US';
+  const normalizedCurrency = CURRENCY_KEYS[(clinicForm.currency || '').toUpperCase()]
+    ? (clinicForm.currency || '').toUpperCase()
+    : 'USD';
+  const normalizedLocale = LOCALE_KEYS[clinicForm.locale] ? clinicForm.locale : 'en-US';
+  const normalizedTimezone = TIMEZONE_KEYS[clinicForm.timezone]
+    ? clinicForm.timezone
+    : 'America/New_York';
 
   if (!isClinicAdmin) {
     return (
@@ -38,7 +102,7 @@ export function GeneralSettingsTab({
   }
 
   return (
-    <div className='w-full max-w-4xl space-y-6 text-left'>
+    <div className='w-full max-w-4xl space-y-6 text-left' key={locale}>
       <SettingsTabHeader title={t('settings.clinicInfo')} />
       <form
         onSubmit={(e) => {
@@ -73,18 +137,18 @@ export function GeneralSettingsTab({
                   {t('settings.region')} <span className='text-red-500'>*</span>
                 </label>
                 <select
-                  value={clinicForm.region}
+                  value={normalizedRegion}
                   onChange={(e) => setClinicForm({ ...clinicForm, region: e.target.value })}
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
                   required
                 >
-                  <option value='US'>United States</option>
-                  <option value='EU'>European Union</option>
-                  <option value='CA'>Canada</option>
-                  <option value='AU'>Australia</option>
-                  <option value='IN'>India</option>
-                  <option value='APAC'>Asia Pacific</option>
-                  <option value='ME'>Middle East</option>
+                  <option value='US'>{getRegionLabel('US')}</option>
+                  <option value='EU'>{getRegionLabel('EU')}</option>
+                  <option value='CA'>{getRegionLabel('CA')}</option>
+                  <option value='AU'>{getRegionLabel('AU')}</option>
+                  <option value='IN'>{getRegionLabel('IN')}</option>
+                  <option value='APAC'>{getRegionLabel('APAC')}</option>
+                  <option value='ME'>{getRegionLabel('ME')}</option>
                 </select>
                 <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                   {t('settings.primaryOperatingRegion')}
@@ -101,69 +165,69 @@ export function GeneralSettingsTab({
             </h3>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
                   {t('settings.currency')} <span className='text-red-500'>*</span>
                 </label>
                 <select
-                  value={clinicForm.currency}
+                  value={normalizedCurrency}
                   onChange={(e) => setClinicForm({ ...clinicForm, currency: e.target.value })}
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
                   required
                 >
-                  <option value='USD'>USD - US Dollar</option>
-                  <option value='EUR'>EUR - Euro</option>
-                  <option value='GBP'>GBP - British Pound</option>
-                  <option value='INR'>INR - Indian Rupee</option>
-                  <option value='CAD'>CAD - Canadian Dollar</option>
-                  <option value='AUD'>AUD - Australian Dollar</option>
+                  <option value='USD'>{getCurrencyLabel('USD')}</option>
+                  <option value='EUR'>{getCurrencyLabel('EUR')}</option>
+                  <option value='GBP'>{getCurrencyLabel('GBP')}</option>
+                  <option value='INR'>{getCurrencyLabel('INR')}</option>
+                  <option value='CAD'>{getCurrencyLabel('CAD')}</option>
+                  <option value='AUD'>{getCurrencyLabel('AUD')}</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>{t('settings.forBillingInvoices')}</p>
+                <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>{t('settings.forBillingInvoices')}</p>
               </div>
 
               {!isSuperAdmin && (
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                  <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
                     {t('settings.locale')} <span className='text-red-500'>*</span>
                   </label>
                   <select
-                    value={clinicForm.locale}
+                    value={normalizedLocale}
                     onChange={(e) => setClinicForm({ ...clinicForm, locale: e.target.value })}
                     className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
                     required
                   >
-                    <option value='en-US'>English (US)</option>
-                    <option value='es-ES'>Español</option>
-                    <option value='ar-SA'>العربية</option>
+                    <option value='en-US'>{getLocaleLabel('en-US')}</option>
+                    <option value='es-ES'>{getLocaleLabel('es-ES')}</option>
+                    <option value='ar-SA'>{getLocaleLabel('ar-SA')}</option>
                   </select>
-                  <p className='text-xs text-neutral-500 mt-1'>
+                  <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                     {t('settings.languageAndDateFormat')}
                   </p>
                 </div>
               )}
 
               <div className='md:col-span-2'>
-                <label className='block text-sm font-medium text-neutral-700 mb-1.5'>
+                <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
                   {t('settings.timezone')} <span className='text-red-500'>*</span>
                 </label>
                 <select
-                  value={clinicForm.timezone}
+                  value={normalizedTimezone}
                   onChange={(e) => setClinicForm({ ...clinicForm, timezone: e.target.value })}
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
                   required
                 >
-                  <option value='America/New_York'>Eastern Time (ET) - America/New_York</option>
-                  <option value='America/Chicago'>Central Time (CT) - America/Chicago</option>
-                  <option value='America/Denver'>Mountain Time (MT) - America/Denver</option>
+                  <option value='America/New_York'>{getTimezoneLabel('America/New_York')}</option>
+                  <option value='America/Chicago'>{getTimezoneLabel('America/Chicago')}</option>
+                  <option value='America/Denver'>{getTimezoneLabel('America/Denver')}</option>
                   <option value='America/Los_Angeles'>
-                    Pacific Time (PT) - America/Los_Angeles
+                    {getTimezoneLabel('America/Los_Angeles')}
                   </option>
-                  <option value='America/Toronto'>Toronto - America/Toronto</option>
-                  <option value='Europe/London'>London - Europe/London</option>
-                  <option value='Europe/Paris'>Paris - Europe/Paris</option>
-                  <option value='Asia/Kolkata'>India - Asia/Kolkata</option>
-                  <option value='Australia/Sydney'>Sydney - Australia/Sydney</option>
+                  <option value='America/Toronto'>{getTimezoneLabel('America/Toronto')}</option>
+                  <option value='Europe/London'>{getTimezoneLabel('Europe/London')}</option>
+                  <option value='Europe/Paris'>{getTimezoneLabel('Europe/Paris')}</option>
+                  <option value='Asia/Kolkata'>{getTimezoneLabel('Asia/Kolkata')}</option>
+                  <option value='Australia/Sydney'>{getTimezoneLabel('Australia/Sydney')}</option>
                 </select>
-                <p className='text-xs text-neutral-500 mt-1'>
+                <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                   {t('settings.forAppointmentsScheduling')}
                 </p>
               </div>

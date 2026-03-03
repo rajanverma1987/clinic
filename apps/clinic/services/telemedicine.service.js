@@ -34,6 +34,8 @@ import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import connectDB from '@/lib/db/connection.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
 import TelemedicineSession, { SessionStatus } from '@/models/TelemedicineSession.js';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name.js';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish.js';
 
 /**
  * Generate unique session ID
@@ -112,6 +114,8 @@ export async function getSessionById(sessionId, tenantId = null) {
 
 /**
  * List sessions
+ * @param {string} tenantId
+ * @param {Object} filters - patientId, doctorId, status, startDate, endDate, locale (e.g. 'es', 'ar' for localized names)
  */
 export async function listSessions(tenantId, filters) {
   await connectDB();
@@ -127,11 +131,58 @@ export async function listSessions(tenantId, filters) {
     if (filters.endDate) query.scheduledStartTime.$lte = filters.endDate;
   }
 
-  return await TelemedicineSession.find(query)
-    .populate('patientId', 'firstName lastName patientId')
+  const sessions = await TelemedicineSession.find(query)
+    .populate('patientId', 'firstName lastName patientId firstName_es lastName_es firstName_ar lastName_ar')
     .populate('doctorId', 'firstName lastName')
     .sort({ scheduledStartTime: -1 })
     .lean();
+
+  const locale = filters?.locale && String(filters.locale).toLowerCase().slice(0, 2);
+  const firstKey = locale === 'es' || locale === 'ar' ? `firstName_${locale}` : 'firstName';
+  const lastKey = locale === 'es' || locale === 'ar' ? `lastName_${locale}` : 'lastName';
+
+  return sessions.map((s) => {
+    const p = s.patientId;
+    if (p) {
+      const displayFirst = (p[firstKey] && String(p[firstKey]).trim()) || p.firstName || '';
+      const displayLast = (p[lastKey] && String(p[lastKey]).trim()) || p.lastName || '';
+      s.patientId = { ...p, firstName: displayFirst, lastName: displayLast };
+      let displayName = [displayFirst, displayLast].filter(Boolean).join(' ').trim() || null;
+      if (locale === 'ar' && displayName && !(p.firstName_ar || p.lastName_ar)) {
+        displayName =
+          [transliterateToArabic(displayFirst), transliterateToArabic(displayLast)]
+            .filter(Boolean)
+            .join(' ')
+            .trim() || displayName;
+      }
+      if (locale === 'es' && displayName && !(p.firstName_es || p.lastName_es)) {
+        const esFirst = translateToSpanish(displayFirst) || displayFirst;
+        const esLast = translateToSpanish(displayLast) || displayLast;
+        displayName = [esFirst, esLast].filter(Boolean).join(' ').trim() || displayName;
+      }
+      s.patientDisplayName = displayName;
+    } else {
+      s.patientDisplayName = null;
+    }
+    const d = s.doctorId;
+    if (d) {
+      let docFirst = d.firstName || '';
+      let docLast = d.lastName || '';
+      if (locale === 'ar') {
+        docFirst = transliterateToArabic(docFirst) || docFirst;
+        docLast = transliterateToArabic(docLast) || docLast;
+      }
+      if (locale === 'es') {
+        docFirst = translateToSpanish(docFirst) || docFirst;
+        docLast = translateToSpanish(docLast) || docLast;
+      }
+      s.doctorId = { ...d, firstName: docFirst, lastName: docLast };
+      s.doctorDisplayName = [docFirst, docLast].filter(Boolean).join(' ').trim() || null;
+    } else {
+      s.doctorDisplayName = null;
+    }
+    return s;
+  });
 }
 
 /**

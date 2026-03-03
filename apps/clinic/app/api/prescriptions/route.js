@@ -20,6 +20,7 @@ async function getHandler(req, user) {
   const queryParams = {
     page: searchParams.get('page') || undefined,
     limit: searchParams.get('limit') || undefined,
+    locale: searchParams.get('locale') || undefined,
     patientId: searchParams.get('patientId') || undefined,
     doctorId: searchParams.get('doctorId') || undefined,
     status: searchParams.get('status') || undefined,
@@ -44,7 +45,7 @@ async function getHandler(req, user) {
     String(validationResult.data.limit || '') === '5';
   const result = isDashboardQuery
     ? await optimizedCacheManager.getOrFetch(
-        `prescriptions:active:${user.tenantId}`,
+        `prescriptions:active:${user.tenantId}:${(validationResult.data.locale || 'en').slice(0, 2)}`,
         () => listPrescriptions(validationResult.data, user.tenantId, user.userId),
         60000,
       )

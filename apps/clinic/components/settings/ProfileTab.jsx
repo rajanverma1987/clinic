@@ -322,20 +322,24 @@ export function ProfileTab({
     img.src = url;
   };
 
-  const getRoleLabel = (role) => {
-    const roleKeys = {
-      super_admin: 'common.roleSuperAdmin',
-      clinic_admin: 'common.roleClinicAdmin',
-      doctor: 'common.roleDoctor',
-      nurse: 'settings.roleNurse',
-      receptionist: 'settings.roleReceptionist',
-      accountant: 'settings.roleAccountant',
-      pharmacist: 'settings.rolePharmacist',
-      staff: 'common.roleStaff',
-      manager: 'settings.roleManager',
-    };
-    return roleKeys[role] ? t(roleKeys[role]) : role;
-  };
+  const getRoleLabel = useCallback(
+    (role) => {
+      const roleKeys = {
+        super_admin: 'common.roleSuperAdmin',
+        clinic_admin: 'common.roleClinicAdmin',
+        doctor: 'common.roleDoctor',
+        nurse: 'settings.roleNurse',
+        receptionist: 'settings.roleReceptionist',
+        accountant: 'settings.roleAccountant',
+        pharmacist: 'settings.rolePharmacist',
+        lab_tech: 'staff.labTech',
+        staff: 'common.roleStaff',
+        manager: 'settings.roleManager',
+      };
+      return roleKeys[role] ? t(roleKeys[role]) : (role ? String(role).replace(/_/g, ' ') : '—');
+    },
+    [t],
+  );
 
   return (
     <div className='w-full max-w-4xl space-y-6 text-left'>
@@ -604,10 +608,10 @@ export function ProfileTab({
               </div>
               <div className='pt-4 border-t border-neutral-200 dark:border-neutral-600'>
                 <p className='text-sm font-medium text-neutral-700 dark:text-neutral-300'>
-                  Two-Factor Authentication
+                  {t('auth.twoFactorAuthentication')}
                 </p>
                 <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-0.5'>
-                  Add an extra layer of security using an authenticator app.
+                  {t('auth.twoFactorDescription')}
                 </p>
                 <div className='mt-3'>
                   <TwoFactorSetup

@@ -25,7 +25,7 @@ import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const ROUTE_KEY = 'route_inventory';
 
@@ -36,9 +36,12 @@ export default function InventoryPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
   const { locale } = useSettings();
   const tenantId = user?.tenantId ?? null;
+  const localeCode = (i18nLocale || 'en').slice(0, 2);
+  const dateLocale =
+    localeCode === 'ar' ? 'ar' : localeCode === 'es' ? 'es' : (i18nLocale || 'en-US');
   const managerReadOnly = isManagerPathReadOnly(pathname);
 
   const tabFromUrl = searchParams.get('tab');
@@ -198,13 +201,31 @@ export default function InventoryPage() {
     }
   }, [showLowStock, debouncedSearchTerm, categoryFilter, t]);
 
-  const formatCurrency = (amount) => {
-    if (!amount) return 'N/A';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount / 100);
-  };
+  const formatCurrency = useCallback(
+    (amount) => {
+      if (!amount) return 'N/A';
+      return new Intl.NumberFormat(dateLocale, {
+        style: 'currency',
+        currency: 'USD',
+      }).format(amount / 100);
+    },
+    [dateLocale],
+  );
+
+  const getTypeLabel = useCallback(
+    (type) => {
+      const key =
+        {
+          medicine: 'inventory.medicine',
+          medical_supply: 'inventory.medicalSupply',
+          equipment: 'inventory.equipment',
+          consumable: 'inventory.consumable',
+          other: 'common.other',
+        }[type] || 'common.other';
+      return t(key);
+    },
+    [t],
+  );
 
   const handleDeleteItem = async () => {
     if (!deleteItemModal.item) return;
@@ -249,60 +270,66 @@ export default function InventoryPage() {
     }
   };
 
-  const columns = [
-    { header: t('inventory.itemName'), accessor: 'name' },
-    { header: t('inventory.code'), accessor: 'code' },
-    { header: t('inventory.category'), accessor: 'type' },
-    {
-      header: t('inventory.currentStock'),
-      accessor: (row) => {
-        const available = row.availableQuantity ?? 0;
-        const threshold = row.lowStockThreshold ?? 0;
-        const isLow = available <= threshold;
-        return (
-          <span className={isLow ? 'text-status-error font-medium' : 'text-neutral-900'}>
-            {row.totalQuantity} / {row.availableQuantity} {t('inventory.available')}
-          </span>
-        );
+  const columns = useMemo(
+    () => [
+      { header: t('inventory.itemName'), accessor: 'name' },
+      { header: t('inventory.code'), accessor: 'code' },
+      {
+        header: t('inventory.category'),
+        accessor: (row) => getTypeLabel(row.type),
       },
-    },
-    {
-      header: t('inventory.costPrice'),
-      accessor: (row) => formatCurrency(row.costPrice),
-    },
-    {
-      header: t('inventory.sellingPrice'),
-      accessor: (row) => formatCurrency(row.sellingPrice),
-    },
-    {
-      header: t('common.actions'),
-      accessor: (row) => (
-        <ActionsMenu
-          ariaLabel={t('common.actions')}
-          triggerSize='xs'
-          items={[
-            {
-              key: 'view',
-              label: t('inventory.viewItem'),
-              icon: <EyeIcon className='icon icon-sm' />,
-              onClick: () => router.push(`/inventory/items/${row._id}`),
-            },
-            ...((!(user?.role === 'manager' && managerReadOnly))
-              ? [
-                  {
-                    key: 'delete',
-                    label: t('common.delete'),
-                    icon: <TrashIcon className='icon icon-sm' />,
-                    onClick: () => setDeleteItemModal({ open: true, item: row }),
-                    variant: 'danger',
-                  },
-                ]
-              : []),
-          ]}
-        />
-      ),
-    },
-  ];
+      {
+        header: t('inventory.currentStock'),
+        accessor: (row) => {
+          const available = row.availableQuantity ?? 0;
+          const threshold = row.lowStockThreshold ?? 0;
+          const isLow = available <= threshold;
+          return (
+            <span className={isLow ? 'text-status-error font-medium' : 'text-neutral-900'}>
+              {row.totalQuantity} / {row.availableQuantity} {t('inventory.available')}
+            </span>
+          );
+        },
+      },
+      {
+        header: t('inventory.costPrice'),
+        accessor: (row) => formatCurrency(row.costPrice),
+      },
+      {
+        header: t('inventory.sellingPrice'),
+        accessor: (row) => formatCurrency(row.sellingPrice),
+      },
+      {
+        header: t('common.actions'),
+        accessor: (row) => (
+          <ActionsMenu
+            ariaLabel={t('common.actions')}
+            triggerSize='xs'
+            items={[
+              {
+                key: 'view',
+                label: t('inventory.viewItem'),
+                icon: <EyeIcon className='icon icon-sm' />,
+                onClick: () => router.push(`/inventory/items/${row._id}`),
+              },
+              ...((!(user?.role === 'manager' && managerReadOnly))
+                ? [
+                    {
+                      key: 'delete',
+                      label: t('common.delete'),
+                      icon: <TrashIcon className='icon icon-sm' />,
+                      onClick: () => setDeleteItemModal({ open: true, item: row }),
+                      variant: 'danger',
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        ),
+      },
+    ],
+    [t, getTypeLabel, formatCurrency, router, user?.role, managerReadOnly],
+  );
 
   // Redirect if not authenticated (non-blocking)
   useEffect(() => {
@@ -380,14 +407,17 @@ export default function InventoryPage() {
     if (activeTab === 'transactions') fetchTransactions();
   }, [authLoading, user, activeTab, fetchTransactions]);
 
-  const formatLotsDate = (date) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString(locale || 'en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  const formatLotsDate = useCallback(
+    (date) => {
+      if (!date) return 'N/A';
+      return new Date(date).toLocaleDateString(dateLocale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    },
+    [dateLocale],
+  );
 
   const getLotStatusBadge = (lot) => {
     if (lot.isExpired) {
