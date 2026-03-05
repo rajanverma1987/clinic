@@ -284,11 +284,13 @@ export async function searchPatients(
     ]);
   }
 
-  // Apply localized patient names for UI (es/ar when requested)
+  // Apply localized patient names and contact (phone/email) for UI (es/ar when requested)
   const locale = filters.locale && String(filters.locale).toLowerCase().slice(0, 2);
   if (locale === 'es' || locale === 'ar') {
-    const firstKey = locale === 'es' || locale === 'ar' ? `firstName_${locale}` : 'firstName';
-    const lastKey = locale === 'es' || locale === 'ar' ? `lastName_${locale}` : 'lastName';
+    const firstKey = `firstName_${locale}`;
+    const lastKey = `lastName_${locale}`;
+    const phoneKey = `phone_${locale}`;
+    const emailKey = `email_${locale}`;
     patients = patients.map((p) => {
       let pFirst = (p[firstKey] && String(p[firstKey]).trim()) || p.firstName || '';
       let pLast = (p[lastKey] && String(p[lastKey]).trim()) || p.lastName || '';
@@ -301,7 +303,22 @@ export async function searchPatients(
         pLast = translateToSpanish(pLast) || pLast;
       }
       const patientDisplayName = [pFirst, pLast].filter(Boolean).join(' ').trim() || null;
-      return { ...p, firstName: pFirst, lastName: pLast, patientDisplayName };
+      const pPhone = (p[phoneKey] && String(p[phoneKey]).trim()) || p.phone || '';
+      let pEmail = (p[emailKey] && String(p[emailKey]).trim()) || p.email || '';
+      if (pEmail && locale === 'ar' && !(p.email_ar && String(p.email_ar).trim())) {
+        pEmail = transliterateToArabic(pEmail) || pEmail;
+      }
+      if (pEmail && locale === 'es' && !(p.email_es && String(p.email_es).trim())) {
+        pEmail = translateToSpanish(pEmail) || pEmail;
+      }
+      return {
+        ...p,
+        firstName: pFirst,
+        lastName: pLast,
+        patientDisplayName,
+        phone: pPhone,
+        email: pEmail,
+      };
     });
   }
 

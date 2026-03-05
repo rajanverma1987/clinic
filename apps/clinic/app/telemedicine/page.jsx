@@ -103,11 +103,11 @@ export default function TelemedicinePage() {
   const columns = useMemo(
     () => [
       {
-        header: t('telemedicine.sessionId'),
+        header: () => t('telemedicine.sessionId'),
         accessor: (row) => <span className='font-mono text-sm'>{row.sessionId}</span>,
       },
       {
-        header: t('telemedicine.patient'),
+        header: () => t('telemedicine.patient'),
         accessor: (row) => {
           const name =
             row.patientDisplayName ||
@@ -115,28 +115,28 @@ export default function TelemedicinePage() {
               ? `${row.patientId.firstName || ''} ${row.patientId.lastName || ''}`.trim()
               : '');
           const pid = row.patientId?.patientId ? ` (${row.patientId.patientId})` : '';
-          return name ? `${name}${pid}` : '—';
+          return name ? `${name}${pid}` : t('common.na');
         },
       },
       {
-        header: t('telemedicine.doctor'),
+        header: () => t('telemedicine.doctor'),
         accessor: (row) => {
           const name =
             row.doctorDisplayName ||
             (row.doctorId
               ? `${row.doctorId.firstName || ''} ${row.doctorId.lastName || ''}`.trim()
               : '');
-          return name ? `Dr. ${name}` : '—';
+          return name ? `${t('telemedicine.doctorPrefix')} ${name}` : t('common.na');
         },
       },
       {
-        header: t('telemedicine.type'),
+        header: () => t('telemedicine.type'),
         accessor: (row) => (
           <Tag variant='default'>{t(`telemedicine.${getSessionTypeKey(row.sessionType)}`)}</Tag>
         ),
       },
       {
-        header: t('telemedicine.scheduledTime'),
+        header: () => t('telemedicine.scheduledTime'),
         accessor: (row) =>
           row.scheduledStartTime
             ? new Date(row.scheduledStartTime).toLocaleString(dateLocale, {
@@ -146,10 +146,10 @@ export default function TelemedicinePage() {
                 hour: '2-digit',
                 minute: '2-digit',
               })
-            : '—',
+            : t('common.na'),
       },
       {
-        header: t('telemedicine.status'),
+        header: () => t('telemedicine.status'),
         accessor: (row) => (
           <Tag variant={getStatusColor(row.status)}>
             {t(`telemedicine.${getStatusKey(row.status)}`)}
@@ -157,7 +157,7 @@ export default function TelemedicinePage() {
         ),
       },
       {
-        header: t('common.actions'),
+        header: () => t('common.actions'),
         accessor: (row) => {
           const items = [];
           if (row.status === 'SCHEDULED' || row.status === 'IN_PROGRESS') {
@@ -185,7 +185,7 @@ export default function TelemedicinePage() {
         },
       },
     ],
-    [t, dateLocale, getStatusKey, getSessionTypeKey, getStatusColor, handleJoinSession, router],
+    [t, dateLocale, localeCode, getStatusKey, getSessionTypeKey, getStatusColor, handleJoinSession, router],
   );
 
   if (loading) {
@@ -345,6 +345,7 @@ export default function TelemedicinePage() {
           </div>
 
           <Table
+            key={localeCode}
             data={sessions}
             columns={columns}
             emptyMessage={t('telemedicine.noSessionsFound')}
@@ -371,12 +372,10 @@ export default function TelemedicinePage() {
                 </svg>
               </div>
               <h3 className='text-lg font-semibold text-neutral-900 mb-2'>
-                Get Started with Telemedicine
+                {t('telemedicine.getStartedTitle')}
               </h3>
               <p className='text-neutral-600 mb-6 max-w-md mx-auto'>
-                Schedule video consultations from the appointments page. Select &quot;Video
-                Consultation&quot; when booking to enable remote care with secure, HIPAA-compliant
-                video calls.
+                {t('telemedicine.getStartedDescription')}
               </p>
               <div className='flex gap-4 justify-center'>
                 <Button href='/appointments/new'>{t('telemedicine.bookVideoConsultation')}</Button>

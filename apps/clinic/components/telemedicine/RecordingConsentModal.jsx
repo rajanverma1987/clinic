@@ -1,8 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function RecordingConsentModal({ isOpen, onConsent, onDecline }) {
+  const { t } = useI18n();
   if (!isOpen) return null;
 
   return (
@@ -11,21 +13,20 @@ export function RecordingConsentModal({ isOpen, onConsent, onDecline }) {
       style={{ zIndex: 'var(--z-modal, 50)' }}
     >
       <div className='bg-white rounded-lg p-6 max-w-md w-full mx-4 border border-neutral-300 shadow-xl'>
-        <h3 className='text-neutral-900 text-xl font-semibold mb-4'>Recording Consent</h3>
+        <h3 className='text-neutral-900 text-xl font-semibold mb-4'>{t('telemedicine.recordingConsent')}</h3>
         <p className='text-gray-300 mb-4'>
-          This session may be recorded for medical records and quality assurance purposes. By
-          continuing, you consent to the recording of this consultation.
+          {t('telemedicine.recordingConsentMessage')}
         </p>
         <div className='flex space-x-3'>
           <Button variant='secondary' onClick={() => onConsent(true)} className='flex-1'>
-            I Consent
+            {t('telemedicine.iConsent')}
           </Button>
           <Button variant='danger' onClick={() => onConsent(false)} className='flex-1'>
-            Decline
+            {t('telemedicine.recordingDecline')}
           </Button>
         </div>
         <p className='text-gray-500 text-xs mt-4'>
-          Note: Recording will be disabled if you decline consent.
+          {t('telemedicine.recordingDeclineNote')}
         </p>
       </div>
     </div>

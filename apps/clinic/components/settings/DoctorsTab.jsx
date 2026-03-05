@@ -5,7 +5,29 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
 import { useI18n } from '@/contexts/I18nContext';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { SettingsTabHeader } from './SettingsTabHeader';
+
+/** Same as item name: transliterate to Arabic, translate to Spanish (word-by-word) for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
+
+function getRoleLabel(role, t) {
+  if (role === 'doctor') return t('settings.roleDoctor');
+  if (role === 'nurse') return t('settings.roleNurse');
+  if (role === 'receptionist') return t('settings.roleReceptionist');
+  if (role === 'accountant') return t('settings.roleAccountant');
+  if (role === 'pharmacist') return t('settings.rolePharmacist');
+  if (role === 'clinic_admin') return t('settings.roleClinicAdmin');
+  if (role === 'manager') return t('settings.roleManager');
+  return role || '';
+}
 
 export function DoctorsTab({
   isClinicAdmin,
@@ -21,7 +43,8 @@ export function DoctorsTab({
   onCreateUser,
   onToggleUserStatus,
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
 
   if (!isClinicAdmin) {
     return (
@@ -206,28 +229,14 @@ export function DoctorsTab({
                     </div>
                     <div className='flex-1 min-w-0'>
                       <h3 className='font-semibold text-neutral-900 dark:text-neutral-100 text-sm truncate'>
-                        {user.firstName} {user.lastName}
+                        {getDisplayValue(user.firstName || '', localeCode)} {getDisplayValue(user.lastName || '', localeCode)}
                       </h3>
                       <p className='text-xs text-neutral-600 dark:text-neutral-300 truncate'>
-                        {user.email}
+                        {getDisplayValue(user.email || '', localeCode)}
                       </p>
                       <div className='flex flex-wrap items-center gap-1.5 mt-1'>
                         <span className='px-1.5 py-0.5 bg-primary-100 dark:bg-blue-800 text-primary-700 dark:text-blue-100 text-xs rounded-full font-medium'>
-                          {user.role === 'doctor'
-                            ? t('settings.roleDoctor')
-                            : user.role === 'nurse'
-                              ? t('settings.roleNurse')
-                              : user.role === 'receptionist'
-                                ? t('settings.roleReceptionist')
-                                : user.role === 'accountant'
-                                  ? t('settings.roleAccountant')
-                                  : user.role === 'pharmacist'
-                                    ? t('settings.rolePharmacist')
-                                    : user.role === 'clinic_admin'
-                                      ? t('settings.roleClinicAdmin')
-                                      : user.role === 'manager'
-                                        ? t('settings.roleManager')
-                                        : user.role}
+                          {getDisplayValue(getRoleLabel(user.role, t), localeCode)}
                         </span>
                         <span
                           className={`px-1.5 py-0.5 text-xs rounded-full font-medium ${

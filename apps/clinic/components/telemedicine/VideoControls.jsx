@@ -25,7 +25,7 @@ export function VideoControls({
       className='absolute bottom-2 sm:bottom-4 left-1/2 flex items-center gap-2 sm:gap-3 md:gap-4 bg-neutral-200/95 dark:bg-neutral-800/95 backdrop-blur-sm border border-neutral-300 dark:border-neutral-600 px-2 sm:px-4 py-2 sm:py-3 rounded-full flex-wrap justify-center max-w-[95vw] shadow-lg'
       style={{ marginLeft: '-50%' }}
       role='toolbar'
-      aria-label='Call controls'
+      aria-label={t('telemedicine.callControls')}
     >
       {/* Mute/Unmute Button */}
       <Button

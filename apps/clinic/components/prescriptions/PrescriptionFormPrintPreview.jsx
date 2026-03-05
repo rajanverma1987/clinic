@@ -20,7 +20,7 @@ export function PrescriptionFormPrintPreview({
   clinicSettings,
 }) {
   const { user: currentUser } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [loading, setLoading] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState('');
@@ -33,7 +33,7 @@ export function PrescriptionFormPrintPreview({
       setPrintHtml('');
       setError('');
     }
-  }, [isOpen, formData, items]);
+  }, [isOpen, formData, items, locale]);
 
   const generatePrintHtml = async () => {
     setLoading(true);
@@ -42,7 +42,7 @@ export function PrescriptionFormPrintPreview({
     try {
       const selectedPatient = patients.find((p) => p._id === formData.patientId);
       if (!selectedPatient) {
-        setError('Please select a patient first');
+        setError(t('prescriptions.selectPatientFirst'));
         setLoading(false);
         return;
       }
@@ -108,7 +108,7 @@ export function PrescriptionFormPrintPreview({
 
       // Prepare print data
       const printData = {
-        clinicName: clinicSettings?.name || 'Clinic Name',
+        clinicName: clinicSettings?.name || t('prescriptions.clinicNameFallback'),
         clinicLogoUrl: clinicSettings?.settings?.logo || '',
         clinicAddress: clinicAddress,
         clinicPhone: clinicPhone,
@@ -169,19 +169,19 @@ export function PrescriptionFormPrintPreview({
             item.itemType === 'drug' && item.frequency
               ? `${item.quantity || 1} ${item.frequency}${
                   item.takeBeforeMeal
-                    ? ' (Before Food)'
+                    ? ` (${t('prescriptions.printBeforeFood')})`
                     : item.takeAfterMeal
-                      ? ' (After Food)'
+                      ? ` (${t('prescriptions.printAfterFood')})`
                       : item.takeWithFood
-                        ? ' (With Food)'
+                        ? ` (${t('prescriptions.printWithFood')})`
                         : ''
                 }`
               : '';
 
           const duration =
             item.itemType === 'drug' && item.duration
-              ? `${item.duration} Days (Tot:${item.quantity || 1} ${
-                  form === 'TABLET' ? 'Tab' : form === 'CAPSULE' ? 'Cap' : 'Unit'
+              ? `${item.duration} ${t('prescriptions.printDays')} (${t('prescriptions.printTot')}:${item.quantity || 1} ${
+                  form === 'TABLET' ? t('prescriptions.printTab') : form === 'CAPSULE' ? t('prescriptions.printCap') : t('prescriptions.printUnit')
                 })`
               : '';
 
@@ -211,11 +211,41 @@ export function PrescriptionFormPrintPreview({
         additionalInstructions: undefined,
       };
 
-      const html = generatePrescriptionPrintHTML(printData);
+      const labels = {
+        printDiagnosis: t('prescriptions.printDiagnosis'),
+        printProceduresConducted: t('prescriptions.printProceduresConducted'),
+        printMedicineName: t('prescriptions.printMedicineName'),
+        printDosage: t('prescriptions.printDosage'),
+        printDuration: t('prescriptions.printDuration'),
+        printDays: t('prescriptions.printDays'),
+        printTab: t('prescriptions.printTab'),
+        printCap: t('prescriptions.printCap'),
+        printUnit: t('prescriptions.printUnit'),
+        printTot: t('prescriptions.printTot'),
+        printInvestigations: t('prescriptions.printInvestigations'),
+        printAdviceGiven: t('prescriptions.printAdviceGiven'),
+        printFollowUp: t('prescriptions.printFollowUp'),
+        printAdditionalInstructions: t('prescriptions.printAdditionalInstructions'),
+        printValidUntilDisclaimer: t('prescriptions.printValidUntilDisclaimer'),
+        printSignature: t('prescriptions.printSignature'),
+        printKnownHistoryOf: t('prescriptions.printKnownHistoryOf'),
+        printChiefComplaints: t('prescriptions.printChiefComplaints'),
+        printClinicalFindings: t('prescriptions.printClinicalFindings'),
+        printNotes: t('prescriptions.printNotes'),
+        printDate: t('prescriptions.printDate'),
+        printAddress: t('prescriptions.printAddress'),
+        printWeightKg: t('prescriptions.printWeightKg'),
+        printHeightCms: t('prescriptions.printHeightCms'),
+        printBp: t('prescriptions.printBp'),
+        printReferredBy: t('prescriptions.printReferredBy'),
+        printTiming: t('prescriptions.printTiming'),
+        printPh: t('prescriptions.printPh'),
+      };
+      const html = generatePrescriptionPrintHTML(printData, labels);
       setPrintHtml(html);
     } catch (error) {
       logger.error('Failed to generate print preview:', error);
-      setError('Failed to generate print preview');
+      setError(t('prescriptions.failedToGeneratePrintPreview'));
     } finally {
       setLoading(false);
     }
@@ -312,7 +342,7 @@ export function PrescriptionFormPrintPreview({
 
             <div className='flex justify-end gap-2 pt-4 border-t'>
               <Button variant='secondary' onClick={onClose}>
-                Close
+                {t('common.close')}
               </Button>
               <Button variant='secondary' onClick={handleDownloadPDF} disabled={downloadingPdf}>
                 {downloadingPdf

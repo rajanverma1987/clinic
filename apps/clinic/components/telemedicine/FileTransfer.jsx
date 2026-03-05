@@ -104,7 +104,7 @@ export function FileTransfer({
     >
       {/* File Transfer Header */}
       <div className='bg-white border-b border-neutral-300 px-4 py-3 flex items-center justify-between'>
-        <h3 className='text-neutral-900 font-semibold'>File Transfer</h3>
+        <h3 className='text-neutral-900 font-semibold'>{t('telemedicine.fileTransfer')}</h3>
         <Button
           variant='ghost'
           size='xs'
@@ -132,7 +132,7 @@ export function FileTransfer({
             uploading ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
-          {uploading ? `Uploading... ${uploadProgress}%` : 'Upload File'}
+          {uploading ? t('telemedicine.uploadingProgress', { progress: uploadProgress }) : t('telemedicine.uploadFile')}
         </label>
         {uploading && (
           <div className='mt-2 w-full bg-neutral-200 rounded-full h-2'>
@@ -143,14 +143,14 @@ export function FileTransfer({
           </div>
         )}
         <p className='text-xs text-neutral-600 mt-2 text-center'>
-          Max file size: 10MB • 🔒 Encrypted
+          {t('telemedicine.maxFileSizeEncrypted')}
         </p>
       </div>
 
       {/* Files List */}
       <div className='flex-1 overflow-y-auto p-4 space-y-2'>
         {files.length === 0 ? (
-          <div className='text-center text-neutral-600 text-sm mt-8'>No files shared yet</div>
+          <div className='text-center text-neutral-600 text-sm mt-8'>{t('telemedicine.noFilesSharedYet')}</div>
         ) : (
           files.map((file, index) => (
             <div

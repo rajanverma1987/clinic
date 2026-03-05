@@ -26,7 +26,8 @@ export default function InventoryItemDetailPage() {
   const params = useParams();
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
+  const localeCode = (i18nLocale || 'en').slice(0, 2);
   const managerReadOnly = isManagerPathReadOnly(pathname);
   const { currency, locale } = useSettings();
   const [item, setItem] = useState(null);
@@ -233,10 +234,15 @@ export default function InventoryItemDetailPage() {
     return null;
   }
 
+  const displayName =
+    (localeCode === 'ar' && item.name_ar) ? item.name_ar
+      : (localeCode === 'es' && item.name_es) ? item.name_es
+      : item.name;
+
   return (
     <Layout>
       <PageHeader
-        title={item.name}
+        title={displayName}
         subtitle={
           <>
             {item.code && (
@@ -295,6 +301,23 @@ export default function InventoryItemDetailPage() {
                 disabled={!isEditing}
                 required
               />
+
+              {isEditing && (
+                <>
+                  <Input
+                    label={t('inventory.itemNameArabic')}
+                    value={formData.name_ar || ''}
+                    onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                    placeholder={t('inventory.itemNamePlaceholder')}
+                  />
+                  <Input
+                    label={t('inventory.itemNameSpanish')}
+                    value={formData.name_es || ''}
+                    onChange={(e) => setFormData({ ...formData, name_es: e.target.value })}
+                    placeholder={t('inventory.itemNamePlaceholder')}
+                  />
+                </>
+              )}
 
               <Input
                 label={t('inventory.code')}

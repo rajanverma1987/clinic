@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { useCallback } from 'react';
 import { SettingsTabHeader } from './SettingsTabHeader';
 
@@ -43,6 +45,15 @@ const TIMEZONE_KEYS = {
   'Australia/Sydney': 'settings.timezoneAustraliaSydney',
 };
 
+/** Same as item name: transliterate to Arabic, translate to Spanish (word-by-word) for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
+
 export function GeneralSettingsTab({
   isClinicAdmin,
   clinicForm,
@@ -53,6 +64,7 @@ export function GeneralSettingsTab({
 }) {
   const { user } = useAuth();
   const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const isSuperAdmin = user?.role === 'super_admin';
 
   const getRegionLabel = useCallback(
@@ -122,7 +134,7 @@ export function GeneralSettingsTab({
                   {t('settings.clinicName')} <span className='text-red-500'>*</span>
                 </label>
                 <Input
-                  value={clinicForm.name}
+                  value={getDisplayValue(clinicForm.name, localeCode)}
                   onChange={(e) => setClinicForm({ ...clinicForm, name: e.target.value })}
                   placeholder={t('settings.clinicNamePlaceholder')}
                   required
@@ -174,12 +186,24 @@ export function GeneralSettingsTab({
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
                   required
                 >
-                  <option value='USD'>{getCurrencyLabel('USD')}</option>
-                  <option value='EUR'>{getCurrencyLabel('EUR')}</option>
-                  <option value='GBP'>{getCurrencyLabel('GBP')}</option>
-                  <option value='INR'>{getCurrencyLabel('INR')}</option>
-                  <option value='CAD'>{getCurrencyLabel('CAD')}</option>
-                  <option value='AUD'>{getCurrencyLabel('AUD')}</option>
+                  <option value='USD'>
+                    {getDisplayValue(getCurrencyLabel('USD'), localeCode)}
+                  </option>
+                  <option value='EUR'>
+                    {getDisplayValue(getCurrencyLabel('EUR'), localeCode)}
+                  </option>
+                  <option value='GBP'>
+                    {getDisplayValue(getCurrencyLabel('GBP'), localeCode)}
+                  </option>
+                  <option value='INR'>
+                    {getDisplayValue(getCurrencyLabel('INR'), localeCode)}
+                  </option>
+                  <option value='CAD'>
+                    {getDisplayValue(getCurrencyLabel('CAD'), localeCode)}
+                  </option>
+                  <option value='AUD'>
+                    {getDisplayValue(getCurrencyLabel('AUD'), localeCode)}
+                  </option>
                 </select>
                 <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>{t('settings.forBillingInvoices')}</p>
               </div>
@@ -195,9 +219,15 @@ export function GeneralSettingsTab({
                     className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
                     required
                   >
-                    <option value='en-US'>{getLocaleLabel('en-US')}</option>
-                    <option value='es-ES'>{getLocaleLabel('es-ES')}</option>
-                    <option value='ar-SA'>{getLocaleLabel('ar-SA')}</option>
+                    <option value='en-US'>
+                      {getDisplayValue(getLocaleLabel('en-US'), localeCode)}
+                    </option>
+                    <option value='es-ES'>
+                      {getDisplayValue(getLocaleLabel('es-ES'), localeCode)}
+                    </option>
+                    <option value='ar-SA'>
+                      {getDisplayValue(getLocaleLabel('ar-SA'), localeCode)}
+                    </option>
                   </select>
                   <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                     {t('settings.languageAndDateFormat')}
@@ -215,17 +245,33 @@ export function GeneralSettingsTab({
                   className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
                   required
                 >
-                  <option value='America/New_York'>{getTimezoneLabel('America/New_York')}</option>
-                  <option value='America/Chicago'>{getTimezoneLabel('America/Chicago')}</option>
-                  <option value='America/Denver'>{getTimezoneLabel('America/Denver')}</option>
-                  <option value='America/Los_Angeles'>
-                    {getTimezoneLabel('America/Los_Angeles')}
+                  <option value='America/New_York'>
+                    {getDisplayValue(getTimezoneLabel('America/New_York'), localeCode)}
                   </option>
-                  <option value='America/Toronto'>{getTimezoneLabel('America/Toronto')}</option>
-                  <option value='Europe/London'>{getTimezoneLabel('Europe/London')}</option>
-                  <option value='Europe/Paris'>{getTimezoneLabel('Europe/Paris')}</option>
-                  <option value='Asia/Kolkata'>{getTimezoneLabel('Asia/Kolkata')}</option>
-                  <option value='Australia/Sydney'>{getTimezoneLabel('Australia/Sydney')}</option>
+                  <option value='America/Chicago'>
+                    {getDisplayValue(getTimezoneLabel('America/Chicago'), localeCode)}
+                  </option>
+                  <option value='America/Denver'>
+                    {getDisplayValue(getTimezoneLabel('America/Denver'), localeCode)}
+                  </option>
+                  <option value='America/Los_Angeles'>
+                    {getDisplayValue(getTimezoneLabel('America/Los_Angeles'), localeCode)}
+                  </option>
+                  <option value='America/Toronto'>
+                    {getDisplayValue(getTimezoneLabel('America/Toronto'), localeCode)}
+                  </option>
+                  <option value='Europe/London'>
+                    {getDisplayValue(getTimezoneLabel('Europe/London'), localeCode)}
+                  </option>
+                  <option value='Europe/Paris'>
+                    {getDisplayValue(getTimezoneLabel('Europe/Paris'), localeCode)}
+                  </option>
+                  <option value='Asia/Kolkata'>
+                    {getDisplayValue(getTimezoneLabel('Asia/Kolkata'), localeCode)}
+                  </option>
+                  <option value='Australia/Sydney'>
+                    {getDisplayValue(getTimezoneLabel('Australia/Sydney'), localeCode)}
+                  </option>
                 </select>
                 <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                   {t('settings.forAppointmentsScheduling')}
@@ -249,7 +295,7 @@ export function GeneralSettingsTab({
                   {t('settings.logoUrl')}
                 </label>
                 <Input
-                  value={clinicForm.logo || ''}
+                  value={getDisplayValue(clinicForm.logo || '', localeCode)}
                   onChange={(e) => setClinicForm({ ...clinicForm, logo: e.target.value })}
                   placeholder={t('settings.urlPlaceholder')}
                 />
@@ -259,7 +305,7 @@ export function GeneralSettingsTab({
                   {t('settings.clinicPhone')}
                 </label>
                 <Input
-                  value={clinicForm.phone || ''}
+                  value={getDisplayValue(clinicForm.phone || '', localeCode)}
                   onChange={(e) => setClinicForm({ ...clinicForm, phone: e.target.value })}
                   placeholder={t('settings.clinicPhonePlaceholder')}
                 />
@@ -269,7 +315,7 @@ export function GeneralSettingsTab({
                   {t('settings.addressStreet')}
                 </label>
                 <Input
-                  value={clinicForm.address?.street || ''}
+                  value={getDisplayValue(clinicForm.address?.street || '', localeCode)}
                   onChange={(e) =>
                     setClinicForm({
                       ...clinicForm,
@@ -284,7 +330,7 @@ export function GeneralSettingsTab({
                   {t('settings.addressCity')}
                 </label>
                 <Input
-                  value={clinicForm.address?.city || ''}
+                  value={getDisplayValue(clinicForm.address?.city || '', localeCode)}
                   onChange={(e) =>
                     setClinicForm({
                       ...clinicForm,
@@ -298,7 +344,7 @@ export function GeneralSettingsTab({
                   {t('settings.addressState')}
                 </label>
                 <Input
-                  value={clinicForm.address?.state || ''}
+                  value={getDisplayValue(clinicForm.address?.state || '', localeCode)}
                   onChange={(e) =>
                     setClinicForm({
                       ...clinicForm,
@@ -312,7 +358,7 @@ export function GeneralSettingsTab({
                   {t('settings.addressZipCode')}
                 </label>
                 <Input
-                  value={clinicForm.address?.zipCode || ''}
+                  value={getDisplayValue(clinicForm.address?.zipCode || '', localeCode)}
                   onChange={(e) =>
                     setClinicForm({
                       ...clinicForm,
@@ -326,7 +372,7 @@ export function GeneralSettingsTab({
                   {t('settings.addressCountry')}
                 </label>
                 <Input
-                  value={clinicForm.address?.country || ''}
+                  value={getDisplayValue(clinicForm.address?.country || '', localeCode)}
                   onChange={(e) =>
                     setClinicForm({
                       ...clinicForm,
@@ -353,7 +399,7 @@ export function GeneralSettingsTab({
                   {t('settings.receiptTaxId')}
                 </label>
                 <Input
-                  value={clinicForm.taxId || ''}
+                  value={getDisplayValue(clinicForm.taxId || '', localeCode)}
                   onChange={(e) => setClinicForm({ ...clinicForm, taxId: e.target.value })}
                   placeholder={t('settings.receiptTaxIdPlaceholder')}
                 />
@@ -363,7 +409,7 @@ export function GeneralSettingsTab({
                   {t('settings.receiptFooter')}
                 </label>
                 <Input
-                  value={clinicForm.receiptFooter || ''}
+                  value={getDisplayValue(clinicForm.receiptFooter || '', localeCode)}
                   onChange={(e) => setClinicForm({ ...clinicForm, receiptFooter: e.target.value })}
                   placeholder={t('settings.receiptFooterPlaceholder')}
                 />

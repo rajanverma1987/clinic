@@ -75,18 +75,17 @@ export default function PatientsPage() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [viewMode, setViewMode] = useState('table');
 
+  // Cache key includes locale so stored DB data (e.g. localized names) matches current UI language
+  const patientsCacheId =
+    tenantId && localeCode ? `${tenantId}:${localeCode}` : tenantId;
+
   // Hydrate from localStorage before paint (no flash, no hydration mismatch)
-  // Show cached data immediately for fast loading
-  // Only use cache if it matches current pageSize and has reasonable data
+  // Only use cache if it matches current pageSize and locale (so names are in correct language)
   useLayoutEffect(() => {
-    if (!tenantId) return;
-    const cached = routeCache.getData(ROUTE_KEY, tenantId);
+    if (!patientsCacheId) return;
+    const cached = routeCache.getData(ROUTE_KEY, patientsCacheId);
     if (cached && cached.patients != null && Array.isArray(cached.patients)) {
       const cachedPageSize = cached.pageSize ?? 25;
-      // Only use cache if:
-      // 1. Page size matches current pageSize (25 by default)
-      // 2. Don't use cache if it has 5 or fewer patients (likely from old dashboard widget)
-      // 3. For pageSize >= 25, cache must have at least pageSize records (or all records if total < pageSize)
       const isValidCache =
         cachedPageSize === pageSize &&
         cached.patients.length > 5 &&
@@ -99,11 +98,10 @@ export default function PatientsPage() {
         setTotalCount(cached.total ?? 0);
         setLoading(false);
       } else {
-        // Clear cache if pageSize mismatch or stale small dataset (<= 5 patients)
-        routeCache.clear(ROUTE_KEY, tenantId);
+        routeCache.clear(ROUTE_KEY, patientsCacheId);
       }
     }
-  }, [tenantId, pageSize]);
+  }, [patientsCacheId, pageSize]);
   const [showModal, setShowModal] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
@@ -209,8 +207,8 @@ export default function PatientsPage() {
           setTotalPages(pagination.totalPages);
           setTotalCount(pagination.total ?? 0);
           if (effectiveSearch) addRecentSearch('patients', effectiveSearch);
-          if (tenantId)
-            routeCache.set(ROUTE_KEY, tenantId, {
+          if (patientsCacheId)
+            routeCache.set(ROUTE_KEY, patientsCacheId, {
               patients: patientsList,
               totalPages: pagination.totalPages,
               currentPage,
@@ -233,6 +231,8 @@ export default function PatientsPage() {
     },
     [
       tenantId,
+      localeCode,
+      patientsCacheId,
       currentPage,
       pageSize,
       searchTerm,
@@ -242,20 +242,18 @@ export default function PatientsPage() {
       ageGroupFilter,
       sortBy,
       sortOrder,
-      localeCode,
     ],
   );
 
-  // Refetch when UI language changes so patient table shows names in new locale (es/ar).
+  // Refetch when UI language changes so patient table shows stored DB data in new locale (es/ar).
   const prevLocaleRef = useRef(localeCode);
   useEffect(() => {
     if (!user || authLoading) return;
     if (prevLocaleRef.current !== localeCode) {
       prevLocaleRef.current = localeCode;
-      if (tenantId) routeCache.clear(ROUTE_KEY, tenantId);
       fetchPatients(!!debouncedSearchTerm, false);
     }
-  }, [localeCode, user, authLoading, tenantId, fetchPatients, debouncedSearchTerm]);
+  }, [localeCode, user, authLoading, fetchPatients, debouncedSearchTerm]);
 
   // Manual refresh handler
   const handleManualRefresh = useCallback(() => {
@@ -267,11 +265,10 @@ export default function PatientsPage() {
   useEffect(() => {
     if (!authLoading && user) {
       fetchSettings();
-      // Clear cache if it has wrong pageSize to ensure fresh fetch
-      if (tenantId) {
-        const cached = routeCache.getData(ROUTE_KEY, tenantId);
+      if (patientsCacheId) {
+        const cached = routeCache.getData(ROUTE_KEY, patientsCacheId);
         if (cached && (cached.pageSize ?? 25) !== pageSize) {
-          routeCache.clear(ROUTE_KEY, tenantId);
+          routeCache.clear(ROUTE_KEY, patientsCacheId);
         }
       }
       // Fetch fresh data (will show cached data first, then update)
@@ -528,6 +525,17 @@ export default function PatientsPage() {
   );
 
   const dateLocale = (locale || 'en').slice(0, 2) === 'ar' ? 'ar' : (locale || 'en').startsWith('es') ? 'es' : (locale || 'en-US');
+
+  /** For Arabic locale: display phone digits in Eastern Arabic numerals (٠-٩). */
+  const formatPhoneForLocale = useCallback(
+    (phoneStr) => {
+      if (!phoneStr || localeCode !== 'ar') return phoneStr;
+      const easternNumerals = '٠١٢٣٤٥٦٧٨٩';
+      return String(phoneStr).replace(/[0-9]/g, (d) => easternNumerals[Number(d)]);
+    },
+    [localeCode],
+  );
+
   /** Use getTranslation with explicit locale so table cells always show in current UI language (es/ar). */
   const getGenderLabel = useCallback(
     (value) => {
@@ -543,20 +551,36 @@ export default function PatientsPage() {
 
   const columns = useMemo(
     () => [
-      { header: t('patients.patientId'), accessor: 'patientId' },
+      {
+        header: t('patients.patientId'),
+        accessor: (row) =>
+          row.patientId && String(row.patientId).trim() ? row.patientId : t('common.na'),
+      },
       {
         header: t('patients.name'),
-        accessor: (row) => `${row.firstName} ${row.lastName}`,
+        accessor: (row) => {
+          const display =
+            row.patientDisplayName && String(row.patientDisplayName).trim()
+              ? row.patientDisplayName
+              : [row.firstName ?? '', row.lastName ?? ''].filter(Boolean).join(' ').trim();
+          return display || t('common.na');
+        },
       },
       {
-        header: t('patients.phone'),
-        accessor: (row) =>
-          row.phone && String(row.phone).trim() ? row.phone : getTranslation('common.na', localeCode),
+        header: getTranslation('patients.phone', localeCode),
+        accessor: (row) => {
+          const raw = row.phone && String(row.phone).trim();
+          if (!raw) return getTranslation('common.na', localeCode);
+          return formatPhoneForLocale(raw);
+        },
       },
       {
-        header: t('patients.email'),
-        accessor: (row) =>
-          row.email && String(row.email).trim() ? row.email : getTranslation('common.na', localeCode),
+        header: getTranslation('patients.email', localeCode),
+        accessor: (row) => {
+          const raw = row.email && String(row.email).trim();
+          if (!raw) return getTranslation('common.na', localeCode);
+          return raw;
+        },
       },
       {
         header: t('patients.dateOfBirth'),
@@ -567,7 +591,7 @@ export default function PatientsPage() {
                 month: 'short',
                 day: 'numeric',
               })
-            : getTranslation('common.na', localeCode),
+            : t('common.na'),
       },
       {
         header: t('patients.gender'),
@@ -622,7 +646,7 @@ export default function PatientsPage() {
                             const res = await apiClient.delete(`/patients/${id}`);
                             if (res?.success) {
                               showSuccess(t('patients.patientDeleted'));
-                              routeCache.clear(ROUTE_KEY, tenantId);
+                              routeCache.clear(ROUTE_KEY, patientsCacheId);
                               fetchPatients(false, false);
                             } else {
                               showError(res?.error?.message || t('patients.deleteFailed'));
@@ -649,7 +673,7 @@ export default function PatientsPage() {
         },
       },
     ],
-    [t, router, user, openConfirm, tenantId, fetchPatients, getGenderLabel, dateLocale, locale, localeCode],
+    [t, router, user, openConfirm, patientsCacheId, fetchPatients, getGenderLabel, formatPhoneForLocale, dateLocale, locale, localeCode],
   );
 
   // Redirect if not authenticated (non-blocking)
@@ -936,8 +960,8 @@ export default function PatientsPage() {
                     onChange={(e) => {
                       const newSize = parseInt(e.target.value, 10);
                       // Clear cache when changing page size to force fresh fetch
-                      if (tenantId) {
-                        routeCache.clear(ROUTE_KEY, tenantId);
+                      if (patientsCacheId) {
+                        routeCache.clear(ROUTE_KEY, patientsCacheId);
                       }
                       setPageSize(newSize);
                       setCurrentPage(1); // Reset to first page when changing page size

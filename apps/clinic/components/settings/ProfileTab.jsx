@@ -9,6 +9,8 @@ import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { getAvatarPlaceholder } from '@/lib/utils/avatars';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -128,6 +130,15 @@ function cropImageToDataUrl(img, positionX, positionY, scale, quality = AVATAR_J
   return canvas.toDataURL('image/jpeg', quality);
 }
 
+/** Same as item name: transliterate to Arabic, translate to Spanish (word-by-word) for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
+
 export function ProfileTab({
   currentUser,
   logout,
@@ -139,7 +150,8 @@ export function ProfileTab({
   on2FAStatusChange,
   onAvatarUploaded,
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const { open: openConfirm } = useConfirmation();
   const fileInputRef = useRef(null);
   const cropImageRef = useRef(null);
@@ -414,14 +426,14 @@ export function ProfileTab({
             <div className='flex-1 min-w-0 text-center sm:text-left'>
               <h2 className='text-xl font-semibold text-neutral-900 dark:text-neutral-100'>
                 {currentUser?.role === 'doctor'
-                  ? `Dr. ${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim()
-                  : `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim()}
+                  ? `Dr. ${getDisplayValue(currentUser?.firstName || '', localeCode)} ${getDisplayValue(currentUser?.lastName || '', localeCode)}`.trim()
+                  : `${getDisplayValue(currentUser?.firstName || '', localeCode)} ${getDisplayValue(currentUser?.lastName || '', localeCode)}`.trim()}
               </h2>
               <p className='mt-1 text-sm text-neutral-600 dark:text-neutral-400'>
-                {getRoleLabel(currentUser?.role)}
+                {getDisplayValue(getRoleLabel(currentUser?.role), localeCode)}
               </p>
               <p className='mt-0.5 text-sm text-neutral-500 dark:text-neutral-500'>
-                {currentUser?.email}
+                {getDisplayValue(currentUser?.email || '', localeCode)}
               </p>
               <div className='mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-3'>
                 <span
@@ -548,7 +560,7 @@ export function ProfileTab({
                   {t('auth.firstName')}
                 </dt>
                 <dd className='mt-0.5 text-sm text-neutral-900 dark:text-neutral-100'>
-                  {currentUser?.firstName || '—'}
+                  {getDisplayValue(currentUser?.firstName || '', localeCode) || '—'}
                 </dd>
               </div>
               <div>
@@ -556,7 +568,7 @@ export function ProfileTab({
                   {t('auth.lastName')}
                 </dt>
                 <dd className='mt-0.5 text-sm text-neutral-900 dark:text-neutral-100'>
-                  {currentUser?.lastName || '—'}
+                  {getDisplayValue(currentUser?.lastName || '', localeCode) || '—'}
                 </dd>
               </div>
               <div>
@@ -564,7 +576,7 @@ export function ProfileTab({
                   {t('auth.email')}
                 </dt>
                 <dd className='mt-0.5 text-sm text-neutral-900 dark:text-neutral-100 break-all'>
-                  {currentUser?.email || '—'}
+                  {getDisplayValue(currentUser?.email || '', localeCode) || '—'}
                 </dd>
               </div>
               <div>
@@ -572,7 +584,7 @@ export function ProfileTab({
                   {t('common.role')}
                 </dt>
                 <dd className='mt-0.5 text-sm text-neutral-900 dark:text-neutral-100'>
-                  {getRoleLabel(currentUser?.role) || '—'}
+                  {getDisplayValue(getRoleLabel(currentUser?.role), localeCode) || '—'}
                 </dd>
               </div>
               <div>
@@ -580,7 +592,7 @@ export function ProfileTab({
                   {t('settings.subscriptionPlan')}
                 </dt>
                 <dd className='mt-0.5 text-sm text-neutral-900 dark:text-neutral-100'>
-                  {currentUser?.subscriptionPlan?.name || t('settings.noPlan')}
+                  {getDisplayValue(currentUser?.subscriptionPlan?.name || '', localeCode) || t('settings.noPlan')}
                 </dd>
               </div>
             </dl>

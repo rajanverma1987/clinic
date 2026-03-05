@@ -616,7 +616,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         <div className='flex-shrink-0 border-t border-neutral-200 dark:border-neutral-800 flex flex-col min-h-0'>
           {/* Profile block */}
           <div className={[isCollapsed ? 'px-2 py-2' : 'px-3 py-2'].join(' ')}>
-            <ProfileMenu isCollapsed={isCollapsed} showSubscriptionLinks={showSubscriptionFooter} />
+            <ProfileMenu key={locale} isCollapsed={isCollapsed} showSubscriptionLinks={showSubscriptionFooter} />
           </div>
 
           {/* Collapse + Logout row — consistent height and alignment */}

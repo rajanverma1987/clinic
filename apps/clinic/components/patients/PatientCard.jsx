@@ -14,40 +14,47 @@ import { useRouter } from 'next/navigation';
  * View action is an icon-only button in the top-right; optional doctor actions (message, notes) as icons.
  */
 export function PatientCard({ patient, isDoctor }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
+  const dateLocale =
+    (locale || 'en').slice(0, 2) === 'ar'
+      ? 'ar'
+      : (locale || 'en').startsWith('es')
+        ? 'es'
+        : undefined;
+  const na = t('common.na');
 
-  const name = `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || '—';
+  const name = `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || na;
   const dob = patient.dateOfBirth
-    ? new Date(patient.dateOfBirth).toLocaleDateString(undefined, {
+    ? new Date(patient.dateOfBirth).toLocaleDateString(dateLocale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
       })
-    : '—';
+    : na;
   const lastVisit = patient.lastVisitDate
-    ? new Date(patient.lastVisitDate).toLocaleDateString(undefined, {
+    ? new Date(patient.lastVisitDate).toLocaleDateString(dateLocale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
       })
-    : '—';
-  const totalVisits = patient.appointmentCount ?? '—';
+    : na;
+  const totalVisits = patient.appointmentCount ?? na;
   const conditions =
     patient.conditionsSummary ||
     (patient.chronicConditions?.length ? patient.chronicConditions.join(', ') : null) ||
-    '—';
-  const activeRx = patient.activePrescriptionsCount ?? '—';
+    na;
+  const activeRx = patient.activePrescriptionsCount ?? na;
   const allergies =
     patient.allergiesSummary ||
     (Array.isArray(patient.allergies) ? patient.allergies.join(', ') : patient.allergies) ||
-    '—';
+    na;
   const lastLab = patient.lastLabDate
-    ? new Date(patient.lastLabDate).toLocaleDateString(undefined, {
+    ? new Date(patient.lastLabDate).toLocaleDateString(dateLocale, {
         year: 'numeric',
         month: 'short',
       })
-    : '—';
+    : na;
 
   const recordPath = isDoctor ? `/doctors/patients/${patient._id}` : `/patients/${patient._id}`;
 
@@ -117,7 +124,7 @@ export function PatientCard({ patient, isDoctor }) {
               {name}
             </h3>
             <p className='text-body-xs text-neutral-500 dark:text-neutral-400'>
-              ID: {patient.patientId || patient._id?.slice(-8) || '—'}
+              ID: {patient.patientId || patient._id?.slice(-8) || na}
             </p>
           </div>
         </div>
@@ -125,11 +132,11 @@ export function PatientCard({ patient, isDoctor }) {
         <div className='grid grid-cols-2 gap-x-4 gap-y-2 text-body-xs'>
           <span className='text-neutral-500 dark:text-neutral-400'>{t('patients.phone')}:</span>
           <span className='truncate text-neutral-700 dark:text-neutral-300'>
-            {patient.phone || '—'}
+            {patient.phone || na}
           </span>
           <span className='text-neutral-500 dark:text-neutral-400'>{t('patients.email')}:</span>
           <span className='truncate text-neutral-700 dark:text-neutral-300'>
-            {patient.email || '—'}
+            {patient.email || na}
           </span>
           <span className='text-neutral-500 dark:text-neutral-400'>
             {t('patients.dateOfBirth')}:

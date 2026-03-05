@@ -23,6 +23,8 @@ const InventoryItemSchema = new Schema(
       trim: true,
       index: true,
     },
+    name_ar: { type: String, trim: true },
+    name_es: { type: String, trim: true },
     code: {
       type: String,
       trim: true,

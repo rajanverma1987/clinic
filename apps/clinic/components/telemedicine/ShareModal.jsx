@@ -53,7 +53,7 @@ export function ShareModal({ isOpen, onClose, sessionId, sessionData, onSendEmai
     <Modal isOpen={isOpen} onClose={onClose} title={t('telemedicine.shareVideoCallLink')}>
       <div className='space-y-4'>
         <p className='text-gray-600 text-sm'>
-          Share this link with the patient to join the video consultation:
+          {t('telemedicine.shareLinkWithPatient')}
         </p>
 
         <div className='flex gap-2'>
@@ -65,9 +65,9 @@ export function ShareModal({ isOpen, onClose, sessionId, sessionData, onSendEmai
 
         {sessionData?.patientId?.email && (
           <div className='pt-4 border-t'>
-            <p className='text-gray-600 text-sm mb-2'>Or send the link directly via email:</p>
+            <p className='text-gray-600 text-sm mb-2'>{t('telemedicine.orSendViaEmail')}</p>
             <Button onClick={handleEmailSend} variant='primary' size='md' className='w-full'>
-              Send Email to {sessionData.patientId.email}
+              {t('telemedicine.sendEmailTo', { email: sessionData.patientId.email })}
             </Button>
           </div>
         )}

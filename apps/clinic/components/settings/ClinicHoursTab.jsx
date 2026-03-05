@@ -30,6 +30,16 @@ export function ClinicHoursTab({
     };
     return icons[day] || '📅';
   };
+  const dayKeys = {
+    Monday: 'settings.monday',
+    Tuesday: 'settings.tuesday',
+    Wednesday: 'settings.wednesday',
+    Thursday: 'settings.thursday',
+    Friday: 'settings.friday',
+    Saturday: 'settings.saturday',
+    Sunday: 'settings.sunday',
+  };
+  const getDayLabel = (day) => (day && dayKeys[day] ? t(dayKeys[day]) : day || '');
 
   return (
     <div className='w-full max-w-4xl space-y-6 text-left'>
@@ -63,7 +73,7 @@ export function ClinicHoursTab({
                             : 'text-neutral-500 dark:text-neutral-400'
                         }`}
                       >
-                        {hour.day}
+                        {getDayLabel(hour.day)}
                       </span>
                     </div>
                     <div className='flex items-center gap-1.5'>

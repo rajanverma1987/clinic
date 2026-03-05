@@ -5,13 +5,25 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useI18n } from '@/contexts/I18nContext';
 import { PRIMARY_900 } from '@/lib/constants/brand-colors';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { showError } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+/** Same as item name: transliterate to Arabic, translate to Spanish (word-by-word) for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
+
 export default function BrandingPage() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const [formData, setFormData] = useState({
     clinicName: '',
     logo: '',
@@ -52,14 +64,14 @@ export default function BrandingPage() {
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <Input
               label={t('settings.clinicName')}
-              value={formData.clinicName}
+              value={getDisplayValue(formData.clinicName, localeCode)}
               onChange={(e) => setFormData({ ...formData, clinicName: e.target.value })}
               placeholder={t('settings.placeholderClinicName')}
             />
 
             <Input
               label={t('settings.customDomain')}
-              value={formData.customDomain}
+              value={getDisplayValue(formData.customDomain, localeCode)}
               onChange={(e) => setFormData({ ...formData, customDomain: e.target.value })}
               placeholder={t('settings.placeholderCustomDomain')}
             />
@@ -70,7 +82,7 @@ export default function BrandingPage() {
               {t('settings.logoUrl')}
             </label>
             <Input
-              value={formData.logo}
+              value={getDisplayValue(formData.logo, localeCode)}
               onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
               placeholder={t('settings.placeholderLogoUrl')}
             />
@@ -82,7 +94,7 @@ export default function BrandingPage() {
               {t('settings.faviconUrl')}
             </label>
             <Input
-              value={formData.favicon}
+              value={getDisplayValue(formData.favicon, localeCode)}
               onChange={(e) => setFormData({ ...formData, favicon: e.target.value })}
               placeholder={t('settings.placeholderFaviconUrl')}
             />
@@ -106,7 +118,7 @@ export default function BrandingPage() {
                   className='h-10 w-20 rounded border border-neutral-300'
                 />
                 <Input
-                  value={formData.primaryColor}
+                  value={getDisplayValue(formData.primaryColor, localeCode)}
                   onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
                   placeholder={PRIMARY_900}
                   className='flex-1'
@@ -130,7 +142,7 @@ export default function BrandingPage() {
                   className='h-10 w-20 rounded border border-neutral-300'
                 />
                 <Input
-                  value={formData.secondaryColor}
+                  value={getDisplayValue(formData.secondaryColor, localeCode)}
                   onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
                   placeholder={t('settings.secondaryColorPlaceholder')}
                   className='flex-1'
@@ -154,7 +166,7 @@ export default function BrandingPage() {
                   className='h-10 w-20 rounded border border-neutral-300'
                 />
                 <Input
-                  value={formData.accentColor}
+                  value={getDisplayValue(formData.accentColor, localeCode)}
                   onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
                   placeholder={t('settings.accentColorPlaceholder')}
                   className='flex-1'
@@ -176,7 +188,7 @@ export default function BrandingPage() {
               {t('settings.footerText')}
             </label>
             <textarea
-              value={formData.footerText}
+              value={getDisplayValue(formData.footerText, localeCode)}
               onChange={(e) => setFormData({ ...formData, footerText: e.target.value })}
               className='w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
               rows={3}

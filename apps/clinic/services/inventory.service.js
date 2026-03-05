@@ -33,7 +33,26 @@ import InventoryItem from '@/models/InventoryItem.js';
 import StockTransaction, { TransactionStatus } from '@/models/StockTransaction.js';
 import Supplier from '@/models/Supplier.js';
 import mongoose from 'mongoose';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name.js';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish.js';
 import { parseAmount } from './tax-engine.service.js';
+
+/** Same as patient names: transliterate to Arabic script when name_ar not set */
+function getItemNameAr(name) {
+  if (name == null || String(name).trim() === '') return name ?? '';
+  return transliterateToArabic(String(name).trim()) || String(name).trim();
+}
+
+/** Same as patient names: translate to Spanish (word-by-word) when name_es not set */
+function getItemNameEs(name) {
+  if (name == null || String(name).trim() === '') return name ?? '';
+  return String(name)
+    .trim()
+    .split(/\s+/)
+    .map((w) => translateToSpanish(w) || w)
+    .join(' ')
+    .trim();
+}
 
 /**
  * Generate unique transaction number for a tenant
@@ -146,6 +165,8 @@ export async function createInventoryItem(input, tenantId, userId) {
   const item = await InventoryItem.create({
     tenantId,
     name: input.name,
+    name_ar: input.name_ar,
+    name_es: input.name_es,
     code: input.code,
     type: input.type,
     description: input.description,
@@ -280,7 +301,8 @@ export async function listInventoryItems(query, tenantId, userId) {
   // Get total count
   const total = await InventoryItem.countDocuments(filter);
 
-  // Get paginated results - use aggregation with $lookup instead of populate for better performance
+  // Get paginated results - use aggregation with $lookup instead of populate for better performance.
+  // Ensure name_ar and name_es are always present for locale-aware display in the UI.
   const pipeline = [
     { $match: filter },
     {
@@ -295,6 +317,9 @@ export async function listInventoryItems(query, tenantId, userId) {
     {
       $addFields: {
         primarySupplierId: { $arrayElemAt: ['$supplier', 0] },
+        // Ensure locale fields exist; fallback to primary name so UI can show something in ar/es
+        name_ar: { $ifNull: ['$name_ar', '$name'] },
+        name_es: { $ifNull: ['$name_es', '$name'] },
       },
     },
     { $sort: { name: 1 } },
@@ -302,7 +327,18 @@ export async function listInventoryItems(query, tenantId, userId) {
     { $limit: limit || 10 },
   ];
 
-  const items = await InventoryItem.aggregate(pipeline);
+  let items = await InventoryItem.aggregate(pipeline);
+
+  // Same as patient names: transliterate to Arabic, translate to Spanish when name_ar/name_es not set
+  const primary = (n) => (n != null ? String(n).trim() : '');
+  for (const item of items) {
+    const name = primary(item.name);
+    if (!name) continue;
+    const dbAr = primary(item.name_ar);
+    const dbEs = primary(item.name_es);
+    if (!dbAr || dbAr === name) item.name_ar = getItemNameAr(name);
+    if (!dbEs || dbEs === name) item.name_es = getItemNameEs(name);
+  }
 
   // Audit list access
   await AuditLogger.auditWrite(
@@ -352,12 +388,24 @@ export async function getLowStockItems(tenantId, userId) {
     {
       $addFields: {
         primarySupplierId: { $arrayElemAt: ['$supplier', 0] },
+        name_ar: { $ifNull: ['$name_ar', '$name'] },
+        name_es: { $ifNull: ['$name_es', '$name'] },
       },
     },
     { $sort: { availableQuantity: 1 } },
   ];
 
-  const items = await InventoryItem.aggregate(pipeline);
+  let items = await InventoryItem.aggregate(pipeline);
+
+  const primary = (n) => (n != null ? String(n).trim() : '');
+  for (const item of items) {
+    const name = primary(item.name);
+    if (!name) continue;
+    const dbAr = primary(item.name_ar);
+    const dbEs = primary(item.name_es);
+    if (!dbAr || dbAr === name) item.name_ar = getItemNameAr(name);
+    if (!dbEs || dbEs === name) item.name_es = getItemNameEs(name);
+  }
   return items;
 }
 
@@ -551,7 +599,7 @@ export async function listStockTransactions(tenantId, userId, options = {}) {
   const limit = Math.min(options.limit ?? 100, 500);
 
   const transactions = await StockTransaction.find(filter)
-    .populate('inventoryItemId', 'name code')
+    .populate('inventoryItemId', 'name name_ar name_es code')
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
@@ -559,6 +607,8 @@ export async function listStockTransactions(tenantId, userId, options = {}) {
   const list = transactions.map((tx) => ({
     ...tx,
     itemName: tx.inventoryItemId?.name ?? null,
+    itemName_ar: tx.inventoryItemId?.name_ar ?? null,
+    itemName_es: tx.inventoryItemId?.name_es ?? null,
     itemCode: tx.inventoryItemId?.code ?? null,
     inventoryItemId: tx.inventoryItemId?._id ?? tx.inventoryItemId,
   }));
@@ -946,6 +996,8 @@ export async function getAllLots(tenantId, userId, filters = {}) {
       $project: {
         _id: 1,
         name: 1,
+        name_ar: 1,
+        name_es: 1,
         code: 1,
         type: 1,
         unit: 1,
@@ -993,6 +1045,8 @@ export async function getAllLots(tenantId, userId, filters = {}) {
         },
         itemId: { $toString: '$_id' },
         itemName: '$name',
+        itemName_ar: '$name_ar',
+        itemName_es: '$name_es',
         itemCode: '$code',
         itemType: '$type',
         batchNumber: {
@@ -1074,9 +1128,31 @@ export async function getAllLots(tenantId, userId, filters = {}) {
   ];
 
   try {
-    const lots = await measureTime(`getAllLots-${tenantId}`, () =>
+    let lots = await measureTime(`getAllLots-${tenantId}`, () =>
       InventoryItem.aggregate(pipeline),
     );
+
+    // Same as patient names / items list: transliterate to Arabic, translate to Spanish for lot item names and batch number
+    const primary = (n) => (n != null ? String(n).trim() : '');
+    for (const lot of lots) {
+      const name = primary(lot.itemName);
+      if (name) {
+        const dbAr = primary(lot.itemName_ar);
+        const dbEs = primary(lot.itemName_es);
+        if (!dbAr || dbAr === name) lot.itemName_ar = getItemNameAr(name);
+        if (!dbEs || dbEs === name) lot.itemName_es = getItemNameEs(name);
+      }
+      const batchNum = primary(lot.batchNumber);
+      if (batchNum) {
+        lot.batchNumber_ar = getItemNameAr(batchNum);
+        lot.batchNumber_es = getItemNameEs(batchNum);
+      }
+      const unitStr = primary(lot.unit);
+      if (unitStr) {
+        lot.unit_ar = getItemNameAr(unitStr);
+        lot.unit_es = getItemNameEs(unitStr);
+      }
+    }
 
     // Audit list access
     await AuditLogger.auditWrite(

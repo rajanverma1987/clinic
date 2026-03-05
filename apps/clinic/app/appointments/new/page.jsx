@@ -27,7 +27,7 @@ function NewAppointmentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user: currentUser, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { hasFeature } = useFeatures();
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -395,10 +395,27 @@ function NewAppointmentPageContent() {
                       placeholder={t('common.select')}
                       options={[
                         { value: '', label: t('common.select'), disabled: true },
-                        ...doctors.map((d) => ({
-                          value: d.id,
-                          label: `Dr. ${d.firstName} ${d.lastName}`,
-                        })),
+                        ...doctors.map((d) => {
+                          const displayFirst =
+                            locale === 'ar' && (d.firstName_ar ?? '')
+                              ? d.firstName_ar
+                              : locale === 'es' && (d.firstName_es ?? '')
+                                ? d.firstName_es
+                                : d.firstName || '';
+                          const displayLast =
+                            locale === 'ar' && (d.lastName_ar ?? '')
+                              ? d.lastName_ar
+                              : locale === 'es' && (d.lastName_es ?? '')
+                                ? d.lastName_es
+                                : d.lastName || '';
+                          return {
+                            value: d.id,
+                            label: t('appointments.doctorNameFormat', {
+                              firstName: displayFirst,
+                              lastName: displayLast,
+                            }),
+                          };
+                        }),
                       ]}
                     />
                     {doctors.length === 0 && (
@@ -440,12 +457,12 @@ function NewAppointmentPageContent() {
                       onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                       required
                       options={[
-                        { value: '15', label: '15 min' },
-                        { value: '30', label: '30 min' },
-                        { value: '45', label: '45 min' },
-                        { value: '60', label: '60 min' },
-                        { value: '90', label: '90 min' },
-                        { value: '120', label: '120 min' },
+                        { value: '15', label: t('appointments.durationMin', { count: 15 }) },
+                        { value: '30', label: t('appointments.durationMin', { count: 30 }) },
+                        { value: '45', label: t('appointments.durationMin', { count: 45 }) },
+                        { value: '60', label: t('appointments.durationMin', { count: 60 }) },
+                        { value: '90', label: t('appointments.durationMin', { count: 90 }) },
+                        { value: '120', label: t('appointments.durationMin', { count: 120 }) },
                       ]}
                     />
                   </div>
@@ -456,12 +473,12 @@ function NewAppointmentPageContent() {
                       onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                       required
                       options={[
-                        { value: 'consultation', label: 'Consultation' },
-                        { value: 'follow_up', label: 'Follow-up' },
-                        { value: 'checkup', label: 'Checkup' },
-                        { value: 'emergency', label: 'Emergency' },
-                        { value: 'procedure', label: 'Procedure' },
-                        { value: 'lab_test', label: 'Lab Test' },
+                        { value: 'consultation', label: t('appointments.typeConsultation') },
+                        { value: 'follow_up', label: t('appointments.typeFollowUp') },
+                        { value: 'checkup', label: t('appointments.typeCheckup') },
+                        { value: 'emergency', label: t('appointments.typeEmergency') },
+                        { value: 'procedure', label: t('appointments.typeProcedure') },
+                        { value: 'lab_test', label: t('appointments.typeLabTest') },
                       ]}
                     />
                   </div>
@@ -490,10 +507,10 @@ function NewAppointmentPageContent() {
                         setFormData({ ...formData, recurringFrequency: e.target.value })
                       }
                       options={[
-                        { value: 'daily', label: 'Daily' },
-                        { value: 'weekly', label: 'Weekly' },
-                        { value: 'biweekly', label: 'Bi-weekly' },
-                        { value: 'monthly', label: 'Monthly' },
+                        { value: 'daily', label: t('appointments.recurringDaily') },
+                        { value: 'weekly', label: t('appointments.recurringWeekly') },
+                        { value: 'biweekly', label: t('appointments.recurringBiweekly') },
+                        { value: 'monthly', label: t('appointments.recurringMonthly') },
                       ]}
                       className='w-36'
                     />
@@ -591,11 +608,10 @@ function NewAppointmentPageContent() {
                       </div>
                       <div className='flex-1'>
                         <h4 className='font-semibold text-neutral-900 mb-1'>
-                          Video Consultations Not Available
+                          {t('appointments.videoNotAvailableTitle')}
                         </h4>
                         <p className='text-sm text-neutral-700 mb-3'>
-                          Upgrade your subscription to enable secure video consultations with
-                          patients remotely.
+                          {t('appointments.videoNotAvailableDesc')}
                         </p>
                         <Button
                           type='button'
@@ -617,7 +633,7 @@ function NewAppointmentPageContent() {
                               d='M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z'
                             />
                           </svg>
-                          Upgrade Plan
+                          {t('staff.upgradePlan')}
                         </Button>
                       </div>
                     </div>
