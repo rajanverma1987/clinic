@@ -4,10 +4,22 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useI18n } from '@/contexts/I18nContext';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { SettingsTabHeader } from './SettingsTabHeader';
 
+/** Same as item name: transliterate to Arabic, translate to Spanish (word-by-word) for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
+
 export function TaxSettingsTab({ taxForm, setTaxForm, saving, onSave, onCancel }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   return (
     <div className='w-full max-w-4xl space-y-6 text-left'>
       <SettingsTabHeader title={t('settings.taxSettings')} />
@@ -45,9 +57,15 @@ export function TaxSettingsTab({ taxForm, setTaxForm, saving, onSave, onCancel }
                   className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
                   required
                 >
-                  <option value='SALES_TAX'>{t('admin.taxTypeSalesTax')}</option>
-                  <option value='GST'>{t('admin.taxTypeGst')}</option>
-                  <option value='VAT'>{t('admin.taxTypeVat')}</option>
+                  <option value='SALES_TAX'>
+                    {getDisplayValue(t('admin.taxTypeSalesTax'), localeCode)}
+                  </option>
+                  <option value='GST'>
+                    {getDisplayValue(t('admin.taxTypeGst'), localeCode)}
+                  </option>
+                  <option value='VAT'>
+                    {getDisplayValue(t('admin.taxTypeVat'), localeCode)}
+                  </option>
                 </select>
               </div>
 

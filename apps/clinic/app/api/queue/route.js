@@ -23,6 +23,10 @@ const QUEUE_CACHE_TTL_MS = 30000; // 30 seconds - queue data changes frequently
 async function getHandler(req, user) {
   const { searchParams } = new URL(req.url);
 
+  const locale =
+    searchParams.get('locale') ||
+    req.headers.get('accept-language')?.split(',')[0]?.trim()?.slice(0, 2) ||
+    undefined;
   const queryParams = {
     page: searchParams.get('page') || undefined,
     limit: searchParams.get('limit') || undefined,
@@ -34,6 +38,7 @@ async function getHandler(req, user) {
     appointmentId: searchParams.get('appointmentId') || undefined,
     date: searchParams.get('date') || undefined,
     isActive: searchParams.get('isActive') || undefined,
+    locale: locale || undefined,
   };
 
   const validationResult = queueQuerySchema.safeParse(queryParams);
@@ -51,8 +56,9 @@ async function getHandler(req, user) {
     !validationResult.data.patientId &&
     !validationResult.data.appointmentId;
 
+  const cacheLocale = (validationResult.data.locale && String(validationResult.data.locale).slice(0, 2)) || '';
   const cacheKey = isCacheable 
-    ? `queue-${user.tenantId}-${validationResult.data.status || 'all'}-${validationResult.data.doctorId || 'all'}-${validationResult.data.page || 1}-${validationResult.data.limit || 100}`
+    ? `queue-${user.tenantId}-${validationResult.data.status || 'all'}-${validationResult.data.doctorId || 'all'}-${validationResult.data.page || 1}-${validationResult.data.limit || 100}-${cacheLocale}`
     : null;
 
   const result = cacheKey

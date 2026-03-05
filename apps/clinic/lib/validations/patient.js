@@ -130,4 +130,5 @@ export const patientSearchSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
   doctorId: z.string().optional(),
   branchId: z.string().optional(), // L2: filter by branch/location
+  locale: z.string().max(10).optional(), // e.g. es, ar for localized patient names in list
 });

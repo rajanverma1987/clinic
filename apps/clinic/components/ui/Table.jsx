@@ -92,7 +92,7 @@ export function Table({
             <TableHeaderRow>
               {columns.map((column, index) => (
                 <TableHeaderCell key={index} className={column.headerClassName}>
-                  {column.header}
+                  {typeof column.header === 'function' ? column.header() : column.header}
                 </TableHeaderCell>
               ))}
             </TableHeaderRow>

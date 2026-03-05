@@ -33,6 +33,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { getTranslation } from '@/lib/i18n';
 import * as routeCache from '@/lib/cache/dashboard-cache';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { canDeletePatient } from '@/lib/permissions/cursor-md-matrix';
@@ -50,8 +51,10 @@ const ROUTE_KEY = 'route_patients';
 export default function PatientsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
-  const { locale } = useSettings();
+  const { t, locale: i18nLocale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const locale = i18nLocale || settingsLocale;
+  const localeCode = (locale || 'en').slice(0, 2);
   const { prefetchPatient } = usePrefetchDetail();
   const { open: openConfirm } = useConfirmation();
   const tenantId = user?.tenantId ?? null;
@@ -72,18 +75,17 @@ export default function PatientsPage() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [viewMode, setViewMode] = useState('table');
 
+  // Cache key includes locale so stored DB data (e.g. localized names) matches current UI language
+  const patientsCacheId =
+    tenantId && localeCode ? `${tenantId}:${localeCode}` : tenantId;
+
   // Hydrate from localStorage before paint (no flash, no hydration mismatch)
-  // Show cached data immediately for fast loading
-  // Only use cache if it matches current pageSize and has reasonable data
+  // Only use cache if it matches current pageSize and locale (so names are in correct language)
   useLayoutEffect(() => {
-    if (!tenantId) return;
-    const cached = routeCache.getData(ROUTE_KEY, tenantId);
+    if (!patientsCacheId) return;
+    const cached = routeCache.getData(ROUTE_KEY, patientsCacheId);
     if (cached && cached.patients != null && Array.isArray(cached.patients)) {
       const cachedPageSize = cached.pageSize ?? 25;
-      // Only use cache if:
-      // 1. Page size matches current pageSize (25 by default)
-      // 2. Don't use cache if it has 5 or fewer patients (likely from old dashboard widget)
-      // 3. For pageSize >= 25, cache must have at least pageSize records (or all records if total < pageSize)
       const isValidCache =
         cachedPageSize === pageSize &&
         cached.patients.length > 5 &&
@@ -96,11 +98,10 @@ export default function PatientsPage() {
         setTotalCount(cached.total ?? 0);
         setLoading(false);
       } else {
-        // Clear cache if pageSize mismatch or stale small dataset (<= 5 patients)
-        routeCache.clear(ROUTE_KEY, tenantId);
+        routeCache.clear(ROUTE_KEY, patientsCacheId);
       }
     }
-  }, [tenantId, pageSize]);
+  }, [patientsCacheId, pageSize]);
   const [showModal, setShowModal] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
@@ -195,6 +196,7 @@ export default function PatientsPage() {
             params.append('dateOfBirthTo', to.toISOString().slice(0, 10));
           }
         }
+        params.append('locale', localeCode);
 
         const response = await apiClient.get(`/patients?${params}`);
 
@@ -205,8 +207,8 @@ export default function PatientsPage() {
           setTotalPages(pagination.totalPages);
           setTotalCount(pagination.total ?? 0);
           if (effectiveSearch) addRecentSearch('patients', effectiveSearch);
-          if (tenantId)
-            routeCache.set(ROUTE_KEY, tenantId, {
+          if (patientsCacheId)
+            routeCache.set(ROUTE_KEY, patientsCacheId, {
               patients: patientsList,
               totalPages: pagination.totalPages,
               currentPage,
@@ -229,6 +231,8 @@ export default function PatientsPage() {
     },
     [
       tenantId,
+      localeCode,
+      patientsCacheId,
       currentPage,
       pageSize,
       searchTerm,
@@ -241,6 +245,16 @@ export default function PatientsPage() {
     ],
   );
 
+  // Refetch when UI language changes so patient table shows stored DB data in new locale (es/ar).
+  const prevLocaleRef = useRef(localeCode);
+  useEffect(() => {
+    if (!user || authLoading) return;
+    if (prevLocaleRef.current !== localeCode) {
+      prevLocaleRef.current = localeCode;
+      fetchPatients(!!debouncedSearchTerm, false);
+    }
+  }, [localeCode, user, authLoading, fetchPatients, debouncedSearchTerm]);
+
   // Manual refresh handler
   const handleManualRefresh = useCallback(() => {
     setRefreshing(true);
@@ -251,11 +265,10 @@ export default function PatientsPage() {
   useEffect(() => {
     if (!authLoading && user) {
       fetchSettings();
-      // Clear cache if it has wrong pageSize to ensure fresh fetch
-      if (tenantId) {
-        const cached = routeCache.getData(ROUTE_KEY, tenantId);
+      if (patientsCacheId) {
+        const cached = routeCache.getData(ROUTE_KEY, patientsCacheId);
         if (cached && (cached.pageSize ?? 25) !== pageSize) {
-          routeCache.clear(ROUTE_KEY, tenantId);
+          routeCache.clear(ROUTE_KEY, patientsCacheId);
         }
       }
       // Fetch fresh data (will show cached data first, then update)
@@ -444,6 +457,7 @@ export default function PatientsPage() {
           params.append('dateOfBirthTo', to.toISOString().slice(0, 10));
         }
       }
+      params.append('locale', localeCode);
       const res = await apiClient.get(`/patients?${params.toString()}`);
       const list = extractArrayData(res) || [];
       if (!list.length) {
@@ -492,6 +506,7 @@ export default function PatientsPage() {
     statusFilter,
     genderFilter,
     ageGroupFilter,
+    localeCode,
     t,
   ]);
 
@@ -509,20 +524,79 @@ export default function PatientsPage() {
     [user, router],
   );
 
+  const dateLocale = (locale || 'en').slice(0, 2) === 'ar' ? 'ar' : (locale || 'en').startsWith('es') ? 'es' : (locale || 'en-US');
+
+  /** For Arabic locale: display phone digits in Eastern Arabic numerals (٠-٩). */
+  const formatPhoneForLocale = useCallback(
+    (phoneStr) => {
+      if (!phoneStr || localeCode !== 'ar') return phoneStr;
+      const easternNumerals = '٠١٢٣٤٥٦٧٨٩';
+      return String(phoneStr).replace(/[0-9]/g, (d) => easternNumerals[Number(d)]);
+    },
+    [localeCode],
+  );
+
+  /** Use getTranslation with explicit locale so table cells always show in current UI language (es/ar). */
+  const getGenderLabel = useCallback(
+    (value) => {
+      if (!value) return getTranslation('common.na', localeCode);
+      const key = value.toLowerCase().replace(/_/g, '');
+      if (key === 'male') return getTranslation('common.male', localeCode);
+      if (key === 'female') return getTranslation('common.female', localeCode);
+      if (key === 'other' || key === 'prefernottosay') return getTranslation('common.other', localeCode);
+      return getTranslation(`common.${value}`, localeCode) || value;
+    },
+    [localeCode],
+  );
+
   const columns = useMemo(
     () => [
-      { header: t('patients.patientId'), accessor: 'patientId' },
+      {
+        header: t('patients.patientId'),
+        accessor: (row) =>
+          row.patientId && String(row.patientId).trim() ? row.patientId : t('common.na'),
+      },
       {
         header: t('patients.name'),
-        accessor: (row) => `${row.firstName} ${row.lastName}`,
+        accessor: (row) => {
+          const display =
+            row.patientDisplayName && String(row.patientDisplayName).trim()
+              ? row.patientDisplayName
+              : [row.firstName ?? '', row.lastName ?? ''].filter(Boolean).join(' ').trim();
+          return display || t('common.na');
+        },
       },
-      { header: t('patients.phone'), accessor: 'phone' },
-      { header: t('patients.email'), accessor: 'email' },
+      {
+        header: getTranslation('patients.phone', localeCode),
+        accessor: (row) => {
+          const raw = row.phone && String(row.phone).trim();
+          if (!raw) return getTranslation('common.na', localeCode);
+          return formatPhoneForLocale(raw);
+        },
+      },
+      {
+        header: getTranslation('patients.email', localeCode),
+        accessor: (row) => {
+          const raw = row.email && String(row.email).trim();
+          if (!raw) return getTranslation('common.na', localeCode);
+          return raw;
+        },
+      },
       {
         header: t('patients.dateOfBirth'),
-        accessor: (row) => new Date(row.dateOfBirth).toLocaleDateString(),
+        accessor: (row) =>
+          row.dateOfBirth
+            ? new Date(row.dateOfBirth).toLocaleDateString(dateLocale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })
+            : t('common.na'),
       },
-      { header: t('patients.gender'), accessor: 'gender' },
+      {
+        header: t('patients.gender'),
+        accessor: (row) => getGenderLabel(row.gender),
+      },
       {
         header: t('common.actions'),
         accessor: (row) => {
@@ -572,7 +646,7 @@ export default function PatientsPage() {
                             const res = await apiClient.delete(`/patients/${id}`);
                             if (res?.success) {
                               showSuccess(t('patients.patientDeleted'));
-                              routeCache.clear(ROUTE_KEY, tenantId);
+                              routeCache.clear(ROUTE_KEY, patientsCacheId);
                               fetchPatients(false, false);
                             } else {
                               showError(res?.error?.message || t('patients.deleteFailed'));
@@ -599,7 +673,7 @@ export default function PatientsPage() {
         },
       },
     ],
-    [t, router, user, openConfirm, tenantId, fetchPatients],
+    [t, router, user, openConfirm, patientsCacheId, fetchPatients, getGenderLabel, formatPhoneForLocale, dateLocale, locale, localeCode],
   );
 
   // Redirect if not authenticated (non-blocking)
@@ -857,6 +931,7 @@ export default function PatientsPage() {
             </div>
             {viewMode === 'table' ? (
               <Table
+                key={localeCode}
                 data={patients}
                 columns={columns}
                 onRowClick={handleRowClick}
@@ -885,8 +960,8 @@ export default function PatientsPage() {
                     onChange={(e) => {
                       const newSize = parseInt(e.target.value, 10);
                       // Clear cache when changing page size to force fresh fetch
-                      if (tenantId) {
-                        routeCache.clear(ROUTE_KEY, tenantId);
+                      if (patientsCacheId) {
+                        routeCache.clear(ROUTE_KEY, patientsCacheId);
                       }
                       setPageSize(newSize);
                       setCurrentPage(1); // Reset to first page when changing page size

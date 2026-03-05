@@ -74,6 +74,11 @@ const PatientSchema = new Schema(
       required: true,
       trim: true,
     },
+    /** Optional localized contact for display in Spanish/Arabic (fallback to phone when not set) */
+    phone_es: { type: String, trim: true },
+    phone_ar: { type: String, trim: true },
+    email_es: { type: String, trim: true, lowercase: true },
+    email_ar: { type: String, trim: true, lowercase: true },
     alternatePhone: {
       type: String,
       trim: true,

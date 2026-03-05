@@ -106,11 +106,11 @@
   filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--color-primary-500) 30%, transparent));
 }
 
-/* Badge - Ultra Premium */
+/* Badge - at top-right corner of notification icon */
 .NotificationDropdown-badge {
   position: absolute;
   top: -6px;
-  right: -6px;
+  right: -2px;
   background: linear-gradient(
     135deg,
     var(--color-status-error) 0%,
@@ -483,6 +483,7 @@
   font-family: inherit;
   font-size: 14px;
   color: var(--color-neutral-800, #1f2937);
+  height: 100%;
 }
 
 .NotificationDropdown-item::before {
@@ -810,8 +811,8 @@
 .page-header .NotificationDropdown .NotificationDropdown-badge,
 .enterprise-header .NotificationDropdown .NotificationDropdown-badge,
 .sticky-header-bar .NotificationDropdown .NotificationDropdown-badge {
-  top: -4px;
-  right: -4px;
+  top: -6px;
+  right: -2px;
   min-width: var(--icon-size-menu);
   height: var(--icon-size-menu);
   font-size: 10px;

@@ -1,6 +1,10 @@
 'use client';
 
-export function generatePrescriptionPrintHTML(data) {
+/** @param {object} data - Print data
+ *  @param {object} labels - i18n labels (e.g. from t('prescriptions.printX'))
+ */
+export function generatePrescriptionPrintHTML(data, labels = {}) {
+  const L = (key, fallback) => (labels[key] != null && labels[key] !== '' ? labels[key] : fallback);
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-GB', {
@@ -315,8 +319,8 @@ export function generatePrescriptionPrintHTML(data) {
       <div class="clinic-info">
         ${data.clinicName ? `<div class="clinic-name">${data.clinicName}</div>` : ''}
         ${data.clinicAddress ? `<div>${data.clinicAddress}</div>` : ''}
-        ${data.clinicPhone ? `<div>Ph: ${data.clinicPhone}</div>` : ''}
-        ${data.clinicTiming ? `<div>Timing: ${data.clinicTiming}</div>` : ''}
+        ${data.clinicPhone ? `<div>${L('printPh', 'Ph:')} ${data.clinicPhone}</div>` : ''}
+        ${data.clinicTiming ? `<div>${L('printTiming', 'Timing:')} ${data.clinicTiming}</div>` : ''}
       </div>
     </div>
 
@@ -328,30 +332,30 @@ export function generatePrescriptionPrintHTML(data) {
         }${data.patientAge ? ` / ${data.patientAge} Y` : ''}</div>
         ${
           data.patientAddress
-            ? `<div class="patient-details">Address: ${data.patientAddress}</div>`
+            ? `<div class="patient-details">${L('printAddress', 'Address:')} ${data.patientAddress}</div>`
             : ''
         }
         ${
           data.weight || data.height || data.bloodPressure
             ? `
           <div class="patient-vitals">
-            ${data.weight ? `Weight(kg): ${data.weight}` : ''}${
+            ${data.weight ? `${L('printWeightKg', 'Weight(kg):')} ${data.weight}` : ''}${
               data.weight && data.height ? ', ' : ''
             }
-            ${data.height ? `Height (cms): ${data.height}` : ''}${
+            ${data.height ? `${L('printHeightCms', 'Height (cms):')} ${data.height}` : ''}${
               (data.weight || data.height) && data.bloodPressure ? ', ' : ''
             }
-            ${data.bloodPressure ? `BP: ${data.bloodPressure} mmHg` : ''}
+            ${data.bloodPressure ? `${L('printBp', 'BP:')} ${data.bloodPressure} mmHg` : ''}
           </div>
         `
             : ''
         }
-        ${data.referredBy ? `<div>Referred By: ${data.referredBy}</div>` : ''}
+        ${data.referredBy ? `<div>${L('printReferredBy', 'Referred By:')} ${data.referredBy}</div>` : ''}
         ${
           data.knownHistory && data.knownHistory.length > 0
             ? `
           <div style="margin-top: 8px;">
-            <div class="section-title" style="margin-bottom: 4px;">Known History Of</div>
+            <div class="section-title" style="margin-bottom: 4px;">${L('printKnownHistoryOf', 'Known History Of')}</div>
             <ul style="list-style: none; padding-left: 12px; margin: 0;">
               ${data.knownHistory
                 .map((h) => `<li style="margin-bottom: 4px;">• ${h}</li>`)
@@ -363,7 +367,7 @@ export function generatePrescriptionPrintHTML(data) {
         }
       </div>
       <div class="patient-right">
-        <div>Date: ${formatDate(data.visitDate)}${
+        <div>${L('printDate', 'Date:')} ${formatDate(data.visitDate)}${
           data.visitTime ? `, ${formatTime(data.visitDate)}` : ''
         }</div>
       </div>
@@ -381,7 +385,7 @@ export function generatePrescriptionPrintHTML(data) {
           data.chiefComplaints && data.chiefComplaints.length > 0
             ? `
           <div class="clinical-left">
-            <div class="section-title">Chief Complaints</div>
+            <div class="section-title">${L('printChiefComplaints', 'Chief Complaints')}</div>
             <div class="section-content">
               <ul>
                 ${data.chiefComplaints.map((cc) => `<li>${cc}</li>`).join('')}
@@ -395,7 +399,7 @@ export function generatePrescriptionPrintHTML(data) {
           data.clinicalFindings && data.clinicalFindings.length > 0
             ? `
           <div class="clinical-right">
-            <div class="section-title">Clinical Findings</div>
+            <div class="section-title">${L('printClinicalFindings', 'Clinical Findings')}</div>
             <div class="section-content">
               <ul>
                 ${data.clinicalFindings.map((cf) => `<li>${cf}</li>`).join('')}
@@ -415,7 +419,7 @@ export function generatePrescriptionPrintHTML(data) {
         ? `
       <div class="section-divider"></div>
       <div class="block-section">
-        <div class="section-title">Notes:</div>
+        <div class="section-title">${L('printNotes', 'Notes:')}</div>
         <div class="section-content">${data.notes}</div>
       </div>
     `
@@ -426,7 +430,7 @@ export function generatePrescriptionPrintHTML(data) {
       data.diagnosis && data.diagnosis.length > 0
         ? `
       <div class="block-section">
-        <div class="section-title">Diagnosis:</div>
+        <div class="section-title">${L('printDiagnosis', 'Diagnosis:')}</div>
         <div class="section-content">
           <ul>
             ${data.diagnosis.map((d) => `<li>${d}</li>`).join('')}
@@ -441,7 +445,7 @@ export function generatePrescriptionPrintHTML(data) {
       data.procedures && data.procedures.length > 0
         ? `
       <div class="block-section">
-        <div class="section-title">Procedures conducted</div>
+        <div class="section-title">${L('printProceduresConducted', 'Procedures conducted')}</div>
         <div class="section-content">
           <ul>
             ${data.procedures.map((p) => `<li>${p}</li>`).join('')}
@@ -462,9 +466,9 @@ export function generatePrescriptionPrintHTML(data) {
           <thead>
             <tr>
               <th style="width: 5%;">#</th>
-              <th style="width: 40%;">Medicine Name</th>
-              <th style="width: 30%;">Dosage</th>
-              <th style="width: 25%;">Duration</th>
+              <th style="width: 40%;">${L('printMedicineName', 'Medicine Name')}</th>
+              <th style="width: 30%;">${L('printDosage', 'Dosage')}</th>
+              <th style="width: 25%;">${L('printDuration', 'Duration')}</th>
             </tr>
           </thead>
           <tbody>
@@ -479,19 +483,7 @@ export function generatePrescriptionPrintHTML(data) {
                     }`
                   : item.instructions || '-';
 
-                const duration = item.duration
-                  ? `${item.duration} Days${
-                      item.quantity
-                        ? ` (Tot:${item.quantity} ${
-                            item.name.includes('TAB')
-                              ? 'Tab'
-                              : item.name.includes('CAP')
-                                ? 'Cap'
-                                : 'Unit'
-                          })`
-                        : ''
-                    }`
-                  : '-';
+                const duration = item.duration || '-';
 
                 return `
                 <tr>
@@ -514,7 +506,7 @@ export function generatePrescriptionPrintHTML(data) {
       data.investigations && data.investigations.length > 0
         ? `
       <div class="block-section">
-        <div class="section-title">Investigations:</div>
+        <div class="section-title">${L('printInvestigations', 'Investigations:')}</div>
         <div class="section-content">
           <ul>
             ${data.investigations.map((i) => `<li>${i}</li>`).join('')}
@@ -529,7 +521,7 @@ export function generatePrescriptionPrintHTML(data) {
       data.advice && data.advice.length > 0
         ? `
       <div class="block-section">
-        <div class="section-title">Advice Given:</div>
+        <div class="section-title">${L('printAdviceGiven', 'Advice Given:')}</div>
         <div class="section-content">
           ${
             data.advice.length === 1 && data.advice[0].includes('<')
@@ -546,7 +538,7 @@ export function generatePrescriptionPrintHTML(data) {
       data.followUp
         ? `
       <div class="block-section">
-        <div class="section-title">Follow Up: ${data.followUp}</div>
+        <div class="section-title">${L('printFollowUp', 'Follow Up:')} ${data.followUp}</div>
       </div>
     `
         : ''
@@ -556,7 +548,7 @@ export function generatePrescriptionPrintHTML(data) {
       data.additionalInstructions
         ? `
       <div class="block-section">
-        <div class="section-title">Additional Instructions:</div>
+        <div class="section-title">${L('printAdditionalInstructions', 'Additional Instructions:')}</div>
         <div class="section-content">${data.additionalInstructions}</div>
       </div>
     `
@@ -567,7 +559,7 @@ export function generatePrescriptionPrintHTML(data) {
     <div class="footer">
       <div class="signature-section">
         <div class="signature-line">
-          <div style="font-weight: bold; margin-bottom: 5px;">Signature</div>
+          <div style="font-weight: bold; margin-bottom: 5px;">${L('printSignature', 'Signature')}</div>
           <div>Dr. ${data.doctorName}${
             data.doctorQualification ? ` ${data.doctorQualification}` : ''
           }</div>
@@ -577,7 +569,7 @@ export function generatePrescriptionPrintHTML(data) {
         data.followUp
           ? `
       <div class="valid-until-disclaimer">
-        Disclaimer: Valid until : ${data.followUp}
+        ${L('printValidUntilDisclaimer', 'Disclaimer: Valid until :')} ${data.followUp}
       </div>
       `
           : ''

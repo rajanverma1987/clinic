@@ -26,21 +26,25 @@ const LIMIT = 10;
 export function PrescriptionsTab({ isActive = false }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
   const { prefetchPrescription } = usePrefetchDetail();
   const userId = user?._id || user?.userId;
+  const localeCode = (i18nLocale || 'en').slice(0, 2);
+  const dateLocale =
+    localeCode === 'ar' ? 'ar' : localeCode === 'es' ? 'es' : (i18nLocale || 'en-US');
 
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRevalidating, setIsRevalidating] = useState(false);
   const revalidateTimerRef = useRef(null);
+  const prevLocaleRef = useRef(localeCode);
 
   const fetchAndUpdate = useCallback(
     async (showRevalidating = false) => {
       if (!userId) return;
       if (showRevalidating) setIsRevalidating(true);
-      const { data, error: err } = await fetchPrescriptionsTab(userId);
+      const { data, error: err } = await fetchPrescriptionsTab(userId, localeCode);
       if (err) {
         if (!showRevalidating) setError(err?.message || t('common.error'));
         setPrescriptions((prev) => (prev.length ? prev : []));
@@ -51,7 +55,7 @@ export function PrescriptionsTab({ isActive = false }) {
       setLoading(false);
       setIsRevalidating(false);
     },
-    [userId, t],
+    [userId, localeCode, t],
   );
 
   // Before paint: when tab becomes active, show cache immediately so no loading flash.
@@ -70,6 +74,11 @@ export function PrescriptionsTab({ isActive = false }) {
     if (authLoading || !user || !userId) return;
     if (!isActive) return;
 
+    if (prevLocaleRef.current !== localeCode) {
+      prevLocaleRef.current = localeCode;
+      fetchAndUpdate(true);
+    }
+
     const cached = getCachedPrescriptions(userId);
     if (cached === null || !Array.isArray(cached)) {
       fetchAndUpdate(false);
@@ -79,7 +88,7 @@ export function PrescriptionsTab({ isActive = false }) {
     return () => {
       if (revalidateTimerRef.current) clearTimeout(revalidateTimerRef.current);
     };
-  }, [isActive, userId, authLoading, user, fetchAndUpdate]);
+  }, [isActive, userId, authLoading, user, fetchAndUpdate, localeCode]);
 
   const getStatusLabel = useCallback(
     (status) => {
@@ -101,7 +110,9 @@ export function PrescriptionsTab({ isActive = false }) {
       {
         header: t('appointments.patient'),
         accessor: (row) =>
-          [row.patientId?.firstName, row.patientId?.lastName].filter(Boolean).join(' ') || '—',
+          row.patientDisplayName ||
+          [row.patientId?.firstName, row.patientId?.lastName].filter(Boolean).join(' ') ||
+          '—',
       },
       {
         header: t('prescriptions.status'),
@@ -125,10 +136,17 @@ export function PrescriptionsTab({ isActive = false }) {
       },
       {
         header: t('common.createdAt'),
-        accessor: (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '—'),
+        accessor: (row) =>
+          row.createdAt
+            ? new Date(row.createdAt).toLocaleDateString(dateLocale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })
+            : '—',
       },
     ],
-    [t, getStatusLabel],
+    [t, getStatusLabel, dateLocale],
   );
 
   const stats = useMemo(

@@ -27,15 +27,15 @@ export function PrescriptionItemsTable({
         <thead>
           <tr>
             <th className='prescription-items-col-index'>#</th>
-            <th className='prescription-items-col-type'>Type</th>
-            <th className='prescription-items-col-item'>Item *</th>
-            <th className='prescription-items-col-frequency'>Frequency</th>
-            <th className='prescription-items-col-duration'>Duration</th>
-            <th className='prescription-items-col-qty'>Qty</th>
+            <th className='prescription-items-col-type'>{t('prescriptions.tableHeaderType')}</th>
+            <th className='prescription-items-col-item'>{t('prescriptions.tableHeaderItemRequired')}</th>
+            <th className='prescription-items-col-frequency'>{t('prescriptions.tableHeaderFrequency')}</th>
+            <th className='prescription-items-col-duration'>{t('prescriptions.tableHeaderDuration')}</th>
+            <th className='prescription-items-col-qty'>{t('prescriptions.tableHeaderQty')}</th>
             <th className='prescription-items-col-route'>{t('prescriptions.route')}</th>
             <th className='prescription-items-col-refills'>{t('prescriptions.refills')}</th>
-            <th className='prescription-items-col-instructions'>Instructions</th>
-            <th className='prescription-items-col-actions'>Actions</th>
+            <th className='prescription-items-col-instructions'>{t('prescriptions.tableHeaderInstructions')}</th>
+            <th className='prescription-items-col-actions'>{t('prescriptions.tableHeaderActions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -106,10 +106,10 @@ export function PrescriptionItemsTable({
                     }}
                     className='prescription-form-input'
                   >
-                    <option value='drug'>Drug</option>
-                    <option value='lab'>Lab Test</option>
-                    <option value='procedure'>Procedure</option>
-                    <option value='other'>Other</option>
+                    <option value='drug'>{t('prescriptions.typeDrug')}</option>
+                    <option value='lab'>{t('prescriptions.typeLabTest')}</option>
+                    <option value='procedure'>{t('prescriptions.typeProcedure')}</option>
+                    <option value='other'>{t('prescriptions.typeOther')}</option>
                   </select>
                 </td>
                 <td className='prescription-items-col-item'>
@@ -192,7 +192,7 @@ export function PrescriptionItemsTable({
                         <option value=''>{t('prescriptions.selectLabTest')}</option>
                         {labTests.map((test) => (
                           <option key={test.code} value={test.code}>
-                            {test.code} - {test.name}
+                            {test.code} - {t(`prescriptions.labTest_${test.code}`)}
                           </option>
                         ))}
                       </select>
@@ -231,11 +231,11 @@ export function PrescriptionItemsTable({
                         }`}
                         required
                       >
-                        <option value='once daily'>Once Daily</option>
-                        <option value='twice daily'>Twice Daily</option>
-                        <option value='three times daily'>Three Times Daily</option>
-                        <option value='four times daily'>Four Times Daily</option>
-                        <option value='as needed'>As Needed</option>
+                        <option value='once daily'>{t('prescriptions.frequencyOnceDaily')}</option>
+                        <option value='twice daily'>{t('prescriptions.frequencyTwiceDaily')}</option>
+                        <option value='three times daily'>{t('prescriptions.frequencyThreeTimesDaily')}</option>
+                        <option value='four times daily'>{t('prescriptions.frequencyFourTimesDaily')}</option>
+                        <option value='as needed'>{t('prescriptions.frequencyAsNeeded')}</option>
                       </select>
                       {frequencyError && (
                         <div className='prescription-form-error'>{frequencyError}</div>

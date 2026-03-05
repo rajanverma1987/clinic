@@ -25,7 +25,7 @@ import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const ROUTE_KEY = 'route_inventory';
 
@@ -36,9 +36,12 @@ export default function InventoryPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
-  const { locale } = useSettings();
+  const { t, locale: i18nLocale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
   const tenantId = user?.tenantId ?? null;
+  const localeCode = (i18nLocale || settingsLocale || 'en').toString().slice(0, 2);
+  const dateLocale =
+    localeCode === 'ar' ? 'ar' : localeCode === 'es' ? 'es' : (i18nLocale || 'en-US');
   const managerReadOnly = isManagerPathReadOnly(pathname);
 
   const tabFromUrl = searchParams.get('tab');
@@ -79,14 +82,21 @@ export default function InventoryPage() {
   const [deleteBatchModal, setDeleteBatchModal] = useState({ open: false, lot: null });
   const [deleting, setDeleting] = useState(false);
 
+  const normalizeItemNames = useCallback((list) =>
+    (list || []).map((item) => ({
+      ...item,
+      name_ar: item.name_ar ?? item.name ?? '',
+      name_es: item.name_es ?? item.name ?? '',
+    })), []);
+
   useLayoutEffect(() => {
     if (!tenantId) return;
     const cached = routeCache.getData(ROUTE_KEY, tenantId);
     if (cached && cached.items != null) {
-      setItems(cached.items);
+      setItems(normalizeItemNames(cached.items));
       setLoading(false);
     }
-  }, [tenantId]);
+  }, [tenantId, normalizeItemNames]);
 
   const fetchItems = useCallback(
     async (silentRefresh = false) => {
@@ -99,7 +109,8 @@ export default function InventoryPage() {
         if (categoryFilter && categoryFilter !== 'all') params.set('type', categoryFilter);
         const response = await apiClient.get(`/inventory/items?${params}`);
         if (response.success && response.data) {
-          const itemsList = extractArrayData(response);
+          const raw = extractArrayData(response);
+          const itemsList = normalizeItemNames(raw);
           if (!showLowStock && tenantId) routeCache.set(ROUTE_KEY, tenantId, { items: itemsList });
           setItems(itemsList);
         }
@@ -110,7 +121,7 @@ export default function InventoryPage() {
         setRefreshing(false);
       }
     },
-    [tenantId, showLowStock, debouncedSearchTerm, categoryFilter],
+    [tenantId, showLowStock, debouncedSearchTerm, categoryFilter, normalizeItemNames],
   );
 
   useEffect(() => {
@@ -118,6 +129,17 @@ export default function InventoryPage() {
       fetchItems();
     }
   }, [authLoading, user, showLowStock, fetchItems]);
+
+  const fetchItemsRef = useRef(fetchItems);
+  fetchItemsRef.current = fetchItems;
+  const prevLocaleRef = useRef(localeCode);
+  // When locale changes (e.g. user switches to Arabic/Spanish), clear cache and refetch for correct name_ar/name_es
+  useEffect(() => {
+    if (!tenantId || !user || prevLocaleRef.current === localeCode) return;
+    prevLocaleRef.current = localeCode;
+    routeCache.clear(ROUTE_KEY, tenantId);
+    fetchItemsRef.current(true);
+  }, [localeCode, tenantId, user]);
 
   // Setup automatic background refresh every 60 seconds
   useEffect(() => {
@@ -170,11 +192,25 @@ export default function InventoryPage() {
         t('inventory.costPrice'),
         t('inventory.sellingPrice'),
       ];
+      const getCategoryLabel = (type) => {
+        const key =
+          {
+            medicine: 'inventory.medicine',
+            medical_supply: 'inventory.medicalSupply',
+            equipment: 'inventory.equipment',
+            consumable: 'inventory.consumable',
+            supply: 'inventory.supply',
+            other: 'common.other',
+          }[type] || 'common.other';
+        return t(key);
+      };
+      const getExportItemName = (r) =>
+        localeCode === 'ar' ? (r?.name_ar ?? r?.name ?? '') : localeCode === 'es' ? (r?.name_es ?? r?.name ?? '') : (r?.name ?? '');
       const rows = list.map((r) => [
-        r.name || '',
+        getExportItemName(r),
         r.code || '',
-        r.type || '',
-        `${r.totalQuantity ?? 0} / ${r.availableQuantity ?? 0}`,
+        getCategoryLabel(r.type),
+        `${r.totalQuantity ?? 0} / ${r.availableQuantity ?? 0} ${t('inventory.available')}`,
         r.costPrice != null ? String(r.costPrice / 100) : '',
         r.sellingPrice != null ? String(r.sellingPrice / 100) : '',
       ]);
@@ -196,15 +232,89 @@ export default function InventoryPage() {
     } finally {
       setExporting(false);
     }
-  }, [showLowStock, debouncedSearchTerm, categoryFilter, t]);
+  }, [showLowStock, debouncedSearchTerm, categoryFilter, t, localeCode]);
 
-  const formatCurrency = (amount) => {
-    if (!amount) return 'N/A';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount / 100);
-  };
+  const formatCurrency = useCallback(
+    (amount) => {
+      if (!amount) return 'N/A';
+      return new Intl.NumberFormat(dateLocale, {
+        style: 'currency',
+        currency: 'USD',
+      }).format(amount / 100);
+    },
+    [dateLocale],
+  );
+
+  const getTypeLabel = useCallback(
+    (type) => {
+      const key =
+        {
+          medicine: 'inventory.medicine',
+          medical_supply: 'inventory.medicalSupply',
+          equipment: 'inventory.equipment',
+          consumable: 'inventory.consumable',
+          supply: 'inventory.supply',
+          other: 'common.other',
+        }[type] || 'common.other';
+      return t(key);
+    },
+    [t],
+  );
+
+  /** Item name by current locale (name_ar / name_es / name) for table and CSV */
+  const getItemDisplayName = useCallback(
+    (row) => {
+      if (localeCode === 'ar') return (row?.name_ar ?? row?.name) || '';
+      if (localeCode === 'es') return (row?.name_es ?? row?.name) || '';
+      return (row?.name ?? '') || '';
+    },
+    [localeCode],
+  );
+
+  /** Lot item name by locale (lots API returns itemName, itemName_ar, itemName_es) */
+  const getLotItemDisplayName = useCallback(
+    (lot) => {
+      if (localeCode === 'ar') return (lot?.itemName_ar ?? lot?.itemName) || '';
+      if (localeCode === 'es') return (lot?.itemName_es ?? lot?.itemName) || '';
+      return (lot?.itemName ?? '') || '';
+    },
+    [localeCode],
+  );
+
+  /** Lot batch number by locale (lots API returns batchNumber, batchNumber_ar, batchNumber_es) */
+  const getLotBatchDisplayName = useCallback(
+    (lot) => {
+      if (localeCode === 'ar') return (lot?.batchNumber_ar ?? lot?.batchNumber) || '';
+      if (localeCode === 'es') return (lot?.batchNumber_es ?? lot?.batchNumber) || '';
+      return (lot?.batchNumber ?? '') || '';
+    },
+    [localeCode],
+  );
+
+  /** Lot quantity + unit by locale (lots API returns unit, unit_ar, unit_es) */
+  const getLotQuantityDisplay = useCallback(
+    (lot) => {
+      const qty = lot?.quantity ?? 0;
+      const unit =
+        localeCode === 'ar'
+          ? (lot?.unit_ar ?? lot?.unit) || ''
+          : localeCode === 'es'
+            ? (lot?.unit_es ?? lot?.unit) || ''
+            : (lot?.unit ?? '') || '';
+      return unit ? `${qty} ${unit}` : String(qty);
+    },
+    [localeCode],
+  );
+
+  /** Transaction item name by locale */
+  const getTxItemDisplayName = useCallback(
+    (tx) => {
+      if (localeCode === 'ar') return (tx?.itemName_ar ?? tx?.itemName) || '';
+      if (localeCode === 'es') return (tx?.itemName_es ?? tx?.itemName) || '';
+      return (tx?.itemName ?? '') || '';
+    },
+    [localeCode],
+  );
 
   const handleDeleteItem = async () => {
     if (!deleteItemModal.item) return;
@@ -249,60 +359,66 @@ export default function InventoryPage() {
     }
   };
 
-  const columns = [
-    { header: t('inventory.itemName'), accessor: 'name' },
-    { header: t('inventory.code'), accessor: 'code' },
-    { header: t('inventory.category'), accessor: 'type' },
-    {
-      header: t('inventory.currentStock'),
-      accessor: (row) => {
-        const available = row.availableQuantity ?? 0;
-        const threshold = row.lowStockThreshold ?? 0;
-        const isLow = available <= threshold;
-        return (
-          <span className={isLow ? 'text-status-error font-medium' : 'text-neutral-900'}>
-            {row.totalQuantity} / {row.availableQuantity} {t('inventory.available')}
-          </span>
-        );
+  const columns = useMemo(
+    () => [
+      { header: () => t('inventory.itemName'), accessor: (row) => getItemDisplayName(row) },
+      { header: () => t('inventory.code'), accessor: 'code' },
+      {
+        header: () => t('inventory.category'),
+        accessor: (row) => getTypeLabel(row.type),
       },
-    },
-    {
-      header: t('inventory.costPrice'),
-      accessor: (row) => formatCurrency(row.costPrice),
-    },
-    {
-      header: t('inventory.sellingPrice'),
-      accessor: (row) => formatCurrency(row.sellingPrice),
-    },
-    {
-      header: t('common.actions'),
-      accessor: (row) => (
-        <ActionsMenu
-          ariaLabel={t('common.actions')}
-          triggerSize='xs'
-          items={[
-            {
-              key: 'view',
-              label: t('inventory.viewItem'),
-              icon: <EyeIcon className='icon icon-sm' />,
-              onClick: () => router.push(`/inventory/items/${row._id}`),
-            },
-            ...((!(user?.role === 'manager' && managerReadOnly))
-              ? [
-                  {
-                    key: 'delete',
-                    label: t('common.delete'),
-                    icon: <TrashIcon className='icon icon-sm' />,
-                    onClick: () => setDeleteItemModal({ open: true, item: row }),
-                    variant: 'danger',
-                  },
-                ]
-              : []),
-          ]}
-        />
-      ),
-    },
-  ];
+      {
+        header: () => t('inventory.currentStock'),
+        accessor: (row) => {
+          const available = row.availableQuantity ?? 0;
+          const threshold = row.lowStockThreshold ?? 0;
+          const isLow = available <= threshold;
+          return (
+            <span className={isLow ? 'text-status-error font-medium' : 'text-neutral-900'}>
+              {row.totalQuantity} / {row.availableQuantity} {t('inventory.available')}
+            </span>
+          );
+        },
+      },
+      {
+        header: () => t('inventory.costPrice'),
+        accessor: (row) => formatCurrency(row.costPrice),
+      },
+      {
+        header: () => t('inventory.sellingPrice'),
+        accessor: (row) => formatCurrency(row.sellingPrice),
+      },
+      {
+        header: () => t('common.actions'),
+        accessor: (row) => (
+          <ActionsMenu
+            ariaLabel={t('common.actions')}
+            triggerSize='xs'
+            items={[
+              {
+                key: 'view',
+                label: t('inventory.viewItem'),
+                icon: <EyeIcon className='icon icon-sm' />,
+                onClick: () => router.push(`/inventory/items/${row._id}`),
+              },
+              ...((!(user?.role === 'manager' && managerReadOnly))
+                ? [
+                    {
+                      key: 'delete',
+                      label: t('common.delete'),
+                      icon: <TrashIcon className='icon icon-sm' />,
+                      onClick: () => setDeleteItemModal({ open: true, item: row }),
+                      variant: 'danger',
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        ),
+      },
+    ],
+    [t, getTypeLabel, getItemDisplayName, formatCurrency, router, user?.role, managerReadOnly, localeCode],
+  );
 
   // Redirect if not authenticated (non-blocking)
   useEffect(() => {
@@ -380,14 +496,17 @@ export default function InventoryPage() {
     if (activeTab === 'transactions') fetchTransactions();
   }, [authLoading, user, activeTab, fetchTransactions]);
 
-  const formatLotsDate = (date) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString(locale || 'en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  const formatLotsDate = useCallback(
+    (date) => {
+      if (!date) return 'N/A';
+      return new Date(date).toLocaleDateString(dateLocale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    },
+    [dateLocale],
+  );
 
   const getLotStatusBadge = (lot) => {
     if (lot.isExpired) {
@@ -514,7 +633,7 @@ export default function InventoryPage() {
                         ) : (
                           <FileDownIcon className='icon icon-sm' aria-hidden />
                         )}
-                        <span className='ml-1.5'>{t('common.exportCSV')}</span>
+                        <span className='ml-1.5'>{t('inventory.exportCSV')}</span>
                       </Button>
                     )}
                   </PageSearchBar>
@@ -550,6 +669,7 @@ export default function InventoryPage() {
 
                   <Card>
                     <Table
+                      key={localeCode}
                       data={items}
                       columns={columns}
                       onRowClick={(row) => router.push(`/inventory/items/${row._id}`)}
@@ -609,16 +729,14 @@ export default function InventoryPage() {
                           <tr key={lot._id}>
                             <td>
                               <div>
-                                <div className='font-medium'>{lot.itemName}</div>
+                                <div className='font-medium'>{getLotItemDisplayName(lot)}</div>
                                 {lot.itemCode && (
                                   <div className='text-xs text-neutral-500'>{lot.itemCode}</div>
                                 )}
                               </div>
                             </td>
-                            <td className='font-mono'>{lot.batchNumber}</td>
-                            <td>
-                              {lot.quantity} {lot.unit}
-                            </td>
+                            <td className='font-mono'>{getLotBatchDisplayName(lot)}</td>
+                            <td>{getLotQuantityDisplay(lot)}</td>
                             <td>{formatLotsDate(lot.expiryDate)}</td>
                             <td className='text-neutral-600'>{lot.supplierName || t('common.na')}</td>
                             <td>{getLotStatusBadge(lot)}</td>
@@ -737,7 +855,7 @@ export default function InventoryPage() {
                             <td>
                               <div>
                                 <div className='font-medium'>
-                                  {tx.itemName || t('common.unknown')}
+                                  {getTxItemDisplayName(tx) || t('common.unknown')}
                                 </div>
                                 {tx.itemCode && (
                                   <div className='text-xs text-neutral-500'>{tx.itemCode}</div>
@@ -840,13 +958,13 @@ export default function InventoryPage() {
           {deleteBatchModal.lot && (
             <div className='bg-neutral-100 dark:bg-neutral-800 p-3 rounded-lg'>
               <p className='font-medium text-neutral-900 dark:text-neutral-100'>
-                {deleteBatchModal.lot.itemName}
+                {getLotItemDisplayName(deleteBatchModal.lot)}
               </p>
               <p className='text-sm text-neutral-600 dark:text-neutral-400'>
-                {t('inventory.batchNumber')}: {deleteBatchModal.lot.batchNumber}
+                {t('inventory.batchNumber')}: {getLotBatchDisplayName(deleteBatchModal.lot)}
               </p>
               <p className='text-sm text-neutral-600 dark:text-neutral-400'>
-                {t('inventory.quantity')}: {deleteBatchModal.lot.quantity} {deleteBatchModal.lot.unit}
+                {t('inventory.quantity')}: {getLotQuantityDisplay(deleteBatchModal.lot)}
               </p>
             </div>
           )}

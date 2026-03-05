@@ -80,6 +80,10 @@ async function getHandler(req, user) {
   // Only apply doctor filter if explicitly requested via doctorId param, not automatically for doctors
   const doctorId = searchParams.get('doctorId') || undefined;
 
+  const locale =
+    searchParams.get('locale') ||
+    req.headers.get('accept-language')?.split(',')[0]?.trim()?.slice(0, 2) ||
+    undefined;
   // Build filters from query params
   const filters = {
     search: searchParams.get('search') || undefined,
@@ -106,6 +110,7 @@ async function getHandler(req, user) {
     sortOrder: searchParams.get('sortOrder') || 'desc',
     doctorId,
     branchId: searchParams.get('branchId') || undefined,
+    locale: locale || undefined,
   };
 
   // Validate filters

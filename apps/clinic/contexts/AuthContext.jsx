@@ -70,12 +70,10 @@ export function AuthProvider({ children }) {
         } finally {
           apiClient.setToken('');
           if (typeof window !== 'undefined') {
-            // Clear all authentication-related localStorage items
+            // Clear auth tokens and cache; keep rememberedEmail/rememberedPassword for Remember me
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('userInfo');
-            localStorage.removeItem('rememberedEmail');
-            localStorage.removeItem('rememberedPassword');
             lastActivityRef.current = 0;
             dashboardCache.clear();
             clearAllCache();
@@ -175,6 +173,10 @@ export function AuthProvider({ children }) {
                 email: userData.email || '',
                 firstName: userData.firstName || '',
                 lastName: userData.lastName || '',
+                firstName_ar: userData.firstName_ar,
+                lastName_ar: userData.lastName_ar,
+                firstName_es: userData.firstName_es,
+                lastName_es: userData.lastName_es,
                 role: userData.role || '',
                 tenantId: userData.tenantId || '',
                 subscriptionPlan: userData.subscriptionPlan || null,
@@ -259,6 +261,10 @@ export function AuthProvider({ children }) {
           email: userData.email || '',
           firstName: userData.firstName || '',
           lastName: userData.lastName || '',
+          firstName_ar: userData.firstName_ar,
+          lastName_ar: userData.lastName_ar,
+          firstName_es: userData.firstName_es,
+          lastName_es: userData.lastName_es,
           role: userData.role || '',
           tenantId: userData.tenantId || '',
           subscriptionPlan: userData.subscriptionPlan || null,
@@ -312,6 +318,10 @@ export function AuthProvider({ children }) {
                 email: userData.email || '',
                 firstName: userData.firstName || '',
                 lastName: userData.lastName || '',
+                firstName_ar: userData.firstName_ar,
+                lastName_ar: userData.lastName_ar,
+                firstName_es: userData.firstName_es,
+                lastName_es: userData.lastName_es,
                 role: userData.role || '',
                 tenantId: userData.tenantId || '',
                 subscriptionPlan: userData.subscriptionPlan || null,
@@ -600,8 +610,6 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userInfo');
-        localStorage.removeItem('rememberedEmail');
-        localStorage.removeItem('rememberedPassword');
         lastActivityRef.current = 0;
         dashboardCache.clear();
         clearAllCache();

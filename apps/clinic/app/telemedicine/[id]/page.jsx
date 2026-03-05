@@ -158,14 +158,10 @@ function VideoConsultationRoomContent() {
           // User denied permissions
           setHasCameraPermission(false);
           setHasMicrophonePermission(false);
-          setConnectionError(
-            'Camera and microphone permissions are required. Please allow access and refresh the page.',
-          );
+          setConnectionError(t('telemedicine.permissionsRequiredMessage'));
         } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
           // No devices found
-          setConnectionError(
-            'No camera or microphone detected. Please connect a device and refresh the page.',
-          );
+          setConnectionError(t('telemedicine.noDevicesDetected'));
         } else {
           // Other error
           logger.warn('[VideoCall] Permission request error (will retry on connect):', error);
@@ -205,7 +201,7 @@ function VideoConsultationRoomContent() {
             const now = new Date();
             if (now > expiresAt) {
               setSessionExpired(true);
-              setConnectionError('This link has expired. Please request a new link.');
+              setConnectionError(t('telemedicine.linkExpired'));
               return;
             }
           }
@@ -213,7 +209,7 @@ function VideoConsultationRoomContent() {
           // Check if one-time link was already used
           if (session.oneTimeToken && session.linkUsed && !user) {
             setSessionExpired(true);
-            setConnectionError('This link has already been used. Please request a new link.');
+            setConnectionError(t('telemedicine.linkAlreadyUsed'));
             return;
           }
 
@@ -243,7 +239,7 @@ function VideoConsultationRoomContent() {
               const now = new Date();
               if (now > expiresAt) {
                 setSessionExpired(true);
-                setConnectionError('This session has expired. Please request a new link.');
+                setConnectionError(t('telemedicine.sessionExpiredMessage'));
                 return;
               }
             }
@@ -295,7 +291,7 @@ function VideoConsultationRoomContent() {
               }
             } else if (participant && participant.status === 'rejected') {
               setIsInWaitingRoom(false);
-              setConnectionError('Your request to join was declined.');
+              setConnectionError(t('telemedicine.joinDeclined'));
             }
           }
         } catch (error) {
@@ -323,7 +319,7 @@ function VideoConsultationRoomContent() {
                 return { ...msg, message: decrypted, decrypted: true };
               } catch (error) {
                 logger.error('[E2EE] Failed to decrypt message:', error);
-                return { ...msg, message: '[Encrypted - Decryption failed]', decrypted: false };
+                return { ...msg, message: t('telemedicine.encryptedDecryptionFailed'), decrypted: false };
               }
             }
             return msg; // Already decrypted or not encrypted
@@ -511,7 +507,7 @@ function VideoConsultationRoomContent() {
 
     // Check if session is expired
     if (sessionExpired) {
-      setConnectionError('This session has expired. Please request a new link.');
+      setConnectionError(t('telemedicine.sessionExpiredMessage'));
       return;
     }
 
@@ -535,7 +531,7 @@ function VideoConsultationRoomContent() {
     try {
       // Check if browser supports WebRTC
       if (typeof window === 'undefined') {
-        throw new Error('This feature requires a browser environment');
+        throw new Error(t('telemedicine.browserNotSupported'));
       }
 
       // More comprehensive WebRTC support check (works on mobile too)
@@ -577,14 +573,14 @@ function VideoConsultationRoomContent() {
       // For mobile, if RTCPeerConnection exists, assume WebRTC is supported
       // getUserMedia will be checked when we actually try to use it
       if (!hasRTCPeerConnection) {
-        const errorMsg = `Your browser does not support video calls. Please use Chrome, Firefox, or Safari.`;
+        const errorMsg = t('telemedicine.browserNotSupported');
         logger.error('[VideoCall] WebRTC not supported:', errorMsg);
         throw new Error(errorMsg);
       }
 
       // Only check getUserMedia on desktop (mobile might need permissions first)
       if (!isMobile && !hasGetUserMedia) {
-        const errorMsg = `Your browser does not support video calls. Please use Chrome, Firefox, or Safari.`;
+        const errorMsg = t('telemedicine.browserNotSupported');
         logger.error('[VideoCall] getUserMedia not supported:', errorMsg);
         throw new Error(errorMsg);
       }
@@ -618,9 +614,7 @@ function VideoConsultationRoomContent() {
 
           // Block if both permissions are denied
           if (cameraPermission.state === 'denied' && microphonePermission.state === 'denied') {
-            throw new Error(
-              'Please allow camera and microphone access in your browser settings:\n\n1. Click the lock/camera icon in your browser\'s address bar\n2. Set Camera and Microphone to "Allow"\n3. Refresh this page and try again',
-            );
+            throw new Error(t('telemedicine.allowCameraMicrophoneSettings'));
           }
         } catch (permError) {
           // Permission API might not be fully supported or query failed, continue anyway
@@ -648,7 +642,7 @@ function VideoConsultationRoomContent() {
 
         if (!sessionResponse.success || !sessionResponse.data) {
           setIsConnecting(false);
-          setConnectionError('Unable to load session details. Please refresh the page.');
+          setConnectionError(t('telemedicine.unableToLoadSession'));
           logger.error('[VideoCall] Failed to load session:', sessionResponse);
           return;
         }
@@ -823,16 +817,14 @@ function VideoConsultationRoomContent() {
       if (!currentUserId || currentUserId === 'undefined') {
         logger.error('[VideoCall] ❌ currentUserId is invalid:', currentUserId);
         setIsConnecting(false);
-        setConnectionError('Unable to identify you. Please refresh the page and try again.');
+        setConnectionError(t('telemedicine.unableToIdentifyYou'));
         return;
       }
 
       if (!remoteUserId || remoteUserId === 'undefined') {
         logger.error('[VideoCall] ❌ remoteUserId is invalid:', remoteUserId);
         setIsConnecting(false);
-        setConnectionError(
-          'Unable to identify the other person. Please refresh the page and try again.',
-        );
+        setConnectionError(t('telemedicine.unableToIdentifyOther'));
         return;
       }
 
@@ -924,8 +916,8 @@ function VideoConsultationRoomContent() {
             } else {
               // Initial connection error
               setIsConnecting(false);
-              const technicalMsg =
-                state.error?.message || state.reason || t('telemedicine.connectionError');
+        const technicalMsg =
+          state.error?.message || state.reason || t('telemedicine.failedToStartVideoCall');
               const friendlyMsg = getUserFriendlyMessage(technicalMsg);
               setConnectionError(friendlyMsg);
             }
@@ -942,7 +934,7 @@ function VideoConsultationRoomContent() {
           logger.error('Call manager error:', error);
           setIsConnecting(false);
           const technicalMsg =
-            error?.message || (typeof error === 'string' ? error : 'Failed to start video call');
+            error?.message || (typeof error === 'string' ? error : t('telemedicine.failedToStartVideoCall'));
           const friendlyMsg = getUserFriendlyMessage(technicalMsg);
           setConnectionError(friendlyMsg);
         },
@@ -1239,7 +1231,7 @@ function VideoConsultationRoomContent() {
       }
     } catch (error) {
       logger.error('Screen share error:', error);
-      const errorMsg = error.message || 'Failed to share screen';
+      const errorMsg = error.message || t('telemedicine.failedToShareScreen');
       showError(getUserFriendlyMessage(errorMsg));
     }
   };
@@ -1580,10 +1572,7 @@ function VideoConsultationRoomContent() {
 
     try {
       await navigator.clipboard.writeText(patientLink);
-      showSuccess(
-        t('telemedicine.linkCopied') ||
-          'Video call link copied! You can now share it with the patient.',
-      );
+      showSuccess(t('telemedicine.linkCopiedShareWithPatient'));
     } catch (error) {
       setShowShareModal(true);
     }
@@ -1617,15 +1606,12 @@ function VideoConsultationRoomContent() {
         );
         setShowShareModal(false);
       } else {
-        const errorMsg = response.error?.message || 'Failed to send email';
+        const errorMsg = response.error?.message || t('telemedicine.failedToSendEmailGeneric');
         showError(getUserFriendlyMessage(errorMsg));
       }
     } catch (error) {
       logger.error('Failed to send email:', error);
-      showError(
-        t('telemedicine.unableToSendEmail') ||
-          'Unable to send email. Please copy the link and share it manually.',
-      );
+      showError(t('telemedicine.unableToSendEmail'));
     }
   };
 

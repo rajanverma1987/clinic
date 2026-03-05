@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 import { useEffect, useRef, useState } from 'react';
 
 /**
@@ -15,6 +16,7 @@ export function ChatPanel({
   isOpen = false,
   onClose,
 }) {
+  const { t } = useI18n();
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef(null);
 
@@ -116,7 +118,7 @@ export function ChatPanel({
             {t('telemedicine.send')}
           </Button>
         </div>
-        <p className='text-xs text-gray-500 mt-2'>🔒 Messages are encrypted end-to-end</p>
+        <p className='text-xs text-gray-500 mt-2'>{t('telemedicine.messagesEncryptedE2E')}</p>
       </div>
     </div>
   );

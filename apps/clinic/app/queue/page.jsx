@@ -34,8 +34,10 @@ export default function QueuePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { open: openConfirm } = useConfirmation();
-  const { t } = useI18n();
-  const { locale } = useSettings();
+  const { t, locale: i18nLocale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const locale = i18nLocale || settingsLocale;
+  const localeCode = (locale || 'en').slice(0, 2);
   const userId = user?._id ?? user?.id ?? user?.userId ?? null;
 
   const [queueEntries, setQueueEntries] = useState([]);
@@ -108,6 +110,7 @@ export default function QueuePage() {
         if (currentDoctorIdRef.current) {
           params.append('doctorId', currentDoctorIdRef.current);
         }
+        params.append('locale', localeCode);
 
         const activeResponse = await apiClient.get(`/queue?${params}`);
         let allEntries = [];
@@ -122,6 +125,7 @@ export default function QueuePage() {
             completedParams.append('doctorId', currentDoctorIdRef.current);
           }
           completedParams.append('status', 'completed');
+          completedParams.append('locale', localeCode);
           const completedResponse = await apiClient.get(`/queue?${completedParams}`);
           if (completedResponse.success && completedResponse.data) {
             const completedList = extractArrayData(completedResponse);
@@ -140,8 +144,18 @@ export default function QueuePage() {
         isFetchingRef.current = false;
       }
     },
-    [showCompleted, userId],
+    [showCompleted, userId, localeCode],
   );
+
+  // Refetch when UI language changes so queue table shows patient/doctor names in new locale (es/ar).
+  const prevLocaleRef = useRef(localeCode);
+  useEffect(() => {
+    if (!user || authLoading) return;
+    if (prevLocaleRef.current !== localeCode) {
+      prevLocaleRef.current = localeCode;
+      fetchQueue(false);
+    }
+  }, [localeCode, user, authLoading, fetchQueue]);
 
   // Effect: Initial fetch and refetch on doctor change.
   useEffect(() => {

@@ -30,7 +30,10 @@ export default function PrescriptionsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
+  const localeCode = (i18nLocale || 'en').slice(0, 2);
+  const dateLocale =
+    localeCode === 'ar' ? 'ar' : localeCode === 'es' ? 'es' : (i18nLocale || 'en-US');
   const { open: openConfirm } = useConfirmation();
   const { prefetchPrescription } = usePrefetchDetail();
   const tenantId = user?.tenantId ?? null;
@@ -59,7 +62,9 @@ export default function PrescriptionsPage() {
     const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
     if (!silentRefresh && !hasCache) setLoading(true);
     try {
-      const response = await apiClient.get('/prescriptions');
+      const params = new URLSearchParams();
+      if (localeCode) params.set('locale', localeCode);
+      const response = await apiClient.get(`/prescriptions${params.toString() ? `?${params}` : ''}`);
       if (response.success && response.data) {
         const data = response.data;
         let prescriptionsList =
@@ -77,7 +82,7 @@ export default function PrescriptionsPage() {
       if (!silentRefresh) setLoading(false);
       setRefreshing(false);
     }
-  }, [tenantId]);
+  }, [tenantId, localeCode]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -170,7 +175,10 @@ export default function PrescriptionsPage() {
       { header: t('prescriptions.title') + ' #', accessor: 'prescriptionNumber' },
       {
         header: t('appointments.patient'),
-        accessor: (row) => `${row.patientId?.firstName || ''} ${row.patientId?.lastName || ''}`,
+        accessor: (row) =>
+          row.patientDisplayName ||
+          `${row.patientId?.firstName || ''} ${row.patientId?.lastName || ''}`.trim() ||
+          '—',
       },
       {
         header: t('prescriptions.status'),
@@ -193,8 +201,15 @@ export default function PrescriptionsPage() {
         ),
       },
       {
-        header: 'Created',
-        accessor: (row) => new Date(row.createdAt).toLocaleDateString(),
+        header: t('common.createdAt'),
+        accessor: (row) =>
+          row.createdAt
+            ? new Date(row.createdAt).toLocaleDateString(dateLocale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })
+            : '—',
       },
       {
         header: t('common.actions'),
@@ -241,7 +256,7 @@ export default function PrescriptionsPage() {
         },
       },
     ],
-    [t, getStatusLabel, router, handleEdit, handleActivate, handlePrint],
+    [t, getStatusLabel, router, handleEdit, handleActivate, handlePrint, dateLocale],
   );
 
   // Redirect if not authenticated (non-blocking)

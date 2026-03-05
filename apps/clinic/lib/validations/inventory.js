@@ -34,6 +34,8 @@ const batchSchema = z.object({
 
 export const createInventoryItemSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  name_ar: z.string().optional(),
+  name_es: z.string().optional(),
   code: z.string().optional(),
   type: z.enum([
     InventoryItemType.MEDICINE,

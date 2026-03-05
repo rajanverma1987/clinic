@@ -22,7 +22,7 @@ import { createPortal } from 'react-dom';
 
 export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -52,16 +52,20 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
     [t],
   );
 
-  // User display name
+  // Localized first/last name by current locale (Arabic, Spanish, or default)
+  const localizedFirst = user && (locale === 'ar' && user.firstName_ar ? user.firstName_ar : locale === 'es' && user.firstName_es ? user.firstName_es : user.firstName);
+  const localizedLast = user && (locale === 'ar' && user.lastName_ar ? user.lastName_ar : locale === 'es' && user.lastName_es ? user.lastName_es : user.lastName);
+
+  // User display name: translated prefix for doctors + localized name
   const userDisplayName = user
-    ? `${user.role === 'doctor' ? 'Dr. ' : ''}${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+    ? `${user.role === 'doctor' ? `${t('common.doctorPrefix')} ` : ''}${localizedFirst || ''} ${localizedLast || ''}`.trim() ||
       t('common.user')
     : '';
 
-  // Initials for avatar fallback: first letter of first name + first letter of last name (e.g. "SR" for Shiv Ram)
+  // Initials from localized name so they match the displayed name (e.g. Arabic initials when locale is ar)
   const userInitials =
     (user &&
-      [user.firstName?.[0], user.lastName?.[0]]
+      [localizedFirst?.[0], localizedLast?.[0]]
         .filter(Boolean)
         .map((c) => (typeof c === 'string' ? c : String(c)).toUpperCase())
         .join('')) ||
@@ -211,8 +215,8 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
               />
             </div>
 
-            {/* Name + role */}
-            <div className='flex-1 min-w-0 text-left'>
+            {/* Name + role — key so locale switch updates prefix/role/name immediately */}
+            <div key={locale} className='flex-1 min-w-0 text-left'>
               <p className='text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate leading-tight'>
                 {userDisplayName}
               </p>

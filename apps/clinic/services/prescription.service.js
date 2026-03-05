@@ -39,6 +39,8 @@ import mongoose from 'mongoose';
 import { createStockTransaction } from './inventory.service.js';
 import { recordPrescriptionVersion } from './prescription-version.service.js';
 import { recalculatePositions } from './queue.service.js';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name.js';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish.js';
 
 /**
  * Generate unique prescription number for a tenant
@@ -496,7 +498,19 @@ export async function listPrescriptions(query, tenantId, userId) {
         localField: 'patientId',
         foreignField: '_id',
         as: 'patient',
-        pipeline: [{ $project: { firstName: 1, lastName: 1, patientId: 1 } }],
+        pipeline: [
+          {
+            $project: {
+              firstName: 1,
+              lastName: 1,
+              patientId: 1,
+              firstName_es: 1,
+              lastName_es: 1,
+              firstName_ar: 1,
+              lastName_ar: 1,
+            },
+          },
+        ],
       },
     },
     {
@@ -524,8 +538,55 @@ export async function listPrescriptions(query, tenantId, userId) {
       Prescription.aggregate(pipeline),
     );
 
+    // Apply localized patient and doctor names for UI (es/ar when requested)
+    const locale = query.locale && String(query.locale).toLowerCase().slice(0, 2);
+    const firstKey = locale === 'es' || locale === 'ar' ? `firstName_${locale}` : 'firstName';
+    const lastKey = locale === 'es' || locale === 'ar' ? `lastName_${locale}` : 'lastName';
+    const withLocalizedNames = prescriptions.map((rx) => {
+      const p = rx.patientId;
+      if (p) {
+        const displayFirst = (p[firstKey] && String(p[firstKey]).trim()) || p.firstName || '';
+        const displayLast = (p[lastKey] && String(p[lastKey]).trim()) || p.lastName || '';
+        rx.patientId = { ...p, firstName: displayFirst, lastName: displayLast };
+        let displayName = [displayFirst, displayLast].filter(Boolean).join(' ').trim() || null;
+        if (locale === 'ar' && displayName && !(p.firstName_ar || p.lastName_ar)) {
+          displayName =
+            [transliterateToArabic(displayFirst), transliterateToArabic(displayLast)]
+              .filter(Boolean)
+              .join(' ')
+              .trim() || displayName;
+        }
+        if (locale === 'es' && displayName && !(p.firstName_es || p.lastName_es)) {
+          const esFirst = translateToSpanish(displayFirst) || displayFirst;
+          const esLast = translateToSpanish(displayLast) || displayLast;
+          displayName = [esFirst, esLast].filter(Boolean).join(' ').trim() || displayName;
+        }
+        rx.patientDisplayName = displayName;
+      } else {
+        rx.patientDisplayName = null;
+      }
+      const d = rx.doctorId;
+      if (d) {
+        let docFirst = d.firstName || '';
+        let docLast = d.lastName || '';
+        if (locale === 'ar') {
+          docFirst = transliterateToArabic(docFirst) || docFirst;
+          docLast = transliterateToArabic(docLast) || docLast;
+        }
+        if (locale === 'es') {
+          docFirst = translateToSpanish(docFirst) || docFirst;
+          docLast = translateToSpanish(docLast) || docLast;
+        }
+        rx.doctorId = { ...d, firstName: docFirst, lastName: docLast };
+        rx.doctorDisplayName = [docFirst, docLast].filter(Boolean).join(' ').trim() || null;
+      } else {
+        rx.doctorDisplayName = null;
+      }
+      return rx;
+    });
+
     // Decrypt item instructions for each prescription (needed when using aggregation)
-    const decryptedPrescriptions = prescriptions.map((prescription) =>
+    const decryptedPrescriptions = withLocalizedNames.map((prescription) =>
       decryptPrescriptionItems(prescription),
     );
 

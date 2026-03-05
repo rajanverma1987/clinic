@@ -26,6 +26,8 @@ import { withTenant } from '@/lib/db/tenant-helper.js';
 import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 import { logger } from '@/lib/utils/logger.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name.js';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish.js';
 import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
 import Patient from '@/models/Patient.js';
 import Queue, { QueuePriority, QueueStatus, QueueType } from '@/models/Queue.js';
@@ -378,7 +380,18 @@ export async function listQueueEntries(query, tenantId, userId) {
               localField: 'patientId',
               foreignField: '_id',
               as: 'patient',
-              pipeline: [{ $project: { firstName: 1, lastName: 1, patientId: 1, phone: 1 } }],
+              pipeline: [{
+                $project: {
+                  firstName: 1,
+                  lastName: 1,
+                  firstName_es: 1,
+                  lastName_es: 1,
+                  firstName_ar: 1,
+                  lastName_ar: 1,
+                  patientId: 1,
+                  phone: 1,
+                },
+              }],
             },
           },
           {
@@ -433,7 +446,57 @@ export async function listQueueEntries(query, tenantId, userId) {
 
     const aggregationResult = result[0] || { totalCount: [{ count: 0 }], data: [] };
     const total = aggregationResult.totalCount[0]?.count || 0;
-    const queueEntries = aggregationResult.data || [];
+    let queueEntries = aggregationResult.data || [];
+
+    // Apply localized patient and doctor names for UI (es/ar when requested)
+    const locale = query.locale && String(query.locale).toLowerCase().slice(0, 2);
+    if (locale === 'es' || locale === 'ar') {
+      const firstKey = locale === 'es' || locale === 'ar' ? `firstName_${locale}` : 'firstName';
+      const lastKey = locale === 'es' || locale === 'ar' ? `lastName_${locale}` : 'lastName';
+      queueEntries = queueEntries.map((entry) => {
+        const nextEntry = { ...entry };
+
+        // Patient name
+        const p = entry.patientId;
+        if (p) {
+          let pFirst = (p[firstKey] && String(p[firstKey]).trim()) || p.firstName || '';
+          let pLast = (p[lastKey] && String(p[lastKey]).trim()) || p.lastName || '';
+          if (locale === 'ar' && !(p.firstName_ar || p.lastName_ar)) {
+            pFirst = transliterateToArabic(pFirst) || pFirst;
+            pLast = transliterateToArabic(pLast) || pLast;
+          }
+          if (locale === 'es' && !(p.firstName_es || p.lastName_es)) {
+            pFirst = translateToSpanish(pFirst) || pFirst;
+            pLast = translateToSpanish(pLast) || pLast;
+          }
+          nextEntry.patientId = { ...p, firstName: pFirst, lastName: pLast };
+          nextEntry.patientDisplayName = [pFirst, pLast].filter(Boolean).join(' ').trim() || null;
+        } else {
+          nextEntry.patientDisplayName = null;
+        }
+
+        // Doctor name
+        const d = entry.doctorId;
+        if (d) {
+          let dFirst = d.firstName || '';
+          let dLast = d.lastName || '';
+          if (locale === 'ar') {
+            dFirst = transliterateToArabic(dFirst) || dFirst;
+            dLast = transliterateToArabic(dLast) || dLast;
+          }
+          if (locale === 'es') {
+            dFirst = translateToSpanish(dFirst) || dFirst;
+            dLast = translateToSpanish(dLast) || dLast;
+          }
+          nextEntry.doctorId = { ...d, firstName: dFirst, lastName: dLast };
+          nextEntry.doctorDisplayName = [dFirst, dLast].filter(Boolean).join(' ').trim() || null;
+        } else {
+          nextEntry.doctorDisplayName = null;
+        }
+
+        return nextEntry;
+      });
+    }
 
     // Early return if no entries
     if (total === 0) {

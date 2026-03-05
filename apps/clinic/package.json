@@ -41,7 +41,8 @@
     "generate:dashboard-json": "node scripts/generate-dashboard-structure-json.js",
     "fix:encryption": "node -r dotenv/config scripts/fix-encryption-warnings.js dotenv_config_path=.env.local",
     "update-dashboard-metrics": "node -r dotenv/config scripts/update-dashboard-metrics.js dotenv_config_path=.env.local",
-    "dashboard-indexes": "node -r dotenv/config scripts/create-dashboard-indexes.js dotenv_config_path=.env.local"
+    "dashboard-indexes": "node -r dotenv/config scripts/create-dashboard-indexes.js dotenv_config_path=.env.local",
+    "inventory:fill-translations": "node scripts/fill-inventory-item-translations.js"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.893.0",

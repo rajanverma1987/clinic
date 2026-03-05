@@ -21,7 +21,7 @@ import { getRolePermissions } from '@/lib/permissions/constants';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const ROLE_OPTIONS = [
   { value: 'clinic_admin', labelKey: 'settings.admin' },
@@ -46,7 +46,10 @@ function permissionsSummary(role) {
 export default function StaffPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
+  const localeCode = (i18nLocale || 'en').slice(0, 2);
+  const dateLocale =
+    localeCode === 'ar' ? 'ar' : localeCode === 'es' ? 'es' : (i18nLocale || 'en-US');
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -150,6 +153,25 @@ export default function StaffPage() {
     if (roleFilter && s.role !== roleFilter) return false;
     return true;
   });
+
+  const getRoleLabel = useCallback(
+    (role) => {
+      const key =
+        {
+          clinic_admin: 'settings.admin',
+          manager: 'settings.manager',
+          nurse: 'settings.nurse',
+          receptionist: 'settings.receptionist',
+          accountant: 'settings.accountant',
+          pharmacist: 'settings.pharmacist',
+          lab_tech: 'staff.labTech',
+          doctor: 'settings.doctor',
+          super_admin: 'settings.admin',
+        }[role] || null;
+      return key ? t(key) : (role ? String(role).replace(/_/g, ' ') : '—');
+    },
+    [t],
+  );
 
   const openConfirm = useConfirmation().open;
   const handleDeactivate = async (row) => {
@@ -289,96 +311,107 @@ export default function StaffPage() {
     return null;
   }
 
-  const columns = [
-    {
-      header: t('staff.fullName'),
-      accessor: (row) => (
-        <div className='font-medium text-neutral-900'>
-          {[row.firstName, row.lastName].filter(Boolean).join(' ') || '—'}
-        </div>
-      ),
-    },
-    {
-      header: t('staff.email'),
-      accessor: (row) => <div className='text-neutral-700'>{row.email || '—'}</div>,
-    },
-    {
-      header: t('staff.phone'),
-      accessor: (row) => <div className='text-neutral-600'>{row.phone || '—'}</div>,
-    },
-    {
-      header: t('staff.role'),
-      headerClassName: 'min-w-[8rem]',
-      cellClassName: 'min-w-[8rem]',
-      accessor: (row) => {
-        const role = row.role ?? row.roles?.[0] ?? '';
-        const label = typeof role === 'string' ? role.replace(/_/g, ' ') : String(role);
-        return (
-          <span
-            className='inline-block min-w-[7rem] px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 capitalize whitespace-nowrap'
-            title={label}
-          >
-            {label || '—'}
-          </span>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        header: t('staff.fullName'),
+        accessor: (row) => (
+          <div className='font-medium text-neutral-900'>
+            {[row.firstName, row.lastName].filter(Boolean).join(' ') || '—'}
+          </div>
+        ),
       },
-    },
-    {
-      header: t('staff.permissions'),
-      accessor: (row) => (
-        <span className='text-xs text-neutral-500' title={permissionsSummary(row.role)}>
-          {permissionsSummary(row.role)}
-        </span>
-      ),
-    },
-    {
-      header: t('common.status'),
-      accessor: (row) => (
-        <span
-          className={`px-2 py-1 text-xs font-medium rounded-full ${
-            row.isActive ? 'bg-green-100 text-green-800' : 'bg-neutral-100 text-neutral-600'
-          }`}
-        >
-          {row.isActive ? t('common.active') : t('common.inactive')}
-        </span>
-      ),
-    },
-    {
-      header: t('staff.lastLogin'),
-      accessor: (row) => (
-        <span className='text-sm text-neutral-600'>
-          {row.lastLoginAt ? new Date(row.lastLoginAt).toLocaleString() : t('staff.never')}
-        </span>
-      ),
-    },
-    {
-      header: t('common.actions'),
-      accessor: (row) => (
-        <div className='flex gap-2 flex-wrap'>
-          <Button variant='secondary' size='sm' onClick={() => openEdit(row)}>
-            {t('staff.edit')}
-          </Button>
-          {row.isActive ? (
-            <Button variant='secondary' size='sm' onClick={() => handleDeactivate(row)}>
-              {t('staff.deactivate')}
-            </Button>
-          ) : (
-            <Button variant='secondary' size='sm' onClick={() => handleActivate(row)}>
-              {t('staff.activate')}
-            </Button>
-          )}
-          <Button
-            variant='ghost'
-            size='sm'
-            className='text-red-600'
-            onClick={() => handleRemove(row)}
+      {
+        header: t('staff.email'),
+        accessor: (row) => <div className='text-neutral-700'>{row.email || '—'}</div>,
+      },
+      {
+        header: t('staff.phone'),
+        accessor: (row) => <div className='text-neutral-600'>{row.phone || '—'}</div>,
+      },
+      {
+        header: t('staff.role'),
+        headerClassName: 'min-w-[8rem]',
+        cellClassName: 'min-w-[8rem]',
+        accessor: (row) => {
+          const role = row.role ?? row.roles?.[0] ?? '';
+          const label = getRoleLabel(role);
+          return (
+            <span
+              className='inline-block min-w-[7rem] px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 capitalize whitespace-nowrap'
+              title={label}
+            >
+              {label || '—'}
+            </span>
+          );
+        },
+      },
+      {
+        header: t('staff.permissions'),
+        accessor: (row) => (
+          <span className='text-xs text-neutral-500' title={permissionsSummary(row.role)}>
+            {permissionsSummary(row.role)}
+          </span>
+        ),
+      },
+      {
+        header: t('common.status'),
+        accessor: (row) => (
+          <span
+            className={`px-2 py-1 text-xs font-medium rounded-full ${
+              row.isActive ? 'bg-green-100 text-green-800' : 'bg-neutral-100 text-neutral-600'
+            }`}
           >
-            {t('staff.remove')}
-          </Button>
-        </div>
-      ),
-    },
-  ];
+            {row.isActive ? t('common.active') : t('common.inactive')}
+          </span>
+        ),
+      },
+      {
+        header: t('staff.lastLogin'),
+        accessor: (row) => (
+          <span className='text-sm text-neutral-600'>
+            {row.lastLoginAt
+              ? new Date(row.lastLoginAt).toLocaleString(dateLocale, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : t('staff.never')}
+          </span>
+        ),
+      },
+      {
+        header: t('common.actions'),
+        accessor: (row) => (
+          <div className='flex gap-2 flex-wrap'>
+            <Button variant='secondary' size='sm' onClick={() => openEdit(row)}>
+              {t('staff.edit')}
+            </Button>
+            {row.isActive ? (
+              <Button variant='secondary' size='sm' onClick={() => handleDeactivate(row)}>
+                {t('staff.deactivate')}
+              </Button>
+            ) : (
+              <Button variant='secondary' size='sm' onClick={() => handleActivate(row)}>
+                {t('staff.activate')}
+              </Button>
+            )}
+            <Button
+              variant='ghost'
+              size='sm'
+              className='text-red-600'
+              onClick={() => handleRemove(row)}
+            >
+              {t('staff.remove')}
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [t, getRoleLabel, dateLocale, openEdit],
+  );
 
   return (
     <Layout>

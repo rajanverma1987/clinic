@@ -10,9 +10,20 @@ import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger.js';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useEffect, useState } from 'react';
 import { SettingsTabHeader } from './SettingsTabHeader';
+
+/** Same as item name: transliterate to Arabic, translate to Spanish (word-by-word) for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
 
 export function HolidayManagementTab({
   settings,
@@ -20,7 +31,9 @@ export function HolidayManagementTab({
   showAddForm: controlledShowAdd,
   setShowAddForm: setControlledShowAdd,
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
+  const dateLocale = localeCode === 'ar' ? 'ar-SA' : localeCode === 'es' ? 'es' : undefined;
   const { open: openConfirm } = useConfirmation();
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -232,10 +245,10 @@ export function HolidayManagementTab({
                   <div className='flex items-center gap-3'>
                     <div>
                       <p className='font-semibold text-neutral-900 dark:text-neutral-100 text-sm'>
-                        {holiday.name}
+                        {getDisplayValue(holiday.name, localeCode)}
                       </p>
                       <p className='text-xs text-neutral-600 dark:text-neutral-400'>
-                        {new Date(holiday.date).toLocaleDateString(undefined, {
+                        {new Date(holiday.date).toLocaleDateString(dateLocale, {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',

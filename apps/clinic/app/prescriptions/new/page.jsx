@@ -77,7 +77,7 @@ function NewPrescriptionPageContent() {
       .filter((item) => item.type === 'medicine')
       .map((item) => ({
         _id: item._id,
-        name: item.name || item.brandName || 'Unknown',
+        name: item.name || item.brandName || '',
         genericName: item.genericName,
         form: item.form || '',
         strength: item.strength,
@@ -89,8 +89,14 @@ function NewPrescriptionPageContent() {
     { revalidateOnFocus: false, dedupingInterval: 5 * 60 * 1000 },
   );
   useEffect(() => {
-    if (medicinesFromSWR) setDrugs(medicinesFromSWR);
-  }, [medicinesFromSWR]);
+    if (!medicinesFromSWR) return;
+    setDrugs(
+      medicinesFromSWR.map((item) => ({
+        ...item,
+        name: item.name || item.brandName || t('prescriptions.unknownMedicine'),
+      })),
+    );
+  }, [medicinesFromSWR, t]);
 
   // Appointments and patients: SWR so remounts reuse cache (avoids repeated 5s+ and 2s+ fetches)
   const appointmentsKey = currentUser?.tenantId
@@ -225,7 +231,7 @@ function NewPrescriptionPageContent() {
             form.dispatchEvent(submitEvent);
           }
         },
-        description: 'Save prescription (Ctrl+S)',
+        description: t('prescriptions.shortcutSavePrescription'),
       },
       {
         key: 'Escape',
@@ -233,10 +239,10 @@ function NewPrescriptionPageContent() {
           e.preventDefault();
           router.back();
         },
-        description: 'Cancel (Esc)',
+        description: t('prescriptions.shortcutCancel'),
       },
     ],
-    [router],
+    [router, t],
   );
 
   useKeyboardShortcuts(keyboardShortcuts);
@@ -421,7 +427,7 @@ function NewPrescriptionPageContent() {
     }));
     setItems((prev) => [...prev, ...newItems]);
     setSelectedPackageId('');
-    showSuccess(t('prescriptions.addedFromPackage') || 'Added from package');
+    showSuccess(t('prescriptions.addedFromPackage'));
   };
 
   const removeItem = (index) => {
@@ -675,7 +681,7 @@ function NewPrescriptionPageContent() {
   const handlePrintPreview = () => {
     const selectedPatient = patients.find((p) => p._id === formData.patientId);
     if (!selectedPatient) {
-      showError(t('prescriptions.selectPatientFirst') || 'Please select a patient first');
+      showError(t('prescriptions.selectPatientFirst'));
       return;
     }
     setShowPrintPreview(true);
@@ -932,7 +938,7 @@ function NewPrescriptionPageContent() {
 
                       <div className='prescription-form-field'>
                         <label htmlFor='followUpDate' className='prescription-form-label'>
-                          Follow-up Date
+                          {t('prescriptions.followUpDate')}
                         </label>
                         <Input
                           id='followUpDate'
@@ -944,7 +950,7 @@ function NewPrescriptionPageContent() {
                           min={new Date().toISOString().split('T')[0]}
                         />
                         <p className='prescription-form-help-text'>
-                          Recommended date for patient follow-up
+                          {t('prescriptions.followUpDateHelp')}
                         </p>
                       </div>
 
@@ -985,7 +991,7 @@ function NewPrescriptionPageContent() {
 
                       <div className='prescription-form-field'>
                         <label htmlFor='refillsAllowed' className='prescription-form-label'>
-                          Refills Allowed
+                          {t('prescriptions.refillsAllowed')}
                         </label>
                         <Input
                           id='refillsAllowed'
@@ -1001,7 +1007,7 @@ function NewPrescriptionPageContent() {
                           placeholder={t('prescriptions.refillsPlaceholder')}
                         />
                         <p className='prescription-form-help-text'>
-                          Number of times this prescription can be refilled
+                          {t('prescriptions.refillsAllowedHelp')}
                         </p>
                       </div>
                     </div>
@@ -1018,12 +1024,7 @@ function NewPrescriptionPageContent() {
                           onChange={(e) =>
                             setFormData({ ...formData, digitalSignature: e.target.value })
                           }
-                          placeholder={
-                            currentUser
-                              ? `Dr. ${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() ||
-                                'Dr. Name'
-                              : 'Dr. Name'
-                          }
+                          placeholder={t('prescriptions.doctorNamePlaceholder')}
                         />
                         <Input
                           id='signedByTitle'
@@ -1045,7 +1046,7 @@ function NewPrescriptionPageContent() {
                         />
                       </div>
                       <p className='prescription-form-help-text'>
-                        Name, title, and license # for e-signature. Required for Sign &amp; Send.
+                        {t('prescriptions.signatureHelp')}
                       </p>
                     </div>
 
@@ -1075,7 +1076,7 @@ function NewPrescriptionPageContent() {
                         rows={4}
                       />
                       <p className='prescription-form-help-text'>
-                        Special instructions, warnings, or notes for the patient
+                        {t('prescriptions.additionalInstructionsHelp')}
                       </p>
                     </div>
                   </div>
@@ -1086,7 +1087,7 @@ function NewPrescriptionPageContent() {
                     actions={
                       <div className='flex flex-wrap items-center gap-2'>
                         <Button type='button' variant='primary' size='sm' onClick={addItem}>
-                          + {t('prescriptions.addItem') || 'Add Item'}
+                          + {t('prescriptions.addItem')}
                         </Button>
                         {treatmentPackages.length > 0 && (
                           <>
@@ -1094,10 +1095,10 @@ function NewPrescriptionPageContent() {
                               value={selectedPackageId}
                               onChange={(e) => setSelectedPackageId(e.target.value)}
                               className='px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm min-w-[160px]'
-                              aria-label={t('prescriptions.addFromPackage') || 'Treatment package'}
+                              aria-label={t('prescriptions.addFromPackage')}
                             >
                               <option value=''>
-                                {t('prescriptions.selectPackage') || 'Select package'}
+                                {t('prescriptions.selectPackage')}
                               </option>
                               {treatmentPackages.map((p) => (
                                 <option key={p._id} value={p._id}>
@@ -1112,7 +1113,7 @@ function NewPrescriptionPageContent() {
                               onClick={addItemsFromPackage}
                               disabled={!selectedPackageId}
                             >
-                              {t('prescriptions.addFromPackage') || 'Add from package'}
+                              {t('prescriptions.addFromPackage')}
                             </Button>
                           </>
                         )}
@@ -1141,7 +1142,7 @@ function NewPrescriptionPageContent() {
                       onClick={() => router.back()}
                       disabled={submitting}
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </Button>
                     <Button
                       type='button'
@@ -1171,7 +1172,7 @@ function NewPrescriptionPageContent() {
                       }
                     >
                       <FileDownIcon className='icon icon-sm flex-shrink-0' ariaHidden />
-                      {t('prescriptions.downloadPdf') || 'Download PDF'}
+                      {t('prescriptions.downloadPdf')}
                     </Button>
                     <Button
                       type='submit'

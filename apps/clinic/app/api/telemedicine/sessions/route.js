@@ -17,6 +17,7 @@ async function getHandler(req, user) {
   const { searchParams } = new URL(req.url);
 
   const filters = {};
+  if (searchParams.get('locale')) filters.locale = searchParams.get('locale');
   if (searchParams.get('patientId')) filters.patientId = searchParams.get('patientId');
   if (searchParams.get('doctorId')) filters.doctorId = searchParams.get('doctorId');
   if (searchParams.get('status')) filters.status = searchParams.get('status');

@@ -10,6 +10,8 @@ import { withTenant } from '@/lib/db/tenant-helper.js';
 import { notifyPatientUpdated } from '@/lib/realtime/integration-helpers.js';
 import { generatePatientId } from '@/lib/utils/number-generator.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name.js';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish.js';
 import Appointment from '@/models/Appointment.js';
 import Patient from '@/models/Patient.js';
 
@@ -280,6 +282,44 @@ export async function searchPatients(
         .lean(),
       Patient.countDocuments(query),
     ]);
+  }
+
+  // Apply localized patient names and contact (phone/email) for UI (es/ar when requested)
+  const locale = filters.locale && String(filters.locale).toLowerCase().slice(0, 2);
+  if (locale === 'es' || locale === 'ar') {
+    const firstKey = `firstName_${locale}`;
+    const lastKey = `lastName_${locale}`;
+    const phoneKey = `phone_${locale}`;
+    const emailKey = `email_${locale}`;
+    patients = patients.map((p) => {
+      let pFirst = (p[firstKey] && String(p[firstKey]).trim()) || p.firstName || '';
+      let pLast = (p[lastKey] && String(p[lastKey]).trim()) || p.lastName || '';
+      if (locale === 'ar' && !(p.firstName_ar || p.lastName_ar)) {
+        pFirst = transliterateToArabic(pFirst) || pFirst;
+        pLast = transliterateToArabic(pLast) || pLast;
+      }
+      if (locale === 'es' && !(p.firstName_es || p.lastName_es)) {
+        pFirst = translateToSpanish(pFirst) || pFirst;
+        pLast = translateToSpanish(pLast) || pLast;
+      }
+      const patientDisplayName = [pFirst, pLast].filter(Boolean).join(' ').trim() || null;
+      const pPhone = (p[phoneKey] && String(p[phoneKey]).trim()) || p.phone || '';
+      let pEmail = (p[emailKey] && String(p[emailKey]).trim()) || p.email || '';
+      if (pEmail && locale === 'ar' && !(p.email_ar && String(p.email_ar).trim())) {
+        pEmail = transliterateToArabic(pEmail) || pEmail;
+      }
+      if (pEmail && locale === 'es' && !(p.email_es && String(p.email_es).trim())) {
+        pEmail = translateToSpanish(pEmail) || pEmail;
+      }
+      return {
+        ...p,
+        firstName: pFirst,
+        lastName: pLast,
+        patientDisplayName,
+        phone: pPhone,
+        email: pEmail,
+      };
+    });
   }
 
   // Log search (PHI access)

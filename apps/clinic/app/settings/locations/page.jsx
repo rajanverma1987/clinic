@@ -10,8 +10,19 @@ import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useCallback, useEffect, useState } from 'react';
+
+/** Same as item name: transliterate to Arabic, translate to Spanish (word-by-word) for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
 
 function toLocationRow(loc) {
   return {
@@ -39,7 +50,8 @@ function toSettingsPayload(locations) {
 }
 
 export default function LocationsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const { open: openConfirm } = useConfirmation();
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +178,7 @@ export default function LocationsPage() {
       header: t('settings.locationName'),
       accessor: (row) => (
         <div>
-          <div className='font-medium'>{row.name}</div>
+          <div className='font-medium'>{getDisplayValue(row.name, localeCode)}</div>
           {row.isMain && (
             <Tag variant='success' size='sm' className='mt-1'>
               {t('settings.location')} (Main)
@@ -175,9 +187,18 @@ export default function LocationsPage() {
         </div>
       ),
     },
-    { header: t('common.address'), accessor: 'address' },
-    { header: t('common.phone'), accessor: 'phone' },
-    { header: t('auth.email'), accessor: 'email' },
+    {
+      header: t('common.address'),
+      accessor: (row) => getDisplayValue(row.address, localeCode),
+    },
+    {
+      header: t('common.phone'),
+      accessor: (row) => getDisplayValue(row.phone, localeCode),
+    },
+    {
+      header: t('auth.email'),
+      accessor: (row) => getDisplayValue(row.email, localeCode),
+    },
     {
       header: t('common.status', 'Status'),
       accessor: (row) => (

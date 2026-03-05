@@ -82,7 +82,7 @@ ${t('common.date')}: ${new Date(session.scheduledStartTime).toLocaleString()}
 ${t('telemedicine.durationLabel')}: ${session.duration ?? t('common.na')} ${t('queue.minutes')}
 
 ${t('telemedicine.patient')}: ${session.patientId?.firstName} ${session.patientId?.lastName}
-${t('telemedicine.doctor')}: Dr. ${session.doctorId?.firstName} ${session.doctorId?.lastName}
+${t('telemedicine.doctor')}: ${t('telemedicine.doctorPrefix')} ${session.doctorId?.firstName} ${session.doctorId?.lastName}
 
 ${session.notes ? `${t('telemedicine.clinicalNotes')}:\n${session.notes}\n\n` : ''}
 ${session.diagnosis ? `${t('telemedicine.diagnosis')}:\n${session.diagnosis}\n\n` : ''}
@@ -152,9 +152,9 @@ ${t('telemedicine.connectionQuality')}: ${session.connectionQuality || t('common
                 </div>
 
                 <div>
-                  <label className='text-sm text-neutral-600'>Doctor</label>
+                  <label className='text-sm text-neutral-600'>{t('telemedicine.doctor')}</label>
                   <p className='font-medium text-neutral-900'>
-                    Dr. {session.doctorId.firstName} {session.doctorId.lastName}
+                    {t('telemedicine.doctorPrefix')} {session.doctorId.firstName} {session.doctorId.lastName}
                   </p>
                 </div>
 
@@ -291,11 +291,11 @@ ${t('telemedicine.connectionQuality')}: ${session.connectionQuality || t('common
                   d='M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'
                 />
               </svg>
-              Rate This Consultation
+              {t('telemedicine.rateThisConsultation')}
             </h3>
             <div className='space-y-4'>
               <div>
-                <label className='block text-sm font-medium text-neutral-700 mb-2'>Rating *</label>
+                <label className='block text-sm font-medium text-neutral-700 mb-2'>{t('telemedicine.ratingLabel')}</label>
                 <div className='flex items-center gap-2'>
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Button
@@ -326,7 +326,7 @@ ${t('telemedicine.connectionQuality')}: ${session.connectionQuality || t('common
               </div>
               <div>
                 <label className='block text-sm font-medium text-neutral-700 mb-2'>
-                  Your Review (Optional)
+                  {t('telemedicine.yourReviewOptional')}
                 </label>
                 <textarea
                   className='w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
@@ -341,7 +341,7 @@ ${t('telemedicine.connectionQuality')}: ${session.connectionQuality || t('common
                 onClick={handleSubmitRating}
                 disabled={submittingRating || rating === 0}
               >
-                {submittingRating ? 'Submitting...' : 'Submit Rating'}
+                {submittingRating ? t('telemedicine.submittingRating') : t('telemedicine.submitRating')}
               </Button>
             </div>
           </Card>
