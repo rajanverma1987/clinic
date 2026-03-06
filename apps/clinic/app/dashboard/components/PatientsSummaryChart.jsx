@@ -2,9 +2,11 @@
 
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
+import { formatLocale } from '@/lib/i18n';
 
 export function PatientsSummaryChart({ data, loading = false }) {
   const { t, locale } = useI18n();
+  const dateLocale = formatLocale((locale || 'en').toString().slice(0, 2));
 
   // Calculate totals
   const newPatients = data?.newPatients || 0;
@@ -49,7 +51,7 @@ export function PatientsSummaryChart({ data, loading = false }) {
           <div className='accent-bar accent-bar-primary' />
           <h2 className='section-title'>
             {t('dashboard.patientsSummary')}{' '}
-            {new Date().toLocaleDateString(locale || 'en', { month: 'long', year: 'numeric' })}
+            {new Date().toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })}
           </h2>
         </div>
 

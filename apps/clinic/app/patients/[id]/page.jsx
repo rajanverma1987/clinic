@@ -17,6 +17,8 @@ import { apiClient } from '@/lib/api/client';
 import { ERROR_HANDLING, PATIENT_DETAIL_TABS } from '@/lib/constants/route-security';
 import { hasPermission } from '@/lib/permissions/constants';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { getEmailDisplayValue } from '@/lib/utils/email-display';
+import { getPatientDisplayName, getPatientDisplayNameParts } from '@/lib/utils/patient-display-name';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -32,6 +34,7 @@ export default function PatientDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { currency, locale } = useSettings();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const [patient, setPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
@@ -553,8 +556,8 @@ export default function PatientDetailPage() {
       ) : (
         <>
           <PageHeader
-            title={`${patient.firstName} ${patient.lastName}`}
-            subtitle={`Patient ID: ${patient.patientId}`}
+            title={getPatientDisplayName(patient, localeCode, t)}
+            subtitle={`${t('patients.patientId')}: ${patient.patientId}`}
             notifications={[]}
             unreadCount={0}
             actionButtons={
@@ -629,7 +632,7 @@ export default function PatientDetailPage() {
                       <div className='grid grid-cols-2 gap-4'>
                         <div>
                           <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                            First Name
+                            {t('patients.firstName')}
                           </label>
                           {isEditing ? (
                             <Input
@@ -639,12 +642,12 @@ export default function PatientDetailPage() {
                               }
                             />
                           ) : (
-                            <p className='text-neutral-900'>{patient.firstName}</p>
+                            <p className='text-neutral-900'>{getPatientDisplayNameParts(patient, localeCode).first || '—'}</p>
                           )}
                         </div>
                         <div>
                           <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                            Last Name
+                            {t('patients.lastName')}
                           </label>
                           {isEditing ? (
                             <Input
@@ -654,7 +657,7 @@ export default function PatientDetailPage() {
                               }
                             />
                           ) : (
-                            <p className='text-neutral-900'>{patient.lastName}</p>
+                            <p className='text-neutral-900'>{getPatientDisplayNameParts(patient, localeCode).last || '—'}</p>
                           )}
                         </div>
                       </div>
@@ -714,13 +717,13 @@ export default function PatientDetailPage() {
                       )}
                       <div>
                         <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                          Patient ID
+                          {t('patients.patientId')}
                         </label>
                         <p className='text-neutral-900'>{patient.patientId}</p>
                       </div>
                       <div>
                         <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                          Date of Birth
+                          {t('patients.dateOfBirth')}
                         </label>
                         {isEditing ? (
                           <Input
@@ -743,7 +746,7 @@ export default function PatientDetailPage() {
                       <div className='grid grid-cols-2 gap-4'>
                         <div>
                           <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                            Gender
+                            {t('patients.gender')}
                           </label>
                           {isEditing ? (
                             <select
@@ -751,17 +754,25 @@ export default function PatientDetailPage() {
                               onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                               className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500'
                             >
-                              <option value='male'>Male</option>
-                              <option value='female'>Female</option>
-                              <option value='other'>Other</option>
+                              <option value='male'>{t('common.male')}</option>
+                              <option value='female'>{t('common.female')}</option>
+                              <option value='other'>{t('common.other')}</option>
                             </select>
                           ) : (
-                            <p className='text-neutral-900 capitalize'>{patient.gender}</p>
+                            <p className='text-neutral-900'>
+                              {patient.gender === 'male'
+                                ? t('common.male')
+                                : patient.gender === 'female'
+                                  ? t('common.female')
+                                  : patient.gender === 'other'
+                                    ? t('common.other')
+                                    : patient.gender || '—'}
+                            </p>
                           )}
                         </div>
                         <div>
                           <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                            Blood Group
+                            {t('patients.bloodGroup')}
                           </label>
                           {isEditing ? (
                             <select
@@ -830,7 +841,7 @@ export default function PatientDetailPage() {
                           />
                         ) : (
                           <p className='text-neutral-900 dark:text-neutral-100'>
-                            {patient.email || t('patients.notProvided')}
+                            {patient.email ? getEmailDisplayValue(patient.email, localeCode) : t('patients.notProvided')}
                           </p>
                         )}
                       </div>
@@ -941,7 +952,7 @@ export default function PatientDetailPage() {
                       </div>
                       <div>
                         <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
-                          Chronic Conditions
+                          {t('patients.conditions')}
                         </label>
                         {isEditing ? (
                           <Input
@@ -1036,7 +1047,7 @@ export default function PatientDetailPage() {
               )}
 
               {activeTab === 'timeline' && (
-                <Card title={t('patients.timeline') || 'Visit timeline'}>
+                <Card title={t('patients.timeline')}>
                   <div className='space-y-4'>
                     {(() => {
                       const entries = [];
@@ -1045,7 +1056,7 @@ export default function PatientDetailPage() {
                         entries.push({
                           date: d ? new Date(d) : null,
                           type: 'appointment',
-                          label: `${a.type || 'Visit'} – ${a.status || ''}`,
+                          label: `${a.type || t('patients.visit')} – ${a.status || ''}`,
                           id: a._id,
                           href: `/appointments/${a._id}`,
                         });
@@ -1055,7 +1066,7 @@ export default function PatientDetailPage() {
                         entries.push({
                           date: d ? new Date(d) : null,
                           type: 'prescription',
-                          label: p.prescriptionNumber || 'Prescription',
+                          label: p.prescriptionNumber || t('patients.prescriptionLabel'),
                           id: p._id,
                           href: `/prescriptions/${p._id}`,
                         });
@@ -1065,7 +1076,7 @@ export default function PatientDetailPage() {
                         entries.push({
                           date: d ? new Date(d) : null,
                           type: 'lab_result',
-                          label: r.testId?.name || 'Lab result',
+                          label: r.testId?.name || t('patients.labResultLabel'),
                           id: r._id,
                           href: `/lab-results/${r._id}`,
                         });
@@ -1075,7 +1086,7 @@ export default function PatientDetailPage() {
                         entries.push({
                           date: d ? new Date(d) : null,
                           type: 'procedure',
-                          label: s.procedureId?.name || s.procedureName || 'Procedure',
+                          label: s.procedureId?.name || s.procedureName || t('patients.procedureLabel'),
                           id: s._id,
                           href: null,
                         });
@@ -1145,7 +1156,7 @@ export default function PatientDetailPage() {
                             </td>
                             <td className='whitespace-nowrap'>{apt.startTime || '-'}</td>
                             <td className='whitespace-nowrap capitalize'>
-                              {apt.type || 'In-Person'}
+                              {apt.type === 'video' ? t('appointments.video') : (apt.type || t('appointments.inPerson'))}
                             </td>
                             <td className='whitespace-nowrap'>
                               {apt.doctorId
@@ -1403,7 +1414,7 @@ export default function PatientDetailPage() {
                         <tr>
                           <th>{t('carePlans.name')}</th>
                           <th>{t('carePlans.condition')}</th>
-                          <th>{t('carePlans.conditions') || 'Conditions'}</th>
+                          <th>{t('carePlans.conditions')}</th>
                           <th>{t('carePlans.startDate')}</th>
                           <th>{t('carePlans.endDate')}</th>
                           <th>{t('carePlans.status')}</th>
@@ -1849,7 +1860,7 @@ export default function PatientDetailPage() {
                               rel='noopener noreferrer'
                               className='text-primary-600 hover:text-primary-700 text-sm font-medium'
                             >
-                              View
+                              {t('common.view')}
                             </a>
                           )}
                         </div>
@@ -2038,7 +2049,7 @@ export default function PatientDetailPage() {
           </div>
           <div>
             <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
-              {t('procedures.type')} code
+              {t('procedures.typeCode')}
             </label>
             <Input
               value={procedureForm.typeCode || ''}

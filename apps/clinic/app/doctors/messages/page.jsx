@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
@@ -17,7 +19,9 @@ import { useEffect, useState } from 'react';
 export default function DoctorMessagesPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const localeCode = (settingsLocale || i18nLocale || 'en').toString().slice(0, 2);
   const [loading, setLoading] = useState(true);
   const [activeFolder, setActiveFolder] = useState('inbox'); // inbox, sent, archive
   const [messages, setMessages] = useState([]);
@@ -276,7 +280,7 @@ export default function DoctorMessagesPage() {
                       <option value=''>{t('doctors.selectRecipient')}</option>
                       {patients.map((patient) => (
                         <option key={patient._id} value={patient._id}>
-                          {patient.firstName} {patient.lastName} - {patient.patientId}
+                          {getPatientDisplayName(patient, localeCode, t)} - {patient.patientId}
                         </option>
                       ))}
                     </select>

@@ -79,6 +79,75 @@ const TO_ARABIC = {
   sterile: 'معقم',
   disposable: 'للاستخدام الواحد',
   examination: 'فحص',
+  // ICD-10 / diagnosis terms
+  allergic: 'تحسسي',
+  rhinitis: 'التهاب الأنف',
+  unspecified: 'غير محدد',
+  chronic: 'مزمن',
+  acute: 'حاد',
+  upper: 'علوي',
+  respiratory: 'تنفسي',
+  infection: 'عدوى',
+  essential: 'أساسي',
+  primary: 'أولي',
+  hypertension: 'ارتفاع ضغط الدم',
+  type: 'نوع',
+  diabetes: 'السكري',
+  mellitus: 'سكري',
+  without: 'بدون',
+  complications: 'مضاعفات',
+  nasopharyngitis: 'التهاب البلعوم الأنفي',
+  common: 'شائع',
+  cold: 'برد',
+  pharyngitis: 'التهاب البلعوم',
+  tonsillitis: 'التهاب اللوزتين',
+  fever: 'حمى',
+  headache: 'صداع',
+  cough: 'سعال',
+  abdominal: 'بطني',
+  pain: 'ألم',
+  'gastro-esophageal': 'معدي مريئي',
+  reflux: 'ارتجاع',
+  disease: 'مرض',
+  esophagitis: 'التهاب المريء',
+  low: 'أسفل',
+  back: 'الظهر',
+  right: 'أيمن',
+  shoulder: 'كتف',
+  generalized: 'معمم',
+  anxiety: 'قلق',
+  disorder: 'اضطراب',
+  major: 'اكتئابي',
+  depressive: 'اكتئاب',
+  single: 'حادثة',
+  episode: 'نوبة',
+  contact: 'تماس',
+  dermatitis: 'التهاب الجلد',
+  cause: 'سبب',
+  gastritis: 'التهاب المعدة',
+  bleeding: 'نزيف',
+  urinary: 'بولية',
+  tract: 'مسالك',
+  site: 'موقع',
+  specified: 'محدد',
+  migraine: 'صداع نصفي',
+  intractable: 'مستعصي',
+  nausea: 'غثيان',
+  vomiting: 'قيء',
+  malaise: 'توعك',
+  fatigue: 'إرهاق',
+  dizziness: 'دوار',
+  giddiness: 'دوار',
+  hyperlipidemia: 'فرط شحوم الدم',
+  obesity: 'سمنة',
+  swelling: 'تورم',
+  mass: 'كتلة',
+  lump: 'ورم',
+  encounter: 'زيارة',
+  general: 'عام',
+  adult: 'بالغ',
+  abnormal: 'شاذ',
+  findings: 'نتائج',
 };
 
 const TO_SPANISH = {
@@ -157,6 +226,75 @@ const TO_SPANISH = {
   sterile: 'Estéril',
   disposable: 'Desechable',
   examination: 'Exploración',
+  // ICD-10 / diagnosis terms
+  allergic: 'Alérgico',
+  rhinitis: 'Rinitis',
+  unspecified: 'No especificado',
+  chronic: 'Crónico',
+  acute: 'Agudo',
+  upper: 'Superior',
+  respiratory: 'Respiratorio',
+  infection: 'Infección',
+  essential: 'Esencial',
+  primary: 'Primario',
+  hypertension: 'Hipertensión',
+  type: 'Tipo',
+  diabetes: 'Diabetes',
+  mellitus: 'Mellitus',
+  without: 'Sin',
+  complications: 'Complicaciones',
+  nasopharyngitis: 'Nasofaringitis',
+  common: 'Común',
+  cold: 'Resfriado',
+  pharyngitis: 'Faringitis',
+  tonsillitis: 'Amigdalitis',
+  fever: 'Fiebre',
+  headache: 'Cefalea',
+  cough: 'Tos',
+  abdominal: 'Abdominal',
+  pain: 'Dolor',
+  'gastro-esophageal': 'Gastroesofágico',
+  reflux: 'Reflujo',
+  disease: 'Enfermedad',
+  esophagitis: 'Esofagitis',
+  low: 'Bajo',
+  back: 'Espalda',
+  right: 'Derecho',
+  shoulder: 'Hombro',
+  generalized: 'Generalizado',
+  anxiety: 'Ansiedad',
+  disorder: 'Trastorno',
+  major: 'Mayor',
+  depressive: 'Depresivo',
+  single: 'Único',
+  episode: 'Episodio',
+  contact: 'Contacto',
+  dermatitis: 'Dermatitis',
+  cause: 'Causa',
+  gastritis: 'Gastritis',
+  bleeding: 'Hemorragia',
+  urinary: 'Urinario',
+  tract: 'Tracto',
+  site: 'Sitio',
+  specified: 'Especificado',
+  migraine: 'Migraña',
+  intractable: 'Intratable',
+  nausea: 'Náuseas',
+  vomiting: 'Vómito',
+  malaise: 'Malestar',
+  fatigue: 'Fatiga',
+  dizziness: 'Mareo',
+  giddiness: 'Vértigo',
+  hyperlipidemia: 'Hiperlipidemia',
+  obesity: 'Obesidad',
+  swelling: 'Hinchazón',
+  mass: 'Masa',
+  lump: 'Bulto',
+  encounter: 'Encuentro',
+  general: 'General',
+  adult: 'Adulto',
+  abnormal: 'Anormal',
+  findings: 'Hallazgos',
 };
 
 /**
@@ -213,6 +351,50 @@ export function getSpanishDisplayName(name) {
   const out = words.map((w) => translateWordToSpanish(w) ?? w);
   const result = out.join(' ').trim();
   return result || trimmed;
+}
+
+/**
+ * Translate diagnosis/ICD title for display (same approach as item names).
+ * Normalizes punctuation so "Allergic rhinitis, unspecified" is word-split correctly.
+ * @param {string} title - e.g. "Allergic rhinitis, unspecified"
+ * @param {string} localeCode - 'en' | 'ar' | 'es'
+ * @returns {string} Translated title for display
+ */
+export function getDiagnosisDisplayName(title, localeCode) {
+  if (title == null || String(title).trim() === '') return '';
+  const raw = String(title).trim();
+  const normalized = raw.replace(/[,;[\]]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!normalized) return raw;
+  const l = (localeCode || 'en').toString().slice(0, 2);
+  if (l === 'ar') return getArabicDisplayName(normalized);
+  if (l === 'es') return getSpanishDisplayName(normalized);
+  return raw;
+}
+
+/**
+ * Translate full diagnosis string for display (e.g. "J30.9 - Allergic rhinitis, unspecified").
+ * Handles "CODE - Title" and multi-part strings separated by comma/semicolon.
+ * @param {string} diagnosis - Full diagnosis string from prescription
+ * @param {string} localeCode - 'en' | 'ar' | 'es'
+ * @returns {string} Translated diagnosis for display
+ */
+export function getDiagnosisDisplayValue(diagnosis, localeCode) {
+  if (diagnosis == null || String(diagnosis).trim() === '') return '';
+  // Split only by semicolon so commas inside a title (e.g. "Allergic rhinitis, unspecified") stay in one segment
+  const parts = String(diagnosis)
+    .split(/\s*;\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const l = (localeCode || 'en').toString().slice(0, 2);
+  const translated = parts.map((part) => {
+    // Match "CODE - Title" (allow space-hyphen-space or unicode dash)
+    const dashMatch = part.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+    if (!dashMatch) return getDiagnosisDisplayName(part, l);
+    const code = dashMatch[1].trim();
+    const title = dashMatch[2].trim();
+    return code ? `${code} - ${getDiagnosisDisplayName(title, l)}` : getDiagnosisDisplayName(title, l);
+  });
+  return translated.join('; ');
 }
 
 /**

@@ -11,13 +11,32 @@ import { apiClient } from '@/lib/api/client';
 import { CARD_FEATURES_BY_PLAN } from '@/lib/constants/plan-features';
 import { YEARLY_SAVE } from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+/** Same as item name: transliterate to Arabic, translate to Spanish (word-by-word) for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') {
+    const out = s
+      .split(/\s+/)
+      .map((w) => translateToSpanish(w) || w)
+      .join(' ')
+      .trim();
+    return out || s;
+  }
+  return s;
+}
+
 export default function PricingPage() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const { user } = useAuth();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,11 +71,11 @@ export default function PricingPage() {
       if (response.success && response.data) {
         setPlans(response.data);
       } else {
-        setError('Failed to load subscription plans. Please try again later.');
+        setError(t('subscription.updateFailed'));
       }
     } catch (error) {
       logger.error('Failed to fetch plans', error);
-      setError('Unable to connect to the server. Please check your internet connection.');
+      setError(error.message || t('errors.requestFailed'));
     } finally {
       setLoading(false);
     }
@@ -64,7 +83,10 @@ export default function PricingPage() {
 
   /** Pricing is USD only. */
   const formatPrice = (price) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format((price || 0) / 100);
+    new Intl.NumberFormat(localeCode === 'ar' ? 'ar-SA' : localeCode === 'es' ? 'es-ES' : 'en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format((price || 0) / 100);
 
   const handleSelectPlan = async (planId, planName) => {
     setSelectingPlanId(planId);
@@ -169,7 +191,9 @@ export default function PricingPage() {
                   />
                 </svg>
               </div>
-              <h2 className='text-2xl font-bold text-red-900 mb-2'>Unable to Load Pricing</h2>
+              <h2 className='text-2xl font-bold text-red-900 mb-2'>
+                {t('pricing.unableToLoadPricing')}
+              </h2>
               <p className='text-red-700 mb-6'>{error}</p>
               <Button
                 variant='primary'
@@ -178,7 +202,7 @@ export default function PricingPage() {
                   fetchPlans();
                 }}
               >
-                Try Again
+                {t('common.retry')}
               </Button>
             </div>
           </div>
@@ -328,13 +352,15 @@ export default function PricingPage() {
                   {displayedPlans.map((plan) => (
                     <SubscriptionCard
                       key={plan._id}
-                      name={plan.name}
-                      description={plan.description}
+                      name={getDisplayValue(plan.name, localeCode)}
+                      description={getDisplayValue(plan.description, localeCode)}
                       price={plan.price}
                       originalPrice={plan.originalPrice}
                       currency={plan.currency || 'USD'}
                       billingCycle={plan.billingCycle}
-                      features={CARD_FEATURES_BY_PLAN[plan.name] || plan.features}
+                      features={(CARD_FEATURES_BY_PLAN[plan.name] || plan.features || []).map((f) =>
+                        getDisplayValue(f, localeCode),
+                      )}
                       maxUsers={plan.maxUsers}
                       maxPatients={plan.maxPatients}
                       maxStorageGB={plan.maxStorageGB}
@@ -342,7 +368,7 @@ export default function PricingPage() {
                       yearlySaveAmount={YEARLY_SAVE[plan.name]}
                       trialDays={plan.trialDays ?? 14}
                       displayCurrency='USD'
-                      displayLocale='en-US'
+                      displayLocale={localeCode === 'ar' ? 'ar-SA' : localeCode === 'es' ? 'es-ES' : 'en-US'}
                       showPaymentMethods={user && (Number(plan.price) || 0) > 0}
                       onPayWithPayPal={
                         user && (Number(plan.price) || 0) > 0

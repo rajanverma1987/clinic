@@ -6,13 +6,15 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
 import { logger } from '@/lib/utils/logger.js';
 import { useEffect, useState } from 'react';
 import { generatePrescriptionPrintHTML } from './PrescriptionPrintTemplate';
 
 export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
   const { user: currentUser } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [printHtml, setPrintHtml] = useState('');
@@ -171,7 +173,7 @@ export function PrescriptionPrintPreview({ prescriptionId, isOpen, onClose }) {
           clinicalNote?.soap?.plan ||
           (prescription.additionalInstructions ? prescription.additionalInstructions : undefined),
         diagnosis: prescription.diagnosis
-          ? prescription.diagnosis.split(',').map((d) => d.trim())
+          ? prescription.diagnosis.split(/[,;]+/).map((d) => getDiagnosisDisplayValue(d.trim(), localeCode)).filter(Boolean)
           : [],
         procedures:
           prescription.items

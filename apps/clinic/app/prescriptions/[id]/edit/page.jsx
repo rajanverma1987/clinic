@@ -12,8 +12,10 @@ import { SimpleTextEditor } from '@/components/ui/SimpleTextEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
+import { useSettings } from '@/hooks/useSettings';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
+import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -23,7 +25,9 @@ export default function EditPrescriptionPage() {
   const params = useParams();
   const prescriptionId = params?.id;
   const { user: currentUser, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const localeCode = (settingsLocale || i18nLocale || 'en').toString().slice(0, 2);
   const { invalidateLists } = useInvalidateDashboard();
   const [patients, setPatients] = useState([]);
   const [drugs, setDrugs] = useState([]);
@@ -529,7 +533,7 @@ export default function EditPrescriptionPage() {
                       </option>
                       {patients.map((patient) => (
                         <option key={patient._id} value={patient._id}>
-                          {patient.patientId} - {patient.firstName} {patient.lastName}
+                          {patient.patientId} - {getPatientDisplayName(patient, localeCode, t)}
                         </option>
                       ))}
                     </select>

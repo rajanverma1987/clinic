@@ -4,6 +4,17 @@ import { ChatIcon, DocumentIcon, PhoneIcon, VideoIcon } from '@/components/icons
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
+import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
+
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
 
 export function NextPatientCard({
   patient,
@@ -13,7 +24,8 @@ export function NextPatientCard({
   onChat,
   onStartVideo,
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const isVideoAppointment = appointment?.isTelemedicine;
   const showStartVideo = isVideoAppointment && onStartVideo;
   if (!patient && !appointment) {
@@ -23,18 +35,19 @@ export function NextPatientCard({
   const patientData = patient || appointment?.patientId;
   const firstName = patientData?.firstName || '';
   const lastName = patientData?.lastName || '';
-  const patientName =
-    patientData?.name || `${firstName} ${lastName}`.trim() || t('common.unknownPatient');
+  const rawName = (patientData?.name || `${firstName} ${lastName}`.trim()) || '';
+  const patientName = rawName ? getDisplayValue(rawName, localeCode) : t('common.unknownPatient');
   const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
 
   const na = t('common.na');
-  const patientId = patientData?.patientId || patientData?._id?.slice(-12) || na;
+  const rawPatientId = patientData?.patientId || patientData?._id?.slice(-12) || na;
+  const patientId = rawPatientId === na ? na : getDisplayValue(String(rawPatientId), localeCode);
   const dateOfBirth = patientData?.dateOfBirth
     ? new Date(patientData.dateOfBirth).toLocaleDateString()
     : na;
-  const gender = patientData?.gender || na;
-  const weight = patientData?.weight || na;
-  const height = patientData?.height || na;
+  const gender = patientData?.gender ? getDisplayValue(String(patientData.gender), localeCode) : na;
+  const weight = patientData?.weight != null && patientData?.weight !== '' ? getDisplayValue(String(patientData.weight), localeCode) : na;
+  const height = patientData?.height != null && patientData?.height !== '' ? getDisplayValue(String(patientData.height), localeCode) : na;
   const phone = patientData?.phone || na;
   const regDate = patientData?.createdAt
     ? new Date(patientData.createdAt).toLocaleDateString()
@@ -44,7 +57,12 @@ export function NextPatientCard({
     ? new Date(appointment.lastAppointment).toLocaleDateString()
     : na;
 
-  const reason = appointment?.reason || appointment?.type || t('common.generalConsultation');
+  const rawReason = appointment?.reason || appointment?.type || t('common.generalConsultation');
+  // Translate when reason looks like ICD diagnosis (e.g. "J30.9 - Allergic rhinitis, unspecified")
+  const reason =
+    rawReason && String(rawReason).includes(' - ')
+      ? getDiagnosisDisplayValue(String(rawReason), localeCode)
+      : rawReason;
 
   // Parse medical history from patient data (can be string, array, or object)
   const parseMedicalInfo = (data) => {
@@ -151,16 +169,20 @@ export function NextPatientCard({
           </p>
           {medicalHistory && medicalHistory.length > 0 ? (
             <div className='flex flex-wrap gap-2'>
-              {medicalHistory.map((condition, index) => (
-                <span
-                  key={index}
-                  className='inline-flex items-center px-2.5 py-1 rounded-md text-body-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-neutral-700/50 dark:text-neutral-300 dark:border-neutral-600'
-                >
-                  {typeof condition === 'object' && condition?.condition
-                    ? condition.condition
-                    : condition}
-                </span>
-              ))}
+              {medicalHistory.map((condition, index) => {
+                const rawText = typeof condition === 'object' && condition?.condition
+                  ? condition.condition
+                  : condition;
+                const displayText = getDiagnosisDisplayValue(String(rawText || ''), localeCode);
+                return (
+                  <span
+                    key={index}
+                    className='inline-flex items-center px-2.5 py-1 rounded-md text-body-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200 dark:bg-neutral-700/50 dark:text-neutral-300 dark:border-neutral-600'
+                  >
+                    {displayText}
+                  </span>
+                );
+              })}
             </div>
           ) : (
             <p className='text-body-sm text-neutral-500 dark:text-neutral-400 italic'>

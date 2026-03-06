@@ -18,6 +18,8 @@ import { useFeatures } from '@/hooks/useFeatures.js';
 import { apiClient } from '@/lib/api/client';
 import * as routeCache from '@/lib/cache/dashboard-cache';
 import { clearCacheByPrefix } from '@/lib/utils/api-cache';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess, showWarning } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -28,6 +30,14 @@ function NewAppointmentPageContent() {
   const searchParams = useSearchParams();
   const { user: currentUser, loading: authLoading } = useAuth();
   const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
+  const getDisplayValue = (str, code) => {
+    if (str == null || String(str).trim() === '') return '';
+    const s = String(str).trim();
+    if (code === 'ar') return transliterateToArabic(s) || s;
+    if (code === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+    return s;
+  };
   const { hasFeature } = useFeatures();
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -397,19 +407,19 @@ function NewAppointmentPageContent() {
                         { value: '', label: t('common.select'), disabled: true },
                         ...doctors.map((d) => {
                           const displayFirst =
-                            locale === 'ar' && (d.firstName_ar ?? '')
+                            localeCode === 'ar' && (d.firstName_ar ?? '') !== ''
                               ? d.firstName_ar
-                              : locale === 'es' && (d.firstName_es ?? '')
+                              : localeCode === 'es' && (d.firstName_es ?? '') !== ''
                                 ? d.firstName_es
-                                : d.firstName || '';
+                                : getDisplayValue(d.firstName || '', localeCode);
                           const displayLast =
-                            locale === 'ar' && (d.lastName_ar ?? '')
+                            localeCode === 'ar' && (d.lastName_ar ?? '') !== ''
                               ? d.lastName_ar
-                              : locale === 'es' && (d.lastName_es ?? '')
+                              : localeCode === 'es' && (d.lastName_es ?? '') !== ''
                                 ? d.lastName_es
-                                : d.lastName || '';
+                                : getDisplayValue(d.lastName || '', localeCode);
                           return {
-                            value: d.id,
+                            value: d.id || d._id,
                             label: t('appointments.doctorNameFormat', {
                               firstName: displayFirst,
                               lastName: displayLast,

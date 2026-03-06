@@ -2,15 +2,19 @@
 
 import { Button } from '@/components/ui/Button';
 import { ChevronRightIcon } from '@/components/icons';
+import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
+import { getPatientDisplayNameParts } from '@/lib/utils/patient-display-name';
 import React from 'react';
 
 function PatientListItemInner({ patient, onClick }) {
-  const patientName =
-    patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown';
+  const { t, locale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const localeCode = (settingsLocale || locale || 'en').toString().slice(0, 2);
+  const { first, last } = getPatientDisplayNameParts(patient, localeCode);
+  const patientName = [first, last].filter(Boolean).join(' ').trim() || patient.name || t('common.unknownPatient') || 'Unknown';
 
-  const firstName = patient.firstName || '';
-  const lastName = patient.lastName || '';
-  const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'P';
+  const initials = `${(first || '').charAt(0)}${(last || '').charAt(0)}`.toUpperCase() || 'P';
 
   const contactInfo = patient.phone || patient.email || 'No contact info';
   const age = patient.age || patient.dateOfBirth ? calculateAge(patient.dateOfBirth) : null;

@@ -17,7 +17,9 @@ import { Loader } from '@/components/ui/Loader';
 import { SimpleTextEditor } from '@/components/ui/SimpleTextEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
 import icd10Common from '@/data/icd10-common.json';
+import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { useFormAutoSave } from '@/hooks/useFormAutoSave.js';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
@@ -33,7 +35,9 @@ function NewPrescriptionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user: currentUser, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const localeCode = (settingsLocale || i18nLocale || 'en').toString().slice(0, 2);
   const [patients, setPatients] = useState([]);
   const [drugs, setDrugs] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -834,7 +838,7 @@ function NewPrescriptionPageContent() {
                           </option>
                           {patients.map((patient) => (
                             <option key={patient._id} value={patient._id}>
-                              {patient.patientId} - {patient.firstName} {patient.lastName}
+                              {patient.patientId} - {getPatientDisplayName(patient, localeCode, t)}
                             </option>
                           ))}
                         </select>

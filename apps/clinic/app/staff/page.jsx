@@ -18,6 +18,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { apiClient } from '@/lib/api/client';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { getRolePermissions } from '@/lib/permissions/constants';
+import { getEmailDisplayValue } from '@/lib/utils/email-display';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -323,7 +324,11 @@ export default function StaffPage() {
       },
       {
         header: t('staff.email'),
-        accessor: (row) => <div className='text-neutral-700'>{row.email || '—'}</div>,
+        accessor: (row) => (
+          <div className='text-neutral-700'>
+            {row.email ? getEmailDisplayValue(row.email, localeCode) : '—'}
+          </div>
+        ),
       },
       {
         header: t('staff.phone'),

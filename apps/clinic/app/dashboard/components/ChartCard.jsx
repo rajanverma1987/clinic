@@ -2,6 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
+import { formatLocale } from '@/lib/i18n';
 import { memo, useEffect, useRef, useState, useMemo } from 'react';
 
 const CHART_HEIGHT = 160;
@@ -25,9 +26,10 @@ const COLOR_CLASSES = {
     'bg-gradient-to-t from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600',
 };
 
-function ChartCardInner({ title, data, colorScheme = 'primary', loading = false }) {
-  const { t } = useI18n();
+function ChartCardInner({ title, data, colorScheme = 'primary', loading = false, displayLocale }) {
+  const { t, locale } = useI18n();
   const containerRef = useRef(null);
+  const dateLocale = displayLocale || formatLocale((locale || 'en').toString().slice(0, 2));
   const [inView, setInView] = useState(false);
 
   // Only render chart content when the card enters the viewport.
@@ -152,7 +154,7 @@ function ChartCardInner({ title, data, colorScheme = 'primary', loading = false 
                           minHeight: value > 0 ? '3px' : '0',
                           boxShadow: value > 0 ? '0 2px 4px rgba(0, 0, 0, 0.1)' : 'none',
                         }}
-                        title={`${getItemDate(item).toLocaleDateString()}: ${value}`}
+                        title={`${getItemDate(item).toLocaleDateString(dateLocale)}: ${value}`}
                       />
                       <div
                         className='absolute -top-8 left-1/2 opacity-0 group-hover:opacity-100 bg-neutral-800 dark:bg-neutral-700 text-white text-xs px-2 py-1 rounded-md whitespace-nowrap z-10 shadow-lg transition-opacity duration-200 pointer-events-none'
@@ -171,7 +173,7 @@ function ChartCardInner({ title, data, colorScheme = 'primary', loading = false 
                             const isFirstItem = index === 0;
                             const isFirstOfMonth = day === 1;
                             if (isFirstItem || isFirstOfMonth) {
-                              return date.toLocaleDateString(undefined, {
+                              return date.toLocaleDateString(dateLocale, {
                                 month: 'short',
                                 day: 'numeric',
                               });
@@ -179,12 +181,12 @@ function ChartCardInner({ title, data, colorScheme = 'primary', loading = false 
                             return day.toString();
                           }
                           if (chartData.length <= 7) {
-                            return date.toLocaleDateString(undefined, {
+                            return date.toLocaleDateString(dateLocale, {
                               month: 'short',
                               day: 'numeric',
                             });
                           }
-                          return date.toLocaleDateString(undefined, { month: 'short' });
+                          return date.toLocaleDateString(dateLocale, { month: 'short' });
                         })()}
                       </span>
                     </div>
@@ -204,6 +206,7 @@ export const ChartCard = memo(ChartCardInner, (prev, next) => {
     prev.data === next.data &&
     prev.title === next.title &&
     prev.colorScheme === next.colorScheme &&
-    prev.loading === next.loading
+    prev.loading === next.loading &&
+    prev.displayLocale === next.displayLocale
   );
 });

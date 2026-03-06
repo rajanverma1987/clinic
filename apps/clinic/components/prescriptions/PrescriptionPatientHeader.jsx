@@ -1,7 +1,9 @@
 'use client';
 
 import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { useEffect, useState } from 'react';
 
 /**
@@ -9,7 +11,9 @@ import { useEffect, useState } from 'react';
  * Shown at top of form when a patient is selected (Phase 3.1).
  */
 export function PrescriptionPatientHeader({ patientId }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const localeCode = (settingsLocale || locale || 'en').toString().slice(0, 2);
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -51,7 +55,7 @@ export function PrescriptionPatientHeader({ patientId }) {
     })();
 
   const name =
-    [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.patientId || '—';
+    getPatientDisplayName(patient, localeCode, t) || patient.patientId || '—';
   const allergies = patient.allergies ?? patient.allergiesList ?? '';
   const currentMeds = patient.currentMedications ?? '';
 

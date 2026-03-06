@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Toggle } from '@/components/ui/Toggle';
 import { useI18n } from '@/contexts/I18nContext';
+import { getEmailDisplayValue } from '@/lib/utils/email-display';
 import { transliterateToArabic } from '@/lib/utils/transliterate-name';
 import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { SettingsTabHeader } from './SettingsTabHeader';
@@ -232,7 +233,7 @@ export function DoctorsTab({
                         {getDisplayValue(user.firstName || '', localeCode)} {getDisplayValue(user.lastName || '', localeCode)}
                       </h3>
                       <p className='text-xs text-neutral-600 dark:text-neutral-300 truncate'>
-                        {getDisplayValue(user.email || '', localeCode)}
+                        {getEmailDisplayValue(user.email || '', localeCode)}
                       </p>
                       <div className='flex flex-wrap items-center gap-1.5 mt-1'>
                         <span className='px-1.5 py-0.5 bg-primary-100 dark:bg-blue-800 text-primary-700 dark:text-blue-100 text-xs rounded-full font-medium'>

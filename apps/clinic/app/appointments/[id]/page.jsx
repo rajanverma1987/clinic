@@ -14,6 +14,10 @@ import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
 import { apiClient } from '@/lib/api/client';
+import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
+import { getEmailDisplayValue } from '@/lib/utils/email-display';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { appointmentKey, DASHBOARD_LISTS_KEY } from '@/lib/swr/dashboard-keys';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -39,7 +43,15 @@ export default function AppointmentDetailsPage() {
   const searchParams = useSearchParams();
   const params = useParams();
   const id = params?.id ?? null;
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
+  const getDisplayValue = (str, code) => {
+    if (str == null || String(str).trim() === '') return '';
+    const s = String(str).trim();
+    if (code === 'ar') return transliterateToArabic(s) || s;
+    if (code === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+    return s;
+  };
   const { user } = useAuth();
   const { open: openConfirm } = useConfirmation();
   const { invalidateLists, invalidateStats } = useInvalidateDashboard();
@@ -165,22 +177,53 @@ export default function AppointmentDetailsPage() {
     mutateAppointment,
   ]);
 
-  const patientFullName = useMemo(
-    () =>
-      appointment
-        ? `${appointment.patientId?.firstName || ''} ${
-            appointment.patientId?.lastName || ''
-          }`.trim()
-        : '',
-    [appointment],
-  );
+  const patientFullName = useMemo(() => {
+    if (!appointment?.patientId) return '';
+    const p = appointment.patientId;
+    const first =
+      localeCode === 'ar' && (p.firstName_ar ?? '') !== ''
+        ? p.firstName_ar
+        : localeCode === 'es' && (p.firstName_es ?? '') !== ''
+          ? p.firstName_es
+          : getDisplayValue(p.firstName || '', localeCode);
+    const last =
+      localeCode === 'ar' && (p.lastName_ar ?? '') !== ''
+        ? p.lastName_ar
+        : localeCode === 'es' && (p.lastName_es ?? '') !== ''
+          ? p.lastName_es
+          : getDisplayValue(p.lastName || '', localeCode);
+    return [first, last].filter(Boolean).join(' ').trim() || '';
+  }, [appointment?.patientId, localeCode]);
 
-  const doctorFullName = useMemo(
-    () =>
-      appointment
-        ? `${appointment.doctorId?.firstName || ''} ${appointment.doctorId?.lastName || ''}`.trim()
-        : '',
-    [appointment],
+  const doctorFullName = useMemo(() => {
+    if (!appointment?.doctorId) return '';
+    const d = appointment.doctorId;
+    const first =
+      localeCode === 'ar' && (d.firstName_ar ?? '') !== ''
+        ? d.firstName_ar
+        : localeCode === 'es' && (d.firstName_es ?? '') !== ''
+          ? d.firstName_es
+          : getDisplayValue(d.firstName || '', localeCode);
+    const last =
+      localeCode === 'ar' && (d.lastName_ar ?? '') !== ''
+        ? d.lastName_ar
+        : localeCode === 'es' && (d.lastName_es ?? '') !== ''
+          ? d.lastName_es
+          : getDisplayValue(d.lastName || '', localeCode);
+    return [first, last].filter(Boolean).join(' ').trim() || '';
+  }, [appointment?.doctorId, localeCode]);
+
+  const statusLabelMap = useMemo(
+    () => ({
+      scheduled: t('appointments.scheduled'),
+      confirmed: t('appointments.confirmed'),
+      arrived: t('appointments.arrived'),
+      in_progress: t('appointments.inProgress'),
+      completed: t('appointments.completed'),
+      cancelled: t('appointments.cancelled'),
+      no_show: t('appointments.noShow'),
+    }),
+    [t],
   );
 
   const handleStatusChange = async (status) => {
@@ -272,7 +315,7 @@ export default function AppointmentDetailsPage() {
     <Layout>
       <PageHeader
         title={t('appointments.appointmentDetails')}
-        subtitle={`Appointment ID: ${appointment._id}`}
+        subtitle={`${t('appointments.appointmentIdLabel')}: ${appointment._id}`}
         notifications={[]}
         unreadCount={0}
         actionButtons={
@@ -303,7 +346,7 @@ export default function AppointmentDetailsPage() {
                     : 'default'
               }
             >
-              {appointment.status.replace(/_/g, ' ')}
+              {statusLabelMap[appointment.status] ?? appointment.status?.replace(/_/g, ' ')}
             </Tag>
           </>
         }
@@ -374,7 +417,7 @@ export default function AppointmentDetailsPage() {
                     }}
                   >
                     <XIcon className='icon icon-sm' />
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                 </>
               )}
@@ -419,8 +462,8 @@ export default function AppointmentDetailsPage() {
                 {appointment.patientId?.phone || '—'}
               </p>
               <p>
-                <span className='font-medium text-neutral-900'>Email:</span>{' '}
-                {appointment.patientId?.email || '—'}
+                <span className='font-medium text-neutral-900'>{t('common.email')}:</span>{' '}
+                {appointment.patientId?.email ? getEmailDisplayValue(appointment.patientId.email, localeCode) : '—'}
               </p>
             </div>
           </Card>
@@ -437,8 +480,8 @@ export default function AppointmentDetailsPage() {
                 {doctorFullName || '—'}
               </p>
               <p>
-                <span className='font-medium text-neutral-900'>Email:</span>{' '}
-                {appointment.doctorId?.email || '—'}
+                <span className='font-medium text-neutral-900'>{t('common.email')}:</span>{' '}
+                {appointment.doctorId?.email ? getEmailDisplayValue(appointment.doctorId.email, localeCode) : '—'}
               </p>
             </div>
           </Card>
@@ -465,7 +508,7 @@ export default function AppointmentDetailsPage() {
             <h3 className='text-sm font-semibold text-neutral-900 uppercase tracking-wide mb-1'>
               {t('appointments.duration')}
             </h3>
-            <p className='text-2xl font-bold text-neutral-900'>{appointment.duration || 30} mins</p>
+            <p className='text-2xl font-bold text-neutral-900'>{appointment.duration || 30} {t('appointments.mins')}</p>
           </Card>
         </div>
 
@@ -475,7 +518,9 @@ export default function AppointmentDetailsPage() {
               {t('appointments.reason')}
             </h3>
             <p className='text-neutral-700'>
-              {appointment.reason || t('appointments.reasonNotProvided')}
+              {appointment.reason && String(appointment.reason).includes(' - ')
+                ? getDiagnosisDisplayValue(String(appointment.reason), localeCode)
+                : (appointment.reason || t('appointments.reasonNotProvided'))}
             </p>
           </Card>
 
@@ -564,7 +609,7 @@ export default function AppointmentDetailsPage() {
                     {diagnosis && (
                       <p className='mb-2'>
                         <span className='font-semibold'>{t('appointments.diagnosisLabel')}:</span>{' '}
-                        {diagnosis}
+                        {getDiagnosisDisplayValue(String(diagnosis), localeCode)}
                       </p>
                     )}
                     <p className='whitespace-pre-wrap'>{consultationNotes}</p>

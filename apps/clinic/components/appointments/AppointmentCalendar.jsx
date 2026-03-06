@@ -20,7 +20,7 @@ export default function AppointmentCalendar({
 }) {
   const { t } = useI18n();
   const [availableSlots, setAvailableSlots] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(selectedDate || new Date());
   const [selectedSlot, setSelectedSlot] = useState(null);
 
@@ -29,6 +29,8 @@ export default function AppointmentCalendar({
   const defaultEndHour = 17;
   // Get slot duration from Queue Settings (Average Consultation Time), default to 30 minutes
   const slotDuration = settings?.queueSettings?.averageConsultationTime || 30; // minutes
+  // Skeleton count to match actual slots: (end - start) hours * 60 / duration
+  const skeletonSlotCount = Math.ceil(((defaultEndHour - defaultStartHour) * 60) / slotDuration);
 
   /** YYYY-MM-DD in local time — use for date input value/min so the calendar shows the correct day. */
   const formatDateLocal = useCallback((date) => {
@@ -533,10 +535,10 @@ export default function AppointmentCalendar({
               aria-busy='true'
               aria-label={t('appointments.loadingSlots')}
             >
-              {Array.from({ length: 24 }, (_, i) => (
+              {Array.from({ length: skeletonSlotCount }, (_, i) => (
                 <div
                   key={i}
-                  className='h-10 rounded-lg skeleton animate-pulse bg-neutral-200 dark:bg-neutral-700'
+                  className='min-h-[2.5rem] rounded-lg border border-neutral-200 dark:border-neutral-600 bg-neutral-200 dark:bg-neutral-700 animate-pulse'
                 />
               ))}
             </div>

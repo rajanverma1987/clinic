@@ -9,6 +9,7 @@ import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { getAvatarPlaceholder } from '@/lib/utils/avatars';
+import { getEmailDisplayValue } from '@/lib/utils/email-display';
 import { transliterateToArabic } from '@/lib/utils/transliterate-name';
 import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -433,7 +434,7 @@ export function ProfileTab({
                 {getDisplayValue(getRoleLabel(currentUser?.role), localeCode)}
               </p>
               <p className='mt-0.5 text-sm text-neutral-500 dark:text-neutral-500'>
-                {getDisplayValue(currentUser?.email || '', localeCode)}
+                {getEmailDisplayValue(currentUser?.email || '', localeCode)}
               </p>
               <div className='mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-3'>
                 <span
@@ -576,7 +577,7 @@ export function ProfileTab({
                   {t('auth.email')}
                 </dt>
                 <dd className='mt-0.5 text-sm text-neutral-900 dark:text-neutral-100 break-all'>
-                  {getDisplayValue(currentUser?.email || '', localeCode) || '—'}
+                  {getEmailDisplayValue(currentUser?.email || '', localeCode) || '—'}
                 </dd>
               </div>
               <div>

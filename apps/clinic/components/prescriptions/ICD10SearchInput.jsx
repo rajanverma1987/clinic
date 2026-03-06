@@ -2,11 +2,12 @@
 
 import { Input } from '@/components/ui/Input';
 import { useI18n } from '@/contexts/I18nContext';
+import { getDiagnosisDisplayName } from '@/lib/i18n/inventory-name-dictionary';
 import { useEffect, useRef, useState } from 'react';
 
 /**
  * ICD-10 search/autocomplete for primary diagnosis (Phase 3.2).
- * Uses data/icd10-common.json; can be extended with API later.
+ * Uses data/icd10-common.json; titles shown in locale (ar/es) via getDiagnosisDisplayName.
  */
 export function ICD10SearchInput({
   value = '',
@@ -17,13 +18,29 @@ export function ICD10SearchInput({
   className = '',
   codes = [],
 }) {
-  const { t } = useI18n();
-  const [query, setQuery] = useState(displayValue || value);
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
+  const [query, setQuery] = useState('');
   const [filtered, setFiltered] = useState([]);
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+
+  function displayTextForItem(item) {
+    const title = item?.title || '';
+    const translatedTitle = getDiagnosisDisplayName(title, localeCode);
+    return item?.code ? `${item.code} - ${translatedTitle}`.trim() : translatedTitle;
+  }
+
+  function displayTextForValue(fullValue) {
+    if (!fullValue || typeof fullValue !== 'string') return fullValue || '';
+    const idx = fullValue.indexOf(' - ');
+    if (idx === -1) return getDiagnosisDisplayName(fullValue.trim(), localeCode);
+    const code = fullValue.slice(0, idx).trim();
+    const titlePart = fullValue.slice(idx + 3).trim();
+    return code ? `${code} - ${getDiagnosisDisplayName(titlePart, localeCode)}` : getDiagnosisDisplayName(titlePart, localeCode);
+  }
 
   useEffect(() => {
     if (!query.trim()) {
@@ -45,12 +62,12 @@ export function ICD10SearchInput({
   }, [query, codes]);
 
   useEffect(() => {
-    if (displayValue) setQuery(displayValue);
-    else if (value) setQuery(value);
-  }, [value, displayValue]);
+    if (displayValue) setQuery(displayTextForValue(displayValue));
+    else if (value) setQuery(displayTextForValue(value));
+  }, [value, displayValue, localeCode]);
 
   const handleSelect = (item) => {
-    const text = item.code ? `${item.code} - ${item.title || ''}`.trim() : item.title || '';
+    const text = displayTextForItem(item);
     setQuery(text);
     onChange(item.code || text);
     onSelect && onSelect(item);
@@ -118,7 +135,7 @@ export function ICD10SearchInput({
               <span className='font-semibold text-neutral-900 dark:text-neutral-100'>{item.code}</span>
               {item.title && (
                 <span className='ml-2 text-neutral-600 dark:text-neutral-400'>
-                  {item.title}
+                  {getDiagnosisDisplayName(item.title, localeCode)}
                 </span>
               )}
             </li>

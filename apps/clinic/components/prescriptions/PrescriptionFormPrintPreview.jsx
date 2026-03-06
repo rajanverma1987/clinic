@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
 import { loadJsPDF } from '@/lib/utils/dynamic-imports';
 import { logger } from '@/lib/utils/logger.js';
 import { useEffect, useState } from 'react';
@@ -21,6 +22,7 @@ export function PrescriptionFormPrintPreview({
 }) {
   const { user: currentUser } = useAuth();
   const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const [loading, setLoading] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState('');
@@ -148,7 +150,9 @@ export function PrescriptionFormPrintPreview({
         notes:
           clinicalNote?.soap?.plan ||
           (formData.additionalInstructions ? formData.additionalInstructions : undefined),
-        diagnosis: formData.diagnosis ? formData.diagnosis.split(',').map((d) => d.trim()) : [],
+        diagnosis: formData.diagnosis
+          ? formData.diagnosis.split(/[,;]+/).map((d) => getDiagnosisDisplayValue(d.trim(), localeCode)).filter(Boolean)
+          : [],
         procedures: items
           .filter((i) => i.itemType === 'procedure')
           .map((i) => i.procedureName || ''),

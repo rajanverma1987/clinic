@@ -10,7 +10,9 @@ import { Tabs, getTabPanelId, getTabPanelLabelledBy } from '@/components/ui/Tabs
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { getPatientDisplayName, getPatientDisplayNameParts } from '@/lib/utils/patient-display-name';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -22,7 +24,9 @@ export default function DoctorPatientRecordsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const localeCode = (settingsLocale || locale || 'en').toString().slice(0, 2);
   const patientId = params.id;
   const tabFromUrl = searchParams.get('tab');
   const [loading, setLoading] = useState(true);
@@ -192,8 +196,8 @@ export default function DoctorPatientRecordsPage() {
     <Layout>
       <div style={{ padding: '0 10px' }} className='space-y-6'>
         <PageHeader
-          title={`Patient: ${patient.firstName} ${patient.lastName}`}
-          subtitle={`Patient ID: ${patient.patientId || patient._id.slice(-8)}`}
+          title={getPatientDisplayName(patient, localeCode, t)}
+          subtitle={`${t('patients.patientId')}: ${patient.patientId || patient._id?.slice(-8) || ''}`}
         />
 
         {/* Demographics section */}
@@ -207,12 +211,12 @@ export default function DoctorPatientRecordsPage() {
                 <div className='flex items-center gap-4'>
                   <div className='w-20 h-20 bg-primary-100 rounded-lg flex items-center justify-center'>
                     <span className='text-3xl font-bold text-primary-600'>
-                      {patient.firstName?.charAt(0) || 'P'}
+                      {(getPatientDisplayNameParts(patient, localeCode).first || '').charAt(0) || 'P'}
                     </span>
                   </div>
                   <div>
                     <h2 className='text-2xl font-bold text-neutral-900'>
-                      {patient.firstName} {patient.lastName}
+                      {getPatientDisplayName(patient, localeCode, t)}
                     </h2>
                     <p className='text-neutral-600'>
                       {patient.dateOfBirth

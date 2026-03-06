@@ -4,12 +4,16 @@ import '@/app/prescriptions/styles/prescription-form.css';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client.js';
+import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { useEffect, useState } from 'react';
 import { logger } from '@/lib/utils/logger.js';
 
 export function PatientDetailsPanel({ patientId }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const localeCode = (settingsLocale || locale || 'en').toString().slice(0, 2);
   const [patient, setPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
@@ -155,7 +159,7 @@ export function PatientDetailsPanel({ patientId }) {
         <div className='patient-details-content'>
           <div>
             <h3 className='text-base font-bold text-neutral-900 dark:text-neutral-100 mb-4'>
-              {patient.firstName} {patient.lastName}
+              {getPatientDisplayName(patient, localeCode, t)}
             </h3>
             <div className='space-y-2'>
               <div className='patient-details-field'>

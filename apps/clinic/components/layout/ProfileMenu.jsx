@@ -16,6 +16,8 @@ import {
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -52,9 +54,34 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
     [t],
   );
 
-  // Localized first/last name by current locale (Arabic, Spanish, or default)
-  const localizedFirst = user && (locale === 'ar' && user.firstName_ar ? user.firstName_ar : locale === 'es' && user.firstName_es ? user.firstName_es : user.firstName);
-  const localizedLast = user && (locale === 'ar' && user.lastName_ar ? user.lastName_ar : locale === 'es' && user.lastName_es ? user.lastName_es : user.lastName);
+  const localeCode = (locale || 'en').toString().slice(0, 2);
+  // Same as item name: transliterate to Arabic, translate to Spanish when no stored localized name
+  const getDisplayValue = useCallback(
+    (str, code) => {
+      if (str == null || String(str).trim() === '') return '';
+      const s = String(str).trim();
+      if (code === 'ar') return transliterateToArabic(s) || s;
+      if (code === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+      return s;
+    },
+    [],
+  );
+
+  // Localized first/last name: use stored _ar/_es when present, else translate English name (like item names)
+  const localizedFirst =
+    user &&
+    (locale === 'ar' && user.firstName_ar
+      ? user.firstName_ar
+      : locale === 'es' && user.firstName_es
+        ? user.firstName_es
+        : getDisplayValue(user.firstName || '', localeCode));
+  const localizedLast =
+    user &&
+    (locale === 'ar' && user.lastName_ar
+      ? user.lastName_ar
+      : locale === 'es' && user.lastName_es
+        ? user.lastName_es
+        : getDisplayValue(user.lastName || '', localeCode));
 
   // User display name: translated prefix for doctors + localized name
   const userDisplayName = user

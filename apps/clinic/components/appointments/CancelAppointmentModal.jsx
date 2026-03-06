@@ -107,7 +107,7 @@ export function CancelAppointmentModal({ isOpen, onClose, onConfirm, patientName
         <div className='ConfirmationModal-content'>
           <p className='ConfirmationModal-message mb-4'>{t('appointments.cancelReasonPrompt')}</p>
 
-          {/* Quick-pick reason buttons */}
+          {/* Quick-pick reason buttons – ensure option text is visible in light and dark mode */}
           <div className='flex flex-wrap gap-2 mb-3'>
             {COMMON_REASONS.map((r) => (
               <Button
@@ -119,7 +119,7 @@ export function CancelAppointmentModal({ isOpen, onClose, onConfirm, patientName
                 className={
                   reason === r
                     ? ''
-                    : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-600 hover:border-status-error hover:text-status-error'
+                    : '!bg-white dark:!bg-neutral-800 !text-neutral-800 dark:!text-neutral-200 border border-neutral-200 dark:border-neutral-600 hover:border-status-error hover:!text-status-error dark:hover:!text-status-error'
                 }
               >
                 {r}

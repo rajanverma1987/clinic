@@ -30,20 +30,69 @@ import {
   YEARLY_SAVE,
 } from '@/lib/constants/subscription-spec';
 import { logger } from '@/lib/utils/logger';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+/** Same as item name: transliterate to Arabic, translate to Spanish (word-by-word) for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') {
+    const out = s
+      .split(/\s+/)
+      .map((w) => translateToSpanish(w) || w)
+      .join(' ')
+      .trim();
+    return out || s;
+  }
+  return s;
+}
+
+/** Quick Feature Comparison table cell value → i18n key for full ar/es translation */
+const COMPARISON_CELL_KEYS = {
+  'Unlimited': 'subscriptionSpec.ctUnlimited',
+  '3 total': 'subscriptionSpec.ct3Total',
+  '15 total': 'subscriptionSpec.ct15Total',
+  '10 templates': 'subscriptionSpec.ct10Templates',
+  'Unlimited templates': 'subscriptionSpec.ctUnlimitedTemplates',
+  '✓': 'subscriptionSpec.ctCheck',
+  '✓ + Drug alerts': 'subscriptionSpec.ctCheckDrugAlerts',
+  '✓ + Advanced': 'subscriptionSpec.ctCheckAdvanced',
+  '—': 'subscriptionSpec.ctDash',
+  '✓ + In-house lab': 'subscriptionSpec.ctCheckInHouseLab',
+  'Basic': 'subscriptionSpec.ctBasic',
+  'Advanced + Tax': 'subscriptionSpec.ctAdvancedTax',
+  'Enterprise + Claims': 'subscriptionSpec.ctEnterpriseClaims',
+  'Medicine tracking': 'subscriptionSpec.ctMedicineTracking',
+  'Full pharmacy': 'subscriptionSpec.ctFullPharmacy',
+  '200 / month': 'subscriptionSpec.ct200Month',
+  '5 GB': 'subscriptionSpec.ct5GB',
+  '100 GB': 'subscriptionSpec.ct100GB',
+  'Up to 2': 'subscriptionSpec.ctUpTo2',
+  'Advanced + Export': 'subscriptionSpec.ctAdvancedExport',
+  'Custom builder': 'subscriptionSpec.ctCustomBuilder',
+  'Daily': 'subscriptionSpec.ctDaily',
+  'Hourly': 'subscriptionSpec.ctHourly',
+  'Email 24 hr': 'subscriptionSpec.ctEmail24hr',
+  'Priority + Phone': 'subscriptionSpec.ctPriorityPhone',
+  '24/7 Dedicated': 'subscriptionSpec.ct24_7Dedicated',
+};
 
 export default function SubscriptionPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { open: openConfirm } = useConfirmation();
   const { refreshFeatures } = useFeatures();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   /** Subscription pricing is USD; payment method is PayPal only. */
   const displayCurrency = 'USD';
-  const displayLocale = 'en-US';
+  const displayLocale = localeCode === 'ar' ? 'ar-SA' : localeCode === 'es' ? 'es-ES' : 'en-US';
   const { handleError, safeTranslate } = useErrorHandler({ t, showToast: true });
   const [subscription, setSubscription] = useState(null);
   const [availablePlans, setAvailablePlans] = useState([]);
@@ -193,7 +242,11 @@ export default function SubscriptionPage() {
       : t('subscription.confirmUpgradeActionSubscribe');
     const msg = t('subscription.confirmUpgrade')
       .replace('{{action}}', action)
-      .replace('{{planName}}', plan.name);
+      .replace(
+        '{{planName}}',
+        t(`subscriptionSpec.planName${PLAN_DISPLAY_NAMES[plan.name] || plan.name}`) ||
+          getDisplayValue(plan.name, localeCode),
+      );
 
     openConfirm({
       title: t('subscription.confirmUpgradeTitle'),
@@ -349,12 +402,12 @@ export default function SubscriptionPage() {
 
   /** Format USD cents → "$24.99" */
   const formatCurrency = (amount) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+    new Intl.NumberFormat(displayLocale, { style: 'currency', currency: 'USD' }).format(
       (amount || 0) / 100,
     );
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t('common.na') || 'N/A';
     try {
       return new Date(dateString).toLocaleDateString(undefined, {
         year: 'numeric',
@@ -362,7 +415,7 @@ export default function SubscriptionPage() {
         day: 'numeric',
       });
     } catch {
-      return 'Invalid Date';
+      return getDisplayValue('Invalid Date', localeCode);
     }
   };
 
@@ -582,8 +635,11 @@ export default function SubscriptionPage() {
                   <span className='sub-detail-label'>{t('subscription.status')}</span>
                   <Tag variant={getStatusColor(subscription.status)}>
                     {subscription.status
-                      ? subscription.status.charAt(0).toUpperCase() +
-                        subscription.status.slice(1).toLowerCase()
+                      ? getDisplayValue(
+                          subscription.status.charAt(0).toUpperCase() +
+                            subscription.status.slice(1).toLowerCase(),
+                          localeCode,
+                        )
                       : '—'}
                   </Tag>
                 </div>
@@ -763,7 +819,6 @@ export default function SubscriptionPage() {
                 const cardPrice = fixedPriceCents ?? plan.price;
                 const cardCurrency = fixedPriceCents != null ? 'USD' : plan.currency || 'USD';
                 const isPaid = (Number(cardPrice) || 0) > 0;
-                // CARD_FEATURES_BY_PLAN stores plain text strings — pass directly, do NOT translate
                 const cardFeatures = (
                   CARD_FEATURES_BY_PLAN[canonicalName] ||
                   CARD_FEATURES_BY_PLAN[plan.name] ||
@@ -771,6 +826,9 @@ export default function SubscriptionPage() {
                 ).length
                   ? CARD_FEATURES_BY_PLAN[canonicalName] || CARD_FEATURES_BY_PLAN[plan.name]
                   : dedupeFeatures(plan.features);
+                const translatedCardFeatures = (cardFeatures || []).map((f) =>
+                  getDisplayValue(f, localeCode),
+                );
                 return (
                   <SubscriptionCard
                     key={plan._id || plan.name}
@@ -779,7 +837,7 @@ export default function SubscriptionPage() {
                     price={cardPrice}
                     currency={cardCurrency}
                     billingCycle={plan.billingCycle}
-                    features={cardFeatures}
+                    features={translatedCardFeatures}
                     maxUsers={plan.maxUsers}
                     maxPatients={plan.maxPatients}
                     maxStorageGB={plan.maxStorageGB}
@@ -817,7 +875,13 @@ export default function SubscriptionPage() {
               onClose={() => !upgrading && setPaymentModalPlan(null)}
               title={
                 paymentModalPlan
-                  ? `${t('subscription.subscribe')} – ${paymentModalPlan.name}`
+                  ? `${t('subscription.subscribe')} – ${
+                      t(
+                        `subscriptionSpec.planName${
+                          PLAN_DISPLAY_NAMES[paymentModalPlan.name] || paymentModalPlan.name
+                        }`,
+                      ) || getDisplayValue(paymentModalPlan.name, localeCode)
+                    }`
                   : t('subscription.choosePlan')
               }
               size='sm'
@@ -882,7 +946,10 @@ export default function SubscriptionPage() {
                     <tr>
                       <th>{t('subscriptionSpec.feature')}</th>
                       {COMPARISON_TABLE_PLAN_SLUGS.map((slug) => (
-                        <th key={slug}>{slug}</th>
+                        <th key={slug}>
+                          {t(`subscriptionSpec.planName${PLAN_DISPLAY_NAMES[slug] || slug}`) ||
+                            getDisplayValue(slug, localeCode)}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -890,9 +957,14 @@ export default function SubscriptionPage() {
                     {COMPARISON_TABLE_ROWS.map((row, idx) => (
                       <tr key={idx}>
                         <td>{t(row[0])}</td>
-                        {row.slice(1).map((cell, cidx) => (
-                          <td key={cidx}>{cell}</td>
-                        ))}
+                        {row.slice(1).map((cell, cidx) => {
+                          const key = COMPARISON_CELL_KEYS[cell];
+                          return (
+                            <td key={cidx}>
+                              {key ? t(key) : (getDisplayValue(cell, localeCode) || cell)}
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>
@@ -921,7 +993,10 @@ export default function SubscriptionPage() {
                     .filter(Boolean) || [];
                 return (
                   <div key={planSlug} className='sub-which-plan-card'>
-                    <div className='sub-which-plan-name'>{planSlug}</div>
+                    <div className='sub-which-plan-name'>
+                      {t(`subscriptionSpec.planName${PLAN_DISPLAY_NAMES[planSlug] || planSlug}`) ||
+                        getDisplayValue(planSlug, localeCode)}
+                    </div>
                     <p className='sub-which-plan-title'>{t(titleKey)}</p>
                     <ul className='sub-which-plan-bullets'>
                       {bullets.map((b, i) => (
@@ -966,7 +1041,10 @@ export default function SubscriptionPage() {
             >
               {OUTCOME_POSITIONING.map(({ plan, outcomeKey }) => (
                 <div key={plan} className='sub-outcome-card'>
-                  <div className='sub-outcome-plan'>{plan}</div>
+                  <div className='sub-outcome-plan'>
+                    {t(`subscriptionSpec.planName${PLAN_DISPLAY_NAMES[plan] || plan}`) ||
+                      getDisplayValue(plan, localeCode)}
+                  </div>
                   <p className='sub-outcome-text'>{t(outcomeKey)}</p>
                 </div>
               ))}

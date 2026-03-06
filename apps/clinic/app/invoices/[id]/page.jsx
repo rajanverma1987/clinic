@@ -11,6 +11,8 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { getEmailDisplayValue } from '@/lib/utils/email-display';
+import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -22,6 +24,7 @@ export default function InvoiceDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useI18n();
   const { currency, locale } = useSettings();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
@@ -168,7 +171,7 @@ export default function InvoiceDetailPage() {
                       {t('patients.name')}
                     </label>
                     <p>
-                      {patient.firstName} {patient.lastName}
+                      {getPatientDisplayName(patient, localeCode, t)}
                     </p>
                   </div>
                   <div>
@@ -181,7 +184,7 @@ export default function InvoiceDetailPage() {
                     <label className='text-sm font-medium text-neutral-500'>
                       {t('patients.email')}
                     </label>
-                    <p>{patient.email || 'N/A'}</p>
+                    <p>{patient.email ? getEmailDisplayValue(patient.email, localeCode) : 'N/A'}</p>
                   </div>
                 </div>
               </div>

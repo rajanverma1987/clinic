@@ -11,6 +11,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { isManagerPathLimitedWrite } from '@/lib/constants/route-security';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
+import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { logger } from '@/lib/utils/logger';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -19,8 +20,9 @@ export default function NewInvoicePage() {
   const router = useRouter();
   const pathname = usePathname();
   const { user: currentUser, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale: i18nLocale } = useI18n();
   const { currency, locale } = useSettings();
+  const localeCode = (locale || i18nLocale || 'en').toString().slice(0, 2);
   const managerLimitedWrite =
     isManagerPathLimitedWrite(pathname) && currentUser?.role === 'manager';
   const [patients, setPatients] = useState([]);
@@ -420,7 +422,7 @@ export default function NewInvoicePage() {
                   </option>
                   {patients.map((patient) => (
                     <option key={patient._id} value={patient._id}>
-                      {patient.patientId} - {patient.firstName} {patient.lastName}
+                      {patient.patientId} - {getPatientDisplayName(patient, localeCode, t)}
                     </option>
                   ))}
                 </select>

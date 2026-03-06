@@ -1,6 +1,11 @@
 'use client';
 
+import { useI18n } from '@/contexts/I18nContext';
+import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
+
 export function PrescriptionPrintView({ prescriptionData }) {
+  const { locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -105,7 +110,7 @@ export function PrescriptionPrintView({ prescriptionData }) {
       {prescriptionData.diagnosis && (
         <div className='mb-6'>
           <h2 className='text-sm font-semibold text-gray-700 uppercase mb-2'>Diagnosis</h2>
-          <p className='text-sm'>{prescriptionData.diagnosis}</p>
+          <p className='text-sm'>{getDiagnosisDisplayValue(prescriptionData.diagnosis, localeCode)}</p>
         </div>
       )}
 

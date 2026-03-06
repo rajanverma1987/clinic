@@ -11,6 +11,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { formatLocale } from '@/lib/i18n';
 import { useSettings } from '@/hooks/useSettings';
 import { useUpdatesAvailable } from '@/hooks/useUpdatesAvailable';
 import { apiClient } from '@/lib/api/client';
@@ -1445,7 +1446,9 @@ export default function DashboardPage() {
               {!isDoctor && stats?.lastUpdated && (
                 <div className='mt-2 text-center text-sm text-neutral-500 dark:text-neutral-400'>
                   {t('dashboard.lastUpdated')}:{' '}
-                  {new Date(stats.lastUpdated).toLocaleString()}
+                  {new Date(stats.lastUpdated).toLocaleString(
+                    formatLocale((locale || 'en').toString().slice(0, 2)),
+                  )}
                 </div>
               )}
 

@@ -6,6 +6,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
 import { logger } from '@/lib/utils/logger';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -15,7 +16,8 @@ export default function PrescriptionPrintPage() {
   const params = useParams();
   const prescriptionId = params?.id;
   const { user: currentUser, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [printHtml, setPrintHtml] = useState('');
@@ -179,7 +181,7 @@ export default function PrescriptionPrintPage() {
           : [],
         notes: clinicalNote?.soap?.plan || prescription.additionalInstructions || undefined,
         diagnosis: prescription.diagnosis
-          ? prescription.diagnosis.split(',').map((d) => d.trim())
+          ? prescription.diagnosis.split(/[,;]+/).map((d) => getDiagnosisDisplayValue(d.trim(), localeCode)).filter(Boolean)
           : [],
         procedures:
           prescription.items

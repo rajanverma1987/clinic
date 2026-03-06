@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { usePathname, useRouter } from 'next/navigation';
@@ -19,7 +20,15 @@ export default function NewInventoryItemPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const localeCode = (settingsLocale || locale || 'en').toString().slice(0, 2);
+  const unitPlaceholder =
+    localeCode === 'ar'
+      ? 'مثال: علبة، زجاجة، عبوة'
+      : localeCode === 'es'
+        ? 'ej., caja, frasco, paquete'
+        : t('inventory.unitPlaceholder');
 
   useEffect(() => {
     if (!authLoading && user?.role === 'manager' && isManagerPathReadOnly(pathname)) {
@@ -188,7 +197,7 @@ export default function NewInventoryItemPage() {
                   value={formData.unit}
                   onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                   required
-                  placeholder={t('inventory.unitPlaceholder')}
+                  placeholder={unitPlaceholder}
                 />
               </div>
 
@@ -267,11 +276,11 @@ export default function NewInventoryItemPage() {
 
               <div className='md:col-span-2'>
                 <Textarea
-                  label={t('invoices.description')}
+                  label={t('inventory.description')}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  placeholder={t('invoices.description')}
+                  placeholder={t('inventory.descriptionPlaceholder')}
                 />
               </div>
             </div>

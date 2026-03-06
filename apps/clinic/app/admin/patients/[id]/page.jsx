@@ -10,7 +10,9 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -165,7 +167,7 @@ export default function AdminPatientDetailPage() {
   return (
     <Layout
       title={t('admin.patientDetailsTitle')}
-      subtitle={`${patient.firstName} ${patient.lastName}`}
+      subtitle={getPatientDisplayName(patient, localeCode, t)}
       actionButton={
         <div className='flex items-center gap-1'>
           <Button

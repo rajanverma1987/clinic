@@ -494,6 +494,8 @@ export default function AppointmentsPage() {
       cancelled: t('appointments.cancelled'),
       arrived: t('appointments.arrived'),
       in_progress: t('appointments.inProgress'),
+      in_queue: t('appointments.inQueue'),
+      no_show: t('appointments.noShow'),
     };
     return statusMap[status] || status;
   };

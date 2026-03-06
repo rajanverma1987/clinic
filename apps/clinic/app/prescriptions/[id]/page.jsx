@@ -10,6 +10,7 @@ import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, useRouter } from 'next/navigation';
@@ -283,7 +284,7 @@ export default function PrescriptionDetailPage() {
                 {prescription.diagnosis && (
                   <div>
                     <label className='text-sm font-medium text-neutral-500'>{t('prescriptions.diagnosisLabel')}</label>
-                    <p className='text-neutral-900 mt-1'>{prescription.diagnosis}</p>
+                    <p className='text-neutral-900 mt-1'>{getDiagnosisDisplayValue(prescription.diagnosis, localeCode)}</p>
                   </div>
                 )}
 

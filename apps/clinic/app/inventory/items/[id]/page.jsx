@@ -18,8 +18,10 @@ import { apiClient } from '@/lib/api/client';
 import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function InventoryItemDetailPage() {
   const router = useRouter();
@@ -30,6 +32,19 @@ export default function InventoryItemDetailPage() {
   const localeCode = (i18nLocale || 'en').slice(0, 2);
   const managerReadOnly = isManagerPathReadOnly(pathname);
   const { currency, locale } = useSettings();
+  const settingsLocaleCode = (locale || 'en').toString().slice(0, 2);
+  const effectiveLocale = settingsLocaleCode || localeCode;
+
+  /** Item name by locale: name_ar/name_es when set, else transliterate/translate like item names elsewhere */
+  const getItemDisplayName = useCallback(
+    (name, nameAr, nameEs) => {
+      if (effectiveLocale === 'ar') return (nameAr && String(nameAr).trim()) || (name ? transliterateToArabic(String(name).trim()) || name : '');
+      if (effectiveLocale === 'es') return (nameEs && String(nameEs).trim()) || (name ? String(name).trim().split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || name : '');
+      return (name && String(name).trim()) || '';
+    },
+    [effectiveLocale],
+  );
+
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -296,7 +311,7 @@ export default function InventoryItemDetailPage() {
             <div className='content-grid-2 content-grid-gap-6'>
               <Input
                 label={t('inventory.itemName')}
-                value={isEditing ? formData.name || '' : item.name}
+                value={isEditing ? formData.name || '' : getItemDisplayName(item.name, item.name_ar, item.name_es) || item.name || ''}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 disabled={!isEditing}
                 required
@@ -413,7 +428,7 @@ export default function InventoryItemDetailPage() {
                       : ''
                     : item.costPrice
                       ? formatCurrency(item.costPrice)
-                      : 'N/A'
+                      : t('common.na')
                 }
                 onChange={(e) =>
                   setFormData({
@@ -489,7 +504,7 @@ export default function InventoryItemDetailPage() {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               disabled={!isEditing}
               rows={4}
-              placeholder={t('inventory.description')}
+              placeholder={t('inventory.descriptionPlaceholder')}
             />
 
             {isEditing && (
@@ -552,8 +567,8 @@ export default function InventoryItemDetailPage() {
                       </td>
                       <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
                         {batch.expiryDate
-                          ? new Date(batch.expiryDate).toLocaleDateString()
-                          : 'N/A'}
+                          ? new Date(batch.expiryDate).toLocaleDateString(effectiveLocale === 'ar' ? 'ar-SA' : effectiveLocale === 'es' ? 'es-ES' : undefined)
+                          : t('common.na')}
                       </td>
                       <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
                         {batch.purchaseDate

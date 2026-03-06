@@ -1,6 +1,8 @@
 'use client';
 
 import { useI18n } from '@/contexts/I18nContext.jsx';
+import { useSettings } from '@/hooks/useSettings';
+import { getPatientDisplayName, getPatientDisplayNameParts } from '@/lib/utils/patient-display-name';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from './Button.jsx';
 import { Input } from './Input.jsx';
@@ -14,7 +16,9 @@ export function PatientSelector({
   required = false,
   placeholder,
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { locale: settingsLocale } = useSettings();
+  const localeCode = (settingsLocale || locale || 'en').toString().slice(0, 2);
   const labelText = label ?? t('patientSelector.selectPatient');
   const placeholderText = placeholder ?? t('patientSelector.searchPlaceholder');
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,7 +26,13 @@ export function PatientSelector({
   const [filteredPatients, setFilteredPatients] = useState(patients);
   const containerRef = useRef(null);
 
-  const selectedPatient = patients.find((p) => p._id === selectedPatientId);
+  const selectedPatient = patients.find(
+    (p) =>
+      p._id === selectedPatientId ||
+      p.id === selectedPatientId ||
+      String(p._id) === String(selectedPatientId) ||
+      String(p.id) === String(selectedPatientId),
+  );
 
   useEffect(() => {
     if (!searchTerm) {
@@ -79,15 +89,17 @@ export function PatientSelector({
               {/* Patient Avatar */}
               <div className='w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0'>
                 <span className='text-primary-600 font-semibold text-sm'>
-                  {selectedPatient.firstName[0]}
-                  {selectedPatient.lastName[0]}
+                  {(() => {
+                    const { first, last } = getPatientDisplayNameParts(selectedPatient, localeCode);
+                    return `${(first || '').charAt(0)}${(last || '').charAt(0)}`.toUpperCase() || 'P';
+                  })()}
                 </span>
               </div>
 
               {/* Patient Info */}
               <div className='flex-1 min-w-0'>
                 <div className='font-medium text-neutral-900 truncate'>
-                  {selectedPatient.firstName} {selectedPatient.lastName}
+                  {getPatientDisplayName(selectedPatient, localeCode, t)}
                 </div>
                 <div className='flex items-center gap-3 text-sm text-neutral-500'>
                   <span className='font-mono'>{selectedPatient.patientId}</span>
@@ -225,15 +237,17 @@ export function PatientSelector({
                       {/* Patient Avatar */}
                       <div className='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0'>
                         <span className='text-gray-600 font-semibold text-sm'>
-                          {patient.firstName[0]}
-                          {patient.lastName[0]}
+                          {(() => {
+                            const { first, last } = getPatientDisplayNameParts(patient, localeCode);
+                            return `${(first || '').charAt(0)}${(last || '').charAt(0)}`.toUpperCase() || 'P';
+                          })()}
                         </span>
                       </div>
 
                       {/* Patient Info */}
                       <div className='flex-1 min-w-0'>
                         <div className='font-medium text-neutral-900'>
-                          {patient.firstName} {patient.lastName}
+                          {getPatientDisplayName(patient, localeCode, t)}
                         </div>
                         <div className='flex items-center gap-2 text-sm text-neutral-500'>
                           <span className='font-mono bg-gray-100 px-2 py-0.5 rounded'>

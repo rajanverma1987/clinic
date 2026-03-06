@@ -7,6 +7,8 @@ import { UserIcon } from '@/components/icons/UserIcon';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
+import { getEmailDisplayValue } from '@/lib/utils/email-display';
+import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { useRouter } from 'next/navigation';
 
 /**
@@ -15,16 +17,13 @@ import { useRouter } from 'next/navigation';
  */
 export function PatientCard({ patient, isDoctor }) {
   const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const router = useRouter();
   const dateLocale =
-    (locale || 'en').slice(0, 2) === 'ar'
-      ? 'ar'
-      : (locale || 'en').startsWith('es')
-        ? 'es'
-        : undefined;
+    localeCode === 'ar' ? 'ar' : localeCode === 'es' ? 'es' : undefined;
   const na = t('common.na');
 
-  const name = `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || na;
+  const name = getPatientDisplayName(patient, localeCode, t) || na;
   const dob = patient.dateOfBirth
     ? new Date(patient.dateOfBirth).toLocaleDateString(dateLocale, {
         year: 'numeric',
@@ -136,7 +135,7 @@ export function PatientCard({ patient, isDoctor }) {
           </span>
           <span className='text-neutral-500 dark:text-neutral-400'>{t('patients.email')}:</span>
           <span className='truncate text-neutral-700 dark:text-neutral-300'>
-            {patient.email || na}
+            {patient.email ? getEmailDisplayValue(patient.email, localeCode) : na}
           </span>
           <span className='text-neutral-500 dark:text-neutral-400'>
             {t('patients.dateOfBirth')}:

@@ -156,7 +156,6 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
                   variant='ghost'
                   size='sm'
                   role='menuitem'
-                  size='auto'
                   fullWidth
                   align='start'
                   onClick={() => {

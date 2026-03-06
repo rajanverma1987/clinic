@@ -52,7 +52,9 @@ export function TrendsSection({ tenantId, trends: trendsProp, children, classNam
                   {revenue.trendPercent}%
                 </span>
                 <span className='text-body-sm text-neutral-500 ml-2'>
-                  vs {revenue.period === 'day' ? 'yesterday' : revenue.period}
+                  {revenue.period === 'day'
+                    ? t('dashboard.vsYesterday')
+                    : t(`dashboard.vs${(revenue.period || 'day').charAt(0).toUpperCase()}${(revenue.period || '').slice(1)}`)}
                 </span>
               </div>
             )}
@@ -72,10 +74,12 @@ export function TrendsSection({ tenantId, trends: trendsProp, children, classNam
             {loading && <div className='skeleton skeleton-text w-20 h-8' />}
             {!loading && patientFlow && (
               <div>
-                <span className='text-lg font-semibold'>{patientFlow.newPatients} new</span>
+                <span className='text-lg font-semibold'>
+                  {patientFlow.newPatients} {t('dashboard.newLabel')}
+                </span>
                 <span className='text-body-sm text-neutral-500 ml-2'>
                   ({patientFlow.trendPercent >= 0 ? '+' : ''}
-                  {patientFlow.trendPercent}% vs prev {patientFlow.period})
+                  {patientFlow.trendPercent}% {t(`dashboard.vsPrev${(patientFlow.period || 'day').charAt(0).toUpperCase()}${(patientFlow.period || '').slice(1)}`)})
                 </span>
               </div>
             )}
