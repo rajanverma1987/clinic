@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/contexts/I18nContext';
 import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
 
@@ -23,11 +24,13 @@ export function PhoneInput({
   onCountryCodeChange,
   label,
   error,
-  placeholder = '00000 00000',
+  placeholder,
   className = '',
   disabled = false,
   required = false,
 }) {
+  const { t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t('common.placeholderPhone');
   const [showDropdown, setShowDropdown] = useState(false);
 
   const handlePhoneChange = (e) => {
@@ -120,7 +123,7 @@ export function PhoneInput({
           type='tel'
           value={value}
           onChange={handlePhoneChange}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           disabled={disabled}
           required={required}
           className='flex-1 px-4 py-2.5 border-none focus:outline-none bg-transparent text-gray-900 placeholder-gray-400'

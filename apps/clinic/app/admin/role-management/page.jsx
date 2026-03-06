@@ -217,7 +217,7 @@ export default function AdminRoleManagementPage() {
                         type="text"
                         value={newRoleName}
                         onChange={(e) => setNewRoleName(e.target.value)}
-                        placeholder="e.g. Regional Billing Admin"
+                        placeholder={t('admin.placeholderRoleName')}
                         className="input w-full"
                       />
                     </div>
@@ -228,7 +228,7 @@ export default function AdminRoleManagementPage() {
                       <textarea
                         value={newRoleDesc}
                         onChange={(e) => setNewRoleDesc(e.target.value)}
-                        placeholder="Describe the role's responsibilities…"
+                        placeholder={t('admin.placeholderRoleDescription')}
                         rows={2}
                         className="input w-full resize-none"
                       />

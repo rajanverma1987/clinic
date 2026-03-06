@@ -290,7 +290,7 @@ export default function AdminActivityLogsPage() {
                     <textarea
                       value={overrideJustification}
                       onChange={(e) => setOverrideJustification(e.target.value)}
-                      placeholder='Describe the override, the affected clinic/user, and the business reason…'
+                      placeholder={t('admin.placeholderActivityOverride')}
                       rows={3}
                       className='input w-full resize-none'
                     />

@@ -25,12 +25,18 @@ function getNestedKeys(obj, prefix = '') {
 function extractTKeysFromFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const keys = new Set();
-  const regex = /t\s*\(\s*['"]([a-zA-Z0-9_.]+)['"]/g;
-  let m;
-  while ((m = regex.exec(content)) !== null) {
-    const k = m[1];
-    if (k.includes('.') && k.length >= 4 && !/^[a-z]+$/.test(k)) {
-      keys.add(k);
+  const patterns = [
+    /t\s*\(\s*['"]([a-zA-Z0-9_.]+)['"]/g,
+    /labelKey\s*:\s*['"]([a-zA-Z0-9_.]+)['"]/g,
+    /descKey\s*:\s*['"]([a-zA-Z0-9_.]+)['"]/g,
+  ];
+  for (const regex of patterns) {
+    let m;
+    while ((m = regex.exec(content)) !== null) {
+      const k = m[1];
+      if (k.includes('.') && k.length >= 4 && !/^[a-z]+$/.test(k)) {
+        keys.add(k);
+      }
     }
   }
   return keys;

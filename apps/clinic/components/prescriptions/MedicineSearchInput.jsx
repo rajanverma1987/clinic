@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '@/contexts/I18nContext';
 import { Input } from '@/components/ui/Input';
 import { useEffect, useRef, useState } from 'react';
 
@@ -8,9 +9,11 @@ export function MedicineSearchInput({
   value,
   onChange,
   onSelect,
-  placeholder = 'Search medicine...',
+  placeholder,
   className = '',
 }) {
+  const { t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t('prescriptions.searchMedicine');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredDrugs, setFilteredDrugs] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -133,7 +136,7 @@ export function MedicineSearchInput({
             setShowDropdown(true);
           }
         }}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         className={className}
       />
       {showDropdown && filteredDrugs.length > 0 && (

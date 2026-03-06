@@ -1183,7 +1183,7 @@ export default function AdminSubscriptionsPage() {
                 </div>
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>Reason <span className='text-red-500'>*</span></label>
-                  <textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} rows={3} placeholder='Business reason for this payment override…' className='input w-full resize-none' />
+                  <textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} rows={3} placeholder={t('admin.placeholderOverrideReason')} className='input w-full resize-none' />
                   <p className={`text-xs mt-1 ${overrideReason.length >= 10 ? 'text-green-600' : 'text-neutral-400'}`}>{overrideReason.length}/10 minimum</p>
                 </div>
                 <div className='flex gap-2 pt-2'>
@@ -1275,7 +1275,7 @@ export default function AdminSubscriptionsPage() {
                 </div>
                 <div>
                   <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>Reason <span className='text-red-500'>*</span></label>
-                  <textarea value={extendReason} onChange={(e) => setExtendReason(e.target.value)} rows={3} placeholder='Reason for extending trial…' className='input w-full resize-none' />
+                  <textarea value={extendReason} onChange={(e) => setExtendReason(e.target.value)} rows={3} placeholder={t('admin.placeholderExtendTrialReason')} className='input w-full resize-none' />
                   <p className={`text-xs mt-1 ${extendReason.length >= 10 ? 'text-green-600' : 'text-neutral-400'}`}>{extendReason.length}/10 minimum</p>
                 </div>
                 <div className='flex gap-2 pt-2'>

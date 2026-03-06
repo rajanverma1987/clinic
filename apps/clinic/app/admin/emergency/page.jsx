@@ -260,7 +260,7 @@ export default function AdminEmergencyPage() {
                 </p>
                 <input
                   type="text"
-                  placeholder="Search clinics by name…"
+                  placeholder={t('admin.placeholderSearchClinicsByName')}
                   value={suspendSearch}
                   onChange={(e) => setSuspendSearch(e.target.value)}
                   className="input w-full max-w-sm text-sm mb-2"
@@ -309,7 +309,7 @@ export default function AdminEmergencyPage() {
                 <textarea
                   value={suspendReason}
                   onChange={(e) => setSuspendReason(e.target.value)}
-                  placeholder="Explain the reason for suspending this clinic…"
+                  placeholder={t('admin.placeholderSuspendReason')}
                   rows={3}
                   className="input w-full resize-none"
                 />
@@ -430,7 +430,7 @@ export default function AdminEmergencyPage() {
                 <textarea
                   value={lockReason}
                   onChange={(e) => setLockReason(e.target.value)}
-                  placeholder="Reason for locking this access…"
+                  placeholder={t('admin.placeholderLockReason')}
                   rows={2}
                   className="input w-full resize-none"
                 />
@@ -448,7 +448,7 @@ export default function AdminEmergencyPage() {
                   type="text"
                   value={lockConfirmText}
                   onChange={(e) => setLockConfirmText(e.target.value)}
-                  placeholder="CONFIRM LOCK"
+                  placeholder={t('admin.placeholderConfirmLock')}
                   className="input w-full max-w-sm font-mono text-sm"
                 />
               </div>

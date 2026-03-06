@@ -2043,7 +2043,7 @@ export default function PatientDetailPage() {
             <Input
               value={procedureForm.typeCode || ''}
               onChange={(e) => setProcedureForm({ ...procedureForm, typeCode: e.target.value })}
-              placeholder='e.g. CPT code'
+              placeholder={t('patients.placeholderCptCode')}
             />
           </div>
           <div className='flex justify-end gap-2 pt-4'>

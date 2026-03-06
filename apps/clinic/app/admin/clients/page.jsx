@@ -1036,7 +1036,7 @@ export default function AdminClientsPage() {
                 <div className='flex gap-2 mt-2'>
                   <Input
                     className='flex-1'
-                    placeholder='e.g. ai_assistance, advanced_automation'
+                    placeholder={t('admin.placeholderFeatureSlug')}
                     value={betaFeaturesInput}
                     onChange={(e) => setBetaFeaturesInput(e.target.value)}
                   />
@@ -1411,7 +1411,7 @@ export default function AdminClientsPage() {
                 label={t('admin.slug')}
                 value={createSlug}
                 onChange={(e) => setCreateSlug(e.target.value)}
-                placeholder='my-clinic'
+                placeholder={t('admin.placeholderClinicSlug')}
               />
               <Select
                 label={t('admin.region')}

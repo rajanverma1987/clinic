@@ -259,7 +259,7 @@ export default function AdminNotificationsPage() {
                               type="text"
                               value={cfg.recipients ?? ''}
                               onChange={(e) => update(meta.key, 'recipients', e.target.value)}
-                              placeholder="admin@company.com, +1234567890"
+                              placeholder={t('admin.placeholderNotificationRecipients')}
                               className="input w-full text-sm max-w-md"
                             />
                           </div>

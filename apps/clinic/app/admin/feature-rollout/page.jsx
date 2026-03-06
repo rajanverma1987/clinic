@@ -322,7 +322,7 @@ export default function AdminFeatureRolloutPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Search clinics…"
+                      placeholder={t('admin.placeholderSearchClinics')}
                       value={clinicSearch}
                       onChange={(e) => setClinicSearch(e.target.value)}
                       className="input w-full text-sm mb-2"

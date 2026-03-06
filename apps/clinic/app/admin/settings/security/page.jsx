@@ -301,7 +301,7 @@ export default function AdminSettingsSecurityPage() {
                         className="input w-full min-h-[100px] font-mono text-sm resize-y"
                         value={form.superAdminIpWhitelist}
                         onChange={(e) => setForm((f) => ({ ...f, superAdminIpWhitelist: e.target.value }))}
-                        placeholder={'192.168.1.0/24\n10.0.0.1\n203.0.113.42'}
+                        placeholder={t('admin.placeholderIpWhitelist')}
                       />
                       <p className="text-xs text-neutral-400 mt-1">Supports single IPs and CIDR notation (e.g., 192.168.0.0/24).</p>
                     </div>
@@ -357,7 +357,7 @@ export default function AdminSettingsSecurityPage() {
                     type="text"
                     value={testIp}
                     onChange={(e) => { setTestIp(e.target.value); setTestIpResult(null); }}
-                    placeholder="e.g. 203.0.113.42"
+                    placeholder={t('admin.placeholderIpExample')}
                     className="input font-mono text-sm w-48"
                   />
                   <Button variant="secondary" size="sm" onClick={handleTestIp} disabled={!testIp.trim()}>
