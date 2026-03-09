@@ -80,11 +80,18 @@ export function Layout({
         setShowNotifications(false);
         setSidebarMobileOpen(false);
       }
-      // N key for notifications
+      // N key for notifications – ignore when user is typing in any editable field
       if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+        const isEditable = (el) => {
+          if (!el || !el.tagName) return false;
+          const tag = el.tagName.toUpperCase();
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+          if (el.isContentEditable) return true;
+          return !!el.closest?.('[contenteditable="true"]');
+        };
         const target = e.target;
-        // Only open if not typing in an input/textarea
-        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+        const active = document.activeElement;
+        if (!isEditable(target) && !isEditable(active)) {
           e.preventDefault();
           setShowNotifications(true);
         }

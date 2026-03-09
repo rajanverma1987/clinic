@@ -39,8 +39,6 @@ export default function NewInventoryItemPage() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
-    name_ar: '',
-    name_es: '',
     code: '',
     type: 'medicine',
     unit: 'unit',
@@ -143,24 +141,6 @@ export default function NewInventoryItemPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  placeholder={t('inventory.itemNamePlaceholder')}
-                />
-              </div>
-
-              <div>
-                <Input
-                  label={t('inventory.itemNameArabic')}
-                  value={formData.name_ar}
-                  onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-                  placeholder={t('inventory.itemNamePlaceholder')}
-                />
-              </div>
-
-              <div>
-                <Input
-                  label={t('inventory.itemNameSpanish')}
-                  value={formData.name_es}
-                  onChange={(e) => setFormData({ ...formData, name_es: e.target.value })}
                   placeholder={t('inventory.itemNamePlaceholder')}
                 />
               </div>

@@ -16,7 +16,7 @@ export function Textarea({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-body-sm font-medium text-neutral-900 mb-1">
+        <label className="block text-body-sm font-medium text-neutral-900 dark:text-neutral-100 mb-0.5">
           {label}
         </label>
       )}
@@ -27,23 +27,23 @@ export function Textarea({
             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:shadow-focus
             resize-none
             ${error 
-              ? 'border-status-error bg-white focus:ring-status-error focus:border-status-error' 
-              : 'border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-500 hover:border-neutral-300'
+              ? 'border-status-error bg-white dark:bg-neutral-800 focus:ring-status-error focus:border-status-error' 
+              : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 dark:placeholder:text-neutral-400 hover:border-neutral-300 dark:hover:border-primary-500'
             }
-            ${props.disabled ? 'bg-neutral-100 border-neutral-300 text-neutral-500 cursor-not-allowed opacity-60' : ''}
+            ${props.disabled ? 'bg-neutral-100 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400 cursor-not-allowed opacity-60' : ''}
             ${className}
           `}
           maxLength={maxLength}
           {...props}
         />
         {showCount && maxLength && (
-          <div className="absolute bottom-2 right-2 text-body-xs text-neutral-500">
+          <div className="absolute bottom-2 right-2 text-body-xs text-neutral-500 dark:text-neutral-400">
             {currentLength}/{maxLength}
           </div>
         )}
       </div>
       {error && <p className="mt-1 text-body-sm text-status-error">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-body-sm text-neutral-500">{helperText}</p>}
+      {helperText && !error && <p className="mt-1 text-body-sm text-neutral-500 dark:text-neutral-400">{helperText}</p>}
     </div>
   );
 }

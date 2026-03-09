@@ -3,7 +3,18 @@
 import { Button } from '@/components/ui/Button';
 import { ClockIcon, PhoneIcon } from '@/components/icons';
 import { useI18n } from '@/contexts/I18nContext';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import React, { useCallback, useEffect, useState } from 'react';
+
+/** Same as clinic item names: transliterate to Arabic, translate to Spanish for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
 
 /**
  * Single appointment row for dashboard lists. Memoized for list performance.
@@ -18,7 +29,8 @@ function AppointmentListItemInner({
   onReschedule,
   onCancel,
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   // Priority: startTime (actual time slot) > schedule.startTime > appointmentDate (date only)
@@ -32,23 +44,27 @@ function AppointmentListItemInner({
     ? new Date(appointment.startedAt)
     : new Date(appointment.startTime || appointment.schedule?.startTime || appointmentTime);
   const endTime = new Date(appointment.endTime || appointment.schedule?.endTime || appointmentTime);
-  const timeStr = appointmentTime.toLocaleTimeString('en-US', {
+  const localeForTime = localeCode === 'ar' ? 'ar-SA' : localeCode === 'es' ? 'es-ES' : 'en-US';
+  const timeStr = appointmentTime.toLocaleTimeString(localeForTime, {
     hour: '2-digit',
     minute: '2-digit',
   });
 
-  const patientName =
+  const rawPatientName =
     appointment.patientId?.name ||
     `${appointment.patientId?.firstName || ''} ${appointment.patientId?.lastName || ''}`.trim() ||
     t('common.unknownPatient');
+  const patientName = getDisplayValue(rawPatientName, localeCode) || t('common.unknownPatient');
   const firstName = appointment.patientId?.firstName || '';
   const lastName = appointment.patientId?.lastName || '';
   const initials = `${firstName.charAt(0) || ''}${lastName.charAt(0) || ''}`.toUpperCase() || 'PN';
   const phone = appointment.patientId?.phone || appointment.patientId?.primaryPhone || '';
 
-  const visitType = appointment.type || 'consultation';
-  const chiefComplaint = appointment.chiefComplaint || appointment.reason || '—';
-  const reason = appointment.reason || appointment.type || t('common.generalConsultation');
+  const rawVisitType = appointment.type || 'consultation';
+  const visitType = getDisplayValue(rawVisitType, localeCode);
+  const rawChiefComplaint = appointment.chiefComplaint || appointment.reason || '—';
+  const chiefComplaint = rawChiefComplaint === '—' ? '—' : getDisplayValue(rawChiefComplaint, localeCode);
+  const reason = getDisplayValue(appointment.reason || appointment.type || '', localeCode) || t('common.generalConsultation');
 
   const status = appointment.status || 'scheduled';
   const isOngoing = status === 'in_progress' || status === 'arrived';

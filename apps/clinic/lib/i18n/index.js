@@ -29,10 +29,12 @@ const translations = {
 /**
  * Get translation for a given key and locale
  * Supports nested keys like "auth.login"
+ * Locale can be short ('ar') or full ('ar-SA'); normalized via extractLocale.
  */
 export function getTranslation(key, locale = 'en') {
+  const localeKey = extractLocale(String(locale));
   const keys = key.split('.');
-  let value = translations[locale] || translations['en'];
+  let value = translations[localeKey] || translations['en'];
 
   for (const k of keys) {
     if (value && typeof value === 'object' && k in value) {

@@ -392,4 +392,83 @@
   }
 }
 
-/* Light theme only – dark mode disabled */
+/* Dark mode – sign out and all modals */
+.dark .Modal-backdrop {
+  background: color-mix(in srgb, var(--color-neutral-900) 60%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary-500) 12%, transparent) 0%,
+      color-mix(in srgb, var(--color-secondary-600) 10%, transparent) 50%,
+      color-mix(in srgb, var(--color-status-warning) 8%, transparent) 100%
+    ),
+    color-mix(in srgb, var(--color-neutral-900) 65%, transparent);
+}
+
+.dark .Modal-container {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0 32px 64px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-400) 20%, transparent),
+    0 0 40px color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+}
+
+.dark .Modal-container::before {
+  opacity: 0.9;
+}
+
+.dark .Modal-header {
+  border-bottom-color: var(--color-border);
+  background: var(--color-surface-elevated);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-neutral-800) 80%, var(--color-surface-elevated)) 0%,
+    var(--color-surface-elevated) 100%
+  );
+}
+
+.dark .Modal-title {
+  color: var(--color-text-primary);
+}
+
+.dark .Modal-title-icon {
+  color: var(--color-primary-300);
+}
+
+.dark .Modal-close {
+  color: var(--color-neutral-400);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark .Modal-close:hover {
+  color: var(--color-neutral-50);
+  background: var(--color-status-error);
+}
+
+.dark .Modal-content,
+.dark .Modal-content-no-header {
+  color: var(--color-text-primary);
+}
+
+.dark .Modal-content::-webkit-scrollbar-track,
+.dark .Modal-content-no-header::-webkit-scrollbar-track {
+  background: var(--color-surface);
+  border-radius: 4px;
+}
+
+.dark .Modal-content::-webkit-scrollbar-thumb,
+.dark .Modal-content-no-header::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-600);
+  border-radius: 4px;
+}
+
+.dark .Modal-content::-webkit-scrollbar-thumb:hover,
+.dark .Modal-content-no-header::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-400);
+}
+
+.dark .Modal-footer {
+  border-top-color: var(--color-border);
+  background: var(--color-surface-elevated);
+}

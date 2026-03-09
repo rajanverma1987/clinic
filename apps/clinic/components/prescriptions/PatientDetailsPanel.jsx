@@ -7,6 +7,8 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client.js';
 import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { useEffect, useState } from 'react';
 import { logger } from '@/lib/utils/logger.js';
 
@@ -14,6 +16,40 @@ export function PatientDetailsPanel({ patientId }) {
   const { t, locale } = useI18n();
   const { locale: settingsLocale } = useSettings();
   const localeCode = (settingsLocale || locale || 'en').toString().slice(0, 2);
+  const localeForDate = localeCode === 'ar' ? 'ar-SA' : localeCode === 'es' ? 'es-ES' : undefined;
+
+  const getDisplayValue = (str, code) => {
+    if (str == null || String(str).trim() === '') return '';
+    const s = String(str).trim();
+    const c = (code || localeCode).slice(0, 2);
+    if (c === 'ar') return transliterateToArabic(s) || s;
+    if (c === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+    return s;
+  };
+
+  const getPrescriptionStatusLabel = (status) => {
+    const map = {
+      draft: t('prescriptions.statusDraft'),
+      active: t('prescriptions.statusActive'),
+      dispensed: t('prescriptions.statusDispensed'),
+      cancelled: t('prescriptions.statusCancelled'),
+      expired: t('prescriptions.statusExpired'),
+    };
+    return map[status] || status;
+  };
+
+  const getAppointmentStatusLabel = (status) => {
+    const map = {
+      scheduled: t('appointments.scheduled'),
+      confirmed: t('appointments.confirmed'),
+      completed: t('appointments.completed'),
+      cancelled: t('appointments.cancelled'),
+      arrived: t('appointments.arrived'),
+      in_progress: t('appointments.inProgress'),
+    };
+    return map[status] || status;
+  };
+
   const [patient, setPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
@@ -72,7 +108,7 @@ export function PatientDetailsPanel({ patientId }) {
           style={{ textAlign: 'center', padding: 'var(--space-8)' }}
         >
           <p className='text-sm text-neutral-500 dark:text-neutral-400'>
-            Select a patient to view details
+            {t('prescriptions.selectPatientToViewDetails')}
           </p>
         </div>
       </div>
@@ -100,7 +136,7 @@ export function PatientDetailsPanel({ patientId }) {
           style={{ textAlign: 'center', padding: 'var(--space-8)' }}
         >
           <p className='text-sm text-status-error dark:text-red-300'>
-            Failed to load patient details
+            {t('patients.failedToLoadPatient')}
           </p>
         </div>
       </div>
@@ -130,7 +166,7 @@ export function PatientDetailsPanel({ patientId }) {
             activeTab === 'details' ? 'patient-details-tab-active' : ''
           }`}
         >
-          Details
+          {t('patients.tabDetails')}
         </Button>
         <Button
           type='button'
@@ -140,7 +176,7 @@ export function PatientDetailsPanel({ patientId }) {
             activeTab === 'history' ? 'patient-details-tab-active' : ''
           }`}
         >
-          History
+          {t('patients.tabHistory')}
         </Button>
         <Button
           type='button'
@@ -150,7 +186,7 @@ export function PatientDetailsPanel({ patientId }) {
             activeTab === 'visits' ? 'patient-details-tab-active' : ''
           }`}
         >
-          Visits ({appointments.length})
+          {t('patients.tabVisits')} ({appointments.length})
         </Button>
       </div>
 
@@ -163,45 +199,50 @@ export function PatientDetailsPanel({ patientId }) {
             </h3>
             <div className='space-y-2'>
               <div className='patient-details-field'>
-                <span className='patient-details-label'>Patient ID:</span>
+                <span className='patient-details-label'>{t('patients.patientId')}:</span>
                 <span className='patient-details-value'>{patient.patientId}</span>
               </div>
               <div className='patient-details-field'>
-                <span className='patient-details-label'>Age:</span>
+                <span className='patient-details-label'>{t('patients.age')}:</span>
                 <span className='patient-details-value'>
-                  {calculateAge(patient.dateOfBirth)} years
+                  {calculateAge(patient.dateOfBirth)} {t('patients.years')}
                 </span>
               </div>
               <div className='patient-details-field'>
-                <span className='patient-details-label'>Gender:</span>
-                <span className='patient-details-value'>{patient.gender}</span>
+                <span className='patient-details-label'>{t('patients.gender')}:</span>
+                <span className='patient-details-value'>{patient.gender ? getDisplayValue(patient.gender) : ''}</span>
               </div>
               {patient.bloodGroup && (
                 <div className='patient-details-field'>
-                  <span className='patient-details-label'>Blood Group:</span>
-                  <span className='patient-details-value'>{patient.bloodGroup}</span>
+                  <span className='patient-details-label'>{t('patients.bloodGroup')}:</span>
+                  <span className='patient-details-value'>{getDisplayValue(patient.bloodGroup)}</span>
                 </div>
               )}
               <div className='patient-details-field'>
-                <span className='patient-details-label'>Phone:</span>
-                <span className='patient-details-value'>{patient.phone}</span>
+                <span className='patient-details-label'>{t('patients.phoneLabel')}:</span>
+                <span className='patient-details-value'>{patient.phone ? getDisplayValue(patient.phone) : ''}</span>
               </div>
               {patient.email && (
                 <div className='patient-details-field'>
-                  <span className='patient-details-label'>Email:</span>
-                  <span className='patient-details-value'>{patient.email}</span>
+                  <span className='patient-details-label'>{t('patients.emailLabel')}:</span>
+                  <span className='patient-details-value'>{getDisplayValue(patient.email)}</span>
                 </div>
               )}
               {patient.address && (
                 <div className='patient-details-field'>
-                  <span className='patient-details-label'>Address:</span>
+                  <span className='patient-details-label'>{t('patients.address')}:</span>
                   <span
                     className='patient-details-value'
                     style={{ fontSize: 'var(--text-body-xs)' }}
                   >
-                    {patient.address.city && patient.address.state
-                      ? `${patient.address.city}, ${patient.address.state}`
-                      : patient.address.country || ''}
+                    {[
+                      patient.address.city,
+                      patient.address.state,
+                      patient.address.country,
+                    ]
+                      .filter(Boolean)
+                      .map((part) => getDisplayValue(part))
+                      .join(', ')}
                   </span>
                 </div>
               )}
@@ -211,19 +252,19 @@ export function PatientDetailsPanel({ patientId }) {
           {patient.allergies && (
             <div className='patient-details-section'>
               <p className='patient-details-section-title text-status-error dark:text-red-300'>
-                Allergies
+                {t('patients.allergies')}
               </p>
               <p className='text-xs text-neutral-600 dark:text-neutral-300'>
-                {patient.allergies}
+                {getDisplayValue(patient.allergies)}
               </p>
             </div>
           )}
 
           {patient.currentMedications && (
             <div className='patient-details-section'>
-              <p className='patient-details-section-title'>Current Medications</p>
+              <p className='patient-details-section-title'>{t('patients.currentMedications')}</p>
               <p className='text-xs text-neutral-600 dark:text-neutral-300'>
-                {patient.currentMedications}
+                {getDisplayValue(patient.currentMedications)}
               </p>
             </div>
           )}
@@ -235,20 +276,20 @@ export function PatientDetailsPanel({ patientId }) {
         <div className='patient-details-content'>
           {patient.medicalHistory ? (
             <div>
-              <p className='patient-details-section-title'>Medical History</p>
+              <p className='patient-details-section-title'>{t('patients.medicalHistory')}</p>
               <p className='text-xs text-neutral-600 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed'>
-                {patient.medicalHistory}
+                {getDisplayValue(patient.medicalHistory)}
               </p>
             </div>
           ) : (
             <p className='text-sm text-neutral-500 dark:text-neutral-400 text-center py-4'>
-              No medical history recorded
+              {t('patients.noMedicalHistoryRecorded')}
             </p>
           )}
 
           {prescriptions.length > 0 && (
             <div className='patient-details-section'>
-              <p className='patient-details-section-title'>Recent Prescriptions</p>
+              <p className='patient-details-section-title'>{t('prescriptions.recentPrescriptions')}</p>
               <div
                 style={{
                   maxHeight: '200px',
@@ -267,10 +308,10 @@ export function PatientDetailsPanel({ patientId }) {
                       {pres.prescriptionNumber}
                     </p>
                     <p className='text-xs text-neutral-600 dark:text-neutral-300'>
-                      {new Date(pres.createdAt).toLocaleDateString()} - {pres.status}
+                      {new Date(pres.createdAt).toLocaleDateString(localeForDate)} - {getPrescriptionStatusLabel(pres.status)}
                     </p>
                     <p className='text-xs text-neutral-500 dark:text-neutral-400'>
-                      {pres.items?.length || 0} items
+                      {t('prescriptions.itemsCount', { count: pres.items?.length || 0 })}
                     </p>
                   </div>
                 ))}
@@ -293,14 +334,14 @@ export function PatientDetailsPanel({ patientId }) {
                   <div className='flex justify-between items-start'>
                     <div>
                       <p className='text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-1'>
-                        {new Date(apt.appointmentDate).toLocaleDateString()}
+                        {new Date(apt.appointmentDate).toLocaleDateString(localeForDate)}
                       </p>
                       <p className='text-xs text-neutral-600 dark:text-neutral-300'>
-                        {apt.type}
+                        {apt.type ? getDisplayValue(apt.type) : ''}
                       </p>
                       {apt.reason && (
                         <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
-                          {apt.reason}
+                          {getDisplayValue(apt.reason)}
                         </p>
                       )}
                     </div>
@@ -313,7 +354,7 @@ export function PatientDetailsPanel({ patientId }) {
                             : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-600 dark:text-neutral-200'
                       }`}
                     >
-                      {apt.status}
+                      {getAppointmentStatusLabel(apt.status)}
                     </span>
                   </div>
                 </div>
@@ -321,7 +362,7 @@ export function PatientDetailsPanel({ patientId }) {
             </div>
           ) : (
             <p className='text-sm text-neutral-500 dark:text-neutral-400 text-center py-4'>
-              No previous visits
+              {t('patients.noPreviousVisits')}
             </p>
           )}
         </div>

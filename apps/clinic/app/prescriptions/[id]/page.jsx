@@ -12,6 +12,8 @@ import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
 import { logger } from '@/lib/utils/logger';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -21,7 +23,50 @@ export default function PrescriptionDetailPage() {
   const params = useParams();
   const prescriptionId = params?.id;
   const { user, loading: authLoading } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
+  const localeForDate = localeCode === 'ar' ? 'ar-SA' : localeCode === 'es' ? 'es-ES' : undefined;
+
+  /** Same as clinic item names: transliterate to Arabic, translate to Spanish for display */
+  const getDisplayValue = (str, code) => {
+    if (str == null || String(str).trim() === '') return '';
+    const s = String(str).trim();
+    const c = (code || localeCode).slice(0, 2);
+    if (c === 'ar') return transliterateToArabic(s) || s;
+    if (c === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+    return s;
+  };
+
+  const getItemTypeLabel = (itemType) => {
+    const type = (itemType || 'drug').toLowerCase();
+    if (type === 'lab') return t('prescriptions.lab');
+    if (type === 'procedure') return t('prescriptions.procedure');
+    if (type === 'other') return t('prescriptions.other');
+    return t('prescriptions.drug');
+  };
+
+  const getUnitDisplayLabel = (unit) => {
+    if (unit == null || String(unit).trim() === '') return t('prescriptions.units');
+    const u = String(unit).trim().toLowerCase();
+    if (u === 'tablets' || u === 'tablet') return t('prescriptions.unitTablets');
+    if (u === 'capsules' || u === 'capsule') return t('prescriptions.unitCapsules');
+    if (u === 'bottles' || u === 'bottle') return t('prescriptions.unitBottles');
+    if (u === 'tubes' || u === 'tube') return t('prescriptions.unitTubes');
+    if (u === 'packs' || u === 'pack') return t('prescriptions.unitPacks');
+    return getDisplayValue(unit);
+  };
+
+  const getFormDisplayLabel = (form) => {
+    if (form == null || String(form).trim() === '') return '';
+    const f = String(form).trim().toLowerCase();
+    if (f === 'tablet' || f === 'tablets') return t('prescriptions.formTablet');
+    if (f === 'capsule' || f === 'capsules') return t('prescriptions.formCapsule');
+    if (f === 'syrup') return t('prescriptions.formSyrup');
+    if (f === 'injection' || f === 'injectable') return t('prescriptions.formInjection');
+    if (f === 'cream' || f === 'ointment') return t('prescriptions.formCream');
+    return getDisplayValue(form);
+  };
+
   const [prescription, setPrescription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -133,8 +178,8 @@ export default function PrescriptionDetailPage() {
   return (
     <Layout>
       <PageHeader
-        title={`Prescription #${prescription.prescriptionNumber}`}
-        subtitle={`${t('prescriptions.createdOn')} ${new Date(prescription.createdAt).toLocaleDateString()}`}
+        title={`${t('prescriptions.rxNumber')}${prescription.prescriptionNumber}`}
+        subtitle={`${t('prescriptions.createdOn')} ${new Date(prescription.createdAt).toLocaleDateString(localeForDate)}`}
         notifications={[]}
         unreadCount={0}
         actionButtons={
@@ -262,13 +307,13 @@ export default function PrescriptionDetailPage() {
                   <div>
                     <label className='text-sm font-medium text-neutral-500'>{t('prescriptions.validFrom')}</label>
                     <p className='text-neutral-900'>
-                      {new Date(prescription.validFrom).toLocaleDateString()}
+                      {new Date(prescription.validFrom).toLocaleDateString(localeForDate)}
                     </p>
                   </div>
                   <div>
                     <label className='text-sm font-medium text-neutral-500'>{t('prescriptions.validUntil')}</label>
                     <p className='text-neutral-900'>
-                      {new Date(prescription.validUntil).toLocaleDateString()}
+                      {new Date(prescription.validUntil).toLocaleDateString(localeForDate)}
                     </p>
                   </div>
                   <div>
@@ -346,56 +391,60 @@ export default function PrescriptionDetailPage() {
                       prescription.items.map((item, index) => (
                         <tr key={index}>
                           <td>{index + 1}</td>
-                          <td className='capitalize'>{item.itemType || 'drug'}</td>
+                          <td>{getItemTypeLabel(item.itemType)}</td>
                           <td>
                             {item.itemType === 'drug' && item.drugName && (
                               <div>
-                                <div className='font-medium'>{item.drugName}</div>
+                                <div className='font-medium'>{getDisplayValue(item.drugName)}</div>
                                 {item.genericName && (
                                   <div className='text-xs text-neutral-500'>
-                                    ({item.genericName})
+                                    ({getDisplayValue(item.genericName)})
                                   </div>
                                 )}
                                 {item.strength && (
-                                  <div className='text-xs text-neutral-500'>{item.strength}</div>
+                                  <div className='text-xs text-neutral-500'>{getDisplayValue(item.strength)}</div>
                                 )}
                                 {item.form && (
-                                  <div className='text-xs text-neutral-500'>{item.form}</div>
+                                  <div className='text-xs text-neutral-500'>{getFormDisplayLabel(item.form)}</div>
                                 )}
                               </div>
                             )}
                             {item.itemType === 'lab' && item.labTestName && (
                               <div>
-                                <div className='font-medium'>{item.labTestName}</div>
+                                <div className='font-medium'>{getDisplayValue(item.labTestName)}</div>
                                 {item.labTestCode && (
                                   <div className='text-xs text-neutral-500'>
-                                    Code: {item.labTestCode}
+                                    {t('prescriptions.codeLabel')}: {getDisplayValue(item.labTestCode)}
                                   </div>
                                 )}
                               </div>
                             )}
                             {item.itemType === 'procedure' && item.procedureName && (
                               <div>
-                                <div className='font-medium'>{item.procedureName}</div>
+                                <div className='font-medium'>{getDisplayValue(item.procedureName)}</div>
                                 {item.procedureCode && (
                                   <div className='text-xs text-neutral-500'>
-                                    Code: {item.procedureCode}
+                                    {t('prescriptions.codeLabel')}: {getDisplayValue(item.procedureCode)}
                                   </div>
                                 )}
                               </div>
                             )}
                             {item.itemType === 'other' && item.itemName && (
-                              <div className='font-medium'>{item.itemName}</div>
+                              <div className='font-medium'>{getDisplayValue(item.itemName)}</div>
                             )}
                           </td>
                           <td>
                             {item.itemType === 'drug' && (
                               <div className='space-y-1'>
-                                {item.frequency && <div>Frequency: {item.frequency}</div>}
-                                {item.duration && <div>Duration: {item.duration} days</div>}
+                                {item.frequency && (
+                                  <div>{t('prescriptions.frequency')}: {getDisplayValue(item.frequency)}</div>
+                                )}
+                                {item.duration && (
+                                  <div>{t('prescriptions.duration')}: {item.duration} {t('prescriptions.days')}</div>
+                                )}
                                 {item.quantity && (
                                   <div>
-                                    {t('prescriptions.quantity')}: {item.quantity} {item.unit || t('prescriptions.units')}
+                                    {t('prescriptions.quantity')}: {item.quantity} {getUnitDisplayLabel(item.unit)}
                                   </div>
                                 )}
                                 {item.takeWithFood && (
@@ -417,23 +466,23 @@ export default function PrescriptionDetailPage() {
                                 )}
                                 {item.labInstructions && (
                                   <div className='text-xs text-neutral-500'>
-                                    {item.labInstructions}
+                                    {getDisplayValue(item.labInstructions)}
                                   </div>
                                 )}
                               </div>
                             )}
                             {item.itemType === 'procedure' && item.procedureInstructions && (
                               <div className='text-xs text-neutral-500'>
-                                {item.procedureInstructions}
+                                {getDisplayValue(item.procedureInstructions)}
                               </div>
                             )}
                             {item.itemType === 'other' && item.itemDescription && (
-                              <div className='text-xs text-neutral-500'>{item.itemDescription}</div>
+                              <div className='text-xs text-neutral-500'>{getDisplayValue(item.itemDescription)}</div>
                             )}
                           </td>
                           <td>
                             {item.instructions && (
-                              <div className='whitespace-pre-wrap'>{item.instructions}</div>
+                              <div className='whitespace-pre-wrap'>{getDisplayValue(item.instructions)}</div>
                             )}
                           </td>
                         </tr>
@@ -454,14 +503,16 @@ export default function PrescriptionDetailPage() {
                 <h2 className='text-lg font-semibold mb-4'>{t('prescriptions.prescribedBy')}</h2>
                 <div className='space-y-2'>
                   <p className='text-neutral-900'>
-                    {prescription.doctorId.firstName} {prescription.doctorId.lastName}
+                    {getDisplayValue(
+                      `${prescription.doctorId.firstName || ''} ${prescription.doctorId.lastName || ''}`.trim(),
+                    )}
                   </p>
                   <p className='text-sm text-neutral-500'>
-                    {t('prescriptions.createdOn')} {new Date(prescription.createdAt).toLocaleString()}
+                    {t('prescriptions.createdOn')} {new Date(prescription.createdAt).toLocaleString(localeForDate)}
                   </p>
                   {prescription.dispensedAt && (
                     <p className='text-sm text-neutral-500'>
-                      {t('prescriptions.dispensedOn')} {new Date(prescription.dispensedAt).toLocaleString()}
+                      {t('prescriptions.dispensedOn')} {new Date(prescription.dispensedAt).toLocaleString(localeForDate)}
                     </p>
                   )}
                 </div>
@@ -499,11 +550,13 @@ export default function PrescriptionDetailPage() {
                           </td>
                           <td>
                             {v.changedById?.firstName != null || v.changedById?.lastName != null
-                              ? `${v.changedById.firstName || ''} ${v.changedById.lastName || ''}`.trim()
-                              : '—'}
+                              ? getDisplayValue(
+                                  `${v.changedById.firstName || ''} ${v.changedById.lastName || ''}`.trim(),
+                                )
+                              : t('common.na')}
                           </td>
-                          <td>{v.changedAt ? new Date(v.changedAt).toLocaleString() : '—'}</td>
-                          <td>{v.reason || '—'}</td>
+                          <td>{v.changedAt ? new Date(v.changedAt).toLocaleString(localeForDate) : t('common.na')}</td>
+                          <td>{v.reason ? getDisplayValue(v.reason) : t('common.na')}</td>
                         </tr>
                       ))}
                     </tbody>

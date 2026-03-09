@@ -136,7 +136,7 @@ export default function CreateManagerPage() {
             <p className='text-sm text-blue-800 dark:text-blue-200'>{t('settings.managerAccessDescription')}</p>
           </div>
 
-          <form onSubmit={handleSubmit} className='space-y-6'>
+          <form onSubmit={handleSubmit} className='create-manager-form space-y-6'>
             {error && (
               <div className='p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/30 dark:border-red-700 dark:text-red-200'>
                 {error}
@@ -207,23 +207,26 @@ export default function CreateManagerPage() {
 
             <div>
               <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>{t('settings.passwordRequired')}</label>
-              <div className='relative'>
+              <div className='relative min-h-[var(--input-height-md,40px)]'>
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                   minLength={8}
+                  className='pr-10'
                 />
-                <Button
-                  type='button'
-                  variant='ghost'
-                  size='xs'
-                  onClick={() => setShowPassword(!showPassword)}
-                  className='absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 min-w-0'
-                >
-                  {showPassword ? t('common.hide') : t('common.show')}
-                </Button>
+                <div className='absolute inset-y-0 right-0 w-10 flex items-center justify-center pointer-events-none [&>*]:pointer-events-auto'>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='xs'
+                    onClick={() => setShowPassword(!showPassword)}
+                    className='min-w-0 p-0 h-auto aspect-square text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
+                  >
+                    {showPassword ? t('common.hide') : t('common.show')}
+                  </Button>
+                </div>
               </div>
               <p className='text-sm text-neutral-500 dark:text-neutral-400 mt-1'>{t('settings.minimumChars')}</p>
             </div>

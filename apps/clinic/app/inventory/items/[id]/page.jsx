@@ -45,6 +45,19 @@ export default function InventoryItemDetailPage() {
     [effectiveLocale],
   );
 
+  /** Same as clinic account item names: transliterate to Arabic, translate to Spanish for batch number / quantity display */
+  const getDisplayValue = useCallback(
+    (str, locale) => {
+      if (str == null || String(str).trim() === '') return '';
+      const s = String(str).trim();
+      const code = (locale || effectiveLocale).slice(0, 2);
+      if (code === 'ar') return transliterateToArabic(s) || s;
+      if (code === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+      return s;
+    },
+    [effectiveLocale],
+  );
+
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -453,7 +466,7 @@ export default function InventoryItemDetailPage() {
                       : ''
                     : item.sellingPrice
                       ? formatCurrency(item.sellingPrice)
-                      : 'N/A'
+                      : t('common.na')
                 }
                 onChange={(e) =>
                   setFormData({
@@ -560,10 +573,10 @@ export default function InventoryItemDetailPage() {
                       className='border-b border-neutral-100 dark:border-neutral-800'
                     >
                       <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
-                        {batch.batchNumber}
+                        {getDisplayValue(batch.batchNumber, effectiveLocale)}
                       </td>
                       <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
-                        {batch.quantity} {item.unit}
+                        {getDisplayValue(String(batch.quantity), effectiveLocale)} {item.unit}
                       </td>
                       <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
                         {batch.expiryDate
@@ -572,8 +585,8 @@ export default function InventoryItemDetailPage() {
                       </td>
                       <td className='py-2 px-3 text-neutral-900 dark:text-neutral-100'>
                         {batch.purchaseDate
-                          ? new Date(batch.purchaseDate).toLocaleDateString()
-                          : 'N/A'}
+                          ? new Date(batch.purchaseDate).toLocaleDateString(effectiveLocale === 'ar' ? 'ar-SA' : effectiveLocale === 'es' ? 'es-ES' : undefined)
+                          : t('common.na')}
                       </td>
                     </tr>
                   ))}

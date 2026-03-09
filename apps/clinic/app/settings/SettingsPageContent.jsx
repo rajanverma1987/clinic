@@ -20,8 +20,19 @@ import { apiClient } from '@/lib/api/client';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { showError, showSuccess } from '@/lib/utils/toast';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
+/** Same as clinic account item names: transliterate to Arabic, translate to Spanish for display */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
 
 /** Settings tabs: clinic-related only (profile = current user; rest = clinic config). */
 const SETTINGS_TAB_IDS = [
@@ -62,7 +73,8 @@ function SettingsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const { user: currentUser, loading: authLoading, logout, refreshUser } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(null);
@@ -642,8 +654,8 @@ function SettingsPageContent() {
 
   const handleEditProfileClick = () => {
     setEditProfileForm({
-      firstName: currentUser?.firstName || '',
-      lastName: currentUser?.lastName || '',
+      firstName: getDisplayValue(currentUser?.firstName || '', localeCode),
+      lastName: getDisplayValue(currentUser?.lastName || '', localeCode),
     });
     setShowEditProfileModal(true);
   };
@@ -658,15 +670,15 @@ function SettingsPageContent() {
         lastName: editProfileForm.lastName?.trim() || '',
       });
       if (response?.success) {
-        showSuccess(t('settings.profileUpdatedSuccess') || 'Profile updated successfully');
+        showSuccess(t('settings.profileUpdatedSuccess'));
         setShowEditProfileModal(false);
         await refreshUser();
         fetchSettings();
       } else {
-        showError(response?.error?.message || t('errors.generic') || 'Failed to update profile');
+        showError(response?.error?.message || t('settings.profileUpdateFailed'));
       }
     } catch (error) {
-      showError(error?.message || t('errors.generic') || 'Failed to update profile');
+      showError(error?.message || t('settings.profileUpdateFailed'));
     } finally {
       setSaving(false);
     }
@@ -889,7 +901,7 @@ function SettingsPageContent() {
       <Modal
         isOpen={showEditProfileModal}
         onClose={() => setShowEditProfileModal(false)}
-        title={t('settings.editProfile') || 'Edit Profile'}
+        title={t('settings.editProfile')}
         size='md'
       >
         <div className='p-4 space-y-4'>

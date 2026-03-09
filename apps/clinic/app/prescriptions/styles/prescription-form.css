@@ -434,13 +434,15 @@
   width: 6%;
 }
 .prescription-items-table th.prescription-items-col-qty {
-  width: 5%;
+  width: 6%;
+  min-width: 4.5rem;
 }
 .prescription-items-table th.prescription-items-col-route {
   width: 9%;
 }
 .prescription-items-table th.prescription-items-col-refills {
-  width: 5%;
+  width: 6%;
+  min-width: 4.5rem;
 }
 .prescription-items-table th.prescription-items-col-instructions {
   width: 23%;
@@ -497,8 +499,42 @@
 .prescription-items-input-narrow {
   width: 4.5rem;
   min-width: 4.5rem;
+  max-width: 100%;
   font-size: var(--text-body-sm);
   padding: var(--space-2) var(--space-3);
+  color: var(--color-neutral-900);
+  background: var(--color-white, #fff);
+  border: 1px solid var(--color-neutral-200);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.dark .prescription-items-input-narrow,
+.dark .prescription-items-table td .prescription-items-input-narrow {
+  color: var(--color-neutral-100);
+  background: var(--color-neutral-800);
+  border-color: var(--color-neutral-600);
+}
+/* Qty and Refills cells: ensure input value is visible and column doesn't collapse */
+.prescription-items-table td.prescription-items-col-qty,
+.prescription-items-table td.prescription-items-col-refills {
+  min-width: 4.5rem;
+  overflow: visible;
+  vertical-align: middle;
+}
+.prescription-items-table td.prescription-items-col-qty > div,
+.prescription-items-table td.prescription-items-col-refills > div {
+  min-width: 0;
+}
+.prescription-items-table td.prescription-items-col-qty input,
+.prescription-items-table td.prescription-items-col-refills input {
+  color: var(--color-neutral-900);
+  width: 4.5rem;
+  min-width: 4.5rem;
+  box-sizing: border-box;
+}
+.dark .prescription-items-table td.prescription-items-col-qty input,
+.dark .prescription-items-table td.prescription-items-col-refills input {
+  color: var(--color-neutral-100);
 }
 
 /* Empty state when no items */

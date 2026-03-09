@@ -2,9 +2,20 @@
 
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext.jsx';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './NotificationDropdown.css';
+
+/** Same as clinic item names: transliterate to Arabic, translate to Spanish for notification title/message */
+function getDisplayValue(str, localeCode) {
+  if (str == null || String(str).trim() === '') return '';
+  const s = String(str).trim();
+  if (localeCode === 'ar') return transliterateToArabic(s) || s;
+  if (localeCode === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+  return s;
+}
 
 /**
  * NotificationDropdown Component
@@ -20,7 +31,8 @@ export function NotificationDropdown({
   onOpenPanel,
   size = 'md',
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeCode = (locale || 'en').toString().slice(0, 2);
   // Ensure notifications is always an array
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const [isOpen, setIsOpen] = useState(false);
@@ -152,7 +164,8 @@ export function NotificationDropdown({
     if (diffMins < 60) return t('notifications.minutesAgo', { count: diffMins });
     if (diffHours < 24) return t('notifications.hoursAgo', { count: diffHours });
     if (diffDays < 7) return t('notifications.daysAgo', { count: diffDays });
-    return notificationDate.toLocaleDateString();
+    const localeForDate = localeCode === 'ar' ? 'ar-SA' : localeCode === 'es' ? 'es-ES' : undefined;
+    return notificationDate.toLocaleDateString(localeForDate);
   };
 
   const getNotificationIcon = (type) => {
@@ -285,9 +298,9 @@ export function NotificationDropdown({
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className='NotificationDropdown-item-content'>
-                      <div className='NotificationDropdown-item-title'>{notification.title}</div>
+                      <div className='NotificationDropdown-item-title'>{getDisplayValue(notification.title, localeCode)}</div>
                       <div className='NotificationDropdown-item-message'>
-                        {notification.message}
+                        {getDisplayValue(notification.message, localeCode)}
                       </div>
                       <div className='NotificationDropdown-item-time'>
                         {formatTime(notification.createdAt)}

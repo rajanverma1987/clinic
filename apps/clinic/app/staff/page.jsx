@@ -17,8 +17,12 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { apiClient } from '@/lib/api/client';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
+import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { getRolePermissions } from '@/lib/permissions/constants';
 import { getEmailDisplayValue } from '@/lib/utils/email-display';
+import { getPatientDisplayNameParts } from '@/lib/utils/patient-display-name';
+import { transliterateToArabic } from '@/lib/utils/transliterate-name';
+import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -44,13 +48,64 @@ function permissionsSummary(role) {
   );
 }
 
+/** Permission resource/action words → Spanish (for permission column display, same approach as item names) */
+const PERM_WORDS_ES = {
+  appointments: 'Citas', appointment: 'Cita', patients: 'Pacientes', patient: 'Paciente',
+  prescriptions: 'Recetas', prescription: 'Receta', invoices: 'Facturas', invoice: 'Factura',
+  payments: 'Pagos', payment: 'Pago', inventory: 'Inventario', settings: 'Ajustes',
+  read: 'lectura', create: 'crear', update: 'actualizar', delete: 'eliminar',
+  export: 'exportar', manage: 'gestionar', clinical_note: 'Nota clínica', clinical: 'clínica', note: 'nota',
+  lab_test: 'Prueba', lab: 'Laboratorio', test: 'prueba', user: 'Usuario', users: 'Usuarios',
+  report: 'Informe', reports: 'Informes', queue: 'Cola', consent: 'Consentimiento',
+};
+
 export default function StaffPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t, locale: i18nLocale } = useI18n();
   const localeCode = (i18nLocale || 'en').slice(0, 2);
   const dateLocale =
-    localeCode === 'ar' ? 'ar' : localeCode === 'es' ? 'es' : (i18nLocale || 'en-US');
+    localeCode === 'ar' ? 'ar-SA' : localeCode === 'es' ? 'es-ES' : (i18nLocale || 'en-US');
+
+  const getDisplayValue = useCallback(
+    (str, code) => {
+      if (str == null || String(str).trim() === '') return '';
+      const s = String(str).trim();
+      const c = (code || localeCode).slice(0, 2);
+      if (c === 'ar') return transliterateToArabic(s) || s;
+      if (c === 'es') return s.split(/\s+/).map((w) => translateToSpanish(w) || w).join(' ').trim() || s;
+      return s;
+    },
+    [localeCode],
+  );
+
+  /** Full name for staff row: use stored _ar/_es when present, else transliterate/translate (same as item names). */
+  const getStaffDisplayName = useCallback(
+    (row) => {
+      const { first, last } = getPatientDisplayNameParts(row, localeCode);
+      const name = [first, last].filter(Boolean).join(' ').trim();
+      return name || '—';
+    },
+    [localeCode],
+  );
+
+  /** Permission summary translated for locale: Arabic = transliterate, Spanish = map resource/action words. */
+  const getPermissionSummaryDisplay = useCallback(
+    (role) => {
+      const raw = permissionsSummary(role);
+      if (!raw || raw === '—') return raw;
+      if (localeCode === 'ar') return transliterateToArabic(raw) || raw;
+      if (localeCode === 'es') {
+        const parts = raw.replace(/…$/, '').split(', ').map((phrase) =>
+          phrase.split(/\s+/).map((w) => PERM_WORDS_ES[w.toLowerCase()] || w).join(' ')
+        );
+        const suffix = raw.endsWith('…') ? '…' : '';
+        return parts.join(', ') + suffix;
+      }
+      return raw;
+    },
+    [localeCode],
+  );
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,9 +141,17 @@ export default function StaffPage() {
 
   const fetchStaff = useCallback(async (silentRefresh = false) => {
     if (!silentRefresh) setLoading(true);
-    setStaff([]);
-    if (!silentRefresh) setLoading(false);
-    setRefreshing(false);
+    setRefreshing(true);
+    try {
+      const response = await apiClient.get('/users');
+      const usersList = extractArrayData(response);
+      setStaff(Array.isArray(usersList) ? usersList : []);
+    } catch (err) {
+      setStaff([]);
+    } finally {
+      if (!silentRefresh) setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -233,9 +296,10 @@ export default function StaffPage() {
 
   const openEdit = (row) => {
     setEditingUser(row);
+    const { first, last } = getPatientDisplayNameParts(row, localeCode);
     setEditForm({
-      firstName: row.firstName || '',
-      lastName: row.lastName || '',
+      firstName: first || '',
+      lastName: last || '',
       role: row.role || '',
       isActive: row.isActive !== false,
     });
@@ -300,25 +364,15 @@ export default function StaffPage() {
     }
   };
 
-  if (authLoading) {
-    return (
-      <Layout>
-        <Loader type='section' text={t('common.loading')} />
-      </Layout>
-    );
-  }
-
-  if (!user || !allowedRoles.includes(user.role)) {
-    return null;
-  }
-
   const columns = useMemo(
     () => [
       {
         header: t('staff.fullName'),
+        headerClassName: 'min-w-[11rem]',
+        cellClassName: 'min-w-[11rem] align-top',
         accessor: (row) => (
-          <div className='font-medium text-neutral-900'>
-            {[row.firstName, row.lastName].filter(Boolean).join(' ') || '—'}
+          <div className='font-medium text-neutral-900 dark:text-neutral-100 break-words'>
+            {[getDisplayValue(row.firstName), getDisplayValue(row.lastName)].filter(Boolean).join(' ') || '—'}
           </div>
         ),
       },
@@ -332,20 +386,21 @@ export default function StaffPage() {
       },
       {
         header: t('staff.phone'),
-        accessor: (row) => <div className='text-neutral-600'>{row.phone || '—'}</div>,
+        accessor: (row) => (
+          <div className='text-neutral-600 dark:text-neutral-300'>
+            {row.phone ? getDisplayValue(row.phone) : '—'}
+          </div>
+        ),
       },
       {
         header: t('staff.role'),
         headerClassName: 'min-w-[8rem]',
-        cellClassName: 'min-w-[8rem]',
+        cellClassName: 'min-w-[8rem] align-top',
         accessor: (row) => {
           const role = row.role ?? row.roles?.[0] ?? '';
           const label = getRoleLabel(role);
           return (
-            <span
-              className='inline-block min-w-[7rem] px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 capitalize whitespace-nowrap'
-              title={label}
-            >
+            <span className='staff-table-role-badge' title={label}>
               {label || '—'}
             </span>
           );
@@ -353,18 +408,25 @@ export default function StaffPage() {
       },
       {
         header: t('staff.permissions'),
-        accessor: (row) => (
-          <span className='text-xs text-neutral-500' title={permissionsSummary(row.role)}>
-            {permissionsSummary(row.role)}
-          </span>
-        ),
+        accessor: (row) => {
+          const summary = permissionsSummary(row.role);
+          return (
+            <span className='text-xs text-neutral-500' title={summary}>
+              {summary ? getDisplayValue(summary) : '—'}
+            </span>
+          );
+        },
       },
       {
         header: t('common.status'),
+        headerClassName: 'min-w-[7rem]',
+        cellClassName: 'min-w-[7rem] align-top',
         accessor: (row) => (
           <span
-            className={`px-2 py-1 text-xs font-medium rounded-full ${
-              row.isActive ? 'bg-green-100 text-green-800' : 'bg-neutral-100 text-neutral-600'
+            className={`inline-block px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+              row.isActive
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
+                : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
             }`}
           >
             {row.isActive ? t('common.active') : t('common.inactive')}
@@ -374,7 +436,7 @@ export default function StaffPage() {
       {
         header: t('staff.lastLogin'),
         accessor: (row) => (
-          <span className='text-sm text-neutral-600'>
+          <span className='text-sm text-neutral-600 dark:text-neutral-300'>
             {row.lastLoginAt
               ? new Date(row.lastLoginAt).toLocaleString(dateLocale, {
                   year: 'numeric',
@@ -415,8 +477,20 @@ export default function StaffPage() {
         ),
       },
     ],
-    [t, getRoleLabel, dateLocale, openEdit],
+    [t, getRoleLabel, getDisplayValue, getStaffDisplayName, getPermissionSummaryDisplay, dateLocale, localeCode, openEdit],
   );
+
+  if (authLoading) {
+    return (
+      <Layout>
+        <Loader type='section' text={t('common.loading')} />
+      </Layout>
+    );
+  }
+
+  if (!user || !allowedRoles.includes(user.role)) {
+    return null;
+  }
 
   return (
     <Layout>
@@ -637,13 +711,13 @@ export default function StaffPage() {
         {editingUser && (
           <div className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50 p-4'>
             <Card className='p-6 max-w-md w-full'>
-              <h2 className='text-lg font-bold text-neutral-900 mb-4'>
-                {t('staff.edit')} – {editingUser.email}
+              <h2 className='text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4'>
+                {t('staff.edit')} – {editingUser.email ? getEmailDisplayValue(editingUser.email, localeCode) : ''}
               </h2>
               <form onSubmit={handleEditSubmit} className='space-y-4'>
                 <div className='grid grid-cols-2 gap-4'>
                   <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                    <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
                       {t('staff.firstName')}
                     </label>
                     <Input
@@ -652,7 +726,7 @@ export default function StaffPage() {
                     />
                   </div>
                   <div>
-                    <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                    <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
                       {t('staff.lastName')}
                     </label>
                     <Input
@@ -662,11 +736,11 @@ export default function StaffPage() {
                   </div>
                 </div>
                 <div>
-                  <label className='block text-sm font-medium text-neutral-700 mb-1'>
+                  <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1'>
                     {t('staff.role')}
                   </label>
                   <select
-                    className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500'
+                    className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100'
                     value={editForm.role}
                     onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                   >
@@ -684,7 +758,7 @@ export default function StaffPage() {
                     checked={editForm.isActive}
                     onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
                   />
-                  <label htmlFor='editActive' className='text-sm text-neutral-700'>
+                  <label htmlFor='editActive' className='text-sm text-neutral-700 dark:text-neutral-300'>
                     {t('common.active')}
                   </label>
                 </div>

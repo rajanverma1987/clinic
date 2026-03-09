@@ -240,7 +240,7 @@ export function HolidayManagementTab({
               {holidays.map((holiday) => (
                 <div
                   key={holiday.id}
-                  className='flex items-center justify-between p-3 border border-neutral-200 dark:border-neutral-600 rounded-lg hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all'
+                  className='holiday-row flex items-center justify-between p-3 border border-neutral-200 rounded-lg'
                 >
                   <div className='flex items-center gap-3'>
                     <div>

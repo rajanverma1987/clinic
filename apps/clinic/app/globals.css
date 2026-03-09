@@ -1474,6 +1474,44 @@
   color: var(--color-neutral-400);
 }
 
+/* Staff table role badge: dark mode uses explicit vars so text is always visible */
+.staff-table-role-badge {
+  display: inline-block;
+  min-width: 7rem;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  text-transform: capitalize;
+  white-space: nowrap;
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-700);
+  border: 1px solid transparent;
+}
+.dark .clinic-table .staff-table-role-badge,
+.dark .clinic-table-wrap .staff-table-role-badge {
+  background-color: color-mix(in srgb, var(--color-primary-400) 32%, var(--color-surface-elevated));
+  color: var(--color-primary-100);
+  border-color: color-mix(in srgb, var(--color-primary-400) 50%, transparent);
+}
+
+/* Settings > Holidays: row hover visible in dark mode */
+.holiday-row {
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+.holiday-row:hover {
+  border-color: var(--color-primary-300);
+  background-color: var(--color-primary-50);
+}
+.dark .holiday-row {
+  border-color: var(--color-border);
+}
+.dark .holiday-row:hover {
+  border-color: var(--color-primary-400);
+  background-color: color-mix(in srgb, var(--color-primary-400) 25%, var(--color-surface-elevated));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary-400) 40%, transparent);
+}
+
 .dashboard-card {
   border-radius: var(--dashboard-card-radius);
   padding: var(--dashboard-card-padding);
@@ -3709,6 +3747,20 @@ svg.icon.icon-hero {
 .dark .admin-toolbar__search-wrap input:focus,
 .dark .admin-toolbar__search-wrap input.admin-toolbar__search-input:focus {
   border-color: var(--color-primary-500);
+}
+
+/* Change-password page: gap between lock icon and placeholder */
+.change-password-form input.form-control-height {
+  padding-left: 2.75rem !important;
+}
+/* RTL (e.g. Arabic): same gap between eye icon and placeholder (eye stays on physical right) */
+[dir='rtl'] .change-password-form input.form-control-height {
+  padding-right: 2.75rem !important;
+}
+
+/* Create manager: space for show/hide password button */
+.create-manager-form .relative input.form-control-height {
+  padding-right: 2.5rem !important;
 }
 
 .admin-toolbar__select {

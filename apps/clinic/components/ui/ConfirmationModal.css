@@ -118,3 +118,36 @@
     animation: none;
   }
 }
+
+/* Dark mode */
+.dark .ConfirmationModal-backdrop {
+  background: color-mix(in srgb, var(--color-neutral-900) 60%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.dark .ConfirmationModal-container {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0 20px 40px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-400) 15%, transparent);
+}
+
+.dark .ConfirmationModal-title {
+  color: var(--color-text-primary);
+}
+
+.dark .ConfirmationModal-content,
+.dark .ConfirmationModal-message {
+  color: var(--color-neutral-300);
+}
+
+.dark .ConfirmationModal-footer {
+  border-top-color: var(--color-border);
+  background: transparent;
+}
+
+.dark .ConfirmationModal-icon--info {
+  color: var(--color-primary-300);
+}

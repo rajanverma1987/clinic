@@ -151,7 +151,7 @@ export function GeneralSettingsTab({
                 <select
                   value={normalizedRegion}
                   onChange={(e) => setClinicForm({ ...clinicForm, region: e.target.value })}
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
+                  className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
                   required
                 >
                   <option value='US'>{getRegionLabel('US')}</option>
@@ -183,7 +183,7 @@ export function GeneralSettingsTab({
                 <select
                   value={normalizedCurrency}
                   onChange={(e) => setClinicForm({ ...clinicForm, currency: e.target.value })}
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
+                  className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
                   required
                 >
                   <option value='USD'>
@@ -216,7 +216,7 @@ export function GeneralSettingsTab({
                   <select
                     value={normalizedLocale}
                     onChange={(e) => setClinicForm({ ...clinicForm, locale: e.target.value })}
-                    className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
+                    className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
                     required
                   >
                     <option value='en-US'>
@@ -242,7 +242,7 @@ export function GeneralSettingsTab({
                 <select
                   value={normalizedTimezone}
                   onChange={(e) => setClinicForm({ ...clinicForm, timezone: e.target.value })}
-                  className='w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-neutral-900 text-sm'
+                  className='w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-sm'
                   required
                 >
                   <option value='America/New_York'>
