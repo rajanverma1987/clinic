@@ -72,6 +72,12 @@ export default function QueuePage() {
     });
   };
 
+  const handleOpenSearch = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openSearch'));
+    }
+  }, []);
+
   // Queue stores doctorId as User _id (ref: 'User'). Use current user's id for doctor role; for clinic_admin use selected doctor's User id from dropdown.
   useEffect(() => {
     if (isDoctor && userId) {
@@ -440,6 +446,7 @@ export default function QueuePage() {
         subtitle={formatDateDisplay()}
         notifications={[]}
         unreadCount={0}
+        onOpenSearch={handleOpenSearch}
         onRefresh={() => fetchQueue(true)}
         refreshing={loading}
         actionButtons={[

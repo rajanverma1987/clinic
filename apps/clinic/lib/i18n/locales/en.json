@@ -4083,6 +4083,7 @@
     "connecting": "Connecting...",
     "establishingConnection": "Establishing peer-to-peer connection",
     "mayTakeFewSeconds": "This may take a few seconds",
+    "preparingCall": "Preparing your call...",
     "waitingForDoctorToJoin": "Waiting for doctor to join...",
     "waitingForPatientToJoin": "Waiting for patient to join...",
     "waitingForDoctorToRejoin": "Waiting for doctor to rejoin...",

@@ -139,3 +139,77 @@
   background: var(--color-neutral-100);
   color: var(--color-neutral-900);
 }
+
+/* Dark theme: toasts inside #toast-container (imperative toasts) and .Toast (React toasts) */
+.dark #toast-container .Toast,
+.dark .Toast {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-neutral-600);
+  box-shadow: var(--shadow-lg);
+}
+
+.dark #toast-container .Toast--info,
+.dark .Toast--info {
+  border-color: var(--color-primary-400);
+}
+
+.dark #toast-container .Toast--success,
+.dark .Toast--success {
+  border-color: var(--color-secondary-400);
+}
+
+.dark #toast-container .Toast--warning,
+.dark .Toast--warning {
+  border-color: var(--color-status-warning);
+}
+
+.dark #toast-container .Toast--error,
+.dark .Toast--error {
+  background: color-mix(in srgb, var(--color-primary-500) 18%, var(--color-surface-elevated));
+  border-left-color: var(--color-primary-400);
+}
+
+.dark #toast-container .Toast-message,
+.dark .Toast-message {
+  color: var(--color-text-primary);
+}
+
+.dark #toast-container .Toast-timestamp,
+.dark .Toast-timestamp {
+  color: var(--color-text-secondary);
+}
+
+.dark #toast-container .Toast-close,
+.dark .Toast-close {
+  color: var(--color-text-secondary);
+}
+
+.dark #toast-container .Toast-close:hover,
+.dark .Toast-close:hover {
+  background: var(--color-neutral-600);
+  color: var(--color-text-primary);
+}
+
+.dark #toast-container .Toast-icon--info,
+.dark .Toast-icon--info {
+  background: color-mix(in srgb, var(--color-primary-500) 22%, transparent);
+  color: var(--color-primary-300);
+}
+
+.dark #toast-container .Toast-icon--success,
+.dark .Toast-icon--success {
+  background: color-mix(in srgb, var(--color-secondary-500) 22%, transparent);
+  color: var(--color-secondary-300);
+}
+
+.dark #toast-container .Toast-icon--warning,
+.dark .Toast-icon--warning {
+  background: color-mix(in srgb, var(--color-status-warning) 22%, transparent);
+  color: var(--color-status-warning);
+}
+
+.dark #toast-container .Toast-icon--error,
+.dark .Toast-icon--error {
+  background: transparent;
+  color: var(--color-primary-400);
+}

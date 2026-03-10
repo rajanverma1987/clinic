@@ -136,13 +136,21 @@ export default function PrescriptionDetailPage() {
 
   const getStatusColor = (status) => {
     const colorMap = {
-      draft: 'bg-status-warning/10 text-status-warning',
-      active: 'bg-primary-100 text-primary-700',
-      dispensed: 'bg-primary-100 text-primary-700',
-      cancelled: 'bg-status-error/10 text-status-error',
-      expired: 'bg-neutral-100 text-neutral-700',
+      draft:
+        'bg-status-warning/10 text-status-warning dark:bg-status-warning/20 dark:text-status-warning',
+      active:
+        'bg-primary-100 text-primary-700 dark:bg-primary-700/50 dark:text-primary-50 border border-transparent dark:border-primary-500/40',
+      dispensed:
+        'bg-primary-100 text-primary-700 dark:bg-primary-700/50 dark:text-primary-50 border border-transparent dark:border-primary-500/40',
+      cancelled:
+        'bg-status-error/10 text-status-error dark:bg-status-error/20 dark:text-status-error',
+      expired:
+        'bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-100',
     };
-    return colorMap[status] || 'bg-neutral-100 text-neutral-700';
+    return (
+      colorMap[status] ||
+      'bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-100'
+    );
   };
 
   // Redirect if not authenticated (non-blocking)
@@ -283,9 +291,10 @@ export default function PrescriptionDetailPage() {
                 <div className='flex items-center justify-between pb-4 border-b'>
                   <h2 className='text-lg font-semibold'>{t('prescriptions.prescriptionDetails')}</h2>
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    className={`prescription-detail-status px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
                       prescription.status,
                     )}`}
+                    data-status={prescription.status || ''}
                   >
                     {getStatusLabel(prescription.status)}
                   </span>

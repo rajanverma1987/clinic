@@ -61,7 +61,7 @@ export function SimpleTextEditor({ value, onChange, placeholder, className = '',
   return (
     <div className='w-full'>
       {/* Toolbar */}
-      <div className='flex items-center gap-1 mb-2 p-2 bg-gray-50 border border-gray-300 rounded-t-lg'>
+      <div className='flex items-center gap-1 mb-2 p-2 bg-neutral-50 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-t-lg'>
         <Button
           type='button'
           variant='ghost'
@@ -144,10 +144,10 @@ export function SimpleTextEditor({ value, onChange, placeholder, className = '',
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         className={`
-          w-full px-3 py-2 border border-gray-300 rounded-b-lg
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+          w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-b-lg
+          focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
           min-h-[${rows * 1.5}rem]
-          ${isFocused ? 'bg-white' : 'bg-white'}
+          ${isFocused ? 'bg-white dark:bg-neutral-800' : 'bg-white dark:bg-neutral-800'}
           ${className}
         `}
         style={{

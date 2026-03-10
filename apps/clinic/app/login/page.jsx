@@ -260,16 +260,16 @@ function LoginPageContent() {
   }
 
   return (
-    <div className='h-screen flex bg-neutral-50 overflow-hidden'>
+    <div className='h-screen flex bg-neutral-50 dark:bg-neutral-900 overflow-hidden'>
       {/* Left Side - Background Image Only */}
-      <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 h-full'>
+      <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 dark:border-neutral-700 h-full'>
         {/* Background Image */}
         <div className='absolute inset-0 w-full h-full'>
           <ImageTransition
             src='/images/login.png'
             alt={t('common.altLoginBackground')}
             fill
-            className='object-cover opacity-90'
+            className='object-cover opacity-90 dark:opacity-70'
             quality={75}
             priority
             sizes='50vw'
@@ -277,11 +277,11 @@ function LoginPageContent() {
           />
         </div>
         {/* Subtle fade overlay */}
-        <div className='absolute inset-0 bg-gradient-to-br from-neutral-900/10 via-transparent to-neutral-900/20'></div>
+        <div className='absolute inset-0 bg-gradient-to-br from-neutral-900/10 via-transparent to-neutral-900/20 dark:from-neutral-950/40 dark:to-neutral-950/60'></div>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className='w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 h-full overflow-y-auto'>
+      <div className='w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 h-full overflow-y-auto'>
         <div className='w-full max-w-md'>
           {reasonClinicOnly && (
             <div className='mb-4 p-3 rounded-lg bg-primary-50 border border-primary-200 text-primary-800 text-sm'>
@@ -297,14 +297,14 @@ function LoginPageContent() {
                   alt={t('common.altClinicLogo')}
                   width={200}
                   height={175}
-                  className='object-contain drop-shadow-md w-52 max-w-full'
+                  className='object-contain drop-shadow-md w-52 max-w-full dark:brightness-0 dark:invert'
                   priority
                 />
               </div>
             </Link>
           </div>
 
-          <FormTransition className='bg-white rounded-2xl border-2 border-neutral-200/80 shadow-2xl p-8 lg:p-10'>
+          <FormTransition className='bg-white dark:bg-neutral-800 rounded-2xl border-2 border-neutral-200/80 dark:border-neutral-600/80 shadow-2xl p-8 lg:p-10'>
             {/* Logo for desktop - top of form */}
             <div className='hidden lg:flex justify-center mb-8'>
               <Link href='/' className='inline-flex items-center justify-center group'>
@@ -314,7 +314,7 @@ function LoginPageContent() {
                     alt={t('common.altClinicLogo')}
                     width={200}
                     height={175}
-                    className='object-contain drop-shadow-sm w-52'
+                    className='object-contain drop-shadow-sm w-52 dark:brightness-0 dark:invert'
                     priority
                   />
                 </div>
@@ -323,7 +323,7 @@ function LoginPageContent() {
 
             <div className='text-center mb-8'>
               <h2
-                className='text-neutral-900 mb-2'
+                className='text-neutral-900 dark:text-neutral-100 mb-2'
                 style={{
                   fontSize: '32px',
                   lineHeight: '40px',
@@ -334,7 +334,7 @@ function LoginPageContent() {
                 {t('auth.login')}
               </h2>
               <p
-                className='text-neutral-600'
+                className='text-neutral-600 dark:text-neutral-400'
                 style={{
                   fontSize: '16px',
                   lineHeight: '24px',
@@ -369,14 +369,14 @@ function LoginPageContent() {
                 <div>
                   <label
                     htmlFor='email'
-                    className='block text-sm font-semibold text-neutral-800 mb-2'
+                    className='block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2'
                   >
                     {t('auth.email')}
                   </label>
-                  <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
-                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                  <div className='flex items-stretch border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-700/50 overflow-hidden focus-within:border-primary-500 dark:focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-500/20 dark:focus-within:ring-primary-400/20 form-control-height'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 dark:border-neutral-600 bg-neutral-50/50 dark:bg-neutral-700'>
                       <svg
-                        className='icon icon-sm text-neutral-600'
+                        className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -408,14 +408,14 @@ function LoginPageContent() {
                 <div>
                   <label
                     htmlFor='password'
-                    className='block text-sm font-semibold text-neutral-800 mb-2'
+                    className='block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2'
                   >
                     {t('auth.password')}
                   </label>
-                  <div className='flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height'>
-                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                  <div className='flex items-stretch border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-700/50 overflow-hidden focus-within:border-primary-500 dark:focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-500/20 dark:focus-within:ring-primary-400/20 form-control-height'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 dark:border-neutral-600 bg-neutral-50/50 dark:bg-neutral-700'>
                       <svg
-                        className='icon icon-sm text-neutral-600'
+                        className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -498,14 +498,14 @@ function LoginPageContent() {
                     />
                     <label
                       htmlFor='rememberMe'
-                      className='text-sm text-neutral-700 group-hover:text-neutral-900 font-medium transition-colors cursor-pointer'
+                      className='text-sm text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-neutral-100 font-medium transition-colors cursor-pointer'
                     >
                       {t('auth.rememberMe')}
                     </label>
                   </div>
                   <Link
                     href='/forgot-password'
-                    className='text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center group transition-colors'
+                    className='text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold flex items-center group transition-colors'
                   >
                     <svg
                       className='icon icon-xs mr-1 group-hover:translate-x-1 transition-transform'
@@ -550,10 +550,10 @@ function LoginPageContent() {
 
                 <div className='relative my-6'>
                   <div className='absolute inset-0 flex items-center'>
-                    <div className='w-full border-t border-neutral-200' />
+                    <div className='w-full border-t border-neutral-200 dark:border-neutral-600' />
                   </div>
                   <div className='relative flex justify-center text-sm'>
-                    <span className='px-3 bg-white text-neutral-500'>
+                    <span className='px-3 bg-white dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400'>
                       {t('auth.orContinueWith')}
                     </span>
                   </div>
@@ -609,7 +609,7 @@ function LoginPageContent() {
                     </svg>
                   </div>
                   <h3
-                    className='text-neutral-900 mb-2'
+                    className='text-neutral-900 dark:text-neutral-100 mb-2'
                     style={{
                       fontSize: '24px',
                       lineHeight: '32px',
@@ -619,7 +619,7 @@ function LoginPageContent() {
                     {t('auth.twoFactorAuthentication')}
                   </h3>
                   <p
-                    className='text-neutral-600'
+                    className='text-neutral-600 dark:text-neutral-400'
                     style={{
                       fontSize: '14px',
                       lineHeight: '20px',
@@ -651,7 +651,7 @@ function LoginPageContent() {
                 <div>
                   <label
                     htmlFor='otp'
-                    className='block text-sm font-semibold text-neutral-800 mb-2'
+                    className='block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2'
                   >
                     {t('auth.secretCode')}
                   </label>
@@ -725,25 +725,25 @@ function LoginPageContent() {
             {!showOtp && (
               <>
                 <div className='mt-8 text-center'>
-                  <p className='text-sm text-neutral-700'>
+                  <p className='text-sm text-neutral-700 dark:text-neutral-300'>
                     {t('auth.noPublicSignup') ||
                       'Clinics are provisioned by admin. Contact your administrator or '}
                     <Link
                       href='/pricing'
-                      className='text-primary-600 hover:text-primary-700 font-bold transition-colors'
+                      className='text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-bold transition-colors'
                     >
                       {t('auth.contactSales')}
                     </Link>
                     .
                   </p>
                   <p
-                    className='text-neutral-500 mt-2'
+                    className='text-neutral-500 dark:text-neutral-400 mt-2'
                     style={{ fontSize: '10px', lineHeight: '14px' }}
                   >
                     By signing in, you agree to our{' '}
                     <Link
                       href='/legal'
-                      className='text-primary-600 hover:text-primary-700 font-medium underline'
+                      className='text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium underline'
                       style={{ fontSize: '10px' }}
                     >
                       Legal Information & Disclaimers
@@ -763,8 +763,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className='min-h-screen flex items-center justify-center bg-neutral-50'>
-          <div className='animate-pulse rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent' />
+        <div className='min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-900'>
+          <div className='animate-pulse rounded-full h-8 w-8 border-2 border-primary-500 dark:border-primary-400 border-t-transparent' />
         </div>
       }
     >

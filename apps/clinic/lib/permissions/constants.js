@@ -95,13 +95,13 @@ export const PERMISSIONS = {
     [RESOURCES.CONSENT]: [ACTIONS.MANAGE],
   },
 
-  // Admin (CursorMD/New: full clinic ops except assign Admin/Manager; prescription view-only; no medical notes/add diagnosis)
+  // Admin (CursorMD/New: full clinic ops except assign Admin/Manager; prescription create/edit allowed; no medical notes/add diagnosis)
   // clinic_admin in DB is treated as Admin in permissions (see hasPermission).
   // SUBSCRIPTION:CREATE allowed here; isPrimaryAccount in handler is the gate for who can mutate.
   admin: {
     [RESOURCES.PATIENT]: [ACTIONS.MANAGE],
     [RESOURCES.APPOINTMENT]: [ACTIONS.MANAGE],
-    [RESOURCES.PRESCRIPTION]: [ACTIONS.READ], // Spec: Admin – Create prescription View Only
+    [RESOURCES.PRESCRIPTION]: [ACTIONS.CREATE, ACTIONS.READ, ACTIONS.UPDATE], // Admin can create and edit prescriptions
     [RESOURCES.INVOICE]: [ACTIONS.MANAGE],
     [RESOURCES.PAYMENT]: [ACTIONS.MANAGE],
     [RESOURCES.LAB_TEST]: [ACTIONS.MANAGE],
@@ -132,7 +132,7 @@ export const PERMISSIONS = {
   clinic_admin: {
     [RESOURCES.PATIENT]: [ACTIONS.MANAGE],
     [RESOURCES.APPOINTMENT]: [ACTIONS.MANAGE],
-    [RESOURCES.PRESCRIPTION]: [ACTIONS.READ],
+    [RESOURCES.PRESCRIPTION]: [ACTIONS.CREATE, ACTIONS.READ, ACTIONS.UPDATE],
     [RESOURCES.INVOICE]: [ACTIONS.MANAGE],
     [RESOURCES.PAYMENT]: [ACTIONS.MANAGE],
     [RESOURCES.LAB_TEST]: [ACTIONS.MANAGE],

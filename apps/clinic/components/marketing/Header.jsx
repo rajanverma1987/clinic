@@ -91,7 +91,7 @@ export function Header() {
                   alt={t('common.altClinicLogo')}
                   width={180}
                   height={50}
-                  className='object-contain'
+                  className='object-contain dark:brightness-0 dark:invert'
                   style={{ width: '100%', height: 'auto', maxHeight: '50px' }}
                   priority
                   quality={90}

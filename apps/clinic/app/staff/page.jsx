@@ -30,6 +30,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const ROLE_OPTIONS = [
   { value: 'clinic_admin', labelKey: 'settings.admin' },
+  { value: 'doctor', labelKey: 'settings.doctor' },
   { value: 'manager', labelKey: 'settings.manager' },
   { value: 'nurse', labelKey: 'settings.nurse' },
   { value: 'receptionist', labelKey: 'settings.receptionist' },

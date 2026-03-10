@@ -210,7 +210,7 @@ export default function InventoryPage() {
         getExportItemName(r),
         r.code || '',
         getCategoryLabel(r.type),
-        `${r.totalQuantity ?? 0} / ${r.availableQuantity ?? 0} ${t('inventory.available')}`,
+        `${r.availableQuantity ?? 0} / ${r.totalQuantity ?? 0} ${t('inventory.available')}`,
         r.costPrice != null ? String(r.costPrice / 100) : '',
         r.sellingPrice != null ? String(r.sellingPrice / 100) : '',
       ]);
@@ -375,7 +375,7 @@ export default function InventoryPage() {
           const isLow = available <= threshold;
           return (
             <span className={isLow ? 'text-status-error font-medium' : 'text-neutral-900'}>
-              {row.totalQuantity} / {row.availableQuantity} {t('inventory.available')}
+              {row.availableQuantity} / {row.totalQuantity} {t('inventory.available')}
             </span>
           );
         },

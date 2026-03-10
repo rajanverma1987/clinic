@@ -126,11 +126,11 @@ export function canManageSuppliers(role) {
 }
 
 /**
- * STAFF MANAGEMENT – Spec: only Doctor (clinic owner) and Super Admin can assign Admin/Manager.
- * Admin cannot assign or remove Admin or Manager roles.
+ * STAFF MANAGEMENT – Doctor (clinic owner), Clinic Admin, and Super Admin can assign Admin/Manager.
+ * Admin (clinic_admin) can do everything on staff page including assigning Admin or Manager roles.
  */
 export function canAssignAdminManager(role) {
-  return ['super_admin', 'doctor'].includes(r(role));
+  return ['super_admin', 'doctor', 'admin'].includes(r(role));
 }
 
 export function canAddStaff(role) {

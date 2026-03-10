@@ -26,29 +26,20 @@ export class WebRTCPeerWrapper {
     this.remoteStream = null;
     this.isConnected = false;
 
-    // High-quality video/audio constraints for clear communication
-    // Optimized for professional video calls with excellent quality
+    // Use only "ideal" (optional) constraints to avoid OverconstrainedError on devices
+    // that can't meet min resolution/sampleRate. Fallback to minimal constraints if needed.
     this.videoConstraints = {
-      width: { ideal: 1920, min: 1280 },
-      height: { ideal: 1080, min: 720 },
-      frameRate: { ideal: 30, min: 24 },
-      aspectRatio: { ideal: 16 / 9 },
-      facingMode: 'user'
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+      frameRate: { ideal: 24 },
+      facingMode: { ideal: 'user' }
     };
 
     this.audioConstraints = {
       echoCancellation: true,
       noiseSuppression: true,
-      autoGainControl: true,
-      sampleRate: 48000,
-      channelCount: 2, // Stereo for better quality
-      // Chrome-specific high-quality audio settings
-      googEchoCancellation: true,
-      googAutoGainControl: true,
-      googNoiseSuppression: true,
-      googHighpassFilter: true,
-      googTypingNoiseDetection: true,
-      googNoiseReduction: true
+      autoGainControl: true
+      // Avoid sampleRate, channelCount, goog* — many devices don't support them and throw OverconstrainedError
     };
   }
 
@@ -144,12 +135,21 @@ export class WebRTCPeerWrapper {
 
       logger.info('[WebRTC] Requesting camera and microphone access...');
 
-      // Request media with explicit constraints
-      // This will trigger the browser's permission prompt
-      const stream = await getUserMediaFunc({
-        video: this.videoConstraints,
-        audio: this.audioConstraints
-      });
+      // Request media: try preferred constraints first, fallback to minimal on OverconstrainedError
+      let stream;
+      try {
+        stream = await getUserMediaFunc({
+          video: this.videoConstraints,
+          audio: this.audioConstraints
+        });
+      } catch (firstError) {
+        if (firstError.name === 'OverconstrainedError' || firstError.name === 'ConstraintNotSatisfiedError') {
+          logger.warn('[WebRTC] Preferred constraints not supported, retrying with minimal constraints:', firstError.message || firstError.constraint);
+          stream = await getUserMediaFunc({ video: true, audio: true });
+        } else {
+          throw firstError;
+        }
+      }
 
       // Log actual video settings achieved
       const videoTrack = stream.getVideoTracks()[0];
@@ -177,15 +177,15 @@ export class WebRTCPeerWrapper {
           aspectRatio: capabilities.aspectRatio
         });
 
-        // Try to apply optimal settings if supported
+        // Try to apply optional quality settings if supported (ideal only to avoid OverconstrainedError)
         if (videoTrack.applyConstraints) {
           try {
             await videoTrack.applyConstraints({
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-              frameRate: { ideal: 30 }
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 24 }
             });
-            logger.info('[WebRTC] ✅ Applied high-quality video constraints');
+            logger.info('[WebRTC] ✅ Applied video constraints');
           } catch (constraintError) {
             logger.warn('[WebRTC] Could not apply ideal constraints, using defaults:', constraintError);
           }

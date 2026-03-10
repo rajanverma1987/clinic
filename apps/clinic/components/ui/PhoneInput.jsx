@@ -46,11 +46,15 @@ export function PhoneInput({
 
   return (
     <div className={`w-full ${className}`}>
-      {label && <label className='block text-sm font-semibold text-gray-900 mb-2'>{label}</label>}
+      {label && (
+        <label className='block text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-2'>
+          {label}
+        </label>
+      )}
       <div
         className={`
-        flex items-center border rounded-lg transition-[border-color,box-shadow] duration-200 ease-out focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500
-        ${error ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'}
+        flex items-center border rounded-lg transition-[border-color,box-shadow] duration-200 ease-out focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500
+        ${error ? 'border-status-error bg-red-50 dark:bg-status-error/10' : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-500'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
       >
@@ -64,11 +68,11 @@ export function PhoneInput({
             disabled={disabled}
             aria-expanded={showDropdown}
             aria-haspopup='listbox'
-            className='flex items-center px-3 py-2.5 border-r border-gray-300 hover:bg-gray-50 rounded-l-lg min-w-0 rounded-r-none'
+            className='flex items-center px-3 py-2.5 border-r border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 rounded-l-lg min-w-0 rounded-r-none text-neutral-700 dark:text-neutral-200'
           >
-            <span className='text-gray-700 font-medium mr-1'>{countryCode}</span>
+            <span className='font-medium mr-1'>{countryCode}</span>
             <svg
-              className={`icon icon-xs text-gray-400 ${showDropdown ? 'rotate-180' : ''}`}
+              className={`icon icon-xs text-neutral-400 dark:text-neutral-500 ${showDropdown ? 'rotate-180' : ''}`}
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'
@@ -91,7 +95,7 @@ export function PhoneInput({
                 onClick={() => setShowDropdown(false)}
               />
               <div
-                className='absolute top-full left-0 mt-1 w-48 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto'
+                className='absolute top-full left-0 mt-1 w-48 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto'
                 style={{ zIndex: 10060 }}
               >
                 {COUNTRY_CODES.map((item) => (
@@ -102,12 +106,14 @@ export function PhoneInput({
                     fullWidth
                     align='start'
                     onClick={() => handleCountryCodeChange(item.code)}
-                    className={`px-4 py-2 hover:bg-gray-50 ${
-                      countryCode === item.code ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                    className={`px-4 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-700 ${
+                      countryCode === item.code
+                        ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-200'
+                        : 'text-neutral-700 dark:text-neutral-200'
                     }`}
                   >
                     <span className='font-medium'>{item.code}</span>
-                    <span className='ml-2 text-gray-500 text-sm'>{item.country}</span>
+                    <span className='ml-2 text-neutral-500 dark:text-neutral-400 text-sm'>{item.country}</span>
                   </Button>
                 ))}
               </div>
@@ -123,10 +129,10 @@ export function PhoneInput({
           placeholder={placeholder}
           disabled={disabled}
           required={required}
-          className='flex-1 px-4 py-2.5 border-none focus:outline-none bg-transparent text-gray-900 placeholder-gray-400'
+          className='flex-1 px-4 py-2.5 border-none focus:outline-none bg-transparent text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 min-w-0'
         />
       </div>
-      {error && <p className='mt-1 text-sm text-red-600'>{error}</p>}
+      {error && <p className='mt-1 text-sm text-status-error'>{error}</p>}
     </div>
   );
 }

@@ -8,6 +8,7 @@
 import { useI18n } from '@/contexts/I18nContext';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import '@/components/ui/Toast.css';
 
 const TOAST_CONTAINER_STYLE = {
   position: 'fixed',

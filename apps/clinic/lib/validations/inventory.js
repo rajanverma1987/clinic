@@ -51,7 +51,9 @@ export const createInventoryItemSchema = z.object({
   form: z.string().optional(),
   strength: z.string().optional(),
   unit: z.string().optional(),
-  currentStock: z.number().int().min(0).optional(), // Simplified stock input
+  currentStock: z.number().int().min(0).optional(), // Simplified stock input (create)
+  totalQuantity: z.number().int().min(0).optional(), // For direct update (e.g. edit current stock)
+  availableQuantity: z.number().int().min(0).optional(),
   batches: z.array(batchSchema).optional(),
   batchNumber: z.string().optional(), // For single batch
   expiryDate: z.string().optional(), // For single batch

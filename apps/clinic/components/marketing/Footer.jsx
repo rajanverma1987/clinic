@@ -180,7 +180,7 @@ function FooterComponent() {
                       alt={t('common.altClinicLogo')}
                       width={160}
                       height={45}
-                      className='object-contain'
+                      className='object-contain dark:brightness-0 dark:invert'
                       quality={90}
                       sizes='160px'
                       style={{ width: '100%', height: 'auto', maxHeight: '45px' }}

@@ -4075,6 +4075,7 @@
     "connecting": "جاري الاتصال...",
     "establishingConnection": "جاري إنشاء الاتصال المباشر",
     "mayTakeFewSeconds": "قد يستغرق ذلك بضع ثوانٍ",
+    "preparingCall": "جاري تحضير المكالمة...",
     "waitingForDoctorToJoin": "في انتظار انضمام الطبيب...",
     "waitingForPatientToJoin": "في انتظار انضمام المريض...",
     "waitingForDoctorToRejoin": "في انتظار عودة الطبيب...",

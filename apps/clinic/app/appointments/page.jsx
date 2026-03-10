@@ -543,14 +543,16 @@ export default function AppointmentsPage() {
     },
     {
       header: t('appointments.date'),
-      accessor: (row) =>
-        row.appointmentDate
-          ? formatDateDisplay(new Date(row.appointmentDate), {
+      accessor: (row) => {
+        const dateSource = row.startTime || row.appointmentDate;
+        return dateSource
+          ? formatDateDisplay(new Date(dateSource), {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
             })
-          : '—',
+          : '—';
+      },
     },
     {
       header: t('appointments.time'),

@@ -2056,6 +2056,7 @@
     "connecting": "Connexion...",
     "establishingConnection": "Établissement de la connexion pair à pair",
     "mayTakeFewSeconds": "Cela peut prendre quelques secondes",
+    "preparingCall": "Préparation de votre appel...",
     "waitingForDoctorToJoin": "En attente du médecin...",
     "waitingForPatientToJoin": "En attente du patient...",
     "waitingForDoctorToRejoin": "En attente du retour du médecin...",

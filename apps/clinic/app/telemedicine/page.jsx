@@ -87,7 +87,7 @@ export default function TelemedicinePage() {
     try {
       const response = await apiClient.post('/telemedicine/sessions/test');
       if (response?.success && response?.data?.id) {
-        router.push(`/telemedicine/${response.data.id}?role=doctor`);
+        router.push(`/telemedicine/${response.data.id}?role=doctor&autoJoin=1`);
       } else {
         logger.warn('Test video session failed', response?.error);
         alert(response?.error?.message || t('common.error'));

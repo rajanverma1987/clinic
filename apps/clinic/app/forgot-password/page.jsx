@@ -136,7 +136,7 @@ export default function ForgotPasswordPage() {
                   alt={t('common.altClinicLogo')}
                   width={128}
                   height={112}
-                  className='object-contain drop-shadow-md w-32 max-w-full'
+                  className='object-contain drop-shadow-md w-32 max-w-full dark:brightness-0 dark:invert'
                   priority
                 />
               </div>
@@ -158,7 +158,7 @@ export default function ForgotPasswordPage() {
                     alt={t('common.altClinicLogo')}
                     width={128}
                     height={112}
-                    className='object-contain drop-shadow-sm w-32 max-w-full'
+                    className='object-contain drop-shadow-sm w-32 max-w-full dark:brightness-0 dark:invert'
                     priority
                   />
                 </div>

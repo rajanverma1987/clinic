@@ -158,7 +158,7 @@ function ChangePasswordContent() {
                   alt={t('common.altClinicLogo')}
                   width={200}
                   height={175}
-                  className='object-contain drop-shadow-md w-52 max-w-full'
+                  className='object-contain drop-shadow-md w-52 max-w-full dark:brightness-0 dark:invert'
                   priority
                 />
               </div>
@@ -180,7 +180,7 @@ function ChangePasswordContent() {
                     alt={t('common.altClinicLogo')}
                     width={200}
                     height={175}
-                    className='object-contain drop-shadow-sm w-52'
+                    className='object-contain drop-shadow-sm w-52 dark:brightness-0 dark:invert'
                     priority
                   />
                 </div>

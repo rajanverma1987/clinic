@@ -41,96 +41,18 @@ class ToastManager {
   }
 
   getIcon(type) {
-    const getIconColor = (type) => {
-      switch (type) {
-        case 'success':
-          return 'var(--color-secondary-600)';
-        case 'error':
-          return 'var(--color-status-error)';
-        case 'warning':
-          return 'var(--color-status-warning)';
-        case 'info':
-        default:
-          return 'var(--color-primary-600)';
-      }
-    };
-
-    const getIconBg = (type) => {
-      switch (type) {
-        case 'success':
-          return 'var(--color-secondary-100)';
-        case 'error':
-          return 'transparent';
-        case 'warning':
-          return 'rgba(245, 158, 11, 0.1)';
-        case 'info':
-        default:
-          return 'var(--color-primary-100)';
-      }
-    };
-
+    const iconClass = `Toast-icon Toast-icon--${type}`;
     switch (type) {
       case 'success':
-        return `<div style="width: 40px; height: 40px; border-radius: var(--radius-lg); background: ${getIconBg(type)}; color: ${getIconColor(type)}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: var(--icon-size-sm, 20px); height: var(--icon-size-sm, 20px); flex-shrink: 0;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
-          </svg>
-        </div>`;
+        return `<div class="${iconClass}"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: var(--icon-size-sm, 20px); height: var(--icon-size-sm, 20px); flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg></div>`;
       case 'error':
-        return `<div style="width: 40px; height: 40px; border-radius: var(--radius-lg); background: ${getIconBg(type)}; color: ${getIconColor(type)}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: var(--icon-size-sm, 20px); height: var(--icon-size-sm, 20px); flex-shrink: 0;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>`;
+        return `<div class="${iconClass}"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: var(--icon-size-sm, 20px); height: var(--icon-size-sm, 20px); flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`;
       case 'warning':
-        return `<div style="width: 40px; height: 40px; border-radius: var(--radius-lg); background: ${getIconBg(type)}; color: ${getIconColor(type)}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: var(--icon-size-sm, 20px); height: var(--icon-size-sm, 20px); flex-shrink: 0;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-          </svg>
-        </div>`;
+        return `<div class="${iconClass}"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: var(--icon-size-sm, 20px); height: var(--icon-size-sm, 20px); flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>`;
       case 'info':
-        return `<div style="width: 40px; height: 40px; border-radius: var(--radius-lg); background: ${getIconBg(type)}; color: ${getIconColor(type)}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: var(--icon-size-sm, 20px); height: var(--icon-size-sm, 20px); flex-shrink: 0;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>`;
+        return `<div class="${iconClass}"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: var(--icon-size-sm, 20px); height: var(--icon-size-sm, 20px); flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`;
       default:
         return '';
-    }
-  }
-
-  getStyles(type) {
-    switch (type) {
-      case 'success':
-        return {
-          bg: '#FFFFFF',
-          border: '#27AE60',
-          text: '#1A1A1A',
-        };
-      case 'error':
-        return {
-          bg: '#FFFFFF',
-          border: '#EB5757',
-          text: '#1A1A1A',
-        };
-      case 'warning':
-        return {
-          bg: '#FFFFFF',
-          border: '#F2C94C',
-          text: '#1A1A1A',
-        };
-      case 'info':
-        return {
-          bg: '#FFFFFF',
-          border: 'var(--color-primary-500)',
-          text: '#1A1A1A',
-        };
-      default:
-        return {
-          bg: '#FFFFFF',
-          border: '#E6E9EE',
-          text: '#1A1A1A',
-        };
     }
   }
 
@@ -147,85 +69,15 @@ class ToastManager {
       animation: premium-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     `;
 
-    const styles = this.getStyles(type);
     const icon = this.getIcon(type);
 
-    // Use theme colors from CSS variables
-    const getThemeBorderColor = (type) => {
-      switch (type) {
-        case 'success':
-          return 'var(--color-secondary-300)';
-        case 'error':
-          return 'var(--color-primary-500)';
-        case 'warning':
-          return 'var(--color-status-warning)';
-        case 'info':
-        default:
-          return 'var(--color-primary-300)';
-      }
-    };
-
-    const getToastBackground = (type) => {
-      if (type === 'error') {
-        return 'var(--color-primary-100)';
-      }
-      return 'var(--color-neutral-50)';
-    };
-
-    const getToastBorder = (type) => {
-      if (type === 'error') {
-        return 'border-left: 4px solid var(--color-primary-500); border-top: none; border-right: none; border-bottom: none;';
-      }
-      return `border: 1px solid ${getThemeBorderColor(type)};`;
-    };
-
     toast.innerHTML = `
-      <div class="Toast Toast--${type}" style="
-        display: flex;
-        align-items: start;
-        gap: 12px;
-        min-width: 320px;
-        max-width: 420px;
-        padding: 16px;
-        background: ${getToastBackground(type)};
-        ${getToastBorder(type)}
-        border-radius: var(--radius-xl);
-        box-shadow: var(--shadow-lg);
-        backdrop-filter: blur(12px);
-      ">
+      <div class="Toast Toast--${type}">
         ${icon}
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; padding-top: 2px;">
-          <div style="
-            font-size: var(--text-body-sm);
-            line-height: var(--text-body-sm-line-height);
-            color: var(--color-neutral-900);
-            font-weight: 600;
-            letter-spacing: -0.01em;
-          ">
-            ${message}
-          </div>
+        <div class="Toast-content">
+          <div class="Toast-message">${message}</div>
         </div>
-        <button
-          onclick="this.closest('[id^=toast-]').remove()"
-          style="
-            flex-shrink: 0;
-            color: var(--color-neutral-500);
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-center;
-            transition: all 0.2s;
-            width: 28px;
-            height: 28px;
-          "
-          onmouseover="this.style.background='var(--color-neutral-100)'; this.style.color='var(--color-neutral-900)';"
-          onmouseout="this.style.background='transparent'; this.style.color='var(--color-neutral-500)';"
-          aria-label="${this.closeAriaLabel}"
-        >
+        <button type="button" class="Toast-close" onclick="this.closest('[id^=toast-]').remove()" aria-label="${this.closeAriaLabel}">
           <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>

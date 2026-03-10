@@ -397,6 +397,13 @@ export default function DashboardPage() {
 
   // QuickActions moved to tab row (right corner)
 
+  // Open global search (Layout listens for 'openSearch' and opens GlobalSearch modal)
+  const handleOpenSearch = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openSearch'));
+    }
+  }, []);
+
   // Notification handlers – must be declared before any early return (Rules of Hooks)
   const handleNotificationClick = useCallback(
     (notification) => {
@@ -461,6 +468,7 @@ export default function DashboardPage() {
               subtitle={formatDateDisplay()}
               notifications={[]}
               unreadCount={0}
+              onOpenSearch={handleOpenSearch}
               variant='dashboard'
             />
           </div>
@@ -480,6 +488,7 @@ export default function DashboardPage() {
               subtitle={formatDateDisplay()}
               notifications={[]}
               unreadCount={0}
+              onOpenSearch={handleOpenSearch}
               variant='dashboard'
             />
           </div>
@@ -541,6 +550,7 @@ export default function DashboardPage() {
               onNotificationClick={handleNotificationClick}
               onMarkAsRead={handleMarkAsRead}
               onMarkAllAsRead={handleMarkAllAsRead}
+              onOpenSearch={handleOpenSearch}
               onRefresh={handleManualRefresh || forceRefresh}
               refreshing={!isDoctor && dashboardAll.isRefreshing}
               variant='dashboard'

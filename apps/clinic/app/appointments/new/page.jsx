@@ -15,7 +15,9 @@ import { Textarea } from '@/components/ui/Textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useFeatures } from '@/hooks/useFeatures.js';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
+import { dateAtTimeInTimezone } from '@/lib/utils/date-timezone';
 import * as routeCache from '@/lib/cache/dashboard-cache';
 import { clearCacheByPrefix } from '@/lib/utils/api-cache';
 import { transliterateToArabic } from '@/lib/utils/transliterate-name';
@@ -39,6 +41,8 @@ function NewAppointmentPageContent() {
     return s;
   };
   const { hasFeature } = useFeatures();
+  const { settings } = useSettings();
+  const clinicTimezone = settings?.settings?.timezone || 'UTC';
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -247,9 +251,20 @@ function NewAppointmentPageContent() {
         return;
       }
 
-      // Calculate end time from start time and duration
-      const startDateTime = new Date(`${formData.appointmentDate}T${formData.startTime}`);
-      const durationMinutes = parseInt(formData.duration);
+      // Build start/end in clinic timezone so "10:00 AM" is 10:00 AM clinic time, not browser time
+      const [startHour, startMinute] = (formData.startTime || '00:00').split(':').map((n) => parseInt(n, 10) || 0);
+      const startDateTime = dateAtTimeInTimezone(
+        formData.appointmentDate,
+        startHour,
+        startMinute,
+        clinicTimezone,
+      );
+      if (Number.isNaN(startDateTime.getTime())) {
+        showError(t('errors.pleaseSelectTime'));
+        setSubmitting(false);
+        return;
+      }
+      const durationMinutes = parseInt(formData.duration, 10) || 30;
       const endDateTime = new Date(startDateTime.getTime() + durationMinutes * 60000);
 
       // Validate telemedicine requirements

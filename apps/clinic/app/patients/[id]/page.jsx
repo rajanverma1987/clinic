@@ -22,7 +22,7 @@ import { getPatientDisplayName, getPatientDisplayNameParts } from '@/lib/utils/p
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const PATIENT_TAB_IDS = PATIENT_DETAIL_TABS.tabs.map((tab) => tab.id);
 
@@ -103,6 +103,12 @@ export default function PatientDetailPage() {
       router.replace(base + '?tab=' + encodeURIComponent(tabId));
     });
   };
+
+  const handleOpenSearch = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openSearch'));
+    }
+  }, []);
 
   const handleOpenConsentModal = async () => {
     setShowConsentModal(true);
@@ -534,6 +540,7 @@ export default function PatientDetailPage() {
             subtitle={t('common.loading')}
             notifications={[]}
             unreadCount={0}
+            onOpenSearch={handleOpenSearch}
           />
           <div className='flex items-center justify-center min-h-[400px]'>
             <Loader type='section' text={t('common.loading')} />
@@ -560,6 +567,7 @@ export default function PatientDetailPage() {
             subtitle={`${t('patients.patientId')}: ${patient.patientId}`}
             notifications={[]}
             unreadCount={0}
+            onOpenSearch={handleOpenSearch}
             actionButtons={
               <>
                 {!isEditing ? (

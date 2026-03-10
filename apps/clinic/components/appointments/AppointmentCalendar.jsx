@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
+import { dateAtTimeInTimezone } from '@/lib/utils/date-timezone';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger.js';
 import { useCallback, useEffect, useState } from 'react';
@@ -109,27 +110,37 @@ export default function AppointmentCalendar({
     if (!Number.isNaN(date.getTime())) setCurrentDate(date);
   }, [selectedDate]);
 
-  // Generate time slots for a day
-  const generateTimeSlots = (date) => {
-    const slots = [];
-    const dayStart = new Date(date);
-    dayStart.setHours(defaultStartHour, 0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(defaultEndHour, 0, 0, 0, 0);
+  // Generate time slots in clinic timezone so booked-slot matching is correct
+  const generateTimeSlots = useCallback(
+    (dateStr, timezone) => {
+      const tz = timezone || 'UTC';
+      const slots = [];
+      const totalMinutes = (defaultEndHour - defaultStartHour) * 60;
+      const slotCount = Math.floor(totalMinutes / slotDuration);
 
-    let current = new Date(dayStart);
-    while (current < dayEnd) {
-      const slotEnd = new Date(current.getTime() + slotDuration * 60000);
-      slots.push({
-        start: new Date(current),
-        end: new Date(slotEnd),
-        available: false,
-        booked: false,
-      });
-      current = new Date(slotEnd);
-    }
-    return slots;
-  };
+      for (let i = 0; i < slotCount; i++) {
+        const startMinutes = defaultStartHour * 60 + i * slotDuration;
+        const endMinutes = startMinutes + slotDuration;
+        const startHour = Math.floor(startMinutes / 60);
+        const startMin = startMinutes % 60;
+        const endHour = Math.floor(endMinutes / 60);
+        const endMin = endMinutes % 60;
+
+        const start = dateAtTimeInTimezone(dateStr, startHour, startMin, tz);
+        const end = dateAtTimeInTimezone(dateStr, endHour, endMin, tz);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
+
+        slots.push({
+          start,
+          end,
+          available: false,
+          booked: false,
+        });
+      }
+      return slots;
+    },
+    [defaultStartHour, defaultEndHour, slotDuration],
+  );
 
   // Fetch appointments for the selected date to determine availability
   const fetchAvailability = useCallback(async () => {
@@ -154,22 +165,19 @@ export default function AppointmentCalendar({
           activeStatuses.includes(apt.status),
         );
 
-        // Filter appointments to only those on the selected date
+        // Filter appointments to only those on the selected date (use startTime in clinic TZ to avoid off-by-one)
         const appointments = allAppointments.filter((apt) => {
-          // Try both appointmentDate and startTime fields
-          const aptDate = apt.appointmentDate
-            ? new Date(apt.appointmentDate)
-            : new Date(apt.startTime);
-          const aptDateKey = formatDateForApi(aptDate);
-
-          // Also check if startTime falls on the selected date
-          const aptStartDate = new Date(apt.startTime);
-          const aptStartDateKey = formatDateForApi(aptStartDate);
-          return aptDateKey === dateKey || aptStartDateKey === dateKey;
+          if (!apt.startTime) return false;
+          const aptStartDateKey = formatDateForApi(new Date(apt.startTime));
+          return aptStartDateKey === dateKey;
         });
 
-        // Generate slots for the selected date
-        const slots = generateTimeSlots(currentDate);
+        // Use clinic timezone; fallback to browser TZ so past slots work even before settings load
+        const clinicTimezone =
+          settings?.timezone ||
+          (typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null) ||
+          'UTC';
+        const slots = generateTimeSlots(dateKey, clinicTimezone);
 
         // Initialize all slots as available first
         slots.forEach((slot) => {
@@ -177,153 +185,53 @@ export default function AppointmentCalendar({
           slot.booked = false;
         });
 
-        // Match doctor's appointments date/time with calendar date/timeslot
-        // Mark slot as booked if any appointment date/time matches
+        // Mark slot as booked if any appointment overlaps (all times are UTC)
         appointments.forEach((apt) => {
           const aptStart = new Date(apt.startTime);
           const aptEnd = new Date(apt.endTime);
 
-          // Get appointment date string (YYYY-MM-DD format) for comparison
-          const aptDateStr = formatDateForApi(aptStart);
-          const selectedDateStr = formatDateForApi(currentDate);
-
-          // Check if appointment is on the selected date
-          if (aptDateStr !== selectedDateStr) {
-            return; // Skip appointments not on this date
-          }
-
-          // Get appointment time in minutes from midnight (using clinic timezone)
-          // Convert UTC times to clinic timezone for accurate comparison
-          const clinicTimezone = settings?.timezone || 'UTC';
-
-          // Get hours/minutes in clinic timezone
-          const aptStartInClinicTz = new Date(
-            aptStart.toLocaleString('en-US', { timeZone: clinicTimezone }),
-          );
-          const aptEndInClinicTz = new Date(
-            aptEnd.toLocaleString('en-US', { timeZone: clinicTimezone }),
-          );
-
-          // Use the original date but extract time in clinic timezone
-          const aptStartHours = parseInt(
-            new Intl.DateTimeFormat('en-US', {
-              timeZone: clinicTimezone,
-              hour: 'numeric',
-              hour12: false,
-            }).format(aptStart),
-          );
-          const aptStartMinutes = parseInt(
-            new Intl.DateTimeFormat('en-US', {
-              timeZone: clinicTimezone,
-              minute: 'numeric',
-            }).format(aptStart),
-          );
-          const aptEndHours = parseInt(
-            new Intl.DateTimeFormat('en-US', {
-              timeZone: clinicTimezone,
-              hour: 'numeric',
-              hour12: false,
-            }).format(aptEnd),
-          );
-          const aptEndMinutes = parseInt(
-            new Intl.DateTimeFormat('en-US', {
-              timeZone: clinicTimezone,
-              minute: 'numeric',
-            }).format(aptEnd),
-          );
-
-          const aptStartTimeMinutes = aptStartHours * 60 + aptStartMinutes;
-          const aptEndTimeMinutes = aptEndHours * 60 + aptEndMinutes;
-
-          // Check each slot against this appointment
-          slots.forEach((slot, slotIdx) => {
-            // Get slot time in minutes from midnight (using clinic timezone)
-            const clinicTimezone = settings?.timezone || 'UTC';
-
-            // Extract hours/minutes from slot in clinic timezone
-            const slotStartHours = parseInt(
-              new Intl.DateTimeFormat('en-US', {
-                timeZone: clinicTimezone,
-                hour: 'numeric',
-                hour12: false,
-              }).format(slot.start),
-            );
-            const slotStartMinutes = parseInt(
-              new Intl.DateTimeFormat('en-US', {
-                timeZone: clinicTimezone,
-                minute: 'numeric',
-              }).format(slot.start),
-            );
-            const slotEndHours = parseInt(
-              new Intl.DateTimeFormat('en-US', {
-                timeZone: clinicTimezone,
-                hour: 'numeric',
-                hour12: false,
-              }).format(slot.end),
-            );
-            const slotEndMinutes = parseInt(
-              new Intl.DateTimeFormat('en-US', {
-                timeZone: clinicTimezone,
-                minute: 'numeric',
-              }).format(slot.end),
-            );
-
-            const slotStartTimeMinutes = slotStartHours * 60 + slotStartMinutes;
-            const slotEndTimeMinutes = slotEndHours * 60 + slotEndMinutes;
-
-            // Simple overlap check: two time ranges overlap if:
-            // slotStart < aptEnd AND aptStart < slotEnd
-            // This covers all cases: partial overlap, complete containment, exact match
-            const slotOverlaps =
-              slotStartTimeMinutes < aptEndTimeMinutes && aptStartTimeMinutes < slotEndTimeMinutes;
-
-            if (slotOverlaps) {
+          slots.forEach((slot) => {
+            const overlaps = slot.start < aptEnd && aptStart < slot.end;
+            if (overlaps) {
               slot.available = false;
               slot.booked = true;
             }
           });
         });
 
-        // Get current date/time for past slot detection
+        // Past slot detection: use clinic timezone so "today" and "past day" match clinic 9–5
         const now = new Date();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const selectedDay = new Date(currentDate);
-        selectedDay.setHours(0, 0, 0, 0);
-        const isToday = selectedDay.getTime() === today.getTime();
+        const todayInClinicKey = formatDateForApi(new Date());
+        const isTodayInClinic = dateKey === todayInClinicKey;
+        const isPastDayInClinic = dateKey < todayInClinicKey;
+        const oneMinuteMs = 60 * 1000;
 
-        // Format slots with date and time info - preserve booked status
+        // Format slots: get display hour/minute in clinic TZ; keep start/end as UTC Dates
         const formattedSlots = slots.map((slot) => {
-          const slotHour = slot.start.getHours();
-          const slotMinute = slot.start.getMinutes();
-          const slotDate = new Date(currentDate);
-          slotDate.setHours(slotHour, slotMinute, 0, 0);
+          const slotHour = parseInt(
+            new Intl.DateTimeFormat('en-US', { timeZone: clinicTimezone, hour: 'numeric', hour12: false }).format(slot.start),
+            10,
+          );
+          const slotMinute = parseInt(
+            new Intl.DateTimeFormat('en-US', { timeZone: clinicTimezone, minute: 'numeric' }).format(slot.start),
+            10,
+          );
 
-          // Check if this slot is in the past (only if selected date is today)
-          let isPastSlot = false;
-          if (isToday) {
-            // Create a date object for this slot's start time in the clinic timezone
-            const slotDateTime = new Date(slotDate);
-            // Compare with current time
-            isPastSlot = slotDateTime < now;
-          } else if (selectedDay < today) {
-            // If the entire day is in the past, all slots are past
-            isPastSlot = true;
-          }
+          // Past if: selected date is before today (clinic), or today and slot start has passed (slot.end so slot is fully in past)
+          const isPastSlot =
+            isPastDayInClinic || (isTodayInClinic && slot.end.getTime() - oneMinuteMs < now.getTime());
 
-          // Explicitly preserve booked and available status from the slot object
           const isBooked = slot.booked === true;
           const isAvailable = slot.available === true && !isBooked && !isPastSlot;
 
           return {
-            ...slot, // This includes available and booked properties
-            start: new Date(slotDate),
-            end: new Date(slotDate.getTime() + slotDuration * 60000),
+            ...slot,
+            start: slot.start,
+            end: slot.end,
             date: new Date(currentDate),
             dateKey: dateKey,
             hour: slotHour,
             minute: slotMinute,
-            // Explicitly preserve booked and available status
             available: isAvailable,
             booked: isBooked,
             isPast: isPastSlot,
@@ -332,39 +240,34 @@ export default function AppointmentCalendar({
 
         setAvailableSlots(formattedSlots);
       } else {
-        // Still generate slots even if no appointments
-        const slots = generateTimeSlots(currentDate);
+        const clinicTz =
+          settings?.timezone ||
+          (typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null) ||
+          'UTC';
+        const slots = generateTimeSlots(dateKey, clinicTz);
 
-        // Get current date/time for past slot detection
         const now = new Date();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const selectedDay = new Date(currentDate);
-        selectedDay.setHours(0, 0, 0, 0);
-        const isToday = selectedDay.getTime() === today.getTime();
+        const todayInClinicKey = formatDateForApi(new Date());
+        const isTodayInClinic = dateKey === todayInClinicKey;
+        const isPastDayInClinic = dateKey < todayInClinicKey;
+        const oneMinuteMs = 60 * 1000;
 
         const formattedSlots = slots.map((slot) => {
-          const slotHour = slot.start.getHours();
-          const slotMinute = slot.start.getMinutes();
-          const slotDate = new Date(currentDate);
-          slotDate.setHours(slotHour, slotMinute, 0, 0);
-
-          // Check if this slot is in the past (only if selected date is today)
-          let isPastSlot = false;
-          if (isToday) {
-            // Create a date object for this slot's start time
-            const slotDateTime = new Date(slotDate);
-            // Compare with current time
-            isPastSlot = slotDateTime < now;
-          } else if (selectedDay < today) {
-            // If the entire day is in the past, all slots are past
-            isPastSlot = true;
-          }
+          const slotHour = parseInt(
+            new Intl.DateTimeFormat('en-US', { timeZone: clinicTz, hour: 'numeric', hour12: false }).format(slot.start),
+            10,
+          );
+          const slotMinute = parseInt(
+            new Intl.DateTimeFormat('en-US', { timeZone: clinicTz, minute: 'numeric' }).format(slot.start),
+            10,
+          );
+          const isPastSlot =
+            isPastDayInClinic || (isTodayInClinic && slot.end.getTime() - oneMinuteMs < now.getTime());
 
           return {
             ...slot,
             date: new Date(currentDate),
-            dateKey: formatDateForApi(currentDate),
+            dateKey: dateKey,
             hour: slotHour,
             minute: slotMinute,
             available: !isPastSlot,
@@ -376,39 +279,35 @@ export default function AppointmentCalendar({
       }
     } catch (error) {
       logger.error('Failed to fetch availability:', error);
-      // Generate empty slots on error
-      const slots = generateTimeSlots(currentDate);
+      const clinicTz =
+        settings?.timezone ||
+        (typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null) ||
+        'UTC';
+      const dateKeyFallback = formatDateForApi(currentDate);
+      const slots = generateTimeSlots(dateKeyFallback, clinicTz);
 
-      // Get current date/time for past slot detection
       const now = new Date();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const selectedDay = new Date(currentDate);
-      selectedDay.setHours(0, 0, 0, 0);
-      const isToday = selectedDay.getTime() === today.getTime();
+      const todayInClinicKey = formatDateForApi(new Date());
+      const isTodayInClinic = dateKeyFallback === todayInClinicKey;
+      const isPastDayInClinic = dateKeyFallback < todayInClinicKey;
+      const oneMinuteMs = 60 * 1000;
 
       const formattedSlots = slots.map((slot) => {
-        const slotHour = slot.start.getHours();
-        const slotMinute = slot.start.getMinutes();
-        const slotDate = new Date(currentDate);
-        slotDate.setHours(slotHour, slotMinute, 0, 0);
-
-        // Check if this slot is in the past (only if selected date is today)
-        let isPastSlot = false;
-        if (isToday) {
-          // Create a date object for this slot's start time
-          const slotDateTime = new Date(slotDate);
-          // Compare with current time
-          isPastSlot = slotDateTime < now;
-        } else if (selectedDay < today) {
-          // If the entire day is in the past, all slots are past
-          isPastSlot = true;
-        }
+        const slotHour = parseInt(
+          new Intl.DateTimeFormat('en-US', { timeZone: clinicTz, hour: 'numeric', hour12: false }).format(slot.start),
+          10,
+        );
+        const slotMinute = parseInt(
+          new Intl.DateTimeFormat('en-US', { timeZone: clinicTz, minute: 'numeric' }).format(slot.start),
+          10,
+        );
+        const isPastSlot =
+          isPastDayInClinic || (isTodayInClinic && slot.end.getTime() - oneMinuteMs < now.getTime());
 
         return {
           ...slot,
           date: new Date(currentDate),
-          dateKey: formatDateForApi(currentDate),
+          dateKey: dateKeyFallback,
           hour: slotHour,
           minute: slotMinute,
           available: !isPastSlot,
@@ -420,7 +319,7 @@ export default function AppointmentCalendar({
     } finally {
       setLoading(false);
     }
-  }, [selectedDoctorId, currentDate, formatDateForApi, settings]);
+  }, [selectedDoctorId, currentDate, formatDateForApi, settings, generateTimeSlots]);
 
   useEffect(() => {
     fetchAvailability();

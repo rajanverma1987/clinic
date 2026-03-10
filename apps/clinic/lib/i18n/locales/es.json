@@ -4072,6 +4072,7 @@
     "connecting": "Conectando...",
     "establishingConnection": "Estableciendo conexión peer-to-peer",
     "mayTakeFewSeconds": "Esto puede tardar unos segundos",
+    "preparingCall": "Preparando tu llamada...",
     "waitingForDoctorToJoin": "Esperando a que se una el doctor...",
     "waitingForPatientToJoin": "Esperando a que se una el paciente...",
     "waitingForDoctorToRejoin": "Esperando a que el doctor se reincorpore...",

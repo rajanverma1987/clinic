@@ -172,7 +172,7 @@ export default function TryForFreePage() {
                   alt={t('common.altClinicLogo')}
                   width={180}
                   height={158}
-                  className='object-contain drop-shadow-md w-44 max-w-full'
+                  className='object-contain drop-shadow-md w-44 max-w-full dark:brightness-0 dark:invert'
                   priority
                 />
               </div>
@@ -189,7 +189,7 @@ export default function TryForFreePage() {
                     alt={t('common.altClinicLogo')}
                     width={180}
                     height={158}
-                    className='object-contain drop-shadow-sm w-44'
+                    className='object-contain drop-shadow-sm w-44 dark:brightness-0 dark:invert'
                     priority
                   />
                 </div>

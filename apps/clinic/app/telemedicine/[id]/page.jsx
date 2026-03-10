@@ -17,7 +17,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
-import { AuditLogger } from '@/lib/audit/audit-logger';
 import {
   decryptFile,
   decryptMessage,
@@ -32,6 +31,14 @@ import { VideoCallManager } from '@/lib/webrtc/video-call-manager';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+
+/** Fire-and-forget audit log via API (avoids using MongoDB in the browser). */
+function logTelemedicineAudit(sessionId, payload) {
+  if (!sessionId || !payload?.action) return;
+  apiClient
+    .post(`/telemedicine/sessions/${sessionId}/audit`, payload)
+    .catch((err) => logger.warn('Telemedicine audit log failed:', err));
+}
 
 function VideoConsultationRoomContent() {
   const router = useRouter();
@@ -85,6 +92,24 @@ function VideoConsultationRoomContent() {
   const callManagerRef = useRef(null);
   const isConnectedRef = useRef(false);
   const canvasRef = useRef(null); // For watermarking
+  const hasAutoJoinTriggeredRef = useRef(false);
+
+  // When alone in a test call, peer never connects — after a timeout, show "Waiting for patient" instead of stuck "Connecting..."
+  const CONNECTING_TO_WAITING_TIMEOUT_MS = 15000; // 15 seconds
+  useEffect(() => {
+    if (!isConnecting || isConnected) return;
+    const timer = setTimeout(() => {
+      if (isConnectedRef.current) return;
+      // Still connecting with no peer: treat as "in call, waiting for other participant"
+      setIsConnecting(false);
+      setIsConnected(true);
+      isConnectedRef.current = true;
+      setRemoteUserConnected(false);
+      setConnectionError(null);
+      logger.debug('[VideoCall] No remote peer after timeout — showing waiting-for-participant UI');
+    }, CONNECTING_TO_WAITING_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [isConnecting, isConnected]);
 
   // Attach stored streams to video elements when refs become ready (avoids missing stream if callback fired before mount)
   useEffect(() => {
@@ -110,9 +135,9 @@ function VideoConsultationRoomContent() {
     return () => clearTimeout(t);
   }, [isConnecting, isConnected]);
 
-  // Session timer
+  // Session timer — only count when the other participant has joined (not while "waiting for patient")
   useEffect(() => {
-    if (!isConnected) {
+    if (!isConnected || !remoteUserConnected) {
       setSessionDuration(0);
       return;
     }
@@ -122,7 +147,7 @@ function VideoConsultationRoomContent() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isConnected]);
+  }, [isConnected, remoteUserConnected]);
 
   // Request media permissions explicitly on page load
   useEffect(() => {
@@ -340,16 +365,21 @@ function VideoConsultationRoomContent() {
     if (!sessionId) return;
 
     // Initialize Socket.IO connection
-    // Use window.location.origin for same-origin connection
-    const socketUrl =
+    // Use window.location.origin for same-origin connection.
+    // Normalize NEXT_PUBLIC_SOCKET_URL so it can safely include or omit the /socket.io path.
+    let rawSocketUrl =
       typeof window !== 'undefined'
         ? process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
         : process.env.NEXT_PUBLIC_APP_URL ||
           process.env.NEXT_PUBLIC_SOCKET_URL ||
           'http://localhost:5053';
-    logger.debug('[Chat] Connecting to Socket.IO server:', socketUrl);
 
-    const socket = io(socketUrl, {
+    // Strip trailing /socket.io or /socket.io/ so we always connect to the origin.
+    rawSocketUrl = rawSocketUrl.replace(/\/socket\.io\/?$/i, '');
+
+    logger.debug('[Chat] Connecting to Socket.IO server:', rawSocketUrl);
+
+    const socket = io(rawSocketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -984,19 +1014,11 @@ function VideoConsultationRoomContent() {
 
       // Audit log: User joined call
       if (user) {
-        try {
-          await AuditLogger.auditWrite(
-            'telemedicine_session',
-            sessionId,
-            user.userId || user._id,
-            user.tenantId,
-            'ACCESS',
-            { action: 'join_call', role: detectedRole },
-            { timestamp: new Date().toISOString() },
-          );
-        } catch (error) {
-          logger.warn('Failed to log audit:', error);
-        }
+        logTelemedicineAudit(sessionId, {
+          action: 'ACCESS',
+          before: { action: 'join_call', role: detectedRole },
+          details: { timestamp: new Date().toISOString() },
+        });
       }
 
       // Mark session as started (only if user is authenticated)
@@ -1039,6 +1061,28 @@ function VideoConsultationRoomContent() {
     }
   };
 
+  // Keep a ref to the latest handleConnect for auto-join effect
+  const handleConnectRef = useRef(handleConnect);
+  useEffect(() => {
+    handleConnectRef.current = handleConnect;
+  }, [handleConnect]);
+
+  // Auto-join when opened from "Test video call" (autoJoin=1): show Connecting immediately instead of Join button
+  useEffect(() => {
+    if (
+      hasAutoJoinTriggeredRef.current ||
+      sessionLoading ||
+      !sessionData ||
+      sessionExpired ||
+      searchParams.get('autoJoin') !== '1' ||
+      !user
+    ) {
+      return;
+    }
+    hasAutoJoinTriggeredRef.current = true;
+    handleConnectRef.current?.();
+  }, [sessionLoading, sessionData, sessionExpired, searchParams, user]);
+
   const handleEndCall = async () => {
     openConfirm({
       title: t('telemedicine.confirmEndConsultation'),
@@ -1046,19 +1090,11 @@ function VideoConsultationRoomContent() {
       variant: 'danger',
       onConfirm: async () => {
         if (user) {
-          try {
-            await AuditLogger.auditWrite(
-              'telemedicine_session',
-              sessionId,
-              user.userId || user._id,
-              user.tenantId,
-              'ACCESS',
-              { action: 'leave_call', duration: sessionDuration },
-              { timestamp: new Date().toISOString() },
-            );
-          } catch (error) {
-            logger.warn('Failed to log audit:', error);
-          }
+          logTelemedicineAudit(sessionId, {
+            action: 'ACCESS',
+            before: { action: 'leave_call', duration: sessionDuration },
+            details: { timestamp: new Date().toISOString() },
+          });
         }
 
         // End the call
@@ -1118,15 +1154,11 @@ function VideoConsultationRoomContent() {
 
       // Audit log
       if (user) {
-        AuditLogger.auditWrite(
-          'telemedicine_session',
-          sessionId,
-          user.userId || user._id,
-          user.tenantId,
-          'UPDATE',
-          { muted: newMutedState },
-          { action: 'toggle_mute' },
-        ).catch((err) => logger.error('Error', err));
+        logTelemedicineAudit(sessionId, {
+          action: 'UPDATE',
+          before: { muted: newMutedState },
+          details: { action: 'toggle_mute' },
+        });
       }
     }
   };
@@ -1139,15 +1171,11 @@ function VideoConsultationRoomContent() {
 
       // Audit log
       if (user) {
-        AuditLogger.auditWrite(
-          'telemedicine_session',
-          sessionId,
-          user.userId || user._id,
-          user.tenantId,
-          'UPDATE',
-          { videoEnabled: newVideoState },
-          { action: 'toggle_video' },
-        ).catch((err) => logger.error('Error', err));
+        logTelemedicineAudit(sessionId, {
+          action: 'UPDATE',
+          before: { videoEnabled: newVideoState },
+          details: { action: 'toggle_video' },
+        });
       }
     }
   };
@@ -1163,15 +1191,11 @@ function VideoConsultationRoomContent() {
 
         // Audit log
         if (user) {
-          AuditLogger.auditWrite(
-            'telemedicine_session',
-            sessionId,
-            user.userId || user._id,
-            user.tenantId,
-            'UPDATE',
-            { screenShare: false },
-            { action: 'stop_screen_share' },
-          ).catch((err) => logger.error('Error', err));
+          logTelemedicineAudit(sessionId, {
+            action: 'UPDATE',
+            before: { screenShare: false },
+            details: { action: 'stop_screen_share' },
+          });
         }
       } else {
         const stream = await callManagerRef.current.startScreenShare();
@@ -1218,15 +1242,11 @@ function VideoConsultationRoomContent() {
 
         // Audit log
         if (user) {
-          AuditLogger.auditWrite(
-            'telemedicine_session',
-            sessionId,
-            user.userId || user._id,
-            user.tenantId,
-            'UPDATE',
-            { screenShare: true },
-            { action: 'start_screen_share' },
-          ).catch((err) => logger.error('Error', err));
+          logTelemedicineAudit(sessionId, {
+            action: 'UPDATE',
+            before: { screenShare: true },
+            details: { action: 'start_screen_share' },
+          });
         }
       }
     } catch (error) {
@@ -1330,15 +1350,11 @@ function VideoConsultationRoomContent() {
 
       // Audit log
       if (user) {
-        AuditLogger.auditWrite(
-          'telemedicine_session',
-          sessionId,
-          user.userId || user._id,
-          user.tenantId,
-          'CREATE',
-          { messageSent: true, encrypted: chatMessage.encrypted },
-          { action: 'send_chat_message' },
-        ).catch((err) => logger.error('Error', err));
+        logTelemedicineAudit(sessionId, {
+          action: 'CREATE',
+          before: { messageSent: true, encrypted: chatMessage.encrypted },
+          details: { action: 'send_chat_message' },
+        });
       }
     } catch (error) {
       logger.error('Error sending chat message:', error);
@@ -1365,15 +1381,11 @@ function VideoConsultationRoomContent() {
 
     // Audit log
     if (user) {
-      AuditLogger.auditWrite(
-        'telemedicine_session',
-        sessionId,
-        user.userId || user._id,
-        user.tenantId,
-        'UPDATE',
-        { participantAdmitted: participantId },
-        { action: 'admit_participant' },
-      ).catch((err) => logger.error('Error', err));
+      logTelemedicineAudit(sessionId, {
+        action: 'UPDATE',
+        before: { participantAdmitted: participantId },
+        details: { action: 'admit_participant' },
+      });
     }
   };
 
@@ -1395,15 +1407,11 @@ function VideoConsultationRoomContent() {
 
     // Audit log
     if (user) {
-      AuditLogger.auditWrite(
-        'telemedicine_session',
-        sessionId,
-        user.userId || user._id,
-        user.tenantId,
-        'UPDATE',
-        { participantRejected: participantId },
-        { action: 'reject_participant' },
-      ).catch((err) => logger.error('Error', err));
+      logTelemedicineAudit(sessionId, {
+        action: 'UPDATE',
+        before: { participantRejected: participantId },
+        details: { action: 'reject_participant' },
+      });
     }
   };
 
@@ -1422,15 +1430,11 @@ function VideoConsultationRoomContent() {
 
     // Audit log
     if (user) {
-      AuditLogger.auditWrite(
-        'telemedicine_session',
-        sessionId,
-        user.userId || user._id,
-        user.tenantId,
-        'UPDATE',
-        { recordingConsent: consented },
-        { action: 'recording_consent' },
-      ).catch((err) => logger.error('Error', err));
+      logTelemedicineAudit(sessionId, {
+        action: 'UPDATE',
+        before: { recordingConsent: consented },
+        details: { action: 'recording_consent' },
+      });
     }
   };
 
@@ -1477,19 +1481,15 @@ function VideoConsultationRoomContent() {
 
         // Audit log
         if (user) {
-          AuditLogger.auditWrite(
-            'telemedicine_session',
-            sessionId,
-            user.userId || user._id,
-            user.tenantId,
-            'CREATE',
-            {
+          logTelemedicineAudit(sessionId, {
+            action: 'CREATE',
+            before: {
               fileName: fileData.fileName,
               fileSize: fileData.fileSize,
               encrypted: !!encryptionKey,
             },
-            { action: 'upload_file' },
-          ).catch((err) => logger.error('Error', err));
+            details: { action: 'upload_file' },
+          });
         }
       }
     } catch (error) {
@@ -1550,15 +1550,11 @@ function VideoConsultationRoomContent() {
 
         // Audit log
         if (user) {
-          AuditLogger.auditWrite(
-            'telemedicine_session',
-            sessionId,
-            user.userId || user._id,
-            user.tenantId,
-            'ACCESS',
-            { fileName: file.fileName, encrypted: file.encrypted },
-            { action: 'download_file' },
-          ).catch((err) => logger.error('Error', err));
+          logTelemedicineAudit(sessionId, {
+            action: 'ACCESS',
+            before: { fileName: file.fileName, encrypted: file.encrypted },
+            details: { action: 'download_file' },
+          });
         }
       }
     } catch (error) {
@@ -1620,7 +1616,7 @@ function VideoConsultationRoomContent() {
       {/* Header */}
       <div className='bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between'>
         <SessionInfo
-          sessionDuration={isConnected ? sessionDuration : 0}
+          sessionDuration={isConnected && remoteUserConnected ? sessionDuration : 0}
           sessionId={sessionId}
           sessionData={sessionData}
         />
@@ -1818,13 +1814,27 @@ function VideoConsultationRoomContent() {
               />
             </div>
           ) : sessionLoading ? (
-            /* Session loading - show until session data or error is available */
-            <div className='absolute inset-0 flex flex-col items-center justify-center z-10 bg-neutral-100 dark:bg-neutral-900'>
-              <Loader type='section' variant='primary' text={t('telemedicine.loading')} />
-              <p className='text-neutral-600 dark:text-neutral-400 text-sm mt-4'>
-                {t('telemedicine.loading')}
-              </p>
-            </div>
+            /* Session loading - when autoJoin=1 show "Preparing your call..." for a seamless flow from Test video call */
+            searchParams.get('autoJoin') === '1' ? (
+              <div className='absolute inset-0 bg-neutral-900/50 dark:bg-neutral-950/60 backdrop-blur-sm flex items-center justify-center z-20'>
+                <div className='text-center bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-6 max-w-md mx-4 shadow-xl'>
+                  <Loader type='section' variant='primary' text={t('telemedicine.preparingCall')} />
+                  <p className='text-neutral-900 dark:text-neutral-100 text-lg font-semibold mb-2 mt-4'>
+                    {t('telemedicine.preparingCall')}
+                  </p>
+                  <p className='text-neutral-500 dark:text-neutral-500 text-xs mt-2'>
+                    {t('telemedicine.mayTakeFewSeconds')}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className='absolute inset-0 flex flex-col items-center justify-center z-10 bg-neutral-100 dark:bg-neutral-900'>
+                <Loader type='section' variant='primary' text={t('telemedicine.loading')} />
+                <p className='text-neutral-600 dark:text-neutral-400 text-sm mt-4'>
+                  {t('telemedicine.loading')}
+                </p>
+              </div>
+            )
           ) : (
             /* Pre-connection UI - Shown when not connecting and not connected */
             <div className='text-center px-4 w-full absolute inset-0 flex flex-col items-center justify-center z-10 bg-neutral-100 dark:bg-neutral-900'>

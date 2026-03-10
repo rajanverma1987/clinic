@@ -86,10 +86,14 @@ async function generateTransactionNumber(tenantId) {
 
 /**
  * Update inventory item stock
+ * - Incoming (quantity > 0): add to both totalQuantity and availableQuantity.
+ * - Outgoing (quantity < 0): subtract only from availableQuantity so total stays "total ever received" and UI can show available/total (e.g. 99/100).
  */
 async function updateItemStock(item, quantity, batchNumber, expiryDate) {
-  item.totalQuantity += quantity;
   item.availableQuantity += quantity;
+  if (quantity > 0) {
+    item.totalQuantity += quantity;
+  }
 
   // Update or add batch
   if (batchNumber && expiryDate) {
@@ -491,6 +495,7 @@ export async function createStockTransaction(input, tenantId, userId) {
     referenceNumber: input.referenceNumber,
     reason: input.reason,
     notes: input.notes,
+    performedBy: userId,
     createdBy: userId,
   });
 

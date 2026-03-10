@@ -256,6 +256,12 @@ export default function PatientsPage() {
   }, [localeCode, user, authLoading, fetchPatients, debouncedSearchTerm]);
 
   // Manual refresh handler
+  const handleOpenSearch = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openSearch'));
+    }
+  }, []);
+
   const handleManualRefresh = useCallback(() => {
     setRefreshing(true);
     fetchPatients(!!debouncedSearchTerm, false);
@@ -695,6 +701,7 @@ export default function PatientsPage() {
         subtitle={formatDateDisplay()}
         notifications={[]}
         unreadCount={0}
+        onOpenSearch={handleOpenSearch}
         onRefresh={handleManualRefresh}
         refreshing={refreshing}
         actionButtons={
@@ -1012,7 +1019,7 @@ export default function PatientsPage() {
 
         {showModal && (
           <div
-            className='fixed inset-0 bg-neutral-500/30 backdrop-blur-sm flex items-center justify-center z-50'
+            className='fixed inset-0 bg-neutral-500/30 dark:bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4'
             onClick={(e) => {
               // Close modal if clicking on the backdrop
               if (e.target === e.currentTarget) {
@@ -1020,8 +1027,8 @@ export default function PatientsPage() {
               }
             }}
           >
-            <div className='bg-neutral-50 rounded-lg p-6 w-full max-w-md shadow-lg'>
-              <h2 className='text-h2 text-neutral-900 mb-3'>{t('patients.addNewPatient')}</h2>
+            <div className='bg-neutral-50 dark:bg-neutral-800 rounded-lg p-6 w-full max-w-md shadow-lg border border-transparent dark:border-neutral-600'>
+              <h2 className='text-h2 text-neutral-900 dark:text-neutral-100 mb-3'>{t('patients.addNewPatient')}</h2>
               <form onSubmit={handleSubmit} className='space-y-3' noValidate>
                 <div className='grid grid-cols-2 gap-3'>
                   <Input
@@ -1062,13 +1069,13 @@ export default function PatientsPage() {
                 />
 
                 <div>
-                  <label className='block text-body-sm font-medium text-neutral-900 mb-1'>
+                  <label className='block text-body-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1'>
                     {t('patients.gender')}
                   </label>
                   <select
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className='w-full px-3 py-3 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-900 focus:outline-none focus:border-primary-500 focus:shadow-focus'
+                    className='w-full px-3 py-3 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-primary-500 focus:shadow-focus'
                     required
                   >
                     <option value='male'>{t('common.male')}</option>

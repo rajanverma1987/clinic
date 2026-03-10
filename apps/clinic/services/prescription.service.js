@@ -26,19 +26,21 @@ import { decryptField } from '@/lib/encryption/phi-encryption.js';
 import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 import { logger } from '@/lib/utils/logger.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
-import Appointment, { AppointmentStatus } from '@/models/Appointment.js';
+import Appointment, { AppointmentStatus, AppointmentType } from '@/models/Appointment.js';
 import Drug from '@/models/Drug.js';
 import InventoryItem from '@/models/InventoryItem.js';
 import Patient from '@/models/Patient.js';
 import Prescription, { PrescriptionStatus } from '@/models/Prescription.js';
 import Queue, { QueueStatus } from '@/models/Queue.js';
-import { TransactionType } from '@/models/StockTransaction.js';
+import StockTransaction, { TransactionType } from '@/models/StockTransaction.js';
 import Tenant from '@/models/Tenant.js';
 import User from '@/models/User.js';
 import mongoose from 'mongoose';
+import { createAppointment } from './appointment.service.js';
 import { createStockTransaction } from './inventory.service.js';
 import { recordPrescriptionVersion } from './prescription-version.service.js';
 import { recalculatePositions } from './queue.service.js';
+import { dateAtTimeInTimezone } from '@/lib/utils/date-timezone.js';
 import { transliterateToArabic } from '@/lib/utils/transliterate-name.js';
 import { translateToSpanish } from '@/lib/utils/translate-name-spanish.js';
 
@@ -70,6 +72,44 @@ async function generatePrescriptionNumber(tenantId) {
   }
 
   return 'RX-0001';
+}
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * Get first clinic slot start time for a given date (9–5 default; otherwise from clinic hours).
+ * @param {Array} clinicHours - Tenant settings.clinicHours (day, isOpen, timeSlots)
+ * @param {string} dateStr - YYYY-MM-DD
+ * @returns {{ startHour: number, startMinute: number }}
+ */
+function getFirstClinicSlotForDate(clinicHours, dateStr) {
+  const defaultStart = { startHour: 9, startMinute: 0 };
+  if (!dateStr || !Array.isArray(clinicHours) || clinicHours.length === 0) {
+    return defaultStart;
+  }
+  try {
+    const date = new Date(dateStr + 'T12:00:00.000Z');
+    const dayIndex = date.getUTCDay();
+    const dayName = DAY_NAMES[dayIndex];
+    const dayConfig = clinicHours.find((h) => (h.day || '').toLowerCase() === dayName.toLowerCase());
+    if (!dayConfig || dayConfig.isOpen === false || !Array.isArray(dayConfig.timeSlots) || dayConfig.timeSlots.length === 0) {
+      return defaultStart;
+    }
+    const firstSlot = dayConfig.timeSlots[0];
+    const startTimeStr = firstSlot?.startTime;
+    if (!startTimeStr || typeof startTimeStr !== 'string') {
+      return defaultStart;
+    }
+    const match = startTimeStr.trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) {
+      return defaultStart;
+    }
+    const startHour = Math.min(23, Math.max(0, parseInt(match[1], 10)));
+    const startMinute = Math.min(59, Math.max(0, parseInt(match[2], 10)));
+    return { startHour, startMinute };
+  } catch {
+    return defaultStart;
+  }
 }
 
 /**
@@ -253,6 +293,136 @@ export async function createPrescription(input, tenantId, userId) {
   );
 
   await recordPrescriptionVersion(prescription._id.toString(), 'create', tenantId, userId, null);
+
+  // When prescription is sent (ACTIVE), deduct stock for each medicine chosen from inventory
+  const isSentActive = String(prescriptionStatus).toLowerCase() === PrescriptionStatus.ACTIVE;
+  if (isSentActive) {
+    // Use enrichedItems so we have the exact drugId (inventory _id) we resolved during enrichment
+    for (const item of enrichedItems) {
+      const itemType = (item.itemType || 'drug').toString().toLowerCase();
+      if (itemType !== 'drug' || !item.drugId || !(Number(item.quantity) > 0)) continue;
+      const drugIdObj = mongoose.Types.ObjectId.isValid(item.drugId)
+        ? new mongoose.Types.ObjectId(item.drugId)
+        : item.drugId;
+      let inventoryItem = await InventoryItem.findOne(
+        withTenant(tenantId, {
+          _id: drugIdObj,
+          type: 'medicine',
+          deletedAt: null,
+        }),
+      ).lean();
+      if (!inventoryItem) {
+        inventoryItem = await InventoryItem.findOne(
+          withTenant(tenantId, {
+            drugId: drugIdObj,
+            type: 'medicine',
+            deletedAt: null,
+          }),
+        ).lean();
+      }
+      if (!inventoryItem) {
+        logger.warn('[Prescription] Stock deduction skipped: no inventory item for drugId', {
+          drugId: item.drugId,
+          prescriptionNumber: prescription.prescriptionNumber,
+        });
+        continue;
+      }
+      const qty = Number(item.quantity);
+      if (inventoryItem.availableQuantity < qty) {
+        throw new Error(
+          `Insufficient stock for "${inventoryItem.name || item.drugName}". Available: ${inventoryItem.availableQuantity}, required: ${qty}. Reduce quantity or add stock before sending.`,
+        );
+      }
+      try {
+        const inventoryItemId =
+          inventoryItem._id instanceof mongoose.Types.ObjectId
+            ? inventoryItem._id
+            : new mongoose.Types.ObjectId(inventoryItem._id);
+        await createStockTransaction(
+          {
+            inventoryItemId,
+            type: TransactionType.SALE,
+            quantity: -qty,
+            prescriptionId: prescription._id.toString(),
+            referenceNumber: prescription.prescriptionNumber,
+            notes: `Prescription ${prescription.prescriptionNumber} sent to patient`,
+          },
+          tenantId,
+          userId,
+        );
+        logger.info('[Prescription] Stock deducted for prescription', {
+          prescriptionNumber: prescription.prescriptionNumber,
+          inventoryItemId: inventoryItemId.toString(),
+          quantity: qty,
+        });
+      } catch (err) {
+        logger.error('Prescription send: stock deduction failed for item', {
+          drugId: item.drugId,
+          prescriptionId: prescription._id,
+          err: err.message,
+        });
+        throw new Error(
+          `Failed to deduct stock for "${inventoryItem.name || item.drugName}": ${err.message}`,
+        );
+      }
+    }
+  }
+
+  // Auto-schedule follow-up appointment when requested (followUpAutoSchedule + followUpDate)
+  if (
+    isSentActive &&
+    input.followUpAutoSchedule &&
+    input.followUpDate
+  ) {
+    try {
+      const followUpDate = input.followUpDate instanceof Date
+        ? input.followUpDate
+        : new Date(input.followUpDate);
+      if (Number.isNaN(followUpDate.getTime())) {
+        logger.warn('[Prescription] Invalid follow-up date, skipping auto-schedule:', input.followUpDate);
+      } else {
+        const dateStr = followUpDate.toISOString().slice(0, 10);
+        const tenant = await Tenant.findById(tenantId).select('settings.timezone settings.clinicHours').lean();
+        const timezone = tenant?.settings?.timezone || 'UTC';
+        const { startHour, startMinute } = getFirstClinicSlotForDate(tenant?.settings?.clinicHours, dateStr);
+        const startTime = dateAtTimeInTimezone(dateStr, startHour, startMinute, timezone);
+        if (Number.isNaN(startTime.getTime())) {
+          logger.warn('[Prescription] Could not build follow-up time in timezone, skipping auto-schedule:', { dateStr, timezone });
+        } else {
+          const duration = 30;
+          const endTime = new Date(startTime.getTime() + duration * 60000);
+          const isVideo = (input.followUpType || 'in-person') === 'video';
+          await createAppointment(
+            {
+              patientId: input.patientId,
+              doctorId: userId,
+              appointmentDate: startTime,
+              startTime,
+              endTime,
+              duration,
+              type: AppointmentType.FOLLOW_UP,
+              reason: `Follow-up from prescription ${prescription.prescriptionNumber}`,
+              notes: `Auto-scheduled from prescription ${prescription.prescriptionNumber}`,
+              isTelemedicine: isVideo,
+            },
+            tenantId,
+            userId,
+          );
+          logger.info('[Prescription] Follow-up appointment auto-scheduled', {
+            prescriptionNumber: prescription.prescriptionNumber,
+            followUpDate: dateStr,
+            followUpType: input.followUpType,
+          });
+        }
+      }
+    } catch (err) {
+      logger.error('[Prescription] Auto-schedule follow-up appointment failed (prescription was saved)', {
+        prescriptionNumber: prescription.prescriptionNumber,
+        err: err.message,
+      });
+      // Do not throw: prescription creation succeeds; user can schedule follow-up manually
+    }
+  }
 
   // Auto-complete queue entry if prescription is created for an in-progress queue entry
   // Improved error handling to prevent silent failures
@@ -804,6 +974,119 @@ export async function signPrescription(prescriptionId, input, tenantId, userId) 
     { action: 'signed' },
   );
 
+  // When signing a draft (sending to patient), deduct inventory stock for medicines from inventory
+  if (String(before.status).toLowerCase() === PrescriptionStatus.DRAFT) {
+    const items = prescription.items || [];
+    for (const item of items) {
+      if ((item.itemType || 'drug').toString().toLowerCase() !== 'drug' || !item.drugId || !(Number(item.quantity) > 0))
+        continue;
+      const drugIdObj = mongoose.Types.ObjectId.isValid(item.drugId)
+        ? new mongoose.Types.ObjectId(item.drugId)
+        : item.drugId;
+      let inventoryItem = await InventoryItem.findOne(
+        withTenant(tenantId, {
+          _id: drugIdObj,
+          type: 'medicine',
+          deletedAt: null,
+        }),
+      ).lean();
+      if (!inventoryItem) {
+        inventoryItem = await InventoryItem.findOne(
+          withTenant(tenantId, {
+            drugId: drugIdObj,
+            type: 'medicine',
+            deletedAt: null,
+          }),
+        ).lean();
+      }
+      if (!inventoryItem) continue;
+      const qty = Number(item.quantity);
+      if (inventoryItem.availableQuantity < qty) {
+        throw new Error(
+          `Insufficient stock for "${inventoryItem.name || item.drugName}". Available: ${inventoryItem.availableQuantity}, required: ${qty}. Reduce quantity or add stock before signing.`,
+        );
+      }
+      try {
+        const inventoryItemId =
+          inventoryItem._id instanceof mongoose.Types.ObjectId
+            ? inventoryItem._id
+            : new mongoose.Types.ObjectId(inventoryItem._id);
+        await createStockTransaction(
+          {
+            inventoryItemId,
+            type: TransactionType.SALE,
+            quantity: -qty,
+            prescriptionId: prescription._id.toString(),
+            referenceNumber: prescription.prescriptionNumber,
+            notes: `Prescription ${prescription.prescriptionNumber} signed and sent to patient`,
+          },
+          tenantId,
+          userId,
+        );
+      } catch (err) {
+        logger.error('Sign prescription: stock deduction failed for item', {
+          drugId: item.drugId,
+          prescriptionId: prescription._id,
+          err: err.message,
+        });
+        throw new Error(
+          `Failed to deduct stock for "${inventoryItem.name || item.drugName}": ${err.message}`,
+        );
+      }
+    }
+  }
+
+  // Auto-schedule follow-up appointment when signing a draft that had it enabled
+  if (
+    String(before.status).toLowerCase() === PrescriptionStatus.DRAFT &&
+    prescription.followUpAutoSchedule &&
+    prescription.followUpDate
+  ) {
+    try {
+      const followUpDate =
+        prescription.followUpDate instanceof Date
+          ? prescription.followUpDate
+          : new Date(prescription.followUpDate);
+      if (!Number.isNaN(followUpDate.getTime())) {
+        const dateStr = followUpDate.toISOString().slice(0, 10);
+        const tenant = await Tenant.findById(tenantId).select('settings.timezone settings.clinicHours').lean();
+        const timezone = tenant?.settings?.timezone || 'UTC';
+        const { startHour, startMinute } = getFirstClinicSlotForDate(tenant?.settings?.clinicHours, dateStr);
+        const startTime = dateAtTimeInTimezone(dateStr, startHour, startMinute, timezone);
+        if (!Number.isNaN(startTime.getTime())) {
+          const duration = 30;
+          const endTime = new Date(startTime.getTime() + duration * 60000);
+          const isVideo = (prescription.followUpType || 'in-person') === 'video';
+          await createAppointment(
+            {
+              patientId: prescription.patientId,
+              doctorId: userId,
+              appointmentDate: startTime,
+              startTime,
+              endTime,
+              duration,
+              type: AppointmentType.FOLLOW_UP,
+              reason: `Follow-up from prescription ${prescription.prescriptionNumber}`,
+              notes: `Auto-scheduled from prescription ${prescription.prescriptionNumber}`,
+              isTelemedicine: isVideo,
+            },
+            tenantId,
+            userId,
+          );
+          logger.info('[Prescription] Follow-up appointment auto-scheduled (signed draft)', {
+            prescriptionNumber: prescription.prescriptionNumber,
+            followUpDate: dateStr,
+          });
+        }
+      }
+    } catch (err) {
+      logger.error('[Prescription] Auto-schedule follow-up failed on sign (prescription was signed)', {
+        prescriptionNumber: prescription.prescriptionNumber,
+        err: err.message,
+      });
+    }
+  }
+
   const prescriptionObj = prescription.toObject();
   return decryptPrescriptionItems(prescriptionObj);
 }
@@ -853,44 +1136,58 @@ export async function dispensePrescription(prescriptionId, input, tenantId, user
     { action: 'dispensed' },
   );
 
-  // D4: Stock deduction for each drug item linked to inventory
-  const items = prescription.items || [];
-  for (const item of items) {
-    if (item.itemType !== 'drug' || !item.drugId || !(item.quantity > 0)) continue;
-    try {
-      const inventoryItem = await InventoryItem.findOne(
-        withTenant(tenantId, {
-          drugId: item.drugId,
-          deletedAt: null,
-        }),
-      ).lean();
-      if (!inventoryItem || inventoryItem.availableQuantity < item.quantity) {
-        if (inventoryItem && inventoryItem.availableQuantity < item.quantity) {
-          logger.warn(
-            `Dispense: insufficient stock for drug ${item.drugId}, available ${inventoryItem.availableQuantity}, required ${item.quantity}`,
-          );
+  // D4: Stock deduction only if not already deducted when prescription was sent (create as ACTIVE)
+  const alreadyDeducted = await StockTransaction.exists(
+    withTenant(tenantId, { prescriptionId: prescription._id }),
+  );
+  if (!alreadyDeducted) {
+    const items = prescription.items || [];
+    for (const item of items) {
+      if (item.itemType !== 'drug' || !item.drugId || !(item.quantity > 0)) continue;
+      try {
+        let inventoryItem = await InventoryItem.findOne(
+          withTenant(tenantId, {
+            _id: item.drugId,
+            type: 'medicine',
+            deletedAt: null,
+          }),
+        ).lean();
+        if (!inventoryItem) {
+          inventoryItem = await InventoryItem.findOne(
+            withTenant(tenantId, {
+              drugId: item.drugId,
+              deletedAt: null,
+            }),
+          ).lean();
         }
-        continue;
+        if (!inventoryItem || inventoryItem.availableQuantity < item.quantity) {
+          if (inventoryItem && inventoryItem.availableQuantity < item.quantity) {
+            logger.warn(
+              `Dispense: insufficient stock for drug ${item.drugId}, available ${inventoryItem.availableQuantity}, required ${item.quantity}`,
+            );
+          }
+          continue;
+        }
+        await createStockTransaction(
+          {
+            inventoryItemId: inventoryItem._id,
+            type: TransactionType.SALE,
+            quantity: -item.quantity,
+            prescriptionId: prescription._id.toString(),
+            referenceNumber: prescription.prescriptionNumber,
+            notes: `Dispensed via prescription ${prescription.prescriptionNumber}`,
+          },
+          tenantId,
+          userId,
+        );
+      } catch (err) {
+        logger.error('Dispense stock deduction failed for item', {
+          drugId: item.drugId,
+          prescriptionId: prescription._id,
+          err: err.message,
+        });
+        // Don't fail entire dispense; audit is already written
       }
-      await createStockTransaction(
-        {
-          inventoryItemId: inventoryItem._id,
-          type: TransactionType.SALE,
-          quantity: -item.quantity,
-          prescriptionId: prescription._id.toString(),
-          referenceNumber: prescription.prescriptionNumber,
-          notes: `Dispensed via prescription ${prescription.prescriptionNumber}`,
-        },
-        tenantId,
-        userId,
-      );
-    } catch (err) {
-      logger.error('Dispense stock deduction failed for item', {
-        drugId: item.drugId,
-        prescriptionId: prescription._id,
-        err: err.message,
-      });
-      // Don't fail entire dispense; audit is already written
     }
   }
 

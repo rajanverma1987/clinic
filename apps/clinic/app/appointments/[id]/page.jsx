@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
+import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
 import { getEmailDisplayValue } from '@/lib/utils/email-display';
@@ -24,19 +25,6 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 
-const formatDate = (value) => {
-  if (value == null || value === '') return '—';
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
-};
-
-const formatTime = (value) => {
-  if (value == null || value === '') return '—';
-  const d = new Date(value);
-  return Number.isNaN(d.getTime())
-    ? '—'
-    : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
 
 export default function AppointmentDetailsPage() {
   const router = useRouter();
@@ -53,6 +41,25 @@ export default function AppointmentDetailsPage() {
     return s;
   };
   const { user } = useAuth();
+  const { settings } = useSettings();
+  const clinicTimezone = settings?.settings?.timezone || 'UTC';
+  const formatDate = (value) => {
+    if (value == null || value === '') return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    try {
+      return new Intl.DateTimeFormat(undefined, { timeZone: clinicTimezone, dateStyle: 'long' }).format(d);
+    } catch {
+      return d.toLocaleDateString();
+    }
+  };
+  const formatTime = (value) => {
+    if (value == null || value === '') return '—';
+    const d = new Date(value);
+    return Number.isNaN(d.getTime())
+      ? '—'
+      : new Intl.DateTimeFormat(undefined, { timeZone: clinicTimezone, hour: '2-digit', minute: '2-digit' }).format(d);
+  };
   const { open: openConfirm } = useConfirmation();
   const { invalidateLists, invalidateStats } = useInvalidateDashboard();
   const { mutate } = useSWRConfig();
@@ -493,7 +500,7 @@ export default function AppointmentDetailsPage() {
               {t('appointments.date')}
             </h3>
             <p className='text-2xl font-bold text-neutral-900'>
-              {formatDate(appointment.appointmentDate)}
+              {formatDate(appointment.startTime || appointment.appointmentDate)}
             </p>
           </Card>
           <Card>

@@ -353,6 +353,20 @@
     inset 0 1px 0 color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
 }
 
+/* Dark-mode override: match app dark surfaces */
+.dark .LanguageSwitcher-dropdown--light,
+.dark .LanguageSwitcher-dropdown--dark {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-surface-elevated) 95%, transparent) 0%,
+    color-mix(in srgb, var(--color-neutral-900) 92%, transparent) 100%
+  );
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0 18px 45px color-mix(in srgb, var(--color-neutral-900) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-primary-400) 18%, transparent);
+}
+
 /* Dark dropdown - Light theme: contrast style */
 .LanguageSwitcher-dropdown--dark {
   background: linear-gradient(
@@ -408,6 +422,10 @@
 .LanguageSwitcher-item--light {
   color: var(--color-neutral-700);
   background: transparent;
+}
+
+.dark .LanguageSwitcher-item--light {
+  color: var(--color-neutral-100);
 }
 
 .LanguageSwitcher-item--light:hover {

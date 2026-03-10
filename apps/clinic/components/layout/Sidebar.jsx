@@ -531,7 +531,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
             <img
               src={isCollapsed ? '/images/faviocn.png' : '/images/logoclinic.png'}
               alt={t('common.altClinicLogo')}
-              className='block object-contain flex-shrink-0'
+              className='block object-contain flex-shrink-0 dark:brightness-0 dark:invert'
               style={{
                 height: isCollapsed ? 43 : 55,
                 width: isCollapsed ? 43 : 'auto',

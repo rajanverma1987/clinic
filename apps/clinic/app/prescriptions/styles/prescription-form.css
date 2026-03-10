@@ -276,17 +276,33 @@
   border-radius: var(--radius-lg);
   transition: all 0.2s ease;
 }
+.dark .prescription-form-input,
+.dark .prescription-form-field select.prescription-form-input {
+  background: var(--color-neutral-800);
+  border-color: var(--color-neutral-600);
+  color: var(--color-neutral-100);
+}
 
 .prescription-form-input:focus {
   outline: none;
   border-color: var(--color-primary-500);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 10%, transparent);
 }
+.dark .prescription-form-input:focus,
+.dark .prescription-form-field select.prescription-form-input:focus {
+  border-color: var(--color-primary-400);
+}
 
 .prescription-form-input:disabled {
   background: var(--color-neutral-100);
   color: var(--color-neutral-500);
   cursor: not-allowed;
+}
+.dark .prescription-form-input:disabled,
+.dark .prescription-form-field select.prescription-form-input:disabled {
+  background: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
+  color: var(--color-neutral-400);
 }
 
 .prescription-form-help-text {
