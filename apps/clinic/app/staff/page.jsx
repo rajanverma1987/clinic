@@ -204,6 +204,12 @@ export default function StaffPage() {
     fetchStaff(false);
   }, [fetchStaff]);
 
+  const handleOpenSearch = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openSearch'));
+    }
+  }, []);
+
   const filteredStaff = staff.filter((s) => {
     if (debouncedSearchTerm) {
       const q = debouncedSearchTerm.toLowerCase();
@@ -498,6 +504,7 @@ export default function StaffPage() {
       <PageHeader
         title={t('staff.title')}
         subtitle={t('staff.subtitle')}
+        onOpenSearch={handleOpenSearch}
         onRefresh={handleManualRefresh}
         refreshing={refreshing}
         action={

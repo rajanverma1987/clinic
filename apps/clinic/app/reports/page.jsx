@@ -55,7 +55,7 @@ export default function ReportsPage() {
   const [patientReport, setPatientReport] = useState(null);
   const [appointmentReport, setAppointmentReport] = useState(null);
   const [inventoryReport, setInventoryReport] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [reportError, setReportError] = useState(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [locations, setLocations] = useState([]);
@@ -502,6 +502,12 @@ export default function ReportsPage() {
     ],
   );
 
+  const handleOpenSearch = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openSearch'));
+    }
+  }, []);
+
   const handleGenerateReportPDF = useCallback(async () => {
     const getReportData = async () => {
       const params = new URLSearchParams({
@@ -765,6 +771,7 @@ export default function ReportsPage() {
         subtitle={t('reports.description')}
         notifications={[]}
         unreadCount={0}
+        onOpenSearch={handleOpenSearch}
       />
       <div className='data-tabs-container w-full'>
         <div className='tab-content-wide-width data-tabs-content'>
@@ -1411,7 +1418,7 @@ export default function ReportsPage() {
 
             {loading && (
               <div role='status' aria-label={t('reports.loadingReportData')}>
-                <ReportTabSkeleton />
+                <ReportTabSkeleton activeTab={activeTab} />
               </div>
             )}
 

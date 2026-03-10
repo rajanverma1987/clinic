@@ -171,6 +171,12 @@ export default function InventoryPage() {
     fetchItems(false);
   }, [fetchItems]);
 
+  const handleOpenSearch = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openSearch'));
+    }
+  }, []);
+
   const handleExportCsv = useCallback(async () => {
     setExporting(true);
     try {
@@ -560,6 +566,7 @@ export default function InventoryPage() {
         }
         notifications={[]}
         unreadCount={0}
+        onOpenSearch={handleOpenSearch}
         onRefresh={activeTab === 'items' ? handleManualRefresh : undefined}
         refreshing={activeTab === 'items' && refreshing}
         actionButton={

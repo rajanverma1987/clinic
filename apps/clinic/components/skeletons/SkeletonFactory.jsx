@@ -331,54 +331,196 @@ function GenericSkeleton() {
   );
 }
 
+/** Summary cards row – exact match to reports: Card > p-4, label (text-sm mb-1), value (text-3xl), subtext (text-xs mt-1). */
+function ReportSummaryCards({ count = 4, gridClass = 'content-grid-4' }) {
+  return (
+    <div className={gridClass}>
+      {[...Array(count)].map((_, i) => (
+        <Card key={i}>
+          <div className='p-4'>
+            <div className={`h-4 ${bg2} rounded w-1/2 mb-1`} />
+            <div className={`h-9 ${bg3} rounded w-3/4`} />
+            <div className={`h-3 ${bg2} rounded w-1/3 mt-1`} />
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+/** Chart card – exact match: Card, header (h2.text-xl + Button), chart area h-[220px] like real bar chart. */
+function ReportChartCard() {
+  return (
+    <Card>
+      <div className='flex items-center justify-between mb-4'>
+        <div className={`h-6 ${bg3} rounded w-1/4`} />
+        <div className={`h-9 ${bg2} rounded w-28`} />
+      </div>
+      <div className={`h-[220px] ${bg2} rounded border-b border-l border-neutral-300 dark:border-neutral-600 pl-8 pr-4 pb-8`} />
+    </Card>
+  );
+}
+
+/** Pie/breakdown card – exact match: Card, h3.text-lg.mb-4, then pie area. */
+function ReportPieCard() {
+  return (
+    <Card>
+      <div className={`h-6 ${bg3} rounded w-1/3 mb-4`} />
+      <div className={`h-48 ${bg2} rounded-full max-w-[200px] mx-auto`} />
+    </Card>
+  );
+}
+
+/** Table card – exact match to reports: Card > div.flex.justify-between.mb-4 (title + Export) > clinic-table-wrap > table. */
+function ReportTableCard({ rows = 6, colCount = 4 }) {
+  return (
+    <Card>
+      <div className='flex items-center justify-between mb-4'>
+        <div className={`h-6 ${bg3} rounded w-1/3`} />
+        <div className={`h-9 ${bg2} rounded w-28`} />
+      </div>
+      <div className='clinic-table-wrap'>
+        <table className='clinic-table'>
+          <thead>
+            <tr>
+              {[...Array(colCount)].map((_, j) => (
+                <th key={j} className='px-4 py-3'>
+                  <div className={`h-4 ${bg3} rounded w-full max-w-[80px]`} />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(rows)].map((_, i) => (
+              <tr key={i}>
+                {[...Array(colCount)].map((_, j) => (
+                  <td key={j} className='px-4 py-3'>
+                    <div className={`h-4 ${bg2} rounded flex-1 ${j === colCount - 1 ? 'max-w-[60px]' : ''}`} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+/** Simple table card – exact match: Card > h3.mb-4 > Table (clinic-table-wrap). */
+function ReportTableCardSimple({ rows = 4, colCount = 4 }) {
+  return (
+    <Card>
+      <div className={`h-6 ${bg3} rounded w-1/3 mb-4`} />
+      <div className='clinic-table-wrap'>
+        <table className='clinic-table'>
+          <thead>
+            <tr>
+              {[...Array(colCount)].map((_, j) => (
+                <th key={j} className='px-4 py-3'>
+                  <div className={`h-4 ${bg3} rounded w-full max-w-[80px]`} />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(rows)].map((_, i) => (
+              <tr key={i}>
+                {[...Array(colCount)].map((_, j) => (
+                  <td key={j} className='px-4 py-3'>
+                    <div className={`h-4 ${bg2} rounded`} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
 /**
- * Report tab content skeleton – 100% layout match to reports tab (summary cards, chart card, table card).
- * Same structure as revenue/patients/appointments tabs: content-grid-4, Card chart, Card table.
+ * Report tab content skeleton – layout matches the active report tab (revenue, doctors, patients, appointments, inventory).
+ * Pass activeTab so the skeleton mirrors the real data layout for that tab.
  */
-export function ReportTabSkeleton() {
+export function ReportTabSkeleton({ activeTab = 'revenue' }) {
   const { t } = useI18n();
+
+  const content = (() => {
+    switch (activeTab) {
+      case 'revenue':
+        return (
+          <>
+            <ReportSummaryCards count={4} gridClass='content-grid-4' />
+            <ReportChartCard />
+            <div className='content-grid-2 content-grid-gap-6'>
+              <ReportPieCard />
+              <ReportPieCard />
+            </div>
+          </>
+        );
+      case 'doctors':
+        return (
+          <>
+            <ReportSummaryCards count={4} gridClass='content-grid-4' />
+            <ReportTableCard rows={6} colCount={6} />
+          </>
+        );
+      case 'patients':
+        return (
+          <>
+            <ReportSummaryCards count={3} gridClass='content-grid-3' />
+            <ReportChartCard />
+            <div className='content-grid-2 content-grid-gap-6'>
+              <ReportPieCard />
+              <ReportPieCard />
+            </div>
+          </>
+        );
+      case 'appointments':
+        return (
+          <>
+            <ReportSummaryCards count={4} gridClass='content-grid-4' />
+            <ReportChartCard />
+            <div className='content-grid-2 content-grid-gap-6'>
+              <ReportPieCard />
+              <ReportPieCard />
+            </div>
+          </>
+        );
+      case 'inventory':
+        return (
+          <>
+            <ReportSummaryCards count={4} gridClass='content-grid-4' />
+            <div className='content-grid-2 content-grid-gap-6'>
+              <ReportPieCard />
+            </div>
+            <ReportTableCard rows={5} colCount={4} />
+            <ReportTableCardSimple rows={4} colCount={4} />
+          </>
+        );
+      default:
+        return (
+          <>
+            <ReportSummaryCards count={4} gridClass='content-grid-4' />
+            <ReportChartCard />
+            <div className='content-grid-2 content-grid-gap-6'>
+              <ReportPieCard />
+              <ReportPieCard />
+            </div>
+          </>
+        );
+    }
+  })();
+
   return (
     <div
       className={`space-y-6 ${pulse}`}
       aria-busy='true'
       aria-label={t('common.ariaLabelLoadingReport')}
     >
-      {/* Summary cards – same as real reports: content-grid-4, Card with p-4 */}
-      <div className='content-grid-4'>
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <div className='p-4'>
-              <div className={`h-4 ${bg2} rounded w-1/2 mb-3`} />
-              <div className={`h-8 ${bg3} rounded w-3/4 mb-2`} />
-              <div className={`h-3 ${bg2} rounded w-1/3`} />
-            </div>
-          </Card>
-        ))}
-      </div>
-      {/* Chart card – same as real: Card, header row (title + button), chart area */}
-      <Card>
-        <div className='flex items-center justify-between mb-4'>
-          <div className={`h-6 ${bg3} rounded w-1/4`} />
-          <div className={`h-9 ${bg2} rounded w-28`} />
-        </div>
-        <div className={`h-64 ${bg2} rounded`} />
-      </Card>
-      {/* Table card – same as real: Card, header row, table rows */}
-      <Card className='overflow-hidden'>
-        <div className='px-6 py-4 border-b border-neutral-200 dark:border-neutral-600'>
-          <div className={`h-6 ${bg3} rounded w-1/3`} />
-        </div>
-        <div className='divide-y divide-neutral-200 dark:divide-neutral-600'>
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className='px-6 py-4 flex items-center gap-4'>
-              <div className={`h-4 ${bg2} rounded flex-1 max-w-[120px]`} />
-              <div className={`h-4 ${bg2} rounded flex-1 max-w-[80px]`} />
-              <div className={`h-4 ${bg2} rounded flex-1 max-w-[100px]`} />
-              <div className={`h-8 w-16 ${bg2} rounded`} />
-            </div>
-          ))}
-        </div>
-      </Card>
+      {content}
     </div>
   );
 }

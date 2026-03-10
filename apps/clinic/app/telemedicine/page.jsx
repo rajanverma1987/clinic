@@ -26,6 +26,12 @@ export default function TelemedicinePage() {
   const [loading, setLoading] = useState(true);
   const [testVideoLoading, setTestVideoLoading] = useState(false);
 
+  const handleOpenSearch = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openSearch'));
+    }
+  }, []);
+
   const fetchSessions = useCallback(async () => {
     try {
       setLoading(true);
@@ -206,6 +212,7 @@ export default function TelemedicinePage() {
         subtitle={t('telemedicine.subtitle')}
         notifications={[]}
         unreadCount={0}
+        onOpenSearch={handleOpenSearch}
         actionButton={
           <Button href='/appointments/new' variant='primary' size='md'>
             {t('telemedicine.bookAppointment')}
