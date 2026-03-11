@@ -27,6 +27,12 @@ class ApiClient {
     this.baseUrl = resolveBaseUrl();
     /** Single-flight refresh: only one refresh in progress, others wait for the same promise. */
     this._refreshPromise = null;
+    /** Optional client-side redirect (e.g. router.replace) for same-origin paths; set by app. */
+    this._redirectHandler = null;
+  }
+
+  setRedirectHandler(fn) {
+    this._redirectHandler = typeof fn === 'function' ? fn : null;
   }
 
   async request(endpoint, options = {}, skipRedirect = false) {
@@ -125,7 +131,11 @@ class ApiClient {
                 response.status === 403
                   ? ERROR_HANDLING.forbiddenRedirect
                   : ERROR_HANDLING.unauthorizedRedirect;
-              window.location.href = redirect;
+              if (this._redirectHandler && redirect.startsWith('/')) {
+                this._redirectHandler(redirect);
+              } else {
+                window.location.href = redirect;
+              }
             }
           } else {
             logger.warn(

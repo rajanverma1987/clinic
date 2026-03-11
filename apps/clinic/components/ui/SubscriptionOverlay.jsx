@@ -41,7 +41,7 @@ export function SubscriptionOverlay({
   const handleCompletePayment = () => {
     logger.info('Complete Payment clicked');
     if (paypalApprovalUrl) {
-      window.location.href = paypalApprovalUrl;
+      router.push(paypalApprovalUrl);
     } else {
       router.push('/subscription');
     }

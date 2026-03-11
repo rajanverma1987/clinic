@@ -27,9 +27,22 @@ let currentTenantId = null;
 let eventHandlers = new Map();
 let useSSEFallback = false;
 
+/**
+ * Base URL for Socket.IO and SSE. In production, never use a baked-in localhost:
+ * prefer window.location.origin when env is unset or points to localhost.
+ */
 function getSocketUrl() {
   if (typeof window === 'undefined') return '';
-  return process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+  const envUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+  if (envUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(envUrl)) {
+    try {
+      const u = new URL(envUrl);
+      return u.origin;
+    } catch (_) {
+      return window.location.origin;
+    }
+  }
+  return window.location.origin;
 }
 
 function clearHeartbeat() {
@@ -97,7 +110,8 @@ function connectSSE(tenantId) {
   const url = base.startsWith('http')
     ? base
     : `${typeof window !== 'undefined' ? window.location.origin : ''}${base}`;
-  const sseUrl = `${url.replace(/\/$/, '')}/api/sse?tenantId=${encodeURIComponent(tenantId || '')}`;
+  const origin = typeof url === 'string' && url.startsWith('http') ? (() => { try { return new URL(url).origin; } catch (_) { return url.replace(/\/$/, ''); } })() : url.replace(/\/$/, '');
+  const sseUrl = `${origin}/api/sse?tenantId=${encodeURIComponent(tenantId || '')}`;
   try {
     const es = new EventSource(sseUrl);
     sseEventSource = es;

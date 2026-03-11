@@ -17,8 +17,12 @@ export function useRealtime(options = {}) {
   useEffect(() => {
     if (!user?.tenantId) return;
 
-    // Connect to real-time namespace (must match server io.of('/realtime'))
-    const baseUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+    // Connect to real-time namespace (must match server io.of('/realtime')). Prefer window.location.origin in production when env is localhost.
+    const envUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    const baseUrl =
+      envUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(envUrl)
+        ? envUrl
+        : window.location.origin;
     const origin =
       typeof baseUrl === 'string' && baseUrl.includes('://') ? new URL(baseUrl).origin : baseUrl;
     const socket = io(`${origin}/realtime`, {

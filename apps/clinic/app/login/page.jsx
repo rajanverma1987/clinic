@@ -563,9 +563,7 @@ function LoginPageContent() {
                   variant='secondary'
                   className='w-full'
                   size='lg'
-                  onClick={() => {
-                    window.location.href = '/api/auth/oauth/google';
-                  }}
+                  onClick={() => router.push('/api/auth/oauth/google')}
                   disabled={isLoading}
                   aria-label={t('auth.continueWithGoogle')}
                 >
