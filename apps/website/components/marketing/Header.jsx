@@ -81,7 +81,7 @@ export function Header() {
                 style={{ width: '180px', height: '50px' }}
               >
                 <Image
-                  src='/images/logoclinic.png'
+                  src='/images/logoclinic.webp'
                   alt={t('common.altClinicLogo')}
                   width={180}
                   height={50}

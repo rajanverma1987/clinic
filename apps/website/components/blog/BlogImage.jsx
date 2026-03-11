@@ -43,6 +43,7 @@ export function BlogImage({ src, alt, className, loading = 'lazy', caption }) {
           loading={loading}
           onError={handleError}
           sizes='(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px'
+          quality={90}
         />
       </div>
       {caption && <p className='text-sm text-neutral-600 italic mt-2 text-center'>{caption}</p>}

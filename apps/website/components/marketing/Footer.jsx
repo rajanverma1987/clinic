@@ -188,7 +188,7 @@ function FooterComponent() {
                     style={{ width: '160px', height: '45px' }}
                   >
                     <Image
-                      src='/images/logoclinic.png'
+                      src='/images/logoclinic.webp'
                       alt={t('common.altClinicLogo')}
                       width={160}
                       height={45}
