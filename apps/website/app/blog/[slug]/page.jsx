@@ -8,6 +8,72 @@ import { CLINIC_APP_URL } from '@/lib/config';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+/** Convert inline markdown (**bold** and *italic*) to HTML. Do bold first so asterisks don't conflict. */
+function inlineMarkdownToHtml(str) {
+  if (!str || typeof str !== 'string') return '';
+  const trimmed = str.trim();
+  // Whole string is only *italic* (e.g. caption lines)
+  if (/^\*[^*]+\*$/.test(trimmed)) {
+    return `<em>${trimmed.slice(1, -1)}</em>`;
+  }
+  // Bold first (so ** doesn't get broken by single-* pass)
+  let out = str.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Italic: *text*
+  out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  return out;
+}
+
+/**
+ * Converts markdown-style text to safe HTML for blog content.
+ * Handles **bold**, *italic*, bullet lists (- or *), numbered lists, and strips image syntax.
+ */
+function markdownToHtml(text) {
+  if (!text || typeof text !== 'string') return '';
+  // Strip markdown image syntax ![alt](url)
+  let html = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '');
+  // Split into blocks by double newlines
+  const blocks = html.split(/\n\n+/);
+  const result = blocks
+    .map((block) => {
+      const lines = block.split('\n').filter((l) => l.trim() !== '');
+      if (lines.length === 0) return '';
+
+      const first = lines[0];
+      const orderedMatch = first.match(/^\d+\.\s+/);
+      const unorderedMatch = first.match(/^[-*]\s+/);
+
+      if (orderedMatch) {
+        const listItems = lines
+          .map((line) => line.replace(/^\d+\.\s+/, '').trim())
+          .filter(Boolean)
+          .map((line) => {
+            const inner = inlineMarkdownToHtml(line);
+            return `<li>${inner}</li>`;
+          })
+          .join('');
+        return `<ol class="list-decimal list-inside my-4 space-y-1">${listItems}</ol>`;
+      }
+      if (unorderedMatch) {
+        const listItems = lines
+          .map((line) => line.replace(/^[-*]\s+/, '').trim())
+          .filter(Boolean)
+          .map((line) => {
+            const inner = inlineMarkdownToHtml(line);
+            return `<li>${inner}</li>`;
+          })
+          .join('');
+        return `<ul class="list-disc list-inside my-4 space-y-1">${listItems}</ul>`;
+      }
+
+      // Paragraph: convert inline markdown then wrap
+      const paragraph = inlineMarkdownToHtml(lines.join(' '));
+      return `<p class="mb-4">${paragraph}</p>`;
+    })
+    .filter(Boolean)
+    .join('\n');
+  return result;
+}
+
 // Generate static params for all blog posts
 export async function generateStaticParams() {
   const posts = getAllBlogPosts();
@@ -262,37 +328,19 @@ export default function BlogPostPage({ params }) {
                     {section.heading}
                   </h2>
 
-                  {/* Section Content */}
+                  {/* Section Content — markdown converted to proper HTML */}
                   <div
-                    className='text-neutral-700 leading-relaxed whitespace-pre-line'
-                    dangerouslySetInnerHTML={{
-                      __html: section.content
-                        .split('\n\n')
-                        .map((paragraph) => {
-                          // Remove markdown-style image references
-                          const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-                          let processed = paragraph.replace(imageRegex, '');
-
-                          // Convert bold text
-                          processed = processed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-                          // Convert list items
-                          processed = processed.replace(/^\*\s+(.+)$/gm, '<li>$1</li>');
-
-                          return processed;
-                        })
-                        .join('<br/><br/>'),
-                    }}
+                    className='text-neutral-700 leading-relaxed prose prose-lg max-w-none prose-p:mb-4 prose-ul:list-disc prose-ol:list-decimal prose-li:my-1'
+                    dangerouslySetInnerHTML={{ __html: markdownToHtml(section.content) }}
                   />
                 </div>
               ))}
 
-              {/* Conclusion */}
-              <div className='mt-12 pt-8 border-t border-neutral-200'>
-                <p className='text-lg text-neutral-700 leading-relaxed'>
-                  {post.content.conclusion}
-                </p>
-              </div>
+              {/* Conclusion — markdown converted to proper HTML */}
+              <div
+                className='mt-12 pt-8 border-t border-neutral-200 text-lg text-neutral-700 leading-relaxed'
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(post.content.conclusion) }}
+              />
             </div>
 
             {/* Tags + CTA Section — combined unit with proper padding to prevent tag cutoff */}
