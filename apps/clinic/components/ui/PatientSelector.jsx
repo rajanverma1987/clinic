@@ -6,6 +6,7 @@ import { getPatientDisplayName, getPatientDisplayNameParts } from '@/lib/utils/p
 import { useEffect, useRef, useState } from 'react';
 import { Button } from './Button.jsx';
 import { Input } from './Input.jsx';
+import './PatientSelector.css';
 
 export function PatientSelector({
   patients,
@@ -176,28 +177,25 @@ export function PatientSelector({
             </div>
           </div>
 
-          {/* Dropdown */}
+          {/* Dropdown – styles in PatientSelector.css for margin, padding, left align */}
           {isOpen && (
             <div
-              className='absolute w-full mt-2 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-600 rounded-lg shadow-lg dark:shadow-neutral-900/50 max-h-80 overflow-y-auto'
-              style={{ zIndex: 'var(--z-dropdown-menu, 15)' }}
+              className='PatientSelector-dropdown absolute left-0 right-0 w-full z-[100]'
+              role='listbox'
             >
-              {/* Add New Patient Button */}
+              {/* Add New Patient */}
               {onAddNew && (
-                <Button
+                <button
                   type='button'
-                  variant='ghost'
-                  fullWidth
-                  align='start'
                   onClick={() => {
                     onAddNew();
                     setIsOpen(false);
                   }}
-                  className='w-full px-4 py-3 border-b border-gray-200 dark:border-neutral-600 hover:bg-blue-50 dark:hover:bg-neutral-700/50'
+                  className='PatientSelector-option PatientSelector-optionAddNew flex items-center focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:ring-inset rounded-lg'
                 >
-                  <div className='w-10 h-10 rounded-full bg-blue-600 dark:bg-primary-600 flex items-center justify-center flex-shrink-0'>
+                  <div className='PatientSelector-optionAvatar bg-primary-500 dark:bg-primary-600'>
                     <svg
-                      className='icon icon-sm text-white'
+                      className='w-5 h-5 text-white'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -210,7 +208,7 @@ export function PatientSelector({
                       />
                     </svg>
                   </div>
-                  <div>
+                  <div className='PatientSelector-optionContent'>
                     <div className='font-medium text-primary-600 dark:text-primary-400'>
                       {t('patientSelector.addNewPatient')}
                     </div>
@@ -218,25 +216,21 @@ export function PatientSelector({
                       {t('patientSelector.addNewPatientDesc')}
                     </div>
                   </div>
-                </Button>
+                </button>
               )}
 
               {/* Patient List */}
               {filteredPatients.length > 0 ? (
-                <div className='py-1'>
+                <div className='PatientSelector-list'>
                   {filteredPatients.map((patient) => (
-                    <Button
+                    <button
                       key={patient._id}
                       type='button'
-                      variant='ghost'
-                      fullWidth
-                      align='start'
                       onClick={() => handleSelect(patient)}
-                      className='w-full px-4 py-3 hover:bg-gray-50 dark:hover:bg-neutral-700/50 border-b border-gray-100 dark:border-neutral-600 last:border-b-0'
+                      className='PatientSelector-option flex items-center focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:ring-inset'
                     >
-                      {/* Patient Avatar */}
-                      <div className='w-10 h-10 rounded-full bg-gray-100 dark:bg-neutral-600 flex items-center justify-center flex-shrink-0'>
-                        <span className='text-gray-600 dark:text-neutral-200 font-semibold text-sm'>
+                      <div className='PatientSelector-optionAvatar bg-neutral-100 dark:bg-neutral-600'>
+                        <span className='text-neutral-600 dark:text-neutral-200 font-semibold text-sm'>
                           {(() => {
                             const { first, last } = getPatientDisplayNameParts(patient, localeCode);
                             return `${(first || '').charAt(0)}${(last || '').charAt(0)}`.toUpperCase() || 'P';
@@ -244,13 +238,12 @@ export function PatientSelector({
                         </span>
                       </div>
 
-                      {/* Patient Info */}
-                      <div className='flex-1 min-w-0'>
-                        <div className='font-medium text-neutral-900 dark:text-neutral-100'>
+                      <div className='PatientSelector-optionContent'>
+                        <div className='font-medium text-neutral-900 dark:text-neutral-100 truncate'>
                           {getPatientDisplayName(patient, localeCode, t)}
                         </div>
-                        <div className='flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400'>
-                          <span className='font-mono bg-gray-100 dark:bg-neutral-600 px-2 py-0.5 rounded'>
+                        <div className='flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 flex-wrap'>
+                          <span className='font-mono bg-neutral-100 dark:bg-neutral-600/80 text-neutral-700 dark:text-neutral-300 px-2 py-0.5 rounded text-xs'>
                             {patient.patientId}
                           </span>
                           <span>•</span>
@@ -264,11 +257,10 @@ export function PatientSelector({
                         </div>
                       </div>
 
-                      {/* Selected Indicator */}
                       {selectedPatientId === patient._id && (
                         <div className='flex-shrink-0'>
                           <svg
-                            className='icon icon-sm text-primary-600 dark:text-primary-400'
+                            className='w-5 h-5 text-primary-600 dark:text-primary-400'
                             fill='none'
                             stroke='currentColor'
                             strokeWidth={2}
@@ -278,11 +270,11 @@ export function PatientSelector({
                           </svg>
                         </div>
                       )}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               ) : (
-                <div className='px-4 py-8 text-center text-neutral-500 dark:text-neutral-400'>
+                <div className='px-6 py-10 text-center text-neutral-500 dark:text-neutral-400 rounded-lg'>
                   <svg
                     className='w-12 h-12 mx-auto mb-3 text-neutral-400 dark:text-neutral-500'
                     fill='none'
