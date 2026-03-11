@@ -89,8 +89,8 @@ function logResponse() {}
 function logDatabase() {}
 function logSecurity() {}
 
-// ES module exports
-export {
+// CommonJS export so server.js (CJS) and require() in realtime-manager/jobs work on Node without "type": "module"
+module.exports = {
   logger,
   setCorrelationId,
   getCorrelationId,
