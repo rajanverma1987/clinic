@@ -121,7 +121,7 @@ export function MedicineSearchInput({
   }, []);
 
   return (
-    <div className='relative'>
+    <div>
       <Input
         ref={inputRef}
         type='text'
@@ -139,7 +139,7 @@ export function MedicineSearchInput({
       {showDropdown && filteredDrugs.length > 0 && (
         <div
           ref={dropdownRef}
-          className='absolute w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto'
+          className='mt-1 w-full bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto'
           style={{ zIndex: 10060 }}
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -171,7 +171,7 @@ export function MedicineSearchInput({
         </div>
       )}
       {showDropdown && searchQuery.trim() && filteredDrugs.length === 0 && (
-        <div className='absolute w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg p-4 text-center text-neutral-500' style={{ zIndex: 10060 }}>
+        <div className='mt-1 w-full bg-white border border-neutral-200 rounded-lg shadow-lg p-4 text-center text-neutral-500' style={{ zIndex: 10060 }}>
           No medicines found
         </div>
       )}

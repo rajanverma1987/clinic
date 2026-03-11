@@ -607,19 +607,19 @@ export default function ReportsPage() {
 
     return (
       <div className='relative'>
-        {/* Y-axis labels */}
-        <div className='flex items-end h-[220px] border-b border-l border-neutral-300 pl-8 pr-4 pb-8'>
-          {/* Y-axis scale */}
-          <div className='absolute left-0 top-0 bottom-8 flex flex-col justify-between text-xs text-neutral-500'>
+        {/* Y-axis numbers fully outside (left of) vertical line; gap between numbers and line */}
+        <div className='flex h-[220px] gap-3'>
+          {/* Y-axis numbers – left column, right-aligned so they sit clearly left of the line */}
+          <div className='flex flex-col justify-between text-xs text-neutral-500 dark:text-neutral-400 pt-0 pb-8 w-14 shrink-0 text-right'>
             {[100, 75, 50, 25, 0].map((percent) => (
-              <span key={percent} className='pr-2' style={{ marginRight: '100%' }}>
+              <span key={percent}>
                 {Math.round((maxBarValue * percent) / 100)}
               </span>
             ))}
           </div>
-
-          {/* Bars */}
-          <div className='flex-1 flex items-end justify-between gap-1.5'>
+          {/* Vertical line + bars – line starts after the gap */}
+          <div className='flex-1 flex items-end border-b border-l border-neutral-300 dark:border-neutral-600 pl-4 pr-4 pb-8 min-w-0'>
+          <div className='flex-1 flex items-end justify-between gap-1.5 min-w-0'>
             {chartData.map((item, index) => {
               const value = item.value || item.total || item.count || 0;
               const percentage = (value / maxBarValue) * 100;
@@ -657,6 +657,7 @@ export default function ReportsPage() {
                 </div>
               );
             })}
+          </div>
           </div>
         </div>
       </div>
@@ -773,7 +774,7 @@ export default function ReportsPage() {
         unreadCount={0}
         onOpenSearch={handleOpenSearch}
       />
-      <div className='data-tabs-container w-full'>
+      <div className='data-tabs-container reports-page w-full'>
         <div className='tab-content-wide-width data-tabs-content'>
           <div className='filter-row filter-row-items-end mb-4'>
             <div className='w-auto min-w-0'>
@@ -974,12 +975,14 @@ export default function ReportsPage() {
                         </Button>
                       )}
                     </div>
-                    {renderBarChart(
-                      revenueReport.timeSeries.map((item) => ({
-                        period: item.period,
-                        value: item.total,
-                      })),
-                    )}
+                    <div className='mt-[30px]'>
+                      {renderBarChart(
+                        revenueReport.timeSeries.map((item) => ({
+                          period: item.period,
+                          value: item.total,
+                        })),
+                      )}
+                    </div>
                   </Card>
                 )}
 
@@ -1256,12 +1259,14 @@ export default function ReportsPage() {
                         </Button>
                       )}
                     </div>
-                    {renderBarChart(
-                      appointmentReport.timeSeries.map((item) => ({
-                        period: item.period,
-                        value: item.count,
-                      })),
-                    )}
+                    <div className='mt-[30px]'>
+                      {renderBarChart(
+                        appointmentReport.timeSeries.map((item) => ({
+                          period: item.period,
+                          value: item.count,
+                        })),
+                      )}
+                    </div>
                   </Card>
                 )}
 

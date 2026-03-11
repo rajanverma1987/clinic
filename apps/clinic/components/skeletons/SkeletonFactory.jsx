@@ -331,16 +331,17 @@ function GenericSkeleton() {
   );
 }
 
-/** Summary cards row – exact match to reports: Card > p-4, label (text-sm mb-1), value (text-3xl), subtext (text-xs mt-1). */
-function ReportSummaryCards({ count = 4, gridClass = 'content-grid-4' }) {
+/** Summary cards row – exact match to reports: Card > p-4, label, value, optional subtext. min-height to avoid layout shift when data loads. */
+function ReportSummaryCards({ count = 4, gridClass = 'content-grid-4', noSubtext = false, compactValue = false }) {
+  const valueHeight = compactValue ? 'h-8' : 'h-9';
   return (
     <div className={gridClass}>
       {[...Array(count)].map((_, i) => (
-        <Card key={i}>
-          <div className='p-4'>
+        <Card key={i} className='min-h-[7.5rem]'>
+          <div className='p-4 min-h-[6.5rem]'>
             <div className={`h-4 ${bg2} rounded w-1/2 mb-1`} />
-            <div className={`h-9 ${bg3} rounded w-3/4`} />
-            <div className={`h-3 ${bg2} rounded w-1/3 mt-1`} />
+            <div className={`${valueHeight} ${bg3} rounded w-3/4`} />
+            {!noSubtext && <div className={`h-3 ${bg2} rounded w-1/3 mt-1`} />}
           </div>
         </Card>
       ))}
@@ -348,33 +349,83 @@ function ReportSummaryCards({ count = 4, gridClass = 'content-grid-4' }) {
   );
 }
 
-/** Chart card – exact match: Card, header (h2.text-xl + Button), chart area h-[220px] like real bar chart. */
+/** Chart card – exact match: Card, header + chart area. min-height to avoid layout shift. */
 function ReportChartCard() {
   return (
-    <Card>
+    <Card className='min-h-[20rem]'>
       <div className='flex items-center justify-between mb-4'>
         <div className={`h-6 ${bg3} rounded w-1/4`} />
         <div className={`h-9 ${bg2} rounded w-28`} />
       </div>
-      <div className={`h-[220px] ${bg2} rounded border-b border-l border-neutral-300 dark:border-neutral-600 pl-8 pr-4 pb-8`} />
+      <div className={`min-h-[220px] h-[220px] ${bg2} rounded border-b border-l border-neutral-300 dark:border-neutral-600 pl-8 pr-4 pb-8`} />
     </Card>
   );
 }
 
-/** Pie/breakdown card – exact match: Card, h3.text-lg.mb-4, then pie area. */
+/** Revenue Trend card – exact match: header, mt-[30px], then bar chart. min-height to avoid layout shift. */
+function ReportRevenueChartCard() {
+  return (
+    <Card className='min-h-[20rem]'>
+      <div className='flex items-center justify-between mb-4'>
+        <div className={`h-6 ${bg3} rounded w-1/4`} />
+        <div className={`h-9 ${bg2} rounded w-28`} />
+      </div>
+      <div className='mt-[30px] min-h-[220px]'>
+        <div className='flex h-[220px] gap-3'>
+          <div className={`flex flex-col justify-between text-xs pt-0 pb-8 w-14 shrink-0 ${bg2} rounded`}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className={`h-4 ${bg3} rounded w-8 ml-auto`} />
+            ))}
+          </div>
+          <div className='flex-1 flex items-end border-b border-l border-neutral-300 dark:border-neutral-600 pl-4 pr-4 pb-8 min-w-0'>
+            <div className='flex-1 flex items-end justify-between gap-1.5 min-w-0'>
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className={`flex-1 ${bg2} rounded-t min-h-[2px]`} style={{ height: `${20 + i * 12}%` }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/** Pie/breakdown card – exact match: Card, h3.text-lg.mb-4, then pie area. min-height to avoid layout shift. */
 function ReportPieCard() {
   return (
-    <Card>
+    <Card className='min-h-[15rem]'>
       <div className={`h-6 ${bg3} rounded w-1/3 mb-4`} />
-      <div className={`h-48 ${bg2} rounded-full max-w-[200px] mx-auto`} />
+      <div className={`h-48 min-h-[12rem] ${bg2} rounded-full max-w-[200px] mx-auto`} />
     </Card>
   );
 }
 
-/** Table card – exact match to reports: Card > div.flex.justify-between.mb-4 (title + Export) > clinic-table-wrap > table. */
+/** Patient Demographics card – exact match: Card > h3 > content-grid-2 > section. min-height to avoid layout shift. */
+function ReportPatientDemographicsCard() {
+  return (
+    <Card className='min-h-[14rem]'>
+      <div className={`h-6 ${bg3} rounded w-1/3 mb-4`} />
+      <div className='content-grid-2 content-grid-gap-6 min-h-[10rem]'>
+        <div>
+          <div className={`h-4 ${bg3} rounded w-28 mb-2`} />
+          <div className='space-y-2'>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className='flex justify-between items-center p-2 rounded gap-2'>
+                <div className={`h-4 ${bg2} rounded flex-1 max-w-[80px]`} />
+                <div className={`h-4 ${bg3} rounded w-8`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/** Table card – exact match: Card > header > table. min-height to avoid layout shift. */
 function ReportTableCard({ rows = 6, colCount = 4 }) {
   return (
-    <Card>
+    <Card className='min-h-[18rem]'>
       <div className='flex items-center justify-between mb-4'>
         <div className={`h-6 ${bg3} rounded w-1/3`} />
         <div className={`h-9 ${bg2} rounded w-28`} />
@@ -407,10 +458,49 @@ function ReportTableCard({ rows = 6, colCount = 4 }) {
   );
 }
 
+/** Doctor Performance table card – exact match: Card > h2 + Export, Table 6 cols. min-height to avoid layout shift. */
+function ReportDoctorsTableCard({ rows = 6 }) {
+  const colCount = 6;
+  const headerWidths = ['max-w-[120px]', 'max-w-[72px]', 'max-w-[64px]', 'max-w-[56px]', 'max-w-[80px]', 'max-w-[72px]'];
+  const cellWidths = ['max-w-[140px]', 'max-w-[48px]', 'max-w-[48px]', 'max-w-[48px]', 'max-w-[56px]', 'max-w-[72px]'];
+  return (
+    <Card className='min-h-[18rem]'>
+      <div className='flex items-center justify-between mb-4'>
+        <div className={`h-6 ${bg3} rounded w-48 shrink-0`} />
+        <div className={`h-9 ${bg2} rounded w-28 shrink-0`} />
+      </div>
+      <div className='clinic-table-wrap'>
+        <table className='clinic-table'>
+          <thead>
+            <tr>
+              {[...Array(colCount)].map((_, j) => (
+                <th key={j} className='px-4 py-3'>
+                  <div className={`h-4 ${bg3} rounded w-full ${headerWidths[j]}`} />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(rows)].map((_, i) => (
+              <tr key={i}>
+                {[...Array(colCount)].map((_, j) => (
+                  <td key={j} className='px-4 py-3'>
+                    <div className={`h-4 ${bg2} rounded ${cellWidths[j]}`} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
 /** Simple table card – exact match: Card > h3.mb-4 > Table (clinic-table-wrap). */
 function ReportTableCardSimple({ rows = 4, colCount = 4 }) {
   return (
-    <Card>
+    <Card className='min-h-[14rem]'>
       <div className={`h-6 ${bg3} rounded w-1/3 mb-4`} />
       <div className='clinic-table-wrap'>
         <table className='clinic-table'>
@@ -453,7 +543,7 @@ export function ReportTabSkeleton({ activeTab = 'revenue' }) {
         return (
           <>
             <ReportSummaryCards count={4} gridClass='content-grid-4' />
-            <ReportChartCard />
+            <ReportRevenueChartCard />
             <div className='content-grid-2 content-grid-gap-6'>
               <ReportPieCard />
               <ReportPieCard />
@@ -463,26 +553,25 @@ export function ReportTabSkeleton({ activeTab = 'revenue' }) {
       case 'doctors':
         return (
           <>
-            <ReportSummaryCards count={4} gridClass='content-grid-4' />
-            <ReportTableCard rows={6} colCount={6} />
+            <ReportSummaryCards count={4} gridClass='content-grid-4' noSubtext compactValue />
           </>
         );
       case 'patients':
         return (
           <>
             <ReportSummaryCards count={3} gridClass='content-grid-3' />
-            <ReportChartCard />
             <div className='content-grid-2 content-grid-gap-6'>
               <ReportPieCard />
               <ReportPieCard />
             </div>
+            <ReportPatientDemographicsCard />
           </>
         );
       case 'appointments':
         return (
           <>
             <ReportSummaryCards count={4} gridClass='content-grid-4' />
-            <ReportChartCard />
+            <ReportRevenueChartCard />
             <div className='content-grid-2 content-grid-gap-6'>
               <ReportPieCard />
               <ReportPieCard />
@@ -496,8 +585,6 @@ export function ReportTabSkeleton({ activeTab = 'revenue' }) {
             <div className='content-grid-2 content-grid-gap-6'>
               <ReportPieCard />
             </div>
-            <ReportTableCard rows={5} colCount={4} />
-            <ReportTableCardSimple rows={4} colCount={4} />
           </>
         );
       default:
@@ -516,7 +603,7 @@ export function ReportTabSkeleton({ activeTab = 'revenue' }) {
 
   return (
     <div
-      className={`space-y-6 ${pulse}`}
+      className='space-y-6 reports-skeleton-static'
       aria-busy='true'
       aria-label={t('common.ariaLabelLoadingReport')}
     >

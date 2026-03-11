@@ -1355,6 +1355,15 @@
   box-sizing: border-box;
 }
 
+/* Reports page: less horizontal space so content uses more width */
+.reports-page.data-tabs-container {
+  padding-left: clamp(8px, 1.5vw, 16px);
+  padding-right: clamp(8px, 1.5vw, 16px);
+}
+.reports-page .tab-content-wide-width {
+  max-width: 96rem;
+}
+
 .tab-content-loading {
   display: flex;
   align-items: center;
@@ -1362,6 +1371,12 @@
   min-height: 200px;
   padding: var(--space-8);
   width: 100%;
+}
+
+/* Reports skeleton: no zoom/pulse/shimmer so layout stays stable on hard refresh */
+.reports-skeleton-static {
+  animation: none !important;
+  transform: none !important;
 }
 
 /* Hero heading – single source for responsive size (no inline overrides) */
