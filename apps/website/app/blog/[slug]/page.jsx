@@ -11,14 +11,11 @@ import { notFound } from 'next/navigation';
 /** Convert inline markdown (**bold** and *italic*) to HTML. Do bold first so asterisks don't conflict. */
 function inlineMarkdownToHtml(str) {
   if (!str || typeof str !== 'string') return '';
-  const trimmed = str.trim();
-  // Whole string is only *italic* (e.g. caption lines)
-  if (/^\*[^*]+\*$/.test(trimmed)) {
-    return `<em>${trimmed.slice(1, -1)}</em>`;
-  }
-  // Bold first (so ** doesn't get broken by single-* pass)
-  let out = str.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  // Italic: *text*
+  // Normalise unicode asterisks and line endings so * is always ASCII
+  let s = str.replace(/\u2217/g, '*').replace(/\uFF0A/g, '*').replace(/\r\n?/g, '\n').trim();
+  if (!s) return '';
+  if (/^\*[^*]+\*$/.test(s)) return `<em>${s.slice(1, -1)}</em>`;
+  let out = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   return out;
 }
@@ -29,16 +26,23 @@ function inlineMarkdownToHtml(str) {
  */
 function markdownToHtml(text) {
   if (!text || typeof text !== 'string') return '';
-  // Strip markdown image syntax ![alt](url)
-  let html = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '');
-  // Split into blocks by double newlines
+  let html = text.replace(/\u2217/g, '*').replace(/\uFF0A/g, '*').replace(/\r\n?/g, '\n');
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '');
+  // Global pass: convert ALL **bold** and *italic* in entire content first (so no * ever remains)
+  html = html.replace(/\*\*([^*]+)\*\*/g, (_, g) => `<strong>${g}</strong>`);
+  html = html.replace(/\*([^*]+)\*/g, (_, g) => `<em>${g}</em>`);
   const blocks = html.split(/\n\n+/);
   const result = blocks
     .map((block) => {
-      const lines = block.split('\n').filter((l) => l.trim() !== '');
+      const rawLines = block.split('\n').map((l) => l.replace(/\r$/, '').trim());
+      const lines = rawLines.filter((l) => l !== '');
       if (lines.length === 0) return '';
 
       const first = lines[0];
+      // Single line that is only <em>...</em> (already converted by global pass)
+      if (lines.length === 1 && first.startsWith('<em>') && first.endsWith('</em>')) {
+        return `<p class="mb-4">${first}</p>`;
+      }
       const orderedMatch = first.match(/^\d+\.\s+/);
       const unorderedMatch = first.match(/^[-*]\s+/);
 
@@ -46,10 +50,7 @@ function markdownToHtml(text) {
         const listItems = lines
           .map((line) => line.replace(/^\d+\.\s+/, '').trim())
           .filter(Boolean)
-          .map((line) => {
-            const inner = inlineMarkdownToHtml(line);
-            return `<li>${inner}</li>`;
-          })
+          .map((line) => `<li>${line}</li>`)
           .join('');
         return `<ol class="list-decimal list-inside my-4 space-y-1">${listItems}</ol>`;
       }
@@ -57,21 +58,17 @@ function markdownToHtml(text) {
         const listItems = lines
           .map((line) => line.replace(/^[-*]\s+/, '').trim())
           .filter(Boolean)
-          .map((line) => {
-            const inner = inlineMarkdownToHtml(line);
-            return `<li>${inner}</li>`;
-          })
+          .map((line) => `<li>${line}</li>`)
           .join('');
         return `<ul class="list-disc list-inside my-4 space-y-1">${listItems}</ul>`;
       }
 
-      // Paragraph: convert inline markdown then wrap
-      const paragraph = inlineMarkdownToHtml(lines.join(' '));
-      return `<p class="mb-4">${paragraph}</p>`;
+      return `<p class="mb-4">${lines.join(' ')}</p>`;
     })
     .filter(Boolean)
     .join('\n');
-  return result;
+  // Final pass: convert any remaining *...* in output to <em> (catches edge cases)
+  return result.replace(/\*([^*]+)\*/g, (_, g) => `<em>${g}</em>`);
 }
 
 // Generate static params for all blog posts

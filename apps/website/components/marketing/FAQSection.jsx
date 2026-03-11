@@ -1,39 +1,17 @@
 'use client';
 
 import { ChevronDownIcon } from '@/components/icons';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function FAQSection({ openFaqIndex, onFaqToggle }) {
+  const { t } = useI18n();
   const faqs = [
-    {
-      question: 'Is data secure?',
-      answer:
-        'Yes, we use end-to-end encryption, HIPAA-compliant, and implement strict security measures to protect all patient data.',
-    },
-    {
-      question: 'Can multiple doctors use it?',
-      answer:
-        'Absolutely! Our platform supports multiple doctors, staff members, and departments. You can assign different roles and permissions to each user.',
-    },
-    {
-      question: 'Is there a mobile app?',
-      answer:
-        'Yes, our platform is fully responsive and works seamlessly on mobile devices. We also offer native mobile apps for iOS and Android.',
-    },
-    {
-      question: 'What about backups?',
-      answer:
-        'We perform automated daily backups of all data with 30-day retention. All backups are encrypted and stored in secure, geographically distributed locations.',
-    },
-    {
-      question: 'Can I customize the platform for my clinic?',
-      answer:
-        'Yes, our Premium and Enterprise plans offer extensive customization options including custom branding, workflows, and integrations.',
-    },
-    {
-      question: 'What kind of support do you provide?',
-      answer:
-        'We offer email support for all plans, priority support for Standard and above, and 24/7 dedicated support for Premium and Enterprise customers.',
-    },
+    { question: t('homepage.faq1Question'), answer: t('homepage.faq1Answer') },
+    { question: t('homepage.faq2Question'), answer: t('homepage.faq2Answer') },
+    { question: t('homepage.faq3Question'), answer: t('homepage.faq3Answer') },
+    { question: t('homepage.faq4Question'), answer: t('homepage.faq4Answer') },
+    { question: t('homepage.faq5Question'), answer: t('homepage.faq5Answer') },
+    { question: t('homepage.faq6Question'), answer: t('homepage.faq6Answer') },
   ];
 
   return (
@@ -57,7 +35,7 @@ export function FAQSection({ openFaqIndex, onFaqToggle }) {
               fontWeight: '700',
             }}
           >
-            Frequently Asked Questions
+            {t('homepage.faqTitle')}
           </h2>
           <p
             className='text-neutral-700'
@@ -68,7 +46,7 @@ export function FAQSection({ openFaqIndex, onFaqToggle }) {
               fontWeight: '400',
             }}
           >
-            Everything you need to know about our platform
+            {t('homepage.faqSubtitle')}
           </p>
         </div>
 

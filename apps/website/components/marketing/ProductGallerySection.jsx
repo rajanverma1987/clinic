@@ -1,25 +1,28 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/contexts/I18nContext';
 import { CLINIC_APP_URL } from '@/lib/config';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export function ProductGallerySection() {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState(0);
   const clinicAppUrl = CLINIC_APP_URL.replace(/\/$/, '');
 
-  const features = [
-    {
-      title: 'Dashboard',
-      description:
-        'Comprehensive overview of your clinic operations with real-time insights and key metrics at a glance',
-      highlights: [
-        'Real-time analytics and KPIs',
-        'Quick access to recent activities',
-        'Customizable widgets',
-        'Multi-clinic overview support',
-      ],
-      icon: (
+  const features = useMemo(
+    () => [
+      {
+        key: 'Dashboard',
+        title: t('homepage.galleryDashboardTitle'),
+        description: t('homepage.galleryDashboardDesc'),
+        highlights: [
+          t('homepage.galleryDashboardHighlight1'),
+          t('homepage.galleryDashboardHighlight2'),
+          t('homepage.galleryDashboardHighlight3'),
+          t('homepage.galleryDashboardHighlight4'),
+        ],
+        icon: (
         <svg
           style={{ width: '32px', height: '32px' }}
           fill='none'
@@ -36,14 +39,14 @@ export function ProductGallerySection() {
       ),
     },
     {
-      title: 'Calendar',
-      description:
-        'Smart scheduling with conflict detection and automated reminders for seamless appointment management',
+      key: 'Calendar',
+      title: t('homepage.galleryCalendarTitle'),
+      description: t('homepage.galleryCalendarDesc'),
       highlights: [
-        'Drag-and-drop scheduling',
-        'Automatic conflict detection',
-        'Multi-doctor calendar view',
-        'Recurring appointment support',
+        t('homepage.galleryCalendarHighlight1'),
+        t('homepage.galleryCalendarHighlight2'),
+        t('homepage.galleryCalendarHighlight3'),
+        t('homepage.galleryCalendarHighlight4'),
       ],
       icon: (
         <svg
@@ -62,14 +65,14 @@ export function ProductGallerySection() {
       ),
     },
     {
-      title: 'Patients',
-      description:
-        'Complete patient records management with secure access and comprehensive medical history tracking',
+      key: 'Patients',
+      title: t('homepage.galleryPatientsTitle'),
+      description: t('homepage.galleryPatientsDesc'),
       highlights: [
-        'Digital patient profiles',
-        'Medical history tracking',
-        'Document management',
-        'HIPAA-compliant storage',
+        t('homepage.galleryPatientsHighlight1'),
+        t('homepage.galleryPatientsHighlight2'),
+        t('homepage.galleryPatientsHighlight3'),
+        t('homepage.galleryPatientsHighlight4'),
       ],
       icon: (
         <svg
@@ -88,14 +91,14 @@ export function ProductGallerySection() {
       ),
     },
     {
-      title: 'Billing',
-      description:
-        'Streamlined invoicing and payment tracking with automated reminders and multi-payment gateway support',
+      key: 'Billing',
+      title: t('homepage.galleryBillingTitle'),
+      description: t('homepage.galleryBillingDesc'),
       highlights: [
-        'Automated invoice generation',
-        'Payment tracking and history',
-        'Multi-currency support',
-        'Insurance claim management',
+        t('homepage.galleryBillingHighlight1'),
+        t('homepage.galleryBillingHighlight2'),
+        t('homepage.galleryBillingHighlight3'),
+        t('homepage.galleryBillingHighlight4'),
       ],
       icon: (
         <svg
@@ -114,14 +117,14 @@ export function ProductGallerySection() {
       ),
     },
     {
-      title: 'Reports',
-      description:
-        'Advanced analytics and insights with customizable reports and data visualization tools',
+      key: 'Reports',
+      title: t('homepage.galleryReportsTitle'),
+      description: t('homepage.galleryReportsDesc'),
       highlights: [
-        'Custom report builder',
-        'Revenue analytics',
-        'Patient statistics',
-        'Export to PDF/Excel',
+        t('homepage.galleryReportsHighlight1'),
+        t('homepage.galleryReportsHighlight2'),
+        t('homepage.galleryReportsHighlight3'),
+        t('homepage.galleryReportsHighlight4'),
       ],
       icon: (
         <svg
@@ -140,14 +143,14 @@ export function ProductGallerySection() {
       ),
     },
     {
-      title: 'Prescriptions',
-      description:
-        'Digital prescription management with e-prescription support and pharmacy integration',
+      key: 'Prescriptions',
+      title: t('homepage.galleryPrescriptionsTitle'),
+      description: t('homepage.galleryPrescriptionsDesc'),
       highlights: [
-        'Digital prescription creation',
-        'E-prescription support',
-        'Pharmacy integration',
-        'Prescription history tracking',
+        t('homepage.galleryPrescriptionsHighlight1'),
+        t('homepage.galleryPrescriptionsHighlight2'),
+        t('homepage.galleryPrescriptionsHighlight3'),
+        t('homepage.galleryPrescriptionsHighlight4'),
       ],
       icon: (
         <svg
@@ -165,7 +168,9 @@ export function ProductGallerySection() {
         </svg>
       ),
     },
-  ];
+  ],
+    [t]
+  );
 
   return (
     <section
@@ -181,7 +186,7 @@ export function ProductGallerySection() {
         <div className='text-center mb-10'>
           <div className='inline-flex items-center bg-primary-50 border border-primary-200 rounded-full px-4 py-1.5 mb-6'>
             <span className='text-xs font-semibold text-primary-700 tracking-wide uppercase'>
-              Platform Overview
+              {t('homepage.galleryOverline')}
             </span>
           </div>
 
@@ -194,7 +199,7 @@ export function ProductGallerySection() {
               fontWeight: '700',
             }}
           >
-            See It In Action
+            {t('homepage.galleryTitle')}
           </h2>
           <p
             className='text-neutral-700 max-w-2xl mx-auto'
@@ -205,7 +210,7 @@ export function ProductGallerySection() {
               fontWeight: '400',
             }}
           >
-            Discover how our platform transforms clinic management with powerful, intuitive features
+            {t('homepage.gallerySubtitle')}
           </p>
         </div>
 
@@ -341,25 +346,25 @@ export function ProductGallerySection() {
                     variant='primary'
                     size='lg'
                     onClick={() => {
-                      const feature = features[activeTab].title;
+                      const featureKey = features[activeTab].key;
                       let url = `${clinicAppUrl}/register`;
-                      if (feature === 'Dashboard') {
+                      if (featureKey === 'Dashboard') {
                         url = `${clinicAppUrl}/dashboard`;
-                      } else if (feature === 'Calendar') {
+                      } else if (featureKey === 'Calendar') {
                         url = `${clinicAppUrl}/appointments`;
-                      } else if (feature === 'Patients') {
+                      } else if (featureKey === 'Patients') {
                         url = `${clinicAppUrl}/patients`;
-                      } else if (feature === 'Billing') {
+                      } else if (featureKey === 'Billing') {
                         url = `${clinicAppUrl}/invoices`;
-                      } else if (feature === 'Reports') {
+                      } else if (featureKey === 'Reports') {
                         url = `${clinicAppUrl}/reports`;
-                      } else if (feature === 'Prescriptions') {
+                      } else if (featureKey === 'Prescriptions') {
                         url = `${clinicAppUrl}/prescriptions`;
                       }
                       window.location.href = url;
                     }}
                   >
-                    Explore {features[activeTab].title}
+                    {t('homepage.galleryExplore')} {features[activeTab].title}
                   </Button>
                 </div>
               </div>
