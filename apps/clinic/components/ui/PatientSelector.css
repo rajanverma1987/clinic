@@ -1,0 +1,79 @@
+/* Patient dropdown on /appointments/new – margin, padding, left alignment */
+
+.PatientSelector-dropdown {
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--color-neutral-0, #fff);
+  border: 1px solid var(--color-neutral-200, #e5e5e5);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  max-height: 320px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.dark .PatientSelector-dropdown {
+  background: var(--color-neutral-800, #262626);
+  border-color: var(--color-neutral-600, #525252);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.PatientSelector-option {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 14px 18px;
+  text-align: left;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  gap: 16px;
+  transition: background 0.15s ease;
+}
+
+.PatientSelector-option:last-child {
+  margin-bottom: 0;
+}
+
+.PatientSelector-option:hover {
+  background: var(--color-neutral-50, #fafafa);
+}
+
+.dark .PatientSelector-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.PatientSelector-optionAddNew {
+  margin-bottom: 12px;
+  padding: 14px 18px;
+  border: 1px solid var(--color-neutral-200, #e5e5e5);
+}
+
+.dark .PatientSelector-optionAddNew {
+  border-color: var(--color-neutral-600, #525252);
+}
+
+.PatientSelector-optionContent {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.PatientSelector-optionContent p,
+.PatientSelector-optionContent div {
+  text-align: left;
+}
+
+.PatientSelector-optionAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}

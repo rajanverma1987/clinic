@@ -381,17 +381,19 @@
 }
 
 .LanguageSwitcher-menu {
-  padding: var(--space-2);
+  padding: 10px 12px;
+  text-align: left;
 }
 
-/* Premium Menu Items */
+/* Premium Menu Items – left-aligned like profile dropdown */
 .LanguageSwitcher-item {
   position: relative;
   width: 100%;
   display: flex;
   align-items: center;
-  gap: var(--gap-3);
-  padding: var(--space-3) var(--space-4);
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
   text-align: left;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
@@ -400,6 +402,7 @@
   border-radius: var(--radius-xl);
   margin-bottom: var(--space-1);
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .LanguageSwitcher-item:last-child {
@@ -409,13 +412,13 @@
 .LanguageSwitcher-item--sm {
   font-size: var(--text-body-xs);
   line-height: var(--text-body-xs-line-height);
-  padding: var(--space-3) var(--space-4);
+  padding: 14px 18px;
 }
 
 .LanguageSwitcher-item--md {
   font-size: var(--text-body-sm);
   line-height: var(--text-body-sm-line-height);
-  padding: var(--space-3) var(--space-4);
+  padding: 14px 18px;
 }
 
 /* Light item styles */
@@ -533,6 +536,7 @@
 .LanguageSwitcher-item-content {
   flex: 1;
   min-width: 0;
+  text-align: left;
 }
 
 .LanguageSwitcher-item-name {
@@ -540,6 +544,7 @@
   display: block;
   margin-bottom: 2px;
   transition: color 0.3s ease;
+  text-align: left;
 }
 
 .LanguageSwitcher-item-code {
@@ -549,6 +554,7 @@
   font-weight: 500;
   letter-spacing: 0.5px;
   transition: opacity 0.3s ease;
+  text-align: left;
 }
 
 .LanguageSwitcher-item-code.is-active {
