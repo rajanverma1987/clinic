@@ -128,26 +128,26 @@ function ChangePasswordContent() {
   };
 
   return (
-    <div className='h-screen flex bg-neutral-50 overflow-hidden'>
+    <div className='h-screen flex bg-neutral-50 dark:bg-neutral-900 overflow-hidden'>
       {/* Left Side - Background Image Only */}
-      <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 h-full'>
+      <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 dark:border-neutral-700 h-full'>
         <div className='absolute inset-0 w-full h-full'>
           <ImageTransition
             src='/images/login.png'
             alt={t('common.altChangePasswordBackground')}
             fill
-            className='object-cover opacity-90'
+            className='object-cover opacity-90 dark:opacity-70'
             quality={75}
             priority
             sizes='50vw'
             style={{ objectFit: 'cover', objectPosition: 'center' }}
           />
         </div>
-        <div className='absolute inset-0 bg-gradient-to-br from-neutral-900/10 via-transparent to-neutral-900/20'></div>
+        <div className='absolute inset-0 bg-gradient-to-br from-neutral-900/10 via-transparent to-neutral-900/20 dark:from-neutral-950/40 dark:to-neutral-950/60' />
       </div>
 
       {/* Right Side - Change Password Form */}
-      <div className='w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 h-full overflow-y-auto'>
+      <div className='w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 h-full overflow-y-auto'>
         <div className='w-full max-w-md'>
           {/* Logo for mobile */}
           <div className='lg:hidden mb-8 text-center'>
@@ -170,7 +170,7 @@ function ChangePasswordContent() {
             <LanguageSwitcher />
           </div>
 
-          <FormTransition className='bg-white rounded-2xl border-2 border-neutral-200/80 shadow-2xl p-8 lg:p-10'>
+          <FormTransition className='bg-white dark:bg-neutral-800 rounded-2xl border-2 border-neutral-200/80 dark:border-neutral-600/80 shadow-2xl p-8 lg:p-10'>
             {/* Logo for desktop */}
             <div className='hidden lg:flex justify-center mb-8'>
               <Link href='/' className='inline-flex items-center justify-center group'>
@@ -189,7 +189,7 @@ function ChangePasswordContent() {
 
             <div className='text-center mb-8'>
               <h2
-                className='text-neutral-900 mb-2'
+                className='text-neutral-900 dark:text-neutral-100 mb-2'
                 style={{
                   fontSize: '32px',
                   lineHeight: '40px',
@@ -200,7 +200,7 @@ function ChangePasswordContent() {
                 {isFirstLogin ? t('auth.setYourPassword') : t('auth.changePasswordTitle')}
               </h2>
               <p
-                className='text-neutral-600'
+                className='text-neutral-600 dark:text-neutral-400'
                 style={{
                   fontSize: '16px',
                   lineHeight: '24px',
@@ -234,7 +234,7 @@ function ChangePasswordContent() {
               )}
 
               {success && (
-                <div className='bg-secondary-100 border-l-4 border-secondary-500 text-secondary-700 px-4 py-3 rounded-lg shadow-sm'>
+                <div className='bg-secondary-100 dark:bg-secondary-900/40 border-l-4 border-secondary-500 dark:border-secondary-400 text-secondary-700 dark:text-secondary-300 px-4 py-3 rounded-lg shadow-sm'>
                   <span className='text-sm font-medium'>{success}</span>
                 </div>
               )}
@@ -243,14 +243,14 @@ function ChangePasswordContent() {
                 <div>
                   <label
                     htmlFor='currentPassword'
-                    className='block text-sm font-semibold text-neutral-800 mb-2'
+                    className='block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2'
                   >
                     {t('auth.currentPassword')}
                   </label>
                   <div className='relative min-h-[var(--input-height-md,40px)]'>
                     <div className='absolute inset-y-0 left-0 w-10 flex items-center justify-center pointer-events-none'>
                       <svg
-                        className='icon icon-sm text-neutral-900'
+                        className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                         fill='none'
                         stroke='currentColor'
                         viewBox='0 0 24 24'
@@ -325,14 +325,14 @@ function ChangePasswordContent() {
               <div>
                 <label
                   htmlFor='newPassword'
-                  className='block text-sm font-semibold text-neutral-800 mb-2'
+                  className='block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2'
                 >
                   {t('auth.newPassword')}
                 </label>
                 <div className='relative min-h-[var(--input-height-md,40px)]'>
                   <div className='absolute inset-y-0 left-0 w-10 flex items-center justify-center pointer-events-none'>
                     <svg
-                      className='icon icon-sm text-neutral-900'
+                      className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'
@@ -401,7 +401,7 @@ function ChangePasswordContent() {
                     </Button>
                   </div>
                 </div>
-                <p className='text-xs text-neutral-500 mt-1'>
+                <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
                   {t('auth.passwordRequirementHint')}
                 </p>
               </div>
@@ -409,14 +409,14 @@ function ChangePasswordContent() {
               <div>
                 <label
                   htmlFor='confirmPassword'
-                  className='block text-sm font-semibold text-neutral-800 mb-2'
+                  className='block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2'
                 >
                   {t('auth.confirmNewPassword')}
                 </label>
                 <div className='relative min-h-[var(--input-height-md,40px)]'>
                   <div className='absolute inset-y-0 left-0 w-10 flex items-center justify-center pointer-events-none'>
                     <svg
-                      className='icon icon-sm text-neutral-900'
+                      className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                       fill='none'
                       stroke='currentColor'
                       viewBox='0 0 24 24'

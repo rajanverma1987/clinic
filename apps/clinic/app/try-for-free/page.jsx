@@ -21,10 +21,10 @@ const STEPS = [
 ];
 
 const inputWrapperClass =
-  'flex items-stretch border border-neutral-300 rounded-[10px] bg-white overflow-hidden focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 form-control-height';
-const labelClass = 'block text-sm font-semibold text-neutral-800 mb-2';
+  'flex items-stretch border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-700/50 overflow-hidden focus-within:border-primary-500 dark:focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-500/20 dark:focus-within:ring-primary-400/20 form-control-height';
+const labelClass = 'block text-sm font-semibold text-neutral-800 dark:text-neutral-200 mb-2';
 const selectClass =
-  'w-full border border-neutral-300 rounded-[10px] px-3 py-0 text-neutral-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 form-control-height bg-white';
+  'w-full border border-neutral-300 dark:border-neutral-600 rounded-[10px] px-3 py-0 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-primary-500 dark:focus:border-primary-400 form-control-height bg-white dark:bg-neutral-700/50';
 
 export default function TryForFreePage() {
   const router = useRouter();
@@ -142,26 +142,26 @@ export default function TryForFreePage() {
           '3 months free for Solo & Clinic. Payment applies after. Cancel anytime.';
 
   return (
-    <div className='h-screen flex bg-neutral-50 overflow-hidden'>
+    <div className='h-screen flex bg-neutral-50 dark:bg-neutral-900 overflow-hidden'>
       {/* Left - Background (same as login) */}
-      <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 h-full'>
+      <div className='hidden lg:flex lg:w-1/2 relative overflow-hidden border-r border-neutral-200 dark:border-neutral-700 h-full'>
         <div className='absolute inset-0 w-full h-full'>
           <ImageTransition
             src='/images/login.png'
             alt={t('common.altRegister')}
             fill
-            className='object-cover opacity-90'
+            className='object-cover opacity-90 dark:opacity-70'
             quality={75}
             priority
             sizes='50vw'
             style={{ objectFit: 'cover', objectPosition: 'center' }}
           />
         </div>
-        <div className='absolute inset-0 bg-gradient-to-br from-neutral-900/10 via-transparent to-neutral-900/20' />
+        <div className='absolute inset-0 bg-gradient-to-br from-neutral-900/10 via-transparent to-neutral-900/20 dark:from-neutral-950/40 dark:to-neutral-950/60' />
       </div>
 
       {/* Right - Form (same layout as login) */}
-      <div className='w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 h-full overflow-y-auto'>
+      <div className='w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-neutral-50 via-white to-neutral-50 dark:bg-neutral-900 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 h-full overflow-y-auto'>
         <div className='w-full max-w-md'>
           {/* Logo mobile */}
           <div className='lg:hidden mb-8 text-center'>
@@ -179,7 +179,7 @@ export default function TryForFreePage() {
             </Link>
           </div>
 
-          <FormTransition className='bg-white rounded-2xl border-2 border-neutral-200/80 shadow-2xl p-8 lg:p-10'>
+          <FormTransition className='bg-white dark:bg-neutral-800 rounded-2xl border-2 border-neutral-200/80 dark:border-neutral-600/80 shadow-2xl p-8 lg:p-10'>
             {/* Logo desktop */}
             <div className='hidden lg:flex justify-center mb-6'>
               <Link href='/' className='inline-flex items-center justify-center group'>
@@ -201,14 +201,14 @@ export default function TryForFreePage() {
               {STEPS.map((s) => (
                 <div
                   key={s.id}
-                  className={`h-1 flex-1 rounded-full ${step >= s.id ? 'bg-primary-500' : 'bg-neutral-200'}`}
+                  className={`h-1 flex-1 rounded-full ${step >= s.id ? 'bg-primary-500 dark:bg-primary-400' : 'bg-neutral-200 dark:bg-neutral-600'}`}
                 />
               ))}
             </div>
 
             <div className='text-center mb-6'>
               <h2
-                className='text-neutral-900 mb-2'
+                className='text-neutral-900 dark:text-neutral-100 mb-2'
                 style={{
                   fontSize: '32px',
                   lineHeight: '40px',
@@ -219,7 +219,7 @@ export default function TryForFreePage() {
                 {t('auth.register') || 'Register'}
               </h2>
               <p
-                className='text-neutral-600'
+                className='text-neutral-600 dark:text-neutral-400'
                 style={{
                   fontSize: '16px',
                   lineHeight: '24px',
@@ -228,16 +228,16 @@ export default function TryForFreePage() {
               >
                 {stepTitle}
               </p>
-              <p className='text-neutral-500 text-sm mt-1'>{stepSubtitle}</p>
+              <p className='text-neutral-500 dark:text-neutral-400 text-sm mt-1'>{stepSubtitle}</p>
             </div>
 
             {error && (
-              <div className='mb-6 bg-status-error/10 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex flex-col gap-2 shadow-sm'>
+              <div className='mb-6 bg-status-error/10 dark:bg-status-error/20 border-l-4 border-status-error text-status-error px-4 py-3 rounded-lg flex flex-col gap-2 shadow-sm'>
                 <span className='text-sm font-medium'>{error}</span>
                 {duplicateEmail && (
                   <Link
                     href='/login'
-                    className='text-primary-600 hover:text-primary-700 font-semibold text-sm'
+                    className='text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold text-sm'
                   >
                     {t('tryForFree.alreadyHaveAccount') || 'Already have an account? Sign in'}
                   </Link>
@@ -252,9 +252,9 @@ export default function TryForFreePage() {
                     {t('tryForFree.clinicName') || 'Clinic name'} *
                   </label>
                   <div className={inputWrapperClass}>
-                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 dark:border-neutral-600 bg-neutral-50/50 dark:bg-neutral-700'>
                       <svg
-                        className='icon icon-sm text-neutral-600'
+                        className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -361,7 +361,7 @@ export default function TryForFreePage() {
                       value={data.firstName}
                       onChange={(e) => update('firstName', e.target.value)}
                       required
-                      className='border border-neutral-300 rounded-[10px] form-control-height'
+                      className='border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-700/50 form-control-height'
                     />
                   </div>
                   <div>
@@ -370,16 +370,16 @@ export default function TryForFreePage() {
                       value={data.lastName}
                       onChange={(e) => update('lastName', e.target.value)}
                       required
-                      className='border border-neutral-300 rounded-[10px] form-control-height'
+                      className='border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-700/50 form-control-height'
                     />
                   </div>
                 </div>
                 <div>
                   <label className={labelClass}>{t('tryForFree.phone') || 'Phone'} *</label>
                   <div className={inputWrapperClass}>
-                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 dark:border-neutral-600 bg-neutral-50/50 dark:bg-neutral-700'>
                       <svg
-                        className='icon icon-sm text-neutral-600'
+                        className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -410,7 +410,7 @@ export default function TryForFreePage() {
                     onChange={(e) => update('address', e.target.value)}
                     placeholder={t('tryForFree.addressPlaceholder') || 'Street address'}
                     required
-                    className='border border-neutral-300 rounded-[10px] form-control-height'
+                    className='border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-700/50 form-control-height'
                   />
                 </div>
                 <div className='grid grid-cols-2 gap-4'>
@@ -420,7 +420,7 @@ export default function TryForFreePage() {
                       value={data.city}
                       onChange={(e) => update('city', e.target.value)}
                       required
-                      className='border border-neutral-300 rounded-[10px] form-control-height'
+                      className='border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-700/50 form-control-height'
                     />
                   </div>
                   <div>
@@ -431,7 +431,7 @@ export default function TryForFreePage() {
                       value={data.state}
                       onChange={(e) => update('state', e.target.value)}
                       required
-                      className='border border-neutral-300 rounded-[10px] form-control-height'
+                      className='border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-700/50 form-control-height'
                     />
                   </div>
                 </div>
@@ -443,7 +443,7 @@ export default function TryForFreePage() {
                     value={data.zipCode}
                     onChange={(e) => update('zipCode', e.target.value)}
                     required
-                    className='border border-neutral-300 rounded-[10px] form-control-height'
+                    className='border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-700/50 form-control-height'
                   />
                 </div>
                 <div className='flex gap-3 pt-2'>
@@ -477,9 +477,9 @@ export default function TryForFreePage() {
                     {t('auth.email') || 'Email'} *
                   </label>
                   <div className={inputWrapperClass}>
-                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 dark:border-neutral-600 bg-neutral-50/50 dark:bg-neutral-700'>
                       <svg
-                        className='icon icon-sm text-neutral-600'
+                        className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -510,9 +510,9 @@ export default function TryForFreePage() {
                     {t('auth.password') || 'Password'} * (min 8 characters)
                   </label>
                   <div className={inputWrapperClass}>
-                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 dark:border-neutral-600 bg-neutral-50/50 dark:bg-neutral-700'>
                       <svg
-                        className='icon icon-sm text-neutral-600'
+                        className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -544,9 +544,9 @@ export default function TryForFreePage() {
                     {t('auth.confirmPassword') || 'Confirm password'} *
                   </label>
                   <div className={inputWrapperClass}>
-                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 bg-neutral-50/50'>
+                    <div className='flex items-center justify-center shrink-0 w-12 min-w-[3rem] pl-3 pr-2 border-r border-neutral-200 dark:border-neutral-600 bg-neutral-50/50 dark:bg-neutral-700'>
                       <svg
-                        className='icon icon-sm text-neutral-600'
+                        className='icon icon-sm text-neutral-600 dark:text-neutral-400'
                         fill='none'
                         stroke='currentColor'
                         strokeWidth={2}
@@ -600,20 +600,20 @@ export default function TryForFreePage() {
           </FormTransition>
 
           <div className='mt-8 text-center'>
-            <p className='text-sm text-neutral-700'>
+            <p className='text-sm text-neutral-700 dark:text-neutral-300'>
               {t('tryForFree.cancelAnytime') || 'You can cancel your subscription anytime.'}
             </p>
-            <p className='text-neutral-500 mt-2 text-sm'>
+            <p className='text-neutral-500 dark:text-neutral-400 mt-2 text-sm'>
               {t('auth.alreadyHaveAccount') || 'Already have an account? '}
-              <Link href='/login' className='text-primary-600 hover:text-primary-700 font-semibold'>
+              <Link href='/login' className='text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold'>
                 {t('auth.signIn') || 'Sign in'}
               </Link>
             </p>
-            <p className='text-neutral-500 mt-2' style={{ fontSize: '10px', lineHeight: '14px' }}>
+            <p className='text-neutral-500 dark:text-neutral-400 mt-2' style={{ fontSize: '10px', lineHeight: '14px' }}>
               By signing up, you agree to our{' '}
               <Link
                 href='/legal'
-                className='text-primary-600 hover:text-primary-700 font-medium underline'
+                className='text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium underline'
                 style={{ fontSize: '10px' }}
               >
                 Legal Information & Disclaimers
