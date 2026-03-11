@@ -6,7 +6,7 @@ export function DataSecuritySection() {
   const { t } = useI18n();
   const securityFeatures = [
     {
-      title: 'End-to-end encryption with real-time threat monitoring',
+      title: t('homepage.dataSecurityFeature1'),
       icon: (
         <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
@@ -19,7 +19,7 @@ export function DataSecuritySection() {
       ),
     },
     {
-      title: 'HIPAA-compliant data hosting on AWS servers',
+      title: t('homepage.dataSecurityFeature2'),
       icon: (
         <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
@@ -32,7 +32,7 @@ export function DataSecuritySection() {
       ),
     },
     {
-      title: 'Two-factor authentication for all users',
+      title: t('homepage.dataSecurityFeature3'),
       icon: (
         <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
@@ -45,7 +45,7 @@ export function DataSecuritySection() {
       ),
     },
     {
-      title: 'Strict policy against data selling or misuse',
+      title: t('homepage.dataSecurityFeature4'),
       icon: (
         <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
@@ -58,7 +58,7 @@ export function DataSecuritySection() {
       ),
     },
     {
-      title: 'Full transparency in data handling practices',
+      title: t('homepage.dataSecurityFeature5'),
       icon: (
         <svg className='w-6 h-6 shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
           <path
@@ -96,10 +96,10 @@ export function DataSecuritySection() {
               {t('homepage.securityOverline')}
             </p>
             <h2 className='text-neutral-900 mb-6 text-5xl leading-[56px] tracking-tight font-bold'>
-              Committed to Data Security
+              {t('homepage.dataSecurityTitle')}
             </h2>
             <p className='text-neutral-600 mb-12 text-lg leading-7 tracking-tight font-normal'>
-              Protecting your clinic&apos;s sensitive information is a top priority.
+              {t('homepage.dataSecuritySubtitle')}
             </p>
 
             <div className='space-y-5'>
@@ -158,9 +158,9 @@ export function DataSecuritySection() {
 
                 <div className='grid grid-cols-3 gap-4 w-full max-w-md mb-8'>
                   {[
-                    { label: 'Encrypted', value: '100%', icon: '🔒' },
-                    { label: 'Monitored', value: '24/7', icon: '🛡️' },
-                    { label: 'Compliant', value: 'HIPAA', icon: '✓' },
+                    { label: t('homepage.dataSecurityStatEncrypted'), value: '100%', icon: '🔒' },
+                    { label: t('homepage.dataSecurityStatMonitored'), value: '24/7', icon: '🛡️' },
+                    { label: t('homepage.dataSecurityStatCompliant'), value: 'HIPAA', icon: '✓' },
                   ].map((stat, i) => (
                     <div
                       key={i}

@@ -12,43 +12,43 @@ export function TestimonialsSection({
   const testimonials = [
     {
       text: t('homepage.testimonial1'),
-      name: 'Dr. Sarah Johnson',
-      role: 'Family Medicine, HealthCare Plus',
+      name: t('homepage.testimonial1Name'),
+      role: t('homepage.testimonial1Role'),
       initials: 'SJ',
       bgColor: 'bg-primary-500',
     },
     {
       text: t('homepage.testimonial2'),
-      name: 'Dr. Rajesh Mehta',
-      role: 'Cardiologist, Global Heart Center',
+      name: t('homepage.testimonial2Name'),
+      role: t('homepage.testimonial2Role'),
       initials: 'RM',
       bgColor: 'bg-primary-500',
     },
     {
       text: t('homepage.testimonial3'),
-      name: 'Dr. Maria Williams',
-      role: 'Pediatrician, Little Smiles Clinic',
+      name: t('homepage.testimonial3Name'),
+      role: t('homepage.testimonial3Role'),
       initials: 'MW',
       bgColor: 'bg-primary-500',
     },
     {
       text: t('homepage.testimonial4'),
-      name: 'Dr. James Anderson',
-      role: 'Multi-Location Manager, Health Network',
+      name: t('homepage.testimonial4Name'),
+      role: t('homepage.testimonial4Role'),
       initials: 'JA',
       bgColor: 'bg-primary-600',
     },
     {
       text: t('homepage.testimonial5'),
-      name: 'Dr. Emily Chen',
-      role: 'Internal Medicine, City Medical Group',
+      name: t('homepage.testimonial5Name'),
+      role: t('homepage.testimonial5Role'),
       initials: 'EC',
       bgColor: 'bg-primary-500',
     },
     {
       text: t('homepage.testimonial6'),
-      name: 'Dr. Michael Brown',
-      role: 'Pharmacy Director, Care Pharmacy',
+      name: t('homepage.testimonial6Name'),
+      role: t('homepage.testimonial6Role'),
       initials: 'MB',
       bgColor: 'bg-primary-500',
     },
@@ -127,7 +127,7 @@ export function TestimonialsSection({
                   setCurrentTestimonialIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))
                 }
                 className='absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white border border-neutral-200 shadow-md hover:shadow-lg hover:border-primary-300 flex items-center justify-center text-neutral-600 hover:text-primary-600 transition-colors'
-                aria-label='Previous testimonial'
+                aria-label={t('homepage.testimonialPrev')}
               >
                 <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path
@@ -144,7 +144,7 @@ export function TestimonialsSection({
                   setCurrentTestimonialIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))
                 }
                 className='absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white border border-neutral-200 shadow-md hover:shadow-lg hover:border-primary-300 flex items-center justify-center text-neutral-600 hover:text-primary-600 transition-colors'
-                aria-label='Next testimonial'
+                aria-label={t('homepage.testimonialNext')}
               >
                 <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path
@@ -171,7 +171,7 @@ export function TestimonialsSection({
                   type='button'
                   role='tab'
                   aria-selected={currentTestimonialIndex === index}
-                  aria-label={`Slide ${index + 1}`}
+                  aria-label={`${t('homepage.testimonialSlide')} ${index + 1}`}
                   onClick={() => setCurrentTestimonialIndex(index)}
                   className={`h-2 rounded-full transition-all duration-200 ${
                     currentTestimonialIndex === index
