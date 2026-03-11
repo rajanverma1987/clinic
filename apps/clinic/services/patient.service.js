@@ -14,6 +14,7 @@ import { transliterateToArabic } from '@/lib/utils/transliterate-name.js';
 import { translateToSpanish } from '@/lib/utils/translate-name-spanish.js';
 import Appointment from '@/models/Appointment.js';
 import Patient from '@/models/Patient.js';
+import User from '@/models/User.js'; // Register User so Patient.populate('createdBy') works
 
 /**
  * Create a new patient

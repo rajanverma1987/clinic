@@ -97,8 +97,6 @@ brew install mongodb-community
 # Start MongoDB
 brew services start mongodb-community
 
-# Or use Docker
-docker run -d -p 27017:27017 --name mongodb mongo:6
 ```
 
 #### Option B: MongoDB Atlas

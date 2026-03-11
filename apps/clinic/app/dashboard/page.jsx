@@ -137,6 +137,11 @@ export default function DashboardPage() {
   const isDoctor = user?.role === 'doctor';
   const clinicTenantId = isDoctor ? null : tenantId;
 
+  // Only fetch dashboard/all (or doctor APIs) when on Overview or KPI tab. Appointments/Prescriptions tabs use their own APIs only.
+  const dashboardDataTab = activeTab === 'overview' || activeTab === 'kpi';
+  const enableDashboardData = !isDoctor && dashboardDataTab;
+  const enableDoctorData = isDoctor && dashboardDataTab;
+
   // Defer charts so stats + lists paint first (faster first paint)
   const [chartsEnabled, setChartsEnabled] = useState(false);
   // Avoid hydration mismatch: server and client must render same shell (no <a> in main until mounted)
@@ -181,10 +186,10 @@ export default function DashboardPage() {
     [t],
   );
 
-  // Clinic: one request to /api/dashboard/all (stats + lists + charts). Doctor: separate hooks.
-  const dashboardAll = useDashboard({ enabled: !isDoctor });
-  const doctorStats = useDoctorDashboardStats();
-  const doctorLists = useDoctorDashboardLists();
+  // Clinic: dashboard/all only when Overview or KPI tab. Doctor: doctor APIs only when Overview or KPI tab.
+  const dashboardAll = useDashboard({ enabled: enableDashboardData });
+  const doctorStats = useDoctorDashboardStats({ enabled: enableDoctorData });
+  const doctorLists = useDoctorDashboardLists({ enabled: enableDoctorData });
 
   const stats = isDoctor ? doctorStats.stats : dashboardAll.stats;
   const statsLoading = isDoctor ? doctorStats.loading : dashboardAll.loading;
@@ -259,17 +264,31 @@ export default function DashboardPage() {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Mark initial load done once stats + lists have loaded (so auto-refresh interval can start)
+  // Mark initial load done once stats + lists have loaded (so auto-refresh interval can start). Only when on a tab that uses dashboard data.
   useEffect(() => {
-    if (user && !authLoading && user.role !== 'super_admin' && !statsLoading && !listsLoading) {
+    if (
+      user &&
+      !authLoading &&
+      user.role !== 'super_admin' &&
+      dashboardDataTab &&
+      !statsLoading &&
+      !listsLoading
+    ) {
       setInitialLoadDone(true);
       hasFetchedRef.current = true;
     }
-  }, [user, authLoading, statsLoading, listsLoading]);
+  }, [user, authLoading, dashboardDataTab, statsLoading, listsLoading]);
 
-  // Auto-refresh (silent, no flicker) – start only after initial load
+  // Auto-refresh (silent, no flicker) – only when on Overview/KPI tab and after initial load
   useEffect(() => {
-    if (authLoading || !user || user.role === 'super_admin' || !initialLoadDone) return;
+    if (
+      authLoading ||
+      !user ||
+      user.role === 'super_admin' ||
+      !dashboardDataTab ||
+      !initialLoadDone
+    )
+      return;
 
     const onRefreshFail = () => {
       consecutiveFailsRef.current += 1;
@@ -340,6 +359,7 @@ export default function DashboardPage() {
   }, [
     authLoading,
     user,
+    dashboardDataTab,
     initialLoadDone,
     isDoctor,
     fetchStatsBackground,

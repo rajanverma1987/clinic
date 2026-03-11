@@ -195,39 +195,7 @@ sudo systemctl status clinic
 
 ---
 
-### Option 2: Docker (Recommended)
-
-**Best for:** Kubernetes, ECS, Cloud Run, containerized deployments
-
-See `Dockerfile` and `docker-compose.yml` in the repository.
-
-```bash
-# Build Docker image
-docker build -t clinic-app:latest .
-
-# Run container
-docker run -p 5053:5053 \
-  --env-file .env.production \
-  --name clinic-app \
-  clinic-app:latest
-
-# Or use docker-compose
-docker-compose up -d
-```
-
-**Push to registry:**
-
-```bash
-# Tag for ECR/GCR/Docker Hub
-docker tag clinic-app:latest your-registry.com/clinic-app:v1.0.0
-
-# Push
-docker push your-registry.com/clinic-app:v1.0.0
-```
-
----
-
-### Option 3: Vercel (Easiest)
+### Option 2: Vercel (Easiest)
 
 **Best for:** Quick deployment, automatic scaling
 
@@ -251,7 +219,7 @@ vercel --prod
 
 ---
 
-### Option 4: AWS Elastic Beanstalk
+### Option 3: AWS Elastic Beanstalk
 
 **Best for:** AWS infrastructure
 
@@ -273,7 +241,7 @@ Configure environment variables in Elastic Beanstalk console.
 
 ---
 
-### Option 5: Google Cloud Run
+### Option 4: Google Cloud Run
 
 **Best for:** Google Cloud infrastructure
 
@@ -291,7 +259,7 @@ gcloud run deploy clinic-app \
 
 ---
 
-### Option 6: Azure App Service
+### Option 5: Azure App Service
 
 **Best for:** Azure infrastructure
 
@@ -684,10 +652,6 @@ git checkout v1.0.0  # Previous version
 npm install
 npm run build
 pm2 start clinic-app
-
-# With Docker
-docker stop clinic-app
-docker run -d --name clinic-app clinic-app:v1.0.0
 
 # Restore database (if needed)
 npm run backup:restore

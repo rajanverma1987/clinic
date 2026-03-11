@@ -7,7 +7,6 @@ import { apiRateLimit } from '@/middleware/rate-limit';
 import { RESOURCES, ACTIONS } from '@/lib/permissions/constants';
 import { getAllLots } from '@/services/inventory.service';
 import { successResponse } from '@/lib/utils/api-response';
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 
 /**
  * GET /api/inventory/lots
@@ -26,14 +25,7 @@ async function getHandler(req, user) {
     expired: searchParams.get('expired') === 'true',
   };
 
-  const isDashboardQuery = filters.expiringSoon && !filters.expired;
-  const lots = isDashboardQuery
-    ? await optimizedCacheManager.getOrFetch(
-        `inventory:lots:expiringSoon:${user.tenantId}`,
-        () => getAllLots(user.tenantId, user.userId, filters),
-        60000,
-      )
-    : await getAllLots(user.tenantId, user.userId, filters);
+  const lots = await getAllLots(user.tenantId, user.userId, filters);
 
   return NextResponse.json(successResponse(lots));
 }

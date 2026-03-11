@@ -1,4 +1,3 @@
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { errorResponse, successResponse, validationErrorResponse } from '@/lib/utils/api-response';
 import { createInventoryItemSchema, inventoryItemQuerySchema } from '@/lib/validations/inventory';
@@ -28,11 +27,7 @@ async function getHandler(req, user) {
     const expired = searchParams.get('expired') === 'true';
 
     if (lowStock) {
-      const items = await optimizedCacheManager.getOrFetch(
-        `inventory:lowStock:${user.tenantId}`,
-        () => getLowStockItems(user.tenantId, user.userId),
-        60000,
-      );
+      const items = await getLowStockItems(user.tenantId, user.userId);
       return NextResponse.json(successResponse(items));
     }
 
@@ -44,16 +39,10 @@ async function getHandler(req, user) {
     const lightweight = searchParams.get('lightweight') === 'true';
     const type = searchParams.get('type');
     if (lightweight && type) {
-      const cacheKey = `inventory:lightweight:${type}:${user.tenantId}`;
-      const result = await optimizedCacheManager.getOrFetch(
-        cacheKey,
-        () =>
-          listInventoryItems(
-            { type, limit: searchParams.get('limit') || '500', lightweight: true },
-            user.tenantId,
-            user.userId,
-          ),
-        60000,
+      const result = await listInventoryItems(
+        { type, limit: searchParams.get('limit') || '500', lightweight: true },
+        user.tenantId,
+        user.userId,
       );
       return NextResponse.json(successResponse(result));
     }

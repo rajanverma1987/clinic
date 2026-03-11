@@ -39,8 +39,9 @@ export function KPIDashboardTab({ isActive = false }) {
   const { user } = useAuth();
   const isDoctor = user?.role === 'doctor';
 
-  const dashboardAll = useDashboard({ enabled: !isDoctor });
-  const doctorStats = useDoctorDashboardStats();
+  // Only fetch when this tab is active (page does not fetch for kpi tab; this tab owns its data).
+  const dashboardAll = useDashboard({ enabled: !isDoctor && isActive });
+  const doctorStats = useDoctorDashboardStats({ enabled: isDoctor && isActive });
 
   const stats = isDoctor ? doctorStats.stats : dashboardAll.stats;
   const statsLoading = isDoctor ? doctorStats.loading : dashboardAll.loading;

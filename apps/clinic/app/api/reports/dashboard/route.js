@@ -1,4 +1,3 @@
-import CacheManager from '@/lib/cache/cache-manager.js';
 import { dashboardEngineAdapter } from '@/lib/dashboard-engine-adapter';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
@@ -10,17 +9,14 @@ import { apiRateLimit } from '@/middleware/rate-limit';
 import { getClinicSummary } from '@clinic-saas/dashboard-engine';
 import { NextResponse } from 'next/server';
 
-const DASHBOARD_CACHE_TTL = 300;
-
 /**
  * GET /api/reports/dashboard
- * Dashboard statistics via dashboard-engine. Cache from background job or on-demand.
+ * Dashboard statistics via dashboard-engine (direct fetch).
  */
 async function getHandler(req, user) {
   try {
     const tenantId = user.tenantId?.toString?.() || user.tenantId;
 
-    // Super admin has no tenantId; return empty stats (they use /admin/stats for platform data)
     if (user.role === 'super_admin' && !tenantId) {
       return NextResponse.json({
         ...successResponse({
@@ -30,7 +26,6 @@ async function getHandler(req, user) {
           invoices: { pending: 0, paid: 0 },
           lastUpdated: new Date().toISOString(),
         }),
-        fromCache: false,
       });
     }
 
@@ -40,14 +35,8 @@ async function getHandler(req, user) {
       });
     }
 
-    let stats = await CacheManager.get('dashboard', 'stats', tenantId);
-    if (!stats) {
-      logger.debug('Cache miss - fetching clinic summary via dashboard-engine');
-      stats = await getClinicSummary(tenantId, dashboardEngineAdapter);
-      if (stats) await CacheManager.set('dashboard', stats, DASHBOARD_CACHE_TTL, 'stats', tenantId);
-    }
-
-    return NextResponse.json({ ...successResponse(stats), fromCache: !!stats });
+    const stats = await getClinicSummary(tenantId, dashboardEngineAdapter);
+    return NextResponse.json(successResponse(stats));
   } catch (error) {
     logger.error('Reports dashboard fetch failed', { message: error?.message });
     return NextResponse.json(

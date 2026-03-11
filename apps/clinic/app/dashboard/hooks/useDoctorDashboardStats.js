@@ -1,30 +1,18 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
-import * as dashboardCache from '@/lib/cache/dashboard-cache';
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Doctor dashboard stats. Cache-first: when returning to Dashboard, show last data (no loading).
+ * Doctor dashboard stats. Direct API fetch when enabled.
+ * When enabled is false (e.g. on Appointments/Prescriptions tab), no fetch runs.
  */
-export function useDoctorDashboardStats() {
+export function useDoctorDashboardStats({ enabled = true } = {}) {
   const { user } = useAuth();
   const userId = user?.role === 'doctor' ? (user?._id ?? user?.id ?? user?.userId ?? null) : null;
 
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  useLayoutEffect(() => {
-    if (!userId || userId === 'undefined') {
-      setLoading(false);
-      return;
-    }
-    const cached = dashboardCache.getData('doctorStats', userId);
-    if (cached) {
-      setStats(cached);
-      setLoading(false);
-    }
-  }, [userId]);
 
   const fetchStats = useCallback(async () => {
     if (!user || !userId || userId === 'undefined') {
@@ -37,18 +25,14 @@ export function useDoctorDashboardStats() {
       return Promise.resolve();
     }
 
-    const cached = dashboardCache.getData('doctorStats', userId);
-    const isBackgroundRevalidate = !!cached;
-
     try {
-      if (!isBackgroundRevalidate) setLoading(true);
+      setLoading(true);
       setError(null);
 
       const response = await apiClient.get('/doctors/dashboard');
 
       if (response.success && response.data) {
         setStats(response.data);
-        dashboardCache.set('doctorStats', userId, response.data);
       } else {
         throw new Error(response.error || 'Failed to fetch dashboard stats');
       }
@@ -81,13 +65,11 @@ export function useDoctorDashboardStats() {
     }
   }, [user, userId]);
 
-  // Trigger initial fetch when no cache (otherwise loading stays true forever)
   useEffect(() => {
-    if (!userId || userId === 'undefined' || (user?.role || '').toLowerCase() !== 'doctor') return;
-    const cached = dashboardCache.getData('doctorStats', userId);
-    if (cached) return; // Cache already restored by useLayoutEffect; optional background revalidate via refresh interval
+    if (!enabled || !userId || userId === 'undefined' || (user?.role || '').toLowerCase() !== 'doctor')
+      return;
     fetchStats();
-  }, [userId, user?.role, fetchStats]);
+  }, [enabled, userId, user?.role, fetchStats]);
 
   return { stats, loading, error, fetchStats };
 }

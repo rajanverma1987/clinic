@@ -1,6 +1,6 @@
 /**
  * clinic_dashboard_metrics – aggregated dashboard metrics (no live table queries).
- * Populated by update-dashboard-metrics script (cron every 1 min).
+ * Populated by update-dashboard-metrics script or dashboard stats calculation.
  * Dashboard reads ONLY from this table via getClinicSummary.
  */
 

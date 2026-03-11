@@ -13,13 +13,9 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
-import {
-  fetchPrescriptionsTab,
-  getCachedPrescriptions,
-  REVALIDATE_DELAY_MS,
-} from '@/lib/dashboard-tab-cache';
+import { fetchPrescriptionsTab, REVALIDATE_DELAY_MS } from '@/lib/dashboard-tab-cache';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const LIMIT = 10;
 
@@ -58,29 +54,14 @@ export function PrescriptionsTab({ isActive = false }) {
     [userId, localeCode, t],
   );
 
-  // Before paint: when tab becomes active, show cache immediately so no loading flash.
-  useLayoutEffect(() => {
-    if (!isActive || !userId) return;
-    const cached = getCachedPrescriptions(userId);
-    if (cached !== null && Array.isArray(cached)) {
-      setPrescriptions(cached);
-      setLoading(false);
-      setError(null);
-    }
-  }, [isActive, userId]);
-
-  // After paint: fetch if no cache, and schedule revalidate.
+  // When tab is active, fetch and schedule revalidate.
   useEffect(() => {
-    if (authLoading || !user || !userId) return;
-    if (!isActive) return;
+    if (authLoading || !user || !userId || !isActive) return;
 
     if (prevLocaleRef.current !== localeCode) {
       prevLocaleRef.current = localeCode;
       fetchAndUpdate(true);
-    }
-
-    const cached = getCachedPrescriptions(userId);
-    if (cached === null || !Array.isArray(cached)) {
+    } else {
       fetchAndUpdate(false);
     }
 

@@ -14,17 +14,14 @@ import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { apiClient } from '@/lib/api/client';
-import * as routeCache from '@/lib/cache/dashboard-cache';
 import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { ACTIONS, RESOURCES, hasPermission } from '@/lib/permissions/constants';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
-
-const ROUTE_KEY = 'route_prescriptions';
 
 export default function PrescriptionsPage() {
   const router = useRouter();
@@ -49,18 +46,8 @@ export default function PrescriptionsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const refreshIntervalRef = useRef(null);
 
-  useLayoutEffect(() => {
-    if (!tenantId) return;
-    const cached = routeCache.getData(ROUTE_KEY, tenantId);
-    if (cached && cached.prescriptions != null) {
-      setPrescriptions(cached.prescriptions);
-      setLoading(false);
-    }
-  }, [tenantId]);
-
   const fetchPrescriptions = useCallback(async (silentRefresh = false) => {
-    const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
-    if (!silentRefresh && !hasCache) setLoading(true);
+    if (!silentRefresh) setLoading(true);
     try {
       const params = new URLSearchParams();
       if (localeCode) params.set('locale', localeCode);
@@ -71,7 +58,6 @@ export default function PrescriptionsPage() {
           Array.isArray(data) ? data : data?.data ?? data?.prescriptions ?? extractArrayData(response);
         if (!Array.isArray(prescriptionsList)) prescriptionsList = [];
         setPrescriptions(prescriptionsList);
-        if (tenantId) routeCache.set(ROUTE_KEY, tenantId, { prescriptions: prescriptionsList });
       } else {
         setPrescriptions([]);
       }
@@ -111,7 +97,6 @@ export default function PrescriptionsPage() {
         }
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, fetchPrescriptions]);
 
   // Manual refresh handler

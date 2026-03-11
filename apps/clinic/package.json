@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "git": "git add . && git commit -m 'update' && git push",
-    "dev": "node --max-old-space-size=4096 --no-warnings=MODULE_TYPELESS_PACKAGE_JSON server.js",
-    "dev:clean": "rm -rf .next && node --max-old-space-size=4096 --no-warnings=MODULE_TYPELESS_PACKAGE_JSON server.js",
+    "dev": "node  server.js",
+    "dev:clean": "rm -rf .next && node  server.js",
     "dev:next": "next dev -p 5053",
     "build": "node -r ./lib/run-self-polyfill.cjs ../../node_modules/next/dist/bin/next build",
     "start": "cross-env NODE_ENV=production node server.js",
@@ -64,7 +64,6 @@
     "lucide-react": "^0.556.0",
     "mongoose": "^8.3.0",
     "next": "^15.5.10",
-    "node-cron": "^3.0.3",
     "nodemailer": "^7.0.11",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
@@ -85,16 +84,12 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/jest": "^30.0.0",
-    "@types/node": "24.10.1",
-    "@types/react": "19.2.7",
     "autoprefixer": "^10.4.0",
     "babel-jest": "^30.2.0",
     "cross-env": "^10.1.0",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "postcss": "^8.4.0",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.0.0"
+    "tailwindcss": "^3.4.0"
   }
 }

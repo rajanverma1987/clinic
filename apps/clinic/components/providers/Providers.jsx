@@ -1,6 +1,5 @@
 'use client';
 
-import { CacheWarming } from '@/components/CacheWarming';
 import { DocumentLocale } from '@/components/DocumentLocale';
 import { OfflineReplay } from '@/components/OfflineReplay';
 import { PageTransition } from '@/components/layout/PageTransition';
@@ -42,7 +41,6 @@ export function Providers({ children }) {
           <ThemeProvider>
             <RealtimeProvider>
               <OfflineReplay />
-              <CacheWarming />
               <FeatureProvider>
                 <NotificationProvider>
                   <AppNotificationsProvider>

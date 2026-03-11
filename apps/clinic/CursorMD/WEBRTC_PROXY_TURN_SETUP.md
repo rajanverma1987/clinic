@@ -71,7 +71,7 @@ NEXT_PUBLIC_TURN_CREDENTIAL=your_secure_password
 
 ##### Option 1B: Separate Linux VM/Container (Alternative)
 
-If you prefer not to use WSL, run Coturn on a separate Linux VM or Docker container:
+If you prefer not to use WSL, run Coturn on a separate Linux VM:
 
 1. **Create a small Linux VM** (Ubuntu Server) on the same network
 2. **Install Coturn** on the Linux VM (same steps as Option 1A)

@@ -21,14 +21,11 @@ import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
-import * as routeCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-
-const ROUTE_KEY = 'route_queue';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export default function QueuePage() {
   const router = useRouter();
@@ -49,14 +46,6 @@ export default function QueuePage() {
   const isClinicAdmin = user?.role === 'clinic_admin';
   const isDoctor = user?.role === 'doctor';
 
-  useLayoutEffect(() => {
-    if (!userId) return;
-    const cached = routeCache.getData(ROUTE_KEY, userId);
-    if (cached && cached.queueEntries != null) {
-      setQueueEntries(cached.queueEntries);
-      setLoading(false);
-    }
-  }, [userId]);
   const isInitialMountRef = useRef(true);
   const isFetchingRef = useRef(false);
   const currentDoctorIdRef = useRef('');
@@ -105,11 +94,8 @@ export default function QueuePage() {
     async (showLoading = false) => {
       if (isFetchingRef.current) return;
 
-      const hasCache = userId && routeCache.getData(ROUTE_KEY, userId);
       isFetchingRef.current = true;
-      if (showLoading && !hasCache) {
-        setLoading(true);
-      }
+      if (showLoading) setLoading(true);
 
       try {
         const params = new URLSearchParams();
@@ -140,13 +126,10 @@ export default function QueuePage() {
         }
 
         setQueueEntries(allEntries);
-        if (userId) routeCache.set(ROUTE_KEY, userId, { queueEntries: allEntries });
       } catch (error) {
         logger.error('Failed to fetch queue', error);
       } finally {
-        if (showLoading) {
-          setLoading(false);
-        }
+        if (showLoading) setLoading(false);
         isFetchingRef.current = false;
       }
     },

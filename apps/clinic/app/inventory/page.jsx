@@ -18,16 +18,13 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
-import * as routeCache from '@/lib/cache/dashboard-cache';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-
-const ROUTE_KEY = 'route_inventory';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const INVENTORY_TAB_IDS = ['items', 'lots', 'suppliers', 'transactions'];
 
@@ -89,19 +86,9 @@ export default function InventoryPage() {
       name_es: item.name_es ?? item.name ?? '',
     })), []);
 
-  useLayoutEffect(() => {
-    if (!tenantId) return;
-    const cached = routeCache.getData(ROUTE_KEY, tenantId);
-    if (cached && cached.items != null) {
-      setItems(normalizeItemNames(cached.items));
-      setLoading(false);
-    }
-  }, [tenantId, normalizeItemNames]);
-
   const fetchItems = useCallback(
     async (silentRefresh = false) => {
-      const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
-      if (!silentRefresh && !hasCache) setLoading(true);
+      if (!silentRefresh) setLoading(true);
       try {
         const params = new URLSearchParams();
         if (showLowStock) params.set('lowStock', 'true');
@@ -111,7 +98,6 @@ export default function InventoryPage() {
         if (response.success && response.data) {
           const raw = extractArrayData(response);
           const itemsList = normalizeItemNames(raw);
-          if (!showLowStock && tenantId) routeCache.set(ROUTE_KEY, tenantId, { items: itemsList });
           setItems(itemsList);
         }
       } catch (error) {
@@ -133,11 +119,9 @@ export default function InventoryPage() {
   const fetchItemsRef = useRef(fetchItems);
   fetchItemsRef.current = fetchItems;
   const prevLocaleRef = useRef(localeCode);
-  // When locale changes (e.g. user switches to Arabic/Spanish), clear cache and refetch for correct name_ar/name_es
   useEffect(() => {
     if (!tenantId || !user || prevLocaleRef.current === localeCode) return;
     prevLocaleRef.current = localeCode;
-    routeCache.clear(ROUTE_KEY, tenantId);
     fetchItemsRef.current(true);
   }, [localeCode, tenantId, user]);
 
@@ -162,7 +146,6 @@ export default function InventoryPage() {
         }
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, showLowStock, fetchItems]);
 
   // Manual refresh handler

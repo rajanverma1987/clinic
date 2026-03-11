@@ -1,10 +1,9 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
-import * as dashboardCache from '@/lib/cache/dashboard-cache';
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Clinic dashboard charts – parallel fetch, cache-first when returning to Dashboard.
+ * Clinic dashboard charts – direct API fetch.
  */
 export function useDashboardCharts() {
   const { user } = useAuth();
@@ -18,26 +17,13 @@ export function useDashboardCharts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useLayoutEffect(() => {
-    if (!tenantId) return;
-    const cached = dashboardCache.getData('charts', tenantId);
-    if (cached && typeof cached === 'object') {
-      setChartData({
-        revenue: cached.revenue ?? null,
-        appointments: cached.appointments ?? null,
-        patients: cached.patients ?? null,
-      });
-      setLoading(false);
-    }
-  }, [tenantId]);
-
   const fetchChartData = useCallback(async () => {
-    const cacheKey = tenantId ?? 'clinic';
-    const cached = dashboardCache.getData('charts', cacheKey);
-    const isBackgroundRevalidate = !!cached;
-
+    if (!tenantId) {
+      setLoading(false);
+      return;
+    }
     try {
-      if (!isBackgroundRevalidate) setLoading(true);
+      setLoading(true);
       setError(null);
 
       const endDate = new Date();
@@ -83,9 +69,7 @@ export function useDashboardCharts() {
           ? patientRes.value.data.timeSeries || []
           : [];
 
-      const next = { revenue, appointments, patients };
-      setChartData(next);
-      dashboardCache.set('charts', cacheKey, next);
+      setChartData({ revenue, appointments, patients });
     } catch (err) {
       // Fetch failed
       setError(err);
@@ -94,6 +78,11 @@ export function useDashboardCharts() {
       setLoading(false);
     }
   }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantId) setLoading(false);
+    else fetchChartData();
+  }, [tenantId, fetchChartData]);
 
   return { chartData, loading, error, fetchChartData };
 }

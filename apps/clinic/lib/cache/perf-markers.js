@@ -1,54 +1,12 @@
 /**
- * Performance markers for cache hits/misses (useQueryStats reads these).
- * API request timing: log when response exceeds P95 target (200ms).
+ * Performance markers for API request timing (used by api client).
  */
 
-const cacheHitRef = { current: 0 };
-const cacheMissRef = { current: 0 };
-
-/** Target: API response < 200ms P95 (PROBLEMS.md). Log when exceeded. */
-export const API_P95_TARGET_MS = 200;
-
-export function recordCacheHit() {
-  cacheHitRef.current += 1;
-}
-
-export function recordCacheMiss() {
-  cacheMissRef.current += 1;
-}
-
-export function getCacheHitMiss() {
-  return { hits: cacheHitRef.current, misses: cacheMissRef.current };
-}
-
-/**
- * Measure API request duration and log if over P95 target. Call at end of request.
- * Auth endpoints (login, refresh) are excluded from P95 warning (expected to be slower).
- * @param {string} markName - Name passed to performance.mark(markName) at request start
- * @param {string} endpoint - API endpoint (for logging)
- */
-export function endApiRequestTiming(markName, endpoint) {
+export function endApiRequestTiming(markName, _endpoint) {
+  if (typeof performance === 'undefined' || !performance.measure || !markName) return;
   try {
-    const measureName = `api-measure-${markName}`;
-    performance.measure(measureName, markName);
-    const entry = performance.getEntriesByName(measureName)[0];
-    const isAuthEndpoint =
-      typeof endpoint === 'string' &&
-      (endpoint.startsWith('/auth/login') ||
-        endpoint.startsWith('/auth/refresh') ||
-        endpoint === '/auth/login' ||
-        endpoint === '/auth/refresh');
-    if (entry && entry.duration > API_P95_TARGET_MS && !isAuthEndpoint) {
-      const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
-      if (!isDev && typeof console !== 'undefined' && console.warn) {
-        console.warn('[API] Request exceeded P95 target', {
-          endpoint,
-          durationMs: Math.round(entry.duration),
-          targetMs: API_P95_TARGET_MS,
-        });
-      }
-    }
+    performance.measure(`api:${markName}`, markName);
     performance.clearMarks(markName);
-    performance.clearMeasures(measureName);
+    performance.clearMeasures(`api:${markName}`);
   } catch (_) {}
 }

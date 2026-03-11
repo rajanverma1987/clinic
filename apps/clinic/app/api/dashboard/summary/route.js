@@ -4,7 +4,6 @@
  * Enterprise: consistent { success, data, error } response shape.
  */
 
-import CacheManager from '@/lib/cache/cache-manager.js';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import { withAuth } from '@/middleware/auth';
@@ -38,30 +37,6 @@ async function getHandler(req, user) {
       const data = { ...summary, failed_transactions: metrics.failed_transactions ?? 0 };
       const duration = Date.now() - start;
       return NextResponse.json(successResponse({ ...data, fromMetrics: true }), {
-        headers: { 'Server-Timing': `summary;dur=${duration}` },
-      });
-    }
-
-    // Fallback: use existing cache (until update-dashboard-metrics populates table)
-    const cached = await CacheManager.get('dashboard', 'stats', tenantId);
-    if (cached) {
-      const metricsDoc = {
-        tenantId,
-        data: {
-          appointments: cached.appointments || {},
-          revenue: cached.revenue || {},
-          patients: cached.patients || {},
-          queue: cached.queue || {},
-        },
-        revenue_today: cached?.revenue?.today?.paid ?? cached?.revenue?.today?.total ?? 0,
-        pending_appointments: cached?.appointments?.todayTotal ?? 0,
-        today_patients: cached?.patients?.total ?? 0,
-        updated_at: cached?.lastUpdated || new Date(),
-      };
-      const summary = getClinicSummaryFromMetrics(metricsDoc);
-      const data = { ...summary, failed_transactions: cached?.failedTransactions ?? 0 };
-      const duration = Date.now() - start;
-      return NextResponse.json(successResponse({ ...data, fromCache: true }), {
         headers: { 'Server-Timing': `summary;dur=${duration}` },
       });
     }

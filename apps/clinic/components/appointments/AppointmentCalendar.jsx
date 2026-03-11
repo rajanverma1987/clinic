@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 export default function AppointmentCalendar({
   selectedDoctorId,
   selectedDate,
+  onDateChange,
   onSlotSelect,
   settings,
 }) {
@@ -338,11 +339,22 @@ export default function AppointmentCalendar({
     }
   };
 
+  const notifyDateChange = useCallback(
+    (date) => {
+      if (onDateChange && date && !Number.isNaN(date.getTime())) {
+        onDateChange(date);
+      }
+    },
+    [onDateChange],
+  );
+
   const handleDateChange = (e) => {
     const value = e.target.value;
     if (!value) {
-      setCurrentDate(new Date());
+      const today = new Date();
+      setCurrentDate(today);
       setSelectedSlot(null);
+      notifyDateChange(today);
       return;
     }
     const [y, m, d] = value.split('-').map(Number);
@@ -351,12 +363,14 @@ export default function AppointmentCalendar({
     if (Number.isNaN(newDate.getTime())) return;
     setCurrentDate(newDate);
     setSelectedSlot(null);
+    notifyDateChange(newDate);
   };
 
   const goToToday = () => {
     const today = new Date();
     setCurrentDate(today);
     setSelectedSlot(null);
+    notifyDateChange(today);
   };
 
   const goToPreviousDay = () => {
@@ -364,6 +378,7 @@ export default function AppointmentCalendar({
     prev.setDate(prev.getDate() - 1);
     setCurrentDate(prev);
     setSelectedSlot(null);
+    notifyDateChange(prev);
   };
 
   const goToNextDay = () => {
@@ -371,6 +386,7 @@ export default function AppointmentCalendar({
     next.setDate(next.getDate() + 1);
     setCurrentDate(next);
     setSelectedSlot(null);
+    notifyDateChange(next);
   };
 
   // Check if current date is today

@@ -7,11 +7,9 @@
 
 import { apiClient } from '@/lib/api/client.js';
 import { setCurrentTenantId } from '@/lib/cache/current-tenant.js';
-import * as dashboardCache from '@/lib/cache/dashboard-cache.js';
 import { clearIndexedDBCache, clearOfflineMutations } from '@/lib/cache/indexed-db-cache.js';
 import { clearTestAccountRoleOverride } from '@/lib/constants/test-account.js';
 import { disconnectRealtimeClient } from '@/lib/realtime/realtime-client.js';
-import { clearAllCache } from '@/lib/utils/api-cache.js';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 
 const AuthContext = createContext(undefined);
@@ -75,8 +73,6 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('userInfo');
             lastActivityRef.current = 0;
-            dashboardCache.clear();
-            clearAllCache();
             disconnectRealtimeClient();
             clearIndexedDBCache().catch(() => {});
             clearOfflineMutations().catch(() => {});
@@ -611,8 +607,6 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userInfo');
         lastActivityRef.current = 0;
-        dashboardCache.clear();
-        clearAllCache();
         disconnectRealtimeClient();
         clearIndexedDBCache().catch(() => {});
         clearOfflineMutations().catch(() => {});

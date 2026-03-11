@@ -1,4 +1,3 @@
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { isTestAccount } from '@/lib/constants/test-account.js';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
@@ -27,8 +26,6 @@ const PLAN_FREE_TRIAL_DAYS = {
   ENTERPRISE: 90, // 3 months
 };
 const DEFAULT_FREE_TRIAL_DAYS = 180; // no subscription → 6 months from tenant creation
-
-const FEATURES_CACHE_TTL_MS = 60000;
 
 /** TEMPORARY: Premium subscription payload for test account. REMOVE before production. */
 function getTestAccountPremiumPayload() {
@@ -74,75 +71,65 @@ async function getHandler(req, user) {
     });
   }
 
-  const cacheKey = `features:${user.tenantId}`;
-  const payload = await optimizedCacheManager.getOrFetch(
-    cacheKey,
-    async () => {
-      const [features, limits, subscription, tenant] = await Promise.all([
-        getTenantFeatures(user.tenantId),
-        getTenantLimits(user.tenantId),
-        getTenantSubscription(user.tenantId),
-        Tenant.findById(user.tenantId).select('createdAt').lean(),
-      ]);
-      const sub = subscription;
+  const [features, limits, subscription, tenant] = await Promise.all([
+    getTenantFeatures(user.tenantId),
+    getTenantLimits(user.tenantId),
+    getTenantSubscription(user.tenantId),
+    Tenant.findById(user.tenantId).select('createdAt').lean(),
+  ]);
+  const sub = subscription;
 
-      // Calculate trial days remaining based on tenant creation date + plan-specific trial length.
-      // Basic = 6 months (180 days); Smart Clinic & Enterprise = 3 months (90 days).
-      const planName = sub?.planId?.name || null;
-      const freeDays = planName ? (PLAN_FREE_TRIAL_DAYS[planName] ?? 90) : DEFAULT_FREE_TRIAL_DAYS;
-      let trialDaysRemaining = null;
-      if (tenant?.createdAt) {
-        const trialEnd = new Date(tenant.createdAt);
-        trialEnd.setDate(trialEnd.getDate() + freeDays);
-        const now = new Date();
-        if (trialEnd > now) {
-          trialDaysRemaining = Math.max(
-            0,
-            Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
-          );
-        } else {
-          trialDaysRemaining = 0;
+  const planName = sub?.planId?.name || null;
+  const freeDays = planName ? (PLAN_FREE_TRIAL_DAYS[planName] ?? 90) : DEFAULT_FREE_TRIAL_DAYS;
+  let trialDaysRemaining = null;
+  if (tenant?.createdAt) {
+    const trialEnd = new Date(tenant.createdAt);
+    trialEnd.setDate(trialEnd.getDate() + freeDays);
+    const now = new Date();
+    if (trialEnd > now) {
+      trialDaysRemaining = Math.max(
+        0,
+        Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+      );
+    } else {
+      trialDaysRemaining = 0;
+    }
+  }
+
+  const hasPaidActiveSub =
+    sub &&
+    sub.status === 'ACTIVE' &&
+    sub.planId &&
+    typeof sub.planId === 'object' &&
+    (sub.planId.price ?? 0) > 0;
+  if (hasPaidActiveSub) {
+    trialDaysRemaining = null;
+  }
+
+  const addons =
+    hasPaidActiveSub && Array.isArray(sub?.addons)
+      ? sub.addons.map((a) => ({ addonKey: a.addonKey }))
+      : [];
+
+  const payload = {
+    features,
+    limits,
+    subscription: sub
+      ? {
+          status: sub.status,
+          currentPeriodEnd: sub.currentPeriodEnd,
+          trialDaysRemaining,
+          paypalApprovalUrl: sub.paypalApprovalUrl,
+          addons,
         }
-      }
-
-      // For a paid ACTIVE subscription: trial is over — suppress the trial banner
-      const hasPaidActiveSub =
-        sub &&
-        sub.status === 'ACTIVE' &&
-        sub.planId &&
-        typeof sub.planId === 'object' &&
-        (sub.planId.price ?? 0) > 0;
-      if (hasPaidActiveSub) {
-        trialDaysRemaining = null;
-      }
-
-      // Add-ons only work with a paid plan (not Free Trial / $0)
-      const addons =
-        hasPaidActiveSub && Array.isArray(sub?.addons)
-          ? sub.addons.map((a) => ({ addonKey: a.addonKey }))
-          : [];
-      return {
-        features,
-        limits,
-        subscription: sub
-          ? {
-              status: sub.status,
-              currentPeriodEnd: sub.currentPeriodEnd,
-              trialDaysRemaining,
-              paypalApprovalUrl: sub.paypalApprovalUrl,
-              addons,
-            }
-          : {
-              status: null,
-              currentPeriodEnd: null,
-              trialDaysRemaining,
-              paypalApprovalUrl: null,
-              addons: [],
-            },
-      };
-    },
-    FEATURES_CACHE_TTL_MS,
-  );
+      : {
+          status: null,
+          currentPeriodEnd: null,
+          trialDaysRemaining,
+          paypalApprovalUrl: null,
+          addons: [],
+        },
+  };
 
   return NextResponse.json(successResponse(payload));
 }

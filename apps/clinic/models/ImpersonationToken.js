@@ -8,7 +8,7 @@ const ImpersonationTokenSchema = new Schema(
     token: { type: String, required: true, unique: true, index: true },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true },
   },
   { timestamps: true },
 );

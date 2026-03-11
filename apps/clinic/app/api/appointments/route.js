@@ -29,7 +29,6 @@ import User from '@/models/User';
 import { createAppointment, listAppointments } from '@/services/appointment.service';
 import { createTelemedicineSession } from '@/services/telemedicine.service';
 import { NextResponse } from 'next/server';
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 
 /**
  * GET /api/appointments
@@ -122,23 +121,7 @@ async function getHandler(req, user) {
       queryData.updatedAt = { $gt: new Date(queryData.since) };
     }
 
-    // Cache dashboard widget queries (today's + pending appointments, no patient/doctor filter)
-    const isDashboardQuery =
-      !isIncremental &&
-      !queryData.patientId &&
-      !queryData.doctorId &&
-      !queryData.startDate &&
-      !queryData.endDate &&
-      (queryData.date || queryData.status === 'scheduled') &&
-      parseInt(queryData.limit) <= 10;
-    const cacheLocale = (queryData.locale && String(queryData.locale).slice(0, 2)) || '';
-    const result = isDashboardQuery
-      ? await optimizedCacheManager.getOrFetch(
-          `appointments:dashboard:${user.tenantId}:${queryData.date || ''}:${queryData.status || ''}:${cacheLocale}`,
-          () => listAppointments(queryData, user.tenantId, user.userId),
-          30000,
-        )
-      : await listAppointments(queryData, user.tenantId, user.userId);
+    const result = await listAppointments(queryData, user.tenantId, user.userId);
 
     // Enhance response with incremental update metadata and normalize pagination format
     const totalPagesVal = result.pagination

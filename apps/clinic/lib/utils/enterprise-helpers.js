@@ -9,7 +9,6 @@
  */
 
 import { logger } from './logger.js';
-import CacheManager from '@/lib/cache/cache-manager.js';
 
 /**
  * Default retry configuration for exponential backoff strategy.
@@ -274,34 +273,9 @@ export function createCircuitBreaker(name, options = {}) {
  * Cache write failures are logged but don't block the response.
  * This ensures service availability even if cache is temporarily unavailable.
  */
-export async function cacheWithFallback(key, fetchFn, ttlSeconds = 300, options = {}) {
-  const { useCache = true, cachePrefix = 'cache' } = options;
-  
-  if (useCache) {
-    try {
-      // Try to get from cache
-      const cached = await CacheManager.get(cachePrefix, key);
-      if (cached) {
-        logger.debug(`Cache hit: ${key}`);
-        return cached;
-      }
-    } catch (error) {
-      logger.warn(`Cache read error for ${key}, falling back to fetch`, { error: error.message });
-    }
-  }
-  
-  // Cache miss or error - fetch fresh data
-  logger.debug(`Cache miss: ${key}`);
-  const data = await fetchFn();
-  
-  // Store in cache (don't await to avoid blocking)
-  if (useCache) {
-    CacheManager.set(cachePrefix, data, ttlSeconds, key).catch(error => {
-      logger.warn(`Cache write error for ${key}`, { error: error.message });
-    });
-  }
-  
-  return data;
+/** Direct fetch only; cache removed. Re-implement when needed. */
+export async function cacheWithFallback(key, fetchFn, _ttlSeconds = 300, _options = {}) {
+  return fetchFn();
 }
 
 /**

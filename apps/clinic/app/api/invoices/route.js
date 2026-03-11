@@ -12,7 +12,6 @@ import { withRequestLogger } from '@/middleware/request-logger';
 import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
 import { createInvoice, listInvoices } from '@/services/billing.service';
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { NextResponse } from 'next/server';
 
 /**
@@ -62,21 +61,11 @@ async function getHandler(req, user) {
       );
     }
 
-    // Cache dashboard widget query: overdue invoices (fixed params, 60s TTL)
-    // Note: 'overdue' is not in the schema but is passed as a raw query param; check searchParams directly.
-    const isDashboardQuery =
-      validationResult.data.status === 'pending' &&
-      searchParams.get('overdue') === 'true' &&
-      !validationResult.data.patientId &&
-      !validationResult.data.search &&
-      Number(validationResult.data.limit) === 5;
-    const result = isDashboardQuery
-      ? await optimizedCacheManager.getOrFetch(
-          `invoices:overdue:${user.tenantId}`,
-          () => listInvoices(validationResult.data, user.tenantId, user.userId),
-          60000,
-        )
-      : await listInvoices(validationResult.data, user.tenantId, user.userId);
+    const result = await listInvoices(
+      validationResult.data,
+      user.tenantId,
+      user.userId,
+    );
 
     return NextResponse.json(successResponse(result));
   } catch (error) {

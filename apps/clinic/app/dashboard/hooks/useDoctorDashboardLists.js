@@ -1,13 +1,13 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api/client';
-import * as dashboardCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Doctor dashboard lists – parallel fetch, cache-first when returning to Dashboard.
+ * Doctor dashboard lists – parallel fetch when enabled.
+ * When enabled is false (e.g. on Appointments/Prescriptions tab), no fetch runs.
  */
-export function useDoctorDashboardLists() {
+export function useDoctorDashboardLists({ enabled = true } = {}) {
   const { user } = useAuth();
   const userId =
     user?.role === 'doctor'
@@ -23,36 +23,14 @@ export function useDoctorDashboardLists() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Cache-first: show last data immediately when returning to dashboard (no loading flash)
-  useLayoutEffect(() => {
-    if (!userId || userId === 'undefined') {
-      setLoading(false);
-      return;
-    }
-    const cached = dashboardCache.getData('doctorLists', userId);
-    if (cached && typeof cached === 'object') {
-      setTodayAppointments(cached.todayAppointments ?? []);
-      setRecentPatients(cached.recentPatients ?? []);
-      setUpcomingAppointments(cached.upcomingAppointments ?? []);
-      setPendingReviews(cached.pendingReviews ?? []);
-      setNewPatientRequests(cached.newPatientRequests ?? []);
-      setLoading(false);
-    }
-  }, [userId]);
-
   const fetchDashboardLists = useCallback(async () => {
-    // Guard with primitives only – avoids dependency on the user object reference
-    // which changes whenever the auth context refreshes, causing cascading re-fetches.
     if (!userId || userId === 'undefined') {
       setLoading(false);
       return Promise.resolve();
     }
 
-    const cached = dashboardCache.getData('doctorLists', userId);
-    const isBackgroundRevalidate = !!cached;
-
     try {
-      if (!isBackgroundRevalidate) setLoading(true);
+      setLoading(true);
       setError(null);
 
       // Resolve doctorId (single call, required for all list URLs)
@@ -120,15 +98,6 @@ export function useDoctorDashboardLists() {
         requestsRes.status === 'fulfilled' ? extractArrayData(requestsRes.value) : [];
       const requestsList = Array.isArray(requestsData) ? requestsData.slice(0, 10) : [];
       setNewPatientRequests(requestsList);
-
-      const payload = {
-        todayAppointments: todayList,
-        recentPatients: patientsList,
-        upcomingAppointments: upcomingList,
-        pendingReviews: reviewsList,
-        newPatientRequests: requestsList,
-      };
-      dashboardCache.set('doctorLists', userId, payload);
     } catch (err) {
       // Fetch failed
       setError(err);
@@ -142,13 +111,11 @@ export function useDoctorDashboardLists() {
     }
   }, [userId, doctorId]);
 
-  // Trigger initial fetch when no cache (otherwise loading stays true forever)
   useEffect(() => {
-    if (!userId || userId === 'undefined' || (user?.role || '').toLowerCase() !== 'doctor') return;
-    const cached = dashboardCache.getData('doctorLists', userId);
-    if (cached && typeof cached === 'object') return; // Cache already restored by useLayoutEffect
+    if (!enabled || !userId || userId === 'undefined' || (user?.role || '').toLowerCase() !== 'doctor')
+      return;
     fetchDashboardLists();
-  }, [userId, user?.role, fetchDashboardLists]);
+  }, [enabled, userId, user?.role, fetchDashboardLists]);
 
   return {
     todayAppointments,

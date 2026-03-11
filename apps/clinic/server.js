@@ -156,7 +156,7 @@ app.prepare().then(async () => {
       }
     });
 
-    socket.on('disconnect', () => {});
+    socket.on('disconnect', () => { });
   });
 
   httpServer

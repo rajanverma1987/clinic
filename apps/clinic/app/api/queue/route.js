@@ -10,10 +10,6 @@ import {
   listQueueEntries,
 } from '@/services/queue.service';
 import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/api-response';
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
-
-/** Server-side cache TTL for queue entries (ms). Cache only for common queries. */
-const QUEUE_CACHE_TTL_MS = 30000; // 30 seconds - queue data changes frequently
 
 /**
  * GET /api/queue
@@ -49,25 +45,11 @@ async function getHandler(req, user) {
     );
   }
 
-  // Cache key: only cache common queries (waiting status, no date filter, no patientId filter)
-  const isCacheable = 
-    validationResult.data.status === 'waiting' && 
-    !validationResult.data.date && 
-    !validationResult.data.patientId &&
-    !validationResult.data.appointmentId;
-
-  const cacheLocale = (validationResult.data.locale && String(validationResult.data.locale).slice(0, 2)) || '';
-  const cacheKey = isCacheable 
-    ? `queue-${user.tenantId}-${validationResult.data.status || 'all'}-${validationResult.data.doctorId || 'all'}-${validationResult.data.page || 1}-${validationResult.data.limit || 100}-${cacheLocale}`
-    : null;
-
-  const result = cacheKey
-    ? await optimizedCacheManager.getOrFetch(
-        `queue:${cacheKey}`,
-        () => listQueueEntries(validationResult.data, user.tenantId, user.userId),
-        QUEUE_CACHE_TTL_MS,
-      )
-    : await listQueueEntries(validationResult.data, user.tenantId, user.userId);
+  const result = await listQueueEntries(
+    validationResult.data,
+    user.tenantId,
+    user.userId,
+  );
 
   return NextResponse.json(successResponse(result));
 }
