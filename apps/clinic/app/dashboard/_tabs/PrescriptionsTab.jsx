@@ -58,12 +58,15 @@ export function PrescriptionsTab({ isActive = false }) {
   );
 
   // When tab is active, fetch once and schedule one revalidate. Include fetchAndUpdate so completion always updates current state.
+  // Only clear loading when tab is inactive; when auth is not ready, leave loading true so we refetch when auth settles (fixes nav from side menu from another page).
   useEffect(() => {
-    if (authLoading || !user || !userId || !isActive) {
+    if (!isActive) {
       setLoading(false);
       return;
     }
+    if (authLoading || !user || !userId) return;
 
+    setLoading(true);
     if (prevLocaleRef.current !== localeCode) {
       prevLocaleRef.current = localeCode;
       fetchAndUpdate(true);

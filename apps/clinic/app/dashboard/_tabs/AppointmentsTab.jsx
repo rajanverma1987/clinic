@@ -58,12 +58,15 @@ export function AppointmentsTab({ isActive = false }) {
   );
 
   // When tab is active, fetch once and schedule one revalidate. Include fetchAndUpdate so completion always updates current state.
+  // Only clear loading when tab is inactive; when auth is not ready, leave loading true so we refetch when auth settles (fixes nav from side menu from another page).
   useEffect(() => {
-    if (authLoading || !user || !userId || !isActive) {
+    if (!isActive) {
       setLoading(false);
       return;
     }
+    if (authLoading || !user || !userId) return;
 
+    setLoading(true);
     fetchAndUpdate(false);
     const timer = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
     return () => clearTimeout(timer);

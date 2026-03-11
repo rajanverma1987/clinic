@@ -4,6 +4,7 @@ import { ChatIcon, CheckIcon, ChevronRightIcon, XIcon } from '@/components/icons
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
+import { useRouter } from 'next/navigation';
 
 export function AppointmentRequestCard({
   requests = [],
@@ -14,6 +15,7 @@ export function AppointmentRequestCard({
   loading = false,
 }) {
   const { t } = useI18n();
+  const router = useRouter();
 
   if (loading) {
     return (
@@ -143,7 +145,7 @@ export function AppointmentRequestCard({
               fullWidth
               onClick={() => {
                 if (onSeeAll) onSeeAll();
-                else window.location.href = '/appointments?status=pending';
+                else router.push('/appointments?status=pending');
               }}
               className='section-header-action text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/30'
               aria-label={t('dashboard.seeAll')}

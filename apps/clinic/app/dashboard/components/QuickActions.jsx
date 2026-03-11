@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/contexts/I18nContext';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants';
 import { logger } from '@/lib/utils/logger';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -54,6 +55,7 @@ const ALL_ACTIONS = [
  */
 export function QuickActions({ onNavigate, loading = false, userRole }) {
   const { t } = useI18n();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const menuRef = useRef(null);
@@ -162,7 +164,7 @@ export function QuickActions({ onNavigate, loading = false, userRole }) {
                     if (onNavigate && typeof onNavigate === 'function') {
                       onNavigate(path);
                     } else {
-                      window.location.href = path;
+                      router.push(path);
                     }
                     setOpen(false);
                   }}

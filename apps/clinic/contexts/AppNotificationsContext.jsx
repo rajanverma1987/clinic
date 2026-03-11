@@ -14,7 +14,6 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 const AppNotificationsContext = createContext(undefined);
 
-const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 export function AppNotificationsProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
@@ -123,17 +122,6 @@ export function AppNotificationsProvider({ children }) {
     if (user && !authLoading) {
       fetchNotifications();
     }
-  }, [user, authLoading, fetchNotifications]);
-
-  // Auto-refresh notifications
-  useEffect(() => {
-    if (!user || authLoading) return;
-
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, REFRESH_INTERVAL);
-
-    return () => clearInterval(interval);
   }, [user, authLoading, fetchNotifications]);
 
   const unreadCount = useMemo(() => {

@@ -87,18 +87,26 @@ export default function DashboardPage() {
   const tenantId = user?.tenantId ?? null;
 
   // Tab state: ?tab=overview|kpi|appointments|prescriptions; no redirect. TabBar + TabContent render in-page.
-  // Use local state for instant switching, sync with URL
+  // Use local state for instant switching, sync with URL. Read from window on init so side-menu nav to ?tab=… shows correct tab even if useSearchParams is delayed.
   const urlTab = searchParams?.get('tab') || 'overview';
-  const [activeTab, setActiveTab] = useState(
-    urlTab === 'overview' ||
-      urlTab === 'kpi' ||
-      urlTab === 'appointments' ||
-      urlTab === 'prescriptions'
-      ? urlTab
-      : 'overview',
-  );
+  const [activeTab, setActiveTab] = useState(() => {
+    const fromHook = urlTab;
+    if (
+      fromHook === 'overview' ||
+      fromHook === 'kpi' ||
+      fromHook === 'appointments' ||
+      fromHook === 'prescriptions'
+    )
+      return fromHook;
+    if (typeof window !== 'undefined' && window.location?.search) {
+      const p = new URLSearchParams(window.location.search);
+      const w = p.get('tab');
+      if (w === 'kpi' || w === 'appointments' || w === 'prescriptions') return w;
+    }
+    return 'overview';
+  });
 
-  // Sync local state with URL changes (e.g., browser back/forward)
+  // Sync local state with URL changes (e.g., browser back/forward, or useSearchParams catching up after client nav)
   useEffect(() => {
     const normalizedUrlTab =
       urlTab === 'overview' ||
