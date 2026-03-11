@@ -57,15 +57,17 @@ export function AppointmentsTab({ isActive = false }) {
     [userId, appLocale, t],
   );
 
-  // When tab is active, fetch once and schedule one revalidate. Omit fetchAndUpdate from deps to avoid extra runs when t() changes.
+  // When tab is active, fetch once and schedule one revalidate. Include fetchAndUpdate so completion always updates current state.
   useEffect(() => {
-    if (authLoading || !user || !userId || !isActive) return;
+    if (authLoading || !user || !userId || !isActive) {
+      setLoading(false);
+      return;
+    }
 
     fetchAndUpdate(false);
     const timer = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchAndUpdate omitted to prevent duplicate fetches when t identity changes
-  }, [isActive, userId, appLocale, authLoading, user]);
+  }, [isActive, userId, appLocale, authLoading, user, fetchAndUpdate]);
 
   // When UI language changes, refetch so patient column uses new locale (es/ar).
   const prevAppLocaleRef = useRef(appLocale);
@@ -73,8 +75,7 @@ export function AppointmentsTab({ isActive = false }) {
     if (!isActive || !userId || appLocale === prevAppLocaleRef.current) return;
     prevAppLocaleRef.current = appLocale;
     fetchAndUpdate(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appLocale, isActive, userId]);
+  }, [appLocale, isActive, userId, fetchAndUpdate]);
 
   const getStatusLabel = useCallback(
     (status) => {

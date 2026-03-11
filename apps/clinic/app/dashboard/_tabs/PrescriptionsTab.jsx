@@ -57,9 +57,12 @@ export function PrescriptionsTab({ isActive = false }) {
     [userId, localeCode, t],
   );
 
-  // When tab is active, fetch once and schedule one revalidate. Omit fetchAndUpdate from deps to avoid extra runs when t() changes.
+  // When tab is active, fetch once and schedule one revalidate. Include fetchAndUpdate so completion always updates current state.
   useEffect(() => {
-    if (authLoading || !user || !userId || !isActive) return;
+    if (authLoading || !user || !userId || !isActive) {
+      setLoading(false);
+      return;
+    }
 
     if (prevLocaleRef.current !== localeCode) {
       prevLocaleRef.current = localeCode;
@@ -70,8 +73,7 @@ export function PrescriptionsTab({ isActive = false }) {
 
     const timer = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchAndUpdate omitted to prevent duplicate fetches when t identity changes
-  }, [isActive, userId, authLoading, user, localeCode]);
+  }, [isActive, userId, authLoading, user, localeCode, fetchAndUpdate]);
 
   const getStatusLabel = useCallback(
     (status) => {
