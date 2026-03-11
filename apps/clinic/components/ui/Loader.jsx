@@ -51,11 +51,11 @@ export function Loader({
   };
 
   const sizeConfig = {
-    xs: { spinner: 28 },
-    sm: { spinner: 36 },
-    md: { spinner: 44 },
-    lg: { spinner: 56 },
-    xl: { spinner: 68 },
+    xs: { spinner: 36 },
+    sm: { spinner: 48 },
+    md: { spinner: 60 },
+    lg: { spinner: 78 },
+    xl: { spinner: 92 },
   };
 
   const variantConfig = {
@@ -75,7 +75,7 @@ export function Loader({
 
   const cfg = sizeConfig[effectiveSize] ?? sizeConfig.md;
   const colors = variantConfig[variant] ?? variantConfig.primary;
-  const width = Math.round(cfg.spinner * 1.5 * 1.25); /* +25% size; logo and bar share same width */
+  const width = Math.round(cfg.spinner * 1.5 * 1.25); /* logo and bar share same width; sizeConfig sets base size */
 
   const spinner = (
     <div className='loader-root flex shrink-0 flex-col items-center gap-3' aria-hidden='true'>
