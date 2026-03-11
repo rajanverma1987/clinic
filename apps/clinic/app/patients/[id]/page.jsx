@@ -18,6 +18,7 @@ import { ERROR_HANDLING, PATIENT_DETAIL_TABS } from '@/lib/constants/route-secur
 import { hasPermission } from '@/lib/permissions/constants';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { getEmailDisplayValue } from '@/lib/utils/email-display';
+import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
 import { getPatientDisplayName, getPatientDisplayNameParts } from '@/lib/utils/patient-display-name';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -1234,18 +1235,27 @@ export default function PatientDetailPage() {
                             <td className='whitespace-nowrap'>
                               {new Date(pres.createdAt).toLocaleDateString()}
                             </td>
-                            <td>{pres.diagnosis || '-'}</td>
+                            <td>
+                              {getDiagnosisDisplayValue(
+                                pres.diagnosis || pres.chiefComplaint || '',
+                                localeCode,
+                              ) || '-'}
+                            </td>
                             <td>
                               {pres.items.length} item{pres.items.length !== 1 ? 's' : ''}
                             </td>
                             <td className='whitespace-nowrap'>
                               <span
-                                className={`px-2 py-1 text-xs rounded-full ${
+                                className={`px-2 py-1 text-xs rounded-full font-medium ${
                                   pres.status === 'active'
-                                    ? 'bg-secondary-100 dark:bg-secondary-900/40 text-secondary-700 dark:text-secondary-300'
+                                    ? 'bg-secondary-100 text-secondary-700 dark:bg-green-800 dark:text-green-100'
                                     : pres.status === 'dispensed'
-                                      ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
-                                      : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
+                                      ? 'bg-primary-100 text-primary-700 dark:bg-blue-800 dark:text-blue-100'
+                                      : pres.status === 'draft'
+                                        ? 'bg-status-warning/20 text-status-warning dark:bg-amber-900/60 dark:text-amber-200'
+                                        : pres.status === 'cancelled'
+                                          ? 'bg-status-error/20 text-status-error dark:bg-red-900/60 dark:text-red-200'
+                                          : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-600 dark:text-neutral-200'
                                 }`}
                               >
                                 {pres.status}

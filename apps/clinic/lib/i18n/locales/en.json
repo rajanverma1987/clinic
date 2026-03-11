@@ -2179,6 +2179,8 @@
     "typeFollowUp": "Follow-up",
     "typeCheckup": "Checkup",
     "typeEmergency": "Emergency",
+    "typeProcedure": "Procedure",
+    "typeLabTest": "Lab Test",
     "typeNewPatient": "New Patient",
     "typeRoutine": "Routine",
     "typeOther": "Other",

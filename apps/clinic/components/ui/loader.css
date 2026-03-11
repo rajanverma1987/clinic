@@ -1,10 +1,37 @@
 /**
  * Loader component – all loader-related styles.
  * Imported by Loader.jsx.
+ * Full-screen and bar track support dark/light theme via .dark.
  */
 
 :root {
   --z-loader: 10070;
+}
+
+/* Full-screen loader – light theme (default) */
+.loader-fullscreen {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(249, 250, 251, 0.98) 100%);
+  backdrop-filter: blur(12px);
+}
+
+/* Full-screen loader – dark theme */
+.dark .loader-fullscreen {
+  background: linear-gradient(135deg, rgba(23, 23, 23, 0.98) 0%, rgba(38, 38, 38, 0.98) 100%);
+  backdrop-filter: blur(12px);
+}
+
+/* Loader bar track – light theme */
+.loader-bar-track {
+  background: #e8e8e8;
+}
+
+.dark .loader-bar-track {
+  background: var(--color-neutral-600, #525252);
+}
+
+/* Loader logo – white in dark theme (dono loader: full-screen + section) */
+.dark .loader-logo-img {
+  filter: brightness(0) invert(1);
 }
 
 /* Keyframes used by Loader */

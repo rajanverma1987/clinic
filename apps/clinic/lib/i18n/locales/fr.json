@@ -948,7 +948,13 @@
     "recurringStartingFrom": "starting from",
     "recurringSelectedDate": "selected date",
     "recurringUntil": "until",
-    "recurringTotal": "total"
+    "recurringTotal": "total",
+    "typeConsultation": "Consultation",
+    "typeFollowUp": "Suivi",
+    "typeCheckup": "Contrôle",
+    "typeEmergency": "Urgence",
+    "typeProcedure": "Procédure",
+    "typeLabTest": "Test de laboratoire"
   },
   "invoices": {
     "title": "Factures",

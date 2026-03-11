@@ -2174,6 +2174,8 @@
     "typeFollowUp": "متابعة",
     "typeCheckup": "فحص",
     "typeEmergency": "طوارئ",
+    "typeProcedure": "إجراء",
+    "typeLabTest": "تحليل مخبري",
     "typeNewPatient": "مريض جديد",
     "typeRoutine": "روتيني",
     "typeOther": "أخرى",

@@ -79,25 +79,24 @@ export function Loader({
 
   const spinner = (
     <div className='loader-root flex shrink-0 flex-col items-center gap-3' aria-hidden='true'>
-      {/* Logo — stable, no animation */}
+      {/* Logo — stable, no animation; white in dark theme via .loader-logo-img */}
       <div className='flex items-center justify-center'>
         <img
           src='/images/logoclinic.png'
           alt=''
           width={width}
           height={width}
-          className='object-contain'
+          className='loader-logo-img object-contain'
         />
       </div>
 
       {/* Loading bar — single inner bar sweeps inside one track */}
       <div
-        className='loader-bar rounded-md overflow-hidden'
+        className='loader-bar loader-bar-track rounded-md overflow-hidden border'
         style={{
           width: width,
           height: 8,
-          background: '#e8e8e8',
-          border: `1px solid ${colors.main}`,
+          borderColor: colors.main,
         }}
       >
         <div
@@ -122,13 +121,8 @@ export function Loader({
   if (effectiveFullScreen) {
     return (
       <div
-        className={`fixed inset-0 flex items-center justify-center ${className}`}
-        style={{
-          zIndex: 10070,
-          background:
-            'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(249,250,251,0.98) 100%)',
-          backdropFilter: 'blur(12px)',
-        }}
+        className={`loader-fullscreen fixed inset-0 flex items-center justify-center ${className}`}
+        style={{ zIndex: 10070 }}
         {...a11yProps}
       >
         <div
@@ -178,12 +172,11 @@ export function CardLoader({
       aria-busy='true'
     >
       <div
-        className='loader-bar rounded-md overflow-hidden'
+        className='loader-bar loader-bar-track rounded-md overflow-hidden border'
         style={{
           width,
           height: 8,
-          background: '#e8e8e8',
-          border: `1px solid ${colors.main}`,
+          borderColor: colors.main,
         }}
       >
         <div

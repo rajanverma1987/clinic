@@ -2174,6 +2174,8 @@
     "typeFollowUp": "Seguimiento",
     "typeCheckup": "Revisión",
     "typeEmergency": "Urgencia",
+    "typeProcedure": "Procedimiento",
+    "typeLabTest": "Análisis de laboratorio",
     "typeNewPatient": "Paciente nuevo",
     "typeRoutine": "Rutina",
     "typeOther": "Otro",

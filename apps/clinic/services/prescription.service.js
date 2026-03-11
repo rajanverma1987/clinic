@@ -519,29 +519,40 @@ export async function createPrescription(input, tenantId, userId) {
 }
 
 /**
- * Decrypt item instructions in prescription (needed when using .lean())
- * Also handles cases where post('init') hook didn't run
+ * Decrypt PHI fields in prescription (needed when using .lean() or aggregation).
+ * Decrypts: diagnosis, chiefComplaint, additionalInstructions, and item instructions.
+ * Ensures list and getById return readable diagnosis for the UI.
  */
 function decryptPrescriptionItems(prescription) {
   if (!prescription) {
     return prescription;
   }
 
-  // If no items, return as-is
-  if (!prescription.items || !Array.isArray(prescription.items)) {
-    return prescription;
+  const decrypted = { ...prescription };
+
+  // Decrypt top-level PHI fields (encrypted at rest; aggregation/lean skip Mongoose post('init'))
+  if (decrypted.diagnosis) {
+    decrypted.diagnosis = decryptField(decrypted.diagnosis);
+  }
+  if (decrypted.chiefComplaint) {
+    decrypted.chiefComplaint = decryptField(decrypted.chiefComplaint);
+  }
+  if (decrypted.additionalInstructions) {
+    decrypted.additionalInstructions = decryptField(decrypted.additionalInstructions);
   }
 
-  const decrypted = { ...prescription };
-  decrypted.items = prescription.items.map((item) => {
-    if (item && item.instructions) {
-      return {
-        ...item,
-        instructions: decryptField(item.instructions),
-      };
-    }
-    return item;
-  });
+  // Decrypt item instructions
+  if (decrypted.items && Array.isArray(decrypted.items)) {
+    decrypted.items = decrypted.items.map((item) => {
+      if (item && item.instructions) {
+        return {
+          ...item,
+          instructions: decryptField(item.instructions),
+        };
+      }
+      return item;
+    });
+  }
 
   return decrypted;
 }
