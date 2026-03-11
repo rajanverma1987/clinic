@@ -140,7 +140,7 @@ export function HeroSection({ onContactClick }) {
               ></div>
 
               <Image
-                src='/images/bannerhero.png'
+                src='/images/bannerhero.webp'
                 alt='Clinic Management Platform'
                 width={900}
                 height={675}

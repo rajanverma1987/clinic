@@ -2,18 +2,20 @@
   "name": "@clinic-saas/website",
   "version": "0.1.0",
   "private": true,
-  "type":"module",
+  "type": "module",
   "description": "Public marketing website only. No dashboard, no auth, no clinic data. Login/Register redirect to clinic app.",
   "scripts": {
     "dev": "next dev -p 5054",
     "build": "next build",
-    "start": "next start -p 5054"
+    "start": "next start -p 5054",
+    "images:webp": "node scripts/convert-images-to-webp.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.556.0",
     "next": "^15.5.10",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.0",

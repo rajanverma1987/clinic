@@ -91,7 +91,7 @@ function BlogImageCard({ src, alt, category }) {
         onError={handleError}
         onLoad={handleLoad}
         sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
-        unoptimized={false}
+        quality={90}
         priority={false}
       />
     </div>

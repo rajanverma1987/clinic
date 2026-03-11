@@ -7,7 +7,7 @@ export const metadata = {
   title: "Doctor's Clinic | Clinic Management",
   description: 'Clinic management for healthcare professionals',
   icons: {
-    icon: [{ url: '/images/faviconw.png', sizes: 'any', type: 'image/png' }],
+    icon: [{ url: '/images/faviconw.webp', sizes: 'any', type: 'image/webp' }],
   },
 };
 
@@ -15,7 +15,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang='en'>
       <head>
-        <link rel='icon' href='/images/faviconw.png' type='image/png' />
+        <link rel='icon' href='/images/faviconw.webp' type='image/webp' />
       </head>
       <body>
         <AuthProvider>

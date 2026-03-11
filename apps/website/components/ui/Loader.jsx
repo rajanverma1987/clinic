@@ -3,7 +3,7 @@
 import { LOADER_PRESETS } from '@/lib/constants/loader-usage';
 
 /**
- * Global Loader Component – uses clinic logo (/images/logoclinic.png)
+ * Global Loader Component – uses clinic logo (/images/logoclinic.webp)
  * Use this loader across the entire platform - no custom loaders allowed.
  *
  * Enterprise types (use type prop for consistent UX):
@@ -123,7 +123,7 @@ export function Loader({
         }}
       >
         <img
-          src='/images/logoclinic.png'
+          src='/images/logoclinic.webp'
           alt=''
           width={currentSize.spinner}
           height={currentSize.spinner}
