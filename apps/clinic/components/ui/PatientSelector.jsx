@@ -78,17 +78,28 @@ export function PatientSelector({
 
   return (
     <div ref={containerRef} className='relative'>
-      <label className='block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2'>
+      <label className='block text-body-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5'>
         {labelText} {required && <span className='text-status-error'>*</span>}
       </label>
 
       {/* Selected Patient Display */}
       {selectedPatient && !isOpen ? (
         <div className='relative'>
-          <div className='flex items-center justify-between p-3 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-500'>
-            <div className='flex items-center space-x-3 flex-1'>
+          <div
+            role='button'
+            tabIndex={0}
+            onClick={() => setIsOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsOpen(true);
+              }
+            }}
+            className='flex items-center justify-between gap-4 form-control-height form-control-md px-4 border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 focus:outline-none focus:border-primary-500 dark:focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 min-h-[44px] transition-[border-color,box-shadow] duration-200 cursor-pointer'
+          >
+            <div className='flex items-center gap-3 flex-1 min-w-0'>
               {/* Patient Avatar */}
-              <div className='w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0'>
+              <div className='w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0'>
                 <span className='text-primary-600 dark:text-primary-300 font-semibold text-sm'>
                   {(() => {
                     const { first, last } = getPatientDisplayNameParts(selectedPatient, localeCode);
@@ -114,7 +125,10 @@ export function PatientSelector({
                 <Button
                   type='button'
                   variant='link'
-                  onClick={() => setIsOpen(true)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(true);
+                  }}
                   className='text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium'
                 >
                   {t('patientSelector.change')}
@@ -124,11 +138,14 @@ export function PatientSelector({
                   size='xs'
                   iconOnly
                   type='button'
-                  onClick={handleClear}
-                  className='text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClear();
+                  }}
+                  className='text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-md'
                 >
                   <svg
-                    className='icon icon-sm'
+                    className='w-5 h-5'
                     fill='none'
                     stroke='currentColor'
                     viewBox='0 0 24 24'
@@ -158,11 +175,11 @@ export function PatientSelector({
               }}
               onFocus={() => setIsOpen(true)}
               placeholder={placeholderText}
-              className='pr-10'
+              className='pr-10 rounded-[10px] border-neutral-300 dark:border-neutral-600 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20'
             />
-            <div className='absolute right-3 top-1/2 -translate-y-1/2'>
+            <div className='absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400 dark:text-neutral-500'>
               <svg
-                className='icon icon-sm text-neutral-400 dark:text-neutral-500'
+                className='w-5 h-5 text-neutral-400 dark:text-neutral-500'
                 fill='none'
                 stroke='currentColor'
                 viewBox='0 0 24 24'
@@ -312,7 +329,7 @@ export function PatientSelector({
 
       {/* Helper Text */}
       {isOpen && filteredPatients.length > 0 && (
-        <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-2'>
+        <p className='text-xs text-neutral-500 dark:text-neutral-400 mt-1.5'>
           Showing {filteredPatients.length} of {patients.length} patients
         </p>
       )}
