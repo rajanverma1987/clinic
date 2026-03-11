@@ -210,19 +210,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
 
   const getIsActive = (item) => {
     const hrefPath = item.href.split('?')[0];
-    const tab = item.href.includes('?tab=') ? item.href.split('?tab=')[1]?.split('&')[0] : null;
-    if (tab === 'appointments')
-      return (
-        (pathname === '/dashboard' && currentTab === 'appointments') ||
-        pathname === '/appointments' ||
-        pathname?.startsWith('/appointments/')
-      );
-    if (tab === 'prescriptions')
-      return (
-        (pathname === '/dashboard' && currentTab === 'prescriptions') ||
-        pathname === '/prescriptions' ||
-        pathname?.startsWith('/prescriptions/')
-      );
+    // Appointments and Prescriptions: only active on /appointments and /prescriptions pages, not when dashboard tab is selected
+    if (hrefPath === '/appointments')
+      return pathname === '/appointments' || pathname?.startsWith('/appointments/');
+    if (hrefPath === '/prescriptions')
+      return pathname === '/prescriptions' || pathname?.startsWith('/prescriptions/');
     if (hrefPath === '/dashboard') return pathname === '/dashboard' && !currentTab;
     return pathname === hrefPath || pathname?.startsWith(hrefPath + '/');
   };
@@ -272,7 +264,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
     },
     // Clinical
     {
-      href: '/dashboard?tab=appointments',
+      href: '/appointments',
       labelKey: 'appointments.title',
       icon: CalendarIcon,
       section: 'clinical',
@@ -294,7 +286,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       requiredFeature: 'Patient Management',
     },
     {
-      href: '/dashboard?tab=prescriptions',
+      href: '/prescriptions',
       labelKey: 'prescriptions.title',
       icon: PrescriptionIcon,
       section: 'clinical',
