@@ -91,9 +91,20 @@
   height: 48px;
 }
 
+/* Wrapper so badge positions relative to icon (badge overlaps top-right, not side-by-side) */
+.NotificationDropdown-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  width: fit-content;
+  height: fit-content;
+}
+
 .NotificationDropdown-icon {
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
   color: var(--color-neutral-600);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -106,43 +117,44 @@
   filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--color-primary-500) 30%, transparent));
 }
 
-/* Badge - at top-right corner of notification icon */
+/* Badge - strictly on top-right corner of icon (position: absolute only) */
 .NotificationDropdown-badge {
-  position: absolute;
-  top: -6px;
-  right: -2px;
+  position: absolute !important;
+  top: -4px !important;
+  right: -4px !important;
+  left: auto !important;
+  bottom: auto !important;
   background: linear-gradient(
     135deg,
     var(--color-status-error) 0%,
     color-mix(in srgb, var(--color-status-error) 85%, black) 100%
   );
   color: var(--color-neutral-50);
-  border-radius: var(--radius-xl);
+  border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 var(--space-2);
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
   box-shadow:
-    0 4px 12px color-mix(in srgb, var(--color-status-error) 50%, transparent),
-    0 0 0 2px color-mix(in srgb, var(--color-neutral-50) 90%, transparent),
-    0 0 16px color-mix(in srgb, var(--color-status-error) 40%, transparent);
+    0 1px 4px color-mix(in srgb, var(--color-status-error) 50%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--color-neutral-50) 90%, transparent);
   animation: pulsePremium 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   border: 1px solid color-mix(in srgb, var(--color-neutral-50) 30%, transparent);
-  position: relative;
   z-index: 10;
+  pointer-events: none;
 }
 
 .NotificationDropdown-badge::before {
   content: '';
   position: absolute;
-  inset: -2px;
-  border-radius: var(--radius-xl);
-  background: color-mix(in srgb, var(--color-status-error) 30%, transparent);
+  inset: -1px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-status-error) 25%, transparent);
   animation: rippleBadge 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   z-index: -1;
 }
@@ -159,12 +171,11 @@
   font-weight: 900 !important;
   text-shadow:
     0 0 1px rgba(0, 0, 0, 0.8),
-    0 1px 2px rgba(0, 0, 0, 0.6),
-    0 1px 1px rgba(0, 0, 0, 0.5);
+    0 1px 2px rgba(0, 0, 0, 0.6);
   -webkit-font-smoothing: antialiased;
   box-shadow:
-    0 2px 8px rgba(239, 68, 68, 0.5),
-    0 0 0 2px rgba(255, 255, 255, 0.3);
+    0 2px 6px rgba(239, 68, 68, 0.5),
+    0 0 0 1.5px rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
@@ -817,10 +828,10 @@
 .page-header .NotificationDropdown .NotificationDropdown-icon,
 .enterprise-header .NotificationDropdown .NotificationDropdown-icon,
 .sticky-header-bar .NotificationDropdown .NotificationDropdown-icon {
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
-  min-width: var(--icon-size-sm);
-  min-height: var(--icon-size-sm);
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  min-width: var(--icon-size-md);
+  min-height: var(--icon-size-md);
   color: inherit;
 }
 
@@ -836,12 +847,15 @@
 .page-header .NotificationDropdown .NotificationDropdown-badge,
 .enterprise-header .NotificationDropdown .NotificationDropdown-badge,
 .sticky-header-bar .NotificationDropdown .NotificationDropdown-badge {
-  top: -6px;
-  right: -2px;
-  min-width: var(--icon-size-menu);
-  height: var(--icon-size-menu);
+  position: absolute !important;
+  top: -4px !important;
+  right: -4px !important;
+  left: auto !important;
+  bottom: auto !important;
+  min-width: 12px;
+  height: 12px;
   font-size: 10px;
-  padding: 0 4px;
+  padding: 0 2px;
 }
 
 /* Dark: badge number must stay clearly visible in header */
@@ -849,7 +863,7 @@
 .dark .enterprise-header .NotificationDropdown .NotificationDropdown-badge,
 .dark .sticky-header-bar .NotificationDropdown .NotificationDropdown-badge {
   color: #ffffff !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 900 !important;
   text-shadow:
     0 0 1px #000,

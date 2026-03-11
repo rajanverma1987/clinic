@@ -98,8 +98,29 @@ function BlogImageCard({ src, alt, category }) {
   );
 }
 
+function getPostTitle(t, post) {
+  const key = `blog.posts.${post.slug}.title`;
+  const translated = t(key);
+  return translated && translated !== key ? translated : post.title;
+}
+
+function getPostExcerpt(t, post) {
+  const key = `blog.posts.${post.slug}.excerpt`;
+  const translated = t(key);
+  return translated && translated !== key ? translated : post.excerpt;
+}
+
+function getCategoryLabel(t, post) {
+  const key = post.category && typeof post.category === 'string'
+    ? post.category.toLowerCase().replace(/\s+/g, '')
+    : '';
+  if (key && t(`blog.categories.${key}`)) return t(`blog.categories.${key}`);
+  return post.category;
+}
+
 export default function BlogPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'ar' ? 'ar-EG' : locale === 'es' ? 'es' : 'en-US';
 
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
@@ -163,17 +184,17 @@ export default function BlogPage() {
                       {post.image?.url ? (
                         <BlogImageCard
                           src={post.image.url}
-                          alt={post.image.alt || post.title}
-                          category={post.category}
+                          alt={post.image.alt || getPostTitle(t, post)}
+                          category={getCategoryLabel(t, post)}
                         />
                       ) : (
                         <div className='w-full h-48 flex items-center justify-center bg-gradient-to-br from-primary-100 to-primary-200 text-primary-600 text-4xl font-bold mb-6 rounded-lg'>
-                          {post.category}
+                          {getCategoryLabel(t, post)}
                         </div>
                       )}
                       <div className='flex items-center justify-between mb-4'>
                         <span className='text-sm font-semibold text-primary-600 bg-primary-100 px-3 py-1.5 rounded-full'>
-                          {post.category}
+                          {getCategoryLabel(t, post)}
                         </span>
                         <span className='text-sm text-neutral-500'>{post.readTime}</span>
                       </div>
@@ -185,7 +206,7 @@ export default function BlogPage() {
                           fontWeight: '600',
                         }}
                       >
-                        {post.title}
+                        {getPostTitle(t, post)}
                       </h2>
                       <p 
                         className='text-neutral-600 mb-6 line-clamp-3'
@@ -195,7 +216,7 @@ export default function BlogPage() {
                           fontWeight: '400',
                         }}
                       >
-                        {post.excerpt}
+                        {getPostExcerpt(t, post)}
                       </p>
                       <div 
                         className='flex items-center justify-between text-neutral-500 pt-2 border-t border-neutral-100'
@@ -205,14 +226,14 @@ export default function BlogPage() {
                         }}
                       >
                         <span>
-                          {new Date(post.date).toLocaleDateString('en-US', {
+                          {new Date(post.date).toLocaleDateString(dateLocale, {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
                           })}
                         </span>
                         <span className='text-primary-600 font-medium group-hover:underline'>
-                          Read more →
+                          {t('blog.readMore')} →
                         </span>
                       </div>
                     </div>

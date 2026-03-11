@@ -6,6 +6,7 @@ import { Header } from '@/components/marketing/Header';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
+import { markdownToHtml } from '@/lib/blog/markdownToHtml';
 import Link from 'next/link';
 
 function getCategoryLabel(t, post) {
@@ -240,29 +241,16 @@ export function BlogPostContent({ post, relatedPosts, clinicAppUrl }) {
                     {section.heading}
                   </h2>
                   <div
-                    className='text-neutral-700 leading-relaxed whitespace-pre-line'
-                    dangerouslySetInnerHTML={{
-                      __html: section.content
-                        .split('\n\n')
-                        .map((paragraph) => {
-                          const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-                          let processed = paragraph.replace(imageRegex, '');
-                          processed = processed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-                          processed = processed.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-                          processed = processed.replace(/^\*\s+(.+)$/gm, '<li>$1</li>');
-                          return processed;
-                        })
-                        .join('<br/><br/>'),
-                    }}
+                    className='text-neutral-700 leading-relaxed prose prose-lg max-w-none prose-p:mb-4 prose-ul:list-disc prose-ol:list-decimal prose-li:my-1'
+                    dangerouslySetInnerHTML={{ __html: markdownToHtml(section.content) }}
                   />
                 </div>
               ))}
 
-              <div className='mt-12 pt-8 border-t border-neutral-200'>
-                <p className='text-lg text-neutral-700 leading-relaxed whitespace-pre-line'>
-                  {displayContent.conclusion}
-                </p>
-              </div>
+              <div
+                className='mt-12 pt-8 border-t border-neutral-200 text-lg text-neutral-700 leading-relaxed'
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(displayContent.conclusion) }}
+              />
             </div>
 
             <div className='mt-12 overflow-visible'>
