@@ -1,13 +1,17 @@
+'use client';
+
 import { Header } from '@/components/marketing/Header';
 import { Footer } from '@/components/marketing/Footer';
 import Link from 'next/link';
+import { useEffect } from 'react';
 
-export const metadata = {
-  title: 'Privacy Policy | Doctor\'s Clinic',
-  description: 'Privacy Policy for Doctor\'s Clinic - Clinic Management System',
-};
+const PAGE_TITLE = "Privacy Policy | Doctor's Clinic";
 
 export default function PrivacyPage() {
+  useEffect(() => {
+    document.title = PAGE_TITLE;
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50">
       <Header />

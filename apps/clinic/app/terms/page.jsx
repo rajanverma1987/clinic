@@ -1,13 +1,17 @@
+'use client';
+
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import Link from 'next/link';
+import { useEffect } from 'react';
 
-export const metadata = {
-  title: "Terms of Service | Doctor's Clinic",
-  description: "Terms of Service for Doctor's Clinic - Clinic Management System",
-};
+const PAGE_TITLE = "Terms of Service | Doctor's Clinic";
 
 export default function TermsPage() {
+  useEffect(() => {
+    document.title = PAGE_TITLE;
+  }, []);
+
   return (
     <div className='min-h-screen flex flex-col'>
       <Header />
