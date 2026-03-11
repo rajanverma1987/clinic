@@ -38,7 +38,10 @@ export function AppointmentsTab({ isActive = false }) {
 
   const fetchAndUpdate = useCallback(
     async (showRevalidating = false) => {
-      if (!userId) return;
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
       if (showRevalidating) setIsRevalidating(true);
       const { data, error: err } = await fetchAppointmentsTab(userId, appLocale);
       if (err) {
@@ -54,24 +57,24 @@ export function AppointmentsTab({ isActive = false }) {
     [userId, appLocale, t],
   );
 
-  // When tab is active, fetch and then revalidate after delay.
+  // When tab is active, fetch once and schedule one revalidate. Omit fetchAndUpdate from deps to avoid extra runs when t() changes.
   useEffect(() => {
     if (authLoading || !user || !userId || !isActive) return;
 
     fetchAndUpdate(false);
-    revalidateTimerRef.current = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
-    return () => {
-      if (revalidateTimerRef.current) clearTimeout(revalidateTimerRef.current);
-    };
-  }, [isActive, userId, appLocale, authLoading, user, fetchAndUpdate]);
+    const timer = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchAndUpdate omitted to prevent duplicate fetches when t identity changes
+  }, [isActive, userId, appLocale, authLoading, user]);
 
-  // When UI language changes, clear API cache and refetch so patient column uses new locale (es/ar).
+  // When UI language changes, refetch so patient column uses new locale (es/ar).
   const prevAppLocaleRef = useRef(appLocale);
   useEffect(() => {
     if (!isActive || !userId || appLocale === prevAppLocaleRef.current) return;
     prevAppLocaleRef.current = appLocale;
     fetchAndUpdate(false);
-  }, [appLocale, isActive, userId, fetchAndUpdate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appLocale, isActive, userId]);
 
   const getStatusLabel = useCallback(
     (status) => {
