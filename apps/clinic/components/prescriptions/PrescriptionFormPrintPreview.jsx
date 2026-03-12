@@ -7,7 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { apiClient } from '@/lib/api/client';
 import { getDiagnosisDisplayValue } from '@/lib/i18n/inventory-name-dictionary';
-import { loadJsPDF } from '@/lib/utils/dynamic-imports';
+import { loadHtml2Canvas, loadJsPDF } from '@/lib/utils/dynamic-imports';
+import { loadImageAsDataUrl } from '@/lib/utils/image-dataurl';
 import { logger } from '@/lib/utils/logger.js';
 import { useEffect, useState } from 'react';
 import { generatePrescriptionPrintHTML } from './PrescriptionPrintTemplate';
@@ -258,32 +259,74 @@ export function PrescriptionFormPrintPreview({
   const handleDownloadPDF = async () => {
     if (!printHtml) return;
     setDownloadingPdf(true);
-    let tempDiv = null;
+    let iframe = null;
     try {
+      let htmlToUse = printHtml;
+      const logoUrl = clinicSettings?.settings?.logo || '';
+      const clinicName = clinicSettings?.name || 'Clinic Name';
+      if (logoUrl) {
+        const logoDataUrl = await loadImageAsDataUrl(logoUrl);
+        if (logoDataUrl) {
+          const escapedUrl = String(logoUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+          htmlToUse = htmlToUse.replace(`src="${escapedUrl}"`, `src="${logoDataUrl}"`);
+        } else {
+          const safeName = String(clinicName)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+          htmlToUse = htmlToUse.replace(
+            /<img[^>]*class="clinic-logo-img"[^>]*\/?>/i,
+            `<div class="clinic-logo-text" style="font-size:14px;font-weight:bold;">${safeName}</div>`,
+          );
+        }
+      }
+
+      iframe = document.createElement('iframe');
+      iframe.style.cssText =
+        'position:absolute;left:-9999px;top:0;width:794px;height:1123px;border:0;background:#fff;';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(htmlToUse);
+      iframeDoc.close();
+
+      await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 300)));
+
+      const body = iframeDoc.body;
+      if (!body) throw new Error('Iframe body not ready');
+
+      const html2canvas = await loadHtml2Canvas();
+      const canvas = await html2canvas(body, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      if (iframe?.parentNode) document.body.removeChild(iframe);
+      iframe = null;
+
+      const imgData = canvas.toDataURL('image/png');
       const JsPDF = await loadJsPDF();
       const pdf = new JsPDF('p', 'mm', 'a4');
-      tempDiv = document.createElement('div');
-      tempDiv.innerHTML = printHtml;
-      tempDiv.style.width = '210mm';
-      tempDiv.style.padding = '10mm';
-      tempDiv.style.fontFamily = 'Arial, sans-serif';
-      tempDiv.style.fontSize = '11px';
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      document.body.appendChild(tempDiv);
-      pdf.html(tempDiv, {
-        x: 10,
-        y: 10,
-        width: 190,
-        callback: (doc) => {
-          if (tempDiv?.parentNode) document.body.removeChild(tempDiv);
-          doc.save(`prescription-${new Date().toISOString().slice(0, 10)}.pdf`);
-          setDownloadingPdf(false);
-        },
-      });
+      const pageW = 190;
+      const pageH = 277;
+      const imgW = canvas.width;
+      const imgH = canvas.height;
+      const imgWmm = (imgW * 25.4) / 96;
+      const imgHmm = (imgH * 25.4) / 96;
+      const scale = Math.min(pageW / imgWmm, pageH / imgHmm);
+      const w = imgWmm * scale;
+      const h = imgHmm * scale;
+      pdf.addImage(imgData, 'PNG', 10, 10, w, h);
+      pdf.save(`prescription-${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (err) {
       logger.error('Failed to generate PDF:', err);
-      if (tempDiv?.parentNode) document.body.removeChild(tempDiv);
+      if (iframe?.parentNode) document.body.removeChild(iframe);
+    } finally {
       setDownloadingPdf(false);
     }
   };

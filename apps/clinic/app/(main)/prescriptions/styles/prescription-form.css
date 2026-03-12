@@ -332,6 +332,8 @@
 }
 .prescription-items-table {
   table-layout: fixed;
+  width: 100%;
+  min-width: 880px;
 }
 /* Calmer header: neutral instead of strong primary so the row doesn’t feel loud */
 .prescription-items-table thead {
@@ -348,14 +350,18 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  padding: 14px 16px;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 .dark .prescription-items-table th {
   color: var(--color-neutral-300);
 }
-/* More breathing room in body rows */
+/* More breathing room in body rows – same padding as thead for column alignment */
 .prescription-items-table tbody td {
   padding: 14px 16px;
   vertical-align: middle;
+  box-sizing: border-box;
 }
 /* Clean inputs: white background, crisp border, consistent radius */
 .prescription-items-table td .prescription-form-input,
@@ -435,45 +441,94 @@
 
 .prescription-items-table th.prescription-items-col-index {
   width: 3%;
+  min-width: 2.5rem;
   text-align: center;
 }
 .prescription-items-table th.prescription-items-col-type {
   width: 8%;
+  min-width: 5rem;
+  text-align: left;
 }
 .prescription-items-table th.prescription-items-col-item {
   width: 20%;
+  min-width: 10rem;
+  text-align: left;
 }
 .prescription-items-table th.prescription-items-col-frequency {
   width: 11%;
+  min-width: 6rem;
+  text-align: left;
 }
+/* Duration: enough width + extra right padding so gap before Qty */
 .prescription-items-table th.prescription-items-col-duration {
-  width: 6%;
+  width: 8%;
+  min-width: 7rem;
+  white-space: nowrap;
+  text-align: left;
+  padding-right: 24px;
 }
 .prescription-items-table th.prescription-items-col-qty {
-  width: 6%;
-  min-width: 4.5rem;
+  width: 7%;
+  min-width: 6rem;
+  white-space: nowrap;
+  text-align: left;
 }
 .prescription-items-table th.prescription-items-col-route {
   width: 9%;
+  min-width: 5rem;
+  text-align: left;
 }
 .prescription-items-table th.prescription-items-col-refills {
   width: 6%;
-  min-width: 4.5rem;
+  min-width: 5rem;
+  white-space: nowrap;
+  text-align: left;
 }
 .prescription-items-table th.prescription-items-col-instructions {
   width: 23%;
+  min-width: 8rem;
+  text-align: left;
 }
 .prescription-items-table th.prescription-items-col-actions {
   width: 10%;
+  min-width: 5.5rem;
   text-align: right;
 }
 
+.prescription-items-table td.prescription-items-col-type {
+  text-align: left;
+}
 .prescription-items-table td.prescription-items-col-type select {
-  min-width: 7.5rem;
+  min-width: 6rem;
+  max-width: 100%;
+  width: 100%;
+}
+.prescription-items-table td.prescription-items-col-frequency,
+.prescription-items-table td.prescription-items-col-route,
+.prescription-items-table td.prescription-items-col-instructions {
+  text-align: left;
+  overflow: hidden;
+}
+.prescription-items-table td.prescription-items-col-frequency select,
+.prescription-items-table td.prescription-items-col-route select {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
 }
 
+/* Item column: use table column width from th; clip overflow so header/data align */
+.prescription-items-table td.prescription-items-col-item {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-align: left;
+}
 .prescription-items-table td.prescription-items-col-item > div {
-  min-width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .prescription-items-table td.prescription-items-col-index {
@@ -489,9 +544,11 @@
   text-align: right;
 }
 
-.prescription-items-table td.prescription-items-col-item {
-  position: relative;
-  z-index: 1;
+.prescription-items-table td.prescription-items-col-duration {
+  min-width: 7rem;
+  overflow: visible;
+  text-align: left;
+  padding-right: 24px;
 }
 
 .prescription-item-drug-cell {
@@ -530,10 +587,9 @@
   background: var(--color-neutral-800);
   border-color: var(--color-neutral-600);
 }
-/* Qty and Refills cells: ensure input value is visible and column doesn't collapse */
 .prescription-items-table td.prescription-items-col-qty,
 .prescription-items-table td.prescription-items-col-refills {
-  min-width: 4.5rem;
+  min-width: 6rem;
   overflow: visible;
   vertical-align: middle;
 }

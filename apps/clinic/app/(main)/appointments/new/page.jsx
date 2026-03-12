@@ -17,7 +17,6 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useFeatures } from '@/hooks/useFeatures.js';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
-import { dateAtTimeInTimezone } from '@/lib/utils/date-timezone';
 import { transliterateToArabic } from '@/lib/utils/transliterate-name';
 import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { logger } from '@/lib/utils/logger';
@@ -55,6 +54,7 @@ function NewAppointmentPageContent() {
   const patientIdFromUrl = searchParams?.get('patientId') || '';
   const doctorIdFromUrl = searchParams?.get('doctorId') || '';
   const dateFromUrl = searchParams?.get('date') || '';
+  const timeFromUrl = searchParams?.get('time') || '';
   const startTimeFromUrl = searchParams?.get('startTime') || '';
   const endTimeFromUrl = searchParams?.get('endTime') || '';
 
@@ -69,21 +69,32 @@ function NewAppointmentPageContent() {
     return '30';
   };
 
-  // Extract time from ISO string (HH:mm format)
-  const extractTimeFromISO = (isoString) => {
+  // Extract time from ISO string as HH:mm in clinic timezone (so calendar slot time matches form)
+  const extractTimeFromISO = (isoString, timeZone = undefined) => {
     if (!isoString) return '';
     const date = new Date(isoString);
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
+    if (Number.isNaN(date.getTime())) return '';
+    try {
+      const tz = timeZone || clinicTimezone || 'UTC';
+      return new Intl.DateTimeFormat('en-GB', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).format(date);
+    } catch {
+      const hours = date.getUTCHours().toString().padStart(2, '0');
+      const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
   };
 
   const [formData, setFormData] = useState({
-    patientId: patientIdFromUrl, // Pre-fill from URL if provided
-    doctorId: doctorIdFromUrl, // Pre-fill from URL if provided
-    appointmentDate: dateFromUrl, // Pre-fill from URL if provided
-    startTime: extractTimeFromISO(startTimeFromUrl), // Extract time in HH:mm format
-    duration: calculateDuration(startTimeFromUrl, endTimeFromUrl),
+    patientId: patientIdFromUrl,
+    doctorId: doctorIdFromUrl,
+    appointmentDate: dateFromUrl,
+    startTime: '', // set from URL in useEffect so clinic timezone is used
+    duration: '30',
     type: 'consultation',
     isTelemedicine: false,
     telemedicineConsent: false,
@@ -146,23 +157,29 @@ function NewAppointmentPageContent() {
     }
   }, [doctorIdFromUrl, doctors]);
 
-  // Update date and time when URL parameters change
+  // Apply date + time from URL when coming from Availability Calendar
+  // Prefer time= (HH:mm from calendar display) so booked time matches the slot exactly (no 15-min drift)
   useEffect(() => {
-    if (dateFromUrl) {
-      setFormData((prev) => ({ ...prev, appointmentDate: dateFromUrl }));
+    const updates = {};
+    if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) {
+      updates.appointmentDate = dateFromUrl;
     }
-    if (startTimeFromUrl) {
-      // Extract time in HH:mm format for the time input
-      const timeStr = extractTimeFromISO(startTimeFromUrl);
-      setFormData((prev) => ({ ...prev, startTime: timeStr }));
-
-      // Update duration if endTime is also provided
+    const timeStr =
+      timeFromUrl && /^\d{1,2}:\d{2}$/.test(timeFromUrl.trim())
+        ? timeFromUrl.trim()
+        : startTimeFromUrl
+          ? extractTimeFromISO(startTimeFromUrl, clinicTimezone)
+          : '';
+    if (timeStr) {
+      updates.startTime = timeStr;
       if (endTimeFromUrl) {
-        const duration = calculateDuration(startTimeFromUrl, endTimeFromUrl);
-        setFormData((prev) => ({ ...prev, duration }));
+        updates.duration = calculateDuration(startTimeFromUrl, endTimeFromUrl);
       }
     }
-  }, [dateFromUrl, startTimeFromUrl, endTimeFromUrl]);
+    if (Object.keys(updates).length > 0) {
+      setFormData((prev) => ({ ...prev, ...updates }));
+    }
+  }, [dateFromUrl, timeFromUrl, startTimeFromUrl, endTimeFromUrl, clinicTimezone]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -249,21 +266,10 @@ function NewAppointmentPageContent() {
         return;
       }
 
-      // Build start/end in clinic timezone so "10:00 AM" is 10:00 AM clinic time, not browser time
-      const [startHour, startMinute] = (formData.startTime || '00:00').split(':').map((n) => parseInt(n, 10) || 0);
-      const startDateTime = dateAtTimeInTimezone(
-        formData.appointmentDate,
-        startHour,
-        startMinute,
-        clinicTimezone,
-      );
-      if (Number.isNaN(startDateTime.getTime())) {
-        showError(t('errors.pleaseSelectTime'));
-        setSubmitting(false);
-        return;
-      }
       const durationMinutes = parseInt(formData.duration, 10) || 30;
-      const endDateTime = new Date(startDateTime.getTime() + durationMinutes * 60000);
+      const startTimeLocal = (formData.startTime || '00:00').trim();
+      const [h, min] = startTimeLocal.split(':').map((n) => parseInt(n, 10) || 0);
+      const startTimeHHmm = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 
       // Validate telemedicine requirements
       if (formData.isTelemedicine) {
@@ -283,8 +289,8 @@ function NewAppointmentPageContent() {
         patientId: formData.patientId,
         doctorId: formData.doctorId,
         appointmentDate: formData.appointmentDate,
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString(),
+        startTime: startTimeHHmm,
+        timezone: clinicTimezone || undefined,
         duration: durationMinutes,
         type: formData.type,
         isTelemedicine: formData.isTelemedicine,

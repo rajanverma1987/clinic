@@ -30,8 +30,13 @@ export const createAppointmentSchema = z.object({
   doctorId: z.string().min(1, 'Doctor ID is required'),
   departmentId: z.string().optional(),
   appointmentDate: z.string().min(1, 'Appointment date is required').or(z.date()), // Accept date string (YYYY-MM-DD) or datetime
-  startTime: z.string().datetime().or(z.date()),
+  startTime: z.union([
+    z.string().datetime(),
+    z.date(),
+    z.string().regex(/^\d{1,2}:\d{2}$/, 'Time must be HH:mm'),
+  ]),
   endTime: z.string().datetime().or(z.date()).optional(),
+  timezone: z.string().max(64).optional(), // IANA timezone when startTime is HH:mm (e.g. Asia/Kolkata)
   duration: z.number().int().min(5).max(480).optional(), // 5 minutes to 8 hours
   type: z
     .enum([
@@ -134,7 +139,8 @@ export const appointmentQuerySchema = z.object({
       }
       return val;
     }),
-  date: z.string().optional(), // Single date filter
+  date: z.string().optional(), // Single date filter (YYYY-MM-DD)
+  timezone: z.string().max(64).optional(), // IANA timezone for interpreting date (e.g. Asia/Kolkata)
   isActive: z
     .string()
     .transform((val) => val === 'true')

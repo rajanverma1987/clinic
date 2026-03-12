@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { apiClient } from '@/lib/api/client';
 import { logger } from '@/lib/utils/logger.js';
 import { useRouter } from 'next/navigation';
@@ -51,6 +52,7 @@ const RESULT_ICONS = {
 export default function GlobalSearch({ isOpen, onClose }) {
   const { t } = useI18n();
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const router = useRouter();
   const isSuperAdmin = user?.role === 'super_admin';
   const [query, setQuery] = useState('');
@@ -201,8 +203,15 @@ export default function GlobalSearch({ isOpen, onClose }) {
         }}
       />
 
-      {/* Search Modal */}
-      <Card className='global-search-panel relative z-10 w-full max-w-2xl shadow-2xl'>
+      {/* Search Modal – wrapper with data-theme="dark" so CSS dark styles always apply; w-full max-w-2xl keeps same width as before */}
+      <div
+        className={`w-full max-w-2xl relative z-10 ${isDark ? 'global-search-theme-dark' : ''}`}
+        data-theme={isDark ? 'dark' : undefined}
+      >
+      <Card
+        className='global-search-panel w-full shadow-2xl'
+        contentClassName='global-search-panel-content'
+      >
         <div className='p-4'>
           {/* Search Input */}
           <div className='relative'>
@@ -212,10 +221,10 @@ export default function GlobalSearch({ isOpen, onClose }) {
               placeholder={isSuperAdmin ? t('search.placeholderAdmin') : t('search.placeholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className='pr-20'
+              className='pr-20 global-search-input'
             />
             {loading && (
-              <div className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500 dark:text-neutral-400'>
+              <div className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-neutral-500 dark:text-neutral-400 global-search-loading'>
                 <Loader type='inline' text={t('common.loading')} />
               </div>
             )}
@@ -229,33 +238,34 @@ export default function GlobalSearch({ isOpen, onClose }) {
                   <Loader type='inline' text={t('common.loading')} />
                 </div>
               ) : results.length > 0 ? (
-                <div className='space-y-1'>
+                <div className='space-y-1 global-search-results'>
                   {results.map((result, index) => (
                     <div
                       key={`${result.type}-${result.id}`}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors duration-200 ease-out ${
+                      className={`global-search-result p-3 rounded-lg cursor-pointer transition-colors duration-200 ease-out border-2 ${
                         index === selectedIndex
-                          ? 'bg-primary-50 dark:bg-primary-900/40 border-2 border-primary-300 dark:border-primary-500'
-                          : 'hover:bg-neutral-50 dark:hover:bg-neutral-700/50 border-2 border-transparent'
+                          ? 'bg-primary-50 dark:bg-primary-900/50 border-primary-300 dark:border-primary-500 text-neutral-900 dark:text-neutral-100'
+                          : 'bg-white dark:bg-neutral-800 border-transparent dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700/80 text-neutral-900 dark:text-neutral-100'
                       }`}
+                      data-selected={index === selectedIndex ? 'true' : undefined}
                       onClick={() => handleResultClick(result)}
                     >
                       <div className='flex items-center gap-3'>
                         <div className='text-2xl'>{RESULT_ICONS[result.type] || '📄'}</div>
                         <div className='flex-1 min-w-0'>
-                          <div className='font-semibold text-neutral-900 dark:text-neutral-100 truncate'>
+                          <div className='font-semibold text-neutral-900 dark:text-neutral-100 truncate global-search-result-title'>
                             {result.title}
                           </div>
-                          <div className='text-sm text-neutral-600 dark:text-neutral-400 truncate'>
+                          <div className='text-sm text-neutral-600 dark:text-neutral-300 truncate global-search-result-subtitle'>
                             {result.subtitle}
                           </div>
                           {result.meta && (
-                            <div className='text-xs text-neutral-500 dark:text-neutral-400 mt-1'>
+                            <div className='text-xs text-neutral-500 dark:text-neutral-400 mt-1 global-search-result-meta'>
                               {result.meta}
                             </div>
                           )}
                         </div>
-                        <div className='text-xs text-neutral-500 dark:text-neutral-400 capitalize'>
+                        <div className='text-xs text-neutral-500 dark:text-neutral-400 capitalize global-search-result-type'>
                           {result.type}
                         </div>
                       </div>
@@ -263,7 +273,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
                   ))}
                 </div>
               ) : (
-                <div className='text-center py-8 text-neutral-500 dark:text-neutral-400'>
+                <div className='text-center py-8 text-neutral-500 dark:text-neutral-400 global-search-no-results'>
                   <p>{t('search.noResultsFor', { query })}</p>
                   <p className='text-xs mt-2'>{t('search.tryDifferentKeywords')}</p>
                 </div>
@@ -273,7 +283,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
 
           {/* Quick Tips */}
           {query.length < MIN_SEARCH_LENGTH && (
-            <div className='mt-4 text-sm text-neutral-500 dark:text-neutral-400'>
+            <div className='mt-4 text-sm text-neutral-500 dark:text-neutral-400 global-search-tips'>
               <p className='mb-2'>{t('search.quickTips')}</p>
               <ul className='list-disc list-inside space-y-1 text-xs'>
                 {isSuperAdmin ? (
@@ -294,6 +304,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
           )}
         </div>
       </Card>
+      </div>
     </div>
   );
 }
