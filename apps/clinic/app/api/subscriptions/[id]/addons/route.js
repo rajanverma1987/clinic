@@ -1,4 +1,3 @@
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
 import User from '@/models/User';
 import { addAddon, removeAddon } from '@/services/subscription.service';
@@ -40,8 +39,6 @@ async function postHandler(req, user, params) {
       quantity: body.quantity,
       option: body.option,
     });
-    const tenantId = user.tenantId?.toString?.() || user.tenantId;
-    if (tenantId) optimizedCacheManager.invalidate([`features:${tenantId}`]);
     return NextResponse.json(successResponse(subscription), { status: 200 });
   } catch (error) {
     return NextResponse.json(
@@ -69,8 +66,6 @@ async function deleteHandler(req, user, params) {
       });
     }
     const subscription = await removeAddon(subscriptionId, user.tenantId, addonKey);
-    const tenantId = user.tenantId?.toString?.() || user.tenantId;
-    if (tenantId) optimizedCacheManager.invalidate([`features:${tenantId}`]);
     return NextResponse.json(successResponse(subscription), { status: 200 });
   } catch (error) {
     return NextResponse.json(

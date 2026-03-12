@@ -133,7 +133,6 @@ export default function AdminSubscriptionsPage() {
         }
       })();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, router]);
 
   const fetchPlans = async (isRefresh = false) => {

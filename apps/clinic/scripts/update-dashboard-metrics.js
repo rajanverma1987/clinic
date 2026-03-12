@@ -2,7 +2,7 @@
 /**
  * update-dashboard-metrics – background aggregator.
  * Pulls from raw tables, calculates daily stats, updates clinic_dashboard_metrics.
- * Run via cron every 1 minute: * * * * * node apps/clinic/scripts/update-dashboard-metrics.js
+ * Run manually or via an external scheduler: node apps/clinic/scripts/update-dashboard-metrics.js
  */
 
 import 'dotenv/config';

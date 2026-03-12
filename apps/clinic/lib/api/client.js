@@ -8,30 +8,6 @@ import { logger } from '@/lib/utils/logger.js';
  * Centralized API request handler with authentication
  */
 
-let cacheUtils = null;
-/** Log cache unavailability only once to avoid console spam when cache is disabled or fails. */
-let cacheUnavailableLogged = false;
-
-// Lazy load cache utils to avoid circular dependencies
-async function getCacheUtils() {
-  if (!cacheUtils) {
-    cacheUtils = await import('@/lib/utils/api-cache');
-  }
-  return cacheUtils;
-}
-
-function logCacheUnavailableOnce(error) {
-  if (!cacheUnavailableLogged) {
-    cacheUnavailableLogged = true;
-    logger.debug(
-      'API response cache unavailable (optional); requests will proceed without cache.',
-      {
-        message: error?.message,
-      },
-    );
-  }
-}
-
 /**
  * Resolve API base URL for the current environment.
  * In the browser: never use localhost when the app is deployed (use same-origin /api).
@@ -51,6 +27,12 @@ class ApiClient {
     this.baseUrl = resolveBaseUrl();
     /** Single-flight refresh: only one refresh in progress, others wait for the same promise. */
     this._refreshPromise = null;
+    /** Optional client-side redirect (e.g. router.replace) for same-origin paths; set by app. */
+    this._redirectHandler = null;
+  }
+
+  setRedirectHandler(fn) {
+    this._redirectHandler = typeof fn === 'function' ? fn : null;
   }
 
   async request(endpoint, options = {}, skipRedirect = false) {
@@ -71,24 +53,6 @@ class ApiClient {
       endpoint === '/auth/me' ||
       endpoint.startsWith('/auth/refresh') ||
       endpoint === '/auth/refresh';
-
-    // Check cache for GET requests (skip for auth – must always hit server)
-    if (
-      typeof window !== 'undefined' &&
-      !isAuthEndpoint &&
-      (options.method === 'GET' || !options.method)
-    ) {
-      try {
-        const { getCachedResponse, generateCacheKey } = await getCacheUtils();
-        const cacheKey = generateCacheKey(endpoint, options.params);
-        const cached = getCachedResponse(cacheKey);
-        if (cached) {
-          return cached;
-        }
-      } catch (error) {
-        logCacheUnavailableOnce(error);
-      }
-    }
 
     const headers = {
       'Content-Type': 'application/json',
@@ -167,7 +131,11 @@ class ApiClient {
                 response.status === 403
                   ? ERROR_HANDLING.forbiddenRedirect
                   : ERROR_HANDLING.unauthorizedRedirect;
-              window.location.href = redirect;
+              if (this._redirectHandler && redirect.startsWith('/')) {
+                this._redirectHandler(redirect);
+              } else {
+                window.location.href = redirect;
+              }
             }
           } else {
             logger.warn(
@@ -196,23 +164,6 @@ class ApiClient {
         }
 
         return { success: false, error: err };
-      }
-
-      // Cache successful GET responses with TTL by endpoint
-      if (
-        typeof window !== 'undefined' &&
-        (options.method === 'GET' || !options.method) &&
-        data.success
-      ) {
-        try {
-          const { setCachedResponse, generateCacheKey, getCacheTtlForEndpoint } =
-            await getCacheUtils();
-          const cacheKey = generateCacheKey(endpoint, options.params);
-          const ttlMs = getCacheTtlForEndpoint(endpoint);
-          setCachedResponse(cacheKey, data, ttlMs);
-        } catch (error) {
-          logCacheUnavailableOnce(error);
-        }
       }
 
       return data;
@@ -254,24 +205,9 @@ class ApiClient {
   }
 
   /**
-   * Clear cache for an endpoint or by prefix (e.g. after mutations).
-   * Pass exact path to clear one key, or path prefix to clear all matching (e.g. '/reports' clears all report caches).
+   * No-op. Cache removed; re-implement when needed.
    */
-  async clearCacheForEndpoint(endpoint) {
-    if (typeof window === 'undefined') return;
-    try {
-      const { clearCache, clearCacheByPrefix, generateCacheKey } = await getCacheUtils();
-      if (!endpoint) return;
-      // Clear exact key (no query string)
-      const exactKey = generateCacheKey(endpoint.split('?')[0], {});
-      clearCache(exactKey);
-      // Clear all keys with this path prefix (covers query strings)
-      clearCacheByPrefix(endpoint.split('?')[0]);
-      logger.debug('Cache cleared for endpoint:', endpoint);
-    } catch (error) {
-      logCacheUnavailableOnce(error);
-    }
-  }
+  async clearCacheForEndpoint(_endpoint) {}
 
   getToken() {
     if (typeof window === 'undefined') return null;

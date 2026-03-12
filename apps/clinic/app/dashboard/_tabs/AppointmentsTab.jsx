@@ -14,15 +14,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { formatLocale } from '@/lib/i18n';
-import {
-  fetchAppointmentsTab,
-  getCachedAppointments,
-  REVALIDATE_DELAY_MS,
-} from '@/lib/dashboard-tab-cache';
-import { clearCacheByPrefix } from '@/lib/utils/api-cache';
+import { fetchAppointmentsTab, REVALIDATE_DELAY_MS } from '@/lib/dashboard-tab-cache';
 import { getPatientDisplayName as getPatientDisplayNameUtil } from '@/lib/utils/patient-display-name';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const LIMIT = 10;
 
@@ -43,7 +38,10 @@ export function AppointmentsTab({ isActive = false }) {
 
   const fetchAndUpdate = useCallback(
     async (showRevalidating = false) => {
-      if (!userId) return;
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
       if (showRevalidating) setIsRevalidating(true);
       const { data, error: err } = await fetchAppointmentsTab(userId, appLocale);
       if (err) {
@@ -59,39 +57,26 @@ export function AppointmentsTab({ isActive = false }) {
     [userId, appLocale, t],
   );
 
-  // Before paint: when tab becomes active, show cache immediately so no loading flash.
-  useLayoutEffect(() => {
-    if (!isActive || !userId) return;
-    const cached = getCachedAppointments(userId, appLocale);
-    if (cached !== null && Array.isArray(cached)) {
-      setAppointments(cached);
-      setLoading(false);
-      setError(null);
-    }
-  }, [isActive, userId, appLocale]);
-
-  // After paint: fetch if no cache, then revalidate. Uses appLocale so API returns patient names in Spanish/Arabic when stored on the patient (firstName_es/ar, lastName_es/ar).
+  // When tab is active, fetch once and schedule one revalidate. Include fetchAndUpdate so completion always updates current state.
+  // Only clear loading when tab is inactive; when auth is not ready, leave loading true so we refetch when auth settles (fixes nav from side menu from another page).
   useEffect(() => {
-    if (authLoading || !user || !userId) return;
-    if (!isActive) return;
-
-    const cached = getCachedAppointments(userId, appLocale);
-    if (cached === null || !Array.isArray(cached)) {
-      fetchAndUpdate(false);
+    if (!isActive) {
+      setLoading(false);
+      return;
     }
+    if (authLoading || !user || !userId) return;
 
-    revalidateTimerRef.current = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
-    return () => {
-      if (revalidateTimerRef.current) clearTimeout(revalidateTimerRef.current);
-    };
+    setLoading(true);
+    fetchAndUpdate(false);
+    const timer = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
+    return () => clearTimeout(timer);
   }, [isActive, userId, appLocale, authLoading, user, fetchAndUpdate]);
 
-  // When UI language changes, clear API cache and refetch so patient column uses new locale (es/ar).
+  // When UI language changes, refetch so patient column uses new locale (es/ar).
   const prevAppLocaleRef = useRef(appLocale);
   useEffect(() => {
     if (!isActive || !userId || appLocale === prevAppLocaleRef.current) return;
     prevAppLocaleRef.current = appLocale;
-    clearCacheByPrefix('/appointments');
     fetchAndUpdate(false);
   }, [appLocale, isActive, userId, fetchAndUpdate]);
 

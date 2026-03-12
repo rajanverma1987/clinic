@@ -87,18 +87,26 @@ export default function DashboardPage() {
   const tenantId = user?.tenantId ?? null;
 
   // Tab state: ?tab=overview|kpi|appointments|prescriptions; no redirect. TabBar + TabContent render in-page.
-  // Use local state for instant switching, sync with URL
+  // Use local state for instant switching, sync with URL. Read from window on init so side-menu nav to ?tab=… shows correct tab even if useSearchParams is delayed.
   const urlTab = searchParams?.get('tab') || 'overview';
-  const [activeTab, setActiveTab] = useState(
-    urlTab === 'overview' ||
-      urlTab === 'kpi' ||
-      urlTab === 'appointments' ||
-      urlTab === 'prescriptions'
-      ? urlTab
-      : 'overview',
-  );
+  const [activeTab, setActiveTab] = useState(() => {
+    const fromHook = urlTab;
+    if (
+      fromHook === 'overview' ||
+      fromHook === 'kpi' ||
+      fromHook === 'appointments' ||
+      fromHook === 'prescriptions'
+    )
+      return fromHook;
+    if (typeof window !== 'undefined' && window.location?.search) {
+      const p = new URLSearchParams(window.location.search);
+      const w = p.get('tab');
+      if (w === 'kpi' || w === 'appointments' || w === 'prescriptions') return w;
+    }
+    return 'overview';
+  });
 
-  // Sync local state with URL changes (e.g., browser back/forward)
+  // Sync local state with URL changes (e.g., browser back/forward, or useSearchParams catching up after client nav)
   useEffect(() => {
     const normalizedUrlTab =
       urlTab === 'overview' ||
@@ -136,6 +144,11 @@ export default function DashboardPage() {
   // Check if user is a doctor – clinic SWR hooks get null so they don't fetch (saves 13 API calls)
   const isDoctor = user?.role === 'doctor';
   const clinicTenantId = isDoctor ? null : tenantId;
+
+  // Only fetch dashboard/all (or doctor APIs) when on Overview or KPI tab. Appointments/Prescriptions tabs use their own APIs only.
+  const dashboardDataTab = activeTab === 'overview' || activeTab === 'kpi';
+  const enableDashboardData = !isDoctor && dashboardDataTab;
+  const enableDoctorData = isDoctor && dashboardDataTab;
 
   // Defer charts so stats + lists paint first (faster first paint)
   const [chartsEnabled, setChartsEnabled] = useState(false);
@@ -181,10 +194,10 @@ export default function DashboardPage() {
     [t],
   );
 
-  // Clinic: one request to /api/dashboard/all (stats + lists + charts). Doctor: separate hooks.
-  const dashboardAll = useDashboard({ enabled: !isDoctor });
-  const doctorStats = useDoctorDashboardStats();
-  const doctorLists = useDoctorDashboardLists();
+  // Clinic: dashboard/all only when Overview or KPI tab. Doctor: doctor APIs only when Overview or KPI tab.
+  const dashboardAll = useDashboard({ enabled: enableDashboardData });
+  const doctorStats = useDoctorDashboardStats({ enabled: enableDoctorData });
+  const doctorLists = useDoctorDashboardLists({ enabled: enableDoctorData });
 
   const stats = isDoctor ? doctorStats.stats : dashboardAll.stats;
   const statsLoading = isDoctor ? doctorStats.loading : dashboardAll.loading;
@@ -259,17 +272,31 @@ export default function DashboardPage() {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Mark initial load done once stats + lists have loaded (so auto-refresh interval can start)
+  // Mark initial load done once stats + lists have loaded (so auto-refresh interval can start). Only when on a tab that uses dashboard data.
   useEffect(() => {
-    if (user && !authLoading && user.role !== 'super_admin' && !statsLoading && !listsLoading) {
+    if (
+      user &&
+      !authLoading &&
+      user.role !== 'super_admin' &&
+      dashboardDataTab &&
+      !statsLoading &&
+      !listsLoading
+    ) {
       setInitialLoadDone(true);
       hasFetchedRef.current = true;
     }
-  }, [user, authLoading, statsLoading, listsLoading]);
+  }, [user, authLoading, dashboardDataTab, statsLoading, listsLoading]);
 
-  // Auto-refresh (silent, no flicker) – start only after initial load
+  // Auto-refresh (silent, no flicker) – only when on Overview/KPI tab and after initial load
   useEffect(() => {
-    if (authLoading || !user || user.role === 'super_admin' || !initialLoadDone) return;
+    if (
+      authLoading ||
+      !user ||
+      user.role === 'super_admin' ||
+      !dashboardDataTab ||
+      !initialLoadDone
+    )
+      return;
 
     const onRefreshFail = () => {
       consecutiveFailsRef.current += 1;
@@ -340,6 +367,7 @@ export default function DashboardPage() {
   }, [
     authLoading,
     user,
+    dashboardDataTab,
     initialLoadDone,
     isDoctor,
     fetchStatsBackground,

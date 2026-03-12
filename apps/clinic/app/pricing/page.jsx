@@ -107,7 +107,7 @@ export default function PricingPage() {
 
       if (response.success && response.data) {
         if (response.data.approvalUrl) {
-          window.location.href = response.data.approvalUrl;
+          router.push(response.data.approvalUrl);
         } else {
           showSuccess(t('subscription.subscriptionUpdated'));
           setSelectingPlanId(null);

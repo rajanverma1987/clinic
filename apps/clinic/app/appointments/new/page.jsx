@@ -18,8 +18,6 @@ import { useFeatures } from '@/hooks/useFeatures.js';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { dateAtTimeInTimezone } from '@/lib/utils/date-timezone';
-import * as routeCache from '@/lib/cache/dashboard-cache';
-import { clearCacheByPrefix } from '@/lib/utils/api-cache';
 import { transliterateToArabic } from '@/lib/utils/transliterate-name';
 import { translateToSpanish } from '@/lib/utils/translate-name-spanish';
 import { logger } from '@/lib/utils/logger';
@@ -306,10 +304,6 @@ function NewAppointmentPageContent() {
 
       const response = await apiClient.post('/appointments', appointmentData);
       if (response.success) {
-        if (currentUser?.tenantId) {
-          routeCache.clear('route_appointments', currentUser.tenantId);
-        }
-        clearCacheByPrefix('/appointments');
         const appointmentCount = formData.isRecurring ? formData.recurringOccurrences || 4 : 1;
         showSuccess(
           formData.isRecurring

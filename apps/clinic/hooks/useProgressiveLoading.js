@@ -5,11 +5,13 @@
  * Returns phase state and config for the current route; use with LoadingWrapper or SkeletonFactory.
  */
 
-import { useState, useEffect, useCallback } from 'react';
 import { LOADING_STATES } from '@/lib/loading/loading-states';
 import { getProgressiveLoadingConfig } from '@/lib/loading/progressive-loader';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useProgressiveLoading(routePath, dependencies = []) {
+  const router = useRouter();
   const [loadingPhases, setLoadingPhases] = useState({});
   const [currentPhase, setCurrentPhase] = useState(0);
   const [loadingState, setLoadingState] = useState(LOADING_STATES.INITIAL);
@@ -56,8 +58,8 @@ export function useProgressiveLoading(routePath, dependencies = []) {
         if (cancelled) return;
         setLoadingPhases((prev) => ({ ...prev, [phaseIndex]: LOADING_STATES.ERROR }));
         setErrors((prev) => ({ ...prev, [phaseIndex]: err?.message || 'Error' }));
-        if (phase.fallback === 'redirect-login' && typeof window !== 'undefined') {
-          window.location.href = '/login';
+        if (phase.fallback === 'redirect-login') {
+          router.replace('/login');
         } else {
           setLoadingState(LOADING_STATES.SUCCESS);
         }
@@ -68,7 +70,7 @@ export function useProgressiveLoading(routePath, dependencies = []) {
     return () => {
       cancelled = true;
     };
-  }, [routePath, ...dependencies]);
+  }, [routePath, router, ...dependencies]);
 
   return {
     currentPhase,

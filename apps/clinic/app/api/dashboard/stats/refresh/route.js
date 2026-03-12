@@ -4,8 +4,6 @@
  * Enterprise: consistent { success, data, error } response shape.
  */
 
-import CacheManager from '@/lib/cache/cache-manager.js';
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { dashboardEngineAdapter } from '@/lib/dashboard-engine-adapter';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { errorResponse, successResponse } from '@/lib/utils/api-response';
@@ -16,8 +14,6 @@ import { requirePermission } from '@/middleware/permission-check';
 import { apiRateLimit } from '@/middleware/rate-limit';
 import { getClinicSummary } from '@clinic-saas/dashboard-engine';
 import { NextResponse } from 'next/server';
-
-const DASHBOARD_CACHE_TTL = 300;
 
 async function postHandler(req, user) {
   try {
@@ -42,12 +38,6 @@ async function postHandler(req, user) {
     }
 
     const stats = await getClinicSummary(tenantId, dashboardEngineAdapter);
-
-    if (stats) {
-      await CacheManager.set('dashboard', stats, DASHBOARD_CACHE_TTL, 'stats', tenantId);
-      optimizedCacheManager.set(`dashboard:stats:${tenantId}`, stats, DASHBOARD_CACHE_TTL * 1000);
-    }
-
     return NextResponse.json(successResponse(stats));
   } catch (error) {
     logger.error('Dashboard stats refresh failed', { code: error?.name, message: error?.message });

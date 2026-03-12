@@ -365,7 +365,6 @@ export function ProfileTab({
             <div className='flex-shrink-0'>
               <div className='relative w-[120px] h-[120px] rounded-xl overflow-hidden bg-neutral-200 dark:bg-neutral-700 ring-2 ring-neutral-200 dark:ring-neutral-600'>
                 {currentUser?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={currentUser.avatar}
                     alt={
@@ -516,7 +515,6 @@ export function ProfileTab({
             aria-label={t('settings.cropArea')}
           >
             {cropPreviewUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 ref={cropImageRef}
                 src={cropPreviewUrl}

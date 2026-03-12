@@ -1,10 +1,14 @@
+'use client';
+
 import { BlogImage } from '@/components/blog/BlogImage';
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { Card } from '@/components/ui/Card';
-import { getAllBlogPosts, getBlogPostBySlug, getRelatedPosts } from '@/lib/blog/blog-data';
+import { getBlogPostBySlug, getRelatedPosts } from '@/lib/blog/blog-data';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { useEffect } from 'react';
+import { useParams } from 'next/navigation';
 
 /** Convert inline markdown (**bold** and *italic*) to HTML. Do bold first so asterisks don't conflict. */
 function inlineMarkdownToHtml(str) {
@@ -58,52 +62,17 @@ function markdownToHtml(text) {
   return result;
 }
 
-// Generate static params for all blog posts
-export async function generateStaticParams() {
-  const posts = getAllBlogPosts();
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
-}
+export default function BlogPostPage() {
+  const params = useParams();
+  const slug = params?.slug;
+  const post = slug ? getBlogPostBySlug(slug) : null;
+  const relatedPosts = slug ? getRelatedPosts(slug) : [];
 
-// Generate metadata for SEO
-export async function generateMetadata({ params }) {
-  const post = getBlogPostBySlug(params.slug);
-
-  if (!post) {
-    return {
-      title: 'Blog Post Not Found',
-    };
-  }
-
-  return {
-    title: post.seo.metaTitle || post.title,
-    description: post.seo.metaDescription || post.excerpt,
-    keywords: post.seo.keywords?.join(', '),
-    openGraph: {
-      title: post.seo.metaTitle || post.title,
-      description: post.seo.metaDescription || post.excerpt,
-      images: post.seo.ogImage ? [{ url: post.seo.ogImage }] : [],
-      type: 'article',
-      publishedTime: post.date,
-      modifiedTime: post.updatedDate,
-      authors: [post.author.name],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post.seo.metaTitle || post.title,
-      description: post.seo.metaDescription || post.excerpt,
-      images: post.seo.ogImage ? [post.seo.ogImage] : [],
-    },
-    alternates: {
-      canonical: post.seo.canonicalUrl || `/blog/${post.slug}`,
-    },
-  };
-}
-
-export default function BlogPostPage({ params }) {
-  const post = getBlogPostBySlug(params.slug);
-  const relatedPosts = getRelatedPosts(params.slug);
+  useEffect(() => {
+    if (post) {
+      document.title = post.seo?.metaTitle || post.title;
+    }
+  }, [post]);
 
   if (!post) {
     notFound();

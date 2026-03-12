@@ -28,7 +28,8 @@ const app = next({ dev, hostname });
 const handle = app.getRequestHandler();
 
 app.prepare().then(async () => {
-  const { logger } = await import('./lib/utils/logger.js');
+  const loggerModule = await import('./lib/utils/logger.js');
+  const { logger } = loggerModule.default || loggerModule;
 
   const httpServer = createServer(async (req, res) => {
     try {
@@ -156,7 +157,7 @@ app.prepare().then(async () => {
       }
     });
 
-    socket.on('disconnect', () => {});
+    socket.on('disconnect', () => { });
   });
 
   httpServer

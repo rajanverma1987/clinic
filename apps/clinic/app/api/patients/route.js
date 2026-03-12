@@ -17,7 +17,6 @@
  * - Request correlation tracking
  */
 
-import { optimizedCacheManager } from '@/lib/cache/OptimizedCacheManager';
 import { ACTIONS, RESOURCES } from '@/lib/permissions/constants';
 import { successResponse, validationErrorResponse } from '@/lib/utils/api-response';
 import { patientRegistrationSchema, patientSearchSchema } from '@/lib/validations/patient';
@@ -128,14 +127,13 @@ async function getHandler(req, user) {
     'unknown';
   const userAgent = req.headers.get('user-agent') || 'unknown';
 
-  const result = isDashboardWidget
-    ? await optimizedCacheManager.getOrFetch(
-        `patients:recent:${user.tenantId}`,
-        () =>
-          searchPatients(validationResult.data, user.tenantId, user.userId, ipAddress, userAgent),
-        60000,
-      )
-    : await searchPatients(validationResult.data, user.tenantId, user.userId, ipAddress, userAgent);
+  const result = await searchPatients(
+    validationResult.data,
+    user.tenantId,
+    user.userId,
+    ipAddress,
+    userAgent,
+  );
 
   return NextResponse.json(successResponse(result));
 }

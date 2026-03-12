@@ -1,6 +1,5 @@
 'use client';
 
-import { DASHBOARD_ALL_KEY, DASHBOARD_SUMMARY_KEY } from '@/app/dashboard/hooks/useDashboard';
 import {
   BarChart2Icon,
   BellIcon,
@@ -36,17 +35,14 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useFeatures } from '@/contexts/FeatureContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
-import { apiClient } from '@/lib/api/client';
 import { ADMIN_TABS, isAdminTabActive } from '@/lib/constants/admin-tabs';
 import { isManagerPathForbidden } from '@/lib/constants/route-security.js';
-import { prefetchAppointmentsTab, prefetchPrescriptionsTab } from '@/lib/dashboard-tab-cache';
 import { ACTIONS, hasPermission, RESOURCES } from '@/lib/permissions/constants.js';
 import { logger } from '@/lib/utils/logger.js';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { mutate } from 'swr';
 import { ProfileMenu } from './ProfileMenu.jsx';
 
 /* ─── NavItem ───────────────────────────────────────────────────────────── */
@@ -137,21 +133,6 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
   const prefetchOnHover = useCallback((href) => () => router.prefetch(href), [router]);
 
   const { t, locale } = useI18n();
-  const prefetchDashboard = useCallback(() => {
-    if (!user) return;
-    const summaryFetcher = () =>
-      apiClient.get('/dashboard/summary').then((res) => (res?.success ? res.data : undefined));
-    const allFetcher = () =>
-      apiClient.get('/dashboard/all').then((res) => (res?.success ? res.data : undefined));
-    mutate(DASHBOARD_SUMMARY_KEY, summaryFetcher, { revalidate: false, populateCache: true });
-    mutate(DASHBOARD_ALL_KEY, allFetcher, { revalidate: false, populateCache: true });
-    const uid = user?._id || user?.userId;
-    const appLocale = (locale || 'en').slice(0, 2);
-    if (uid) {
-      prefetchAppointmentsTab(uid, appLocale);
-      prefetchPrescriptionsTab(uid);
-    }
-  }, [user, locale]);
 
   const { hasFeature, loading: featuresLoading } = useFeatures();
 
@@ -229,19 +210,11 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
 
   const getIsActive = (item) => {
     const hrefPath = item.href.split('?')[0];
-    const tab = item.href.includes('?tab=') ? item.href.split('?tab=')[1]?.split('&')[0] : null;
-    if (tab === 'appointments')
-      return (
-        (pathname === '/dashboard' && currentTab === 'appointments') ||
-        pathname === '/appointments' ||
-        pathname?.startsWith('/appointments/')
-      );
-    if (tab === 'prescriptions')
-      return (
-        (pathname === '/dashboard' && currentTab === 'prescriptions') ||
-        pathname === '/prescriptions' ||
-        pathname?.startsWith('/prescriptions/')
-      );
+    // Appointments and Prescriptions: only active on /appointments and /prescriptions pages, not when dashboard tab is selected
+    if (hrefPath === '/appointments')
+      return pathname === '/appointments' || pathname?.startsWith('/appointments/');
+    if (hrefPath === '/prescriptions')
+      return pathname === '/prescriptions' || pathname?.startsWith('/prescriptions/');
     if (hrefPath === '/dashboard') return pathname === '/dashboard' && !currentTab;
     return pathname === hrefPath || pathname?.startsWith(hrefPath + '/');
   };
@@ -291,7 +264,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
     },
     // Clinical
     {
-      href: '/dashboard?tab=appointments',
+      href: '/appointments',
       labelKey: 'appointments.title',
       icon: CalendarIcon,
       section: 'clinical',
@@ -313,7 +286,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
       requiredFeature: 'Patient Management',
     },
     {
-      href: '/dashboard?tab=prescriptions',
+      href: '/prescriptions',
       labelKey: 'prescriptions.title',
       icon: PrescriptionIcon,
       section: 'clinical',
@@ -448,7 +421,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
         icon={item.icon}
         isActive={getIsActive(item)}
         prefetchItem
-        onNavMouseEnter={item.href === '/dashboard' ? prefetchDashboard : undefined}
+        onNavMouseEnter={undefined}
         {...navItemProps({
           onClick: () => {
             prefetchOnHover(item.href)();

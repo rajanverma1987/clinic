@@ -563,10 +563,15 @@ export async function getAppointmentById(appointmentId, tenantId, userId) {
 export async function listAppointments(query, tenantId, userId) {
   await connectDB();
 
-  const { page, limit } = getPaginationParams({
+  let { page, limit } = getPaginationParams({
     page: query.page,
     limit: query.limit,
   });
+  // Cap limit for date-range queries to avoid heavy aggregations (e.g. limit=500 for a month)
+  const isDateRangeQuery = !!(query.startDate || query.endDate);
+  if (isDateRangeQuery && limit > 200) {
+    limit = 200;
+  }
 
   // Normalize tenantId to ObjectId so filter matches Appointment documents (schema uses ObjectId)
   const resolvedTenantId =
@@ -710,10 +715,9 @@ export async function listAppointments(query, tenantId, userId) {
 
   logger.debug('Final filter for appointments:', JSON.stringify(filter, null, 2));
 
-  // Early return optimization: Quick check if any appointments exist
-  const hasAppointments = await Appointment.countDocuments(filter);
-  if (hasAppointments === 0) {
-    // No appointments exist - return empty result immediately
+  // Single count: use for early-exit and as total (avoids second countDocuments)
+  const total = await Appointment.countDocuments(filter);
+  if (total === 0) {
     await AuditLogger.auditWrite(
       'appointment',
       'list',
@@ -725,9 +729,6 @@ export async function listAppointments(query, tenantId, userId) {
     );
     return createPaginationResult([], 0, page || 1, limit || 10);
   }
-
-  // Get total count
-  const total = await Appointment.countDocuments(filter);
 
   // Optimize: Use aggregation with $lookup instead of populate to avoid N+1 queries
   const pipeline = [

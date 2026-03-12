@@ -148,53 +148,6 @@ sudo apt install certbot python3-certbot-nginx -y
 sudo certbot --nginx -d your-domain.com
 ```
 
-### Option 3: Docker Deployment
-
-1. **Create Dockerfile:**
-
-```dockerfile
-FROM node:20-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-RUN npm run build
-
-EXPOSE 3000
-
-CMD ["npm", "start"]
-```
-
-2. **Create docker-compose.yml:**
-
-```yaml
-version: '3.8'
-
-services:
-  app:
-    build: .
-    ports:
-      - '3000:3000'
-    environment:
-      - NODE_ENV=production
-      - MONGODB_URI=${MONGODB_URI}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-    restart: unless-stopped
-```
-
-3. **Deploy:**
-
-```bash
-docker-compose up -d
-```
-
----
-
 ## Database Setup
 
 ### MongoDB Atlas Configuration

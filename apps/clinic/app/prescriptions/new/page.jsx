@@ -23,7 +23,6 @@ import { getPatientDisplayName } from '@/lib/utils/patient-display-name';
 import { useFormAutoSave } from '@/hooks/useFormAutoSave.js';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts.js';
 import { apiClient } from '@/lib/api/client';
-import * as routeCache from '@/lib/cache/dashboard-cache';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
@@ -366,7 +365,6 @@ function NewPrescriptionPageContent() {
         clinicalNoteId: '',
       }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.patientId]);
 
   // Fetch full patient for allergy conflict check
@@ -628,7 +626,6 @@ function NewPrescriptionPageContent() {
       const response = await apiClient.post('/prescriptions', prescriptionData);
       if (response.success) {
         clearDraft();
-        routeCache.clear('route_prescriptions', currentUser?.tenantId ?? undefined);
         showSuccess(t('prescriptions.signedAndSentSuccess'));
         // Reset form so next time user opens "Create prescription" they get a clean form (avoids old items from auto-save)
         setItems(INITIAL_ITEMS.map((i) => ({ ...i })));
@@ -683,7 +680,6 @@ function NewPrescriptionPageContent() {
       const response = await apiClient.post('/prescriptions', prescriptionData);
       if (response.success) {
         clearDraft();
-        routeCache.clear('route_prescriptions', currentUser?.tenantId ?? undefined);
         showSuccess(t('prescriptions.savedAsDraftSuccess'));
       } else {
         const errorMessage = response.error?.message || t('prescriptions.failedToSaveDraft');

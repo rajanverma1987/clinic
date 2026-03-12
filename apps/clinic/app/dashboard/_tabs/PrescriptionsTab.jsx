@@ -13,13 +13,9 @@ import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
-import {
-  fetchPrescriptionsTab,
-  getCachedPrescriptions,
-  REVALIDATE_DELAY_MS,
-} from '@/lib/dashboard-tab-cache';
+import { fetchPrescriptionsTab, REVALIDATE_DELAY_MS } from '@/lib/dashboard-tab-cache';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const LIMIT = 10;
 
@@ -42,7 +38,10 @@ export function PrescriptionsTab({ isActive = false }) {
 
   const fetchAndUpdate = useCallback(
     async (showRevalidating = false) => {
-      if (!userId) return;
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
       if (showRevalidating) setIsRevalidating(true);
       const { data, error: err } = await fetchPrescriptionsTab(userId, localeCode);
       if (err) {
@@ -58,37 +57,26 @@ export function PrescriptionsTab({ isActive = false }) {
     [userId, localeCode, t],
   );
 
-  // Before paint: when tab becomes active, show cache immediately so no loading flash.
-  useLayoutEffect(() => {
-    if (!isActive || !userId) return;
-    const cached = getCachedPrescriptions(userId);
-    if (cached !== null && Array.isArray(cached)) {
-      setPrescriptions(cached);
-      setLoading(false);
-      setError(null);
-    }
-  }, [isActive, userId]);
-
-  // After paint: fetch if no cache, and schedule revalidate.
+  // When tab is active, fetch once and schedule one revalidate. Include fetchAndUpdate so completion always updates current state.
+  // Only clear loading when tab is inactive; when auth is not ready, leave loading true so we refetch when auth settles (fixes nav from side menu from another page).
   useEffect(() => {
+    if (!isActive) {
+      setLoading(false);
+      return;
+    }
     if (authLoading || !user || !userId) return;
-    if (!isActive) return;
 
+    setLoading(true);
     if (prevLocaleRef.current !== localeCode) {
       prevLocaleRef.current = localeCode;
       fetchAndUpdate(true);
-    }
-
-    const cached = getCachedPrescriptions(userId);
-    if (cached === null || !Array.isArray(cached)) {
+    } else {
       fetchAndUpdate(false);
     }
 
-    revalidateTimerRef.current = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
-    return () => {
-      if (revalidateTimerRef.current) clearTimeout(revalidateTimerRef.current);
-    };
-  }, [isActive, userId, authLoading, user, fetchAndUpdate, localeCode]);
+    const timer = setTimeout(() => fetchAndUpdate(true), REVALIDATE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [isActive, userId, authLoading, user, localeCode, fetchAndUpdate]);
 
   const getStatusLabel = useCallback(
     (status) => {

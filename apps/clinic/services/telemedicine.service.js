@@ -112,6 +112,9 @@ export async function getSessionById(sessionId, tenantId = null) {
     .lean();
 }
 
+/** Alias for route handlers that resolve session from URL param id. */
+export const findSessionByParamId = getSessionById;
+
 /**
  * List sessions
  * @param {string} tenantId

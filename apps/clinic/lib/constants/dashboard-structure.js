@@ -1086,7 +1086,6 @@ export const DASHBOARD_CACHE_INTEGRATION = {
   dashboardCacheLegacy: 'lib/cache/dashboard-cache.js',
   indexedDBCache: 'lib/cache/indexed-db-cache.js',
   cacheConfigSWR: 'lib/cache/cache-config.js',
-  useSWRDashboard: 'hooks/useSWRDashboard.js',
 };
 
 /** Print layout. Per CLAUDE-AI #5. */

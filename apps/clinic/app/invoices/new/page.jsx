@@ -74,7 +74,6 @@ export default function NewInvoicePage() {
       ]);
       setFormData((prev) => ({ ...prev, appointmentId: '' }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.patientId]);
 
   const fetchData = async () => {

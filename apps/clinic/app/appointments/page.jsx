@@ -17,17 +17,19 @@ import { useInvalidateDashboard } from '@/hooks/useInvalidateDashboard';
 import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
-import * as routeCache from '@/lib/cache/dashboard-cache';
-import { clearCacheByPrefix } from '@/lib/utils/api-cache';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { getPatientDisplayName as getPatientDisplayNameUtil } from '@/lib/utils/patient-display-name';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-const ROUTE_KEY = 'route_appointments';
+/** Today as YYYY-MM-DD in local date (for initial state before settings load). */
+function getTodayLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 export default function AppointmentsPage() {
   const router = useRouter();
@@ -47,20 +49,11 @@ export default function AppointmentsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [todayCount, setTodayCount] = useState(0);
   const [tomorrowCount, setTomorrowCount] = useState(0);
+  /** Selected calendar day (YYYY-MM-DD). Table shows only this day. Default: today. */
+  const [selectedDate, setSelectedDate] = useState(() =>
+    dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl) ? dateFromUrl : getTodayLocal(),
+  );
 
-  useLayoutEffect(() => {
-    if (!tenantId) return;
-    const localeCode = (locale || '').slice(0, 2);
-    if (localeCode === 'es' || localeCode === 'ar') return; // always fetch when UI needs localized patient names
-    const cached = routeCache.getData(ROUTE_KEY, tenantId);
-    const list = cached?.appointments;
-    if (cached && Array.isArray(list) && list.length > 0) {
-      setAppointments(list);
-      setCurrentPage(cached.currentPage ?? 1);
-      setTotalPages(cached.totalPages ?? 1);
-      setLoading(false);
-    }
-  }, [tenantId, locale]);
   const [statsLoading, setStatsLoading] = useState(true);
   const [settings, setSettings] = useState(null);
   const [doctors, setDoctors] = useState([]);
@@ -134,6 +127,15 @@ export default function AppointmentsPage() {
     fetchDoctors();
   }, [authLoading, user]);
 
+  // Sync selected date from URL (e.g. direct link or browser back)
+  useEffect(() => {
+    if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) {
+      setSelectedDate(dateFromUrl);
+    } else if (!dateFromUrl) {
+      setSelectedDate(getTodayLocal());
+    }
+  }, [dateFromUrl]);
+
   // Set selected doctor to current user by default (for all roles) - only on initial load
   useEffect(() => {
     if (user && !doctorIdInitialized) {
@@ -148,21 +150,20 @@ export default function AppointmentsPage() {
     }
   }, [user, doctorIdInitialized]);
 
-  // After booking: clear doctor filter, clear cache, refetch (no doctor filter), then drop ?from=book
+  // After booking: clear doctor filter, clear cache, refetch for selected date, then drop ?from=book
   const fromBook = searchParams.get('from') === 'book';
   useEffect(() => {
     if (!fromBook || !user) return;
     setSelectedDoctorId('');
-    if (tenantId) routeCache.clear(ROUTE_KEY, tenantId);
-    clearCacheByPrefix('/appointments');
     const params = new URLSearchParams(searchParams.toString());
     params.delete('from');
     const newPath = params.toString() ? `/appointments?${params}` : '/appointments';
     router.replace(newPath, { scroll: false });
     setLoading(true);
-    const q = new URLSearchParams({ page: '1', limit: '10' });
+    const dateForApi = selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate) ? selectedDate : getTodayLocal();
+    const q = new URLSearchParams({ page: '1', limit: '30' });
     if (selectedStatus) q.append('status', selectedStatus);
-    if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) q.append('date', dateFromUrl);
+    q.append('date', dateForApi);
     const localeCode = (locale || '').slice(0, 2);
     if (localeCode) q.append('locale', localeCode);
     apiClient
@@ -174,12 +175,11 @@ export default function AppointmentsPage() {
           setCurrentPage(1);
           const pages = response.data.pagination?.totalPages ?? 1;
           setTotalPages(pages);
-          if (tenantId) routeCache.set(ROUTE_KEY, tenantId, { appointments: list, currentPage: 1, totalPages: pages });
         }
       })
       .catch((err) => logger.error('Failed to fetch appointments after book', err))
       .finally(() => setLoading(false));
-  }, [fromBook, user, tenantId, router, searchParams, selectedStatus, dateFromUrl]);
+  }, [fromBook, user, tenantId, router, searchParams, selectedStatus, selectedDate]);
 
   const formatDateDisplay = useCallback(
     (date, options) => {
@@ -283,19 +283,17 @@ export default function AppointmentsPage() {
 
   const fetchAppointments = useCallback(
     async (silentRefresh = false) => {
-      const hasDateFilter = dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl);
+      const dateForApi = selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate) ? selectedDate : getTodayLocal();
       const localeCode = (locale || '').slice(0, 2);
-      const useCache = localeCode !== 'es' && localeCode !== 'ar';
-      const hasCache = useCache && tenantId && !hasDateFilter && routeCache.getData(ROUTE_KEY, tenantId);
-      if (!silentRefresh && !hasCache) setLoading(true);
+      if (!silentRefresh) setLoading(true);
       try {
         const params = new URLSearchParams({
           page: currentPage.toString(),
-          limit: '10',
+          limit: '30',
         });
         if (selectedDoctorId) params.append('doctorId', selectedDoctorId);
         if (selectedStatus) params.append('status', selectedStatus);
-        if (hasDateFilter) params.append('date', dateFromUrl);
+        params.append('date', dateForApi);
         params.append('locale', localeCode || 'en');
 
         const response = await apiClient.get(`/appointments?${params}`);
@@ -305,12 +303,6 @@ export default function AppointmentsPage() {
           const pages = response.data.pagination?.totalPages || 1;
           setAppointments(list);
           setTotalPages(pages);
-          if (tenantId && !hasDateFilter && useCache)
-            routeCache.set(ROUTE_KEY, tenantId, {
-              appointments: list,
-              currentPage,
-              totalPages: pages,
-            });
         }
       } catch (error) {
         logger.error('Failed to fetch appointments', error);
@@ -319,7 +311,7 @@ export default function AppointmentsPage() {
         setRefreshing(false);
       }
     },
-    [currentPage, selectedDoctorId, selectedStatus, tenantId, dateFromUrl, locale],
+    [currentPage, selectedDoctorId, selectedStatus, tenantId, selectedDate, locale],
   );
 
   useEffect(() => {
@@ -328,7 +320,6 @@ export default function AppointmentsPage() {
       return;
     }
     if (!authLoading && user && !fromBook) {
-      clearCacheByPrefix('/appointments');
       fetchAppointments();
     }
   }, [authLoading, user, router, fetchAppointments, fromBook]);
@@ -341,16 +332,15 @@ export default function AppointmentsPage() {
     const prevCode = (prevLocaleRef.current || '').slice(0, 2);
     if (localeCode !== prevCode) {
       prevLocaleRef.current = locale;
-      clearCacheByPrefix('/appointments');
       fetchAppointments(true);
     } else {
       prevLocaleRef.current = locale;
     }
   }, [locale, user, authLoading, fetchAppointments]);
 
-  // Setup automatic background refresh every 60 seconds
+  // Setup automatic background refresh every 60 seconds (refreshes table for selected day)
   useEffect(() => {
-    if (!authLoading && user && !dateFromUrl && !selectedStatus && !selectedDoctorId) {
+    if (!authLoading && user && !selectedStatus && !selectedDoctorId) {
       // Clear any existing interval
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
@@ -369,14 +359,27 @@ export default function AppointmentsPage() {
         }
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user, dateFromUrl, selectedStatus, selectedDoctorId, fetchAppointments]);
+  }, [authLoading, user, selectedStatus, selectedDoctorId, fetchAppointments]);
 
   // Manual refresh handler
   const handleManualRefresh = useCallback(() => {
     setRefreshing(true);
     fetchAppointments(false);
   }, [fetchAppointments]);
+
+  // When user selects a date in the calendar, update state and URL so table shows that day only
+  const handleCalendarDateChange = useCallback(
+    (date) => {
+      if (!date || Number.isNaN(date.getTime())) return;
+      const dateStr = formatDateForApi(date);
+      setSelectedDate(dateStr);
+      setCurrentPage(1);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('date', dateStr);
+      router.replace(`/appointments?${params.toString()}`, { scroll: false });
+    },
+    [formatDateForApi, router, searchParams],
+  );
 
   // Fetch stats separately when settings are loaded
   useEffect(() => {
@@ -876,10 +879,11 @@ export default function AppointmentsPage() {
                       selectedDoctorId || (user?.role === 'doctor' ? user.userId : '')
                     }
                     selectedDate={
-                      dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)
-                        ? new Date(dateFromUrl + 'T12:00:00')
+                      selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
+                        ? new Date(selectedDate + 'T12:00:00')
                         : new Date()
                     }
+                    onDateChange={handleCalendarDateChange}
                     onSlotSelect={(slot) => {
                       // Navigate to new appointment page with pre-filled data
                       const dateStr = slot.date.toISOString().split('T')[0];
@@ -902,12 +906,12 @@ export default function AppointmentsPage() {
                 </div>
               )}
 
-            {dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl) && (
+            {selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate) && (
               <div className='mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm'>
                 <span className='text-primary-800'>
                   {t('appointments.showingForDate').replace(
                     '{{date}}',
-                    formatDateDisplay(new Date(dateFromUrl + 'T12:00:00'), {
+                    formatDateDisplay(new Date(selectedDate + 'T12:00:00'), {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',

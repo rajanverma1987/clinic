@@ -1,22 +1,19 @@
 /**
- * Dashboard Stats Background Job
- * Pre-computes dashboard statistics every 5 minutes for all active tenants.
- * This dramatically reduces dashboard load time from ~500ms to <200ms.
+ * Dashboard Stats Calculation
+ * Exposes calculateDashboardStats(tenantId) and updateAllTenantsStats() for use by
+ * dashboard-engine adapter and scripts (e.g. update-dashboard-metrics.js).
+ * No scheduled/cron jobs; call these explicitly when needed.
  */
 
-const cron = require('node-cron');
 const mongoose = require('mongoose');
 
-// ES modules need to be imported dynamically
-let CacheManager, connectDB, logger;
+let connectDB, logger;
 let Tenant, Appointment, Invoice, Patient, Queue, ClinicDashboardMetrics;
 let InvoiceStatus, AppointmentStatus, QueueStatus;
 
 // Lazy load ES modules
 async function loadModules() {
-  if (!CacheManager) {
-    const cacheModule = await import('../lib/cache/cache-manager.js');
-    CacheManager = cacheModule.default;
+  if (!connectDB) {
     const dbModule = await import('../lib/db/connection.js');
     connectDB = dbModule.default;
     const loggerModule = await import('../lib/utils/logger.js');
@@ -211,7 +208,6 @@ async function updateAllTenantsStats() {
       const stats = await calculateDashboardStats(tenant._id);
 
       if (stats) {
-        await CacheManager.set('dashboard', stats, 300, 'stats', tenant._id);
         const metrics = {
           tenantId,
           today_patients: stats.patients?.total ?? 0,
@@ -236,20 +232,4 @@ async function updateAllTenantsStats() {
   }
 }
 
-/**
- * Start the dashboard stats background job
- */
-async function startDashboardStatsJob() {
-  await loadModules(); // ensure logger and deps are ready before use
-
-  cron.schedule('*/5 * * * *', updateAllTenantsStats);
-
-  setTimeout(async () => {
-    await loadModules();
-    logger.info('Dashboard stats job started (every 5 minutes)');
-    logger.info('Dashboard stats initial calculation started');
-    updateAllTenantsStats();
-  }, 5000);
-}
-
-module.exports = { startDashboardStatsJob, calculateDashboardStats };
+module.exports = { calculateDashboardStats, updateAllTenantsStats };

@@ -187,7 +187,6 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
           >
             <div className='overflow-hidden rounded-full bg-primary-600 flex items-center justify-center text-white font-bold ring-2 ring-primary-100 dark:ring-primary-900/50 shadow-md w-16 h-16 text-lg group-hover:ring-primary-200 transition-all'>
               {user?.avatar && !avatarError ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={user.avatar}
                   alt={userDisplayName || t('common.altProfile')}
@@ -225,7 +224,6 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
             <div className='relative flex-shrink-0'>
               <div className='overflow-hidden rounded-full bg-primary-600 flex items-center justify-center text-white font-bold ring-2 ring-primary-100 dark:ring-primary-900/50 shadow-md w-32 h-32 text-2xl group-hover:ring-primary-200 dark:group-hover:ring-primary-800 transition-all duration-150'>
                 {user?.avatar && !avatarError ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.avatar}
                     alt={userDisplayName || t('common.altProfile')}

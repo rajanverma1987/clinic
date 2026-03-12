@@ -225,9 +225,7 @@ export function Header() {
                 <Button
                   variant='secondary'
                   size='sm'
-                  onClick={() => {
-                    window.location.href = loginUrl;
-                  }}
+                  onClick={() => router.push(loginUrl)}
                   className='whitespace-nowrap hidden sm:flex px-5 py-2.5'
                 >
                   {t('auth.login')}
@@ -235,9 +233,7 @@ export function Header() {
                 <Button
                   variant='primary'
                   size='sm'
-                  onClick={() => {
-                    window.location.href = registerUrl;
-                  }}
+                  onClick={() => router.push(registerUrl)}
                   className='whitespace-nowrap px-5 py-2.5'
                 >
                   <svg
@@ -440,7 +436,7 @@ export function Header() {
                       size='md'
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        window.location.href = loginUrl;
+                        router.push(loginUrl);
                       }}
                       className='w-full'
                     >
@@ -451,7 +447,7 @@ export function Header() {
                       size='md'
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        window.location.href = registerUrl;
+                        router.push(registerUrl);
                       }}
                       className='w-full'
                     >

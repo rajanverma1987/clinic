@@ -174,7 +174,7 @@ export default function SubscriptionPage() {
       if (response.success && response.data) {
         if (response.data.approvalUrl) {
           setPaymentModalPlan(null);
-          window.location.href = response.data.approvalUrl;
+          router.push(response.data.approvalUrl);
           return;
         }
         showSuccess(t('subscription.subscriptionUpdated'));
@@ -268,7 +268,7 @@ export default function SubscriptionPage() {
             });
             if (response.success && response.data) {
               if (response.data.approvalUrl) {
-                window.location.href = response.data.approvalUrl;
+                router.push(response.data.approvalUrl);
               } else {
                 showSuccess(t('subscription.subscriptionUpdated'));
                 fetchSubscription();

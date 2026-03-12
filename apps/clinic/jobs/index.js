@@ -1,19 +1,13 @@
 /**
  * Background Jobs Initialization
- * Central entry point for all background jobs
+ * No cron or scheduled jobs; kept for compatibility with server.js.
  */
-
-const { startDashboardStatsJob } = require('./dashboard-stats');
 
 /**
- * Initialize all background jobs
+ * Initialize background jobs (no-op; no cron jobs in use).
  */
 async function initializeJobs() {
-  console.log('🔧 Initializing background jobs...');
-
-  await startDashboardStatsJob();
-
-  console.log('✅ All background jobs initialized');
+  return Promise.resolve();
 }
 
 module.exports = { initializeJobs };

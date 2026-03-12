@@ -364,18 +364,13 @@ function VideoConsultationRoomContent() {
   useEffect(() => {
     if (!sessionId) return;
 
-    // Initialize Socket.IO connection
-    // Use window.location.origin for same-origin connection.
-    // Normalize NEXT_PUBLIC_SOCKET_URL so it can safely include or omit the /socket.io path.
+    // Initialize Socket.IO connection. In production, never use baked-in localhost: prefer window.location.origin when env is localhost or unset.
+    const envUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    const isLocalhostEnv = envUrl && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(envUrl);
     let rawSocketUrl =
-      typeof window !== 'undefined'
-        ? process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin
-        : process.env.NEXT_PUBLIC_APP_URL ||
-          process.env.NEXT_PUBLIC_SOCKET_URL ||
-          'http://localhost:5053';
-
-    // Strip trailing /socket.io or /socket.io/ so we always connect to the origin.
-    rawSocketUrl = rawSocketUrl.replace(/\/socket\.io\/?$/i, '');
+      isLocalhostEnv || !envUrl ? window.location.origin : envUrl;
+    rawSocketUrl = (rawSocketUrl || '').replace(/\/socket\.io\/?$/i, '');
+    if (!rawSocketUrl) rawSocketUrl = window.location.origin;
 
     logger.debug('[Chat] Connecting to Socket.IO server:', rawSocketUrl);
 

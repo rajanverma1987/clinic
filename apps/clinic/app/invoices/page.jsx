@@ -17,16 +17,13 @@ import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
-import * as routeCache from '@/lib/cache/dashboard-cache';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { extractArrayData } from '@/lib/utils/api-response-extractor';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/currency';
 import { logger } from '@/lib/utils/logger';
 import { showError, showSuccess } from '@/lib/utils/toast';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-
-const ROUTE_KEY = 'route_invoices';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export default function InvoicesPage() {
   const router = useRouter();
@@ -65,20 +62,9 @@ export default function InvoicesPage() {
   const [refreshing, setRefreshing] = useState(false);
   const refreshIntervalRef = useRef(null);
 
-  // Hydrate from localStorage before paint (no flash, no hydration mismatch)
-  useLayoutEffect(() => {
-    if (!tenantId) return;
-    const cached = routeCache.getData(ROUTE_KEY, tenantId);
-    if (cached?.invoices != null) {
-      setInvoices(cached.invoices);
-      setLoading(false);
-    }
-  }, [tenantId]);
-
   const fetchInvoices = useCallback(
     async (silentRefresh = false) => {
-      const hasCache = tenantId && routeCache.getData(ROUTE_KEY, tenantId);
-      if (!silentRefresh && !hasCache) setLoading(true);
+      if (!silentRefresh) setLoading(true);
       try {
         const params = new URLSearchParams();
         if (statusFilter && statusFilter !== 'all') {
@@ -102,7 +88,6 @@ export default function InvoicesPage() {
             );
           }
           setInvoices(invoicesList);
-          if (tenantId) routeCache.set(ROUTE_KEY, tenantId, { invoices: invoicesList });
         } else {
           setInvoices([]);
         }
@@ -144,7 +129,6 @@ export default function InvoicesPage() {
         }
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, statusFilter, startDate, endDate, fetchInvoices]);
 
   // Manual refresh handler

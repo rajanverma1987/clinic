@@ -7,11 +7,10 @@
 
 import { apiClient } from '@/lib/api/client.js';
 import { setCurrentTenantId } from '@/lib/cache/current-tenant.js';
-import * as dashboardCache from '@/lib/cache/dashboard-cache.js';
 import { clearIndexedDBCache, clearOfflineMutations } from '@/lib/cache/indexed-db-cache.js';
 import { clearTestAccountRoleOverride } from '@/lib/constants/test-account.js';
 import { disconnectRealtimeClient } from '@/lib/realtime/realtime-client.js';
-import { clearAllCache } from '@/lib/utils/api-cache.js';
+import { useRouter } from 'next/navigation';
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 
 const AuthContext = createContext(undefined);
@@ -23,6 +22,7 @@ const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 const TOKEN_REFRESH_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
 
 export function AuthProvider({ children }) {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -75,21 +75,17 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('userInfo');
             lastActivityRef.current = 0;
-            dashboardCache.clear();
-            clearAllCache();
             disconnectRealtimeClient();
             clearIndexedDBCache().catch(() => {});
             clearOfflineMutations().catch(() => {});
           }
           setUser(null);
           setCurrentTenantId(null);
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
+          router.replace('/login');
         }
       }
     }, IDLE_TIMEOUT_MS);
-  }, [user]);
+  }, [user, router]);
 
   // Setup automatic token refresh on activity
   const setupTokenRefresh = React.useCallback(() => {
@@ -611,17 +607,13 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userInfo');
         lastActivityRef.current = 0;
-        dashboardCache.clear();
-        clearAllCache();
         disconnectRealtimeClient();
         clearIndexedDBCache().catch(() => {});
         clearOfflineMutations().catch(() => {});
       }
       setUser(null);
       setCurrentTenantId(null);
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
+      router.replace('/login');
     }
   };
 

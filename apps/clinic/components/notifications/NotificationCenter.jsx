@@ -98,7 +98,11 @@ export function NotificationCenter({
   useEffect(() => {
     if (!user?.tenantId) return;
 
-    const baseUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+    const envUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    const baseUrl =
+      envUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(envUrl)
+        ? envUrl
+        : window.location.origin;
     const origin =
       typeof baseUrl === 'string' && baseUrl.includes('://') ? new URL(baseUrl).origin : baseUrl;
     const socket = io(`${origin}/realtime`, {

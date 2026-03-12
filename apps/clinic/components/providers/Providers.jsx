@@ -1,6 +1,5 @@
 'use client';
 
-import { CacheWarming } from '@/components/CacheWarming';
 import { DocumentLocale } from '@/components/DocumentLocale';
 import { OfflineReplay } from '@/components/OfflineReplay';
 import { PageTransition } from '@/components/layout/PageTransition';
@@ -13,7 +12,18 @@ import { I18nProvider } from '@/contexts/I18nContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { RealtimeProvider } from '@/contexts/RealtimeContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { apiClient } from '@/lib/api/client';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { SWRConfig } from 'swr';
+
+function ApiClientRedirectSetup() {
+  const router = useRouter();
+  useEffect(() => {
+    apiClient.setRedirectHandler((path) => router.replace(path));
+  }, [router]);
+  return null;
+}
 
 function swrRetryWithBackoff(err, _key, _config, revalidate, { retryCount }) {
   if (err?.status === 401 || err?.status === 403) return;
@@ -35,14 +45,15 @@ const swrOptions = {
 
 export function Providers({ children }) {
   return (
-    <AuthProvider>
-      <SWRConfig value={swrOptions}>
+    <>
+      <ApiClientRedirectSetup />
+      <AuthProvider>
+        <SWRConfig value={swrOptions}>
         <I18nProvider>
           <DocumentLocale />
           <ThemeProvider>
             <RealtimeProvider>
               <OfflineReplay />
-              <CacheWarming />
               <FeatureProvider>
                 <NotificationProvider>
                   <AppNotificationsProvider>
@@ -57,7 +68,8 @@ export function Providers({ children }) {
             </RealtimeProvider>
           </ThemeProvider>
         </I18nProvider>
-      </SWRConfig>
-    </AuthProvider>
+        </SWRConfig>
+      </AuthProvider>
+    </>
   );
 }

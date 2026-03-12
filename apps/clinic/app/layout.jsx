@@ -1,15 +1,9 @@
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Providers } from '@/components/providers/Providers';
-import { cookies } from 'next/headers';
 import './globals.css';
 
-/** Force dynamic rendering so pages using useSearchParams() do not require per-page Suspense during static export. */
+/** Client-side rendering: no request-time server data; locale/lang/dir applied on client via DocumentLocale. */
 export const dynamic = 'force-dynamic';
-
-const LOCALE_COOKIE = 'NEXT_LOCALE';
-const RTL_LOCALES = ['ar'];
-const LOCALE_TO_LANG = { en: 'en-US', es: 'es-ES', ar: 'ar-SA' };
-const SUPPORTED = ['en', 'es', 'ar'];
 
 export const metadata = {
   title: 'Clinic Management System',
@@ -19,15 +13,9 @@ export const metadata = {
   },
 };
 
-export default async function RootLayout({ children }) {
-  const cookieStore = await cookies();
-  const localeCookie = cookieStore.get(LOCALE_COOKIE);
-  const locale = localeCookie?.value && SUPPORTED.includes(localeCookie.value) ? localeCookie.value : 'en';
-  const lang = LOCALE_TO_LANG[locale] || 'en-US';
-  const dir = RTL_LOCALES.includes(locale) ? 'rtl' : 'ltr';
-
+export default function RootLayout({ children }) {
   return (
-    <html lang={lang} dir={dir} suppressHydrationWarning>
+    <html lang='en' dir='ltr' suppressHydrationWarning>
       <head>
         <link rel='icon' href='/images/faviconw.png' type='image/png' />
         <script src='/chunk-recovery.js' />

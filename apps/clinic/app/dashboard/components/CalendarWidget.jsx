@@ -10,7 +10,7 @@ import { logger } from '@/lib/utils/logger';
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Build date string YYYY-MM-DD from Date
+ * Build date string YYYY-MM-DD from Date (local date).
  */
 function toDateKey(d) {
   if (!d) return '';
@@ -18,6 +18,24 @@ function toDateKey(d) {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+/** Booked statuses to show on calendar (exclude cancelled/completed/no_show). */
+const BOOKED_STATUSES = ['scheduled', 'confirmed', 'arrived', 'in_progress'];
+
+/**
+ * Get calendar date key YYYY-MM-DD for an appointment so it matches the calendar grid.
+ * Uses ISO date part for date-only fields to avoid timezone shifting the day (e.g. UTC midnight becoming previous day in US).
+ */
+function getAppointmentDateKey(apt) {
+  const dateSource = apt.schedule?.date ?? apt.appointmentDate ?? apt.startTime ?? apt.date;
+  if (!dateSource) return '';
+  if (typeof dateSource === 'string') {
+    const isoDate = dateSource.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return isoDate;
+  }
+  const d = new Date(dateSource);
+  return isNaN(d.getTime()) ? '' : toDateKey(d);
 }
 
 export function CalendarWidget({ onDateSelect, loading = false, doctorId }) {
@@ -102,10 +120,9 @@ export function CalendarWidget({ onDateSelect, loading = false, doctorId }) {
       const list = extractArrayData(res);
       const counts = {};
       for (const apt of list) {
-        const dateSource = apt.schedule?.date || apt.appointmentDate || apt.startTime || apt.date;
-        const d = dateSource ? new Date(dateSource) : null;
-        if (!d || isNaN(d.getTime())) continue;
-        const key = toDateKey(d);
+        const status = (apt.status || '').toLowerCase();
+        if (status && !BOOKED_STATUSES.includes(status)) continue;
+        const key = getAppointmentDateKey(apt);
         if (key) counts[key] = (counts[key] || 0) + 1;
       }
       setAppointmentCountsByDate(counts);

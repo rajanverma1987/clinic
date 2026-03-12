@@ -180,45 +180,6 @@ export function recordDatabaseQuery(collection, duration, success = true) {
 }
 
 /**
- * Record a cache operation (hit, miss, or error) for cache performance analysis.
- *
- * Tracks cache hit/miss rates to measure cache effectiveness. High miss rates
- * indicate cache configuration issues or cache eviction problems.
- *
- * @function recordCacheOperation
- * @param {string} type - Operation type: 'hit', 'miss', or 'error'
- * @param {boolean} [success=true] - Whether the operation succeeded
- * @returns {void}
- *
- * @example
- * try {
- *   const cached = await getCache(key);
- *   recordCacheOperation(cached ? 'hit' : 'miss', true);
- * } catch (error) {
- *   recordCacheOperation('error', false);
- * }
- *
- * @performance
- * - Hit rate = hits / (hits + misses) - higher is better
- * - Low hit rates indicate cache configuration issues
- * - Errors indicate cache service problems
- *
- * @note
- * Should be called for every cache operation to maintain accurate metrics.
- */
-export function recordCacheOperation(type, success = true) {
-  if (type === 'hit') {
-    metrics.cache.hits++;
-  } else if (type === 'miss') {
-    metrics.cache.misses++;
-  }
-
-  if (!success) {
-    metrics.cache.errors++;
-  }
-}
-
-/**
  * Record an error for error tracking and analysis.
  *
  * Tracks error count, types, and maintains recent error log for debugging.

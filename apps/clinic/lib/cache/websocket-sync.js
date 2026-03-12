@@ -8,7 +8,15 @@ import { WEBSOCKET_TO_CACHE_EVENT_MAP } from './websocket-cache-events.js';
 
 function getSocketUrl() {
   if (typeof window === 'undefined') return '';
-  return process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+  const envUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+  if (envUrl && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(envUrl)) {
+    try {
+      return new URL(envUrl).origin;
+    } catch (_) {
+      return window.location.origin;
+    }
+  }
+  return window.location.origin;
 }
 
 class WebSocketCacheSync {

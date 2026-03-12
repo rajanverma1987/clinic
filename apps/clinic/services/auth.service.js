@@ -333,10 +333,15 @@ export async function loginUser(input, options = {}) {
     throw new Error('Invalid email or password');
   }
 
+  // Fetch platform settings and tenant in parallel to reduce login latency
+  const needTenant =
+    !isTestAccount(user.email) && user.tenantId && user.role !== UserRole.SUPER_ADMIN;
+  const [platformSettings, tenant] = await Promise.all([
+    SystemSettings.findOne({ slug: 'platform' }).select('emergencyLock security').lean(),
+    needTenant ? Tenant.findById(user.tenantId).select('isActive suspended').lean() : null,
+  ]);
+
   // Emergency lock (SA11): only super_admin can log in when enabled
-  const platformSettings = await SystemSettings.findOne({ slug: 'platform' })
-    .select('emergencyLock security')
-    .lean();
   if (platformSettings?.emergencyLock && user.role !== UserRole.SUPER_ADMIN) {
     throw new Error('System is in security lock. Only Super Admin can log in.');
   }
@@ -357,8 +362,7 @@ export async function loginUser(input, options = {}) {
   }
 
   // Validate tenant is active and not suspended (skip for super_admin and testing account)
-  if (!isTestAccount(user.email) && user.tenantId && user.role !== UserRole.SUPER_ADMIN) {
-    const tenant = await Tenant.findById(user.tenantId).select('isActive suspended').lean();
+  if (needTenant) {
     if (!tenant || !tenant.isActive) {
       throw new Error('Tenant is not active');
     }

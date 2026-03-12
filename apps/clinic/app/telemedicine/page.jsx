@@ -24,7 +24,6 @@ export default function TelemedicinePage() {
 
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [testVideoLoading, setTestVideoLoading] = useState(false);
 
   const handleOpenSearch = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -85,25 +84,6 @@ export default function TelemedicinePage() {
 
   const handleJoinSession = (sessionId) => {
     router.push(`/telemedicine/${sessionId}`);
-  };
-
-  /** TEMP: Remove before production – creates a test session and opens video room */
-  const handleTestVideoCall = async () => {
-    setTestVideoLoading(true);
-    try {
-      const response = await apiClient.post('/telemedicine/sessions/test');
-      if (response?.success && response?.data?.id) {
-        router.push(`/telemedicine/${response.data.id}?role=doctor&autoJoin=1`);
-      } else {
-        logger.warn('Test video session failed', response?.error);
-        alert(response?.error?.message || t('common.error'));
-      }
-    } catch (err) {
-      logger.error('Test video session error', err);
-      alert(err?.message || t('common.error'));
-    } finally {
-      setTestVideoLoading(false);
-    }
   };
 
   const columns = useMemo(
@@ -220,22 +200,6 @@ export default function TelemedicinePage() {
         }
       />
       <div style={{ padding: '0 10px' }}>
-        {/* TEMP: Test video consulting – remove before production (and delete app/api/telemedicine/sessions/test/route.js) */}
-        <div className='mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-900/20'>
-          <Button
-            type='button'
-            variant='secondary'
-            size='sm'
-            onClick={handleTestVideoCall}
-            disabled={testVideoLoading}
-          >
-            {testVideoLoading ? t('common.loading') : t('telemedicine.testVideoCall')}
-          </Button>
-          <span className='text-xs text-amber-700 dark:text-amber-300'>
-            ({t('telemedicine.testVideoCallHint')})
-          </span>
-        </div>
-
         {/* Quick Stats */}
         <div className='grid grid-cols-1 md:grid-cols-4 gap-6 mb-8'>
           <Card>

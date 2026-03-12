@@ -34,7 +34,6 @@ import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { useSettings } from '@/hooks/useSettings';
 import { apiClient } from '@/lib/api/client';
 import { getTranslation } from '@/lib/i18n';
-import * as routeCache from '@/lib/cache/dashboard-cache';
 import { DASHBOARD_AUTO_REFRESH_MS } from '@/lib/constants/dashboard';
 import { canDeletePatient } from '@/lib/permissions/cursor-md-matrix';
 import { extractArrayData, extractPaginationData } from '@/lib/utils/api-response-extractor';
@@ -44,9 +43,7 @@ import { addRecentSearch, getRecentSearches } from '@/lib/utils/recent-search-ca
 import { showError, showSuccess } from '@/lib/utils/toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-
-const ROUTE_KEY = 'route_patients';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export default function PatientsPage() {
   const router = useRouter();
@@ -75,33 +72,6 @@ export default function PatientsPage() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [viewMode, setViewMode] = useState('table');
 
-  // Cache key includes locale so stored DB data (e.g. localized names) matches current UI language
-  const patientsCacheId =
-    tenantId && localeCode ? `${tenantId}:${localeCode}` : tenantId;
-
-  // Hydrate from localStorage before paint (no flash, no hydration mismatch)
-  // Only use cache if it matches current pageSize and locale (so names are in correct language)
-  useLayoutEffect(() => {
-    if (!patientsCacheId) return;
-    const cached = routeCache.getData(ROUTE_KEY, patientsCacheId);
-    if (cached && cached.patients != null && Array.isArray(cached.patients)) {
-      const cachedPageSize = cached.pageSize ?? 25;
-      const isValidCache =
-        cachedPageSize === pageSize &&
-        cached.patients.length > 5 &&
-        (cached.patients.length >= pageSize || cached.patients.length === cached.total);
-
-      if (isValidCache) {
-        setPatients(cached.patients ?? []);
-        setCurrentPage(cached.currentPage ?? 1);
-        setTotalPages(cached.totalPages ?? 1);
-        setTotalCount(cached.total ?? 0);
-        setLoading(false);
-      } else {
-        routeCache.clear(ROUTE_KEY, patientsCacheId);
-      }
-    }
-  }, [patientsCacheId, pageSize]);
   const [showModal, setShowModal] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
   const [showRecentDropdown, setShowRecentDropdown] = useState(false);
@@ -207,14 +177,6 @@ export default function PatientsPage() {
           setTotalPages(pagination.totalPages);
           setTotalCount(pagination.total ?? 0);
           if (effectiveSearch) addRecentSearch('patients', effectiveSearch);
-          if (patientsCacheId)
-            routeCache.set(ROUTE_KEY, patientsCacheId, {
-              patients: patientsList,
-              totalPages: pagination.totalPages,
-              currentPage,
-              pageSize,
-              total: pagination.total,
-            });
         }
       } catch (error) {
         logger.error('Failed to fetch patients', error);
@@ -232,7 +194,6 @@ export default function PatientsPage() {
     [
       tenantId,
       localeCode,
-      patientsCacheId,
       currentPage,
       pageSize,
       searchTerm,
@@ -271,16 +232,8 @@ export default function PatientsPage() {
   useEffect(() => {
     if (!authLoading && user) {
       fetchSettings();
-      if (patientsCacheId) {
-        const cached = routeCache.getData(ROUTE_KEY, patientsCacheId);
-        if (cached && (cached.pageSize ?? 25) !== pageSize) {
-          routeCache.clear(ROUTE_KEY, patientsCacheId);
-        }
-      }
-      // Fetch fresh data (will show cached data first, then update)
       fetchPatients(!!debouncedSearchTerm);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     authLoading,
     user,
@@ -315,7 +268,6 @@ export default function PatientsPage() {
         }
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, debouncedSearchTerm, statusFilter, fetchPatients]);
 
   // Handle ESC key to close modal
@@ -398,19 +350,6 @@ export default function PatientsPage() {
             return updated;
           });
 
-          // Update cache
-          if (tenantId) {
-            const cached = routeCache.getData(ROUTE_KEY, tenantId);
-            if (cached) {
-              routeCache.set(ROUTE_KEY, tenantId, {
-                patients: [newPatient, ...(cached.patients || [])],
-                totalPages: cached.totalPages,
-                currentPage: cached.currentPage || 1,
-                pageSize: cached.pageSize || pageSize,
-                total: (cached.total || 0) + 1,
-              });
-            }
-          }
         }
 
         // Refresh in background to sync with server (silent)
@@ -652,7 +591,6 @@ export default function PatientsPage() {
                             const res = await apiClient.delete(`/patients/${id}`);
                             if (res?.success) {
                               showSuccess(t('patients.patientDeleted'));
-                              routeCache.clear(ROUTE_KEY, patientsCacheId);
                               fetchPatients(false, false);
                             } else {
                               showError(res?.error?.message || t('patients.deleteFailed'));
@@ -679,7 +617,7 @@ export default function PatientsPage() {
         },
       },
     ],
-    [t, router, user, openConfirm, patientsCacheId, fetchPatients, getGenderLabel, formatPhoneForLocale, dateLocale, locale, localeCode],
+    [t, router, user, openConfirm, fetchPatients, getGenderLabel, formatPhoneForLocale, dateLocale, locale, localeCode],
   );
 
   // Redirect if not authenticated (non-blocking)
@@ -966,10 +904,6 @@ export default function PatientsPage() {
                     value={pageSize}
                     onChange={(e) => {
                       const newSize = parseInt(e.target.value, 10);
-                      // Clear cache when changing page size to force fresh fetch
-                      if (patientsCacheId) {
-                        routeCache.clear(ROUTE_KEY, patientsCacheId);
-                      }
                       setPageSize(newSize);
                       setCurrentPage(1); // Reset to first page when changing page size
                     }}

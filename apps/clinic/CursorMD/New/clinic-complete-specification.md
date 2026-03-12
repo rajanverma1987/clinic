@@ -645,7 +645,6 @@ clinic-backend/
    - Performance metrics
 
 3. **Deployment:**
-   - Docker containerization
    - Kubernetes orchestration
    - CI/CD pipeline
    - Blue-green deployment

@@ -241,31 +241,7 @@ GET /api/invoices?status=pending 403 in 13886ms
 - Troubleshooting section
 - Scaling strategies
 
-### 3. Docker Configuration
-
-📄 **`Dockerfile`**
-- Multi-stage build (3 stages)
-- Optimized for production (~500MB final image)
-- Non-root user for security
-- Health checks included
-
-📄 **`docker-compose.yml`**
-- Complete stack (App + MongoDB + Redis + TURN)
-- Development and production profiles
-- Health checks for all services
-- Volume management
-
-📄 **`.dockerignore`**
-- Optimized build context
-- Excludes unnecessary files
-
-📄 **`DOCKER_QUICK_START.md`**
-- Quick start guide
-- Common commands
-- Troubleshooting
-- Performance optimization
-
-### 4. Maintenance Scripts
+### 3. Maintenance Scripts
 
 📄 **`scripts/fix-encryption-warnings.js`**
 - Handles encryption key changes
@@ -291,22 +267,7 @@ GET /api/invoices?status=pending 403 in 13886ms
 
 ---
 
-### Option 2: Docker 🐳 Highly Recommended
-
-**Pros:**
-- Consistent environment
-- Easy scaling
-- Complete stack included
-
-**Cons:**
-- Docker knowledge required
-- Slightly higher resource usage
-
-**Best for:** Kubernetes, ECS, Cloud Run, any containerized environment
-
----
-
-### Option 3: Vercel ⚡ Easiest
+### Option 2: Vercel ⚡ Easiest
 
 **Pros:**
 - Zero config deployment
@@ -322,7 +283,7 @@ GET /api/invoices?status=pending 403 in 13886ms
 
 ---
 
-### Option 4: AWS Elastic Beanstalk
+### Option 3: AWS Elastic Beanstalk
 
 **Pros:**
 - Managed infrastructure
@@ -337,7 +298,7 @@ GET /api/invoices?status=pending 403 in 13886ms
 
 ---
 
-### Option 5: Google Cloud Run
+### Option 4: Google Cloud Run
 
 **Pros:**
 - Serverless containers
@@ -352,7 +313,7 @@ GET /api/invoices?status=pending 403 in 13886ms
 
 ---
 
-### Option 6: Azure App Service
+### Option 5: Azure App Service
 
 **Pros:**
 - Managed service
@@ -584,9 +545,8 @@ GET /api/invoices?status=pending 403 in 13886ms
 
 1. ✅ **Production Readiness Checklist** (`CursorMD/PRODUCTION_READINESS_CHECKLIST.md`)
 2. ✅ **Production Deployment Guide** (`PRODUCTION_DEPLOYMENT.md`)
-3. ✅ **Docker Quick Start** (`DOCKER_QUICK_START.md`)
-4. ✅ **Environment Template** (`.env.production.template`)
-5. ✅ **This Report** (`PRODUCTION_READINESS_FINAL_REPORT.md`)
+3. ✅ **Environment Template** (`.env.production.template`)
+4. ✅ **This Report** (`PRODUCTION_READINESS_FINAL_REPORT.md`)
 
 ### Scripts Provided
 
@@ -636,26 +596,9 @@ GET /api/invoices?status=pending 403 in 13886ms
 
 For **first production deployment**, I recommend:
 
-**Option: Docker + Cloud Run (or equivalent)**
+**Option: Traditional Node.js (PM2/systemd) or a managed platform (Vercel, Cloud Run, etc.)**
 
-**Reasons:**
-1. ✅ Easiest scaling
-2. ✅ Complete stack included
-3. ✅ Consistent environment
-4. ✅ Easy rollback
-5. ✅ Health checks included
-
-**Steps:**
-```bash
-# 1. Build Docker image
-docker build -t clinic-app:v1.0.0 .
-
-# 2. Test locally
-docker-compose up -d
-
-# 3. Deploy to cloud
-# (Google Cloud Run, AWS ECS, Azure Container Instances, etc.)
-```
+See `PRODUCTION_DEPLOYMENT.md` for deployment options and steps.
 
 ---
 
@@ -678,8 +621,7 @@ The Clinic SaaS application is **technically production-ready**:
 ✅ **Architecture is solid** (enterprise-level patterns)
 ✅ **Security is strong** (encryption, auth, RBAC)
 ✅ **Performance is optimized** (caching, code splitting)
-✅ **Documentation is complete** (5 comprehensive guides)
-✅ **Docker support** (containerized deployment ready)
+✅ **Documentation is complete** (comprehensive guides)
 
 **However**, before going live:
 
@@ -734,11 +676,7 @@ The Clinic SaaS application is **technically production-ready**:
 ```
 apps/clinic/
 ├── .env.production.template              # Production environment template
-├── .dockerignore                         # Docker build context exclusions
-├── Dockerfile                            # Multi-stage production build
-├── docker-compose.yml                    # Complete stack orchestration
-├── PRODUCTION_DEPLOYMENT.md              # 50+ page deployment guide
-├── DOCKER_QUICK_START.md                 # Docker quick start guide
+├── PRODUCTION_DEPLOYMENT.md              # Deployment guide
 ├── PRODUCTION_READINESS_FINAL_REPORT.md  # This report
 ├── pages/
 │   └── _document.js                      # Build fix (Pages Router)

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useI18n } from '@/contexts/I18nContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 
 function DashboardListCardInner({
@@ -28,6 +29,7 @@ function DashboardListCardInner({
   virtualListHeight = 400,
 }) {
   const { t } = useI18n();
+  const router = useRouter();
   if (loading) {
     return (
       <Card
@@ -150,7 +152,7 @@ function DashboardListCardInner({
                   if (onSeeAll) {
                     onSeeAll();
                   } else if (seeAllLink) {
-                    window.location.href = seeAllLink;
+                    router.push(seeAllLink);
                   }
                 }}
                 className='section-header-action text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/30'
