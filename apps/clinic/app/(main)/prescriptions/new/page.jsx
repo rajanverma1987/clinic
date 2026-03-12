@@ -155,7 +155,7 @@ function NewPrescriptionPageContent() {
     setPatients(filtered);
   }, [appointmentsFromSWR, patientsFromSWR, patientIdFromUrl]);
 
-  const [items, setItems] = useState([
+  const INITIAL_ITEMS = [
     {
       itemType: 'drug',
       drugId: '',
@@ -170,7 +170,8 @@ function NewPrescriptionPageContent() {
       route: 'oral',
       refills: 0,
     },
-  ]);
+  ];
+  const [items, setItems] = useState([...INITIAL_ITEMS.map((i) => ({ ...i }))]);
   const [labTests] = useState([
     { code: 'CBC', name: 'Complete Blood Count' },
     { code: 'LIPID', name: 'Lipid Profile' },
@@ -626,6 +627,25 @@ function NewPrescriptionPageContent() {
       if (response.success) {
         clearDraft();
         showSuccess(t('prescriptions.signedAndSentSuccess'));
+        // Reset form so next time user opens "Create prescription" they get a clean form (avoids old items from auto-save)
+        setItems(INITIAL_ITEMS.map((i) => ({ ...i })));
+        setFormData((prev) => ({
+          patientId: patientIdFromUrl || '',
+          appointmentId: '',
+          clinicalNoteId: '',
+          symptoms: '',
+          diagnosis: '',
+          icd10Codes: [],
+          additionalInstructions: '',
+          validUntil: prev.validUntil || '',
+          refillsAllowed: 0,
+          followUpDate: '',
+          followUpType: 'in-person',
+          followUpAutoSchedule: false,
+          digitalSignature: '',
+          signedByTitle: '',
+          signedByLicense: '',
+        }));
         router.push('/prescriptions');
       } else {
         const errorMessage =

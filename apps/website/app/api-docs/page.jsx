@@ -35,10 +35,9 @@ export default function ApiDocsPage() {
               ]}
             />
 
-            <h1 className='text-h1 text-neutral-900 mb-4'>Documentation & API</h1>
+            <h1 className='text-h1 text-neutral-900 mb-4'>{t('apiDocs.title')}</h1>
             <p className='text-neutral-700 mb-8 text-base leading-relaxed max-w-2xl'>
-              Access user guides, API documentation, and integration resources for Doctor&apos;s
-              Clinic.
+              {t('apiDocs.subtitle')}
             </p>
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
@@ -62,13 +61,13 @@ export default function ApiDocsPage() {
                       />
                     </svg>
                   </div>
-                  <h2 className='text-xl font-bold text-neutral-900'>User Guides</h2>
+                  <h2 className='text-xl font-bold text-neutral-900'>{t('apiDocs.userGuidesTitle')}</h2>
                 </div>
                 <p className='text-neutral-600 text-sm mb-4'>
-                  Learn how to get started, manage appointments, patients, billing, and more.
+                  {t('apiDocs.userGuidesDesc')}
                 </p>
                 <span className='text-primary-600 font-medium group-hover:underline'>
-                  Visit Support Center →
+                  {t('apiDocs.visitSupportCenter')}
                 </span>
               </Link>
 
@@ -89,35 +88,33 @@ export default function ApiDocsPage() {
                       />
                     </svg>
                   </div>
-                  <h2 className='text-xl font-bold text-neutral-900'>API Documentation</h2>
+                  <h2 className='text-xl font-bold text-neutral-900'>{t('apiDocs.apiDocTitle')}</h2>
                 </div>
                 <p className='text-neutral-600 text-sm mb-4'>
-                  REST API documentation is available for enterprise customers. Contact us for API
-                  access.
+                  {t('apiDocs.apiDocDesc')}
                 </p>
                 <Link href='/support/contact'>
                   <Button variant='outline' size='md'>
-                    Request API Access
+                    {t('apiDocs.requestApiAccess')}
                   </Button>
                 </Link>
               </div>
             </div>
 
             <div className='mt-12 p-6 bg-primary-50 rounded-xl border border-primary-200'>
-              <h3 className='text-lg font-semibold text-neutral-900 mb-2'>Need Help?</h3>
+              <h3 className='text-lg font-semibold text-neutral-900 mb-2'>{t('apiDocs.needHelp')}</h3>
               <p className='text-neutral-700 text-sm mb-4'>
-                Our support team is available to answer your questions and help you integrate with
-                Doctor&apos;s Clinic.
+                {t('apiDocs.needHelpDesc')}
               </p>
               <div className='flex flex-wrap gap-4'>
                 <Link href='/support/contact'>
                   <Button variant='primary' size='md'>
-                    Contact Support
+                    {t('apiDocs.contactSupport')}
                   </Button>
                 </Link>
                 <a href={`${clinicAppUrl}/register`}>
                   <Button variant='secondary' size='md'>
-                    Start Free Trial
+                    {t('apiDocs.startFreeTrial')}
                   </Button>
                 </a>
               </div>

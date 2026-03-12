@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/contexts/I18nContext';
+
 /**
  * Critical Disclaimers Component
  * Shows only mandatory/required disclaimers - nothing extra
@@ -13,40 +15,27 @@
  * - Spacing: 12px padding, 12px gap
  */
 export function Disclaimer({ type = 'general', className = '' }) {
+  const { t } = useI18n();
   const disclaimers = {
     general: {
-      title: 'HIPAA Compliance Notice',
-      items: [
-        'This system stores Protected Health Information (PHI) and must comply with HIPAA regulations.',
-        'Unauthorized access or disclosure of PHI is prohibited and may result in legal action.',
-      ],
+      title: t('disclaimer.generalTitle'),
+      items: [t('disclaimer.generalItem1'), t('disclaimer.generalItem2')],
     },
     medical: {
-      title: 'Medical Disclaimer',
-      items: [
-        'This system does not provide medical advice, diagnosis, or treatment.',
-        'In case of medical emergency, contact emergency services immediately (e.g., 911).',
-      ],
+      title: t('disclaimer.medicalTitle'),
+      items: [t('disclaimer.medicalItem1'), t('disclaimer.medicalItem2')],
     },
     prescription: {
-      title: 'Prescription Disclaimer',
-      items: [
-        'Prescriptions are issued by licensed healthcare providers only.',
-        'Patients must follow prescribed dosages and instructions exactly as directed.',
-      ],
+      title: t('disclaimer.prescriptionTitle'),
+      items: [t('disclaimer.prescriptionItem1'), t('disclaimer.prescriptionItem2')],
     },
     telemedicine: {
-      title: 'Telemedicine Limitations',
-      items: [
-        'For emergencies, seek immediate in-person medical care.',
-      ],
+      title: t('disclaimer.telemedicineTitle'),
+      items: [t('disclaimer.telemedicineItem1')],
     },
     data: {
-      title: 'HIPAA Compliance Notice',
-      items: [
-        'All Protected Health Information (PHI) is encrypted and stored securely.',
-        'Data breaches must be reported immediately as required by HIPAA.',
-      ],
+      title: t('disclaimer.dataTitle'),
+      items: [t('disclaimer.dataItem1'), t('disclaimer.dataItem2')],
     },
   };
 

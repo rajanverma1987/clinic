@@ -132,7 +132,7 @@ export function PageHeader({
             <Button
               type='button'
               variant='ghost'
-              onClick={onOpenSearch}
+              onClick={onOpenSearch ?? (() => window.dispatchEvent(new CustomEvent('openSearch')))}
               className='page-header__search'
               aria-label={t('common.ariaLabelSearch')}
             >
