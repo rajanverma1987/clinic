@@ -1,14 +1,14 @@
+'use client';
+
 import { Footer } from '@/components/marketing/Footer';
 import { Header } from '@/components/marketing/Header';
 import { ClientBreadcrumb } from '@/components/ui/ClientBreadcrumb';
+import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 
-export const metadata = {
-  title: "Privacy Policy | Doctor's Clinic",
-  description: "Privacy Policy for Doctor's Clinic - Clinic Management System",
-};
-
 export default function PrivacyPage() {
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'ar' ? 'ar-EG' : locale === 'es' ? 'es' : 'en-US';
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
@@ -24,12 +24,12 @@ export default function PrivacyPage() {
           {/* Header Section */}
           <div className='mb-12'>
             <h1 className='text-h1 text-neutral-900 mb-4'>
-              Privacy Policy
+              {t('privacy.pageTitle')}
             </h1>
             <div className='flex items-center gap-3'>
               <p className='text-body-md text-neutral-600'>
-                Last updated:{' '}
-                {new Date().toLocaleDateString('en-US', {
+                {t('privacy.lastUpdated')}{' '}
+                {new Date().toLocaleDateString(dateLocale, {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
                   className='text-primary-700 font-semibold'
                   style={{ fontSize: '12px', fontWeight: '600' }}
                 >
-                  HIPAA & GDPR Compliant
+                  {t('privacy.hipaaGdprBadge')}
                 </span>
               </div>
             </div>
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                1. Introduction
+                {t('privacy.section1Title')}
               </h2>
               <p
                 className='text-neutral-700 mb-4'
@@ -83,11 +83,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                Welcome to Doctor&apos;s Clinic (&quot;we,&quot; &quot;our,&quot; or
-                &quot;us&quot;). We are committed to protecting your privacy and ensuring the
-                security of your personal information and Protected Health Information (PHI). This
-                Privacy Policy explains how we collect, use, disclose, and safeguard your
-                information when you use our clinic management system.
+                {t('privacy.section1P1')}
               </p>
               <p
                 className='text-neutral-700'
@@ -97,10 +93,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                By using Doctor&apos;s Clinic, you agree to the collection and use of information in
-                accordance with this policy. We comply with applicable data protection laws,
-                including HIPAA (Health Insurance Portability and Accountability Act) in the United
-                States and GDPR (General Data Protection Regulation) in the European Union.
+                {t('privacy.section1P2')}
               </p>
             </section>
 
@@ -114,7 +107,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                2. Information We Collect
+                {t('privacy.section2Title')}
               </h2>
               <h3
                 className='text-neutral-900 mb-3'
@@ -125,7 +118,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                2.1 Personal Information
+                {t('privacy.section2_1Title')}
               </h3>
               <p
                 className='text-neutral-700 mb-4'
@@ -135,16 +128,16 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                We collect information that you provide directly to us, including:
+                {t('privacy.section2_1Intro')}
               </p>
               <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{ fontSize: '16px', lineHeight: '26px' }}
               >
-                <li>Name, email address, phone number, and contact information</li>
-                <li>Account credentials and authentication information</li>
-                <li>Clinic and practice information</li>
-                <li>Billing and payment information</li>
+                <li>{t('privacy.section2_1Li1')}</li>
+                <li>{t('privacy.section2_1Li2')}</li>
+                <li>{t('privacy.section2_1Li3')}</li>
+                <li>{t('privacy.section2_1Li4')}</li>
               </ul>
 
               <h3
@@ -156,7 +149,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                2.2 Protected Health Information (PHI)
+                {t('privacy.section2_2Title')}
               </h3>
               <p
                 className='text-neutral-700 mb-4'
@@ -166,18 +159,17 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                As a healthcare management platform, we process PHI on behalf of healthcare
-                providers. This includes:
+                {t('privacy.section2_2Intro')}
               </p>
               <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{ fontSize: '16px', lineHeight: '26px' }}
               >
-                <li>Patient medical records and history</li>
-                <li>Clinical notes and diagnoses</li>
-                <li>Prescription information</li>
-                <li>Appointment and treatment records</li>
-                <li>Insurance and billing information</li>
+                <li>{t('privacy.section2_2Li1')}</li>
+                <li>{t('privacy.section2_2Li2')}</li>
+                <li>{t('privacy.section2_2Li3')}</li>
+                <li>{t('privacy.section2_2Li4')}</li>
+                <li>{t('privacy.section2_2Li5')}</li>
               </ul>
               <p
                 className='text-neutral-700'
@@ -187,8 +179,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                We act as a Business Associate under HIPAA and process PHI strictly in accordance
-                with our Business Associate Agreement and applicable regulations.
+                {t('privacy.section2_2Outro')}
               </p>
             </section>
 
@@ -202,7 +193,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                3. How We Use Your Information
+                {t('privacy.section3Title')}
               </h2>
               <p
                 className='text-neutral-700 mb-4'
@@ -212,18 +203,18 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                We use collected information to:
+                {t('privacy.section3Intro')}
               </p>
               <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{ fontSize: '16px', lineHeight: '26px' }}
               >
-                <li>Provide, maintain, and improve our services</li>
-                <li>Process transactions and manage billing</li>
-                <li>Send appointment reminders and notifications (with your consent)</li>
-                <li>Comply with legal obligations and regulatory requirements</li>
-                <li>Detect and prevent fraud, abuse, and security threats</li>
-                <li>Respond to your inquiries and provide customer support</li>
+                <li>{t('privacy.section3Li1')}</li>
+                <li>{t('privacy.section3Li2')}</li>
+                <li>{t('privacy.section3Li3')}</li>
+                <li>{t('privacy.section3Li4')}</li>
+                <li>{t('privacy.section3Li5')}</li>
+                <li>{t('privacy.section3Li6')}</li>
               </ul>
               <p
                 className='text-neutral-700'
@@ -233,8 +224,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                We do not use PHI for marketing purposes or share it with third parties except as
-                described in this policy or as required by law.
+                {t('privacy.section3Outro')}
               </p>
             </section>
 
@@ -248,7 +238,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                4. Data Security
+                {t('privacy.section4Title')}
               </h2>
               <p
                 className='text-neutral-700 mb-4'
@@ -258,31 +248,31 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                We implement industry-standard security measures to protect your information:
+                {t('privacy.section4Intro')}
               </p>
               <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{ fontSize: '16px', lineHeight: '26px' }}
               >
                 <li>
-                  <strong className='text-neutral-900'>Encryption:</strong> AES-256-GCM encryption
-                  for PHI fields at rest and in transit
+                  <strong className='text-neutral-900'>{t('privacy.section4Encryption')}:</strong>{' '}
+                  {t('privacy.section4EncryptionText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Access Controls:</strong> Role-based access
-                  control (RBAC) and multi-factor authentication
+                  <strong className='text-neutral-900'>{t('privacy.section4Access')}:</strong>{' '}
+                  {t('privacy.section4AccessText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Audit Logging:</strong> Comprehensive audit
-                  trails for all data access and modifications
+                  <strong className='text-neutral-900'>{t('privacy.section4Audit')}:</strong>{' '}
+                  {t('privacy.section4AuditText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Network Security:</strong> Secure connections
-                  using TLS/SSL protocols
+                  <strong className='text-neutral-900'>{t('privacy.section4Network')}:</strong>{' '}
+                  {t('privacy.section4NetworkText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Regular Security Audits:</strong> Ongoing
-                  security assessments and vulnerability testing
+                  <strong className='text-neutral-900'>{t('privacy.section4Regular')}:</strong>{' '}
+                  {t('privacy.section4RegularText')}
                 </li>
               </ul>
             </section>
@@ -297,7 +287,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                5. Data Sharing and Disclosure
+                {t('privacy.section5Title')}
               </h2>
               <p
                 className='text-neutral-700 mb-4'
@@ -307,29 +297,27 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                We do not sell, trade, or rent your personal information or PHI. We may share
-                information only in the following circumstances:
+                {t('privacy.section5Intro')}
               </p>
               <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{ fontSize: '16px', lineHeight: '26px' }}
               >
                 <li>
-                  <strong className='text-neutral-900'>Service Providers:</strong> With trusted
-                  third-party service providers who assist in operating our platform (under strict
-                  confidentiality agreements)
+                  <strong className='text-neutral-900'>{t('privacy.section5Service')}:</strong>{' '}
+                  {t('privacy.section5ServiceText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Legal Requirements:</strong> When required by
-                  law, court order, or government regulation
+                  <strong className='text-neutral-900'>{t('privacy.section5Legal')}:</strong>{' '}
+                  {t('privacy.section5LegalText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Business Transfers:</strong> In connection
-                  with a merger, acquisition, or sale of assets (with prior notice)
+                  <strong className='text-neutral-900'>{t('privacy.section5Business')}:</strong>{' '}
+                  {t('privacy.section5BusinessText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>With Your Consent:</strong> When you
-                  explicitly authorize us to share information
+                  <strong className='text-neutral-900'>{t('privacy.section5Consent')}:</strong>{' '}
+                  {t('privacy.section5ConsentText')}
                 </li>
               </ul>
             </section>
@@ -344,7 +332,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                6. Your Rights (GDPR)
+                {t('privacy.section6Title')}
               </h2>
               <p
                 className='text-neutral-700 mb-4'
@@ -354,36 +342,35 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                If you are located in the European Economic Area (EEA), you have the following
-                rights:
+                {t('privacy.section6Intro')}
               </p>
               <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{ fontSize: '16px', lineHeight: '26px' }}
               >
                 <li>
-                  <strong className='text-neutral-900'>Right to Access:</strong> Request a copy of
-                  your personal data
+                  <strong className='text-neutral-900'>{t('privacy.section6Access')}:</strong>{' '}
+                  {t('privacy.section6AccessText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Right to Rectification:</strong> Request
-                  correction of inaccurate data
+                  <strong className='text-neutral-900'>{t('privacy.section6Rectification')}:</strong>{' '}
+                  {t('privacy.section6RectificationText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Right to Erasure:</strong> Request deletion
-                  of your data (subject to legal requirements)
+                  <strong className='text-neutral-900'>{t('privacy.section6Erasure')}:</strong>{' '}
+                  {t('privacy.section6ErasureText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Right to Restrict Processing:</strong>{' '}
-                  Request limitation of data processing
+                  <strong className='text-neutral-900'>{t('privacy.section6Restrict')}:</strong>{' '}
+                  {t('privacy.section6RestrictText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Right to Data Portability:</strong> Receive
-                  your data in a structured, machine-readable format
+                  <strong className='text-neutral-900'>{t('privacy.section6Portability')}:</strong>{' '}
+                  {t('privacy.section6PortabilityText')}
                 </li>
                 <li>
-                  <strong className='text-neutral-900'>Right to Object:</strong> Object to
-                  processing of your data for certain purposes
+                  <strong className='text-neutral-900'>{t('privacy.section6Object')}:</strong>{' '}
+                  {t('privacy.section6ObjectText')}
                 </li>
               </ul>
               <p
@@ -394,7 +381,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                To exercise these rights, please contact us at{' '}
+                {t('privacy.section6Contact')}{' '}
                 <a
                   href='mailto:privacy@doctorsclinic.services'
                   className='text-primary-600 hover:text-primary-700 hover:underline'
@@ -415,7 +402,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                7. HIPAA Compliance
+                {t('privacy.section7Title')}
               </h2>
               <p
                 className='text-neutral-700 mb-4'
@@ -425,17 +412,17 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                As a Business Associate, we:
+                {t('privacy.section7Intro')}
               </p>
               <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{ fontSize: '16px', lineHeight: '26px' }}
               >
-                <li>Maintain appropriate administrative, physical, and technical safeguards</li>
-                <li>Report any security incidents or breaches as required by law</li>
-                <li>Ensure workforce members are trained on HIPAA requirements</li>
-                <li>Execute Business Associate Agreements with covered entities</li>
-                <li>Conduct regular risk assessments and security audits</li>
+                <li>{t('privacy.section7Li1')}</li>
+                <li>{t('privacy.section7Li2')}</li>
+                <li>{t('privacy.section7Li3')}</li>
+                <li>{t('privacy.section7Li4')}</li>
+                <li>{t('privacy.section7Li5')}</li>
               </ul>
             </section>
 
@@ -449,7 +436,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                8. Data Retention
+                {t('privacy.section8Title')}
               </h2>
               <p
                 className='text-neutral-700 mb-4'
@@ -459,15 +446,15 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                We retain your information for as long as necessary to:
+                {t('privacy.section8Intro')}
               </p>
               <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{ fontSize: '16px', lineHeight: '26px' }}
               >
-                <li>Provide our services to you</li>
-                <li>Comply with legal and regulatory obligations</li>
-                <li>Resolve disputes and enforce agreements</li>
+                <li>{t('privacy.section8Li1')}</li>
+                <li>{t('privacy.section8Li2')}</li>
+                <li>{t('privacy.section8Li3')}</li>
               </ul>
               <p
                 className='text-neutral-700'
@@ -477,10 +464,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                PHI is retained in accordance with applicable healthcare regulations, which may
-                require retention for extended periods. Upon account termination, we will securely
-                delete or anonymize data in accordance with our retention policies and legal
-                requirements.
+                {t('privacy.section8Outro')}
               </p>
             </section>
 
@@ -494,7 +478,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                9. International Data Transfers
+                {t('privacy.section9Title')}
               </h2>
               <p
                 className='text-neutral-700 mb-4'
@@ -504,16 +488,15 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                Your information may be transferred to and processed in countries other than your
-                country of residence. We ensure appropriate safeguards are in place, including:
+                {t('privacy.section9Intro')}
               </p>
               <ul
                 className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
                 style={{ fontSize: '16px', lineHeight: '26px' }}
               >
-                <li>Standard Contractual Clauses (SCCs) for GDPR compliance</li>
-                <li>Data processing agreements with service providers</li>
-                <li>Compliance with applicable data protection laws</li>
+                <li>{t('privacy.section9Li1')}</li>
+                <li>{t('privacy.section9Li2')}</li>
+                <li>{t('privacy.section9Li3')}</li>
               </ul>
             </section>
 
@@ -527,7 +510,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                10. Children&apos;s Privacy
+                {t('privacy.section10Title')}
               </h2>
               <p
                 className='text-neutral-700'
@@ -537,9 +520,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                Our services are not intended for individuals under the age of 18. We do not
-                knowingly collect personal information from children. If you believe we have
-                collected information from a child, please contact us immediately.
+                {t('privacy.section10Text')}
               </p>
             </section>
 
@@ -553,7 +534,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                11. Changes to This Privacy Policy
+                {t('privacy.section11Title')}
               </h2>
               <p
                 className='text-neutral-700'
@@ -563,10 +544,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                We may update this Privacy Policy from time to time. We will notify you of any
-                material changes by posting the new policy on this page and updating the &quot;Last
-                updated&quot; date. For significant changes, we may also notify you via email or
-                through our platform.
+                {t('privacy.section11Text')}
               </p>
             </section>
 
@@ -580,7 +558,7 @@ export default function PrivacyPage() {
                   fontWeight: '600',
                 }}
               >
-                12. Contact Us
+                {t('privacy.section12Title')}
               </h2>
               <p
                 className='text-neutral-700 mb-4'
@@ -590,8 +568,7 @@ export default function PrivacyPage() {
                   letterSpacing: '-0.01em',
                 }}
               >
-                If you have questions or concerns about this Privacy Policy or our data practices,
-                please contact us:
+                {t('privacy.section12Intro')}
               </p>
               <div className='bg-neutral-100 border border-neutral-200 p-6 rounded-xl'>
                 <p
@@ -601,7 +578,7 @@ export default function PrivacyPage() {
                     lineHeight: '24px',
                   }}
                 >
-                  <strong className='text-neutral-900'>Email:</strong>{' '}
+                  <strong className='text-neutral-900'>{t('privacy.section12Email')}:</strong>{' '}
                   <a
                     href='mailto:privacy@doctorsclinic.services'
                     className='text-primary-600 hover:text-primary-700 hover:underline'
@@ -616,7 +593,7 @@ export default function PrivacyPage() {
                     lineHeight: '24px',
                   }}
                 >
-                  <strong className='text-neutral-900'>Data Protection Officer:</strong>{' '}
+                  <strong className='text-neutral-900'>{t('privacy.section12DPO')}:</strong>{' '}
                   <a
                     href='mailto:dpo@doctorsclinic.services'
                     className='text-primary-600 hover:text-primary-700 hover:underline'
@@ -631,12 +608,12 @@ export default function PrivacyPage() {
                     lineHeight: '24px',
                   }}
                 >
-                  <strong className='text-neutral-900'>Support:</strong>{' '}
+                  <strong className='text-neutral-900'>{t('privacy.section12Support')}:</strong>{' '}
                   <Link
                     href='/support/contact'
                     className='text-primary-600 hover:text-primary-700 hover:underline'
                   >
-                    Contact Support
+                    {t('privacy.contactSupport')}
                   </Link>
                 </p>
               </div>

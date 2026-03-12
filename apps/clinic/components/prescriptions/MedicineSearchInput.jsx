@@ -1,7 +1,8 @@
 'use client';
 
 import { Input } from '@/components/ui/Input';
-import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export function MedicineSearchInput({
   drugs,
@@ -15,8 +16,36 @@ export function MedicineSearchInput({
   const [filteredDrugs, setFilteredDrugs] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 200 });
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  const updateDropdownPosition = useCallback(() => {
+    if (!inputRef.current) return;
+    const rect = inputRef.current.getBoundingClientRect();
+    setDropdownPosition({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: Math.max(rect.width, 280),
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (showDropdown && inputRef.current) {
+      updateDropdownPosition();
+    }
+  }, [showDropdown, filteredDrugs.length, updateDropdownPosition]);
+
+  useEffect(() => {
+    if (!showDropdown) return;
+    const onScrollOrResize = updateDropdownPosition;
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [showDropdown, updateDropdownPosition]);
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -120,8 +149,79 @@ export function MedicineSearchInput({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const dropdownContent =
+    showDropdown && inputRef.current
+      ? createPortal(
+          <>
+            {filteredDrugs.length > 0 ? (
+              <div
+                ref={dropdownRef}
+                className='MedicineSearchInput-dropdown bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-lg shadow-lg max-h-60 overflow-y-auto'
+                style={{
+                  position: 'fixed',
+                  zIndex: 10060,
+                  top: dropdownPosition.top,
+                  left: dropdownPosition.left,
+                  width: dropdownPosition.width,
+                  minWidth: 280,
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+                onMouseLeave={() => setSelectedIndex(-1)}
+              >
+                {filteredDrugs.map((drug, index) => (
+                  <div
+                    key={drug._id}
+                    role='option'
+                    aria-selected={index === selectedIndex}
+                    className={`px-4 py-3 cursor-pointer transition-colors rounded-none ${
+                      index === selectedIndex
+                        ? 'bg-primary-50 dark:bg-neutral-600'
+                        : 'bg-transparent dark:bg-transparent'
+                    } hover:bg-primary-50 dark:hover:bg-neutral-600 ${index === 0 ? 'rounded-t-lg' : ''} ${
+                      index === filteredDrugs.length - 1 ? 'rounded-b-lg' : ''
+                    }`}
+                    onClick={() => handleSelect(drug)}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                  >
+                    <div className='font-medium text-neutral-900 dark:text-white'>{drug.name}</div>
+                    <div className='text-sm text-neutral-600 dark:text-neutral-300'>
+                      {drug.strength && <span>{drug.strength}</span>}
+                      {drug.strength && drug.form && <span> • </span>}
+                      {drug.form && <span>{drug.form}</span>}
+                      {drug.manufacturer && (
+                        <>
+                          <span> • </span>
+                          <span>{drug.manufacturer}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : searchQuery.trim() ? (
+              <div
+                ref={dropdownRef}
+                className='MedicineSearchInput-dropdown bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-lg shadow-lg p-4 text-center text-neutral-500 dark:text-neutral-400'
+                style={{
+                  position: 'fixed',
+                  zIndex: 10060,
+                  top: dropdownPosition.top,
+                  left: dropdownPosition.left,
+                  width: dropdownPosition.width,
+                  minWidth: 280,
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                No medicines found
+              </div>
+            ) : null}
+          </>,
+          document.body
+        )
+      : null;
+
   return (
-    <div>
+    <div className='MedicineSearchInput-wrap'>
       <Input
         ref={inputRef}
         type='text'
@@ -136,45 +236,7 @@ export function MedicineSearchInput({
         placeholder={placeholder}
         className={className}
       />
-      {showDropdown && filteredDrugs.length > 0 && (
-        <div
-          ref={dropdownRef}
-          className='mt-1 w-full bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto'
-          style={{ zIndex: 10060 }}
-          onMouseDown={(e) => e.preventDefault()}
-        >
-          {filteredDrugs.map((drug, index) => (
-            <div
-              key={drug._id}
-              className={`px-4 py-3 cursor-pointer hover:bg-primary-50 transition-colors ${
-                index === selectedIndex ? 'bg-primary-50' : ''
-              } ${index === 0 ? 'rounded-t-lg' : ''} ${
-                index === filteredDrugs.length - 1 ? 'rounded-b-lg' : ''
-              }`}
-              onClick={() => handleSelect(drug)}
-              onMouseEnter={() => setSelectedIndex(index)}
-            >
-              <div className='font-medium text-neutral-900'>{drug.name}</div>
-              <div className='text-sm text-neutral-600'>
-                {drug.strength && <span>{drug.strength}</span>}
-                {drug.strength && drug.form && <span> • </span>}
-                {drug.form && <span>{drug.form}</span>}
-                {drug.manufacturer && (
-                  <>
-                    <span> • </span>
-                    <span>{drug.manufacturer}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {showDropdown && searchQuery.trim() && filteredDrugs.length === 0 && (
-        <div className='mt-1 w-full bg-white border border-neutral-200 rounded-lg shadow-lg p-4 text-center text-neutral-500' style={{ zIndex: 10060 }}>
-          No medicines found
-        </div>
-      )}
+      {dropdownContent}
     </div>
   );
 }

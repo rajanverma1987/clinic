@@ -8,7 +8,8 @@ import { useI18n } from '@/contexts/I18nContext';
 import Link from 'next/link';
 
 export default function LegalPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const dateLocale = locale === 'ar' ? 'ar-EG' : locale === 'es' ? 'es' : 'en-US';
   return (
     <div className='min-h-screen flex flex-col bg-neutral-50'>
       <Header />
@@ -26,7 +27,7 @@ export default function LegalPage() {
             <div className='flex items-center gap-3 flex-wrap'>
               <p className='text-body-md text-neutral-600'>
                 {t('legal.lastUpdated')}{' '}
-                {new Date().toLocaleDateString('en-US', {
+                {new Date().toLocaleDateString(dateLocale, {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
@@ -57,7 +58,7 @@ export default function LegalPage() {
 
           {/* Quick Navigation */}
           <div className='bg-white rounded-xl border border-neutral-200 shadow-sm p-6 mb-8'>
-            <h2 className='text-h3 text-neutral-900 mb-4'>Quick Navigation</h2>
+            <h2 className='text-h3 text-neutral-900 mb-4'>{t('legal.quickNav')}</h2>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <Link
                 href='#disclaimers'
@@ -76,7 +77,7 @@ export default function LegalPage() {
                     d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
                   />
                 </svg>
-                <span className='text-body-md text-neutral-700'>Disclaimers</span>
+                <span className='text-body-md text-neutral-700'>{t('legal.disclaimers')}</span>
               </Link>
               <Link
                 href='/privacy'
@@ -95,7 +96,7 @@ export default function LegalPage() {
                     d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
                   />
                 </svg>
-                <span className='text-body-md text-neutral-700'>Privacy Policy</span>
+                <span className='text-body-md text-neutral-700'>{t('legal.privacyPolicy')}</span>
               </Link>
               <Link
                 href='/terms'
@@ -114,7 +115,7 @@ export default function LegalPage() {
                     d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
                   />
                 </svg>
-                <span className='text-body-md text-neutral-700'>Terms of Service</span>
+                <span className='text-body-md text-neutral-700'>{t('legal.termsOfService')}</span>
               </Link>
               <Link
                 href='/support/contact'
@@ -133,7 +134,7 @@ export default function LegalPage() {
                     d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
                   />
                 </svg>
-                <span className='text-body-md text-neutral-700'>Contact Support</span>
+                <span className='text-body-md text-neutral-700'>{t('legal.contactSupport')}</span>
               </Link>
             </div>
           </div>
@@ -150,7 +151,7 @@ export default function LegalPage() {
                   fontWeight: '600',
                 }}
               >
-                Important Disclaimers
+                {t('legal.importantDisclaimers')}
               </h2>
               <p
                 className='text-neutral-700 mb-6'
@@ -160,8 +161,7 @@ export default function LegalPage() {
                   fontWeight: '400',
                 }}
               >
-                The following disclaimers apply to all users of this clinic management system.
-                Please read them carefully.
+                {t('legal.disclaimersIntro')}
               </p>
 
               {/* HIPAA Compliance Disclaimer */}
@@ -202,7 +202,7 @@ export default function LegalPage() {
                 fontWeight: '600',
               }}
             >
-              Terms of Service
+              {t('legal.termsSummaryTitle')}
             </h2>
             <p
               className='text-neutral-700 mb-4'
@@ -211,27 +211,24 @@ export default function LegalPage() {
                 lineHeight: '26px',
               }}
             >
-              By using this clinic management system, you agree to our Terms of Service. Key points
-              include:
+              {t('legal.termsSummaryIntro')}
             </p>
             <ul
               className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
               style={{ fontSize: '16px', lineHeight: '26px' }}
             >
-              <li>You must be at least 18 years old to use this service</li>
-              <li>You are responsible for maintaining account security</li>
-              <li>
-                You must comply with all applicable healthcare regulations (HIPAA, GDPR, etc.)
-              </li>
-              <li>You agree not to use the service for illegal purposes</li>
-              <li>We reserve the right to terminate accounts that violate these terms</li>
+              <li>{t('legal.termsPoint1')}</li>
+              <li>{t('legal.termsPoint2')}</li>
+              <li>{t('legal.termsPoint3')}</li>
+              <li>{t('legal.termsPoint4')}</li>
+              <li>{t('legal.termsPoint5')}</li>
             </ul>
             <Link
               href='/terms'
               className='inline-flex items-center text-primary-600 hover:text-primary-700 font-medium'
               style={{ fontSize: '16px' }}
             >
-              Read Full Terms of Service
+              {t('legal.readFullTerms')}
               <svg className='w-4 h-4 ml-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
                   strokeLinecap='round'
@@ -254,7 +251,7 @@ export default function LegalPage() {
                 fontWeight: '600',
               }}
             >
-              Privacy Policy
+              {t('legal.privacySummaryTitle')}
             </h2>
             <p
               className='text-neutral-700 mb-4'
@@ -263,26 +260,25 @@ export default function LegalPage() {
                 lineHeight: '26px',
               }}
             >
-              We are committed to protecting your privacy and the security of Protected Health
-              Information (PHI). Our privacy practices include:
+              {t('legal.privacySummaryIntro')}
             </p>
             <ul
               className='list-disc pl-6 text-neutral-700 mb-4 space-y-2'
               style={{ fontSize: '16px', lineHeight: '26px' }}
             >
-              <li>AES-256-GCM encryption for all PHI at rest and in transit</li>
-              <li>Role-based access control and multi-factor authentication</li>
-              <li>Comprehensive audit logging for all data access</li>
-              <li>Compliance with HIPAA and GDPR regulations</li>
-              <li>No sale or sharing of PHI for marketing purposes</li>
-              <li>Your rights to access, correct, and delete your data (GDPR)</li>
+              <li>{t('legal.privacyBullet1')}</li>
+              <li>{t('legal.privacyBullet2')}</li>
+              <li>{t('legal.privacyBullet3')}</li>
+              <li>{t('legal.privacyBullet4')}</li>
+              <li>{t('legal.privacyBullet5')}</li>
+              <li>{t('legal.privacyBullet6')}</li>
             </ul>
             <Link
               href='/privacy'
               className='inline-flex items-center text-primary-600 hover:text-primary-700 font-medium'
               style={{ fontSize: '16px' }}
             >
-              Read Full Privacy Policy
+              {t('legal.readFullPrivacy')}
               <svg className='w-4 h-4 ml-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path
                   strokeLinecap='round'
@@ -305,7 +301,7 @@ export default function LegalPage() {
                 fontWeight: '600',
               }}
             >
-              Compliance & Regulations
+              {t('legal.complianceTitle')}
             </h2>
             <div className='space-y-6'>
               <div>
@@ -317,7 +313,7 @@ export default function LegalPage() {
                     fontWeight: '600',
                   }}
                 >
-                  HIPAA Compliance (United States)
+                  {t('legal.hipaaTitle')}
                 </h3>
                 <p
                   className='text-neutral-700 mb-3'
@@ -326,17 +322,16 @@ export default function LegalPage() {
                     lineHeight: '26px',
                   }}
                 >
-                  We comply with the Health Insurance Portability and Accountability Act (HIPAA) and
-                  act as a Business Associate. We maintain:
+                  {t('legal.hipaaIntro')}
                 </p>
                 <ul
                   className='list-disc pl-6 text-neutral-700 space-y-2'
                   style={{ fontSize: '16px', lineHeight: '26px' }}
                 >
-                  <li>Administrative, physical, and technical safeguards</li>
-                  <li>Business Associate Agreements with covered entities</li>
-                  <li>Regular security audits and risk assessments</li>
-                  <li>Incident reporting procedures as required by law</li>
+                  <li>{t('legal.hipaaBullet1')}</li>
+                  <li>{t('legal.hipaaBullet2')}</li>
+                  <li>{t('legal.hipaaBullet3')}</li>
+                  <li>{t('legal.hipaaBullet4')}</li>
                 </ul>
               </div>
 
@@ -349,7 +344,7 @@ export default function LegalPage() {
                     fontWeight: '600',
                   }}
                 >
-                  GDPR Compliance (European Union)
+                  {t('legal.gdprTitle')}
                 </h3>
                 <p
                   className='text-neutral-700 mb-3'
@@ -358,19 +353,18 @@ export default function LegalPage() {
                     lineHeight: '26px',
                   }}
                 >
-                  For users in the European Economic Area (EEA), we comply with the General Data
-                  Protection Regulation (GDPR). You have the right to:
+                  {t('legal.gdprIntro')}
                 </p>
                 <ul
                   className='list-disc pl-6 text-neutral-700 space-y-2'
                   style={{ fontSize: '16px', lineHeight: '26px' }}
                 >
-                  <li>Access your personal data</li>
-                  <li>Rectify inaccurate data</li>
-                  <li>Request erasure of your data</li>
-                  <li>Restrict processing of your data</li>
-                  <li>Data portability</li>
-                  <li>Object to processing</li>
+                  <li>{t('legal.gdprBullet1')}</li>
+                  <li>{t('legal.gdprBullet2')}</li>
+                  <li>{t('legal.gdprBullet3')}</li>
+                  <li>{t('legal.gdprBullet4')}</li>
+                  <li>{t('legal.gdprBullet5')}</li>
+                  <li>{t('legal.gdprBullet6')}</li>
                 </ul>
               </div>
 
@@ -383,7 +377,7 @@ export default function LegalPage() {
                     fontWeight: '600',
                   }}
                 >
-                  Global Compliance
+                  {t('legal.globalTitle')}
                 </h3>
                 <p
                   className='text-neutral-700'
@@ -392,18 +386,17 @@ export default function LegalPage() {
                     lineHeight: '26px',
                   }}
                 >
-                  We strive to comply with applicable data protection laws in all jurisdictions
-                  where we operate, including but not limited to:
+                  {t('legal.globalIntro')}
                 </p>
                 <ul
                   className='list-disc pl-6 text-neutral-700 mt-3 space-y-2'
                   style={{ fontSize: '16px', lineHeight: '26px' }}
                 >
-                  <li>HIPAA (United States)</li>
-                  <li>GDPR (European Union)</li>
-                  <li>PIPEDA (Canada)</li>
-                  <li>PDPA (Singapore)</li>
-                  <li>Other applicable regional data protection regulations</li>
+                  <li>{t('legal.globalBullet1')}</li>
+                  <li>{t('legal.globalBullet2')}</li>
+                  <li>{t('legal.globalBullet3')}</li>
+                  <li>{t('legal.globalBullet4')}</li>
+                  <li>{t('legal.globalBullet5')}</li>
                 </ul>
               </div>
             </div>
@@ -420,7 +413,7 @@ export default function LegalPage() {
                 fontWeight: '600',
               }}
             >
-              Questions or Concerns?
+              {t('legal.questionsTitle')}
             </h2>
             <p
               className='text-neutral-700 mb-6'
@@ -429,13 +422,12 @@ export default function LegalPage() {
                 lineHeight: '26px',
               }}
             >
-              If you have questions about our legal policies, disclaimers, or compliance practices,
-              please contact us:
+              {t('legal.questionsIntro')}
             </p>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>
                 <h3 className='text-neutral-900 font-semibold mb-2' style={{ fontSize: '16px' }}>
-                  Privacy & Data Protection
+                  {t('legal.privacyDataProtection')}
                 </h3>
                 <a
                   href='mailto:privacy@doctorsclinic.services'
@@ -447,7 +439,7 @@ export default function LegalPage() {
               </div>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>
                 <h3 className='text-neutral-900 font-semibold mb-2' style={{ fontSize: '16px' }}>
-                  Legal & Terms
+                  {t('legal.legalTerms')}
                 </h3>
                 <a
                   href='mailto:legal@doctorsclinic.services'
@@ -459,7 +451,7 @@ export default function LegalPage() {
               </div>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>
                 <h3 className='text-neutral-900 font-semibold mb-2' style={{ fontSize: '16px' }}>
-                  Data Protection Officer (GDPR)
+                  {t('legal.dpo')}
                 </h3>
                 <a
                   href='mailto:dpo@doctorsclinic.services'
@@ -471,14 +463,14 @@ export default function LegalPage() {
               </div>
               <div className='bg-white p-4 rounded-lg border border-neutral-200'>
                 <h3 className='text-neutral-900 font-semibold mb-2' style={{ fontSize: '16px' }}>
-                  General Support
+                  {t('legal.generalSupport')}
                 </h3>
                 <Link
                   href='/support/contact'
                   className='text-primary-600 hover:text-primary-700 hover:underline'
                   style={{ fontSize: '14px' }}
                 >
-                  Contact Support
+                  {t('legal.contactSupport')}
                 </Link>
               </div>
             </div>

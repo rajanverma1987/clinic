@@ -380,6 +380,7 @@ function NewAppointmentPageContent() {
         subtitle={t('appointments.appointmentList')}
         notifications={[]}
         unreadCount={0}
+        onOpenSearch={() => window.dispatchEvent(new CustomEvent('openSearch'))}
       />
       <div className='w-full min-w-0 px-4 sm:px-6'>
         <Card className='p-5 sm:p-6 shadow-sm'>

@@ -22,112 +22,47 @@ export default function SupportPage() {
   const faqs = [
     {
       categoryKey: 'support.categoryGettingStarted',
-      category: 'Getting Started',
       questions: [
-        {
-          q: 'How do I create an account?',
-          a: 'Click the "Get Started" button on our homepage or visit the registration page. You\'ll need to provide your clinic information and create an admin account. A 14-day free trial is available to get you started.',
-        },
-        {
-          q: 'What information do I need to set up my clinic?',
-          a: "You'll need basic clinic information including name, address, contact details, timezone, currency, and tax settings. You can also configure appointment types, consultation durations, and other clinic-specific settings.",
-        },
-        {
-          q: 'Is there a mobile app?',
-          a: "Currently, Doctor's Clinic is accessible through web browsers on desktop and mobile devices. We are working on native mobile apps for iOS and Android, which will be available in the future.",
-        },
+        { qKey: 'support.faqGS1Q', aKey: 'support.faqGS1A' },
+        { qKey: 'support.faqGS2Q', aKey: 'support.faqGS2A' },
+        { qKey: 'support.faqGS3Q', aKey: 'support.faqGS3A' },
       ],
     },
     {
       categoryKey: 'support.categoryFeatures',
-      category: 'Features & Functionality',
       questions: [
-        {
-          q: 'How do I schedule appointments?',
-          a: 'Navigate to the Appointments section, click "New Appointment", and fill in the patient, doctor, date, time, and appointment type. The system will automatically check for conflicts and send reminders.',
-        },
-        {
-          q: 'Can I customize clinical note templates?',
-          a: 'Yes! You can create custom note templates for different specialties, appointment types, or individual doctors. Templates support SOAP format and can include pre-filled sections.',
-        },
-        {
-          q: 'How does prescription management work?',
-          a: 'Prescriptions can be created during appointments, include region-specific drug information, and support refills. The system tracks prescription status (draft, active, dispensed) and maintains a complete audit trail.',
-        },
-        {
-          q: 'What payment methods are supported?',
-          a: 'The billing system supports multiple payment methods including cash, card, UPI, bank transfer, cheque, and insurance. You can track partial payments and payment reconciliation.',
-        },
-        {
-          q: 'How do inventory alerts work?',
-          a: 'The system automatically monitors stock levels and sends alerts when items fall below the reorder point. You can also view expired items and low stock reports.',
-        },
+        { qKey: 'support.faqF1Q', aKey: 'support.faqF1A' },
+        { qKey: 'support.faqF2Q', aKey: 'support.faqF2A' },
+        { qKey: 'support.faqF3Q', aKey: 'support.faqF3A' },
+        { qKey: 'support.faqF4Q', aKey: 'support.faqF4A' },
+        { qKey: 'support.faqF5Q', aKey: 'support.faqF5A' },
       ],
     },
     {
       categoryKey: 'support.categorySecurity',
-      category: 'Security & Compliance',
       questions: [
-        {
-          q: "Is Doctor's Clinic HIPAA compliant?",
-          a: "Yes, Doctor's Clinic is designed to be HIPAA compliant. We implement encryption for PHI, maintain audit logs, use role-based access control, and execute Business Associate Agreements with healthcare providers.",
-        },
-        {
-          q: 'How is patient data encrypted?',
-          a: 'Protected Health Information (PHI) is encrypted using AES-256-GCM encryption at rest. All data transmission uses TLS/SSL encryption. We never store PHI in logs or include it in notifications.',
-        },
-        {
-          q: 'Can I export my data?',
-          a: "Yes, you can export your data at any time. Contact support to request a data export, and we'll provide your data in a structured format. This is also available for GDPR compliance.",
-        },
-        {
-          q: 'What happens to my data if I cancel?',
-          a: 'We retain your data for a period as required by law and healthcare regulations. You can request data export before cancellation. After the retention period, data is securely deleted or anonymized.',
-        },
+        { qKey: 'support.faqSec1Q', aKey: 'support.faqSec1A' },
+        { qKey: 'support.faqSec2Q', aKey: 'support.faqSec2A' },
+        { qKey: 'support.faqSec3Q', aKey: 'support.faqSec3A' },
+        { qKey: 'support.faqSec4Q', aKey: 'support.faqSec4A' },
       ],
     },
     {
       categoryKey: 'support.categoryBilling',
-      category: 'Billing & Pricing',
       questions: [
-        {
-          q: 'What are the pricing plans?',
-          a: "We offer flexible pricing based on the number of users and features. Contact our sales team for detailed pricing information and to discuss which plan best fits your clinic's needs.",
-        },
-        {
-          q: 'Is there a free trial?',
-          a: 'Yes, we offer a 14-day free trial with full access to all features. No credit card is required to start your trial.',
-        },
-        {
-          q: 'Can I change my plan later?',
-          a: 'Absolutely! You can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle.',
-        },
-        {
-          q: 'What payment methods do you accept?',
-          a: 'We accept major credit cards, debit cards, and bank transfers. Annual plans may be eligible for discounts.',
-        },
+        { qKey: 'support.faqB1Q', aKey: 'support.faqB1A' },
+        { qKey: 'support.faqB2Q', aKey: 'support.faqB2A' },
+        { qKey: 'support.faqB3Q', aKey: 'support.faqB3A' },
+        { qKey: 'support.faqB4Q', aKey: 'support.faqB4A' },
       ],
     },
     {
       categoryKey: 'support.categoryTechnical',
-      category: 'Technical Support',
       questions: [
-        {
-          q: 'What browsers are supported?',
-          a: "Doctor's Clinic works best on modern browsers including Chrome, Firefox, Safari, and Edge. We recommend using the latest version of your preferred browser for optimal performance.",
-        },
-        {
-          q: 'Do I need to install any software?',
-          a: "No installation is required! Doctor's Clinic is a cloud-based platform accessible through your web browser. Just sign up and start using it immediately.",
-        },
-        {
-          q: 'How do I report a bug or issue?',
-          a: 'You can report issues through the support contact form, email us at support@doctorsclinic.services, or use the in-app feedback feature. We prioritize security and critical issues.',
-        },
-        {
-          q: 'Is there an API available?',
-          a: "Yes, Doctor's Clinic is built API-first to support future integrations and mobile apps. API documentation is available for enterprise customers. Contact us for API access.",
-        },
+        { qKey: 'support.faqT1Q', aKey: 'support.faqT1A' },
+        { qKey: 'support.faqT2Q', aKey: 'support.faqT2A' },
+        { qKey: 'support.faqT3Q', aKey: 'support.faqT3A' },
+        { qKey: 'support.faqT4Q', aKey: 'support.faqT4A' },
       ],
     },
   ];
@@ -467,7 +402,7 @@ export default function SupportPage() {
                       paddingBottom: '16px',
                     }}
                   >
-                    {category.categoryKey ? t(category.categoryKey) : category.category}
+                    {t(category.categoryKey)}
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {category.questions.map((faq, faqIndex) => {
@@ -523,7 +458,7 @@ export default function SupportPage() {
                                   fontWeight: '600',
                                 }}
                               >
-                                {faq.q}
+                                {t(faq.qKey)}
                               </h4>
                             </div>
                           </button>
@@ -551,7 +486,7 @@ export default function SupportPage() {
                                   paddingTop: '8px',
                                 }}
                               >
-                                {faq.a}
+                                {t(faq.aKey)}
                               </div>
                             </div>
                           </div>
@@ -615,7 +550,7 @@ export default function SupportPage() {
                 textShadow: '0 1px 2px rgba(0,0,0,0.2)',
               }}
             >
-              Still Need Help?
+              {t('support.stillNeedHelp')}
             </h2>
             <p
               className='max-w-2xl mx-auto'
