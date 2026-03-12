@@ -1,21 +1,23 @@
-/* Patient dropdown on /appointments/new – margin, padding, left alignment */
+/* Patient dropdown – margin, padding, left alignment; full dark mode support */
 
 .PatientSelector-dropdown {
   margin-top: 12px;
   padding: 16px;
-  background: var(--color-neutral-0, #fff);
-  border: 1px solid var(--color-neutral-200, #e5e5e5);
+  background: var(--color-surface-elevated, var(--color-neutral-50, #f7fafc));
+  border: 1px solid var(--color-border, var(--color-neutral-200, #e5e5e5));
   border-radius: 10px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   max-height: 320px;
   overflow-y: auto;
   text-align: left;
+  color: var(--color-text-primary, var(--color-neutral-900, #1a1a1a));
 }
 
 .dark .PatientSelector-dropdown {
-  background: var(--color-neutral-800, #262626);
-  border-color: var(--color-neutral-600, #525252);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  color: var(--color-text-primary);
 }
 
 .PatientSelector-option {
@@ -40,21 +42,25 @@
 }
 
 .PatientSelector-option:hover {
-  background: var(--color-neutral-50, #fafafa);
+  background: var(--color-neutral-100, #f7fafc);
 }
 
 .dark .PatientSelector-option:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .PatientSelector-optionAddNew {
   margin-bottom: 12px;
   padding: 14px 18px;
-  border: 1px solid var(--color-neutral-200, #e5e5e5);
+  border: 1px solid var(--color-border, var(--color-neutral-200, #e5e5e5));
 }
 
 .dark .PatientSelector-optionAddNew {
-  border-color: var(--color-neutral-600, #525252);
+  border-color: var(--color-border);
+}
+
+.dark .PatientSelector-optionAddNew:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .PatientSelector-optionContent {
@@ -68,6 +74,22 @@
   text-align: left;
 }
 
+/* Dark: ensure option text and meta are visible */
+.dark .PatientSelector-option .PatientSelector-optionContent,
+.dark .PatientSelector-optionContent .font-medium {
+  color: var(--color-text-primary);
+}
+
+.dark .PatientSelector-optionContent .text-neutral-500,
+.dark .PatientSelector-optionContent .text-sm {
+  color: var(--color-text-secondary) !important;
+}
+
+.dark .PatientSelector-optionContent .bg-neutral-100 {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: var(--color-text-primary) !important;
+}
+
 .PatientSelector-optionAvatar {
   width: 40px;
   height: 40px;
@@ -76,4 +98,13 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+/* Dark: empty state and helper text in dropdown */
+.dark .PatientSelector-dropdown .text-neutral-500 {
+  color: var(--color-text-secondary) !important;
+}
+
+.dark .PatientSelector-dropdown .text-neutral-400 {
+  color: var(--color-text-secondary) !important;
 }

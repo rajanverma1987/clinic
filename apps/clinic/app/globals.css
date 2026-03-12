@@ -1918,6 +1918,56 @@ svg.icon.icon-hero {
   animation: fade-in 0.25s ease-out forwards;
 }
 
+/* Dark mode: use data-theme so it works even when modal is not under .dark */
+[data-theme='dark'] .global-search-panel {
+  background-color: #2d2d2d !important;
+  border-color: #525252 !important;
+  color: #f7fafc;
+}
+
+[data-theme='dark'] .global-search-panel .global-search-result {
+  background-color: #262626 !important;
+  border-color: #525252 !important;
+  color: #f7fafc !important;
+}
+
+[data-theme='dark'] .global-search-panel .global-search-result:hover {
+  background-color: #404040 !important;
+}
+
+[data-theme='dark'] .global-search-panel .global-search-result[data-selected='true'],
+[data-theme='dark'] .global-search-panel .global-search-result[data-selected='true']:hover {
+  background-color: rgba(26, 73, 171, 0.5) !important;
+  border-color: #3568c2 !important;
+}
+
+[data-theme='dark'] .global-search-panel .global-search-result-title {
+  color: #f7fafc !important;
+}
+
+[data-theme='dark'] .global-search-panel .global-search-result-subtitle,
+[data-theme='dark'] .global-search-panel .global-search-result-meta,
+[data-theme='dark'] .global-search-panel .global-search-result-type {
+  color: #d1d1d1 !important;
+}
+
+[data-theme='dark'] .global-search-panel .global-search-input,
+[data-theme='dark'] .global-search-panel input.global-search-input {
+  background-color: #262626 !important;
+  border-color: #525252 !important;
+  color: #f7fafc !important;
+}
+
+[data-theme='dark'] .global-search-panel .global-search-input::placeholder {
+  color: #a3a3a3;
+}
+
+[data-theme='dark'] .global-search-panel .global-search-loading,
+[data-theme='dark'] .global-search-panel .global-search-no-results,
+[data-theme='dark'] .global-search-panel .global-search-tips {
+  color: #d1d1d1 !important;
+}
+
 /* Calendar popup – smooth open */
 .calendar-popup-backdrop {
   animation: global-search-backdrop-in 0.2s ease-out forwards;

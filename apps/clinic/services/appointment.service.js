@@ -22,6 +22,7 @@ import { AuditAction, AuditLogger } from '@/lib/audit/audit-logger.js';
 import { PRIMARY_900 } from '@/lib/constants/brand-colors';
 import connectDB from '@/lib/db/connection.js';
 import { withTenant } from '@/lib/db/tenant-helper.js';
+import { dateAtTimeInTimezone, getDayRangeInTimezone } from '@/lib/utils/date-timezone.js';
 import { measureTime } from '@/lib/utils/enterprise-helpers.js';
 import { logger } from '@/lib/utils/logger.js';
 import { createPaginationResult, getPaginationParams } from '@/lib/utils/pagination.js';
@@ -131,6 +132,27 @@ export async function createAppointment(input, tenantId, userId) {
   let appointmentNumber = input.appointmentNumber;
   if (!appointmentNumber) {
     appointmentNumber = await generateAppointmentNumber(tenantId);
+  }
+
+  // When startTime is local time (HH:mm) + timezone, build UTC on server
+  if (
+    typeof input.startTime === 'string' &&
+    /^\d{1,2}:\d{2}$/.test(input.startTime.trim()) &&
+    input.timezone
+  ) {
+    const dateStr =
+      input.appointmentDate instanceof Date
+        ? `${input.appointmentDate.getFullYear()}-${String(input.appointmentDate.getMonth() + 1).padStart(2, '0')}-${String(input.appointmentDate.getDate()).padStart(2, '0')}`
+        : String(input.appointmentDate || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [h, m] = input.startTime.trim().split(':').map((n) => parseInt(n, 10) || 0);
+      const startDate = dateAtTimeInTimezone(dateStr, h, m, input.timezone.trim());
+      const dur = input.duration || 30;
+      if (!Number.isNaN(startDate.getTime())) {
+        input.startTime = startDate.toISOString();
+        input.endTime = new Date(startDate.getTime() + dur * 60000).toISOString();
+      }
+    }
   }
 
   // Build schedule object from input
@@ -625,38 +647,50 @@ export async function listAppointments(query, tenantId, userId) {
 
   // Date filters - check both appointmentDate and startTime to catch all appointments
   if (query.date) {
-    // Parse date-only (YYYY-MM-DD) as UTC so stored UTC dates match consistently
     const dateStr = String(query.date).trim();
     const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
-    const startOfDay = isDateOnly
-      ? new Date(
-          Date.UTC(
-            parseInt(dateStr.slice(0, 4), 10),
-            parseInt(dateStr.slice(5, 7), 10) - 1,
-            parseInt(dateStr.slice(8, 10), 10),
-            0,
-            0,
-            0,
-            0,
-          ),
-        )
-      : new Date(query.date);
-    if (!isDateOnly) {
-      startOfDay.setUTCHours(0, 0, 0, 0);
+    const timezone = typeof query.timezone === 'string' ? query.timezone.trim() || undefined : undefined;
+    let startOfDay;
+    let endOfDay;
+    if (isDateOnly && timezone) {
+      // Interpret date in clinic timezone so "2025-02-16" means that day in clinic, not UTC
+      const range = getDayRangeInTimezone(dateStr, timezone);
+      if (range) {
+        startOfDay = range.startOfDayUtc;
+        endOfDay = range.endOfDayUtc;
+      }
     }
-    const endOfDay = new Date(startOfDay);
-    endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
-    endOfDay.setUTCMilliseconds(-1);
-    // Filter by both appointmentDate and startTime to catch all appointments on that date
+    if (!startOfDay || !endOfDay) {
+      // Fallback: UTC day (no timezone or parse failed)
+      startOfDay = isDateOnly
+        ? new Date(
+            Date.UTC(
+              parseInt(dateStr.slice(0, 4), 10),
+              parseInt(dateStr.slice(5, 7), 10) - 1,
+              parseInt(dateStr.slice(8, 10), 10),
+              0,
+              0,
+              0,
+              0,
+            ),
+          )
+        : new Date(query.date);
+      if (!isDateOnly) {
+        startOfDay.setUTCHours(0, 0, 0, 0);
+      }
+      endOfDay = new Date(startOfDay);
+      endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
+      endOfDay.setUTCMilliseconds(-1);
+    }
     filter.$or = [
       { appointmentDate: { $gte: startOfDay, $lte: endOfDay } },
       { startTime: { $gte: startOfDay, $lte: endOfDay } },
     ];
     logger.debug('Date filter (single date):', {
       date: query.date,
+      timezone: timezone || 'UTC',
       startOfDay: startOfDay.toISOString(),
       endOfDay: endOfDay.toISOString(),
-      filter: filter.$or,
     });
   } else if (query.startDate || query.endDate) {
     // When filtering by date range, check both appointmentDate and startTime

@@ -25,14 +25,19 @@ const BOOKED_STATUSES = ['scheduled', 'confirmed', 'arrived', 'in_progress'];
 
 /**
  * Get calendar date key YYYY-MM-DD for an appointment so it matches the calendar grid.
- * Uses ISO date part for date-only fields to avoid timezone shifting the day (e.g. UTC midnight becoming previous day in US).
+ * For date-only strings (YYYY-MM-DD) use as-is. For datetime strings (with T) use local date
+ * so UTC times don't shift the day (e.g. 16th 00:30 IST = 15th 19:00 UTC → show on 16th).
  */
 function getAppointmentDateKey(apt) {
   const dateSource = apt.schedule?.date ?? apt.appointmentDate ?? apt.startTime ?? apt.date;
   if (!dateSource) return '';
   if (typeof dateSource === 'string') {
-    const isoDate = dateSource.slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return isoDate;
+    const trimmed = dateSource.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    if (trimmed.includes('T')) {
+      const d = new Date(trimmed);
+      return isNaN(d.getTime()) ? '' : toDateKey(d);
+    }
   }
   const d = new Date(dateSource);
   return isNaN(d.getTime()) ? '' : toDateKey(d);

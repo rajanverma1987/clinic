@@ -27,6 +27,20 @@
 
 .dark .loader-bar-track {
   background: var(--color-neutral-600, #525252);
+  /* Loader bar (track border) white in dark mode – matches logo */
+  border-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Loader bar fill – white in dark mode (same as logo) */
+.dark .loader-bar-fill {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 30%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 255, 255, 0.5) 70%,
+    transparent 100%
+  ) !important;
 }
 
 /* Loader logo – white in dark theme (dono loader: full-screen + section) */

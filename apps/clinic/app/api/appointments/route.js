@@ -97,6 +97,7 @@ async function getHandler(req, user) {
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,
       date: searchParams.get('date') || undefined,
+      timezone: searchParams.get('timezone') || undefined,
       isActive: searchParams.get('isActive') || undefined,
       since: searchParams.get('since') || undefined, // For incremental updates
       locale: locale || undefined, // es/ar for localized patient names

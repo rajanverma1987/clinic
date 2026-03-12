@@ -31,6 +31,25 @@ function getTodayLocal() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** YYYY-MM-DD from a Date in local time (avoids UTC date shifting to previous/next day). */
+function toLocalDateString(date) {
+  if (!date || !(date instanceof Date) || Number.isNaN(date.getTime())) return getTodayLocal();
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Parse YYYY-MM-DD as local date (midnight local). Avoids new Date(str) which can be UTC in some browsers. */
+function parseLocalDateOnly(str) {
+  if (!str || typeof str !== 'string') return null;
+  const trimmed = str.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+  const [y, m, d] = trimmed.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export default function AppointmentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -221,7 +240,7 @@ export default function AppointmentsPage() {
           day: '2-digit',
         }).format(date);
       } catch {
-        return date.toISOString().split('T')[0];
+        return toLocalDateString(date);
       }
     },
     [settings],
@@ -254,11 +273,12 @@ export default function AppointmentsPage() {
         day: '2-digit',
       }).format(tomorrowDate);
 
-      // Fetch counts using the appointments API with date filter
+      // Fetch counts using the appointments API with date filter (timezone so backend uses clinic day)
       // Exclude video consultations from stats (they go to queue)
+      const tzParam = timezone ? `&timezone=${encodeURIComponent(timezone)}` : '';
       const [todayResponse, tomorrowResponse] = await Promise.all([
-        apiClient.get(`/appointments?page=1&limit=1000&date=${todayStr}`),
-        apiClient.get(`/appointments?page=1&limit=1000&date=${tomorrowStr}`),
+        apiClient.get(`/appointments?page=1&limit=1000&date=${todayStr}${tzParam}`),
+        apiClient.get(`/appointments?page=1&limit=1000&date=${tomorrowStr}${tzParam}`),
       ]);
 
       // Filter out video consultations from counts
@@ -295,6 +315,8 @@ export default function AppointmentsPage() {
         if (selectedStatus) params.append('status', selectedStatus);
         params.append('date', dateForApi);
         params.append('locale', localeCode || 'en');
+        const tz = settings?.settings?.timezone;
+        if (tz) params.append('timezone', tz);
 
         const response = await apiClient.get(`/appointments?${params}`);
         if (response.success && response.data) {
@@ -311,7 +333,7 @@ export default function AppointmentsPage() {
         setRefreshing(false);
       }
     },
-    [currentPage, selectedDoctorId, selectedStatus, tenantId, selectedDate, locale],
+    [currentPage, selectedDoctorId, selectedStatus, tenantId, selectedDate, locale, settings],
   );
 
   useEffect(() => {
@@ -319,10 +341,10 @@ export default function AppointmentsPage() {
       router.push('/login');
       return;
     }
-    if (!authLoading && user && !fromBook) {
+    if (!authLoading && user) {
       fetchAppointments();
     }
-  }, [authLoading, user, router, fetchAppointments, fromBook]);
+  }, [authLoading, user, router, fetchAppointments]);
 
   // Refetch appointments when UI language changes so patient names use the new locale (es/ar)
   const prevLocaleRef = useRef(locale);
@@ -368,17 +390,18 @@ export default function AppointmentsPage() {
   }, [fetchAppointments]);
 
   // When user selects a date in the calendar, update state and URL so table shows that day only
+  // Use local date for the day the user picked in the calendar (not clinic TZ), so clicking 18 Feb stays 18 Feb
   const handleCalendarDateChange = useCallback(
     (date) => {
       if (!date || Number.isNaN(date.getTime())) return;
-      const dateStr = formatDateForApi(date);
+      const dateStr = toLocalDateString(date);
       setSelectedDate(dateStr);
       setCurrentPage(1);
       const params = new URLSearchParams(searchParams.toString());
       params.set('date', dateStr);
       router.replace(`/appointments?${params.toString()}`, { scroll: false });
     },
-    [formatDateForApi, router, searchParams],
+    [router, searchParams],
   );
 
   // Fetch stats separately when settings are loaded
@@ -705,7 +728,7 @@ export default function AppointmentsPage() {
       <div style={{ padding: '0 10px' }}>
         {loading ? (
           <>
-            {/* Filters Section Skeleton */}
+            {/* 1. Filters Section Skeleton – same layout as real filters card */}
             <Card className='mb-6 p-4'>
               <div className='filter-row filter-row-items-end'>
                 <div className='w-auto min-w-0'>
@@ -718,22 +741,49 @@ export default function AppointmentsPage() {
                 </div>
               </div>
             </Card>
-            {/* Stats Cards Skeleton */}
+            {/* 2. Stats Cards Skeleton – two cards, same width/height as Today/Tomorrow cards */}
             <div className='content-grid-2 mb-6'>
-              <Card className='bg-neutral-100 dark:bg-neutral-800'>
-                <div className='h-4 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse w-32 mb-2' />
-                <div className='h-12 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse w-24 mb-2' />
-                <div className='h-3 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse w-48' />
+              <Card className='bg-primary-100 dark:bg-neutral-800 border border-primary-300 dark:border-neutral-600 min-h-[8.5rem]'>
+                <div className='h-4 bg-primary-200 dark:bg-neutral-600 rounded animate-pulse w-36 mb-2' />
+                <div className='h-10 bg-primary-200 dark:bg-neutral-600 rounded animate-pulse w-16 mb-2' />
+                <div className='h-3 bg-primary-200/80 dark:bg-neutral-600 rounded animate-pulse w-28 mb-3' />
+                <div className='h-3 bg-primary-200/60 dark:bg-neutral-700 rounded animate-pulse w-40' />
               </Card>
-              <Card className='bg-neutral-100 dark:bg-neutral-800'>
-                <div className='h-4 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse w-36 mb-2' />
-                <div className='h-12 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse w-24 mb-2' />
-                <div className='h-3 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse w-56' />
+              <Card className='bg-secondary-100 dark:bg-neutral-800 border border-secondary-300 dark:border-neutral-600 min-h-[8.5rem]'>
+                <div className='h-4 bg-secondary-200 dark:bg-neutral-600 rounded animate-pulse w-40 mb-2' />
+                <div className='h-10 bg-secondary-200 dark:bg-neutral-600 rounded animate-pulse w-16 mb-2' />
+                <div className='h-3 bg-secondary-200/80 dark:bg-neutral-600 rounded animate-pulse w-28 mb-3' />
+                <div className='h-3 bg-secondary-200/60 dark:bg-neutral-700 rounded animate-pulse w-40' />
               </Card>
             </div>
-            {/* Table Skeleton */}
+            {/* 3. Calendar Card Skeleton – same width/height as real AppointmentCalendar */}
+            <div className='mb-6'>
+              <Card className='p-4'>
+                <div className='h-6 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse w-48 mb-4' />
+                <div className='mb-4 flex items-center gap-2 flex-wrap'>
+                  <div className='h-10 w-10 rounded bg-neutral-200 dark:bg-neutral-600 animate-pulse' />
+                  <div className='h-10 w-36 rounded bg-neutral-200 dark:bg-neutral-600 animate-pulse' />
+                  <div className='h-10 w-10 rounded bg-neutral-200 dark:bg-neutral-600 animate-pulse' />
+                  <div className='h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-600 animate-pulse ml-auto' />
+                </div>
+                <div className='grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-96'>
+                  {Array.from({ length: 16 }, (_, i) => (
+                    <div
+                      key={i}
+                      className='min-h-[2.5rem] rounded-lg bg-neutral-200 dark:bg-neutral-600 animate-pulse'
+                    />
+                  ))}
+                </div>
+              </Card>
+            </div>
+            {/* 4. "Showing appointments for" bar skeleton – same height as real bar */}
+            <div className='mb-4 flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800 px-4 py-2'>
+              <div className='h-4 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse w-56' />
+              <div className='h-4 bg-neutral-200 dark:bg-neutral-600 rounded animate-pulse w-32' />
+            </div>
+            {/* 5. Table Card Skeleton – same columns (8) and row count as real table */}
             <Card>
-              <TableSkeleton rows={10} cols={5} />
+              <TableSkeleton rows={10} cols={8} />
             </Card>
           </>
         ) : (
@@ -879,25 +929,22 @@ export default function AppointmentsPage() {
                       selectedDoctorId || (user?.role === 'doctor' ? user.userId : '')
                     }
                     selectedDate={
-                      selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
-                        ? new Date(selectedDate + 'T12:00:00')
-                        : new Date()
+                      parseLocalDateOnly(selectedDate) ?? new Date()
                     }
                     onDateChange={handleCalendarDateChange}
                     onSlotSelect={(slot) => {
-                      // Navigate to new appointment page with pre-filled data
-                      const dateStr = slot.date.toISOString().split('T')[0];
+                      const dateStr = toLocalDateString(slot.date);
                       const startTimeStr = slot.startTime.toISOString();
                       const endTimeStr = slot.endTime.toISOString();
                       const doctorIdParam =
                         selectedDoctorId || (user?.role === 'doctor' ? user.userId : '') || '';
 
-                      // Build URL with query parameters
                       const params = new URLSearchParams();
                       if (doctorIdParam) params.append('doctorId', doctorIdParam);
                       params.append('date', dateStr);
                       params.append('startTime', startTimeStr);
                       params.append('endTime', endTimeStr);
+                      if (slot.time) params.append('time', slot.time);
 
                       router.push(`/appointments/new?${params.toString()}`);
                     }}
@@ -907,11 +954,11 @@ export default function AppointmentsPage() {
               )}
 
             {selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate) && (
-              <div className='mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm'>
-                <span className='text-primary-800'>
+              <div className='mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm dark:border-neutral-600 dark:bg-neutral-800'>
+                <span className='text-primary-800 dark:text-neutral-200'>
                   {t('appointments.showingForDate').replace(
                     '{{date}}',
-                    formatDateDisplay(new Date(selectedDate + 'T12:00:00'), {
+                    formatDateDisplay(parseLocalDateOnly(selectedDate) || new Date(), {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',
@@ -922,7 +969,7 @@ export default function AppointmentsPage() {
                   type='button'
                   variant='link'
                   href='/appointments'
-                  className='font-medium text-primary-700 hover:text-primary-900'
+                  className='font-medium text-primary-700 hover:text-primary-900 dark:text-primary-300 dark:hover:text-primary-100'
                 >
                   {t('appointments.showAllAppointments')}
                 </Button>

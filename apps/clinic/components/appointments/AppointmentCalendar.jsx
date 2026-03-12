@@ -143,41 +143,34 @@ export default function AppointmentCalendar({
     [defaultStartHour, defaultEndHour, slotDuration],
   );
 
-  // Fetch appointments for the selected date to determine availability
+  // Fetch appointments for the selected date to determine availability.
+  // Use the calendar day the user selected (local YYYY-MM-DD), not clinic-TZ conversion, so the
+  // same date/time they book shows as booked on that same date in the calendar.
   const fetchAvailability = useCallback(async () => {
     setLoading(true);
     try {
-      const dateKey = formatDateForApi(currentDate);
-      const startDate = dateKey;
-      const endDate = dateKey;
+      const dateKey = formatDateLocal(currentDate);
+      const clinicTimezone =
+        settings?.timezone ||
+        (typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null) ||
+        'UTC';
 
-      // Fetch appointments for the selected date (with or without doctor filter)
-      const url = selectedDoctorId
-        ? `/appointments?doctorId=${selectedDoctorId}&startDate=${startDate}&endDate=${endDate}`
-        : `/appointments?startDate=${startDate}&endDate=${endDate}&limit=500`;
-      const response = await apiClient.get(url);
+      const params = new URLSearchParams({ date: dateKey, limit: '500' });
+      if (clinicTimezone) params.set('timezone', clinicTimezone);
+      if (selectedDoctorId) params.set('doctorId', selectedDoctorId);
+      params.set('_', String(Date.now())); // avoid stale cache so booked slots show after creating
+      const response = await apiClient.get(`/appointments?${params.toString()}`);
 
       if (response.success && response.data) {
         const appointmentsData = extractArrayData(response);
-        // Filter appointments to only include active statuses
-        // Include 'in_queue' for video consultations that go directly to queue
+        // Filter appointments to only include active statuses (compare lowercase; API may return mixed case)
         const activeStatuses = ['scheduled', 'confirmed', 'arrived', 'in_progress', 'in_queue'];
-        const allAppointments = appointmentsData.filter((apt) =>
-          activeStatuses.includes(apt.status),
-        );
-
-        // Filter appointments to only those on the selected date (use startTime in clinic TZ to avoid off-by-one)
-        const appointments = allAppointments.filter((apt) => {
-          if (!apt.startTime) return false;
-          const aptStartDateKey = formatDateForApi(new Date(apt.startTime));
-          return aptStartDateKey === dateKey;
+        const appointments = appointmentsData.filter((apt) => {
+          const status = (apt.status && String(apt.status).toLowerCase()) || '';
+          const hasStart = !!(apt.startTime || apt.schedule?.startTime);
+          return activeStatuses.includes(status) && hasStart;
         });
 
-        // Use clinic timezone; fallback to browser TZ so past slots work even before settings load
-        const clinicTimezone =
-          settings?.timezone ||
-          (typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null) ||
-          'UTC';
         const slots = generateTimeSlots(dateKey, clinicTimezone);
 
         // Initialize all slots as available first
@@ -186,14 +179,28 @@ export default function AppointmentCalendar({
           slot.booked = false;
         });
 
-        // Mark slot as booked if any appointment overlaps (all times are UTC)
+        // Mark slot as booked if any appointment overlaps (use schedule fallback; all times UTC)
         appointments.forEach((apt) => {
-          const aptStart = new Date(apt.startTime);
-          const aptEnd = new Date(apt.endTime);
+          const rawStart = apt.startTime ?? apt.schedule?.startTime;
+          const rawEnd = apt.endTime ?? apt.schedule?.endTime;
+          const aptStart = rawStart ? new Date(rawStart) : null;
+          if (!aptStart || Number.isNaN(aptStart.getTime())) return;
+
+          let aptEnd = rawEnd ? new Date(rawEnd) : null;
+          if (!aptEnd || Number.isNaN(aptEnd.getTime())) {
+            const durationMin = apt.duration ?? apt.schedule?.duration ?? slotDuration;
+            aptEnd = new Date(aptStart.getTime() + durationMin * 60 * 1000);
+          }
 
           slots.forEach((slot) => {
-            const overlaps = slot.start < aptEnd && aptStart < slot.end;
-            if (overlaps) {
+            const slotStartMs = slot.start.getTime();
+            const slotEndMs = slot.end.getTime();
+            const aptStartMs = aptStart.getTime();
+            // Mark booked only if appointment *starts* in this slot (not every overlapping slot)
+            const tolerance = 1000;
+            const appointmentStartsInThisSlot =
+              aptStartMs >= slotStartMs - tolerance && aptStartMs < slotEndMs - tolerance;
+            if (appointmentStartsInThisSlot) {
               slot.available = false;
               slot.booked = true;
             }
@@ -202,9 +209,9 @@ export default function AppointmentCalendar({
 
         // Past slot detection: use clinic timezone so "today" and "past day" match clinic 9–5
         const now = new Date();
-        const todayInClinicKey = formatDateForApi(new Date());
-        const isTodayInClinic = dateKey === todayInClinicKey;
-        const isPastDayInClinic = dateKey < todayInClinicKey;
+        const todayKey = formatDateLocal(new Date());
+        const isTodayInClinic = dateKey === todayKey;
+        const isPastDayInClinic = dateKey < todayKey;
         const oneMinuteMs = 60 * 1000;
 
         // Format slots: get display hour/minute in clinic TZ; keep start/end as UTC Dates
@@ -248,9 +255,9 @@ export default function AppointmentCalendar({
         const slots = generateTimeSlots(dateKey, clinicTz);
 
         const now = new Date();
-        const todayInClinicKey = formatDateForApi(new Date());
-        const isTodayInClinic = dateKey === todayInClinicKey;
-        const isPastDayInClinic = dateKey < todayInClinicKey;
+        const todayKeyElse = formatDateLocal(new Date());
+        const isTodayInClinic = dateKey === todayKeyElse;
+        const isPastDayInClinic = dateKey < todayKeyElse;
         const oneMinuteMs = 60 * 1000;
 
         const formattedSlots = slots.map((slot) => {
@@ -284,13 +291,13 @@ export default function AppointmentCalendar({
         settings?.timezone ||
         (typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null) ||
         'UTC';
-      const dateKeyFallback = formatDateForApi(currentDate);
+      const dateKeyFallback = formatDateLocal(currentDate);
       const slots = generateTimeSlots(dateKeyFallback, clinicTz);
 
       const now = new Date();
-      const todayInClinicKey = formatDateForApi(new Date());
-      const isTodayInClinic = dateKeyFallback === todayInClinicKey;
-      const isPastDayInClinic = dateKeyFallback < todayInClinicKey;
+      const todayKeyCatch = formatDateLocal(new Date());
+      const isTodayInClinic = dateKeyFallback === todayKeyCatch;
+      const isPastDayInClinic = dateKeyFallback < todayKeyCatch;
       const oneMinuteMs = 60 * 1000;
 
       const formattedSlots = slots.map((slot) => {
@@ -320,7 +327,7 @@ export default function AppointmentCalendar({
     } finally {
       setLoading(false);
     }
-  }, [selectedDoctorId, currentDate, formatDateForApi, settings, generateTimeSlots]);
+  }, [selectedDoctorId, currentDate, formatDateLocal, settings, generateTimeSlots]);
 
   useEffect(() => {
     fetchAvailability();
@@ -330,10 +337,12 @@ export default function AppointmentCalendar({
     if (slot.available && !slot.booked && !slot.isPast) {
       setSelectedSlot(slot);
       if (onSlotSelect) {
+        const timeStr = `${String(slot.hour).padStart(2, '0')}:${String(slot.minute).padStart(2, '0')}`;
         onSlotSelect({
           date: slot.date,
           startTime: slot.start,
           endTime: slot.end,
+          time: timeStr,
         });
       }
     }
