@@ -682,19 +682,19 @@ function NewAppointmentPageContent() {
                     }
                     className={`p-4 border-2 rounded-lg h-auto ${
                       !formData.isTelemedicine
-                        ? 'border-primary-500 bg-primary-100'
-                        : 'border-neutral-300 hover:border-neutral-400'
+                        ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/40 dark:border-primary-500'
+                        : 'border-neutral-300 dark:border-neutral-500 hover:border-neutral-400 dark:hover:border-neutral-400 dark:bg-neutral-700/50'
                     }`}
                   >
                     <div className='flex items-center space-x-3'>
                       <div
                         className={`w-12 h-12 rounded-lg flex items-center justify-center ml-2 ${
-                          !formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200'
+                          !formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200 dark:bg-neutral-600'
                         }`}
                       >
                         <svg
                           className={`icon icon-md ${
-                            !formData.isTelemedicine ? 'text-white' : 'text-neutral-600'
+                            !formData.isTelemedicine ? 'text-white' : 'text-neutral-600 dark:text-neutral-200'
                           }`}
                           fill='none'
                           stroke='currentColor'
@@ -709,10 +709,10 @@ function NewAppointmentPageContent() {
                         </svg>
                       </div>
                       <div className='text-left'>
-                        <div className='font-semibold text-neutral-900'>
+                        <div className='font-semibold text-neutral-900 dark:text-neutral-100'>
                           {t('appointments.inPersonVisit')}
                         </div>
-                        <div className='text-sm text-neutral-600'>
+                        <div className='text-sm text-neutral-600 dark:text-neutral-300'>
                           {t('appointments.inPersonVisitDesc')}
                         </div>
                       </div>
@@ -738,19 +738,19 @@ function NewAppointmentPageContent() {
                     }}
                     className={`p-4 border-2 rounded-lg h-auto ${
                       formData.isTelemedicine
-                        ? 'border-primary-500 bg-primary-100'
-                        : 'border-neutral-300 hover:border-neutral-400'
+                        ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/40 dark:border-primary-500'
+                        : 'border-neutral-300 dark:border-neutral-500 hover:border-neutral-400 dark:hover:border-neutral-400 dark:bg-neutral-700/50'
                     }`}
                   >
                     <div className='flex items-center space-x-3'>
                       <div
                         className={`w-12 h-12 rounded-lg flex items-center justify-center ml-2 ${
-                          formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200'
+                          formData.isTelemedicine ? 'bg-primary-600' : 'bg-neutral-200 dark:bg-neutral-600'
                         }`}
                       >
                         <svg
                           className={`icon icon-md ${
-                            formData.isTelemedicine ? 'text-white' : 'text-neutral-600'
+                            formData.isTelemedicine ? 'text-white' : 'text-neutral-600 dark:text-neutral-200'
                           }`}
                           fill='none'
                           stroke='currentColor'
@@ -765,10 +765,10 @@ function NewAppointmentPageContent() {
                         </svg>
                       </div>
                       <div className='text-left'>
-                        <div className='font-semibold text-neutral-900'>
+                        <div className='font-semibold text-neutral-900 dark:text-neutral-100'>
                           {t('appointments.videoConsultation')}
                         </div>
-                        <div className='text-sm text-neutral-600'>
+                        <div className='text-sm text-neutral-600 dark:text-neutral-300'>
                           {t('appointments.videoConsultationDesc')}
                         </div>
                       </div>

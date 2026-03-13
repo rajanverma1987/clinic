@@ -431,6 +431,30 @@
   color: var(--color-neutral-100);
 }
 
+.dark .LanguageSwitcher-item--light:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-neutral-100);
+}
+
+.dark .LanguageSwitcher-item--light.is-active {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--color-primary-300);
+}
+
+.dark .LanguageSwitcher-item--dark {
+  color: var(--color-neutral-100);
+}
+
+.dark .LanguageSwitcher-item--dark:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-neutral-100);
+}
+
+.dark .LanguageSwitcher-item--dark.is-active {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--color-primary-300);
+}
+
 .LanguageSwitcher-item--light:hover {
   background: linear-gradient(
     135deg,
@@ -669,21 +693,57 @@
 }
 .dark .page-header .LanguageSwitcher-button,
 .dark .page-header .LanguageSwitcher-button--light,
+.dark .page-header .LanguageSwitcher-button--dark,
 .dark .enterprise-header .LanguageSwitcher-button,
 .dark .enterprise-header .LanguageSwitcher-button--light,
+.dark .enterprise-header .LanguageSwitcher-button--dark,
 .dark .sticky-header-bar .LanguageSwitcher-button,
-.dark .sticky-header-bar .LanguageSwitcher-button--light {
+.dark .sticky-header-bar .LanguageSwitcher-button--light,
+.dark .sticky-header-bar .LanguageSwitcher-button--dark {
   background: transparent;
   border: none;
   box-shadow: none;
+  color: var(--color-neutral-100);
 }
 .dark .page-header .LanguageSwitcher-button:hover,
+.dark .page-header .LanguageSwitcher-button--light:hover,
+.dark .page-header .LanguageSwitcher-button--dark:hover,
 .dark .page-header .LanguageSwitcher-button--light.is-open,
+.dark .page-header .LanguageSwitcher-button--dark.is-open,
 .dark .enterprise-header .LanguageSwitcher-button:hover,
+.dark .enterprise-header .LanguageSwitcher-button--light:hover,
+.dark .enterprise-header .LanguageSwitcher-button--dark:hover,
 .dark .enterprise-header .LanguageSwitcher-button--light.is-open,
+.dark .enterprise-header .LanguageSwitcher-button--dark.is-open,
 .dark .sticky-header-bar .LanguageSwitcher-button:hover,
-.dark .sticky-header-bar .LanguageSwitcher-button--light.is-open {
-  background: rgba(255, 255, 255, 0.06);
+.dark .sticky-header-bar .LanguageSwitcher-button--light:hover,
+.dark .sticky-header-bar .LanguageSwitcher-button--dark:hover,
+.dark .sticky-header-bar .LanguageSwitcher-button--light.is-open,
+.dark .sticky-header-bar .LanguageSwitcher-button--dark.is-open {
+  background: rgba(255, 255, 255, 0.12);
   border: none;
   box-shadow: none;
+  color: var(--color-neutral-100);
+}
+
+/* Dark mode: trigger button content (flag + chevron) visible */
+.dark .page-header .LanguageSwitcher-button,
+.dark .page-header .LanguageSwitcher-button--light,
+.dark .page-header .LanguageSwitcher-button--dark,
+.dark .enterprise-header .LanguageSwitcher-button,
+.dark .enterprise-header .LanguageSwitcher-button--light,
+.dark .enterprise-header .LanguageSwitcher-button--dark,
+.dark .sticky-header-bar .LanguageSwitcher-button,
+.dark .sticky-header-bar .LanguageSwitcher-button--light,
+.dark .sticky-header-bar .LanguageSwitcher-button--dark {
+  color: var(--color-neutral-100);
+}
+
+.dark .page-header .LanguageSwitcher-icon,
+.dark .page-header .LanguageSwitcher-flag,
+.dark .enterprise-header .LanguageSwitcher-icon,
+.dark .enterprise-header .LanguageSwitcher-flag,
+.dark .sticky-header-bar .LanguageSwitcher-icon,
+.dark .sticky-header-bar .LanguageSwitcher-flag {
+  color: inherit;
 }

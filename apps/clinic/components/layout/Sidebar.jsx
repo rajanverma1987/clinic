@@ -632,7 +632,7 @@ export function Sidebar({ isMobileOpen = false, onMobileClose }) {
               aria-label={t('auth.logout')}
               className={[
                 'inline-flex items-center gap-2 border border-neutral-200 dark:border-neutral-700 !border-neutral-200 dark:!border-neutral-700',
-                'bg-white dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400',
+                'bg-white dark:bg-neutral-800/60 text-neutral-600 dark:text-white',
                 'hover:border-status-error/50 hover:bg-status-error/10 hover:text-status-error',
                 'dark:hover:border-status-error/50 dark:hover:bg-status-error/10 dark:hover:text-status-error',
                 'min-h-[2.25rem] h-[2.25rem]',

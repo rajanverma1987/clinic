@@ -33,8 +33,8 @@ export function PageSearchBar({
     <Card className={`mb-6 ${className}`}>
       <div className='p-4'>
         <div className='flex flex-col sm:flex-row gap-3'>
-          <div className='flex-1 flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-800 focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500'>
-            <SearchIcon className='icon icon-sm ml-3 text-neutral-400' ariaHidden />
+          <div className='flex-1 flex items-center gap-2 rounded-lg border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-800 focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500 dark:focus-within:ring-neutral-400'>
+            <SearchIcon className='icon icon-sm ml-3 text-neutral-400 dark:text-neutral-200' ariaHidden />
             <Input
               type='text'
               placeholder={placeholder}
@@ -42,7 +42,7 @@ export function PageSearchBar({
               onChange={(e) => onChange?.(e)}
               onKeyPress={handleKeyPress}
               variant='borderless'
-              className='min-w-0'
+              className='min-w-0 dark:placeholder:text-neutral-200'
               {...inputProps}
             />
           </div>

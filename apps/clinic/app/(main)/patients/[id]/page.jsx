@@ -638,92 +638,33 @@ export default function PatientDetailPage() {
                       {t('patients.personalInformation')}
                     </h2>
                     <div className='space-y-4'>
-                      <div className='grid grid-cols-2 gap-4'>
-                        <div>
-                          <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                            {t('patients.firstName')}
-                          </label>
-                          {isEditing ? (
+                      <div>
+                        <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
+                          {t('patients.name') || 'Name'}
+                        </label>
+                        {isEditing ? (
+                          <div className='grid grid-cols-2 gap-4'>
                             <Input
+                              placeholder={t('patients.firstName')}
                               value={formData.firstName || ''}
                               onChange={(e) =>
                                 setFormData({ ...formData, firstName: e.target.value })
                               }
                             />
-                          ) : (
-                            <p className='text-neutral-900'>{getPatientDisplayNameParts(patient, localeCode).first || '—'}</p>
-                          )}
-                        </div>
-                        <div>
-                          <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                            {t('patients.lastName')}
-                          </label>
-                          {isEditing ? (
                             <Input
+                              placeholder={t('patients.lastName')}
                               value={formData.lastName || ''}
                               onChange={(e) =>
                                 setFormData({ ...formData, lastName: e.target.value })
                               }
                             />
-                          ) : (
-                            <p className='text-neutral-900'>{getPatientDisplayNameParts(patient, localeCode).last || '—'}</p>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <p className='text-neutral-900 dark:text-neutral-100'>
+                            {getPatientDisplayName(patient, localeCode, t)}
+                          </p>
+                        )}
                       </div>
-                      {isEditing && (
-                        <div className='grid grid-cols-2 gap-4 pt-2 border-t border-neutral-200'>
-                          <div>
-                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                              {t('patients.firstNameEs')}
-                            </label>
-                            <Input
-                              value={formData.firstName_es || ''}
-                              onChange={(e) =>
-                                setFormData({ ...formData, firstName_es: e.target.value })
-                              }
-                              placeholder={t('patients.firstNameEs')}
-                            />
-                          </div>
-                          <div>
-                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                              {t('patients.lastNameEs')}
-                            </label>
-                            <Input
-                              value={formData.lastName_es || ''}
-                              onChange={(e) =>
-                                setFormData({ ...formData, lastName_es: e.target.value })
-                              }
-                              placeholder={t('patients.lastNameEs')}
-                            />
-                          </div>
-                          <div>
-                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                              {t('patients.firstNameAr')}
-                            </label>
-                            <Input
-                              value={formData.firstName_ar || ''}
-                              onChange={(e) =>
-                                setFormData({ ...formData, firstName_ar: e.target.value })
-                              }
-                              placeholder={t('patients.firstNameAr')}
-                              dir='rtl'
-                            />
-                          </div>
-                          <div>
-                            <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
-                              {t('patients.lastNameAr')}
-                            </label>
-                            <Input
-                              value={formData.lastName_ar || ''}
-                              onChange={(e) =>
-                                setFormData({ ...formData, lastName_ar: e.target.value })
-                              }
-                              placeholder={t('patients.lastNameAr')}
-                              dir='rtl'
-                            />
-                          </div>
-                        </div>
-                      )}
                       <div>
                         <label className='block text-body-sm font-medium text-neutral-700 mb-2'>
                           {t('patients.patientId')}
@@ -1920,8 +1861,8 @@ export default function PatientDetailPage() {
               required
             >
               <option value=''>{t('tasks.selectAssignee') || 'Select assignee'}</option>
-              {assignTaskUsers.map((u) => (
-                <option key={u._id} value={u._id}>
+              {assignTaskUsers.map((u, i) => (
+                <option key={u._id ?? u.id ?? `user-${i}`} value={u._id ?? u.id ?? ''}>
                   {u.firstName} {u.lastName} {u.email ? `(${u.email})` : ''}
                 </option>
               ))}

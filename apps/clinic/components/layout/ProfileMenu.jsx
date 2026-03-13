@@ -245,7 +245,7 @@ export function ProfileMenu({ isCollapsed, showSubscriptionLinks = false }) {
               <p className='text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate leading-tight'>
                 {userDisplayName}
               </p>
-              <p className='text-xs font-semibold text-primary-600 dark:text-primary-400 truncate leading-tight mt-1'>
+              <p className='text-xs font-semibold text-primary-600 dark:text-white truncate leading-tight mt-1'>
                 {userRoleDisplay}
               </p>
             </div>

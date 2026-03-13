@@ -90,8 +90,8 @@ export function Tabs({
               className={[
                 'px-4 py-2 rounded-none text-sm whitespace-nowrap transition-colors duration-150',
                 isActive
-                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200 font-semibold'
-                  : 'font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-primary-50 dark:hover:bg-neutral-800',
+                  ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-white font-semibold'
+                  : 'font-medium text-neutral-600 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white hover:bg-primary-50 dark:hover:bg-neutral-800',
               ].join(' ')}
             >
               {tab.label}
@@ -99,8 +99,8 @@ export function Tabs({
                 <span
                   className={`ml-2 px-2 py-0.5 rounded-full text-xs transition-colors duration-200 ${
                     isActive
-                      ? 'bg-primary-200/60 dark:bg-primary-700/50 text-primary-800 dark:text-primary-100'
-                      : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+                      ? 'bg-primary-200/60 dark:bg-neutral-600 text-primary-800 dark:text-white'
+                      : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-200'
                   }`}
                 >
                   {tab.count}
@@ -123,8 +123,8 @@ export function Tabs({
             onMouseEnter={onTabHover ? () => onTabHover(tab.id) : undefined}
             className={
               isActive
-                ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-500 dark:text-primary-300 font-medium text-body-sm whitespace-nowrap transition-all duration-200 ease-out rounded-none'
-                : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-500 transition-all duration-200 ease-out rounded-none'
+                ? 'py-1.5 px-3 border-b-2 border-primary-500 text-primary-500 dark:border-white dark:text-white font-medium text-body-sm whitespace-nowrap transition-all duration-200 ease-out rounded-none'
+                : 'py-1.5 px-3 border-b-2 border-transparent text-neutral-500 dark:text-white font-medium text-body-sm whitespace-nowrap hover:text-neutral-700 dark:hover:text-white hover:border-neutral-300 dark:hover:border-neutral-500 transition-all duration-200 ease-out rounded-none'
             }
           >
             {tab.label}
@@ -132,8 +132,8 @@ export function Tabs({
               <span
                 className={`ml-2 px-2 py-0.5 rounded-full text-body-xs transition-colors duration-200 ease-out ${
                   isActive
-                    ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300'
-                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
+                    ? 'bg-primary-100 dark:bg-neutral-600 dark:text-white text-primary-700'
+                    : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-white'
                 }`}
               >
                 {tab.count}
