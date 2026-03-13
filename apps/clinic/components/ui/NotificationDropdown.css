@@ -361,12 +361,40 @@
 .dark .NotificationDropdown-item-time {
   color: var(--color-neutral-400, #a3a3a3);
 }
+.dark .NotificationDropdown-item-icon {
+  color: #ffffff;
+  background: color-mix(in srgb, var(--color-neutral-600) 80%, transparent);
+  border-color: var(--color-neutral-500, #737373);
+  box-shadow: none;
+}
+.dark .NotificationDropdown-item-icon svg {
+  color: #ffffff;
+  stroke: #ffffff;
+}
+.dark .NotificationDropdown-item-icon path {
+  stroke: #ffffff;
+}
 .dark .NotificationDropdown-title {
   color: var(--color-neutral-100, #f5f5f5);
 }
 .dark .NotificationDropdown-empty-text,
 .dark .NotificationDropdown-empty-subtext {
   color: var(--color-neutral-400, #a3a3a3);
+}
+.dark .NotificationDropdown-footer {
+  background: var(--color-neutral-800, #262626);
+  border-top-color: var(--color-neutral-600, #525252);
+}
+.dark .NotificationDropdown-view-all {
+  background: color-mix(in srgb, var(--color-neutral-700) 90%, transparent);
+  border-color: var(--color-neutral-600, #525252);
+  color: var(--color-neutral-100, #f5f5f5);
+  box-shadow: none;
+}
+.dark .NotificationDropdown-view-all:hover {
+  background: color-mix(in srgb, var(--color-neutral-600) 95%, transparent);
+  border-color: var(--color-neutral-500, #737373);
+  color: #ffffff;
 }
 
 /* Header - Premium */

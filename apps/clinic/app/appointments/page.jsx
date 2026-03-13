@@ -50,6 +50,27 @@ function parseLocalDateOnly(str) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/** Appointment's calendar date as YYYY-MM-DD in the given timezone (or local). Used to filter table by selected date. */
+function getAppointmentDateStr(row, timezone) {
+  const dateSource = row.startTime || row.appointmentDate;
+  if (!dateSource) return '';
+  const date = new Date(dateSource);
+  if (Number.isNaN(date.getTime())) return '';
+  if (timezone) {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(date);
+    } catch {
+      return toLocalDateString(date);
+    }
+  }
+  return toLocalDateString(date);
+}
+
 export default function AppointmentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -66,11 +87,13 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 25;
   const [todayCount, setTodayCount] = useState(0);
   const [tomorrowCount, setTomorrowCount] = useState(0);
-  /** Selected calendar day (YYYY-MM-DD). Table shows only this day. Default: today. */
+  /** Selected calendar day (YYYY-MM-DD). Empty = show all appointments in table (paginated). */
   const [selectedDate, setSelectedDate] = useState(() =>
-    dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl) ? dateFromUrl : getTodayLocal(),
+    dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl) ? dateFromUrl : '',
   );
 
   const [statsLoading, setStatsLoading] = useState(true);
@@ -146,12 +169,12 @@ export default function AppointmentsPage() {
     fetchDoctors();
   }, [authLoading, user]);
 
-  // Sync selected date from URL (e.g. direct link or browser back)
+  // Sync selected date from URL (e.g. direct link or browser back). No date = show all appointments.
   useEffect(() => {
     if (dateFromUrl && /^\d{4}-\d{2}-\d{2}$/.test(dateFromUrl)) {
       setSelectedDate(dateFromUrl);
-    } else if (!dateFromUrl) {
-      setSelectedDate(getTodayLocal());
+    } else {
+      setSelectedDate('');
     }
   }, [dateFromUrl]);
 
@@ -179,10 +202,9 @@ export default function AppointmentsPage() {
     const newPath = params.toString() ? `/appointments?${params}` : '/appointments';
     router.replace(newPath, { scroll: false });
     setLoading(true);
-    const dateForApi = selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate) ? selectedDate : getTodayLocal();
-    const q = new URLSearchParams({ page: '1', limit: '30' });
+    const q = new URLSearchParams({ page: '1', limit: String(PAGE_SIZE) });
     if (selectedStatus) q.append('status', selectedStatus);
-    q.append('date', dateForApi);
+    if (selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) q.append('date', selectedDate);
     const localeCode = (locale || '').slice(0, 2);
     if (localeCode) q.append('locale', localeCode);
     apiClient
@@ -192,8 +214,9 @@ export default function AppointmentsPage() {
           const list = extractArrayData(response) || [];
           setAppointments(Array.isArray(list) ? list : []);
           setCurrentPage(1);
-          const pages = response.data.pagination?.totalPages ?? 1;
-          setTotalPages(pages);
+          const pag = response.data.pagination;
+          setTotalPages(pag?.totalPages ?? pag?.pages ?? 1);
+          setTotalCount(pag?.total ?? list.length);
         }
       })
       .catch((err) => logger.error('Failed to fetch appointments after book', err))
@@ -303,17 +326,21 @@ export default function AppointmentsPage() {
 
   const fetchAppointments = useCallback(
     async (silentRefresh = false) => {
-      const dateForApi = selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate) ? selectedDate : getTodayLocal();
       const localeCode = (locale || '').slice(0, 2);
       if (!silentRefresh) setLoading(true);
       try {
+        const hasDateFilter = selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate);
+        const limit = hasDateFilter ? 500 : PAGE_SIZE;
         const params = new URLSearchParams({
-          page: currentPage.toString(),
-          limit: '30',
+          page: hasDateFilter ? '1' : currentPage.toString(),
+          limit: String(limit),
         });
         if (selectedDoctorId) params.append('doctorId', selectedDoctorId);
         if (selectedStatus) params.append('status', selectedStatus);
-        params.append('date', dateForApi);
+        // Only filter by date when user has selected a specific day (calendar); otherwise show all appointments (paginated).
+        if (hasDateFilter) {
+          params.append('date', selectedDate);
+        }
         params.append('locale', localeCode || 'en');
         const tz = settings?.settings?.timezone;
         if (tz) params.append('timezone', tz);
@@ -322,9 +349,20 @@ export default function AppointmentsPage() {
         if (response.success && response.data) {
           const appointmentsList = extractArrayData(response);
           const list = Array.isArray(appointmentsList) ? appointmentsList : [];
-          const pages = response.data.pagination?.totalPages || 1;
-          setAppointments(list);
+          const tz = settings?.settings?.timezone;
+          // When a date is selected, filter to only that day (clinic TZ) so table shows only that date's data
+          const filtered =
+            selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
+              ? list.filter((row) => getAppointmentDateStr(row, tz) === selectedDate)
+              : list;
+          const pag = response.data.pagination;
+          const pages =
+            selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate) ? 1 : (pag?.totalPages ?? pag?.pages ?? 1);
+          const total =
+            selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate) ? filtered.length : (pag?.total ?? list.length);
+          setAppointments(filtered);
           setTotalPages(pages);
+          setTotalCount(total);
         }
       } catch (error) {
         logger.error('Failed to fetch appointments', error);
@@ -345,6 +383,11 @@ export default function AppointmentsPage() {
       fetchAppointments();
     }
   }, [authLoading, user, router, fetchAppointments]);
+
+  // When date filter changes (calendar or "Show all"), go to first page
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedDate]);
 
   // Refetch appointments when UI language changes so patient names use the new locale (es/ar)
   const prevLocaleRef = useRef(locale);
@@ -958,7 +1001,7 @@ export default function AppointmentsPage() {
                 <span className='text-primary-800 dark:text-neutral-200'>
                   {t('appointments.showingForDate').replace(
                     '{{date}}',
-                    formatDateDisplay(parseLocalDateOnly(selectedDate) || new Date(), {
+                    formatDateDisplay(new Date(selectedDate + 'T12:00:00Z'), {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',
@@ -985,29 +1028,41 @@ export default function AppointmentsPage() {
                 emptyMessage={t('common.noDataFound')}
               />
 
-              {totalPages > 1 && (
-                <div className='mt-4 flex items-center justify-between'>
-                  <Button
-                    variant='secondary'
-                    size='md'
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className='whitespace-nowrap'
-                  >
-                    {t('common.previous')}
-                  </Button>
-                  <span className='text-body-sm text-neutral-700'>
-                    {t('common.page')} {currentPage} {t('common.of')} {totalPages}
+              {/* Pagination: 25 per page, lazy-load style (fetch only current page). Show when there are results or multiple pages. */}
+              {(totalCount > 0 || totalPages > 1) && (
+                <div className='mt-4 flex flex-wrap items-center justify-between gap-3'>
+                  <span className='text-body-sm text-neutral-600 dark:text-neutral-400'>
+                    {totalCount > 0
+                      ? (() => {
+                          const from = (currentPage - 1) * PAGE_SIZE + 1;
+                          const to = Math.min(currentPage * PAGE_SIZE, totalCount);
+                          return `${t('common.showing') || 'Showing'} ${from}–${to} ${t('common.of') || 'of'} ${totalCount}`;
+                        })()
+                      : `${t('common.page') || 'Page'} ${currentPage} ${t('common.of') || 'of'} ${totalPages}`}
                   </span>
-                  <Button
-                    variant='secondary'
-                    size='md'
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className='whitespace-nowrap'
-                  >
-                    {t('common.next')}
-                  </Button>
+                  <div className='flex items-center gap-2'>
+                    <Button
+                      variant='secondary'
+                      size='md'
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className='whitespace-nowrap'
+                    >
+                      {t('common.previous')}
+                    </Button>
+                    <span className='text-body-sm text-neutral-700 dark:text-neutral-300'>
+                      {t('common.page')} {currentPage} {t('common.of')} {totalPages}
+                    </span>
+                    <Button
+                      variant='secondary'
+                      size='md'
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className='whitespace-nowrap'
+                    >
+                      {t('common.next')}
+                    </Button>
+                  </div>
                 </div>
               )}
             </Card>

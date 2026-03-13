@@ -95,7 +95,7 @@ export function PatientSelector({
                 setIsOpen(true);
               }
             }}
-            className='flex items-center justify-between gap-4 form-control-height form-control-md px-4 border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 focus:outline-none focus:border-primary-500 dark:focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 min-h-[44px] transition-[border-color,box-shadow] duration-200 cursor-pointer'
+            className='flex items-center justify-between gap-4 px-4 py-3 min-h-[64px] border border-neutral-300 dark:border-neutral-600 rounded-[10px] bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:border-neutral-400 dark:hover:border-neutral-500 focus:outline-none focus:border-primary-500 dark:focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-[border-color,box-shadow] duration-200 cursor-pointer'
           >
             <div className='flex items-center gap-3 flex-1 min-w-0'>
               {/* Patient Avatar */}

@@ -82,6 +82,25 @@ export default function AppointmentCalendar({
     [settings?.locale, settings?.timezone],
   );
 
+  /** Format date for the label at end of date filter: use local calendar day so it matches the date input (no timezone shift). */
+  const formatDateDisplayLocal = useCallback((date) => {
+    if (!date || !(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+    try {
+      return new Intl.DateTimeFormat(settings?.locale || 'en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }).format(date);
+    } catch {
+      const y = date.getFullYear();
+      const m = date.toLocaleDateString(undefined, { month: 'short' });
+      const d = date.getDate();
+      const w = date.toLocaleDateString(undefined, { weekday: 'short' });
+      return `${w}, ${m} ${d}, ${y}`;
+    }
+  }, [settings?.locale]);
+
   const formatTimeDisplay = useCallback(
     (date) => {
       try {
@@ -192,15 +211,14 @@ export default function AppointmentCalendar({
             aptEnd = new Date(aptStart.getTime() + durationMin * 60 * 1000);
           }
 
+          const aptEndMs = aptEnd.getTime();
           slots.forEach((slot) => {
             const slotStartMs = slot.start.getTime();
             const slotEndMs = slot.end.getTime();
             const aptStartMs = aptStart.getTime();
-            // Mark booked only if appointment *starts* in this slot (not every overlapping slot)
-            const tolerance = 1000;
-            const appointmentStartsInThisSlot =
-              aptStartMs >= slotStartMs - tolerance && aptStartMs < slotEndMs - tolerance;
-            if (appointmentStartsInThisSlot) {
+            // Mark booked if appointment overlaps this slot (so 9:00–9:30 books both 9:00 and 9:15 in 15-min slots)
+            const overlaps = aptStartMs < slotEndMs && aptEndMs > slotStartMs;
+            if (overlaps) {
               slot.available = false;
               slot.booked = true;
             }
@@ -319,7 +337,7 @@ export default function AppointmentCalendar({
           hour: slotHour,
           minute: slotMinute,
           available: !isPastSlot,
-          booked: false,
+          booked: slot.booked === true,
           isPast: isPastSlot,
         };
       });
@@ -332,6 +350,36 @@ export default function AppointmentCalendar({
   useEffect(() => {
     fetchAvailability();
   }, [fetchAvailability]);
+
+  // When viewing "today", re-compute past slots every minute so passed times become unavailable
+  useEffect(() => {
+    const todayKey = formatDateLocal(new Date());
+    const selectedKey = formatDateLocal(currentDate);
+    const viewingToday = todayKey === selectedKey;
+    if (!viewingToday || availableSlots.length === 0) return;
+
+    const oneMinuteMs = 60 * 1000;
+    const updatePastSlots = () => {
+      const now = Date.now();
+      setAvailableSlots((prev) =>
+        prev.map((slot) => {
+          const isPastDayInClinic = slot.dateKey < todayKey;
+          const isTodayInClinic = slot.dateKey === todayKey;
+          const isPastSlot =
+            isPastDayInClinic || (isTodayInClinic && slot.end.getTime() - oneMinuteMs < now);
+          return {
+            ...slot,
+            isPast: isPastSlot,
+            available: !slot.booked && !isPastSlot,
+          };
+        }),
+      );
+    };
+
+    updatePastSlots();
+    const intervalId = setInterval(updatePastSlots, 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [currentDate, formatDateLocal, availableSlots.length]);
 
   const handleSlotClick = (slot) => {
     if (slot.available && !slot.booked && !slot.isPast) {
@@ -407,9 +455,9 @@ export default function AppointmentCalendar({
   const isPast = selectedDay < today;
 
   return (
-    <Card className='p-4'>
-      <div className='flex items-center justify-between mb-4'>
-        <h3 className='text-lg font-semibold text-neutral-900'>
+    <Card className='p-4 dark:bg-neutral-800 dark:border-neutral-600'>
+      <div className='flex items-center justify-between mb-5'>
+        <h3 className='text-lg font-semibold text-neutral-900 dark:text-white'>
           {t('appointments.availabilityCalendar') || 'Availability Calendar'}
         </h3>
       </div>
@@ -417,7 +465,7 @@ export default function AppointmentCalendar({
       {
         <>
           {/* Date Selector */}
-          <div className='mb-4 flex items-center gap-2 flex-wrap'>
+          <div className='mb-5 mt-1 flex items-center gap-2 flex-wrap'>
             <Button
               variant='secondary'
               size='lg'
@@ -433,7 +481,7 @@ export default function AppointmentCalendar({
               value={formatDateLocal(currentDate)}
               onChange={handleDateChange}
               min={formatDateLocal(today)}
-              className='px-3 py-1.5 text-sm border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500'
+              className='px-3 py-1.5 text-sm border border-neutral-300 dark:border-neutral-500 dark:bg-neutral-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-neutral-400'
             />
             <Button
               variant='primary'
@@ -450,12 +498,12 @@ export default function AppointmentCalendar({
                 {t('appointments.today') || 'Today'}
               </Button>
             )}
-            <div className='ml-auto text-sm text-neutral-600'>{formatDateDisplay(currentDate)}</div>
+            <div className='ml-auto text-sm text-neutral-600 dark:text-neutral-300'>{formatDateDisplayLocal(currentDate)}</div>
           </div>
 
           {loading ? (
             <div
-              className='grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-96 overflow-hidden'
+              className='grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-96 overflow-hidden mt-1'
               aria-busy='true'
               aria-label={t('appointments.loadingSlots')}
             >
@@ -469,7 +517,7 @@ export default function AppointmentCalendar({
           ) : (
             <>
               {/* Time Slots Grid */}
-              <div className='grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-96 overflow-y-auto'>
+              <div className='grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 max-h-96 overflow-y-auto mt-1'>
                 {availableSlots.map((slot, idx) => {
                   const slotHour = slot.hour;
                   const slotMinute = slot.minute;
@@ -529,11 +577,11 @@ export default function AppointmentCalendar({
                       size='xs'
                       onClick={() => handleSlotClick(slot)}
                       disabled={isBooked || !isAvailable || isPastSlot}
-                      className={`py-2 px-3 text-xs rounded border font-medium ${slotClass}`}
+                      className={`py-3 px-4 text-xs rounded border font-medium min-h-[3.25rem] ${slotClass}`}
                       title={slotTitle}
                       aria-label={slotTitle}
                     >
-                      <div className='flex flex-col items-center'>
+                      <div className='flex flex-col items-center dark:[&_span]:text-white'>
                         <span className='text-xs font-semibold'>{timeStr}</span>
                         <span className='text-base mt-0.5'>{slotIcon}</span>
                       </div>
@@ -545,18 +593,18 @@ export default function AppointmentCalendar({
               {/* Legend */}
               <div className='mt-4 flex items-center justify-center gap-4 text-xs flex-wrap'>
                 <div className='flex items-center gap-1.5'>
-                  <div className='w-3 h-3 bg-green-50 border border-green-300 rounded'></div>
-                  <span className='text-neutral-600'>
+                  <div className='w-3 h-3 bg-green-50 border border-green-300 dark:bg-green-500/40 dark:border-green-400 rounded'></div>
+                  <span className='text-neutral-600 dark:text-neutral-300'>
                     {t('appointments.available') || 'Available'}
                   </span>
                 </div>
                 <div className='flex items-center gap-1.5'>
-                  <div className='w-3 h-3 bg-status-warning/20 border border-status-warning/40 rounded'></div>
-                  <span className='text-neutral-600'>{t('appointments.booked') || 'Booked'}</span>
+                  <div className='w-3 h-3 bg-status-warning/20 border border-status-warning/40 dark:bg-amber-500/40 dark:border-amber-400 rounded'></div>
+                  <span className='text-neutral-600 dark:text-neutral-300'>{t('appointments.booked') || 'Booked'}</span>
                 </div>
                 <div className='flex items-center gap-1.5'>
-                  <div className='w-3 h-3 bg-gray-100 border border-gray-200 rounded'></div>
-                  <span className='text-neutral-600'>
+                  <div className='w-3 h-3 bg-gray-100 border border-gray-200 dark:bg-neutral-500 dark:border-neutral-400 rounded'></div>
+                  <span className='text-neutral-600 dark:text-neutral-300'>
                     {t('appointments.pastUnavailable') || 'Past/Unavailable'}
                   </span>
                 </div>
