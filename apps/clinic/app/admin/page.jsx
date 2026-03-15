@@ -292,7 +292,7 @@ export default function AdminDashboardPage() {
             <h2 className='admin-section__title-text'>{t('admin.platformAlerts')}</h2>
             <Link
               href='/admin/clients'
-              className='ml-auto text-sm font-medium text-primary-600 hover:text-primary-700'
+              className='ml-auto text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-white dark:hover:text-neutral-200'
             >
               {t('admin.viewAll')}
             </Link>
@@ -409,7 +409,7 @@ export default function AdminDashboardPage() {
             <h2 className='admin-section__title-text'>{t('admin.riskMonitoring')}</h2>
             <Link
               href='/admin/clients'
-              className='ml-auto text-sm font-medium text-primary-600 hover:text-primary-700'
+              className='ml-auto text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-white dark:hover:text-neutral-200'
             >
               {t('admin.viewAll')}
             </Link>
@@ -473,7 +473,7 @@ export default function AdminDashboardPage() {
 function BuildingIcon() {
   return (
     <svg
-      className='icon icon-md text-neutral-900'
+      className='icon icon-md text-neutral-900 dark:text-white'
       fill='none'
       stroke='currentColor'
       viewBox='0 0 24 24'
@@ -490,7 +490,7 @@ function BuildingIcon() {
 function ClockIcon() {
   return (
     <svg
-      className='icon icon-md text-neutral-900'
+      className='icon icon-md text-neutral-900 dark:text-white'
       fill='none'
       stroke='currentColor'
       viewBox='0 0 24 24'
@@ -507,7 +507,7 @@ function ClockIcon() {
 function CardIcon() {
   return (
     <svg
-      className='icon icon-md text-neutral-900'
+      className='icon icon-md text-neutral-900 dark:text-white'
       fill='none'
       stroke='currentColor'
       viewBox='0 0 24 24'
@@ -524,7 +524,7 @@ function CardIcon() {
 function UsersIcon() {
   return (
     <svg
-      className='icon icon-md text-neutral-900'
+      className='icon icon-md text-neutral-900 dark:text-white'
       fill='none'
       stroke='currentColor'
       viewBox='0 0 24 24'
@@ -541,7 +541,7 @@ function UsersIcon() {
 function StorageIcon() {
   return (
     <svg
-      className='icon icon-md text-neutral-900'
+      className='icon icon-md text-neutral-900 dark:text-white'
       fill='none'
       stroke='currentColor'
       viewBox='0 0 24 24'
@@ -558,7 +558,7 @@ function StorageIcon() {
 function CurrencyIcon() {
   return (
     <svg
-      className='icon icon-md text-neutral-900'
+      className='icon icon-md text-neutral-900 dark:text-white'
       fill='none'
       stroke='currentColor'
       viewBox='0 0 24 24'
@@ -575,7 +575,7 @@ function CurrencyIcon() {
 function CheckIcon() {
   return (
     <svg
-      className='icon icon-md text-neutral-900'
+      className='icon icon-md text-neutral-900 dark:text-white'
       fill='none'
       stroke='currentColor'
       viewBox='0 0 24 24'

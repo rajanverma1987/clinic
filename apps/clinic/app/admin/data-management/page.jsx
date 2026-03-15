@@ -308,8 +308,8 @@ export default function AdminDataManagementPage() {
           <div className='grid gap-4 sm:grid-cols-2'>
             <Card>
               <div className='flex items-start gap-3'>
-                <div className='rounded-lg bg-primary-100 p-2 shrink-0'>
-                  <SettingsIcon className='icon icon-md text-primary-700' />
+                <div className='rounded-lg bg-primary-100 dark:bg-neutral-600 p-2 shrink-0'>
+                  <SettingsIcon className='icon icon-md text-primary-700 dark:!text-white' />
                 </div>
                 <div className='min-w-0 flex-1'>
                   <h3 className='font-medium text-neutral-900 dark:text-neutral-100 mb-1'>
@@ -348,8 +348,8 @@ export default function AdminDataManagementPage() {
             </Card>
             <Card className='border-red-200 dark:border-red-800/40 col-span-2'>
               <div className='flex items-start gap-3 mb-3'>
-                <div className='rounded-lg bg-red-100 dark:bg-red-900/30 p-2 shrink-0'>
-                  <SettingsIcon className='icon icon-md text-red-600 dark:text-red-400' />
+                <div className='rounded-lg bg-red-100 dark:bg-red-900/50 p-2 shrink-0'>
+                  <SettingsIcon className='icon icon-md text-red-600 dark:!text-white' />
                 </div>
                 <div>
                   <h3 className='font-medium text-neutral-900 dark:text-neutral-100'>
@@ -593,8 +593,8 @@ export default function AdminDataManagementPage() {
             </Card>
             <Card>
               <div className='flex items-start gap-3'>
-                <div className='rounded-lg bg-neutral-100 dark:bg-neutral-700 p-2 shrink-0'>
-                  <SettingsIcon className='icon icon-md text-neutral-600 dark:text-neutral-300' />
+                <div className='rounded-lg bg-neutral-100 dark:bg-neutral-600 p-2 shrink-0'>
+                  <SettingsIcon className='icon icon-md text-neutral-600 dark:!text-white' />
                 </div>
                 <div className='min-w-0 flex-1'>
                   <h3 className='font-medium text-neutral-900 dark:text-neutral-100 mb-1'>
@@ -610,8 +610,8 @@ export default function AdminDataManagementPage() {
             </Card>
             <Card>
               <div className='flex items-start gap-3'>
-                <div className='rounded-lg bg-primary-100 p-2 shrink-0'>
-                  <FileDownIcon className='icon icon-md text-primary-700' />
+                <div className='rounded-lg bg-primary-100 dark:bg-neutral-600 p-2 shrink-0'>
+                  <FileDownIcon className='icon icon-md text-primary-700 dark:!text-white' />
                 </div>
                 <div className='min-w-0 flex-1'>
                   <h3 className='font-medium text-neutral-900 dark:text-neutral-100 mb-1'>
@@ -630,8 +630,8 @@ export default function AdminDataManagementPage() {
             </Card>
             <Card>
               <div className='flex items-start gap-3'>
-                <div className='rounded-lg bg-primary-100 p-2 shrink-0'>
-                  <FileDownIcon className='icon icon-md text-primary-700' />
+                <div className='rounded-lg bg-primary-100 dark:bg-neutral-600 p-2 shrink-0'>
+                  <FileDownIcon className='icon icon-md text-primary-700 dark:!text-white' />
                 </div>
                 <div className='min-w-0 flex-1'>
                   <h3 className='font-medium text-neutral-900 dark:text-neutral-100 mb-1'>
