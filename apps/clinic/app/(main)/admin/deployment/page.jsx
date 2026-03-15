@@ -163,27 +163,27 @@ export default function AdminDeploymentPage() {
                     onClick={() => applyTemplate(tpl.id)}
                     className={`text-left p-4 rounded-xl border-2 transition-all ${
                       selectedTemplate === tpl.id
-                        ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                        ? 'border-primary-600 bg-primary-50 text-neutral-800 dark:bg-neutral-600 dark:border-primary-400 dark:ring-2 dark:ring-primary-400 dark:ring-offset-2 dark:ring-offset-neutral-900 dark:!text-white'
                         : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
                     }`}
                   >
-                    <p className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">
+                    <p className={`font-semibold mb-1 ${selectedTemplate === tpl.id ? 'text-neutral-800 dark:!text-white' : 'text-neutral-800 dark:text-neutral-200'}`}>
                       {t(`admin.deploymentTemplate${tpl.id.charAt(0).toUpperCase() + tpl.id.slice(1)}`)}
                     </p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+                    <p className={`text-sm mb-2 ${selectedTemplate === tpl.id ? 'text-neutral-600 dark:!text-neutral-100' : 'text-neutral-500 dark:text-neutral-400'}`}>
                       {t(`admin.deploymentTemplate${tpl.id.charAt(0).toUpperCase() + tpl.id.slice(1)}Desc`)}
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {tpl.modules.slice(0, 4).map((m) => (
                         <span
                           key={m}
-                          className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300"
+                          className={`text-xs px-1.5 py-0.5 rounded ${selectedTemplate === tpl.id ? 'bg-neutral-500/80 dark:bg-neutral-500 dark:!text-white' : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'}`}
                         >
                           {t(`admin.deploymentModule${((DEFAULT_MODULES.find((dm) => dm.key === m)?.key ?? m).charAt(0).toUpperCase() + (DEFAULT_MODULES.find((dm) => dm.key === m)?.key ?? m).slice(1))}`)}
                         </span>
                       ))}
                       {tpl.modules.length > 4 && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-700 text-neutral-500">
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${selectedTemplate === tpl.id ? 'bg-neutral-500/80 dark:bg-neutral-500 dark:!text-white' : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-500'}`}>
                           +{tpl.modules.length - 4} {t('admin.deploymentMore')}
                         </span>
                       )}

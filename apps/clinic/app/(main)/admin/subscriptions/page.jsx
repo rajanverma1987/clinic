@@ -476,7 +476,7 @@ export default function AdminSubscriptionsPage() {
         return (
           <a
             href={`/admin/clients?plan=${encodeURIComponent(row.name)}`}
-            className='text-primary-600 hover:underline text-sm inline-flex items-center gap-1'
+            className='text-primary-600 hover:underline dark:text-white dark:hover:text-neutral-200 text-sm inline-flex items-center gap-1'
           >
             <UsersIcon className='icon icon-sm' />
             {count} {t('admin.viewClinics') || 'View'}
@@ -914,8 +914,8 @@ export default function AdminSubscriptionsPage() {
                     aria-selected={viewMode === VIEW_TABLE}
                     className={`inline-flex items-center gap-1.5 ${
                       viewMode === VIEW_TABLE
-                        ? 'bg-primary-100 text-primary-700 shadow-sm'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
+                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-white shadow-sm'
+                        : 'text-neutral-600 dark:text-white hover:text-neutral-900 dark:hover:text-neutral-100'
                     }`}
                     onClick={() => setViewMode(VIEW_TABLE)}
                   >
@@ -931,7 +931,7 @@ export default function AdminSubscriptionsPage() {
                     className={`inline-flex items-center gap-1.5 ${
                       viewMode === VIEW_CARDS
                         ? 'bg-primary-100 text-primary-700 shadow-sm'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
+                        : 'text-neutral-600 dark:text-white hover:text-neutral-900 dark:hover:text-neutral-100'
                     }`}
                     onClick={() => setViewMode(VIEW_CARDS)}
                   >
@@ -946,8 +946,8 @@ export default function AdminSubscriptionsPage() {
                     aria-selected={viewMode === VIEW_COMPARISON}
                     className={`inline-flex items-center gap-1.5 ${
                       viewMode === VIEW_COMPARISON
-                        ? 'bg-primary-100 text-primary-700 shadow-sm'
-                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
+                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-white shadow-sm'
+                        : 'text-neutral-600 dark:text-white hover:text-neutral-900 dark:hover:text-neutral-100'
                     }`}
                     onClick={() => setViewMode(VIEW_COMPARISON)}
                   >
@@ -960,24 +960,24 @@ export default function AdminSubscriptionsPage() {
                 <div className='overflow-x-auto p-4'>
                   <table className='w-full border-collapse text-sm'>
                     <thead>
-                      <tr className='border-b border-neutral-200'>
-                        <th className='text-left py-3 px-4 font-medium'>
+                      <tr className='border-b border-neutral-200 dark:border-neutral-600'>
+                        <th className='text-left py-3 px-4 font-medium text-neutral-900 dark:text-white'>
                           {t('subscriptionSpec.feature') || 'Feature'}
                         </th>
                         {COMPARISON_TABLE_PLAN_SLUGS.map((slug) => {
                           const plan = displayPlans.find((p) => p.name === slug);
                           return (
-                            <th key={slug} className='text-center py-3 px-4 font-medium'>
+                            <th key={slug} className='text-center py-3 px-4 font-medium text-neutral-900 dark:text-white'>
                               <div>{slug}</div>
                               {plan && (
-                                <div className='text-primary-600 font-semibold mt-1'>
+                                <div className='text-primary-600 dark:text-white font-semibold mt-1'>
                                   {formatPrice(plan.price, plan.currency)}/
                                   {plan.billingCycle === 'MONTHLY'
                                     ? t('admin.billingMonthlyShort')
                                     : t('admin.billingYearlyShort')}
                                 </div>
                               )}
-                              <div className='text-neutral-500 text-xs mt-1'>
+                              <div className='text-neutral-500 dark:text-neutral-400 text-xs mt-1'>
                                 {clinicsPerPlan[slug] ?? 0} {t('admin.clinics') || 'clinics'}
                               </div>
                             </th>
@@ -1106,7 +1106,7 @@ export default function AdminSubscriptionsPage() {
             <div className='admin-section__title'>
               <span className='admin-section__accent' />
               <h2 className='admin-section__title-text'>Per-Clinic Billing Records</h2>
-              <button type='button' className='ml-auto text-xs text-primary-600 hover:underline' onClick={fetchBillingClinics}>Refresh</button>
+              <button type='button' className='ml-auto text-xs text-primary-600 hover:underline dark:text-white dark:hover:text-neutral-200' onClick={fetchBillingClinics}>Refresh</button>
             </div>
             <p className='text-sm text-neutral-500 dark:text-neutral-400 mb-4'>
               Renewal dates, payment status, and payment overrides per clinic.
@@ -1152,7 +1152,7 @@ export default function AdminSubscriptionsPage() {
                               {sub.graceUntil ? new Date(sub.graceUntil).toLocaleDateString() : '—'}
                             </td>
                             <td className='py-3 px-3 text-center'>
-                              <button type='button' className='text-xs text-primary-600 hover:underline' onClick={() => { setOverrideClinic(c); setOverrideReason(''); setOverrideGraceDays('7'); }}>
+                              <button type='button' className='text-xs text-primary-600 hover:underline dark:text-white dark:hover:text-neutral-200' onClick={() => { setOverrideClinic(c); setOverrideReason(''); setOverrideGraceDays('7'); }}>
                                 Override
                               </button>
                             </td>

@@ -284,8 +284,8 @@ export default function AdminUsersPage() {
       header: t('auth.email'),
       accessor: (row) => (
         <div>
-          <div className='font-medium text-neutral-900'>{row.email}</div>
-          <div className='text-sm text-neutral-500'>
+          <div className='font-medium text-neutral-900 dark:text-neutral-100'>{row.email}</div>
+          <div className='text-sm text-neutral-500 dark:text-neutral-400'>
             {row.firstName} {row.lastName}
           </div>
         </div>
@@ -294,7 +294,7 @@ export default function AdminUsersPage() {
     {
       header: t('common.role'),
       accessor: (row) => (
-        <span className='px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 capitalize'>
+        <span className='admin-users-role-badge px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 dark:bg-primary-800 dark:text-white capitalize'>
           {row.role?.replace('_', ' ')}
         </span>
       ),
@@ -303,8 +303,8 @@ export default function AdminUsersPage() {
       header: t('admin.tenant'),
       accessor: (row) => (
         <div>
-          <div className='font-medium text-neutral-900'>{row.tenantName || 'N/A'}</div>
-          {row.tenantSlug && <div className='text-sm text-neutral-500'>{row.tenantSlug}</div>}
+          <div className='font-medium text-neutral-900 dark:text-neutral-100'>{row.tenantName || 'N/A'}</div>
+          {row.tenantSlug && <div className='text-sm text-neutral-500 dark:text-neutral-400'>{row.tenantSlug}</div>}
         </div>
       ),
     },
@@ -313,7 +313,9 @@ export default function AdminUsersPage() {
       accessor: (row) => (
         <span
           className={`px-2 py-1 text-xs font-medium rounded-full ${
-            row.isActive ? 'bg-secondary-100 text-secondary-700' : 'bg-neutral-100 text-neutral-700'
+            row.isActive
+              ? 'bg-secondary-100 text-secondary-700 dark:bg-green-900/40 dark:text-white'
+              : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-100'
           }`}
         >
           {row.isActive ? t('common.active') : t('common.inactive')}
@@ -323,7 +325,7 @@ export default function AdminUsersPage() {
     {
       header: t('admin.lastLogin'),
       accessor: (row) => (
-        <div className='text-sm text-neutral-600'>
+        <div className='text-sm text-neutral-600 dark:text-neutral-300'>
           {row.lastLoginAt ? new Date(row.lastLoginAt).toLocaleDateString() : t('common.never')}
         </div>
       ),
@@ -331,7 +333,7 @@ export default function AdminUsersPage() {
     {
       header: t('admin.created'),
       accessor: (row) => (
-        <div className='text-sm text-neutral-600'>
+        <div className='text-sm text-neutral-600 dark:text-neutral-300'>
           {new Date(row.createdAt).toLocaleDateString()}
         </div>
       ),

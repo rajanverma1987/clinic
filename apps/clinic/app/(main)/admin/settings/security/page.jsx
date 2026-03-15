@@ -226,7 +226,7 @@ export default function AdminSettingsSecurityPage() {
               <div className="admin-section__title">
                 <span className="admin-section__accent" />
                 <h2 className="admin-section__title-text">Clinics Without 2FA</h2>
-                <Button variant="ghost" size="xs" onClick={fetch2FAReport} className="ml-auto text-primary-600 text-xs">
+                <Button variant="ghost" size="xs" onClick={fetch2FAReport} className="ml-auto text-primary-600 dark:text-white dark:hover:text-neutral-200 text-xs">
                   Refresh
                 </Button>
               </div>
@@ -261,7 +261,7 @@ export default function AdminSettingsSecurityPage() {
                               </p>
                               <p className="text-xs text-neutral-500">{c.planName ?? c.plan ?? '—'}</p>
                             </div>
-                            <Button variant="ghost" size="xs" onClick={() => router.push(`/admin/clients?tenantId=${encodeURIComponent(id)}`)} className="text-primary-600 text-xs">
+                            <Button variant="ghost" size="xs" onClick={() => router.push(`/admin/clients?tenantId=${encodeURIComponent(id)}`)} className="text-primary-600 dark:text-white dark:hover:text-neutral-200 text-xs">
                               View →
                             </Button>
                           </li>
