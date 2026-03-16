@@ -352,6 +352,7 @@ export default function AdminUsersPage() {
             }}
             aria-label={t('common.view')}
             title={t('common.view')}
+            className='dark:!text-white dark:hover:!text-neutral-200'
           >
             <EyeIcon className='icon icon-sm' />
           </Button>
@@ -362,6 +363,7 @@ export default function AdminUsersPage() {
             href={`/admin/activity-logs?userId=${row._id || row.id}`}
             aria-label={t('admin.viewActivityLog') || 'View activity log'}
             title={t('admin.viewActivityLog') || 'View activity log'}
+            className='dark:!text-white dark:hover:!text-neutral-200'
           >
             <HistoryIcon className='icon icon-sm' />
           </Button>
@@ -376,6 +378,7 @@ export default function AdminUsersPage() {
             }}
             aria-label={t('admin.resetPassword')}
             title={t('admin.resetPassword')}
+            className='dark:!text-white dark:hover:!text-neutral-200'
           >
             <KeyIcon className='icon icon-sm' />
           </Button>
@@ -392,7 +395,7 @@ export default function AdminUsersPage() {
               }}
               aria-label={t('admin.unlockAccount') || 'Unlock account'}
               title={t('admin.unlockAccount') || 'Unlock — re-enable this account'}
-              className='text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'
+              className='text-green-600 hover:text-green-700 dark:!text-white dark:hover:!text-neutral-200'
             >
               {unlockingUserId === (row._id || row.id) ? (
                 <RefreshCwIcon className='icon icon-sm animate-spin' />
@@ -412,6 +415,7 @@ export default function AdminUsersPage() {
             }}
             aria-label={t('admin.forceLogout') || 'Force logout'}
             title={t('admin.forceLogout') || 'Revoke all sessions'}
+            className='dark:!text-white dark:hover:!text-neutral-200'
           >
             {forceLogoutUserId === (row._id || row.id) ? (
               <RefreshCwIcon className='icon icon-sm animate-spin' />
