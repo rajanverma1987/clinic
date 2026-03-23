@@ -12,7 +12,6 @@ import {
   PencilIcon,
   TrashIcon,
 } from '@/components/icons';
-import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PatientCard } from '@/components/patients/PatientCard';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
@@ -633,7 +632,7 @@ export default function PatientsPage() {
   }
 
   return (
-    <Layout>
+    <>
       <PageHeader
         title={t('patients.title')}
         subtitle={formatDateDisplay()}
@@ -1044,6 +1043,6 @@ export default function PatientsPage() {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

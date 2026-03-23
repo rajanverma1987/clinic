@@ -70,6 +70,7 @@ export class VideoCallManager {
         onConnect: () => this.handleConnect(),
         onClose: () => this.handleClose(),
         onError: (error) => this.handleError(error),
+        location: typeof window !== 'undefined' ? window.location.href : '',
       });
 
       // Initialize peer (gets user media and creates peer connection)
@@ -424,6 +425,7 @@ export class VideoCallManager {
         onConnect: () => this.handleConnect(),
         onClose: () => this.handleClose(),
         onError: (error) => this.handleError(error),
+        location: typeof window !== 'undefined' ? window.location.href : '',
       });
 
       await this.peerWrapper.initialize();

@@ -1,7 +1,6 @@
 'use client';
 
 import { CheckIcon, ChevronRightIcon, RefreshCwIcon, StarIcon, XIcon } from '@/components/icons';
-import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProfilerWrapper } from '@/components/ProfilerWrapper';
 import { StaleDataBanner } from '@/components/StaleDataBanner';
@@ -470,7 +469,7 @@ export default function DashboardPage() {
   // Server and client must match: render same shell until mounted to avoid hydration (e.g. <a> in <div> mismatch)
   if (!mounted) {
     return (
-      <Layout>
+      <>
         <div className='dashboard-container'>
           <div className='dashboard-header-block'>
             <PageHeader
@@ -483,12 +482,12 @@ export default function DashboardPage() {
           </div>
           <DashboardSkeleton isDoctor={false} />
         </div>
-      </Layout>
+      </>
     );
   }
   if (authLoading) {
     return (
-      <Layout>
+      <>
         <div className='dashboard-container'>
           <div className='dashboard-header-block'>
             <PageHeader
@@ -502,13 +501,13 @@ export default function DashboardPage() {
           </div>
           <DashboardSkeleton isDoctor={false} />
         </div>
-      </Layout>
+      </>
     );
   }
 
   if (!user) {
     return (
-      <Layout>
+      <>
         <div className='dashboard-container'>
           <div className='dashboard-header-block'>
             <PageHeader
@@ -528,7 +527,7 @@ export default function DashboardPage() {
             <Loader type='section' text={t('auth.redirectingToLogin')} />
           </div>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -539,7 +538,7 @@ export default function DashboardPage() {
     !isDoctor && dashboardAll.error && dashboardAll.todayAppointments?.length > 0;
 
   return (
-    <Layout>
+    <>
       <ProfilerWrapper id='dashboard'>
         {showStaleBanner && (
           <StaleDataBanner
@@ -987,7 +986,14 @@ export default function DashboardPage() {
                             patient={todayAppointments[0]?.patientId}
                             onCall={() => {
                               const phone = todayAppointments[0]?.patientId?.phone;
-                              if (phone) window.location.href = `tel:${phone}`;
+                              if (phone) {
+                                const a = document.createElement('a');
+                                a.href = `tel:${phone}`;
+                                a.rel = 'noreferrer';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              }
                             }}
                             onViewDetails={() => {
                               if (todayAppointments[0]?.patientId?._id) {
@@ -1014,7 +1020,14 @@ export default function DashboardPage() {
                             }}
                             onCall={() => {
                               const phone = latestActivePrescription.patientId?.phone;
-                              if (phone) window.location.href = `tel:${phone}`;
+                              if (phone) {
+                                const a = document.createElement('a');
+                                a.href = `tel:${phone}`;
+                                a.rel = 'noreferrer';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              }
                             }}
                             onViewDetails={() => {
                               if (latestActivePrescription.patientId?._id) {
@@ -1102,7 +1115,14 @@ export default function DashboardPage() {
                             patient={todayAppointments[0]?.patientId}
                             onCall={() => {
                               const phone = todayAppointments[0]?.patientId?.phone;
-                              if (phone) window.location.href = `tel:${phone}`;
+                              if (phone) {
+                                const a = document.createElement('a');
+                                a.href = `tel:${phone}`;
+                                a.rel = 'noreferrer';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              }
                             }}
                             onViewDetails={() => {
                               if (todayAppointments[0]?.patientId?._id) {
@@ -1533,6 +1553,6 @@ export default function DashboardPage() {
           </TabContent>
         </div>
       </ProfilerWrapper>
-    </Layout>
+    </>
   );
 }

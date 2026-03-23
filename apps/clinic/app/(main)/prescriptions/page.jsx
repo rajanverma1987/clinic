@@ -1,7 +1,6 @@
 'use client';
 
 import { CheckIcon, EyeIcon, PencilIcon, PrinterIcon } from '@/components/icons';
-import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PrescriptionPrintPreview } from '@/components/prescriptions/PrescriptionPrintPreview';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
@@ -12,7 +11,6 @@ import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmation } from '@/contexts/ConfirmationContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { apiClient } from '@/lib/api/client';
 import { isManagerPathReadOnly } from '@/lib/constants/route-security';
 import { ACTIONS, RESOURCES, hasPermission } from '@/lib/permissions/constants';
@@ -32,7 +30,6 @@ export default function PrescriptionsPage() {
   const dateLocale =
     localeCode === 'ar' ? 'ar' : localeCode === 'es' ? 'es' : (i18nLocale || 'en-US');
   const { open: openConfirm } = useConfirmation();
-  const { prefetchPrescription } = usePrefetchDetail();
   const tenantId = user?.tenantId ?? null;
   const managerReadOnly = isManagerPathReadOnly(pathname);
   const canCreatePrescription = user
@@ -257,7 +254,7 @@ export default function PrescriptionsPage() {
   }
 
   return (
-    <Layout>
+    <>
       <PageHeader
         title={t('prescriptions.title')}
         subtitle={t('prescriptions.prescriptionList')}
@@ -289,7 +286,6 @@ export default function PrescriptionsPage() {
               data={prescriptions}
               columns={columns}
               onRowClick={(row) => router.push(`/prescriptions/${row._id}`)}
-              onRowMouseEnter={(row) => row?._id && prefetchPrescription(row._id)}
               emptyMessage={t('common.noDataFound')}
             />
           </Card>
@@ -301,6 +297,6 @@ export default function PrescriptionsPage() {
           onClose={handleClosePrintPreview}
         />
       </div>
-    </Layout>
+    </>
   );
 }

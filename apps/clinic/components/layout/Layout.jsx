@@ -9,6 +9,7 @@ import { SubscriptionExpiredBanner } from '@/components/ui/SubscriptionExpiredBa
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useFeatures } from '@/contexts/FeatureContext.jsx';
 import { useI18n } from '@/contexts/I18nContext.jsx';
+import { useLayoutOptionsContext } from '@/contexts/LayoutOptionsContext.jsx';
 import { useAppKeyboardShortcuts } from '@/hooks/useAppKeyboardShortcuts';
 import { apiClient } from '@/lib/api/client';
 import { usePathname, useRouter } from 'next/navigation';
@@ -25,19 +26,33 @@ import { Sidebar } from './Sidebar.jsx';
  */
 export function Layout({
   children,
-  title,
-  subtitle,
-  actionButton,
-  actionButtons,
-  loading = false,
-  loadingText,
-  skeleton,
+  title: titleProp,
+  subtitle: subtitleProp,
+  actionButton: actionButtonProp,
+  actionButtons: actionButtonsProp,
+  loading: loadingProp = false,
+  loadingText: loadingTextProp,
+  skeleton: skeletonProp,
+  isRootShell = false,
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useI18n();
   const { user, loading: authLoading, loggingOut } = useAuth();
   const { subscription } = useFeatures();
+  const { options, isInsideMainLayout } = useLayoutOptionsContext();
+  // When inside (main) layout, only the root Layout renders the shell; nested <Layout> from pages just passes through
+  if (!isRootShell && isInsideMainLayout) {
+    return children;
+  }
+  // Props override context (for pages that still wrap with <Layout> directly)
+  const title = titleProp ?? options.title;
+  const subtitle = subtitleProp ?? options.subtitle;
+  const actionButton = actionButtonProp ?? options.actionButton;
+  const actionButtons = actionButtonsProp ?? options.actionButtons;
+  const loading = loadingProp ?? options.loading ?? false;
+  const loadingText = loadingTextProp ?? options.loadingText;
+  const skeleton = skeletonProp ?? options.skeleton;
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);

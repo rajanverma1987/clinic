@@ -12,7 +12,6 @@ import { Table } from '@/components/ui/Table';
 import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { usePrefetchDetail } from '@/hooks/usePrefetchDetail';
 import { fetchPrescriptionsTab, REVALIDATE_DELAY_MS } from '@/lib/dashboard-tab-cache';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -23,7 +22,6 @@ export function PrescriptionsTab({ isActive = false }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t, locale: i18nLocale } = useI18n();
-  const { prefetchPrescription } = usePrefetchDetail();
   const userId = user?._id || user?.userId;
   const localeCode = (i18nLocale || 'en').slice(0, 2);
   const dateLocale =
@@ -211,7 +209,6 @@ export function PrescriptionsTab({ isActive = false }) {
           data={prescriptions}
           columns={columns}
           onRowClick={(row) => row?._id && router.push(`/prescriptions/${row._id}`)}
-          onRowMouseEnter={(row) => row?._id && prefetchPrescription(row._id)}
           emptyMessage={t('common.noDataFound')}
         />
       </div>

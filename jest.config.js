@@ -10,7 +10,7 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
-    // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
+    // Handle module aliases (matches jsconfig.json paths)
     '^@/(.*)$': '<rootDir>/$1',
   },
   testMatch: [
@@ -21,7 +21,6 @@ const customJestConfig = {
     'services/**/*.{js,jsx}',
     'lib/**/*.{js,jsx}',
     'app/api/**/*.{js,jsx}',
-    '!**/*.d.ts',
     '!**/node_modules/**',
     '!**/.next/**',
     '!**/coverage/**',

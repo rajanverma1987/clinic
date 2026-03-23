@@ -131,10 +131,15 @@ class ApiClient {
                 response.status === 403
                   ? ERROR_HANDLING.forbiddenRedirect
                   : ERROR_HANDLING.unauthorizedRedirect;
-              if (this._redirectHandler && redirect.startsWith('/')) {
+              if (this._redirectHandler) {
                 this._redirectHandler(redirect);
               } else {
-                window.location.href = redirect;
+                const a = document.createElement('a');
+                a.href = redirect;
+                a.setAttribute('rel', 'noreferrer');
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
               }
             }
           } else {

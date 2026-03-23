@@ -3,7 +3,6 @@
 import AppointmentCalendar from '@/components/appointments/AppointmentCalendar';
 import { CancelAppointmentModal } from '@/components/appointments/CancelAppointmentModal';
 import { EyeIcon, XIcon } from '@/components/icons';
-import { Layout } from '@/components/layout/Layout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ActionsMenu } from '@/components/ui/ActionsMenu';
 import { Button } from '@/components/ui/Button';
@@ -678,7 +677,7 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <Layout>
+    <>
       <PageHeader
         title={t('appointments.title')}
         subtitle={formatDateDisplay(new Date(), {
@@ -976,6 +975,6 @@ export default function AppointmentsPage() {
         patientName={cancelTarget?.patientName}
         loading={!!loadingAppointmentId}
       />
-    </Layout>
+    </>
   );
 }

@@ -65,7 +65,6 @@ export function useApiResource(fetcher, options = {}) {
     if (!manual) {
       execute();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manual, execute, ...deps]);
 
   return {

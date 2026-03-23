@@ -15,6 +15,7 @@ export class WebRTCPeerWrapper {
     this.sessionId = options.sessionId;
     this.userId = options.userId;
     this.isInitiator = options.isInitiator || false;
+    this._locationForLog = options.location ?? '';
     this.onSignal = options.onSignal || (() => { });
     this.onStream = options.onStream || (() => { });
     this.onConnect = options.onConnect || (() => { });
@@ -59,7 +60,7 @@ export class WebRTCPeerWrapper {
         permissions: !!navigator.permissions,
         userAgent: navigator.userAgent,
         isSecureContext: window.isSecureContext,
-        location: window.location.href
+        location: this._locationForLog
       });
 
       // Check if we're in a secure context (required for getUserMedia)

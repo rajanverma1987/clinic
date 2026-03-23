@@ -2,5 +2,5 @@
   "name": "@clinic-saas/shared-config",
   "version": "0.0.1",
   "private": true,
-  "description": "Shared ESLint/config for clinic-saas apps (JavaScript)"
+  "description": "Shared config for clinic-saas apps (JavaScript)"
 }
